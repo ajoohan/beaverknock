@@ -838,21 +838,9 @@ const BEAVERLY_SIDE  = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAa8AAAGkCA
 /* 노크 장면 — 정면 비버의 든 손이 문을 향하도록 나란히 세운다.
    h = 비버 높이(px). 문은 비버보다 살짝 높다. */
 function knockScene(h){
-  /* 원본 아트를 그대로 쓴다 — 손동작과 노크 표시가 이미 그림 안에 있으므로
-     따로 파동을 덧그리지 않고, 두드릴 문만 오른쪽에 세운다. */
-  const dw = h*0.44, dh = h*1.02;
-  return `<span style="display:flex;align-items:flex-end;justify-content:center;position:relative">
-    <img src="${BEAVERLY_KNOCK}" alt="문을 두드리는 공인중개사 비버리"
-      style="height:${h}px;width:auto;display:block;flex:none;user-select:none;-webkit-user-drag:none">
-    <svg viewBox="0 0 100 220" style="height:${dh}px;width:${dw}px;flex:none;margin-left:${-h*0.06}px;display:block" aria-hidden="true">
-      <rect x="2" y="12" width="96" height="208" rx="7" fill="#31336F"/>
-      <rect x="0" y="2" width="100" height="14" rx="6" fill="#23255C"/>
-      <rect x="14" y="28" width="72" height="74" rx="5" fill="#3D3F8F"/>
-      <rect x="22" y="36" width="56" height="58" rx="4" fill="#F5EDE2" opacity=".95"/>
-      <rect x="14" y="116" width="72" height="88" rx="5" fill="#3D3F8F"/>
-      <circle cx="10" cy="120" r="5" fill="#C9A87C"/>
-    </svg>
-  </span>`;}
+  /* 원본 아트 그대로 — 손동작과 노크 표시가 그림 안에 있으므로 덧붙이지 않는다 */
+  return `<img src="${BEAVERLY_KNOCK}" alt="문을 두드리는 공인중개사 비버리"
+    style="height:${h}px;width:auto;display:block;user-select:none;-webkit-user-drag:none">`;}
 
 function beaverly(h){ return `<img src="${BEAVERLY_FRONT}" alt="공인중개사 비버리"
   style="height:${h||280}px;width:auto;display:block;user-select:none;-webkit-user-drag:none">`;}

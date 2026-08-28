@@ -398,7 +398,6 @@ const MUSTS=['주차 가능','엘리베이터','반려동물','역세권','초�
 const FLOORS=['반지하 제외','1층 제외','탑층 제외','무관'], HOUSE=['1인','2인','3인','3인 이상'];
 const LOANS=['있음','없음'];
 const PREFS=['문자·카톡','전화','아무거나'], TIMES=['평일 낮','평일 저녁','주말','아무때나'];
-const SHOP_FLOORS=['1층만','2층 이상 가능','지하 가능','상관없음'];
 
 
 /* ---------- 매물(Listing) — 공급자 전용 매칭 재고 ----------
@@ -541,17 +540,16 @@ const reachCount = sc => S.demands.filter(d => inScope(d, sc)).length;
 
 /* ---------- 상태 ---------- */
 /* 수요자 역할 — 슬롯 수와 입력 필드가 갈린다 (기업 수요는 제안 성격이 다르므로 10건) */
+/* 첫 창업이든 이전이든 다점포든 중개사가 찾아주는 자리는 같다 — 굳이 나누지 않는다 */
 const WHO = {
-  home:      {kind:'home', t:'살 집을 찾아요',              d:'전월세 · 매매 · 아파트 · 오피스텔 · 빌라', slots:5, tag:'개인'},
-  founder:   {kind:'shop', t:'처음 가게를 열어요',           d:'첫 창업 — 업종을 고르면 설비·인허가 요건을 알려드립니다', slots:5, tag:'창업자'},
-  bizowner:  {kind:'shop', t:'가게를 옮기거나 넓히려고요',    d:'이미 운영 중 — 지금 자리와 비교해 더 나은 조건을 찾습니다', slots:5, tag:'자영업자'},
-  franchise: {kind:'shop', t:'여러 점포를 내려고 해요',       d:'프랜차이즈 본사·다점포 — 지역별로 한 번에 조건을 겁니다', slots:10, tag:'본사'},
+  home: {kind:'home', t:'살 집을 찾아요', d:'전월세 · 매매 · 아파트 · 오피스텔 · 빌라', slots:5, tag:'주거'},
+  shop: {kind:'shop', t:'가게 자리를 찾아요', d:'상가 · 점포 — 업종과 상권, 면적으로 조건을 겁니다', slots:5, tag:'상가'},
 };
 const blankDraft = () => ({who:'',kind:'',deal:'',dongs:[],dep:'',rent:'',htype:[],rooms:'',when:'',musts:[],
-  bizBudget:'',openWhen:'',curAddr:'',curPy:'',curRent:'',moveWhy:'',brand:'',mgr:'',storeGoal:'',stdPy:'',
-  dongFree:'',whenFree:'',mustFree:'',bizPreset:'',elev:'',
+  openWhen:'',
+  dongFree:'',whenFree:'',mustFree:'',elev:'',
   keyOk:'',signNeed:'',parkNeed:'',shopNote:'',shopFloorFree:'',facFree:'',mapView:'map',mapLevel:'hanam',
-  biz:'',areaMin:'',areaMax:'',key:'',shopFloor:[],fac:[],
+  biz:'',areaMin:'',areaMax:'',key:'',
   memo:'',floor:'',house:'',loan:'',name:'',phone:'',pref:'문자·카톡',times:[],a1:false,a2:false,a3:false,
   verified:false, vmethod:'', vstep:'idle', birth:'', carrier:'', vcode:'', vat:''});
 
@@ -949,8 +947,9 @@ function draftLines(d){
   const L=[];
   if(d.kind==='shop'){
     L.push(`보증금 ${won(+d.dep||0)} / 월 ${d.rent||0}${d.key?` · 권리금 ${won(+d.key)}까지`:''}`);
-    if(d.areaMin) L.push(`${d.areaMin}~${d.areaMax||''}평 (${(d.areaMin*3.305785).toFixed(1)}~${d.areaMax?(d.areaMax*3.305785).toFixed(1):''}㎡)${d.shopFloor.length?' · '+d.shopFloor.join(' · '):''}`);
-    if(d.fac.length) L.push(d.fac.join(' · '));
+    if(d.areaMin) L.push(`전용 ${d.areaMin}~${d.areaMax||''}평 (${(d.areaMin*3.305785).toFixed(1)}~${d.areaMax?(d.areaMax*3.305785).toFixed(1):''}㎡)${d.shopFloorFree?` · ${d.shopFloorFree}`:''}`);
+    else if(d.shopFloorFree) L.push(d.shopFloorFree);
+    if(d.facFree) L.push(`설비 — ${d.facFree}`);
   } else {
     L.push(`보증금 ${won(+d.dep||0)}${+d.rent?` / 월 ${d.rent}`:''}`);
     L.push(`${d.htype.join(' · ')||'유형 무관'}${d.when?` · ${d.when} 입주`:''}`);
@@ -1134,7 +1133,6 @@ V['#/kind'] = () => `
 /* ---------- D-03 조건 등록 ---------- */
 V['#/register'] = () => {
   const d=S.draft, shop=d.kind==='shop';
-  const preset = shop && d.bizPreset ? BIZ[d.bizPreset] : null;
   return `
 <div class="scr fade">
   ${mprog(50)}
@@ -1146,51 +1144,11 @@ V['#/register'] = () => {
       <p class="sub">아는 것만 채우셔도 됩니다. <b style="color:var(--ind)">*</b> 표시만 필수입니다.</p></div>
 
       ${shop? `
-      ${d.who==='franchise'? `
-      <div class="card pad" style="background:var(--ind50);border-color:#D9DAF0">
-        <span class="sect">본사 정보</span>
-        <div class="grid2 mo1" style="gap:12px">
-          <div><span class="lab" style="font-size:12.5px">브랜드명 <span class="req">*</span></span>
-            <input class="inp" data-in="brand" value="${esc(d.brand)}" placeholder="예) ○○카페" style="padding:11px 13px;font-size:14px"></div>
-          <div><span class="lab" style="font-size:12.5px">담당자</span>
-            <input class="inp" data-in="mgr" value="${esc(d.mgr)}" placeholder="이름 · 직함" style="padding:11px 13px;font-size:14px"></div>
-          <div><span class="lab" style="font-size:12.5px">이번에 낼 점포 수</span>
-            <div class="unit"><input class="inp num" data-in="storeGoal" inputmode="numeric" value="${esc(d.storeGoal)}" placeholder="0" style="padding:11px 13px;font-size:14px"><span>개</span></div></div>
-          <div><span class="lab" style="font-size:12.5px">표준 평형</span>
-            <div class="unit"><input class="inp num" data-in="stdPy" inputmode="numeric" value="${esc(d.stdPy)}" placeholder="0" style="padding:11px 13px;font-size:14px"><span>평</span></div></div>
-        </div>
-        <p style="margin:10px 0 0;font-size:12px;line-height:1.6;color:var(--n700)">
-          본사 수요는 <b style="color:var(--n900)">제안을 10건까지</b> 받습니다. 지역을 여러 곳 고르시면 각 지역의 중개사에게 함께 전달됩니다.</p>
-      </div>` : ''}
-      ${d.who==='bizowner'? `
-      <div class="card pad" style="background:var(--n50);box-shadow:none">
-        <span class="sect">지금 하시는 가게</span>
-        <p style="margin:0 0 12px;font-size:12.3px;line-height:1.6;color:var(--n500)">현재 조건을 알려주시면 중개사가 <b style="color:var(--n900)">더 나은 자리인지</b>를 기준으로 판단합니다.</p>
-        <div class="grid2 mo1" style="gap:12px">
-          <div><span class="lab" style="font-size:12.5px">현재 위치</span>
-            <input class="inp" data-in="curAddr" value="${esc(d.curAddr)}" placeholder="예) 미사1동" style="padding:11px 13px;font-size:14px"></div>
-          <div><span class="lab" style="font-size:12.5px">현재 면적</span>
-            <div class="unit"><input class="inp num" data-in="curPy" inputmode="numeric" value="${esc(d.curPy)}" placeholder="0" style="padding:11px 13px;font-size:14px"><span>평</span></div></div>
-          <div><span class="lab" style="font-size:12.5px">현재 월세</span>
-            <div class="unit"><input class="inp num" data-in="curRent" inputmode="numeric" value="${esc(d.curRent)}" placeholder="0" style="padding:11px 13px;font-size:14px"><span>만원</span></div></div>
-        </div>
-        <div style="margin-top:12px"><span class="lab" style="font-size:12.5px">옮기려는 이유</span>
-          ${chipsHTML(['넓히려고','임대료 부담','계약 만료','상권 이동','권리금 회수'], d.moveWhy,'moveWhy',false)}</div>
-      </div>` : ''}
       <div><span class="lab">업종 <span class="req">*</span> <span class="opt">하시려는 업종을 그대로 적어주세요</span></span>
         <input class="inp" data-in="biz" value="${esc(d.biz)}" placeholder="예) 브런치 카페 / 무인 아이스크림 / 필라테스 / 애견 미용">
         <p style="margin:8px 0 0;font-size:11.8px;line-height:1.6;color:var(--n500)">
-          업종에 따라 <b style="color:var(--n900)">들어갈 수 없는 건물</b>이 있어 중개사가 직접 확인합니다. 아래에서 비슷한 것을 고르시면 확인 요건을 미리 알려드립니다.</p>
-        <div class="chips" style="margin-top:10px">${Object.keys(BIZ).map(k=>`
-          <button class="chip ${d.bizPreset===k?'on':''}" data-act="bizPreset" data-v="${esc(k)}" style="font-size:12.5px;padding:8px 14px">${esc(k)}</button>`).join('')}</div>
+          업종에 따라 <b style="color:var(--n900)">들어갈 수 없는 건물</b>이 있습니다 — 적어주시면 중개사가 직접 확인합니다.</p>
       </div>
-      ${preset? `<div class="card pad" style="background:var(--ind50);border-color:#D9DAF0">
-        <span class="sect">${esc(d.bizPreset)} — 이건 미리 확인하세요</span>
-        <div class="kv"><dt>필요 설비</dt><dd>${preset.fac.join(' · ')||'특별한 설비 없음'}</dd></div>
-        <div class="kv"><dt>인허가</dt><dd>${esc(preset.lic)}</dd></div>
-        ${preset.note?`<p style="margin:10px 0 0;font-size:12.8px;line-height:1.65;color:var(--n700)">${preset.note}</p>`:''}
-        <p style="margin:8px 0 0;font-size:11.5px;color:var(--n500)">이 요건을 중개사에게 함께 전달해 드립니다.</p>
-      </div>`:''}
 <div><span class="lab">찾으시는 상권 <span class="req">*</span> <span class="opt">지도에서 고르거나 직접 적으셔도 됩니다 (여러 곳 가능)</span></span>
         <div style="display:flex;gap:8px;margin-bottom:12px">
           <input class="inp" data-in="dongFree" value="${esc(d.dongFree||'')}" placeholder="예) 하남시 미사동, 하남시 신장동">
@@ -1200,12 +1158,12 @@ V['#/register'] = () => {
         ${regionPicker(d, true)}
       </div>
       <div class="grid2 mo1">
-        <div><span class="lab">희망 면적 <span class="opt">평</span></span>
+        <div><span class="lab">희망 면적 <span class="req">*</span> <span class="opt">전용면적 기준 · 평</span></span>
           <div class="grid2" style="gap:9px">
-            <div class="unit"><input class="inp" data-in="areaMin" inputmode="numeric" value="${esc(d.areaMin)}" placeholder="최소"><span>평</span></div>
-            <div class="unit"><input class="inp" data-in="areaMax" inputmode="numeric" value="${esc(d.areaMax)}" placeholder="최대"><span>평</span></div>
+            <div class="unit"><input class="inp" data-in="areaMin" inputmode="numeric" value="${esc(d.areaMin)}" placeholder="최소"><span>평(전용)</span></div>
+            <div class="unit"><input class="inp" data-in="areaMax" inputmode="numeric" value="${esc(d.areaMax)}" placeholder="최대"><span>평(전용)</span></div>
           </div>
-          ${d.areaMin?`<span style="display:block;margin-top:6px;font-size:12px;font-weight:700;color:var(--ind)">약 ${(d.areaMin*3.305785).toFixed(1)}${d.areaMax?`~${(d.areaMax*3.305785).toFixed(1)}`:''} ㎡</span>`:''}
+          ${d.areaMin?`<span style="display:block;margin-top:6px;font-size:12px;font-weight:700;color:var(--ind)">전용 약 ${(d.areaMin*3.305785).toFixed(1)}${d.areaMax?`~${(d.areaMax*3.305785).toFixed(1)}`:''} ㎡</span>`:''}
         </div>
         <div><span class="lab">권리금 <span class="opt">감당 가능한 상한 — ○○○만원 이하</span></span>
           <div class="unit"><input class="inp" data-in="key" inputmode="numeric" value="${esc(d.key)}" placeholder="0"><span>만원</span></div></div>
@@ -1214,16 +1172,11 @@ V['#/register'] = () => {
         <div><span class="lab">보증금 <span class="req">*</span></span><div class="unit"><input class="inp" data-in="dep" inputmode="numeric" value="${esc(d.dep)}" placeholder="0"><span>만원</span></div></div>
         <div><span class="lab">월세 <span class="req">*</span></span><div class="unit"><input class="inp" data-in="rent" inputmode="numeric" value="${esc(d.rent)}" placeholder="0"><span>만원</span></div></div>
       </div>
-      ${d.who==='founder'? `<div class="grid2 mo1">
-        <div><span class="lab">창업 총예산 <span class="opt">권리금·인테리어 포함</span></span>
-          <div class="unit"><input class="inp num" data-in="bizBudget" inputmode="numeric" value="${esc(d.bizBudget)}" placeholder="0"><span>만원</span></div></div>
-        <div><span class="lab">개업 목표 시기</span>${chipsHTML(['3개월 내','6개월 내','1년 내','미정'], d.openWhen,'openWhen',false)}</div>
-      </div>` : ''}
-      <div><span class="lab">층 조건</span>${chipsHTML(SHOP_FLOORS, d.shopFloor, 'shopFloor', true)}
-        <input class="inp" data-in="shopFloorFree" value="${esc(d.shopFloorFree||'')}" placeholder="더 정확한 조건이 있으면 적어주세요 — 예) 1층만, 지하는 제외" style="margin-top:9px"></div>
-      <div><span class="lab">꼭 필요한 설비 <span class="opt">업종을 고르면 자동으로 체크됩니다</span></span>
-        ${chipsHTML(['주방·급배수','가스 인입','전기 증설','후드·덕트','화장실 내부','간판 설치','주차 가능','정화조 여유','잘 모르겠음'], d.fac, 'fac', true)}
-        <input class="inp" data-in="facFree" value="${esc(d.facFree||'')}" placeholder="목록에 없는 설비는 직접 적어주세요 — 예) 3상 전기 필요, 층고 3.5m 이상" style="margin-top:9px"></div>
+      <div><span class="lab">입주 희망 시기</span>${chipsHTML(['3개월 내','6개월 내','1년 내','미정'], d.openWhen,'openWhen',false)}</div>
+      <div><span class="lab">층 조건 <span class="opt">원하시는 층을 그대로 적어주세요</span></span>
+        <input class="inp" data-in="shopFloorFree" value="${esc(d.shopFloorFree||'')}" placeholder="예) 1층만 / 2층 이상도 괜찮음 / 지하는 제외"></div>
+      <div><span class="lab">꼭 필요한 설비 <span class="opt">없으면 비워두셔도 됩니다</span></span>
+        <input class="inp" data-in="facFree" value="${esc(d.facFree||'')}" placeholder="예) 가스 인입, 후드·덕트, 3상 전기, 층고 3.5m 이상"></div>
       ` : `
       <div><span class="lab">거래 방식 <span class="req">*</span></span>${chipsHTML(DEALS, d.deal, 'deal', false)}</div>
 <div><span class="lab">찾으시는 동네 <span class="req">*</span> <span class="opt">지도에서 고르거나 직접 적으셔도 됩니다 (여러 곳 가능)</span></span>
@@ -1285,7 +1238,7 @@ V['#/detail'] = () => { const d=S.draft, pct=detailPct(d); return `
           placeholder="예) 아이가 있어서 조용한 곳이면 좋겠어요. 이번 달 안에 꼭 옮겨야 하는 사정이 있습니다.">${esc(d.memo)}</textarea>
       </div>
       ${d.kind==='shop' ? `
-      <div><span class="lab">입점 희망 시기</span>${chipsHTML(['3개월 내','6개월 내','1년 내','미정'], d.openWhen, 'openWhen', false)}</div>
+      <div><span class="lab">입주 희망 시기</span>${chipsHTML(['3개월 내','6개월 내','1년 내','미정'], d.openWhen, 'openWhen', false)}</div>
       <div><span class="lab">권리금이 있는 자리도 보시겠어요?</span>${chipsHTML(['괜찮습니다','무권리만','금액 보고 판단'], d.keyOk||'', 'keyOk', false)}</div>
       <div class="grid2 mo1">
         <div><span class="lab">간판 · 외부 노출</span>${chipsHTML(['1층 노출 필수','간판만 보이면 됨','상관없음'], d.signNeed||'', 'signNeed', false)}</div>
@@ -2120,7 +2073,7 @@ V['#/partner/demands'] = () => {
         <div style="display:flex;justify-content:space-between;align-items:center">
           <span style="display:flex;align-items:center;gap:7px">
             <span style="font-size:13.5px;font-weight:800;color:var(--ind)">${d.kind==='home'?'주거':'상가'} · ${esc(d.deal)}</span>
-            ${d.who&&WHO[d.who]&&d.who!=='home'?`<span class="badge ${d.who==='franchise'?'b-ok':'b-mute'}" style="font-size:10.5px">${WHO[d.who].tag}</span>`:''}</span>
+            ${d.who&&WHO[d.who]&&d.who!=='home'?`<span class="badge b-mute" style="font-size:10.5px">${WHO[d.who].tag}</span>`:''}</span>
           <span style="display:flex;align-items:center;gap:8px">
             ${d.urgent?'<span class="badge b-warn">마감 임박</span>':''}
             <span style="font-size:12.5px;font-weight:800;color:var(--n700)">남은 슬롯 <span class="num">${d.slotsLeft}/5</span></span></span>
@@ -3185,17 +3138,11 @@ function handle(a,v,el){
     case 'add-dong': { const raw=(d.dongFree||'').trim(); if(!raw) return toast('지역을 적어주세요'), true;
       raw.split(/[,·]/).map(x=>x.trim()).filter(Boolean).forEach(x=>{ if(!d.dongs.includes(x)) d.dongs.push(x); });
       d.dongFree=''; toast('지역을 추가했습니다'); render(); return true; }
-    case 'bizPreset': { d.bizPreset = d.bizPreset===v ? '' : v;
-      if(d.bizPreset && BIZ[d.bizPreset]) d.fac=[...new Set([...d.fac, ...BIZ[d.bizPreset].fac])];
-      if(d.bizPreset && !d.biz) d.biz = d.bizPreset;
-      render(); return true; }
     case 'elev': d.elev = d.elev===v ? '' : v; render(); return true;
     case 'keyOk': d.keyOk = d.keyOk===v ? '' : v; render(); return true;
     case 'signNeed': d.signNeed = d.signNeed===v ? '' : v; render(); return true;
     case 'htype': toggleIn(d.htype,v); render(); return true;
     case 'musts': toggleIn(d.musts,v); render(); return true;
-    case 'fac': toggleIn(d.fac,v); render(); return true;
-    case 'shopFloor': toggleIn(d.shopFloor,v); render(); return true;
     case 'times': toggleIn(d.times,v); render(); return true;
     case 'moveWhy': case 'openWhen':
     case 'rooms': case 'when': case 'floor': case 'house': case 'loan': case 'pref':
@@ -3250,6 +3197,7 @@ function handle(a,v,el){
     case 'next-register': {
       const shop=d.kind==='shop';
       if(shop && !String(d.biz).trim()) return toast('업종을 적어주세요'), true;
+      if(shop && !+d.areaMin) return toast('희망 면적(전용)을 적어주세요'), true;
       if(!shop && !d.deal) return toast('거래 방식을 선택해 주세요'), true;
       if(!d.dongs.length) return toast(shop?'상권을 하나 이상 선택해 주세요':'동네를 하나 이상 선택해 주세요'), true;
       if(!+d.dep) return toast('보증금을 입력해 주세요'), true;
@@ -3269,13 +3217,19 @@ function handle(a,v,el){
         lines:draftLines(d), memo:d.memo||'',
         m: d.kind==='shop'
           ? {dongs:d.dongs, biz:d.biz, depMax:+d.dep||null, rentMax:+d.rent||null,
-             pyMin:+d.areaMin||null, pyMax:+d.areaMax||null, floors:d.shopFloor, fac:d.fac}
+             /* 층·설비는 기입형이라 기계로 거르지 않는다 — 중개사가 읽고 판단한다 */
+             pyMin:+d.areaMin||null, pyMax:+d.areaMax||null, floors:[], fac:[],
+             floorNote:d.shopFloorFree||'', facNote:d.facFree||''}
           : {dongs:d.dongs, deal:d.deal, depMax:+d.dep||null, rentMax:+d.rent||null,
              feeIncluded:true, rooms:d.rooms==='3룸'?3:d.rooms==='4룸+'?4:d.rooms==='1~2룸'?1:null, musts:d.musts},
         req:[['지역',d.dongs.join(' · ')],['예산',draftLines(d)[0]||''],['유형',(d.htype||[]).join(' · ')||d.biz||''],
              ['입주',d.when||'미정']].filter(r=>r[1]),
-        det:[['층',d.floor||''],['거주',d.house||''],['대출',d.loan||'']].filter(r=>r[1]),
-        check:(d.musts&&d.musts.length?d.musts:(d.fac||[])).slice(0,3)};
+        det:(d.kind==='shop'
+              ? [['층',d.shopFloorFree||''],['설비',d.facFree||''],['업종',d.biz||'']]
+              : [['층',d.floor||''],['거주',d.house||''],['대출',d.loan||'']]).filter(r=>r[1]),
+        check:(d.kind==='shop'
+                ? [d.shopFloorFree, d.facFree].filter(Boolean)
+                : (d.musts&&d.musts.length?d.musts:[])).slice(0,3)};
       S.demands.unshift(nd);
 
       /* ── 즉시 매칭 ── 이미 등록된 물건 중 조건에 맞는 것을 바로 제안으로 전환 */

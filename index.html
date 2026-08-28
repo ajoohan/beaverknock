@@ -450,6 +450,73 @@ table tbody tr:hover{background:var(--ind50)}
   background:radial-gradient(420px circle at 50% 0%, rgba(61,63,143,.05), transparent 70%);
 }
 
+
+/* ══════════ 리뉴얼 ══════════ */
+
+/* ── 타입: 제목이 제목처럼 ──
+   Pretendard 는 가변폰트다(45~920). 800 에서 멈출 이유가 없다. */
+h1.t{font-weight:860;letter-spacing:-.052em;line-height:1.18}
+h1.t + .sub, .sub{font-size:15px;line-height:1.68;color:var(--n500)}
+
+/* 화면 이름표 — 짧은 선 하나로는 라벨로 안 읽힌다 */
+.eyebrow{
+  font-size:10.5px;font-weight:800;letter-spacing:.14em;color:var(--clay700);
+  background:var(--clay100);border:1px solid var(--clay200);
+  padding:5px 11px 5px 9px;border-radius:7px;
+}
+.eyebrow::before{width:4px;height:4px;border-radius:var(--r-full);background:var(--clay700)}
+
+/* ── 둥글기에 층을 준다 ──
+   담는 것은 넉넉하게, 누르는 것은 단단하게. 전부 같으면 위계가 안 생긴다. */
+.card{border-radius:20px}
+.card.pad{padding:24px 26px}
+.empty{border-radius:20px}
+.inp{border-radius:11px}
+
+/* ── 주 버튼: 한 겹 평면에서 벗어난다 ── */
+.btn.pri{
+  background:linear-gradient(180deg,#4A4CA0 0%,var(--ind) 55%,#383A86 100%);
+  border-color:#383A86;
+  box-shadow:0 1px 0 rgba(255,255,255,.16) inset,
+             0 2px 6px rgba(35,37,92,.18), 0 10px 26px rgba(61,63,143,.22);
+}
+.btn.pri:hover{
+  background:linear-gradient(180deg,#54569F 0%,#43459A 55%,#33356F 100%);
+  box-shadow:0 1px 0 rgba(255,255,255,.20) inset,
+             0 3px 8px rgba(35,37,92,.20), 0 14px 32px rgba(61,63,143,.28);
+}
+.btn.pri:active{box-shadow:0 1px 3px rgba(35,37,92,.24)}
+.btn.sec{background:var(--white);box-shadow:0 1px 2px rgba(35,37,92,.05)}
+.btn.sec:hover{background:var(--ind50);border-color:var(--ind300)}
+
+/* ── 상단바: 화면이 여기서 시작한다고 말해준다 ── */
+.nav{height:78px}
+.nav.solid{
+  background:rgba(255,255,255,.86);
+  backdrop-filter:saturate(1.6) blur(14px);
+  -webkit-backdrop-filter:saturate(1.6) blur(14px);
+  border-bottom:1px solid var(--hair);
+  box-shadow:0 1px 0 rgba(31,29,26,.03), 0 8px 24px -18px rgba(35,37,92,.35);
+}
+/* 현재 위치는 배경이 아니라 채운 알약으로 — 한눈에 잡힌다 */
+.nav .items a{padding:9px 15px;border-radius:9px;transition:background var(--t-fast) ease,color var(--t-fast) ease}
+.nav .items a.on{background:var(--ind);color:#fff;font-weight:800}
+.nav .items a.on:hover{background:var(--ind700)}
+
+/* ── 입력: 존재감 ── */
+.inp{padding:14px 15px;font-size:15px}
+.inp::placeholder{color:#B5AFA5}
+
+/* ── 칩: 더 단단하게 ── */
+.chip{font-weight:600;letter-spacing:-.01em}
+.chip.on{font-weight:800}
+
+/* ── 뱃지: 납작하게, 대문자 간격 ── */
+.badge{border-radius:7px;padding:5px 10px;font-size:11px;letter-spacing:.01em}
+
+/* ── 구분선은 얇게, 대신 여백으로 나눈다 ── */
+.foot{border-top:1px solid var(--hair)}
+
 /* 폼 라벨 리듬 */
 .lab{letter-spacing:-.01em;margin-bottom:10px;line-height:1.45}
 .lab .opt{display:inline-block;margin-top:2px}

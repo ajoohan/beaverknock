@@ -61,10 +61,6 @@ export default async function handler(req, res) {
 
   const ip = clientIp(req);
   const now = Date.now();
-  const hit = (burst.get(ip) || []).filter(t => now - t < BURST_WINDOW);
-  if (hit.length >= BURST_MAX) return res.status(429).json({ error: '잠시 후 다시 시도해 주세요' });
-  hit.push(now); burst.set(ip, hit);
-  if (burst.size > 5000) burst.clear();
 
   /* ── 값 검사 — 화면을 우회해 들어오는 요청도 여기서 걸린다 ── */
   const kind = b.kind === 'shop' ? 'shop' : b.kind === 'home' ? 'home' : null;
@@ -79,6 +75,13 @@ export default async function handler(req, res) {
     (b.agree_third_party !== true || b.agree_multi_alert !== true) ? '필수 동의가 없습니다' :
     null;
   if (bad) return res.status(400).json({ error: bad });
+
+  /* 빈도 제한은 값 검사를 통과한 뒤에 센다.
+     오타로 몇 번 되돌아온 사람이 잠겨 버리면 안 된다 — 저장을 시도한 것만 센다. */
+  const hit = (burst.get(ip) || []).filter(t => now - t < BURST_WINDOW);
+  if (hit.length >= BURST_MAX) return res.status(429).json({ error: '잠시 후 다시 시도해 주세요' });
+  hit.push(now); burst.set(ip, hit);
+  if (burst.size > 5000) burst.clear();
 
   const salt = BK_SECRET_KEY.slice(0, 24);
   const iph = ipHash(ip, salt);

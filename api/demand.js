@@ -153,12 +153,26 @@ export default async function handler(req, res) {
     ip_hash: iph,
   };
 
+  const insert = payload => fetch(sb(TABLE), {
+    method: 'POST', headers: { ...H, Prefer: 'return=minimal' }, body: JSON.stringify(payload),
+  });
+
   try {
-    const r = await fetch(sb(TABLE), { method: 'POST', headers: { ...H, Prefer: 'return=minimal' }, body: JSON.stringify(row) });
+    let r = await insert(row);
+    /* ip_hash 컬럼(0005 마이그레이션)이 아직 없으면 그 칸만 빼고 다시 넣는다.
+       스팸 방어 하나 때문에 손님 조건을 잃을 수는 없다. */
     if (!r.ok) {
       const t = await r.text();
-      console.error('접수 저장 실패', r.status, t.slice(0, 300));
-      return res.status(502).json({ error: '저장하지 못했습니다', detail: t.slice(0, 200) });
+      if (t.includes('ip_hash')) {
+        console.warn('ip_hash 컬럼 없음 — 해당 칸 없이 저장한다 (0005 마이그레이션 필요)');
+        const { ip_hash, ...rest } = row;
+        r = await insert(rest);
+      }
+      if (!r.ok) {
+        const t2 = r.bodyUsed ? t : await r.text();
+        console.error('접수 저장 실패', r.status, t2.slice(0, 300));
+        return res.status(502).json({ error: '저장하지 못했습니다', detail: t2.slice(0, 200) });
+      }
     }
   } catch (e) {
     console.error('접수 저장 오류', e);

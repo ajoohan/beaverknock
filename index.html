@@ -300,7 +300,9 @@ hr.hair{border-top:1px solid var(--hair)}
 /* 종이 결 — 완전한 평면은 화면처럼만 보인다 */
 body::after{
   content:''; position:fixed; inset:0; z-index:60; pointer-events:none;
-  background-image:var(--grain); opacity:.032; mix-blend-mode:multiply;
+  background-image:var(--grain); opacity:.028;
+  /* mix-blend-mode 를 걸면 스크롤할 때마다 화면 전체를 다시 합성해 끊긴다.
+     결은 불투명도만으로도 충분하다. */
 }
 
 /* ── 진입 스태거 ──
@@ -494,9 +496,9 @@ h1.t + .sub, .sub{font-size:15px;line-height:1.75;color:var(--n500)}
 /* ── 상단바: 화면이 여기서 시작한다고 말해준다 ── */
 .nav{height:78px}
 .nav.solid{
-  background:rgba(255,255,255,.86);
-  backdrop-filter:saturate(1.6) blur(14px);
-  -webkit-backdrop-filter:saturate(1.6) blur(14px);
+  /* 상단바는 sticky 가 아니라 내용과 함께 스크롤된다.
+     뒤에 흐릴 것이 없으므로 backdrop-filter 는 비용만 낸다 — 뺀다. */
+  background:rgba(255,255,255,.94);
   border-bottom:1px solid var(--hair);
   box-shadow:0 1px 0 rgba(31,29,26,.03), 0 8px 24px -18px rgba(35,37,92,.35);
 }
@@ -891,7 +893,7 @@ const S = {
   myprops:JSON.parse(JSON.stringify(SEED_MYPROP)),
   inboxCond:'c1', modal:null, form:{}, timer:null, timeLeft:900, safeNo:null, sentAddr:{}, matched:0,
   vtimer:null, vsec:180, geo:null, geoState:'idle', geoTried:false, saved:false, lastRoute:null, enterT:null,
-  user:null, afterLogin:null, loginTab:'sns', email:'', pw:'', pw2:'', signup:false,
+  user:null, afterLogin:null, loginTab:'sns', email:'', pw:'', pw2:'', signup:false, skipLogin:false, geoAgree:false,
 };
 
 /* ---------- 유틸 ---------- */
@@ -1322,6 +1324,98 @@ function groundSvg(){
     <path d="M0 74 Q 360 56 780 70 Q 1120 82 1440 66 L1440 120 L0 120 Z" fill="#E8DCC6"/>
   </svg>`;
 }
+
+
+/* ══════════ D-00 로그인 ══════════
+   수요자 계정은 소셜 4종 + 이메일로 만든다.
+   실명·연락처는 로그인으로 확보되지 않으므로, 조건을 걸 때 본인확인을 따로 받는다. */
+const SNS = [
+  {k:'kakao',  t:'카카오로 계속하기', bg:'#FEE500', fg:'#191600', bd:'#FEE500',
+   ic:`<svg viewBox="0 0 24 24" style="width:17px;height:17px"><path fill="#191600" d="M12 3.6c-4.7 0-8.5 2.96-8.5 6.61 0 2.35 1.57 4.41 3.93 5.58l-.9 3.3c-.08.29.24.52.49.35l3.95-2.6c.34.03.68.05 1.03.05 4.7 0 8.5-2.96 8.5-6.68S16.7 3.6 12 3.6z"/></svg>`},
+  {k:'naver',  t:'네이버로 계속하기', bg:'#03C75A', fg:'#fff', bd:'#03C75A',
+   ic:`<svg viewBox="0 0 24 24" style="width:15px;height:15px"><path fill="#fff" d="M4.5 4.5h5.02l4.9 7.06V4.5h5.08v15h-5.02l-4.9-7.07V19.5H4.5z"/></svg>`},
+  {k:'google', t:'Google로 계속하기', bg:'#fff', fg:'#3C4043', bd:'#DADCE0',
+   ic:`<svg viewBox="0 0 24 24" style="width:17px;height:17px"><path fill="#4285F4" d="M21.6 12.23c0-.7-.06-1.37-.18-2.02H12v3.82h5.38a4.6 4.6 0 0 1-2 3.02v2.5h3.23c1.89-1.74 2.99-4.3 2.99-7.32z"/><path fill="#34A853" d="M12 22c2.7 0 4.96-.9 6.61-2.43l-3.23-2.5c-.9.6-2.04.95-3.38.95-2.6 0-4.8-1.75-5.59-4.11H3.07v2.58A10 10 0 0 0 12 22z"/><path fill="#FBBC05" d="M6.41 13.91a5.99 5.99 0 0 1 0-3.82V7.51H3.07a10 10 0 0 0 0 8.98z"/><path fill="#EA4335" d="M12 5.98c1.47 0 2.79.5 3.83 1.5l2.86-2.86C16.95 2.99 14.7 2 12 2 8.09 2 4.71 4.24 3.07 7.51l3.34 2.58C7.2 7.73 9.4 5.98 12 5.98z"/></svg>`},
+  {k:'apple',  t:'Apple로 계속하기', bg:'#000', fg:'#fff', bd:'#000',
+   ic:`<svg viewBox="0 0 24 24" style="width:17px;height:17px"><path fill="#fff" d="M16.36 12.6c-.02-2.2 1.8-3.26 1.88-3.31-1.02-1.5-2.62-1.7-3.19-1.73-1.36-.14-2.65.8-3.34.8-.69 0-1.75-.78-2.87-.76-1.48.02-2.84.86-3.6 2.18-1.53 2.66-.39 6.6 1.1 8.76.73 1.06 1.6 2.25 2.74 2.2 1.1-.04 1.52-.71 2.85-.71s1.71.71 2.87.69c1.19-.02 1.94-1.08 2.66-2.14.84-1.23 1.19-2.42 1.21-2.48-.03-.01-2.32-.89-2.34-3.5zM14.2 5.94c.6-.74 1.01-1.75.9-2.77-.87.04-1.93.58-2.56 1.31-.56.65-1.06 1.7-.93 2.7.97.08 1.97-.5 2.59-1.24z"/></svg>`},
+];
+const SNS_LABEL = {kakao:'카카오', naver:'네이버', google:'Google', apple:'Apple', email:'이메일'};
+
+function snsButton(x){ return `
+  <button data-act="sns" data-v="${x.k}" style="display:flex;align-items:center;justify-content:center;gap:9px;width:100%;
+    padding:14px 16px;border-radius:11px;cursor:pointer;font-size:15px;font-weight:700;letter-spacing:-.01em;
+    background:${x.bg};color:${x.fg};border:1.5px solid ${x.bd};min-height:52px;transition:filter .14s ease,box-shadow .14s ease">
+    <span style="flex:none;display:flex">${x.ic}</span>${x.t}</button>`;}
+
+V['#/login'] = () => {
+  const emailOk = /^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(S.email);
+  const pwOk = S.pw.length >= 8;
+  const canGo = S.signup ? (emailOk && pwOk && S.pw2===S.pw) : (emailOk && pwOk);
+  const toKind = S.afterLogin === '#/kind';   /* 조건을 걸려다 들른 길목인가 */
+  return `
+<div class="scr fade">
+  <div class="nav pad"><a data-go="#/" style="flex:none">${logoLockup({h:25,tag:!isMo()})}</a>
+    <div class="right" style="gap:${isMo()?14:22}px">
+      ${isMo()?'':'<a data-go="#/guide" style="font-size:14px;font-weight:600;color:var(--n700)">이용 안내</a><a data-go="#/faq" style="font-size:14px;font-weight:600;color:var(--n700)">자주 묻는 질문</a>'}
+      <a data-go="#/partner" style="font-size:${isMo()?12.5:14}px;font-weight:600;color:var(--n700)">중개사이신가요?</a></div></div>
+
+  <div style="flex:1;min-height:0;overflow:auto;display:flex;align-items:center;justify-content:center;padding:${isMo()?'18px 22px 26px':'0 40px 20px'}">
+    <div style="width:100%;max-width:${isMo()?'none':'420px'};display:flex;flex-direction:column;gap:${isMo()?16:20}px">
+
+      <div style="display:flex;flex-direction:column;align-items:center;gap:${isMo()?10:13}px;text-align:center">
+        ${isMo()?'':`<span style="flex:none">${beaverly(92)}</span>`}
+        <h1 class="t" style="font-size:${isMo()?21:25}px">${S.signup?'비버노크 시작하기':toKind?'시작하기 전에':'다시 오셨네요'}</h1>
+        <p style="margin:0;font-size:13.5px;line-height:1.75;color:var(--n700)">
+          ${toKind
+            ? '3초면 됩니다. 계정이 있어야 <b style="color:var(--n900)">받은 제안을 나중에 다시 보실 수 있습니다.</b>'
+            : S.signup ? '계정을 만들면 걸어둔 조건과 받은 제안이 그대로 남습니다.'
+                       : '걸어둔 조건과 받은 제안을 이어서 보실 수 있습니다.'}</p>
+      </div>
+
+      ${S.loginTab==='sns' ? `
+      <div style="display:flex;flex-direction:column;gap:9px">${SNS.map(snsButton).join('')}</div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <i style="flex:1;height:1px;background:var(--hair)"></i>
+        <span style="font-size:11.5px;color:var(--n500)">또는</span>
+        <i style="flex:1;height:1px;background:var(--hair)"></i>
+      </div>
+      <button class="btn sec" data-act="login-tab" data-v="email" style="width:100%">이메일로 계속하기</button>
+      ` : `
+      <div style="display:flex;flex-direction:column;gap:13px">
+        <div><span class="lab">이메일 <span class="req">*</span></span>
+          <input class="inp" data-in="email" type="email" value="${esc(S.email)}" placeholder="hanam@example.com">
+          ${S.email && !emailOk?'<span style="display:block;margin-top:6px;font-size:12.5px;font-weight:700;color:var(--danger)">이메일 형식을 확인해 주세요</span>':''}</div>
+        <div><span class="lab">비밀번호 <span class="req">*</span> <span class="opt">8자 이상</span></span>
+          <input class="inp" data-in="pw" type="password" value="${esc(S.pw)}" placeholder="••••••••">
+          ${S.pw && !pwOk?'<span style="display:block;margin-top:6px;font-size:12.5px;font-weight:700;color:var(--danger)">8자 이상으로 만들어 주세요</span>':''}</div>
+        ${S.signup? `<div><span class="lab">비밀번호 확인 <span class="req">*</span></span>
+          <input class="inp" data-in="pw2" type="password" value="${esc(S.pw2)}" placeholder="••••••••">
+          ${S.pw2 && S.pw2!==S.pw?'<span style="display:block;margin-top:6px;font-size:12.5px;font-weight:700;color:var(--danger)">비밀번호가 서로 다릅니다</span>':''}</div>`:''}
+      </div>
+      <button class="btn pri" data-act="login-email" style="width:100%;padding:15px 0;font-size:15px" ${canGo?'':'disabled'}>
+        ${S.signup?'가입하고 시작하기':'로그인'}</button>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <a data-act="login-tab" data-v="sns" style="font-size:13px;font-weight:600;color:var(--n700)">← 다른 방법으로</a>
+        <a data-act="signup-toggle" style="font-size:13px;font-weight:700;color:var(--ind)">
+          ${S.signup?'이미 계정이 있어요':'계정 만들기'}</a>
+      </div>
+      `}
+
+      <!-- 위치 정보: 브라우저 권한창부터 띄우지 않고 여기서 먼저 여쭙는다 -->
+      <div class="chk ${S.geoAgree?'on':''}" data-act="geo-agree" style="border:1px solid ${S.geoAgree?'var(--ind)':'var(--hair)'};border-radius:12px;padding:13px 14px;margin:0">
+        <span class="box">${ICON_CHECK}</span>
+        <span class="txt">(선택) <b style="color:var(--n900)">현재 위치</b>로 지도를 맞춰 주세요
+        <small>내 동네를 찾는 수고를 덜어드립니다. 위치는 지도를 맞추는 데만 쓰고 저장하지 않습니다. 나중에 바꾸실 수 있습니다.</small></span>
+      </div>
+
+      ${toKind? `<button class="btn ghost" data-act="skip-login" style="width:100%;font-size:13.5px;color:var(--n500)">로그인 없이 먼저 둘러볼게요</button>`:''}
+
+      <p style="margin:0;text-align:center;font-size:11.5px;line-height:1.75;color:var(--n500)">
+        로그인하시면 이용약관과 <a data-go="#/privacy" style="color:var(--ind);font-weight:700;text-decoration:underline;text-underline-offset:2px">개인정보 처리방침</a>에 동의하신 것으로 봅니다.<br>
+        조건을 걸으실 때 <b style="color:var(--n700)">본인확인</b>을 한 번 더 받습니다.</p>
+    </div>
+  </div>
+</div>`;};
 
 /* ---------- D-02 유형 선택 ---------- */
 V['#/kind'] = () => `
@@ -3743,9 +3837,13 @@ function render(){
   let h = location.hash || '#/';
   /* 딥링크 가드: 선행 단계를 건너뛴 진입을 앞 단계로 되돌린다 */
   if((h==='#/register'||h==='#/detail'||h==='#/contact') && !S.draft.kind){ location.replace('#/kind'); return; }
-  /* 내 정보 영역은 로그인이 필요하다 — 조건 등록 자체는 둘러보기로 열어둔다 */
+  /* 내 정보 영역은 로그인이 필요하다 */
   const MINE = h==='#/my' || h==='#/inbox' || h.startsWith('#/proposal/') || h.startsWith('#/connect/') || h.startsWith('#/report/');
   if(MINE && !S.user){ S.afterLogin = h; location.replace('#/login'); return; }
+  /* 조건을 걸기 시작할 때 로그인을 권한다 — 강제는 아니다.
+     계정이 있어야 나중에 받은 제안을 다시 볼 수 있고, 기기를 바꿔도 남는다.
+     로그인 화면에서 '로그인 없이 시작하기'로 건너뛸 수 있다. */
+  if(h==='#/kind' && !S.user && !S.skipLogin){ S.afterLogin = '#/kind'; location.replace('#/login'); return; }
   if(h.startsWith('#/partner/propose/') && S.timeLeft<=0){ S.timeLeft = 900; }
   S.route = h;
   const parts = h.split('/');
@@ -3789,8 +3887,9 @@ function render(){
   $('#jump').value = h;
   // 슬롯 타이머
   if(h.startsWith('#/partner/propose/')) startTimer(); else stopTimer();
-  /* 지역을 고르는 화면에 처음 들어올 때만 위치를 한 번 확인한다 */
-  if(h==='#/register' && !S.geoTried){ S.geoTried=true; setTimeout(()=>detectRegion(false), 400); }
+  /* 위치는 로그인 화면에서 미리 여쭙고, 동의하신 경우에만 불러온다.
+     아무 설명 없이 브라우저 권한창부터 띄우면 대부분 거절한다. */
+  if(h==='#/register' && !S.geoTried && S.geoAgree){ S.geoTried=true; setTimeout(()=>detectRegion(false), 400); }
   if(!(h==='#/contact' && S.draft.vstep==='code')) stopVTimer();
 }
 function startTimer(){ if(S.timer) return;
@@ -3919,10 +4018,14 @@ function handle(a,v,el){
 
     /* ── 로그인 ── */
     case 'login-tab': S.loginTab=v; render(); return true;
+    case 'geo-agree': S.geoAgree=!S.geoAgree; render(); return true;
+    case 'skip-login': {   /* 강제하지 않는다 — 둘러보고 나중에 만들어도 된다 */
+      S.skipLogin=true; S.afterLogin=null; go('#/kind'); return true; }
     case 'signup-toggle': S.signup=!S.signup; S.pw2=''; render(); return true;
     case 'sns': {
       S.user = {method:v, label:SNS_LABEL[v], name:S.draft.name||'', email:''};
       toast(`${SNS_LABEL[v]} 계정으로 로그인했습니다`);
+      if(S.geoAgree && !S.geoTried){ S.geoTried=true; setTimeout(()=>detectRegion(false), 500); }
       go(S.afterLogin || '#/my'); S.afterLogin=null; return true; }
     case 'login-email': {
       if(!/^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(S.email)) return toast('이메일을 확인해 주세요'), true;
@@ -3931,6 +4034,7 @@ function handle(a,v,el){
       S.user = {method:'email', label:'이메일', name:S.draft.name||'', email:S.email};
       S.pw=''; S.pw2='';
       toast(S.signup?'가입이 끝났습니다':'로그인했습니다'); S.signup=false;
+      if(S.geoAgree && !S.geoTried){ S.geoTried=true; setTimeout(()=>detectRegion(false), 500); }
       go(S.afterLogin || '#/my'); S.afterLogin=null; return true; }
     case 'logout': {
       S.user=null; S.loginTab='sns'; S.email=''; S.pw=''; S.pw2=''; S.signup=false;
@@ -4162,7 +4266,7 @@ $('#reset').addEventListener('click', ()=>{ Object.assign(S,{draft:blankDraft(),
   scope:JSON.parse(JSON.stringify(SCOPE_DEFAULT)),
   myprops:JSON.parse(JSON.stringify(SEED_MYPROP)),
   inboxCond:'c1', form:{}, modal:null, safeNo:null, timeLeft:900, matched:0, sentAddr:{}, vsec:180,
-  user:null, afterLogin:null, loginTab:'sns', email:'', pw:'', pw2:'', signup:false,
+  user:null, afterLogin:null, loginTab:'sns', email:'', pw:'', pw2:'', signup:false, skipLogin:false, geoAgree:false,
   geo:null, geoState:'idle', geoTried:false});
   stopVTimer();
   toast('처음 상태로 되돌렸습니다'); go('#/'); render(); });

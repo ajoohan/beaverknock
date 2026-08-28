@@ -637,7 +637,7 @@ const S = {
   scope:JSON.parse(JSON.stringify(SCOPE_DEFAULT)),
   myprops:JSON.parse(JSON.stringify(SEED_MYPROP)),
   inboxCond:'c1', modal:null, form:{}, timer:null, timeLeft:900, safeNo:null, sentAddr:{}, matched:0,
-  vtimer:null, vsec:180, geo:null, geoState:'idle', geoTried:false, saved:false,
+  vtimer:null, vsec:180, geo:null, geoState:'idle', geoTried:false, saved:false, lastRoute:null,
   user:null, afterLogin:null, loginTab:'sns', email:'', pw:'', pw2:'', signup:false,
 };
 
@@ -3231,8 +3231,19 @@ function render(){
   else if(h==='#/partner/listing/new') html = V['#/partner/listing/new']();
   else if(h.startsWith('#/partner/listing/')) html = V['#/partner/listing'](parts[3]);
   else html = (V[h] || V['#/'])();
-  $('#app').innerHTML = html + modalHTML();
-  $('#app').scrollTop = 0;
+  /* 칩 하나 고를 때마다 render() 가 다시 도는 구조라,
+     여기서 무조건 맨 위로 올리면 길게 스크롤한 폼에서 화면이 튄다.
+     화면이 실제로 바뀔 때만 위로 올리고, 같은 화면이면 보던 위치를 지킨다. */
+  const app = $('#app');
+  const keep = (S.lastRoute === h) ? app.scrollTop : 0;
+  app.innerHTML = html + modalHTML();
+  /* #app 에 scroll-behavior:smooth 가 걸려 있어, 그냥 넣으면 위치를 되돌리는 과정이
+     '스르륵' 애니메이션으로 보인다. 이 한 번만 즉시 이동으로 바꾼다. */
+  const sb = app.style.scrollBehavior;
+  app.style.scrollBehavior = 'auto';
+  app.scrollTop = keep;
+  app.style.scrollBehavior = sb;
+  S.lastRoute = h;
   // 툴바 역할 하이라이트
   $$('#role button').forEach(b=>{ const t=b.dataset.go;
     b.classList.toggle('on', t==='#/ops'? h.startsWith('#/ops') : t==='#/partner'? h.startsWith('#/partner') : (!h.startsWith('#/partner') && !h.startsWith('#/ops'))); });

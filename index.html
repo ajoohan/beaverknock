@@ -3530,6 +3530,89 @@ V['#/privacy'] = () => `
   }, {passive:true});
 })();
 
+
+/* ══════════ 지표 모션 ══════════ */
+const REDUCED = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* 세면 안 되는 숫자를 걸러낸다.
+   15:00(타이머) · 010-****-5678(번호) · 8/21(날짜) · 41450-2019-00217(등록번호) */
+function countable(t){
+  if(/[:\/*]/.test(t)) return null;
+  if((t.match(/-/g)||[]).length) return null;
+  const m = t.match(/^([^\d]*)(\d[\d,]*(?:\.\d+)?)([^\d]*)$/);
+  if(!m) return null;
+  const raw = m[2].replace(/,/g,'');
+  const n = parseFloat(raw);
+  if(!isFinite(n) || n === 0 || n > 9_999_999) return null;
+  return {pre:m[1], n, post:m[3], dec:(raw.split('.')[1]||'').length, comma:m[2].includes(',')};
+}
+
+const easeOut = t => 1 - Math.pow(1 - t, 3);
+
+function countUp(el, spec, dur, delay){
+  const fmt = v => spec.pre
+    + (spec.comma ? v.toLocaleString('ko-KR', {minimumFractionDigits:spec.dec, maximumFractionDigits:spec.dec})
+                  : v.toFixed(spec.dec))
+    + spec.post;
+  const done = () => { if(el.isConnected) el.textContent = fmt(spec.n); };
+
+  el.textContent = fmt(0);
+  /* 프레임이 안 돌면(숨은 탭 등) 숫자가 0에 멈춘 채로 남는다.
+     안 움직이는 것보다 나쁘므로, 반드시 제값으로 끝나도록 보험을 건다. */
+  const guard = setTimeout(done, delay + dur + 400);
+
+  const t0 = performance.now() + delay;
+  const step = now => {
+    if(!el.isConnected){ clearTimeout(guard); return; }
+    const p = Math.min(1, Math.max(0, (now - t0) / dur));
+    el.textContent = fmt(spec.n * easeOut(p));
+    if(p < 1) requestAnimationFrame(step);
+    else { clearTimeout(guard); done(); }
+  };
+  requestAnimationFrame(step);
+}
+
+/* 막대: 인라인으로 박힌 최종 크기를 잠시 0으로 되돌렸다가 되돌려준다 */
+function growBars(root){
+  const bars = [...root.querySelectorAll('i[style*="width:"], i[style*="height:"]')];
+  const jobs = [];
+  bars.forEach(el => {
+    const w = el.style.width, h = el.style.height;
+    const horiz = w && w.endsWith('%');
+    const vert  = h && h.endsWith('%');
+    if(!horiz && !vert) return;
+    jobs.push({el, horiz, vert, w, h});
+    el.style.transition = 'none';
+    if(horiz) el.style.width = '0%';
+    if(vert)  el.style.height = '0%';
+  });
+  if(!jobs.length) return;
+  void root.offsetHeight;                 /* 0 을 실제로 반영시킨다 */
+  jobs.forEach((j, i) => {
+    const d = Math.min(i * 45, 420);
+    j.el.style.transition = `width .72s cubic-bezier(.22,1,.36,1) ${d}ms, height .72s cubic-bezier(.22,1,.36,1) ${d}ms`;
+    if(j.horiz) j.el.style.width = j.w;
+    if(j.vert)  j.el.style.height = j.h;
+  });
+}
+
+/* 화면이 바뀐 직후 한 번 */
+function animateData(root){
+  /* 움직임을 줄이도록 설정했거나, 화면이 보이지 않는 상태면 그냥 제값을 둔다 */
+  if(REDUCED() || document.visibilityState !== 'visible') return;
+  growBars(root);
+  const nums = [...root.querySelectorAll('.num')];
+  let i = 0;
+  nums.forEach(el => {
+    if(el.hasAttribute('data-vtimer')) return;         /* 인증 남은시간 */
+    if(el.closest('[data-checks]')) return;            /* 명시사항 체크 */
+    const spec = countable(el.textContent.trim());
+    if(!spec) return;
+    countUp(el, spec, 780, Math.min(i * 55, 440));
+    i++;
+  });
+}
+
 /* ══════════ 라우터 ══════════ */
 function render(){
   let h = location.hash || '#/';
@@ -3572,6 +3655,7 @@ function render(){
     app.setAttribute('data-enter','');
     clearTimeout(S.enterT);
     S.enterT = setTimeout(()=>app.removeAttribute('data-enter'), 700);
+    animateData(app);   /* 지표는 세어 올라가고 막대는 자라난다 */
   }
   S.lastRoute = h;
   // 툴바 역할 하이라이트

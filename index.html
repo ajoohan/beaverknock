@@ -622,7 +622,7 @@ const S = {
   scope:JSON.parse(JSON.stringify(SCOPE_DEFAULT)),
   myprops:JSON.parse(JSON.stringify(SEED_MYPROP)),
   inboxCond:'c1', modal:null, form:{}, timer:null, timeLeft:900, safeNo:null, sentAddr:{}, matched:0,
-  vtimer:null, vsec:180, geo:null, geoState:'idle', geoTried:false,
+  vtimer:null, vsec:180, geo:null, geoState:'idle', geoTried:false, saved:false,
   user:null, afterLogin:null, loginTab:'sns', email:'', pw:'', pw2:'', signup:false,
 };
 
@@ -2982,6 +2982,90 @@ function modalHTML(){
   return '';
 }
 
+
+/* ══════════ 조건 저장 ══════════
+   퍼블리시 키는 페이지에 그대로 노출된다 — Supabase 설계가 원래 그렇고,
+   RLS 가 INSERT 만 허용하고 SELECT 정책이 없어 누구도 남의 조건을 읽지 못한다.
+   (실측 확인: 행이 있는 상태에서도 조회 결과가 빈 배열) */
+const BK = {
+  url:   'https://mdnzbjpdihnqzrdjrycu.supabase.co',
+  key:   'sb_publishable_k1b5azsEzptgeECH2jtCJA_aiZfKc4Z',
+  table: 'bk_demand',
+};
+
+/* 화면의 draft 를 테이블 컬럼으로 옮긴다. 화면에서 지운 항목은 보내지 않는다. */
+function demandPayload(d, slotN){
+  const n  = v => { const x = parseFloat(String(v).replace(/[^0-9.]/g,'')); return isFinite(x) ? x : null; };
+  const i  = v => { const x = parseInt(String(v).replace(/[^0-9]/g,''), 10); return isFinite(x) ? x : null; };
+  const t  = v => { const x = String(v ?? '').trim(); return x || null; };
+  const shop = d.kind === 'shop';
+  return {
+    kind: d.kind, who: d.kind,
+    dongs: d.dongs,
+    deal: shop ? null : t(d.deal),
+    dep: i(d.dep), rent: i(d.rent), fee_included: true,
+    key_money: shop ? i(d.key) : null,
+
+    htype: shop ? [] : (d.htype || []),
+    rooms: shop ? null : t(d.rooms),
+    when_text: shop ? null : (d.when === '직접 입력' ? t(d.whenFree) : t(d.when)),
+    musts: shop ? [] : (d.musts || []),
+    must_free: shop ? null : t(d.mustFree),
+    floor_avoid: shop ? null : t(d.floor),
+    household: shop ? null : t(d.house),
+    elevator: shop ? null : t(d.elev),
+    loan_plan: shop ? null : t(d.loan),
+
+    biz: shop ? t(d.biz) : null,
+    area_min: shop ? n(d.areaMin) : null,
+    area_max: shop ? n(d.areaMax) : null,
+    shop_floor_free: shop ? t(d.shopFloorFree) : null,
+    facilities_free: shop ? t(d.facFree) : null,
+    key_ok: shop ? t(d.keyOk) : null,
+    sign_need: shop ? t(d.signNeed) : null,
+    park_need: shop ? i(d.parkNeed) : null,
+    shop_note: shop ? t(d.shopNote) : null,
+    open_when: shop ? t(d.openWhen) : null,
+
+    memo: t(d.memo),
+
+    name: String(d.name || '').trim(),
+    phone: String(d.phone || '').replace(/-/g, ''),
+    birth: t(d.birth),
+    verify_method: d.vmethod || null,
+    verified_at: d.verified ? new Date().toISOString() : null,
+
+    contact_pref: t(d.pref),
+    contact_times: d.times || [],
+
+    agree_third_party: !!d.a1,
+    agree_multi_alert: !!d.a2,
+    agree_marketing: !!d.a3,
+
+    slots: slotN, slots_left: slotN,
+    source: location.hostname || 'local',
+    user_agent: (navigator.userAgent || '').slice(0, 300),
+  };
+}
+
+/* 저장은 화면을 막지 않는다 — 결과는 나중에 토스트로만 알린다 */
+function saveDemand(d, slotN){
+  let body;
+  try { body = JSON.stringify(demandPayload(d, slotN)); }
+  catch(e){ console.warn('조건 변환 실패', e); return; }
+  fetch(`${BK.url}/rest/v1/${BK.table}`, {
+    method:'POST',
+    headers:{ apikey:BK.key, Authorization:'Bearer '+BK.key,
+              'Content-Type':'application/json', Prefer:'return=minimal' },
+    body,
+  }).then(r=>{
+    if(r.ok){ S.saved = true; return; }
+    return r.text().then(txt=>{ console.warn('조건 저장 실패', r.status, txt);
+      toast('조건은 화면에 남았지만 서버 저장에 실패했습니다'); });
+  }).catch(e=>{ console.warn('조건 저장 실패', e);
+    toast('네트워크 문제로 서버 저장에 실패했습니다'); });
+}
+
 /* ══════════ 라우터 ══════════ */
 function render(){
   let h = location.hash || '#/';
@@ -3215,6 +3299,7 @@ function handle(a,v,el){
                 ? [d.shopFloorFree, d.facFree].filter(Boolean)
                 : (d.musts&&d.musts.length?d.musts:[])).slice(0,3)};
       S.demands.unshift(nd);
+      saveDemand(d, slotN);   /* 실제 저장 — 화면은 기다리지 않는다 */
 
       /* ── 즉시 매칭 ── 이미 등록된 물건 중 조건에 맞는 것을 바로 제안으로 전환 */
       const fit = listingsFor(nd).slice(0, slotN);

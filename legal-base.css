@@ -1,0 +1,67 @@
+/* 비버노크 법적 고지 문서 - 자바스크립트 없이 서버가 그대로 내려주는 정적 문서.
+   해시 라우트(#/privacy)는 서버로 전달되지 않아 외부 검수 기관이 읽지 못한다. */
+:root{
+  --ind900:#23255C; --ind700:#31336F; --ind:#3D3F8F; --ind300:#6E70BC; --ind100:#E9E9F7; --ind50:#F5F5FC;
+  --clay700:#8A6A45; --clay200:#E0CBAC; --clay100:#F5EDE2;
+  --n900:#1F1D1A; --n700:#4A4640; --n500:#857F76; --n300:#D6D1C8; --n100:#F0EDE7; --n50:#FAF8F5; --white:#fff;
+  --hair:rgba(31,29,26,.09);
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--n50);color:var(--n700);
+  font-family:Pretendard,'Pretendard Variable',-apple-system,BlinkMacSystemFont,'Segoe UI',
+    'Apple SD Gothic Neo','Malgun Gothic','맑은 고딕',system-ui,sans-serif;
+  font-size:15px;line-height:1.75;word-break:keep-all;line-break:strict}
+
+.top{background:var(--white);border-bottom:1px solid var(--hair)}
+.top .in{max-width:760px;margin:0 auto;padding:18px 22px;display:flex;align-items:center;
+  justify-content:space-between;gap:16px;flex-wrap:wrap}
+.brand{display:inline-flex;align-items:baseline;gap:8px;text-decoration:none}
+.brand b{font-size:17px;font-weight:800;letter-spacing:-.03em;color:var(--ind700)}
+.brand span{font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--ind300)}
+.top nav{display:flex;gap:16px;font-size:13px;font-weight:600}
+.top nav a{color:var(--n700);text-decoration:none}
+.top nav a:hover{color:var(--ind);text-decoration:underline;text-underline-offset:3px}
+.top nav a[aria-current]{color:var(--ind);font-weight:800}
+
+main{max-width:760px;margin:0 auto;padding:34px 22px 56px}
+.eyebrow{display:block;font-size:11px;font-weight:800;letter-spacing:.1em;color:var(--ind)}
+h1{margin:9px 0 12px;font-size:26px;font-weight:800;letter-spacing:-.04em;line-height:1.3;
+  color:var(--n900);text-wrap:balance}
+.lead{margin:0 0 10px;font-size:14.5px;line-height:1.8;color:var(--n700)}
+.lead b{color:var(--n900);font-weight:800}
+.stamp{margin:0 0 26px;font-size:12.5px;color:var(--n500)}
+
+section{background:var(--white);border:1px solid var(--hair);border-radius:14px;
+  padding:20px 24px;margin-bottom:12px}
+h2{margin:0 0 10px;font-size:16px;font-weight:800;letter-spacing:-.02em;color:var(--n900)}
+section p{margin:0 0 9px;font-size:14px;line-height:1.8}
+section p:last-child{margin-bottom:0}
+section b{color:var(--n900);font-weight:800}
+ol,ul{margin:0 0 9px;padding-left:20px}
+li{margin-bottom:6px;font-size:14px;line-height:1.8}
+li:last-child{margin-bottom:0}
+
+.kv{display:flex;gap:14px;padding:8px 0;border-top:1px solid var(--n100);font-size:14px}
+.kv:first-of-type{border-top:none}
+.kv dt{flex:none;width:150px;font-weight:800;color:var(--n500);font-size:12.5px;padding-top:2px}
+.kv dd{margin:0;flex:1;min-width:0;color:var(--n900);line-height:1.7}
+dl{margin:0}
+
+.blank{display:inline-block;background:var(--clay100);border:1px solid var(--clay200);
+  color:var(--clay700);padding:1px 9px;border-radius:6px;font-weight:800;font-size:12.5px}
+.note{background:var(--ind50);border:1px solid var(--ind100);border-radius:12px;
+  padding:14px 18px;margin-bottom:12px;font-size:13.5px;line-height:1.75;color:var(--ind700)}
+.note b{color:var(--ind900)}
+
+footer{border-top:1px solid var(--hair);margin-top:26px;padding-top:20px;
+  font-size:12px;line-height:1.8;color:var(--n500)}
+footer a{color:var(--ind);font-weight:700}
+
+@media (max-width:560px){
+  main{padding:24px 18px 44px}
+  h1{font-size:22px}
+  section{padding:17px 18px;border-radius:12px}
+  .kv{display:block}
+  .kv dt{width:auto;margin-bottom:2px}
+}

@@ -1293,7 +1293,7 @@ V['#/'] = () => `
     <span style="flex:none">${logoLockup({h:26,tag:!isMo()})}</span>
     <div class="right" style="gap:${isMo()?16:26}px">
       ${isMo()?'':'<a data-go="#/guide" style="font-size:14px;font-weight:600;color:var(--n700)">이용 안내</a><a data-go="#/faq" style="font-size:14px;font-weight:600;color:var(--n700)">자주 묻는 질문</a>'}
-      <a data-go="#/my" style="font-size:${isMo()?11.5:14}px;font-weight:600;color:var(--n700)">내 조건 보기</a>
+      <a data-go="#/my" style="font-size:${isMo()?11.5:14}px;font-weight:600;color:var(--n700)">내 조건 확인</a>
       <a data-go="#/partner" style="font-size:${isMo()?11.5:14}px;font-weight:600;color:var(--n700)">중개사이신가요?</a>
       ${isMo()?'':'<button class="btn pri sm" data-go="#/kind" style="padding:11px 22px;font-size:13.5px">조건 걸어두기</button>'}
     </div>
@@ -2171,7 +2171,7 @@ V['#/contact'] = () => { const d=S.draft; const ok = d.verified && phoneOk(d.pho
 /* ---------- D-05 완료 ---------- */
 V['#/done'] = () => `
 <div class="scr fade">
-  <div class="nav pad"><a data-go="#/" style="flex:none">${logoLockup({h:25,tag:!isMo()})}</a><div class="right"><a data-go="#/my" style="font-weight:600">내 조건 보기</a></div></div>
+  <div class="nav pad"><a data-go="#/" style="flex:none">${logoLockup({h:25,tag:!isMo()})}</a><div class="right"><a data-go="#/my" style="font-weight:600">내 조건 확인</a></div></div>
   <div style="flex:1;display:flex;${isMo()?'flex-direction:column;':''}align-items:center;justify-content:center;gap:${isMo()?24:80}px;padding:${isMo()?'10px 26px 26px':'0 76px'}">
     <div style="position:relative;display:flex;align-items:center;justify-content:center;flex:none">
       <div style="position:absolute;width:${isMo()?240:400}px;height:${isMo()?240:400}px;border-radius:var(--r-full);background:rgba(245,237,226,.92)"></div>
@@ -2225,9 +2225,9 @@ V['#/done'] = () => `
       <div style="display:flex;gap:10px;${isMo()?'flex-direction:column':''}">
         ${S.matched>0
           ? `<button class="btn pri md ${isMo()?'blk':''}" data-go="#/inbox">제안 ${S.matched}건 보기</button>
-             <button class="btn sec md ${isMo()?'blk':''}" data-go="#/detail">조건 추가</button>`
-          : `<button class="btn pri md ${isMo()?'blk':''}" data-go="#/detail">조건 추가</button>
-             <button class="btn sec md ${isMo()?'blk':''}" data-go="#/my">내 조건 보기</button>`}
+             <button class="btn sec md ${isMo()?'blk':''}" data-go="#/detail">조건 더 채우기</button>`
+          : `<button class="btn pri md ${isMo()?'blk':''}" data-go="#/detail">조건 더 채우기</button>
+             <button class="btn sec md ${isMo()?'blk':''}" data-go="#/my">내 조건 확인</button>`}
       </div>
       <p style="margin:0;font-size:13.5px;line-height:1.6;color:var(--n700)">자세히 쓰실수록 맞는 좋은 제안이 찾아옵니다.</p>
     </div>
@@ -2321,7 +2321,7 @@ V['#/inbox'] = () => {
       <p style="margin:0 auto 18px;max-width:420px;font-size:13px;line-height:1.6;color:var(--n500)">
         ${over?'지금 조건에 맞는 물건이 시장에 없을 수 있습니다. 실제 거래 데이터로 확인해 보세요.':'제안이 오면 카톡으로 알려드립니다. 들어와서 기다리실 필요 없습니다.'}</p>
       ${over? `<button class="btn pri md" data-go="#/relax">어떻게 하면 제안이 올까요?</button>`
-            : `<button class="btn sec md" data-go="#/detail">조건 추가</button>`}
+            : `<button class="btn sec md" data-go="#/detail">조건 더 채우기</button>`}
     </div>`;};
   return `
 <div class="scr fade">
@@ -2437,7 +2437,7 @@ V['#/connect'] = (id) => { const p=S.props.find(x=>x.id===id); if(!p) return V['
         이후 상담과 계약은 <b>중개사무소와 직접</b> 진행하시면 됩니다.<br class="mbr">저희는 거래에 관여하지 않으며 어떤 비용도 받지 않습니다.</p>
       <div style="display:flex;gap:10px;${isMo()?'flex-direction:column':''}">
         <button class="btn pri md ${isMo()?'blk':''}" data-go="#/inbox">제안함으로</button>
-        <button class="btn sec md ${isMo()?'blk':''}" data-go="#/my">내 조건 보기</button></div>
+        <button class="btn sec md ${isMo()?'blk':''}" data-go="#/my">내 조건 확인</button></div>
     </div>
   </div>
 </div>`;}

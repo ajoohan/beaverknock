@@ -4126,7 +4126,7 @@ function verifyDone(d){
 const SB_URL = 'https://gmbtsucasfwqskfvugzo.supabase.co';
 const SB_KEY = 'sb_publishable__KgU33wE75bnKWvp-Yj4Uw_UDLltUxE';
 const SESS = 'bk.session';
-const LIVE_OAUTH = ['google'];   /* 실제로 연결된 것만 여기 둔다 */
+const LIVE_OAUTH = ['google', 'naver'];   /* 실제로 연결된 것만 여기 둔다 */
 
 const store = {
   get(){ try{ return JSON.parse(localStorage.getItem(SESS)||'null'); }catch(e){ return null; } },
@@ -4139,6 +4139,9 @@ function oauthStart(provider){
   }
   /* 어디로 돌아와야 하는지 남겨둔다 - 돌아오면 주소가 갈아끼워져 있다 */
   try{ sessionStorage.setItem('bk.after', S.afterLogin || '#/my'); }catch(e){}
+  /* 네이버는 Supabase 가 기본 제공하지 않는다 - 인증 왕복을 우리 서버 함수가 돈다.
+     돌아오는 주소 모양은 같으므로 받는 쪽 코드는 하나로 둔다. */
+  if(provider === 'naver'){ location.href = '/api/auth/naver/start'; return; }
   const back = location.origin + location.pathname;
   location.href = `${SB_URL}/auth/v1/authorize?provider=${provider}`
     + `&redirect_to=${encodeURIComponent(back)}`;
@@ -4148,7 +4151,8 @@ const authHeaders = tok => ({apikey: SB_KEY, Authorization: 'Bearer ' + tok});
 
 function meFrom(u, tok){
   const m = u.user_metadata || {};
-  return {method:'google', label:'Google', id:u.id, email:u.email||'',
+  const via = m.provider === 'naver' ? 'naver' : 'google';
+  return {method:via, label: via==='naver' ? '네이버' : 'Google', id:u.id, email:u.email||'',
           name: m.name || m.full_name || (u.email||'').split('@')[0] || '',
           avatar: m.avatar_url || '', token: tok};
 }
@@ -4178,7 +4182,8 @@ function readAuthRedirect(){
   render();   /* 계정 조회를 기다리는 동안 빈 화면으로 두지 않는다 */
   hydrate(sess).then(ok => {
     render();
-    toast(ok ? 'Google 계정으로 로그인했습니다' : '계정을 확인하지 못했습니다 - 다시 시도해 주세요');
+    toast(ok ? `${(S.user&&S.user.label)||'계정'} 계정으로 로그인했습니다`
+             : '계정을 확인하지 못했습니다 - 다시 시도해 주세요');
   });
   return true;
 }

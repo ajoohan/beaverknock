@@ -539,6 +539,11 @@ body.mo .chip{min-height:38px}
 [data-go],[data-act]{cursor:pointer}
 [data-go][disabled],[data-act][disabled],.btn[disabled]{cursor:not-allowed}
 
+/* 입력 아래 한 줄 — 비어 있을 때는 자리를 차지하지 않는다 */
+.warn{display:block;font-size:12.5px;font-weight:700;line-height:1.5;color:var(--danger)}
+.warn:empty{display:none}
+.warn.ok{color:var(--ok)}
+
 /* 폼 라벨 리듬 */
 .lab{letter-spacing:-.01em;margin-bottom:10px;line-height:1.45}
 .lab .opt{display:inline-block;margin-top:2px}
@@ -1390,14 +1395,16 @@ V['#/login'] = () => {
       ` : `
       <div style="display:flex;flex-direction:column;gap:13px">
         <div><span class="lab">이메일 <span class="req">*</span></span>
-          <input class="inp" data-in="email" type="email" value="${esc(S.email)}" placeholder="hanam@example.com">
-          ${S.email && !emailOk?'<span style="display:block;margin-top:6px;font-size:12.5px;font-weight:700;color:var(--danger)">이메일 형식을 확인해 주세요</span>':''}</div>
+          <input class="inp" data-in="email" type="email" value="${esc(S.email)}" placeholder="hanam@example.com" autocomplete="email">
+          <span data-warn="email" class="warn">${S.email && !emailOk?'이메일 형식을 확인해 주세요':''}</span></div>
         <div><span class="lab">비밀번호 <span class="req">*</span> <span class="opt">8자 이상</span></span>
-          <input class="inp" data-in="pw" type="password" value="${esc(S.pw)}" placeholder="••••••••">
-          ${S.pw && !pwOk?'<span style="display:block;margin-top:6px;font-size:12.5px;font-weight:700;color:var(--danger)">8자 이상으로 만들어 주세요</span>':''}</div>
+          <input class="inp" data-in="pw" type="password" value="${esc(S.pw)}" placeholder="••••••••"
+            autocomplete="${S.signup?'new-password':'current-password'}">
+          <span data-warn="pw" class="warn">${S.pw && !pwOk?'8자 이상으로 만들어 주세요':''}</span></div>
         ${S.signup? `<div><span class="lab">비밀번호 확인 <span class="req">*</span></span>
-          <input class="inp" data-in="pw2" type="password" value="${esc(S.pw2)}" placeholder="••••••••">
-          ${S.pw2 && S.pw2!==S.pw?'<span style="display:block;margin-top:6px;font-size:12.5px;font-weight:700;color:var(--danger)">비밀번호가 서로 다릅니다</span>':''}</div>`:''}
+          <input class="inp" data-in="pw2" type="password" value="${esc(S.pw2)}" placeholder="한 번 더 입력해 주세요" autocomplete="new-password">
+          <span data-warn="pw2" class="warn ${S.pw2 && S.pw2===S.pw?'ok':''}">${
+            S.pw2 ? (S.pw2===S.pw ? '비밀번호가 일치합니다' : '비밀번호가 서로 다릅니다') : ''}</span></div>`:''}
       </div>
       <button class="btn pri" data-act="login-email" style="width:100%;padding:15px 0;font-size:15px" ${canGo?'':'disabled'}>
         ${S.signup?'가입하고 시작하기':'로그인'}</button>
@@ -3962,6 +3969,15 @@ function refreshLoginBtn(){
   const emailOk=/^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(S.email), pwOk=S.pw.length>=8;
   const b=$('#app [data-act="login-email"]');
   if(b) b.disabled = !(S.signup ? (emailOk && pwOk && S.pw2===S.pw) : (emailOk && pwOk));
+
+  /* 경고 문구가 화면 템플릿 안에만 있으면, 타이핑 중에는 재렌더가 없어 한 번도 안 뜬다.
+     버튼만 잠기고 이유는 모르는 상태가 된다 — 자리를 만들어 두고 여기서 채운다. */
+  const put = (k, msg, ok) => { const el=$(`#app [data-warn="${k}"]`); if(!el) return;
+    el.textContent = msg; el.classList.toggle('ok', !!ok); };
+  put('email', S.email && !emailOk ? '이메일 형식을 확인해 주세요' : '');
+  put('pw',    S.pw    && !pwOk    ? '8자 이상으로 만들어 주세요' : '');
+  put('pw2',   S.pw2 ? (S.pw2===S.pw ? '비밀번호가 일치합니다' : '비밀번호가 서로 다릅니다') : '',
+               S.pw2 && S.pw2===S.pw);
 }
 function toggleSubmit(){ const d=S.draft;
   const ok = d.verified && phoneOk(d.phone) && d.a1 && d.a2;

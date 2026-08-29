@@ -534,6 +534,11 @@ body.mo .chip{min-height:38px}
 .warn:empty{display:none}
 .warn.ok{color:var(--ok)}
 
+/* 로그인 확인 중 표시 - 움직임을 줄이신 분께는 돌지 않는다 */
+@keyframes bkspin{to{transform:rotate(360deg)}}
+.spin{animation:bkspin .8s linear infinite}
+@media (prefers-reduced-motion:reduce){.spin{animation:none;opacity:.5}}
+
 /* 주소 자동완성 - 고를 수 있는 것만 고르게 한다 */
 .ac{position:relative;width:100%}
 .aclist{position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:40;background:var(--white);
@@ -908,7 +913,7 @@ const SEED_MYPROP = [
 const S = {
   device:'pc', route:'#/', draft:blankDraft(),
   /* 본인확인은 사람에게 붙는다 - 조건마다 다시 받을 이유가 없다 */
-  idv:null,
+  idv:null, authBusy:false,
   conds:JSON.parse(JSON.stringify(SEED_CONDS)),
   props:JSON.parse(JSON.stringify(SEED_PROPOSALS)),
   demands:JSON.parse(JSON.stringify(SEED_DEMANDS)),
@@ -4028,6 +4033,17 @@ V['#/faq'] = () => docShell('FAQ', '자주 묻는 질문',
 /* ══════════ 라우터 ══════════ */
 function render(){
   let h = location.hash || '#/';
+  /* 계정을 확인하는 몇백 밀리초 - 어떤 가드도 타지 않고 그냥 기다린다 */
+  if(S.authBusy){
+    $('#app').innerHTML = `
+      <div class="scr" style="align-items:center;justify-content:center;gap:14px;text-align:center;padding:40px 24px">
+        <div class="spin" style="width:26px;height:26px;border:2.5px solid var(--ind100);border-top-color:var(--ind);border-radius:50%"></div>
+        <b style="font-size:15px;font-weight:800;color:var(--n900)">로그인하고 있습니다</b>
+        <span style="font-size:13px;color:var(--n500)">계정을 확인하는 중입니다. 곧 이어집니다.</span>
+      </div>`;
+    S.lastRoute = null;
+    return;
+  }
   /* 딥링크 가드: 선행 단계를 건너뛴 진입을 앞 단계로 되돌린다 */
   if((h==='#/register'||h==='#/detail'||h==='#/contact') && !S.draft.kind){ location.replace('#/kind'); return; }
   /* 내 정보 영역은 로그인이 필요하다 */
@@ -4178,9 +4194,15 @@ function readAuthRedirect(){
     expires_at: +(q.get('expires_at') || 0),
   };
   store.set(sess);
-  history.replaceState(null, '', location.pathname + back);
-  render();   /* 계정 조회를 기다리는 동안 빈 화면으로 두지 않는다 */
+  /* 계정을 확인하기 전에 목적지로 보내면 안 된다.
+     그 순간 S.user 는 아직 비어 있어서, 내 조건 화면 가드가 로그인 화면으로 되돌린다.
+     확인이 끝난 뒤에 보낸다. 기다리는 동안은 빈 화면 대신 한 줄을 띄운다. */
+  history.replaceState(null, '', location.pathname);
+  S.authBusy = true;
+  render();
   hydrate(sess).then(ok => {
+    S.authBusy = false;
+    location.replace(location.pathname + (ok ? back : '#/login'));
     render();
     toast(ok ? `${(S.user&&S.user.label)||'계정'} 계정으로 로그인했습니다`
              : '계정을 확인하지 못했습니다 - 다시 시도해 주세요');

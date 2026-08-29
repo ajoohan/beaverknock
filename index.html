@@ -3963,7 +3963,14 @@ document.addEventListener('input', e=>{
 function refreshLoginBtn(){
   const emailOk=/^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(S.email), pwOk=S.pw.length>=8;
   const b=$('#app [data-act="login-email"]');
-  if(b) b.disabled = !(S.signup ? (emailOk && pwOk && S.pw2===S.pw) : (emailOk && pwOk));
+  if(b){
+    const ok = S.signup ? (emailOk && pwOk && S.pw2===S.pw) : (emailOk && pwOk);
+    b.disabled = !ok;
+    /* 색도 함께 바꾼다 — 안 그러면 눌리는데도 회색이라 잠긴 줄 안다.
+       클래스는 렌더 때 한 번만 정해지므로 여기서 직접 갈아끼운다. */
+    b.classList.toggle('pri', ok);
+    b.classList.toggle('sec', !ok);
+  }
 
   /* 경고 문구가 화면 템플릿 안에만 있으면, 타이핑 중에는 재렌더가 없어 한 번도 안 뜬다.
      버튼만 잠기고 이유는 모르는 상태가 된다 — 자리를 만들어 두고 여기서 채운다. */

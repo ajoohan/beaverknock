@@ -1239,7 +1239,7 @@ V['#/'] = () => `
     <span style="flex:none">${logoLockup({h:26,tag:!isMo()})}</span>
     <div class="right" style="gap:${isMo()?16:26}px">
       ${isMo()?'':'<a data-go="#/guide" style="font-size:14px;font-weight:600;color:var(--n700)">이용 안내</a><a data-go="#/faq" style="font-size:14px;font-weight:600;color:var(--n700)">자주 묻는 질문</a>'}
-      <a data-go="${S.user?'#/my':'#/login'}" style="font-size:${isMo()?11.5:14}px;font-weight:600;color:var(--n700)">${S.user?'내 조건':'로그인'}</a>
+      <a data-go="#/my" style="font-size:${isMo()?11.5:14}px;font-weight:600;color:var(--n700)">내 조건 보기</a>
       <a data-go="#/partner" style="font-size:${isMo()?11.5:14}px;font-weight:600;color:var(--n700)">중개사이신가요?</a>
       ${isMo()?'':'<button class="btn pri sm" data-go="#/kind" style="padding:11px 22px;font-size:13.5px">조건 걸어두기</button>'}
     </div>
@@ -1261,7 +1261,7 @@ V['#/'] = () => `
       <span>① 조건 등록</span><span style="color:var(--n300)">—</span><span>② 맞으면 연락</span><span style="color:var(--n300)">—</span><span>③ 직접 상담</span>
     </div>
     <button class="btn pri blk" data-go="#/kind" style="padding:16px 0;font-size:17px">내 조건 걸어두기</button>
-    <span style="text-align:center;font-size:11.5px;color:var(--n500)">1분이면 됩니다 · 전 과정 무료 · 앱 설치 없음</span>
+    <span style="text-align:center;font-size:11.5px;line-height:1.6;color:var(--n500)"><b style="color:var(--n700);font-weight:700">카카오로 3초</b> 로그인하고 바로 겁니다<br>전 과정 무료 · 앱 설치 없음</span>
   </div>`
   : `
   <!-- PC: 왼쪽 문구 / 오른쪽 캐릭터. 가운데 정렬을 버리고 축을 왼쪽에 둔다 -->
@@ -1276,7 +1276,7 @@ V['#/'] = () => `
         원하는 집·가게의 조건을 남기면, 맞는 물건이 있는 공인중개사가 직접 연락합니다.</p>
       <div style="display:flex;align-items:center;gap:16px;margin-top:4px">
         <button class="btn pri" data-go="#/kind" style="padding:18px 44px;font-size:17px;box-shadow:var(--sh3)">내 조건 걸어두기</button>
-        <span style="font-size:13px;line-height:1.45;color:var(--n500)">1분이면 됩니다<br>전 과정 무료 · 앱 설치 없음</span>
+        <span style="font-size:13px;line-height:1.55;color:var(--n500)"><b style="color:var(--n700);font-weight:700">카카오로 3초</b> 로그인하고 바로 겁니다<br>전 과정 무료 · 앱 설치 없음</span>
       </div>
     </div>
     <div style="position:relative;height:100%;display:flex;align-items:flex-end;justify-content:center;min-height:0">
@@ -1352,6 +1352,7 @@ V['#/login'] = () => {
   const pwOk = S.pw.length >= 8;
   const canGo = S.signup ? (emailOk && pwOk && S.pw2===S.pw) : (emailOk && pwOk);
   const toKind = S.afterLogin === '#/kind';   /* 조건을 걸려다 들른 길목인가 */
+  const toMine = S.afterLogin === '#/my' || S.afterLogin === '#/inbox';
   return `
 <div class="scr fade">
   <div class="nav pad"><a data-go="#/" style="flex:none">${logoLockup({h:25,tag:!isMo()})}</a>
@@ -1364,16 +1365,22 @@ V['#/login'] = () => {
 
       <div style="display:flex;flex-direction:column;align-items:center;gap:${isMo()?10:13}px;text-align:center">
         ${isMo()?'':`<span style="flex:none">${beaverly(92)}</span>`}
-        <h1 class="t" style="font-size:${isMo()?21:25}px">${S.signup?'비버노크 시작하기':toKind?'시작하기 전에':'다시 오셨네요'}</h1>
-        <p style="margin:0;font-size:13.5px;line-height:1.75;color:var(--n700)">
+        <h1 class="t" style="font-size:${isMo()?21:25}px">${
+          S.signup ? '비버노크 시작하기'
+          : toKind ? '3초면 시작합니다'
+          : toMine ? '걸어두신 조건을 불러올게요'
+          : '다시 오셨네요'}</h1>
+        <p style="margin:0;font-size:13.5px;line-height:1.75;color:var(--n700);max-width:32ch">
           ${toKind
-            ? '3초면 됩니다. 계정이 있어야 <b style="color:var(--n900)">받은 제안을 나중에 다시 보실 수 있습니다.</b>'
+            ? '아래에서 하나만 누르시면 바로 조건 등록으로 넘어갑니다. 계정이 있어야 <b style="color:var(--n900)">받은 제안을 나중에 다시</b> 보실 수 있습니다.'
+            : toMine ? '처음이시라면 아래에서 시작하시면 됩니다. 바로 조건을 거실 수 있습니다.'
             : S.signup ? '계정을 만들면 걸어둔 조건과 받은 제안이 그대로 남습니다.'
                        : '걸어둔 조건과 받은 제안을 이어서 보실 수 있습니다.'}</p>
       </div>
 
       ${S.loginTab==='sns' ? `
       <div style="display:flex;flex-direction:column;gap:9px">${SNS.map(snsButton).join('')}</div>
+      ${toKind?`<p style="margin:-2px 0 0;text-align:center;font-size:12.5px;color:var(--n500)">누르시면 곧바로 조건 등록 화면으로 이어집니다</p>`:''}
       <div style="display:flex;align-items:center;gap:12px">
         <i style="flex:1;height:1px;background:var(--hair)"></i>
         <span style="font-size:11.5px;color:var(--n500)">또는</span>

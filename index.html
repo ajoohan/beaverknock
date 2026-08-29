@@ -898,7 +898,7 @@ const S = {
   myprops:JSON.parse(JSON.stringify(SEED_MYPROP)),
   inboxCond:'c1', modal:null, form:{}, timer:null, timeLeft:900, safeNo:null, sentAddr:{}, matched:0,
   vtimer:null, vsec:180, geo:null, geoState:'idle', geoTried:false, saved:false, lastRoute:null, enterT:null,
-  user:null, afterLogin:null, loginTab:'sns', email:'', pw:'', pw2:'', signup:false,
+  user:null, afterLogin:null, email:'', pw:'', pw2:'', signup:false,
 };
 
 /* ---------- 유틸 ---------- */
@@ -1356,7 +1356,7 @@ V['#/login'] = () => {
   const emailOk = /^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(S.email);
   const pwOk = S.pw.length >= 8;
   const canGo = S.signup ? (emailOk && pwOk && S.pw2===S.pw) : (emailOk && pwOk);
-  const toKind = S.afterLogin === '#/kind';   /* 조건을 걸려다 들른 길목인가 */
+  const toKind = S.afterLogin === '#/kind';
   const toMine = S.afterLogin === '#/my' || S.afterLogin === '#/inbox';
   return `
 <div class="scr fade">
@@ -1365,11 +1365,10 @@ V['#/login'] = () => {
       ${isMo()?'':'<a data-go="#/guide" style="font-size:14px;font-weight:600;color:var(--n700)">이용 안내</a><a data-go="#/faq" style="font-size:14px;font-weight:600;color:var(--n700)">자주 묻는 질문</a>'}
       <a data-go="#/partner" style="font-size:${isMo()?12.5:14}px;font-weight:600;color:var(--n700)">중개사이신가요?</a></div></div>
 
-  <div style="flex:1;min-height:0;overflow:auto;display:flex;align-items:center;justify-content:center;padding:${isMo()?'18px 22px 26px':'0 40px 20px'}">
-    <div style="width:100%;max-width:${isMo()?'none':'420px'};display:flex;flex-direction:column;gap:${isMo()?16:20}px">
+  <div style="flex:1;min-height:0;overflow:auto;display:flex;align-items:flex-start;justify-content:center;padding:${isMo()?'16px 22px 30px':'20px 40px 34px'}">
+    <div style="width:100%;max-width:${isMo()?'none':'400px'};display:flex;flex-direction:column;gap:16px">
 
-      <div style="display:flex;flex-direction:column;align-items:center;gap:${isMo()?10:13}px;text-align:center">
-        ${isMo()?'':`<span style="flex:none">${beaverly(92)}</span>`}
+      <div style="display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center">
         <h1 class="t" style="font-size:${isMo()?21:25}px">${
           S.signup ? '비버노크 시작하기'
           : toKind ? '3초면 시작합니다'
@@ -1377,44 +1376,49 @@ V['#/login'] = () => {
           : '다시 오셨네요'}</h1>
         <p style="margin:0;font-size:13.5px;line-height:1.75;color:var(--n700);max-width:32ch">
           ${toKind
-            ? '아래에서 하나만 누르시면 바로 조건 등록으로 넘어갑니다. 계정이 있어야 <b style="color:var(--n900)">받은 제안을 나중에 다시</b> 보실 수 있습니다.'
-            : toMine ? '처음이시라면 아래에서 시작하시면 됩니다. 바로 조건을 거실 수 있습니다.'
+            ? '아래에서 하나만 누르시면 바로 조건 등록으로 이어집니다.'
+            : toMine ? '처음이시라면 아래에서 시작하시면 됩니다.'
             : S.signup ? '계정을 만들면 걸어둔 조건과 받은 제안이 그대로 남습니다.'
                        : '걸어둔 조건과 받은 제안을 이어서 보실 수 있습니다.'}</p>
       </div>
 
-      ${S.loginTab==='sns' ? `
-      <div style="display:flex;flex-direction:column;gap:9px">${SNS.map(snsButton).join('')}</div>
-      ${toKind?`<p style="margin:-2px 0 0;text-align:center;font-size:12.5px;color:var(--n500)">누르시면 곧바로 조건 등록 화면으로 이어집니다</p>`:''}
-      <div style="display:flex;align-items:center;gap:12px">
-        <i style="flex:1;height:1px;background:var(--hair)"></i>
-        <span style="font-size:11.5px;color:var(--n500)">또는</span>
-        <i style="flex:1;height:1px;background:var(--hair)"></i>
-      </div>
-      <button class="btn sec" data-act="login-tab" data-v="email" style="width:100%">이메일로 계속하기</button>
-      ` : `
-      <div style="display:flex;flex-direction:column;gap:13px">
-        <div><span class="lab">이메일 <span class="req">*</span></span>
-          <input class="inp" data-in="email" type="email" value="${esc(S.email)}" placeholder="hanam@example.com" autocomplete="email">
-          <span data-warn="email" class="warn">${S.email && !emailOk?'이메일 형식을 확인해 주세요':''}</span></div>
-        <div><span class="lab">비밀번호 <span class="req">*</span> <span class="opt">8자 이상</span></span>
-          <input class="inp" data-in="pw" type="password" value="${esc(S.pw)}" placeholder="••••••••"
-            autocomplete="${S.signup?'new-password':'current-password'}">
-          <span data-warn="pw" class="warn">${S.pw && !pwOk?'8자 이상으로 만들어 주세요':''}</span></div>
-        ${S.signup? `<div><span class="lab">비밀번호 확인 <span class="req">*</span></span>
-          <input class="inp" data-in="pw2" type="password" value="${esc(S.pw2)}" placeholder="한 번 더 입력해 주세요" autocomplete="new-password">
-          <span data-warn="pw2" class="warn ${S.pw2 && S.pw2===S.pw?'ok':''}">${
-            S.pw2 ? (S.pw2===S.pw ? '비밀번호가 일치합니다' : '비밀번호가 서로 다릅니다') : ''}</span></div>`:''}
-      </div>
-      <button class="btn pri" data-act="login-email" style="width:100%;padding:15px 0;font-size:15px" ${canGo?'':'disabled'}>
-        ${S.signup?'가입하고 시작하기':'로그인'}</button>
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <a data-act="login-tab" data-v="sns" style="font-size:13px;font-weight:600;color:var(--n700)">← 다른 방법으로</a>
-        <a data-act="signup-toggle" style="font-size:13px;font-weight:700;color:var(--ind)">
-          ${S.signup?'이미 계정이 있어요':'계정 만들기'}</a>
-      </div>
-      `}
+      <!-- 간편 로그인을 위에 — 대부분 여기서 끝난다 -->
+      <div style="display:flex;flex-direction:column;gap:8px">${SNS.map(snsButton).join('')}</div>
 
+      <div style="display:flex;align-items:center;gap:12px;margin:2px 0">
+        <i style="flex:1;height:1px;background:var(--hair)"></i>
+        <span style="font-size:11.5px;color:var(--n500)">이메일로 ${S.signup?'가입':'로그인'}</span>
+        <i style="flex:1;height:1px;background:var(--hair)"></i>
+      </div>
+
+      <!-- 이메일도 접지 않고 그대로 편다 — 탭을 두면 한 번은 헛클릭한다 -->
+      <div style="display:flex;flex-direction:column;gap:11px">
+        <div>
+          <input class="inp" data-in="email" type="email" value="${esc(S.email)}"
+            placeholder="이메일" autocomplete="email" aria-label="이메일">
+          <span data-warn="email" class="warn">${S.email && !emailOk?'이메일 형식을 확인해 주세요':''}</span>
+        </div>
+        <div>
+          <input class="inp" data-in="pw" type="password" value="${esc(S.pw)}"
+            placeholder="비밀번호 (8자 이상)" aria-label="비밀번호"
+            autocomplete="${S.signup?'new-password':'current-password'}">
+          <span data-warn="pw" class="warn">${S.pw && !pwOk?'8자 이상으로 만들어 주세요':''}</span>
+        </div>
+        ${S.signup? `<div>
+          <input class="inp" data-in="pw2" type="password" value="${esc(S.pw2)}"
+            placeholder="비밀번호 확인" autocomplete="new-password" aria-label="비밀번호 확인">
+          <span data-warn="pw2" class="warn ${S.pw2 && S.pw2===S.pw?'ok':''}">${
+            S.pw2 ? (S.pw2===S.pw ? '비밀번호가 일치합니다' : '비밀번호가 서로 다릅니다') : ''}</span>
+        </div>`:''}
+        <button class="btn ${canGo?'pri':'sec'}" data-act="login-email"
+          style="width:100%;padding:14px 0;font-size:15px" ${canGo?'':'disabled'}>
+          ${S.signup?'가입하고 시작하기':'이메일로 로그인'}</button>
+      </div>
+
+      <p style="margin:0;text-align:center;font-size:13px;color:var(--n500)">
+        ${S.signup?'이미 계정이 있으신가요?':'비버노크가 처음이신가요?'}
+        <a data-act="signup-toggle" style="margin-left:5px;font-weight:700;color:var(--ind)">${S.signup?'로그인':'계정 만들기'}</a>
+      </p>
 
       <p style="margin:0;text-align:center;font-size:11.5px;line-height:1.75;color:var(--n500)">
         로그인하시면 이용약관과 <a data-go="#/privacy" style="color:var(--ind);font-weight:700;text-decoration:underline;text-underline-offset:2px">개인정보 처리방침</a>에 동의하신 것으로 봅니다.<br>
@@ -4031,7 +4035,6 @@ function handle(a,v,el){
     case 'agree': d[v]=!d[v]; render(); return true;
 
     /* ── 로그인 ── */
-    case 'login-tab': S.loginTab=v; render(); return true;
     case 'signup-toggle': S.signup=!S.signup; S.pw2=''; render(); return true;
     case 'sns': {
       S.user = {method:v, label:SNS_LABEL[v], name:S.draft.name||'', email:''};
@@ -4048,7 +4051,7 @@ function handle(a,v,el){
       if(!S.geoTried){ S.geoTried=true; setTimeout(()=>detectRegion(false), 500); }
       go(S.afterLogin || '#/my'); S.afterLogin=null; return true; }
     case 'logout': {
-      S.user=null; S.loginTab='sns'; S.email=''; S.pw=''; S.pw2=''; S.signup=false;
+      S.user=null; S.email=''; S.pw=''; S.pw2=''; S.signup=false;
       toast('로그아웃했습니다'); go('#/'); return true; }
 
     /* ── 본인확인 ── */
@@ -4277,7 +4280,7 @@ $('#reset').addEventListener('click', ()=>{ Object.assign(S,{draft:blankDraft(),
   scope:JSON.parse(JSON.stringify(SCOPE_DEFAULT)),
   myprops:JSON.parse(JSON.stringify(SEED_MYPROP)),
   inboxCond:'c1', form:{}, modal:null, safeNo:null, timeLeft:900, matched:0, sentAddr:{}, vsec:180,
-  user:null, afterLogin:null, loginTab:'sns', email:'', pw:'', pw2:'', signup:false,
+  user:null, afterLogin:null, email:'', pw:'', pw2:'', signup:false,
   geo:null, geoState:'idle', geoTried:false});
   stopVTimer();
   toast('처음 상태로 되돌렸습니다'); go('#/'); render(); });

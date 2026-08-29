@@ -3626,7 +3626,63 @@ function saveDemand(d, slotN){
 /* ══════════ A-05 운영 조회 (실데이터) ══════════
    조회는 /api/demands 가 서비스 키로 대신 한다. 이 화면은 암호만 들고 있는다.
    암호는 메모리에만 둔다 - 새로고침하면 다시 물어본다. */
-const OPS = { pass:'', rows:null, loading:false, err:'', reveal:false, kind:'', days:0, at:'' };
+const OPS = { pass:'', rows:null, loading:false, err:'', reveal:false, kind:'', days:0, at:'',
+  q:'', open:'', sent:{}, seen:0, only:'' };
+
+/* 전달 여부는 브라우저에 남긴다. DB 컬럼을 만들려면 SQL 을 한 번 돌려야 하는데,
+   그걸 기다리느니 오늘 돌아가는 게 낫다. 나중에 옮기기 쉬운 모양으로 둔다. */
+try{
+  OPS.sent = JSON.parse(localStorage.getItem('bk.ops.sent') || '{}');
+  OPS.seen = +(localStorage.getItem('bk.ops.seen') || 0);
+}catch(e){}
+const opsSave = () => { try{
+  localStorage.setItem('bk.ops.sent', JSON.stringify(OPS.sent));
+  localStorage.setItem('bk.ops.seen', String(OPS.seen));
+}catch(e){} };
+
+/* 중개사에게 그대로 보낼 글. 카톡에 붙여넣을 것이므로 표가 아니라 줄로 쓴다. */
+function opsShare(r){
+  const shop = r.kind === 'shop';
+  const L = [];
+  L.push(`[비버노크] 새 조건 · ${shop?'상가':'주거'} · ${(r.dongs||[]).join(' · ')||'하남'}`);
+  L.push('');
+  if(shop){
+    if(r.biz) L.push(`업종   ${r.biz}`);
+    L.push(`예산   보증금 ${won(+r.dep||0)} / 월 ${(+r.rent||0).toLocaleString()}만${r.key_money?` · 권리금 ${won(+r.key_money)}까지`:''}`);
+    if(r.area_min) L.push(`면적   전용 ${r.area_min}~${r.area_max||''}평`);
+    if(r.open_when) L.push(`입주   ${r.open_when}`);
+    if(r.shop_floor_free) L.push(`층     ${r.shop_floor_free}`);
+    if(r.facilities_free) L.push(`설비   ${r.facilities_free}`);
+  }else{
+    if(r.deal) L.push(`거래   ${r.deal}`);
+    L.push(`예산   ${r.deal==='매매'?'매매가':'보증금'} ${won(+r.dep||0)}${+r.rent?` / 월 ${(+r.rent).toLocaleString()}만`:''}`);
+    const t = [(r.htype||[]).join(' · '), r.rooms && r.rooms!=='무관' ? r.rooms : ''].filter(Boolean).join(' · ');
+    if(t) L.push(`유형   ${t}`);
+    if(r.when_text) L.push(`입주   ${r.when_text}`);
+    const m = [...(r.musts||[]), r.must_free||''].filter(Boolean).join(' · ');
+    if(m) L.push(`필수   ${m}`);
+    if(r.floor) L.push(`층     ${r.floor}`);
+    if(r.house) L.push(`거주   ${r.house}`);
+    if(r.loan) L.push(`대출   ${r.loan}`);
+  }
+  if(r.memo) L.push(`메모   "${r.memo}"`);
+  L.push('');
+  L.push(`연락처 ${r.name||''} ${fmtPhone(r.phone||'')}`.trim());
+  if(r.pref) L.push(`선호   ${r.pref}${(r.times||[]).length?` · ${(r.times||[]).join(' · ')}`:''}`);
+  L.push(`접수   ${String(r.created_at||'').replace('T',' ').slice(0,16)}`);
+  L.push('');
+  L.push('맞는 물건이 있으시면 직접 연락해 주세요.');
+  return L.join('\n');
+}
+
+/* 클립보드 API 가 막힌 자리를 위한 뒷길 */
+function fallbackCopy(txt, ok){
+  const t = document.createElement('textarea');
+  t.value = txt; t.style.cssText = 'position:fixed;top:-999px;opacity:0';
+  document.body.appendChild(t); t.select();
+  try{ document.execCommand('copy'); ok(); }catch(e){ toast('복사에 실패했습니다 - 글을 직접 선택해 주세요'); }
+  document.body.removeChild(t);
+}
 
 function opsFetch(){
   if(OPS.loading) return;
@@ -3663,7 +3719,15 @@ function opsCsv(){
 }
 
 V['#/ops/live'] = () => {
-  const rows = OPS.rows;
+  const all = OPS.rows;
+  const q = OPS.q.trim().toLowerCase();
+  const rows = !all ? all : all.filter(r=>{
+    if(OPS.only==='todo' && OPS.sent[r.id]) return false;
+    if(OPS.only==='new' && !(new Date(r.created_at).getTime() > OPS.seen)) return false;
+    if(!q) return true;
+    return [r.name, (r.dongs||[]).join(' '), r.memo, r.biz, r.phone]
+      .filter(Boolean).join(' ').toLowerCase().includes(q);
+  });
   const chip = (label, on, act, v) =>
     `<button class="chip ${on?'on':''}" data-act="${act}" data-v="${v}" style="padding:7px 14px;font-size:12.5px">${label}</button>`;
 
@@ -3688,7 +3752,12 @@ V['#/ops/live'] = () => {
       <div class="chips" style="gap:6px">
         ${chip('전체 기간', !OPS.days,'ops-days','0')}${chip('7일', OPS.days===7,'ops-days','7')}${chip('30일', OPS.days===30,'ops-days','30')}
       </div>
-      <span style="flex:1"></span>
+      <span style="width:1px;height:20px;background:var(--hair)"></span>
+      <div class="chips" style="gap:6px">
+        ${chip('전체', !OPS.only,'ops-only','')}${chip('안 보낸 것', OPS.only==='todo','ops-only','todo')}${chip('새로 온 것', OPS.only==='new','ops-only','new')}
+      </div>
+      <input class="inp" data-in="opsQ" value="${esc(OPS.q)}" placeholder="이름·지역·메모 찾기" autocomplete="off"
+        style="flex:1;min-width:150px;max-width:260px;padding:7px 12px;font-size:12.5px;height:auto">
       ${chip(OPS.reveal?'연락처 원문':'연락처 가림', OPS.reveal, 'ops-reveal','')}
       <button class="btn ghost sm" data-act="ops-load">새로고침</button>
       <button class="btn sec sm" data-act="ops-csv">CSV 내려받기</button>
@@ -3696,12 +3765,19 @@ V['#/ops/live'] = () => {
 
     <div class="card pad" style="padding:0;overflow:hidden">
       <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--hair)">
-        <b style="font-size:15px;font-weight:800">접수 ${rows.length}건</b>
-        <span style="font-size:11.5px;color:var(--n500)">${OPS.at?esc(OPS.at.replace('T',' ').slice(0,16)):''} 기준</span>
+        <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">
+          <b style="font-size:15px;font-weight:800">${rows.length===all.length?`접수 ${all.length}건`:`${rows.length}건 / 전체 ${all.length}건`}</b>
+          ${(()=>{ const todo = all.filter(r=>!OPS.sent[r.id]).length;
+            return todo ? `<span class="badge b-warn">아직 안 보낸 것 ${todo}건</span>` : `<span class="badge b-ok">전부 보냈습니다</span>`; })()}
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:11.5px;color:var(--n500)">${OPS.at?esc(OPS.at.replace('T',' ').slice(0,16)):''} 기준</span>
+          <button class="btn ghost sm" data-act="ops-seen" style="padding:5px 11px;font-size:11.5px">여기까지 확인함</button>
+        </div>
       </div>
       ${rows.length===0 ? `<div style="padding:40px 18px;text-align:center">
-        <p style="margin:0 0 5px;font-size:15px;font-weight:800">아직 접수된 조건이 없습니다</p>
-        <p style="margin:0;font-size:13px;color:var(--n500)">링크로 조건이 들어오면 여기에 쌓입니다.</p></div>` : `
+        <p style="margin:0 0 5px;font-size:15px;font-weight:800">${all.length?'조건에 맞는 접수가 없습니다':'아직 접수된 조건이 없습니다'}</p>
+        <p style="margin:0;font-size:13px;color:var(--n500)">${all.length?'찾는 말이나 거른 조건을 바꿔보세요.':'링크로 조건이 들어오면 여기에 쌓입니다.'}</p></div>` : `
       <div style="overflow-x:auto">
         <table style="width:100%;border-collapse:collapse;font-size:13px;white-space:nowrap">
           <thead><tr style="background:var(--n50)">
@@ -3716,17 +3792,35 @@ V['#/ops/live'] = () => {
             const key = shop
               ? [r.biz, (r.area_min?`전용 ${r.area_min}~${r.area_max||''}평`:''), r.shop_floor_free, r.facilities_free].filter(Boolean).join(' · ')
               : [(r.htype||[]).join('·'), r.rooms, r.when_text, (r.musts||[]).join('·'), r.must_free].filter(Boolean).join(' · ');
-            return `<tr style="border-top:1px solid var(--n100)">
-              <td style="padding:11px 14px;color:var(--n500)">${esc(String(r.created_at||'').replace('T',' ').slice(5,16))}</td>
+            const sent = !!OPS.sent[r.id];
+            const fresh = new Date(r.created_at).getTime() > OPS.seen;
+            const open = OPS.open === r.id;
+            return `<tr class="clickable" data-act="ops-open" data-v="${esc(r.id)}"
+              style="border-top:1px solid var(--n100);cursor:pointer;${sent?'opacity:.55;':''}${open?'background:var(--ind50);':''}">
+              <td style="padding:11px 14px;color:var(--n500)">
+                ${fresh&&!sent?`<span class="badge b-ind" style="margin-right:6px;background:var(--ind);color:#fff;padding:1px 7px;font-size:10px">NEW</span>`:''}
+                ${esc(String(r.created_at||'').replace('T',' ').slice(5,16))}</td>
               <td style="padding:11px 14px"><span class="badge ${shop?'b-warn':'b-ok'}">${shop?'상가':'주거'}</span></td>
               <td style="padding:11px 14px;font-weight:700">${esc(r.name||'')}</td>
               <td style="padding:11px 14px" class="num">${esc(r.phone||'')}</td>
               <td style="padding:11px 14px">${esc((r.dongs||[]).join(' · '))}</td>
               <td style="padding:11px 14px" class="num">${esc(money)}</td>
-              <td style="padding:11px 14px;max-width:380px;overflow:hidden;text-overflow:ellipsis" title="${esc(key)}">${esc(key)}</td>
-              <td style="padding:11px 14px;color:var(--n500)">${esc(r.verify_method==='pass'?'PASS':r.verify_method==='sms'?'문자':'-')}</td>
-            </tr>${r.memo?`<tr><td colspan="8" style="padding:0 14px 11px 14px">
-              <span style="display:inline-block;font-size:12.5px;line-height:1.6;color:var(--ind);white-space:normal">“${esc(r.memo)}”</span></td></tr>`:''}`;
+              <td style="padding:11px 14px;max-width:340px;overflow:hidden;text-overflow:ellipsis" title="${esc(key)}">${esc(key)}</td>
+              <td style="padding:11px 14px;color:var(--n500)">${sent?'<span style="color:var(--ok);font-weight:800">보냄</span>':(r.verify_method==='pass'?'PASS':r.verify_method==='sms'?'문자':'-')}</td>
+            </tr>
+            ${open?`<tr><td colspan="8" style="padding:0 14px 16px;background:var(--ind50)">
+              <div style="display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap">
+                <pre data-sharetext="${esc(r.id)}" style="flex:1;min-width:280px;margin:0;padding:14px 16px;background:var(--white);
+                  border:1px solid var(--hair);border-radius:12px;white-space:pre-wrap;word-break:keep-all;
+                  font-family:inherit;font-size:12.5px;line-height:1.85;color:var(--n900)">${esc(opsShare(r))}</pre>
+                <div style="flex:none;display:flex;flex-direction:column;gap:8px;min-width:150px">
+                  <button class="btn pri sm" data-act="ops-copy" data-v="${esc(r.id)}" style="padding:10px 16px">중개사에게 보낼 글 복사</button>
+                  <button class="btn ${sent?'ghost':'sec'} sm" data-act="ops-sent" data-v="${esc(r.id)}" style="padding:10px 16px">${sent?'보냄 취소':'보냈다고 표시'}</button>
+                  <span style="font-size:11px;line-height:1.7;color:var(--n500)">복사해서 해당 지역 중개사에게 그대로 보내시면 됩니다.</span>
+                </div>
+              </div></td></tr>`
+            : (r.memo?`<tr><td colspan="8" style="padding:0 14px 11px 14px">
+              <span style="display:inline-block;font-size:12.5px;line-height:1.6;color:var(--ind);white-space:normal">“${esc(r.memo)}”</span></td></tr>`:'')}`;
           }).join('')}</tbody>
         </table>
       </div>`}
@@ -4292,6 +4386,8 @@ document.addEventListener('input', e=>{
   if(k==='reportDetail'){ S.form.reportDetail=v; return; }
   if(k==='email'||k==='pw'||k==='pw2'){ S[k]=v; refreshLoginBtn(); return; }
   if(k==='opsPass'){ OPS.pass=v; const b=$('#app [data-act="ops-load"]'); if(b) b.disabled=!v; return; }
+  if(k==='opsQ'){ OPS.q=v; OPS.open=''; render(); const el=$('#app [data-in="opsQ"]');
+    if(el){ el.focus(); el.setSelectionRange(el.value.length, el.value.length); } return; }
   if(k==='findPhone'){ S.findPhone = autoHyphen(el); return; }
   if(k==='findName'||k==='resetEmail'){ S[k]=v; return; }
   if(k==='dongFree'){ S.draft.dongFree=v; refreshAddr(); return; }
@@ -4360,6 +4456,24 @@ function handle(a,v,el){
 
     /* ── 운영 조회 ── */
     case 'ops-load':   opsFetch(); return true;
+    case 'ops-only':   OPS.only = OPS.only===v ? '' : v; OPS.open=''; render(); return true;
+    case 'ops-open':   OPS.open = OPS.open===v ? '' : v; render(); return true;
+    case 'ops-sent': {
+      if(OPS.sent[v]) delete OPS.sent[v]; else OPS.sent[v] = Date.now();
+      opsSave(); render(); return true; }
+    case 'ops-seen': {
+      /* 여기까지 봤다고 표시해 두면, 다음에 들어온 것만 NEW 로 뜬다 */
+      OPS.seen = Date.now(); opsSave(); render();
+      toast('여기까지 확인한 것으로 표시했습니다'); return true; }
+    case 'ops-copy': {
+      const el = $(`#app [data-sharetext="${v}"]`);
+      if(!el) return true;
+      const txt = el.textContent;
+      const ok = () => toast('복사했습니다 - 중개사에게 붙여넣으시면 됩니다');
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(txt).then(ok).catch(()=>fallbackCopy(txt, ok));
+      } else fallbackCopy(txt, ok);
+      return true; }
     case 'ops-kind':   OPS.kind = v; opsFetch(); return true;
     case 'ops-days':   OPS.days = +v; opsFetch(); return true;
     case 'ops-reveal': OPS.reveal = !OPS.reveal; opsFetch(); return true;

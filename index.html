@@ -2195,7 +2195,7 @@ V['#/inbox'] = () => {
           <div style="display:flex;justify-content:space-between;margin-bottom:7px">
             <span class="badge ${c.status==='active'?'b-ok':c.status==='expiring'?'b-warn':'b-mute'}">${c.status==='active'?'활성':c.status==='expiring'?'만료임박':'종료'}</span>
             <span style="font-size:11.5px;font-weight:800;color:${n?'var(--ind)':'var(--n500)'}">제안 ${n}/5</span></div>
-          <b style="display:block;font-size:14px;font-weight:800;letter-spacing:-.02em;margin-bottom:4px">${esc(c.title)}</b>
+          <b style="display:block;font-size:14px;font-weight:800;letter-spacing:-.02em;margin-bottom:4px">${esc(c.title)} ${demoTag(c,'vertical-align:middle')}</b>
           <span style="font-size:12.5px;line-height:1.6;color:var(--n700)">${c.lines[0]?esc(c.lines[0]):''}</span></div>`;}).join('')}
       <div class="beaverbox" style="margin-top:auto;margin-bottom:26px">${beaverlyMini(56)}
         <p>새 제안이 오면 <b style="color:var(--n900)">카톡으로 바로</b> 알려드려요. 들어와서 기다리실 필요 없습니다.</p></div>

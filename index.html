@@ -2001,6 +2001,75 @@ function regionPicker(d, shop){
     ` : zonesHTML(LIST_GROUPS(shop), d.dongs)}`;
 }
 
+/* 가입 신청 목록 - 우리가 연락해야 할 사람들 */
+const AG_ROLE = {agent:'공인중개사', owner:'소유자', developer:'시행사'};
+
+function agentPanel(){
+  const q = AG.q.trim().toLowerCase();
+  const all = AG.rows;
+  const rows = !all ? [] : all.filter(r=>{
+    if(AG.role && r.role !== AG.role) return false;
+    if(!q) return true;
+    return [r.name, r.office, r.phone, r.addr, r.reg_no, r.email]
+      .filter(Boolean).join(' ').toLowerCase().includes(q);
+  });
+  const chip = (label, on, act, v) =>
+    `<button class="chip ${on?'on':''}" data-act="${act}" data-v="${v}" style="padding:7px 14px;font-size:12.5px">${label}</button>`;
+
+  if(!all) return `
+    <div class="card pad" style="max-width:440px">
+      <b style="display:block;font-size:15px;font-weight:800;margin-bottom:9px">가입 신청 보기</b>
+      <p style="margin:0 0 14px;font-size:13.5px;line-height:1.75;color:var(--n700)">
+        조건과 같은 암호를 씁니다. 위에서 이미 넣으셨다면 바로 불러옵니다.</p>
+      <button class="btn pri blk" data-act="ag-load" style="padding:13px 0;font-size:15px">
+        ${AG.loading?'불러오는 중…':'신청 불러오기'}</button>
+      ${AG.err?`<p style="margin:11px 0 0;font-size:12.5px;font-weight:700;color:var(--danger)">${esc(AG.err)}</p>`:''}
+    </div>`;
+
+  return `
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px">
+      <div class="chips" style="gap:6px">
+        ${chip('전체', !AG.role, 'ag-role','')}
+        ${chip('공인중개사', AG.role==='agent','ag-role','agent')}
+        ${chip('소유자', AG.role==='owner','ag-role','owner')}
+        ${chip('시행사', AG.role==='developer','ag-role','developer')}
+      </div>
+      <input class="inp" data-in="agQ" value="${esc(AG.q)}" placeholder="이름·상호·번호 찾기" autocomplete="off"
+        style="flex:1;min-width:150px;max-width:260px;padding:7px 12px;font-size:12.5px;height:auto">
+      ${chip(AG.reveal?'연락처 원문':'연락처 가림', AG.reveal, 'ag-reveal','')}
+      <button class="btn ghost sm" data-act="ag-load">새로고침</button>
+    </div>
+
+    <div class="card pad" style="padding:0;overflow:hidden">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--hair)">
+        <b style="font-size:15px;font-weight:800">${rows.length===all.length?`신청 ${all.length}건`:`${rows.length}건 / 전체 ${all.length}건`}</b>
+        <span style="font-size:11.5px;color:var(--n500)">${AG.at?esc(AG.at.replace('T',' ').slice(0,16)):''} 기준</span>
+      </div>
+      ${rows.length===0 ? `<div style="padding:40px 18px;text-align:center">
+        <p style="margin:0 0 5px;font-size:15px;font-weight:800">${all.length?'조건에 맞는 신청이 없습니다':'아직 신청이 없습니다'}</p>
+        <p style="margin:0;font-size:13px;color:var(--n500)">${all.length?'찾는 말을 바꿔보세요.':'중개사 가입 화면으로 신청이 들어오면 여기에 쌓입니다.'}</p></div>` : `
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:13px;white-space:nowrap">
+          <thead><tr style="background:var(--n50)">
+            ${['신청','역할','성함','연락처','사무소 · 물건','등록번호 · 사업자','이메일'].map(h=>
+              `<th style="text-align:left;padding:10px 14px;font-size:11.5px;font-weight:800;color:var(--n500)">${h}</th>`).join('')}
+          </tr></thead>
+          <tbody>${rows.map(r=>`
+            <tr style="border-top:1px solid var(--n100)">
+              <td style="padding:11px 14px;color:var(--n500)">${esc(String(r.created_at||'').replace('T',' ').slice(5,16))}</td>
+              <td style="padding:11px 14px"><span class="badge ${r.role==='agent'?'b-ok':r.role==='owner'?'b-ind':'b-warn'}">${AG_ROLE[r.role]||r.role}</span></td>
+              <td style="padding:11px 14px;font-weight:700">${esc(r.name||'')}</td>
+              <td style="padding:11px 14px" class="num">${esc(r.phone||'')}</td>
+              <td style="padding:11px 14px">${esc(r.office||r.addr||'')}</td>
+              <td style="padding:11px 14px" class="num">${esc(r.reg_no||r.biz_no||'')}</td>
+              <td style="padding:11px 14px;color:var(--n500)">${esc(r.email||'')}</td>
+            </tr>`).join('')}</tbody>
+        </table>
+      </div>`}
+    </div>
+    ${AG.note?`<p style="margin:10px 0 0;font-size:12px;color:var(--n500)">${esc(AG.note)}</p>`:''}`;
+}
+
 /* ══════════ 본인확인 ══════════
    실서비스에서는 본인확인기관(통신 3사 / PASS)이 이름·생년월일·연락처를 대조해 회신한다.
    여기서는 그 절차를 그대로 흉내 낸 목업이다. 두 수단 모두 이름과 연락처를 함께 회신한다. */
@@ -3651,7 +3720,7 @@ function saveDemand(d, slotN){
 /* ══════════ A-05 운영 조회 (실데이터) ══════════
    조회는 /api/demands 가 서비스 키로 대신 한다. 이 화면은 암호만 들고 있는다.
    암호는 메모리에만 둔다 - 새로고침하면 다시 물어본다. */
-const OPS = { pass:'', rows:null, loading:false, err:'', reveal:false, kind:'', days:0, at:'',
+const OPS = { pass:'', rows:null, loading:false, err:'', reveal:false, kind:'', days:0, at:'', tab:'demand',
   q:'', open:'', sent:{}, seen:0, only:'' };
 
 /* 전달 여부는 브라우저에 남긴다. DB 컬럼을 만들려면 SQL 을 한 번 돌려야 하는데,
@@ -3707,6 +3776,22 @@ function fallbackCopy(txt, ok){
   document.body.appendChild(t); t.select();
   try{ document.execCommand('copy'); ok(); }catch(e){ toast('복사에 실패했습니다 - 글을 직접 선택해 주세요'); }
   document.body.removeChild(t);
+}
+
+/* 가입 신청 — 조건과 같은 암호를 쓴다 */
+const AG = { rows:null, loading:false, err:'', at:'', reveal:false, role:'', q:'', note:'' };
+
+function agFetch(){
+  if(AG.loading || !OPS.pass) return;
+  AG.loading = true; AG.err = ''; render();
+  fetch('/api/agents', {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({pass: OPS.pass, reveal: AG.reveal})})
+    .then(r => r.json().catch(()=>({})).then(j => {
+      if(r.ok){ AG.rows = j.rows || []; AG.at = j.at || ''; AG.note = j.note || ''; }
+      else AG.err = j.error || '조회에 실패했습니다';
+      AG.loading = false; render();
+    }))
+    .catch(() => { AG.err = '네트워크 문제로 불러오지 못했습니다'; AG.loading = false; render(); });
 }
 
 function opsFetch(){
@@ -3769,6 +3854,11 @@ V['#/ops/live'] = () => {
       <p style="margin:12px 0 0;font-size:11.5px;line-height:1.6;color:var(--n500)">
         암호는 이 화면에만 잠시 남고 저장되지 않습니다. 새로고침하면 다시 물어봅니다.</p>
     </div>` : `
+    <div class="chips" style="gap:6px;margin-bottom:14px">
+      ${chip(`걸린 조건${all?` ${all.length}`:''}`, OPS.tab!=='agent', 'ops-tab','demand')}
+      ${chip(`가입 신청${AG.rows?` ${AG.rows.length}`:''}`, OPS.tab==='agent', 'ops-tab','agent')}
+    </div>
+    ${OPS.tab==='agent' ? agentPanel() : `
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px">
       <div class="chips" style="gap:6px">
         ${chip('전체', !OPS.kind, 'ops-kind','')}${chip('주거', OPS.kind==='home','ops-kind','home')}${chip('상가', OPS.kind==='shop','ops-kind','shop')}
@@ -3850,6 +3940,7 @@ V['#/ops/live'] = () => {
         </table>
       </div>`}
     </div>
+    `}
     <p style="margin:12px 0 0;font-size:11.5px;line-height:1.75;color:var(--n500)">
       ${OPS.reveal?'<b style="color:var(--danger)">연락처 원문이 보이는 상태입니다.</b> ':''}개인정보는 제공일로부터 3개월 뒤 파기됩니다.
       화면을 벗어나면 암호는 사라집니다.</p>`;
@@ -4440,6 +4531,8 @@ document.addEventListener('input', e=>{
   if(k==='opsPass'){ OPS.pass=v; const b=$('#app [data-act="ops-load"]'); if(b) b.disabled=!v; return; }
   if(k==='opsQ'){ OPS.q=v; OPS.open=''; render(); const el=$('#app [data-in="opsQ"]');
     if(el){ el.focus(); el.setSelectionRange(el.value.length, el.value.length); } return; }
+  if(k==='agQ'){ AG.q=v; render(); const el=$('#app [data-in="agQ"]');
+    if(el){ el.focus(); el.setSelectionRange(el.value.length, el.value.length); } return; }
   if(k==='findPhone'){ S.findPhone = autoHyphen(el); return; }
   if(k==='findName'||k==='resetEmail'){ S[k]=v; return; }
   if(k==='dongFree'){ S.draft.dongFree=v; refreshAddr(); return; }
@@ -4508,6 +4601,10 @@ function handle(a,v,el){
 
     /* ── 운영 조회 ── */
     case 'ops-load':   opsFetch(); return true;
+    case 'ops-tab':    OPS.tab = v; if(v==='agent' && !AG.rows && OPS.pass) agFetch(); render(); return true;
+    case 'ag-load':    agFetch(); return true;
+    case 'ag-role':    AG.role = AG.role===v ? '' : v; render(); return true;
+    case 'ag-reveal':  AG.reveal = !AG.reveal; agFetch(); return true;
     case 'ops-only':   OPS.only = OPS.only===v ? '' : v; OPS.open=''; render(); return true;
     case 'ops-open':   OPS.open = OPS.open===v ? '' : v; render(); return true;
     case 'ops-sent': {

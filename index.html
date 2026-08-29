@@ -1389,22 +1389,27 @@ function groundSvg(){
    수요자 계정은 소셜 4종 + 이메일로 만든다.
    실명·연락처는 로그인으로 확보되지 않으므로, 조건을 걸 때 본인확인을 따로 받는다. */
 const SNS = [
-  {k:'kakao',  t:'카카오로 계속하기', bg:'#FEE500', fg:'#191600', bd:'#FEE500',
+  {k:'kakao',  t:'카카오로 계속하기', bg:'#FEE500', fg:'#191600', bd:'#FEE500', soon:'검수 중',
    ic:`<svg viewBox="0 0 24 24" style="width:17px;height:17px"><path fill="#191600" d="M12 3.6c-4.7 0-8.5 2.96-8.5 6.61 0 2.35 1.57 4.41 3.93 5.58l-.9 3.3c-.08.29.24.52.49.35l3.95-2.6c.34.03.68.05 1.03.05 4.7 0 8.5-2.96 8.5-6.68S16.7 3.6 12 3.6z"/></svg>`},
   {k:'naver',  t:'네이버 로그인', bg:'#03C75A', fg:'#fff', bd:'#03C75A',
    ic:`<svg viewBox="0 0 24 24" style="width:15px;height:15px"><path fill="#fff" d="M4.5 4.5h5.02l4.9 7.06V4.5h5.08v15h-5.02l-4.9-7.07V19.5H4.5z"/></svg>`},
   {k:'google', t:'Google로 계속하기', bg:'#fff', fg:'#3C4043', bd:'#DADCE0',
    ic:`<svg viewBox="0 0 24 24" style="width:17px;height:17px"><path fill="#4285F4" d="M21.6 12.23c0-.7-.06-1.37-.18-2.02H12v3.82h5.38a4.6 4.6 0 0 1-2 3.02v2.5h3.23c1.89-1.74 2.99-4.3 2.99-7.32z"/><path fill="#34A853" d="M12 22c2.7 0 4.96-.9 6.61-2.43l-3.23-2.5c-.9.6-2.04.95-3.38.95-2.6 0-4.8-1.75-5.59-4.11H3.07v2.58A10 10 0 0 0 12 22z"/><path fill="#FBBC05" d="M6.41 13.91a5.99 5.99 0 0 1 0-3.82V7.51H3.07a10 10 0 0 0 0 8.98z"/><path fill="#EA4335" d="M12 5.98c1.47 0 2.79.5 3.83 1.5l2.86-2.86C16.95 2.99 14.7 2 12 2 8.09 2 4.71 4.24 3.07 7.51l3.34 2.58C7.2 7.73 9.4 5.98 12 5.98z"/></svg>`},
-  {k:'apple',  t:'Apple로 계속하기', bg:'#000', fg:'#fff', bd:'#000',
+  {k:'apple',  t:'Apple로 계속하기', bg:'#000', fg:'#fff', bd:'#000', soon:'검수 중',
    ic:`<svg viewBox="0 0 24 24" style="width:17px;height:17px"><path fill="#fff" d="M16.36 12.6c-.02-2.2 1.8-3.26 1.88-3.31-1.02-1.5-2.62-1.7-3.19-1.73-1.36-.14-2.65.8-3.34.8-.69 0-1.75-.78-2.87-.76-1.48.02-2.84.86-3.6 2.18-1.53 2.66-.39 6.6 1.1 8.76.73 1.06 1.6 2.25 2.74 2.2 1.1-.04 1.52-.71 2.85-.71s1.71.71 2.87.69c1.19-.02 1.94-1.08 2.66-2.14.84-1.23 1.19-2.42 1.21-2.48-.03-.01-2.32-.89-2.34-3.5zM14.2 5.94c.6-.74 1.01-1.75.9-2.77-.87.04-1.93.58-2.56 1.31-.56.65-1.06 1.7-.93 2.7.97.08 1.97-.5 2.59-1.24z"/></svg>`},
 ];
 const SNS_LABEL = {kakao:'카카오', naver:'네이버', google:'Google', apple:'Apple', email:'이메일'};
 
 function snsButton(x){ return `
-  <button data-act="sns" data-v="${x.k}" style="display:flex;align-items:center;justify-content:center;gap:9px;width:100%;
-    padding:14px 16px;border-radius:11px;cursor:pointer;font-size:15px;font-weight:700;letter-spacing:-.01em;
-    background:${x.bg};color:${x.fg};border:1.5px solid ${x.bd};min-height:52px;transition:filter .14s ease,box-shadow .14s ease">
-    <span style="flex:none;display:flex">${x.ic}</span>${x.t}</button>`;}
+  <button data-act="sns" data-v="${x.k}" style="position:relative;display:flex;align-items:center;justify-content:center;gap:9px;width:100%;
+    padding:14px 16px;border-radius:11px;cursor:${x.soon?'not-allowed':'pointer'};font-size:15px;font-weight:700;letter-spacing:-.01em;
+    background:${x.bg};color:${x.fg};border:1.5px solid ${x.bd};min-height:52px;${x.soon?'opacity:.62;':''}
+    transition:filter .14s ease,box-shadow .14s ease">
+    <span style="flex:none;display:flex">${x.ic}</span>${x.t}
+    ${x.soon?`<span aria-label="${x.soon}" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);
+      font-size:10.5px;font-weight:800;letter-spacing:0;padding:3px 8px;border-radius:var(--r-full);white-space:nowrap;
+      background:${x.fg==='#fff'?'rgba(255,255,255,.18)':'rgba(0,0,0,.10)'};color:${x.fg}">${x.soon}</span>`:''}
+  </button>`;}
 
 V['#/login'] = () => {
   const emailOk = /^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(S.email);
@@ -4395,10 +4400,9 @@ function handle(a,v,el){
     case 'sns': {
       /* 연결이 끝난 곳은 진짜로 보낸다. 나머지는 아직 흉내다 - 섞여 있는 동안은 그렇다고 말한다. */
       if(LIVE_OAUTH.includes(v)){ oauthStart(v); return true; }
-      S.user = {method:v, label:SNS_LABEL[v], name:S.draft.name||'', email:''};
-      toast(`${SNS_LABEL[v]}는 아직 연결 전입니다 - 화면만 넘어갑니다`);
-      if(!S.geoTried){ S.geoTried=true; setTimeout(()=>detectRegion(false), 500); }
-      go(S.afterLogin || '#/my'); S.afterLogin=null; return true; }
+      /* 검수 중이라 적어놓고 눌리면 그게 더 이상하다. 들어가지 않는다. */
+      toast(`${SNS_LABEL[v]} 로그인은 검수 중입니다 - 이메일·네이버·Google로 이용해 주세요`);
+      return true; }
     case 'find-reset': {  /* 찾기 화면을 새로 시작한다 */
       S.findName=''; S.findPhone=''; S.findErr=''; S.foundEmail='';
       S.resetEmail=''; S.resetErr=''; S.resetSent=''; render(); return true; }

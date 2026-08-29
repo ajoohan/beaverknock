@@ -899,6 +899,7 @@ const S = {
   inboxCond:'c1', modal:null, form:{}, timer:null, timeLeft:900, safeNo:null, sentAddr:{}, matched:0,
   vtimer:null, vsec:180, geo:null, geoState:'idle', geoTried:false, saved:false, lastRoute:null, enterT:null,
   user:null, afterLogin:null, email:'', pw:'', pw2:'', signup:false,
+  findName:'', findPhone:'', findErr:'', foundEmail:'', resetEmail:'', resetErr:'', resetSent:'',
 };
 
 /* ---------- 유틸 ---------- */
@@ -1358,6 +1359,7 @@ V['#/login'] = () => {
   const canGo = S.signup ? (emailOk && pwOk && S.pw2===S.pw) : (emailOk && pwOk);
   const toKind = S.afterLogin === '#/kind';
   const toMine = S.afterLogin === '#/my' || S.afterLogin === '#/inbox';
+  const dot = `<span style="color:var(--n300)">·</span>`;
   return `
 <div class="scr fade">
   <div class="nav pad"><a data-go="#/" style="flex:none">${logoLockup({h:25,tag:!isMo()})}</a>
@@ -1365,7 +1367,7 @@ V['#/login'] = () => {
       ${isMo()?'':'<a data-go="#/guide" style="font-size:14px;font-weight:600;color:var(--n700)">이용 안내</a><a data-go="#/faq" style="font-size:14px;font-weight:600;color:var(--n700)">자주 묻는 질문</a>'}
       <a data-go="#/partner" style="font-size:${isMo()?12.5:14}px;font-weight:600;color:var(--n700)">중개사이신가요?</a></div></div>
 
-  <div style="flex:1;min-height:0;overflow:auto;display:flex;align-items:flex-start;justify-content:center;padding:${isMo()?'16px 22px 30px':'20px 40px 34px'}">
+  <div style="flex:1;min-height:0;overflow:auto;display:flex;align-items:flex-start;justify-content:center;padding:${isMo()?'16px 22px 30px':'22px 40px 34px'}">
     <div style="width:100%;max-width:${isMo()?'none':'400px'};display:flex;flex-direction:column;gap:16px">
 
       <div style="display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center">
@@ -1375,23 +1377,13 @@ V['#/login'] = () => {
           : toMine ? '걸어두신 조건을 불러올게요'
           : '다시 오셨네요'}</h1>
         <p style="margin:0;font-size:13.5px;line-height:1.75;color:var(--n700);max-width:32ch">
-          ${toKind
-            ? '아래에서 하나만 누르시면 바로 조건 등록으로 이어집니다.'
+          ${toKind ? '로그인하시면 바로 조건 등록으로 이어집니다.'
             : toMine ? '처음이시라면 아래에서 시작하시면 됩니다.'
             : S.signup ? '계정을 만들면 걸어둔 조건과 받은 제안이 그대로 남습니다.'
                        : '걸어둔 조건과 받은 제안을 이어서 보실 수 있습니다.'}</p>
       </div>
 
-      <!-- 간편 로그인을 위에 — 대부분 여기서 끝난다 -->
-      <div style="display:flex;flex-direction:column;gap:8px">${SNS.map(snsButton).join('')}</div>
-
-      <div style="display:flex;align-items:center;gap:12px;margin:2px 0">
-        <i style="flex:1;height:1px;background:var(--hair)"></i>
-        <span style="font-size:11.5px;color:var(--n500)">이메일로 ${S.signup?'가입':'로그인'}</span>
-        <i style="flex:1;height:1px;background:var(--hair)"></i>
-      </div>
-
-      <!-- 이메일도 접지 않고 그대로 편다 — 탭을 두면 한 번은 헛클릭한다 -->
+      <!-- 이메일이 먼저 -->
       <div style="display:flex;flex-direction:column;gap:11px">
         <div>
           <input class="inp" data-in="email" type="email" value="${esc(S.email)}"
@@ -1412,13 +1404,25 @@ V['#/login'] = () => {
         </div>`:''}
         <button class="btn ${canGo?'pri':'sec'}" data-act="login-email"
           style="width:100%;padding:14px 0;font-size:15px" ${canGo?'':'disabled'}>
-          ${S.signup?'가입하고 시작하기':'이메일로 로그인'}</button>
+          ${S.signup?'가입하고 시작하기':'로그인'}</button>
       </div>
 
-      <p style="margin:0;text-align:center;font-size:13px;color:var(--n500)">
-        ${S.signup?'이미 계정이 있으신가요?':'비버노크가 처음이신가요?'}
-        <a data-act="signup-toggle" style="margin-left:5px;font-weight:700;color:var(--ind)">${S.signup?'로그인':'계정 만들기'}</a>
-      </p>
+      <!-- 찾기 줄 -->
+      <div style="display:flex;justify-content:center;align-items:center;gap:10px;font-size:13px;color:var(--n500)">
+        ${S.signup
+          ? `<span>이미 계정이 있으신가요?</span><a data-act="signup-toggle" style="font-weight:700;color:var(--ind)">로그인</a>`
+          : `<a data-go="#/find-id" style="color:var(--n700)">이메일 찾기</a>${dot}
+             <a data-go="#/reset-pw" style="color:var(--n700)">비밀번호 재설정</a>${dot}
+             <a data-act="signup-toggle" style="font-weight:700;color:var(--ind)">회원가입</a>`}
+      </div>
+
+      <div style="display:flex;align-items:center;gap:12px;margin:2px 0">
+        <i style="flex:1;height:1px;background:var(--hair)"></i>
+        <span style="font-size:11.5px;color:var(--n500)">간편 로그인</span>
+        <i style="flex:1;height:1px;background:var(--hair)"></i>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px">${SNS.map(snsButton).join('')}</div>
 
       <p style="margin:0;text-align:center;font-size:11.5px;line-height:1.75;color:var(--n500)">
         로그인하시면 이용약관과 <a data-go="#/privacy" style="color:var(--ind);font-weight:700;text-decoration:underline;text-underline-offset:2px">개인정보 처리방침</a>에 동의하신 것으로 봅니다.<br>
@@ -1426,6 +1430,72 @@ V['#/login'] = () => {
     </div>
   </div>
 </div>`;};
+
+/* ══════════ 이메일 찾기 · 비밀번호 재설정 ══════════
+   찾기 링크를 걸어두고 갈 곳이 없으면 앞서 고친 빈 링크를 다시 만드는 셈이다. */
+function findShell(title, lead, body){
+  return `
+<div class="scr fade">
+  <div class="nav pad"><a data-go="#/" style="flex:none">${logoLockup({h:25,tag:!isMo()})}</a>
+    <div class="right"><a data-go="#/login" style="font-size:13.5px;font-weight:600;color:var(--n700)">← 로그인으로</a></div></div>
+  <div style="flex:1;min-height:0;overflow:auto;display:flex;align-items:flex-start;justify-content:center;padding:${isMo()?'18px 22px 30px':'26px 40px 34px'}">
+    <div style="width:100%;max-width:${isMo()?'none':'400px'};display:flex;flex-direction:column;gap:16px">
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <h1 class="t" style="font-size:${isMo()?21:25}px">${title}</h1>
+        <p style="margin:0;font-size:13.5px;line-height:1.75;color:var(--n700)">${lead}</p>
+      </div>
+      ${body}
+    </div>
+  </div>
+</div>`;
+}
+
+const maskEmail = e => {
+  const [id, dom] = String(e||'').split('@');
+  if(!dom) return e;
+  const head = id.slice(0, Math.min(2, id.length));
+  return head + '*'.repeat(Math.max(1, id.length - head.length)) + '@' + dom;
+};
+
+V['#/find-id'] = () => findShell('이메일 찾기',
+  '가입할 때 확인하신 <b style="color:var(--n900)">휴대폰 번호</b>로 찾아드립니다.',
+  S.foundEmail ? `
+    <div class="card pad hi">
+      <span style="display:block;font-size:12.5px;font-weight:700;color:var(--n500);margin-bottom:6px">가입된 이메일</span>
+      <b class="num" style="display:block;font-size:21px;font-weight:800;color:var(--ind);letter-spacing:-.02em">${esc(maskEmail(S.foundEmail))}</b>
+      <p style="margin:10px 0 0;font-size:12.5px;line-height:1.75;color:var(--n700)">
+        보안을 위해 일부만 보여드립니다. 전체가 기억나지 않으시면 비밀번호 재설정에서 이 번호로 다시 확인하실 수 있습니다.</p>
+    </div>
+    <button class="btn pri" data-go="#/login" style="width:100%;padding:14px 0;font-size:15px">로그인하러 가기</button>
+    <a data-go="#/reset-pw" style="text-align:center;font-size:13px;color:var(--n700)">비밀번호도 잊으셨나요?</a>`
+  : `
+    <div style="display:flex;flex-direction:column;gap:11px">
+      <input class="inp" data-in="findName" value="${esc(S.findName||'')}" placeholder="이름" aria-label="이름">
+      <input class="inp num" data-in="findPhone" inputmode="numeric" value="${esc(S.findPhone||'')}"
+        placeholder="휴대폰 번호 (- 없이)" aria-label="휴대폰 번호">
+      <span data-warn="find" class="warn">${S.findErr||''}</span>
+      <button class="btn pri" data-act="do-find-id" style="width:100%;padding:14px 0;font-size:15px">이메일 찾기</button>
+    </div>`);
+
+V['#/reset-pw'] = () => findShell('비밀번호 재설정',
+  '가입하신 이메일로 <b style="color:var(--n900)">재설정 링크</b>를 보내드립니다.',
+  S.resetSent ? `
+    <div class="card pad" style="background:var(--okbg);border-color:#A5CDB6;box-shadow:none">
+      <b style="display:block;font-size:15px;font-weight:800;color:#166B3D;margin-bottom:6px">메일을 보냈습니다</b>
+      <p style="margin:0;font-size:13.5px;line-height:1.75;color:var(--n700)">
+        <b style="color:var(--n900)">${esc(S.resetSent)}</b> 로 재설정 링크를 보냈습니다.
+        메일이 보이지 않으면 스팸함도 확인해 주세요. 링크는 30분 동안 유효합니다.</p>
+    </div>
+    <button class="btn pri" data-go="#/login" style="width:100%;padding:14px 0;font-size:15px">로그인으로 돌아가기</button>
+    <a data-act="reset-again" style="text-align:center;font-size:13px;color:var(--n700)">다른 주소로 다시 보내기</a>`
+  : `
+    <div style="display:flex;flex-direction:column;gap:11px">
+      <input class="inp" data-in="resetEmail" type="email" value="${esc(S.resetEmail||'')}"
+        placeholder="가입하신 이메일" autocomplete="email" aria-label="이메일">
+      <span data-warn="reset" class="warn">${S.resetErr||''}</span>
+      <button class="btn pri" data-act="do-reset" style="width:100%;padding:14px 0;font-size:15px">재설정 링크 보내기</button>
+    </div>
+    <a data-go="#/find-id" style="text-align:center;font-size:13px;color:var(--n700)">이메일이 기억나지 않으세요?</a>`);
 
 /* ---------- D-02 유형 선택 ---------- */
 V['#/kind'] = () => `
@@ -3952,6 +4022,7 @@ document.addEventListener('input', e=>{
   if(k==='reportDetail'){ S.form.reportDetail=v; return; }
   if(k==='email'||k==='pw'||k==='pw2'){ S[k]=v; refreshLoginBtn(); return; }
   if(k==='opsPass'){ OPS.pass=v; const b=$('#app [data-act="ops-load"]'); if(b) b.disabled=!v; return; }
+  if(k==='findName'||k==='findPhone'||k==='resetEmail'){ S[k]=v; return; }
   if(k in S.draft){ S.draft[k]=v;
     if(k==='memo'){ const g=$('#app .gauge i'), t=$('#app [data-pct]');
       const p=detailPct(S.draft); if(g) g.style.width=p+'%'; if(t) t.textContent=`지금 ${p}%`; }
@@ -4043,11 +4114,29 @@ function handle(a,v,el){
 
     /* ── 로그인 ── */
     case 'signup-toggle': S.signup=!S.signup; S.pw2=''; render(); return true;
+
+    /* ── 이메일 찾기 · 비밀번호 재설정 ── */
+    case 'do-find-id': {
+      const nm=String(S.findName||'').trim(), ph=String(S.findPhone||'').replace(/-/g,'');
+      if(!nm) return S.findErr='이름을 적어주세요', render(), true;
+      if(!phoneOk(ph)) return S.findErr='휴대폰 번호를 확인해 주세요', render(), true;
+      S.findErr='';
+      /* 실연동 전까지는 가입 이력이 있다고 보고 보여준다 */
+      S.foundEmail = (S.user && S.user.email) || 'hanam2024@example.com';
+      render(); return true; }
+    case 'do-reset': {
+      const em=String(S.resetEmail||'').trim();
+      if(!/^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(em)) return S.resetErr='이메일 형식을 확인해 주세요', render(), true;
+      S.resetErr=''; S.resetSent=em; render(); return true; }
+    case 'reset-again': S.resetSent=''; S.resetEmail=''; render(); return true;
     case 'sns': {
       S.user = {method:v, label:SNS_LABEL[v], name:S.draft.name||'', email:''};
       toast(`${SNS_LABEL[v]} 계정으로 로그인했습니다`);
       if(!S.geoTried){ S.geoTried=true; setTimeout(()=>detectRegion(false), 500); }
       go(S.afterLogin || '#/my'); S.afterLogin=null; return true; }
+    case 'find-reset': {  /* 찾기 화면을 새로 시작한다 */
+      S.findName=''; S.findPhone=''; S.findErr=''; S.foundEmail='';
+      S.resetEmail=''; S.resetErr=''; S.resetSent=''; render(); return true; }
     case 'login-email': {
       if(!/^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(S.email)) return toast('이메일을 확인해 주세요'), true;
       if(S.pw.length<8) return toast('비밀번호는 8자 이상입니다'), true;
@@ -4296,7 +4385,7 @@ const ROUTES=[['#/','D-01 랜딩'],['#/login','D-00 로그인'],['#/kind','D-02 
   ['#/contact','D-04 연락·동의'],['#/done','D-05 접수 완료'],['#/my','D-07 내 조건'],['#/inbox','D-08 제안함'],
   ['#/proposal/p1','D-09 제안 상세'],['#/connect/p1','D-10 연결'],['#/report/p1','D-11 신고'],['#/relax','D-12 조건 완화'],
   ['#/partner','S-01 공급자 랜딩'],['#/partner/demands','S-04 수요 목록'],['#/partner/demand/d1','S-05 수요 상세'],
-  ['#/partner/propose/d1','S-06 제안 작성'],['#/partner/join','S-02 가입·인증'],['#/partner/settings','S-03 활동 조건 설정'],['#/partner/listings','S-08 내 물건'],['#/partner/listing/L1','S-08 역매칭 결과'],['#/partner/proposals','S-07 내 제안'],['#/partner/stats','S-09 성과'],['#/ops','A-04 지표 대시보드'],['#/ops/live','A-05 접수 조건(실데이터)'],['#/guide','◆ 이용 안내'],['#/faq','◆ 자주 묻는 질문'],['#/privacy','◆ 개인정보 처리방침'],['#/brand','◆ 로고 시스템']];
+  ['#/partner/propose/d1','S-06 제안 작성'],['#/partner/join','S-02 가입·인증'],['#/partner/settings','S-03 활동 조건 설정'],['#/partner/listings','S-08 내 물건'],['#/partner/listing/L1','S-08 역매칭 결과'],['#/partner/proposals','S-07 내 제안'],['#/partner/stats','S-09 성과'],['#/ops','A-04 지표 대시보드'],['#/ops/live','A-05 접수 조건(실데이터)'],['#/find-id','D-00b 이메일 찾기'],['#/reset-pw','D-00c 비밀번호 재설정'],['#/guide','◆ 이용 안내'],['#/faq','◆ 자주 묻는 질문'],['#/privacy','◆ 개인정보 처리방침'],['#/brand','◆ 로고 시스템']];
 $('#jump').innerHTML = ROUTES.map(([h,l])=>`<option value="${h}">${l}</option>`).join('');
 $('#jump').addEventListener('change', e=>{ if(e.target.value.startsWith('#/partner/propose')) S.timeLeft=900; go(e.target.value); });
 

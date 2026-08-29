@@ -530,6 +530,20 @@ body.mo .chip{min-height:38px}
 .warn:empty{display:none}
 .warn.ok{color:var(--ok)}
 
+/* 주소 자동완성 — 고를 수 있는 것만 고르게 한다 */
+.ac{position:relative;width:100%}
+.aclist{position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:40;background:var(--white);
+  border:1px solid var(--hair);border-radius:12px;box-shadow:0 12px 30px rgba(35,37,92,.14);
+  max-height:268px;overflow-y:auto}
+.aclist:empty{display:none}
+.aclist button{display:flex;width:100%;align-items:baseline;gap:9px;padding:11px 14px;
+  text-align:left;border-bottom:1px solid var(--n50);border-radius:0;cursor:pointer}
+.aclist button:last-child{border-bottom:none}
+.aclist button:hover,.aclist button.hi{background:var(--ind50)}
+.aclist button b{font-size:14px;font-weight:800;color:var(--n900);white-space:nowrap}
+.aclist button small{font-size:11.5px;color:var(--n500)}
+.aclist .none{padding:13px 14px;font-size:12.5px;line-height:1.7;color:var(--n500)}
+
 /* 폼 라벨 리듬 */
 .lab{letter-spacing:-.01em;margin-bottom:10px;line-height:1.45}
 .lab .opt{display:inline-block;margin-top:2px}
@@ -1518,10 +1532,11 @@ V['#/register'] = () => {
         <p style="margin:8px 0 0;font-size:11.5px;line-height:1.6;color:var(--n500)">
           업종에 따라 <b style="color:var(--n900)">들어갈 수 없는 건물</b>이 있습니다 — 적어주시면 중개사가 직접 확인합니다.</p>
       </div>
-<div><span class="lab">찾으시는 상권 <span class="req">*</span> <span class="opt">지도에서 고르거나 직접 적으셔도 됩니다 (여러 곳 가능)</span></span>
-        <div style="display:flex;gap:8px;margin-bottom:12px">
-          <input class="inp" data-in="dongFree" value="${esc(d.dongFree||'')}" placeholder="예) 하남시 미사동, 하남시 신장동">
-          <button class="btn sec sm" data-act="add-dong" style="flex:none;padding:0 18px">추가</button></div>
+<div><span class="lab">찾으시는 상권 <span class="req">*</span> <span class="opt">지도에서 고르거나 검색해서 고르세요 (여러 곳 가능)</span></span>
+        <div class="ac" style="margin-bottom:12px">
+          <input class="inp" data-in="dongFree" value="${esc(d.dongFree||'')}" autocomplete="off"
+            placeholder="예) 미사, 신장, 강남, 수원 — 적으면 목록이 뜹니다" aria-label="상권 검색">
+          <div class="aclist" data-aclist></div></div>
         ${d.dongs.length?`<div class="chips" style="margin-bottom:12px">${d.dongs.map(x=>`
           <button class="chip on" data-act="dong" data-v="${esc(x)}">${esc(x)} ✕</button>`).join('')}</div>`:''}
         ${regionPicker(d, true)}
@@ -1548,10 +1563,11 @@ V['#/register'] = () => {
         <input class="inp" data-in="facFree" value="${esc(d.facFree||'')}" placeholder="예) 가스 인입, 후드·덕트, 3상 전기, 층고 3.5m 이상"></div>
       ` : `
       <div><span class="lab">거래 방식 <span class="req">*</span></span>${chipsHTML(DEALS, d.deal, 'deal', false)}</div>
-<div><span class="lab">찾으시는 동네 <span class="req">*</span> <span class="opt">지도에서 고르거나 직접 적으셔도 됩니다 (여러 곳 가능)</span></span>
-        <div style="display:flex;gap:8px;margin-bottom:12px">
-          <input class="inp" data-in="dongFree" value="${esc(d.dongFree||'')}" placeholder="예) 경기도 하남시 미사1동, 하남시 덕풍동">
-          <button class="btn sec sm" data-act="add-dong" style="flex:none;padding:0 18px">추가</button></div>
+<div><span class="lab">찾으시는 동네 <span class="req">*</span> <span class="opt">지도에서 고르거나 검색해서 고르세요 (여러 곳 가능)</span></span>
+        <div class="ac" style="margin-bottom:12px">
+          <input class="inp" data-in="dongFree" value="${esc(d.dongFree||'')}" autocomplete="off"
+            placeholder="예) 미사, 덕풍, 강남, 수원 — 적으면 목록이 뜹니다" aria-label="동네 검색">
+          <div class="aclist" data-aclist></div></div>
         ${d.dongs.length?`<div class="chips" style="margin-bottom:12px">${d.dongs.map(x=>`
           <button class="chip on" data-act="dong" data-v="${esc(x)}">${esc(x)} ✕</button>`).join('')}</div>`:''}
         ${regionPicker(d, false)}
@@ -1837,6 +1853,42 @@ const LIST_GROUPS = shop => ([
   {t:'서울특별시', d:SEOUL_GU.map(x=>x.t)},
   {t:'경기도', d:GG_SI.filter(x=>x.t!=='하남시').map(x=>x.t)},
 ]);
+
+/* ── 주소록 ──
+   지도에서 고를 때 들어가는 이름과 똑같은 목록이다.
+   두 경로가 다른 이름을 넣기 시작하면 그게 다음 오류가 된다. */
+function addrBook(shop){
+  const b = [];
+  (shop?HANAM_ZONE:HANAM_DONG).forEach(x=>b.push({t:x.t, p:'경기도 하남시'}));
+  b.push({t:'하남 어디든', p:'경기도 하남시 전체'});
+  SEOUL_GU.forEach(x=>b.push({t:x.t, p:'서울특별시'}));
+  b.push({t:'서울 전체', p:'서울특별시 전체'});
+  GG_SI.filter(x=>x.t!=='하남시').forEach(x=>b.push({t:x.t, p:'경기도'}));
+  return b;
+}
+/* 앞에서 걸린 것 · 가운데서 걸린 것 · 상위 주소에서 걸린 것 순서로 보여준다 */
+function addrHits(q, shop, picked){
+  const k = String(q||'').replace(/\s/g,'');
+  if(!k) return [];
+  return addrBook(shop).filter(a=>!picked.includes(a.t)).map(a=>{
+    const name = a.t.replace(/\s/g,''), i = name.indexOf(k);
+    const rank = i===0 ? 0 : i>0 ? 1 : (a.p+name).replace(/\s/g,'').indexOf(k)>=0 ? 2 : -1;
+    return {t:a.t, p:a.p, rank};
+  }).filter(a=>a.rank>=0).sort((x,y)=>x.rank-y.rank).slice(0,8);
+}
+function addrHTML(hits, q){
+  if(!q) return '';
+  if(!hits.length) return `<div class="none">찾으시는 지역이 목록에 없습니다.<br>
+    하남시는 <b style="color:var(--n700)">동</b>까지, 그 밖의 수도권은 <b style="color:var(--n700)">시·구</b>까지 고르실 수 있습니다.</div>`;
+  return hits.map((a,i)=>`<button type="button" data-act="pick-addr" data-v="${esc(a.t)}" class="${i===0?'hi':''}">
+    <b>${esc(a.t)}</b><small>${esc(a.p)}</small></button>`).join('');
+}
+/* 타이핑 중에는 재렌더하지 않는다 — 포커스와 커서 위치를 지켜야 한다 */
+function refreshAddr(){
+  const box = $('#app [data-aclist]'); if(!box) return;
+  const q = (S.draft.dongFree||'').trim();
+  box.innerHTML = addrHTML(addrHits(q, S.draft.kind==='shop', S.draft.dongs), q);
+}
 
 /* ── 지역 선택 블록 ── */
 function regionPicker(d, shop){
@@ -3994,6 +4046,7 @@ document.addEventListener('input', e=>{
   if(k==='email'||k==='pw'||k==='pw2'){ S[k]=v; refreshLoginBtn(); return; }
   if(k==='opsPass'){ OPS.pass=v; const b=$('#app [data-act="ops-load"]'); if(b) b.disabled=!v; return; }
   if(k==='findName'||k==='findPhone'||k==='resetEmail'){ S[k]=v; return; }
+  if(k==='dongFree'){ S.draft.dongFree=v; refreshAddr(); return; }
   if(k in S.draft){ S.draft[k]=v;
     if(k==='memo'){ const g=$('#app .gauge i'), t=$('#app [data-pct]');
       const p=detailPct(S.draft); if(g) g.style.width=p+'%'; if(t) t.textContent=`지금 ${p}%`; }
@@ -4062,9 +4115,9 @@ function handle(a,v,el){
     case 'ops-days':   OPS.days = +v; opsFetch(); return true;
     case 'ops-reveal': OPS.reveal = !OPS.reveal; opsFetch(); return true;
     case 'ops-csv':    return opsCsv();
-    case 'add-dong': { const raw=(d.dongFree||'').trim(); if(!raw) return toast('지역을 적어주세요'), true;
-      raw.split(/[,·]/).map(x=>x.trim()).filter(Boolean).forEach(x=>{ if(!d.dongs.includes(x)) d.dongs.push(x); });
-      d.dongFree=''; toast('지역을 추가했습니다'); render(); return true; }
+    case 'pick-addr': { const t=String(v||'').trim(); if(!t) return true;
+      if(!d.dongs.includes(t)) d.dongs.push(t);
+      d.dongFree=''; render(); return true; }
     case 'elev': d.elev = d.elev===v ? '' : v; render(); return true;
     case 'keyOk': d.keyOk = d.keyOk===v ? '' : v; render(); return true;
     case 'signNeed': d.signNeed = d.signNeed===v ? '' : v; render(); return true;
@@ -4324,6 +4377,21 @@ function handle(a,v,el){
   }
   return false;
 }
+
+/* 주소 자동완성 — 손을 마우스로 옮기지 않고도 고를 수 있어야 한다 */
+document.addEventListener('keydown', e=>{
+  if(!e.target.closest('[data-in="dongFree"]')) return;
+  const box=$('#app [data-aclist]'); if(!box) return;
+  const opts=$$('button', box); if(!opts.length) return;
+  let i=opts.findIndex(o=>o.classList.contains('hi'));
+  if(e.key==='ArrowDown'||e.key==='ArrowUp'){
+    e.preventDefault();
+    if(i>=0) opts[i].classList.remove('hi');
+    i = e.key==='ArrowDown' ? (i+1)%opts.length : (i<=0 ? opts.length-1 : i-1);
+    opts[i].classList.add('hi'); opts[i].scrollIntoView({block:'nearest'});
+  } else if(e.key==='Enter'){ e.preventDefault(); opts[i>=0?i:0].click(); }
+  else if(e.key==='Escape'){ box.innerHTML=''; }
+});
 
 /* 모바일 조건 선택 셀렉트 */
 document.addEventListener('change', e=>{

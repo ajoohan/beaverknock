@@ -69,6 +69,10 @@ body.mo .pad{padding:0 22px}
 
 .nav{display:flex;align-items:center;gap:30px;height:74px;flex:none;position:relative;z-index:5}
 body.mo .nav{height:auto;padding-top:calc(16px + env(safe-area-inset-top));padding-bottom:12px;gap:10px;border-bottom:1px solid var(--n100);background:var(--white)}
+/* 어두운 화면에서는 흰 바탕을 덮지 않는다 - 흰 로고가 흰 바탕에 얹혀 사라졌다 */
+body.mo .scr.dark .nav{background:transparent;border-bottom-color:var(--navy700)}
+/* 상단바 글자는 접히지 않는다 */
+.nav .right a, .nav .right button{white-space:nowrap}
 .nav.solid{background:var(--white);border-bottom:1px solid var(--n100)}
 .logo{font-size:17px;font-weight:800;letter-spacing:-.03em;color:var(--ind);flex:none}
 body.mo .logo{font-size:15px}
@@ -2469,7 +2473,7 @@ V['#/proposal'] = (id) => { const p=S.props.find(x=>x.id===id); if(!p) return V[
         <div class="kv"><dt>융자금</dt><dd class="num">${p.loan?p.loan.toLocaleString()+'만원':'없음'}</dd></div>
       </div>
       <p style="margin:8px 0 0;padding-top:9px;border-top:1px solid var(--n100);font-size:11.5px;line-height:1.6;color:var(--n500)">
-        ${esc(p.risk)}<br class="mbr">참고 지표이며 실제와 다를 수 있습니다 - 계약 전 등기사항증명서와 건축물대장을 직접 확인하세요.</p></div>
+        ${esc(p.risk)}<br class="mbr"> 참고 지표이며 실제와 다를 수 있습니다 - 계약 전 등기사항증명서와 건축물대장을 직접 확인하세요.</p></div>
     <div class="card pad" style="display:flex;justify-content:space-between;align-items:center;gap:12px">
       <div><b style="display:block;font-size:14px;font-weight:800">${esc(p.agency.name)}</b>
       <span class="num" style="font-size:12.5px;color:var(--n500)">대표 ${p.agency.rep} · 등록 ${p.agency.reg} · ${p.agency.addr}</span></div>
@@ -2529,7 +2533,7 @@ V['#/connect'] = (id) => { const p=S.props.find(x=>x.id===id); if(!p) return V['
         <span class="num" style="font-size:${isMo()?25:31}px;font-weight:800;letter-spacing:-.02em;color:var(--ind)">${S.safeNo}</span>
         <span style="display:block;margin-top:7px;font-size:11.5px;color:var(--n500)">내 번호는 공개되지 않습니다 · 기간이 지나면 자동 소멸</span></div>
       <p style="margin:0;font-size:13px;line-height:1.75;color:var(--n700);background:var(--n50);padding:14px 18px;text-align:left">
-        이후 상담과 계약은 <b>중개사무소와 직접</b> 진행하시면 됩니다.<br class="mbr">저희는 거래에 관여하지 않으며 어떤 비용도 받지 않습니다.</p>
+        이후 상담과 계약은 <b>중개사무소와 직접</b> 진행하시면 됩니다.<br class="mbr"> 저희는 거래에 관여하지 않으며 어떤 비용도 받지 않습니다.</p>
       <div style="display:flex;gap:10px;${isMo()?'flex-direction:column':''}">
         <button class="btn pri md ${isMo()?'blk':''}" data-go="#/inbox">제안함으로</button>
         <button class="btn sec md ${isMo()?'blk':''}" data-go="#/my">내 조건 확인</button></div>
@@ -2614,20 +2618,20 @@ V['#/relax'] = () => `
 V['#/partner'] = () => `
 <div class="scr dark fade">
   <div class="nav pad" style="border-bottom:1px solid var(--navy700)">
-    <span style="flex:none">${logoLockup({h:26,mode:"dark",partner:true,tag:!isMo()})}</span>
+    <span style="flex:none">${logoLockup({h:isMo()?21:26,mode:"dark",partner:true,tag:!isMo()})}</span>
     <div class="right" style="color:#9AA3BF">
-      <a data-go="#/" style="font-size:13.5px;font-weight:600">손님 화면 보기</a>
-      <button class="btn sm" data-go="#/partner/demands" style="background:var(--ind300);color:#fff;padding:10px 20px">무료로 시작하기</button>
+      <a data-go="#/" style="font-size:${isMo()?12.5:13.5}px;font-weight:600">${isMo()?'손님 화면':'손님 화면 보기'}</a>
+      <button class="btn sm" data-go="#/partner/demands" style="background:var(--ind300);color:#fff;padding:${isMo()?'9px 15px':'10px 20px'};font-size:${isMo()?13:14}px">${isMo()?'시작하기':'무료로 시작하기'}</button>
     </div>
   </div>
   <div class="pad" style="flex:1;display:flex;align-items:center;gap:40px">
    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:22px;max-width:${isMo()?'none':'820px'}">
     <span style="align-self:flex-start;font-size:12.5px;font-weight:800;color:#9AA3BF;border:1px solid var(--navy600);border-radius:var(--r-full);padding:8px 18px">클로즈 베타 · 하남에서 먼저 시작합니다</span>
     <h1 class="t" style="font-size:${isMo()?25:40}px;color:#fff;line-height:1.28;letter-spacing:-.052em;max-width:20ch">지금 하남에서 집·가게를 구하는<br>손님 <span style="color:var(--ind300)">${S.demands.length + 8}명</span>이 기다리고 있습니다</h1>
-    <p style="margin:0;font-size:${isMo()?14:17}px;line-height:1.75;color:#9AA3BF"><b style="color:#F0EDE7">비용은 없습니다. 매물을 올리실 필요도 없습니다.</b><br class="mbr">네이버·직방에 올리는 광고비와 다릅니다 - 이미 원하는 게 정해진 손님입니다.</p>
+    <p style="margin:0;font-size:${isMo()?14:17}px;line-height:1.75;color:#9AA3BF"><b style="color:#F0EDE7">비용은 없습니다. 매물을 올리실 필요도 없습니다.</b><br class="mbr"> 네이버·직방에 올리는 광고비와 다릅니다 - 이미 원하는 게 정해진 손님입니다.</p>
     <div style="display:flex;align-items:center;gap:18px;${isMo()?'flex-direction:column;align-items:stretch':''}">
       <button class="btn ${isMo()?'blk':''}" data-go="#/partner/demands" style="background:var(--ind300);color:#fff;padding:17px 40px;font-size:17px">대기 중인 손님 보기</button>
-      <span style="font-size:12.5px;line-height:1.6;color:var(--navy400)">개설등록번호만 있으면 즉시 시작 ·<br class="mbr">중개사 과금 경로는 영구히 닫혀 있습니다</span>
+      <span style="font-size:12.5px;line-height:1.6;color:var(--navy400)">개설등록번호만 있으면 즉시 시작 ·<br class="mbr"> 중개사 과금 경로는 영구히 닫혀 있습니다</span>
     </div>
    </div>
    ${isMo()?'':`<div style="flex:none;position:relative;display:flex;align-items:center;justify-content:center">
@@ -2644,7 +2648,7 @@ V['#/partner'] = () => `
     </div>
     <div style="flex:none;width:${isMo()?'100%':'350px'};background:var(--navy800);border:1px solid var(--navy600);padding:16px 22px">
       <span style="display:block;font-size:11.5px;font-weight:800;color:#9AA3BF;margin-bottom:7px">지금 쓰시는 방식과 비교하면</span>
-      <span style="font-size:13.5px;line-height:1.75;color:#F0EDE7">매물 1건 노출에 <b>약 2,000원</b> - 수요가 있는지도 모른 채.<br class="mbr">여기서는 <b style="color:var(--ind300)">수요가 확인된 손님에게만, 무료로</b> 보냅니다.</span>
+      <span style="font-size:13.5px;line-height:1.75;color:#F0EDE7">매물 1건 노출에 <b>약 2,000원</b> - 수요가 있는지도 모른 채.<br class="mbr"> 여기서는 <b style="color:var(--ind300)">수요가 확인된 손님에게만, 무료로</b> 보냅니다.</span>
     </div>
   </div>
 </div>`;
@@ -2990,7 +2994,7 @@ V["#/partner/join"] = () => {
     const nameOk = (f['j-name']||'').trim().length >= 2;
     const phoneOk = phoneOk2(f['j-phone']||'');
     body = `
-    <h1 class="t" style="font-size:${isMo()?21:25}px">연락받으실 곳을<br class="mbr"> 알려주세요</h1>
+    <h1 class="t" style="font-size:${isMo()?21:25}px">연락받으실 곳을<br class="mbr">  알려주세요</h1>
     <p class="sub measure">신청을 확인하고 저희가 직접 연락드립니다. 손님 정보를 보내드릴 곳이기도 합니다.</p>
     <div style="display:flex;flex-direction:column;gap:14px;margin-top:6px">
       <div><span class="lab">성함 <span class="req">*</span></span>
@@ -3010,7 +3014,7 @@ V["#/partner/join"] = () => {
       지금 적어주신 내용은 그때 대조합니다.</p>`;
   }
   if(step===3 && role==='agent') body = `
-    <h1 class="t" style="font-size:${isMo()?21:25}px">중개사무소 개설등록번호를<br class="mbr"> 입력해 주세요</h1>
+    <h1 class="t" style="font-size:${isMo()?21:25}px">중개사무소 개설등록번호를<br class="mbr">  입력해 주세요</h1>
     <p class="sub measure">전국 공인중개사무소 공공데이터와 자동 대조합니다. 일치하면 즉시 시작됩니다.</p>
     <div style="margin-bottom:16px"><span class="lab">사무소 상호 <span class="req">*</span></span>
       <input class="inp" data-in="j-office" value="${esc(f['j-office']||'')}" placeholder="예) 미사중앙공인중개사사무소"></div>
@@ -3068,10 +3072,10 @@ V["#/partner/join"] = () => {
         : f.jSent==='already' ? '이미 신청하셨습니다'
         : '신청이 접수되었습니다'}</h1>
       <p style="margin:0;font-size:14px;line-height:1.75;color:var(--n700)">${
-        f.jSent==='fail' ? '잠시 뒤 다시 시도해 주세요.<br class="mbr"> 계속 안 되면 support@plustonic.com 으로 알려주시면 직접 등록해 드립니다.'
+        f.jSent==='fail' ? '잠시 뒤 다시 시도해 주세요.<br class="mbr">  계속 안 되면 support@plustonic.com 으로 알려주시면 직접 등록해 드립니다.'
         : f.jSent==='sending' ? '잠시만 기다려 주세요.'
-        : f.jSent==='already' ? '같은 번호로 접수된 신청이 있습니다.<br class="mbr"> 확인 뒤 연락드리겠습니다.'
-        : '적어주신 번호로 <b style="color:var(--n900)">1~2영업일 안에</b> 연락드립니다.<br class="mbr"> 확인이 끝나면 해당 지역 손님의 조건을 보내드립니다.'}</p>
+        : f.jSent==='already' ? '같은 번호로 접수된 신청이 있습니다.<br class="mbr">  확인 뒤 연락드리겠습니다.'
+        : '적어주신 번호로 <b style="color:var(--n900)">1~2영업일 안에</b> 연락드립니다.<br class="mbr">  확인이 끝나면 해당 지역 손님의 조건을 보내드립니다.'}</p>
       ${f.jSent==='fail'?`<button class="btn sec md" data-act="j-retry" style="margin-top:14px">다시 보내기</button>`:''}
       <div style="display:flex;gap:10px;margin-top:16px;${isMo()?'flex-direction:column;width:100%':''}">
         <a class="btn pri md ${isMo()?'blk':''}" data-go="#/partner/settings">활동 조건 설정하기</a>

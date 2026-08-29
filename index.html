@@ -396,6 +396,10 @@ body::after{
 .chk{border-radius:10px;padding-left:12px;padding-right:12px;margin-left:-12px;margin-right:-12px;
   transition:background var(--t-mid) ease}
 .chk:hover{background:var(--n50)}
+/* 동의 목록 — 줄마다 선 굵기가 다르면 무게가 달라 보인다. 한 겹으로 통일하고
+   전체 동의는 굵기가 아니라 글자 크기로 구분한다. */
+.agrees .chk + .chk{border-top:1px solid var(--n100)}
+.agrees .chk.all .txt{font-size:15px}
 .chk.on{background:var(--ind50)}
 .chk .box{transition:transform var(--t-fast) var(--e-spring),background var(--t-fast) ease,border-color var(--t-fast) ease}
 .chk.on .box{transform:scale(1.06)}
@@ -543,6 +547,37 @@ body.mo .chip{min-height:38px}
 .aclist button b{font-size:14px;font-weight:800;color:var(--n900);white-space:nowrap}
 .aclist button small{font-size:11.5px;color:var(--n500)}
 .aclist .none{padding:13px 14px;font-size:12.5px;line-height:1.7;color:var(--n500)}
+
+/* 전달될 조건 — 이 화면의 결론이다. 문서처럼 세운다.
+   라벨은 작고 조용하게, 값은 굵고 또렷하게. 굵기가 아니라 크기와 색으로 층을 만든다. */
+.recap{background:var(--white);border:1px solid var(--hair);border-radius:16px;overflow:hidden;
+  box-shadow:0 1px 2px rgba(35,37,92,.05),0 10px 28px rgba(35,37,92,.07)}
+.recap .top{padding:18px 22px 15px;border-bottom:1px solid var(--hair);
+  background:linear-gradient(180deg,var(--ind50) 0%,rgba(255,255,255,0) 100%)}
+.recap .eyebrow{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:800;
+  letter-spacing:.09em;color:var(--ind)}
+.recap .eyebrow i{display:block;width:15px;height:2px;border-radius:2px;background:var(--ind)}
+.recap .ttl{display:block;margin-top:9px;font-size:19px;font-weight:800;letter-spacing:-.032em;
+  line-height:1.35;color:var(--n900);word-break:keep-all}
+.recap .body{padding:4px 22px}
+.recap .row{display:flex;gap:16px;align-items:flex-start;padding:11px 0;border-top:1px solid var(--n50)}
+.recap .row:first-child{border-top:none}
+.recap .k{flex:none;width:64px;padding-top:2px;font-size:11.5px;font-weight:800;color:var(--n500)}
+.recap .v{flex:1;min-width:0;font-size:14px;font-weight:700;line-height:1.6;color:var(--n900);word-break:keep-all}
+.recap .tags{display:flex;flex-wrap:wrap;gap:5px}
+.recap .tags span{font-size:12.5px;font-weight:700;color:var(--ind);background:var(--ind50);
+  border-radius:var(--r-full);padding:3px 11px}
+.recap .memo{margin:2px 22px 18px;padding:12px 15px;background:var(--n50);
+  border-left:2.5px solid var(--ind300);border-radius:0 10px 10px 0;
+  font-size:13px;line-height:1.75;color:var(--n700);word-break:keep-all}
+.recap .foot{padding:12px 22px;border-top:1px solid var(--hair);background:var(--n50);
+  font-size:11.5px;line-height:1.65;color:var(--n500);word-break:keep-all}
+body.mo .recap .top{padding:16px 17px 13px}
+body.mo .recap .ttl{font-size:17px}
+body.mo .recap .body{padding:2px 17px}
+body.mo .recap .k{width:56px}
+body.mo .recap .memo{margin:2px 17px 15px}
+body.mo .recap .foot{padding:11px 17px}
 
 /* 폼 라벨 리듬 */
 .lab{letter-spacing:-.01em;margin-bottom:10px;line-height:1.45}
@@ -872,6 +907,8 @@ const SEED_MYPROP = [
 
 const S = {
   device:'pc', route:'#/', draft:blankDraft(),
+  /* 본인확인은 사람에게 붙는다 — 조건마다 다시 받을 이유가 없다 */
+  idv:null,
   conds:JSON.parse(JSON.stringify(SEED_CONDS)),
   props:JSON.parse(JSON.stringify(SEED_PROPOSALS)),
   demands:JSON.parse(JSON.stringify(SEED_DEMANDS)),
@@ -1208,6 +1245,30 @@ function draftLines(d){
   if(d.floor) L.push(d.floor);
   return L.filter(Boolean);
 }
+/* 넘어가는 내용을 라벨과 값으로 세운다 — 문장으로 이어 붙이면 읽어야 알 수 있다. */
+function draftSummary(d){
+  const R=[], put=(k,v)=>{ if(v && String(v).trim()) R.push([k, String(v)]); };
+  const man = n => (+n||0).toLocaleString();
+  if(d.kind==='shop'){
+    put('업종', d.biz);
+    put('예산', `보증금 ${won(+d.dep||0)} / 월 ${man(d.rent)}만${d.key?` · 권리금 ${won(+d.key)}까지`:''}`);
+    if(d.areaMin) put('면적', `전용 ${d.areaMin}~${d.areaMax||''}평 (${(d.areaMin*3.305785).toFixed(1)}~${d.areaMax?(d.areaMax*3.305785).toFixed(1):''}㎡)`);
+    put('입주', d.openWhen);
+    put('층', d.shopFloorFree);
+    put('설비', d.facFree);
+    put('권리금', d.keyOk);
+  } else {
+    put('거래', d.deal);
+    put('예산', `${d.deal==='매매'?'매매가':'보증금'} ${won(+d.dep||0)}${+d.rent?` / 월 ${man(d.rent)}만`:''}`);
+    put('유형', [d.htype.join(' · '), d.rooms && d.rooms!=='무관' ? d.rooms : ''].filter(Boolean).join(' · '));
+    put('입주', d.when==='직접 입력' ? d.whenFree : d.when);
+    put('필수', [...d.musts.filter(x=>x!=='기타'), d.mustFree||''].filter(Boolean).join(' · '));
+    put('층', d.floor);
+    put('거주', d.house);
+    put('대출', d.loan);
+  }
+  return R;
+}
 function detailPct(d){
   /* 선택 항목은 유형마다 다르다 — 상가에 '거주 인원'을 묻지 않는다 */
   const opt = d.kind==='shop' ? ['memo','openWhen','keyOk','signNeed'] : ['memo','floor','house','elev','loan'];
@@ -1458,7 +1519,7 @@ V['#/find-id'] = () => findShell('아이디 찾기',
     <div style="display:flex;flex-direction:column;gap:11px">
       <input class="inp" data-in="findName" value="${esc(S.findName||'')}" placeholder="이름" aria-label="이름">
       <input class="inp num" data-in="findPhone" inputmode="numeric" value="${esc(S.findPhone||'')}"
-        placeholder="휴대폰 번호 (- 없이)" aria-label="휴대폰 번호">
+        placeholder="010-1234-5678" maxlength="13" aria-label="휴대폰 번호">
       <span data-warn="find" class="warn">${S.findErr||''}</span>
       <button class="btn pri" data-act="do-find-id" style="width:100%;padding:14px 0;font-size:15px">아이디 찾기</button>
     </div>`);
@@ -1941,6 +2002,24 @@ const CARRIERS = ['SKT','KT','LG U+','알뜰폰'];
 const phoneOk = p => /^01[016789][0-9]{7,8}$/.test(String(p).replace(/-/g,''));
 const fmtPhone = p => { const n=String(p).replace(/-/g,'');
   return n.length>=10 ? n.replace(/^(01[016789])([0-9]{3,4})([0-9]{4})$/,'$1-$2-$3') : n; };
+/* 번호는 적는 대로 끊어준다 — 열한 자리를 눈으로 세게 두지 않는다.
+   커서는 '앞에 있던 숫자 개수' 뒤에 다시 놓는다. 안 그러면 가운데를 고칠 때마다 끝으로 튄다. */
+function autoHyphen(el){
+  const before = el.value.slice(0, el.selectionStart ?? el.value.length).replace(/[^0-9]/g,'').length;
+  const n = el.value.replace(/[^0-9]/g,'').slice(0,11);
+  const out = n.length<4  ? n
+            : n.length<8  ? n.slice(0,3)+'-'+n.slice(3)
+            : n.length<11 ? n.slice(0,3)+'-'+n.slice(3,6)+'-'+n.slice(6)
+                          : n.slice(0,3)+'-'+n.slice(3,7)+'-'+n.slice(7);
+  el.value = out;
+  let seen=0, pos=out.length;
+  if(before===0) pos=0;
+  else for(let i=0;i<out.length;i++){ if(out[i]>='0'&&out[i]<='9') seen++;
+    if(seen===before){ pos=i+1; break; } }
+  try{ el.setSelectionRange(pos,pos); }catch(e){}
+  return out;
+}
+
 const maskPhone = p => { const n=String(p).replace(/-/g,'');
   return n.length>=10 ? fmtPhone(n).replace(/-([0-9]{3,4})-/,'-****-') : n; };
 
@@ -1953,7 +2032,7 @@ function verifyCard(d){
         <span style="flex:none;width:30px;height:30px;border-radius:var(--r-full);background:#fff;border:1.5px solid #A5CDB6;display:flex;align-items:center;justify-content:center">
           <svg viewBox="0 0 24 24" style="width:15px" fill="none"><path d="M4.5 12.5l5 5 10-11" stroke="#1B7A46" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
         <div style="flex:1;min-width:0">
-          <span style="display:block;font-size:14px;font-weight:800;color:#166B3D">본인확인이 끝났습니다</span>
+          <span style="display:block;font-size:14px;font-weight:800;color:#166B3D">본인 확인이 완료되었습니다</span>
           <span style="display:block;margin-top:2px;font-size:12.5px;color:var(--n700)">
             <b style="color:var(--n900)">${esc(d.name)}</b> · ${maskPhone(d.phone)} · ${esc(m?m.t:'')} · ${esc(d.vat)}</span>
         </div>
@@ -1972,7 +2051,7 @@ function verifyCard(d){
     </div>`;
   const phoneField = `
     <div style="margin-top:12px"><span class="lab" style="font-size:12.5px">휴대폰 번호 <span class="req">*</span> <span class="opt">본인 명의</span></span>
-      <input class="inp num" data-in="phone" inputmode="numeric" value="${esc(d.phone)}" placeholder="01012345678" style="padding:11px 13px;font-size:14px">
+      <input class="inp num" data-in="phone" inputmode="numeric" value="${esc(d.phone)}" placeholder="010-1234-5678" maxlength="13" style="padding:11px 13px;font-size:14px">
       ${d.phone && !phoneOk(d.phone)?'<span style="display:block;margin-top:6px;font-size:11.5px;font-weight:700;color:var(--danger)">번호 형식을 확인해 주세요</span>':''}</div>`;
 
   let body = '';
@@ -2052,21 +2131,34 @@ V['#/contact'] = () => { const d=S.draft; const ok = d.verified && phoneOk(d.pho
         <div><span class="lab">연락 가능한 시간</span>${chipsHTML(TIMES, d.times, 'times', true)}</div>
       </div>
 
-      <div class="card" style="padding:4px 20px">
-        <div class="chk ${d.a1?'on':''}" data-act="agree" data-v="a1" style="border-bottom:1px solid var(--n100)">
+      <div class="card agrees" style="padding:4px 20px">
+        <div class="chk all ${d.a1&&d.a2&&d.a3?'on':''}" data-act="agree-all">
+          <span class="box">${ICON_CHECK}</span><span class="txt"><b style="font-weight:800;color:var(--n900)">전체 동의</b>
+          <small>필수 2개와 선택 1개를 한 번에 동의합니다 — 선택 항목은 따로 해제하실 수 있습니다</small></span></div>
+        <div class="chk ${d.a1?'on':''}" data-act="agree" data-v="a1">
           <span class="box">${ICON_CHECK}</span><span class="txt"><b style="color:var(--ind)">(필수)</b> <b style="color:var(--n900)">개인정보 제3자 제공</b>에 동의합니다
           <a data-go="#/privacy" style="margin-left:6px;font-size:11.5px;font-weight:700;color:var(--ind);text-decoration:underline;text-underline-offset:2px">전문 보기</a>
           <small>제공받는 자: 해당 지역 공인중개사사무소(조건당 최대 5곳) · 항목: 본인확인된 이름·연락처·조건 전체 · 보유: 3개월 후 파기. 거부하실 수 있으나 거부 시 조건 전달이 불가능합니다.</small></span></div>
-        <div class="chk ${d.a2?'on':''}" data-act="agree" data-v="a2" style="border-bottom:1px solid var(--n100)">
+        <div class="chk ${d.a2?'on':''}" data-act="agree" data-v="a2">
           <span class="box">${ICON_CHECK}</span><span class="txt"><b style="color:var(--ind)">(필수)</b> <b style="color:var(--n900)">알림이 여러 차례 발송</b>되는 것에 동의합니다
           <small>조건 1건당 제안이 최대 5건까지 도착할 수 있습니다</small></span></div>
         <div class="chk ${d.a3?'on':''}" data-act="agree" data-v="a3">
           <span class="box">${ICON_CHECK}</span><span class="txt">(선택) 서비스 소식 등 광고성 정보 수신에 동의합니다</span></div>
       </div>
 
-      <div class="card pad" style="background:var(--n50);box-shadow:none">
-        <span class="sect">전달될 조건</span>
-        <p style="margin:0;font-size:13.5px;line-height:1.75;color:var(--n700)">${esc(draftTitle(d))}<br>${draftLines(d).map(esc).join('<br>')}${d.memo?`<br><span style="color:var(--ind);font-weight:700">"${esc(d.memo.slice(0,40))}${d.memo.length>40?'…':''}"</span>`:''}</p>
+      <div class="recap">
+        <div class="top">
+          <span class="eyebrow"><i></i>이대로 전달됩니다</span>
+          <b class="ttl">${esc(draftTitle(d))}</b>
+        </div>
+        <div class="body">
+          <div class="row"><span class="k">${d.kind==='shop'?'상권':'지역'}</span>
+            <span class="v tags">${(d.dongs.length?d.dongs:['하남']).map(x=>`<span>${esc(x)}</span>`).join('')}</span></div>
+          ${draftSummary(d).map(([k,v])=>`<div class="row"><span class="k">${esc(k)}</span><span class="v">${esc(v)}</span></div>`).join('')}
+        </div>
+        ${d.memo?`<div class="memo">${esc(d.memo)}</div>`:''}
+        <div class="foot">본인확인된 <b style="color:var(--n700);font-weight:800">이름·연락처</b>가 함께 전달됩니다 ·
+          조건당 최대 <b style="color:var(--n700);font-weight:800">5곳</b>의 공인중개사사무소 · 3개월 후 자동 파기</div>
       </div>
     </div></div>
   </div>
@@ -2101,7 +2193,7 @@ V['#/done'] = () => `
       </div>
       <p style="margin:0;font-size:${isMo()?15:17}px;line-height:1.6;color:var(--n900);font-weight:500;max-width:34ch">${S.matched>0
         ? '등록하시자마자 조건에 맞는 곳을 찾았습니다. 바로 확인해 보세요.'
-        : '해당 지역 공인중개사 사무소에 순차적으로 전달해 드리겠습니다. 이제 기다리시면 됩니다.'}</p>
+        : '해당 지역 공인중개사 사무소에 순차적으로 전달됩니다.<br>이제 조금만 기다려주시면 됩니다.'}</p>
       ${S.matched > 0 ? `
       <div class="card pad" style="text-align:left;border-color:#A5CDB6;background:var(--okbg);box-shadow:none">
         <span style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
@@ -3945,6 +4037,11 @@ function render(){
   /* 내 정보 영역은 로그인이 필요하다 */
   /* 지표 대시보드는 아직 예시 숫자다. 실데이터 화면의 암호를 통과하기 전에는 열지 않는다. */
   if(h==='#/ops' && !OPS.rows){ location.replace('#/ops/live'); return; }
+  /* 이미 본인확인을 하셨다면 그대로 이어간다 */
+  if(h==='#/contact' && !S.draft.verified && S.idv){
+    Object.assign(S.draft, {verified:true, vstep:'done', vmethod:S.idv.vmethod, vat:S.idv.vat,
+      name:S.draft.name||S.idv.name, phone:S.draft.phone||S.idv.phone});
+  }
   const MINE = h==='#/my' || h==='#/inbox' || h.startsWith('#/proposal/') || h.startsWith('#/connect/') || h.startsWith('#/report/');
   if(MINE && !S.user){ S.afterLogin = h; location.replace('#/login'); return; }
   /* 조건을 걸려면 로그인이 필요하다. 계정이 있어야 받은 제안을 다시 볼 수 있고,
@@ -4017,8 +4114,10 @@ function verifyDone(d){
   d.verified=true; d.vstep='done'; d.vcode='';
   const t=new Date();
   d.vat=`${t.getFullYear()}.${String(t.getMonth()+1).padStart(2,'0')}.${String(t.getDate()).padStart(2,'0')}`;
+  /* 확인 결과는 사람에게 남긴다 — 조건을 새로 걸 때마다 다시 받지 않는다 */
+  S.idv = {name:d.name, phone:d.phone, vmethod:d.vmethod, vat:d.vat};
   stopVTimer(); render();
-  toast('본인확인이 끝났습니다');
+  toast('본인 확인이 완료되었습니다');
 }
 
 /* ══════════ 이벤트 ══════════ */
@@ -4046,13 +4145,15 @@ document.addEventListener('input', e=>{
   if(k==='reportDetail'){ S.form.reportDetail=v; return; }
   if(k==='email'||k==='pw'||k==='pw2'){ S[k]=v; refreshLoginBtn(); return; }
   if(k==='opsPass'){ OPS.pass=v; const b=$('#app [data-act="ops-load"]'); if(b) b.disabled=!v; return; }
-  if(k==='findName'||k==='findPhone'||k==='resetEmail'){ S[k]=v; return; }
+  if(k==='findPhone'){ S.findPhone = autoHyphen(el); return; }
+  if(k==='findName'||k==='resetEmail'){ S[k]=v; return; }
   if(k==='dongFree'){ S.draft.dongFree=v; refreshAddr(); return; }
   if(k in S.draft){ S.draft[k]=v;
     if(k==='memo'){ const g=$('#app .gauge i'), t=$('#app [data-pct]');
       const p=detailPct(S.draft); if(g) g.style.width=p+'%'; if(t) t.textContent=`지금 ${p}%`; }
     if(k==='vcode'){ S.draft.vcode = v.replace(/[^0-9]/g,'').slice(0,6);
       const b=$('#app [data-act="v-confirm"]'); if(b) b.disabled = S.draft.vcode.length!==6; return; }
+    if(k==='phone'){ S.draft.phone = autoHyphen(el); }
     if(k==='name'||k==='phone'||k==='birth'){ toggleSubmit(); }
   }
 });
@@ -4129,6 +4230,8 @@ function handle(a,v,el){
     case 'rooms': case 'when': case 'floor': case 'house': case 'loan': case 'pref':
       d[a]= d[a]===v? '' : v; render(); return true;
     case 'agree': d[v]=!d[v]; render(); return true;
+    /* 하나라도 빠져 있으면 모두 켜고, 다 켜져 있으면 모두 끈다 */
+    case 'agree-all': { const on = !(d.a1 && d.a2 && d.a3); d.a1=d.a2=d.a3=on; render(); return true; }
 
     /* ── 로그인 ── */
     case 'signup-toggle': S.signup=!S.signup; S.pw2=''; render(); return true;
@@ -4165,7 +4268,7 @@ function handle(a,v,el){
       if(!S.geoTried){ S.geoTried=true; setTimeout(()=>detectRegion(false), 500); }
       go(S.afterLogin || '#/my'); S.afterLogin=null; return true; }
     case 'logout': {
-      S.user=null; S.email=''; S.pw=''; S.pw2=''; S.signup=false;
+      S.user=null; S.idv=null; S.email=''; S.pw=''; S.pw2=''; S.signup=false;
       toast('로그아웃했습니다'); go('#/'); return true; }
 
     /* ── 본인확인 ── */
@@ -4191,7 +4294,8 @@ function handle(a,v,el){
       toast('PASS 앱으로 인증을 요청했습니다'); return true; }
     case 'v-approve': verifyDone(d); return true;
     case 'v-reset': {
-      d.verified=false; d.vstep='idle'; d.vcode=''; d.vat='';
+      /* 다른 명의로 다시 받겠다는 뜻이다 — 남겨둔 확인 결과도 함께 지운다 */
+      d.verified=false; d.vstep='idle'; d.vcode=''; d.vat=''; S.idv=null;
       stopVTimer(); render(); return true; }
 
     case 'next-register': {

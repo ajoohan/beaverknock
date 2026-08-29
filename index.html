@@ -4116,6 +4116,110 @@ function verifyDone(d){
   toast('본인 확인이 완료되었습니다');
 }
 
+
+/* ══════════ 계정 ══════════
+   Supabase Auth 를 거친다. SDK 는 쓰지 않는다 - REST 로 충분하고,
+   지금의 '외부 라이브러리 0' 구조를 지킨다.
+
+   브라우저가 든 것은 공개 키뿐이다. 이 키로는 조건을 넣을 수 없다.
+   (bk_demand 의 익명 INSERT 정책을 내렸고, 접수는 /api/demand 서버 함수만 한다.) */
+const SB_URL = 'https://gmbtsucasfwqskfvugzo.supabase.co';
+const SB_KEY = 'sb_publishable__KgU33wE75bnKWvp-Yj4Uw_UDLltUxE';
+const SESS = 'bk.session';
+const LIVE_OAUTH = ['google'];   /* 실제로 연결된 것만 여기 둔다 */
+
+const store = {
+  get(){ try{ return JSON.parse(localStorage.getItem(SESS)||'null'); }catch(e){ return null; } },
+  set(v){ try{ v ? localStorage.setItem(SESS, JSON.stringify(v)) : localStorage.removeItem(SESS); }catch(e){} },
+};
+
+function oauthStart(provider){
+  if(location.protocol === 'file:'){
+    toast('로컬 파일에서는 소셜 로그인이 되지 않습니다'); return;
+  }
+  /* 어디로 돌아와야 하는지 남겨둔다 - 돌아오면 주소가 갈아끼워져 있다 */
+  try{ sessionStorage.setItem('bk.after', S.afterLogin || '#/my'); }catch(e){}
+  const back = location.origin + location.pathname;
+  location.href = `${SB_URL}/auth/v1/authorize?provider=${provider}`
+    + `&redirect_to=${encodeURIComponent(back)}`;
+}
+
+const authHeaders = tok => ({apikey: SB_KEY, Authorization: 'Bearer ' + tok});
+
+function meFrom(u, tok){
+  const m = u.user_metadata || {};
+  return {method:'google', label:'Google', id:u.id, email:u.email||'',
+          name: m.name || m.full_name || (u.email||'').split('@')[0] || '',
+          avatar: m.avatar_url || '', token: tok};
+}
+
+/* 돌아온 주소에 토큰이 붙어 있다. 해시 라우터와 자리가 겹치므로 먼저 걷어낸다. */
+function readAuthRedirect(){
+  const raw = location.hash.slice(1);
+  if(!/(^|&)(access_token|error)=/.test(raw)) return false;
+  const q = new URLSearchParams(raw);
+  const err = q.get('error_description') || q.get('error');
+  let back = '#/my';
+  try{ back = sessionStorage.getItem('bk.after') || '#/my'; sessionStorage.removeItem('bk.after'); }catch(e){}
+
+  if(err){
+    history.replaceState(null, '', location.pathname + '#/login');
+    render();
+    setTimeout(()=>toast(decodeURIComponent(err).slice(0,80)), 60);
+    return true;
+  }
+  const sess = {
+    access_token: q.get('access_token'),
+    refresh_token: q.get('refresh_token'),
+    expires_at: +(q.get('expires_at') || 0),
+  };
+  store.set(sess);
+  history.replaceState(null, '', location.pathname + back);
+  render();   /* 계정 조회를 기다리는 동안 빈 화면으로 두지 않는다 */
+  hydrate(sess).then(ok => {
+    render();
+    toast(ok ? 'Google 계정으로 로그인했습니다' : '계정을 확인하지 못했습니다 - 다시 시도해 주세요');
+  });
+  return true;
+}
+
+/* 저장해 둔 세션으로 사람을 되살린다. 만료됐으면 한 번 갱신해 본다. */
+async function hydrate(sess){
+  sess = sess || store.get();
+  if(!sess || !sess.access_token) return false;
+  if(sess.expires_at && sess.expires_at * 1000 < Date.now() + 30000){
+    sess = await refreshSession(sess);
+    if(!sess) return false;
+  }
+  try{
+    const r = await fetch(`${SB_URL}/auth/v1/user`, {headers: authHeaders(sess.access_token)});
+    if(!r.ok){ store.set(null); return false; }
+    S.user = meFrom(await r.json(), sess.access_token);
+    if(!S.geoTried){ S.geoTried = true; setTimeout(()=>detectRegion(false), 500); }
+    return true;
+  }catch(e){ return false; }
+}
+
+async function refreshSession(sess){
+  try{
+    const r = await fetch(`${SB_URL}/auth/v1/token?grant_type=refresh_token`, {
+      method:'POST', headers:{apikey: SB_KEY, 'Content-Type':'application/json'},
+      body: JSON.stringify({refresh_token: sess.refresh_token})});
+    if(!r.ok){ store.set(null); return null; }
+    const j = await r.json();
+    const next = {access_token:j.access_token, refresh_token:j.refresh_token,
+                  expires_at: Math.floor(Date.now()/1000) + (j.expires_in||3600)};
+    store.set(next); return next;
+  }catch(e){ return null; }
+}
+
+function signOutRemote(){
+  const sess = store.get();
+  store.set(null);
+  if(!sess || !sess.access_token) return;
+  fetch(`${SB_URL}/auth/v1/logout`, {method:'POST', headers: authHeaders(sess.access_token)}).catch(()=>{});
+}
+
 /* ══════════ 이벤트 ══════════ */
 document.addEventListener('click', e=>{
   const goEl = e.target.closest('[data-go]');
@@ -4247,8 +4351,10 @@ function handle(a,v,el){
       S.resetErr=''; S.resetSent=em; render(); return true; }
     case 'reset-again': S.resetSent=''; S.resetEmail=''; render(); return true;
     case 'sns': {
+      /* 연결이 끝난 곳은 진짜로 보낸다. 나머지는 아직 흉내다 - 섞여 있는 동안은 그렇다고 말한다. */
+      if(LIVE_OAUTH.includes(v)){ oauthStart(v); return true; }
       S.user = {method:v, label:SNS_LABEL[v], name:S.draft.name||'', email:''};
-      toast(`${SNS_LABEL[v]} 계정으로 로그인했습니다`);
+      toast(`${SNS_LABEL[v]}는 아직 연결 전입니다 - 화면만 넘어갑니다`);
       if(!S.geoTried){ S.geoTried=true; setTimeout(()=>detectRegion(false), 500); }
       go(S.afterLogin || '#/my'); S.afterLogin=null; return true; }
     case 'find-reset': {  /* 찾기 화면을 새로 시작한다 */
@@ -4264,6 +4370,7 @@ function handle(a,v,el){
       if(!S.geoTried){ S.geoTried=true; setTimeout(()=>detectRegion(false), 500); }
       go(S.afterLogin || '#/my'); S.afterLogin=null; return true; }
     case 'logout': {
+      signOutRemote();
       S.user=null; S.idv=null; S.email=''; S.pw=''; S.pw2=''; S.signup=false;
       toast('로그아웃했습니다'); go('#/'); return true; }
 
@@ -4519,7 +4626,12 @@ MOQ.addEventListener('change', ()=>syncDevice(false));
 syncDevice(true);
 
 window.addEventListener('hashchange', render);
-render();
+
+/* 돌아온 주소에 토큰이 붙어 있으면 먼저 걷어낸다 - 해시 라우터와 자리가 겹친다.
+   저장된 세션이 있으면 되살린 뒤에 그린다. 안 그러면 로그인한 사람을 로그인 화면으로 보낸다. */
+if(!readAuthRedirect()){
+  if(store.get()) hydrate().then(()=>render()); else render();
+}
 </script>
 </body>
 </html>

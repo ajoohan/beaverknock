@@ -2010,6 +2010,7 @@ const VMETHODS = [
 ];
 const CARRIERS = ['SKT','KT','LG U+','알뜰폰'];
 const phoneOk = p => /^01[016789][0-9]{7,8}$/.test(String(p).replace(/-/g,''));
+const phoneOk2 = phoneOk;
 const fmtPhone = p => { const n=String(p).replace(/-/g,'');
   return n.length>=10 ? n.replace(/^(01[016789])([0-9]{3,4})([0-9]{4})$/,'$1-$2-$3') : n; };
 /* 번호는 적는 대로 끊어준다 - 열한 자리를 눈으로 세게 두지 않는다.
@@ -2916,19 +2917,36 @@ V["#/partner/join"] = () => {
         <svg viewBox="0 0 24 24" style="width:21px;flex:none" fill="none" stroke="#3D3F8F" stroke-width="2.2" stroke-linecap="round"><path d="M9 5 L16 12 L9 19"/></svg>
       </button>`).join('')}
     </div>`;
-  if(step===2) body = `
-    <h1 class="t" style="font-size:${isMo()?21:25}px">본인인증</h1>
-    <p class="sub measure">이름과 연락처를 인증기관에서 자동으로 가져옵니다. 미성년자는 소유자·시행사 등록이 불가합니다.</p>
-    <button class="card clickable" data-act="j-pass" style="padding:22px 24px;text-align:left;margin-top:6px">
-      <b style="display:block;font-size:15px;font-weight:800">PASS로 인증하기</b>
-      <span style="font-size:13px;color:var(--n500)">통신 3사 공통 · 1분 이내</span></button>
-    <p style="margin:14px 0 0;background:var(--n50);padding:14px 17px;font-size:12.5px;line-height:1.75;color:var(--n500)">
-      본인인증 모듈은 준비 중입니다 - 지금은 눌러서 다음 단계를 미리 보실 수 있습니다.
-      3회 실패 시 24시간 잠금됩니다 (공통 에러 정책).</p>`;
+  if(step===2){
+    const nameOk = (f['j-name']||'').trim().length >= 2;
+    const phoneOk = phoneOk2(f['j-phone']||'');
+    body = `
+    <h1 class="t" style="font-size:${isMo()?21:25}px">연락받으실 곳을<br class="mbr"> 알려주세요</h1>
+    <p class="sub measure">신청을 확인하고 저희가 직접 연락드립니다. 손님 정보를 보내드릴 곳이기도 합니다.</p>
+    <div style="display:flex;flex-direction:column;gap:14px;margin-top:6px">
+      <div><span class="lab">성함 <span class="req">*</span></span>
+        <input class="inp" data-in="j-name" value="${esc(f['j-name']||'')}" placeholder="홍길동" autocomplete="name">
+        <span data-warn="jname" class="warn">${(f['j-name']||'') && !nameOk ? '성함을 정확히 적어주세요' : ''}</span></div>
+      <div><span class="lab">휴대폰 번호 <span class="req">*</span></span>
+        <input class="inp num" data-in="j-phone" inputmode="numeric" maxlength="13"
+          value="${esc(f['j-phone']||'')}" placeholder="010-1234-5678" autocomplete="tel">
+        <span data-warn="jphone" class="warn">${(f['j-phone']||'') && !phoneOk ? '번호를 확인해 주세요' : ''}</span></div>
+      <div><span class="lab">이메일 <span class="opt">선택 · 자료를 메일로 받고 싶으시면</span></span>
+        <input class="inp" data-in="j-email" type="email" value="${esc(f['j-email']||'')}"
+          placeholder="office@example.com" autocomplete="email"></div>
+      <button class="btn ${nameOk&&phoneOk?'pri':'sec'} blk" data-act="j-pass" style="padding:15px 0;font-size:15px">다음</button>
+    </div>
+    <p style="margin:16px 0 0;background:var(--n50);padding:14px 17px;font-size:12.5px;line-height:1.75;color:var(--n500)">
+      본인확인 모듈(PASS·문자)은 준비 중입니다. 붙는 대로 이 단계가 자동 인증으로 바뀌고,
+      지금 적어주신 내용은 그때 대조합니다.</p>`;
+  }
   if(step===3 && role==='agent') body = `
     <h1 class="t" style="font-size:${isMo()?21:25}px">중개사무소 개설등록번호를<br class="mbr"> 입력해 주세요</h1>
     <p class="sub measure">전국 공인중개사무소 공공데이터와 자동 대조합니다. 일치하면 즉시 시작됩니다.</p>
-    <div style="display:flex;gap:8px;margin-top:6px">
+    <div style="margin-bottom:16px"><span class="lab">사무소 상호 <span class="req">*</span></span>
+      <input class="inp" data-in="j-office" value="${esc(f['j-office']||'')}" placeholder="예) 미사중앙공인중개사사무소"></div>
+    <span class="lab">개설등록번호 <span class="req">*</span></span>
+    <div style="display:flex;gap:8px">
       <input class="inp num" data-in="j-reg" value="${esc(f['j-reg']||'')}" placeholder="41450-2019-00217">
       <button class="btn pri" data-act="j-check" style="flex:none;padding:0 24px" ${(f['j-reg']||'').trim().length>=10?'':'disabled'}>확인</button></div>
     ${f.jMatched ? `<div class="card pad" style="margin-top:14px;border-color:#A5CDB6;background:var(--okbg)">
@@ -2975,10 +2993,17 @@ V["#/partner/join"] = () => {
       ${beaverly(isMo()?150:190)}
       <span style="width:44px;height:44px;border-radius:var(--r-full);background:var(--okbg);border:1.5px solid #A5CDB6;display:flex;align-items:center;justify-content:center;margin-top:8px">
         <svg viewBox="0 0 24 24" style="width:20px" fill="none"><path d="M4.5 12.5l5 5 10-11" stroke="#1B7A46" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-      <h1 class="t" style="font-size:${isMo()?21:25}px;margin-top:8px">${instant?'바로 시작할 수 있습니다':'심사 중입니다 · 1~2영업일'}</h1>
-      <p style="margin:0;font-size:14px;line-height:1.75;color:var(--n700)">${instant
-        ? '등록번호가 일치해 즉시 활성됐습니다.<br class="mbr"> 활동 조건을 설정하면 손님 알림이 시작됩니다.'
-        : '기다리시는 동안 수요 목록은 볼 수 있습니다.<br class="mbr"> 제안은 심사 완료 후에 가능합니다.'}</p>
+      <h1 class="t" style="font-size:${isMo()?21:25}px;margin-top:8px">${
+        f.jSent==='fail' ? '신청이 저장되지 않았습니다'
+        : f.jSent==='sending' ? '신청을 접수하는 중입니다'
+        : f.jSent==='already' ? '이미 신청하셨습니다'
+        : '신청이 접수되었습니다'}</h1>
+      <p style="margin:0;font-size:14px;line-height:1.75;color:var(--n700)">${
+        f.jSent==='fail' ? '잠시 뒤 다시 시도해 주세요.<br class="mbr"> 계속 안 되면 support@plustonic.com 으로 알려주시면 직접 등록해 드립니다.'
+        : f.jSent==='sending' ? '잠시만 기다려 주세요.'
+        : f.jSent==='already' ? '같은 번호로 접수된 신청이 있습니다.<br class="mbr"> 확인 뒤 연락드리겠습니다.'
+        : '적어주신 번호로 <b style="color:var(--n900)">1~2영업일 안에</b> 연락드립니다.<br class="mbr"> 확인이 끝나면 해당 지역 손님의 조건을 보내드립니다.'}</p>
+      ${f.jSent==='fail'?`<button class="btn sec md" data-act="j-retry" style="margin-top:14px">다시 보내기</button>`:''}
       <div style="display:flex;gap:10px;margin-top:16px;${isMo()?'flex-direction:column;width:100%':''}">
         <a class="btn pri md ${isMo()?'blk':''}" data-go="#/partner/settings">활동 조건 설정하기</a>
         <a class="btn sec md ${isMo()?'blk':''}" data-go="#/partner/demands">대기 중인 손님 먼저 보기</a></div>
@@ -4361,6 +4386,32 @@ function signOutRemote(){
   fetch(`${SB_URL}/auth/v1/logout`, {method:'POST', headers: authHeaders(sess.access_token)}).catch(()=>{});
 }
 
+/* 가입 신청을 서버로 보낸다. 키는 서버에만 있다. */
+const JOIN_T0 = Date.now();
+function sendAgent(f){
+  const body = {
+    role: f.jRole,
+    name: (f['j-name']||'').trim(),
+    phone: (f['j-phone']||'').replace(/-/g,''),
+    email: f['j-email']||'',
+    office: f['j-office']||'',
+    reg_no: f['j-reg']||'',
+    addr: f['j-addr']||'',
+    relation: f.jRel||'',
+    biz_no: f['j-biz']||'',
+    dev_type: f.jDev||'',
+    done: f.jDone||'',
+    website: '', elapsed: Date.now() - JOIN_T0,
+  };
+  fetch('/api/agent', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)})
+    .then(r => r.json().catch(()=>({})).then(j => {
+      if(r.ok){ S.form.jSent = j.already ? 'already' : 'ok'; }
+      else { S.form.jSent = 'fail'; toast(j.error || '신청 저장에 실패했습니다'); }
+      render();
+    }))
+    .catch(() => { S.form.jSent = 'fail'; toast('네트워크 문제로 신청이 저장되지 않았습니다'); render(); });
+}
+
 /* ══════════ 이벤트 ══════════ */
 document.addEventListener('click', e=>{
   const goEl = e.target.closest('[data-go]');
@@ -4375,6 +4426,7 @@ document.addEventListener('click', e=>{
 document.addEventListener('input', e=>{
   const el=e.target.closest('[data-in]'); if(!el) return;
   const k=el.dataset.in, v=el.value;
+  if(k==='j-phone'){ S.form[k] = autoHyphen(el); return; }
   if(k.startsWith('j-')){ S.form[k]=v; render(); return; }
   if(k.startsWith('sc-')){ S.scope[k.slice(3)] = v; render(); return; }
   if(k.startsWith('l') && S.route.startsWith('#/partner/listing')){ S.form[k]=v; refreshListingBtn(); return; }
@@ -4679,13 +4731,22 @@ function handle(a,v,el){
 
     /* ── S-02 가입·인증 ── */
     case 'j-role': S.form.jRole = v; S.form.jStep = 2; render(); return true;
-    case 'j-pass': S.form.jStep = 3; toast('본인인증이 완료됐습니다'); render(); return true;
+    case 'j-pass': {
+      const f = S.form;
+      if((f['j-name']||'').trim().length < 2) return toast('성함을 적어주세요'), true;
+      if(!phoneOk(f['j-phone']||'')) return toast('휴대폰 번호를 확인해 주세요'), true;
+      S.form.jStep = 3; render(); return true; }
     case 'j-check': S.form.jMatched = true; toast('공공데이터에서 사무소를 찾았습니다'); render(); return true;
     case 'j-rel': S.form.jRel = v; render(); return true;
     case 'j-dev': S.form.jDev = v; render(); return true;
     case 'j-done': S.form.jDone = v; render(); return true;
-    case 'j-confirm': S.form.jStep = 4; render(); return true;
+    case 'j-confirm': {
+      /* 화면은 먼저 넘긴다 - 여기까지 온 분을 네트워크 때문에 붙잡아 두지 않는다.
+         저장에 실패하면 그때 알린다. */
+      S.form.jStep = 4; S.form.jSent = 'sending'; render();
+      sendAgent(S.form); return true; }
     case 'j-back': S.form.jStep = Math.max(1, (S.form.jStep||1) - 1); S.form.jMatched = false; render(); return true;
+    case 'j-retry': S.form.jSent = 'sending'; render(); sendAgent(S.form); return true;
 
     /* ── S-03 활동 조건 ── */
     case 'sc-assets': case 'sc-deals': case 'sc-biz':

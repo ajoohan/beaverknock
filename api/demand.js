@@ -10,6 +10,7 @@
  */
 
 import crypto from 'node:crypto';
+import { notify, mask } from './_notify.js';
 
 const TABLE = 'bk_demand';
 
@@ -178,6 +179,21 @@ export default async function handler(req, res) {
     console.error('접수 저장 오류', e);
     return res.status(502).json({ error: 'DB에 닿지 못했습니다' });
   }
+
+  /* 알림이 안 가도 접수는 성공이다. 붙잡아 두지 않는다. */
+  await notify(req, {
+    subject: `새 조건 · ${row.kind === 'shop' ? '상가' : '주거'} · ${(row.dongs || []).join(' · ') || '하남'}`,
+    rows: [
+      ['유형', row.kind === 'shop' ? '상가' : '주거'],
+      ['지역', (row.dongs || []).join(' · ') || '-'],
+      ['예산', row.kind === 'shop'
+        ? `보증금 ${row.dep ?? 0}만 / 월 ${row.rent ?? 0}만`
+        : `${row.deal || ''} ${row.dep ?? 0}만${row.rent ? ` / 월 ${row.rent}만` : ''}`.trim()],
+      ['성함', row.name || '-'],
+      ['연락처', mask(row.phone)],
+    ],
+    link: '/#/ops/live',
+  });
 
   res.status(201).json({ ok: true });
 }

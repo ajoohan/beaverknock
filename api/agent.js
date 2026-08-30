@@ -10,6 +10,7 @@
  */
 
 import crypto from 'node:crypto';
+import { notify, mask } from './_notify.js';
 
 const TABLE = 'bk_agent';
 
@@ -32,6 +33,7 @@ const str = (v, max = 200) => {
 };
 
 const ROLES = ['agent', 'owner', 'developer'];
+const ROLE_KO = { agent: '공인중개사', owner: '소유자', developer: '시행사' };
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
@@ -123,6 +125,18 @@ export default async function handler(req, res) {
       }
       return res.status(500).json({ error: '저장에 실패했습니다' });
     }
+    await notify(req, {
+      subject: `새 가입 신청 · ${ROLE_KO[row.role] || row.role}`,
+      rows: [
+        ['역할', ROLE_KO[row.role] || row.role],
+        ['성함', row.name || '-'],
+        ['연락처', mask(row.phone)],
+        ['사무소 · 물건', row.office || row.addr || '-'],
+        ['등록번호 · 사업자', row.reg_no || row.biz_no || '-'],
+        ['이메일', row.email || '-'],
+      ],
+      link: '/#/ops/live',
+    });
     return res.status(200).json({ ok: true });
   } catch (e) {
     return res.status(500).json({ error: '저장 중 문제가 생겼습니다' });

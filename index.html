@@ -544,6 +544,53 @@ body.mo .chip{min-height:38px}
 @media (prefers-reduced-motion:reduce){.spin{animation:none;opacity:.5}}
 
 
+
+/* ══════════ 노크 ══════════
+   비버가 두드리면 파동이 퍼진다. 이 서비스의 이름이 노크다. */
+.knock{position:relative;display:inline-block}
+.knock .ring{position:absolute;border-radius:var(--r-full);border:2px solid var(--ind300);
+  opacity:0;pointer-events:none;
+  left:var(--kx,72%);top:var(--ky,24%);width:var(--ks,26px);height:var(--ks,26px);
+  transform:translate(-50%,-50%) scale(.4);
+  animation:knockRing 3.6s cubic-bezier(.16,.84,.44,1) infinite}
+.knock .ring:nth-child(2){animation-delay:.34s}
+.knock .ring:nth-child(3){animation-delay:.68s}
+@keyframes knockRing{
+  0%   {opacity:0;   transform:translate(-50%,-50%) scale(.35)}
+  12%  {opacity:.55}
+  55%  {opacity:0;   transform:translate(-50%,-50%) scale(3.1)}
+  100% {opacity:0;   transform:translate(-50%,-50%) scale(3.1)}
+}
+/* 그림은 아주 옅게 뜬다 - 눈에 띄면 그건 과하다 */
+.knock img{animation:bob 5.4s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(0,-6px,0)}}
+
+/* ══════════ 세 단계 ══════════
+   가장 설득력 있는 자리인데 각주처럼 놓여 있었다. */
+.steps{position:relative}
+.steps::before{content:'';position:absolute;left:6%;right:6%;top:19px;height:2px;
+  background:linear-gradient(90deg,var(--ind300),var(--clay200));border-radius:2px;
+  transform-origin:left center;transform:scaleX(0);
+  animation:drawLine 1.1s .25s var(--e-out) forwards}
+@keyframes drawLine{to{transform:scaleX(1)}}
+.steps .no{position:relative;z-index:2;width:38px;height:38px;border-radius:var(--r-full);
+  background:var(--white);border:2px solid var(--ind300);color:var(--ind);
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;font-weight:800;letter-spacing:-.01em;
+  box-shadow:0 2px 8px rgba(61,63,143,.14);
+  animation:popNo .5s var(--e-spring) both}
+.steps > *:nth-child(1) .no{animation-delay:.35s}
+.steps > *:nth-child(2) .no{animation-delay:.55s}
+.steps > *:nth-child(3) .no{animation-delay:.75s}
+@keyframes popNo{from{opacity:0;transform:scale(.5)}to{opacity:1;transform:none}}
+
+@media (prefers-reduced-motion:reduce){
+  .knock .ring{display:none}
+  .knock img{animation:none}
+  .steps::before{animation:none;transform:scaleX(1)}
+  .steps .no{animation:none}
+}
+
 /* ══════════ 모션 레이어 ══════════
    transform 과 opacity 만 움직인다. 레이아웃을 건드리면 프레임이 깨진다. */
 
@@ -1206,10 +1253,14 @@ const BEAVERLY_SIDE  = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAa8AAAGkCA
 
 /* 노크 장면 - 정면 비버의 든 손이 문을 향하도록 나란히 세운다.
    h = 비버 높이(px). 문은 비버보다 살짝 높다. */
-function knockScene(h){
-  /* 원본 아트 그대로 - 손동작과 노크 표시가 그림 안에 있으므로 덧붙이지 않는다 */
-  return `<img src="${BEAVERLY_KNOCK}" alt="문을 두드리는 공인중개사 비버리"
-    style="height:${h}px;width:auto;display:block;user-select:none;-webkit-user-drag:none">`;}
+function knockScene(h, kx, ky){
+  /* 손동작과 노크 표시는 그림 안에 있다. 파동만 그 위에 얹는다 -
+     두드리는 자리에서 퍼져야 뜻이 맞는다. */
+  return `<span class="knock" style="--kx:${kx||'74%'};--ky:${ky||'26%'};--ks:${Math.round(h*0.17)}px">
+    <i class="ring"></i><i class="ring"></i><i class="ring"></i>
+    <img src="${BEAVERLY_KNOCK}" alt="문을 두드리는 공인중개사 비버리"
+      style="height:${h}px;width:auto;display:block;user-select:none;-webkit-user-drag:none">
+  </span>`;}
 
 function beaverly(h){ return `<img src="${BEAVERLY_FRONT}" alt="공인중개사 비버리"
   style="height:${h||280}px;width:auto;display:block;user-select:none;-webkit-user-drag:none">`;}
@@ -1408,17 +1459,12 @@ V['#/'] = () => `
 
   <!-- 3단계: 같은 상자 세 개 대신, 이어진 한 줄로 -->
   <div style="flex:none;position:relative;z-index:3;background:var(--white);border-top:1px solid var(--n100);padding:24px 76px 20px">
-    <div style="max-width:1320px;margin:0 auto;display:grid;grid-template-columns:repeat(3,1fr);gap:0;position:relative">
-      <i aria-hidden="true" style="position:absolute;left:16px;right:16px;top:16px;height:1.5px;
-         background:linear-gradient(90deg,var(--ind100),var(--ind300),var(--clay200));border-radius:2px"></i>
+    <div class="steps" style="max-width:1320px;margin:0 auto;display:grid;grid-template-columns:repeat(3,1fr);gap:0">
       ${[['조건을 등록합니다','동네·예산·시기만 있으면 됩니다. 1분.'],
          ['맞을 때만 연락이 옵니다','해당 지역 공인중개사가 직접 제안합니다.'],
          ['마음에 들면 직접 상담합니다','안심번호 연결 - 내 번호는 비공개.']].map(([t,d],i)=>`
         <div style="position:relative;padding:0 24px 0 0">
-          <span style="position:relative;z-index:2;display:flex;width:33px;height:33px;border-radius:var(--r-full);
-            background:${i===0?'var(--ind)':'var(--white)'};color:${i===0?'#fff':'var(--ind)'};
-            border:1.5px solid ${i===0?'var(--ind)':'var(--ind300)'};align-items:center;justify-content:center;
-            font-size:14px;font-weight:800;margin-bottom:11px">${i+1}</span>
+          <span class="no" style="margin-bottom:12px${i===0?';background:var(--ind);border-color:var(--ind);color:#fff':''}">${i+1}</span>
           <span style="display:block;font-size:15px;font-weight:800;letter-spacing:-.03em;margin-bottom:3px">${t}</span>
           <span style="display:block;font-size:12.5px;line-height:1.6;color:var(--n500);max-width:30ch">${d}</span>
         </div>`).join('')}

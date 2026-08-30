@@ -33,22 +33,20 @@ const maskName = s => {
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
+  if (req.method !== 'POST') return res.status(405).json({ error: 'POST 만 받습니다' });
 
   const { BK_URL, BK_SECRET_KEY, BK_OPS_PASS } = process.env;
   if (!BK_URL || !BK_SECRET_KEY || !BK_OPS_PASS) {
     return res.status(503).json({
-      error: '서버에 환경변수가 아직 설정되지 않았습니다',
+      error: '서버에 환경변수가 설정되지 않았습니다',
       need: ['BK_URL', 'BK_SECRET_KEY', 'BK_OPS_PASS'].filter(k => !process.env[k]),
     });
   }
 
   /* 암호는 본문으로 받는다 — HTTP 헤더는 latin-1 만 담을 수 있어 한글 암호가 깨진다.
      본문이면 로그·리퍼러에 남을 위험도 없다. */
-  let payload = {};
-  if (req.method === 'POST') {
-    payload = typeof req.body === 'object' && req.body ? req.body : {};
-    if (typeof req.body === 'string') { try { payload = JSON.parse(req.body); } catch { payload = {}; } }
-  }
+  let payload = typeof req.body === 'object' && req.body ? req.body : {};
+  if (typeof req.body === 'string') { try { payload = JSON.parse(req.body); } catch { payload = {}; } }
   const pass = payload.pass;
   if (!sameSecret(pass, BK_OPS_PASS)) {
     /* 무차별 대입을 조금이라도 늦춘다 */

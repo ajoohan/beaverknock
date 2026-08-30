@@ -3007,6 +3007,8 @@ V["#/partner/join"] = () => {
       <div><span class="lab">이메일 <span class="opt">선택 · 자료를 메일로 받고 싶으시면</span></span>
         <input class="inp" data-in="j-email" type="email" value="${esc(f['j-email']||'')}"
           placeholder="office@example.com" autocomplete="email"></div>
+      <input data-in="website" value="" tabindex="-1" autocomplete="off" aria-hidden="true"
+        style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0">
       <button class="btn ${nameOk&&phoneOk?'pri':'sec'} blk" data-act="j-pass" style="padding:15px 0;font-size:15px">다음</button>
     </div>
     <p style="margin:16px 0 0;background:var(--n50);padding:14px 17px;font-size:12.5px;line-height:1.75;color:var(--n500)">
@@ -3704,7 +3706,7 @@ function saveDemand(d, slotN){
   try {
     body = JSON.stringify({
       ...demandPayload(d, slotN),
-      website: '',                       /* 함정칸 - 사람은 비워 둔다 */
+      website: trapValue(),              /* 함정칸 - 사람은 비워 둔다 */
       elapsed: Date.now() - FORM_T0,     /* 너무 빠른 제출은 서버가 막는다 */
     });
   } catch(e){ console.warn('조건 변환 실패', e); return; }
@@ -3742,32 +3744,38 @@ const opsSave = () => { try{
 function opsShare(r){
   const shop = r.kind === 'shop';
   const L = [];
+  const put = (k, v) => { if(v !== null && v !== undefined && String(v).trim()) L.push(`${k}${v}`); };
+
   L.push(`[비버노크] 새 조건 · ${shop?'상가':'주거'} · ${(r.dongs||[]).join(' · ')||'하남'}`);
   L.push('');
   if(shop){
-    if(r.biz) L.push(`업종   ${r.biz}`);
+    put('업종   ', r.biz);
     L.push(`예산   보증금 ${won(+r.dep||0)} / 월 ${(+r.rent||0).toLocaleString()}만${r.key_money?` · 권리금 ${won(+r.key_money)}까지`:''}`);
-    if(r.area_min) L.push(`면적   전용 ${r.area_min}~${r.area_max||''}평`);
-    if(r.open_when) L.push(`입주   ${r.open_when}`);
-    if(r.shop_floor_free) L.push(`층     ${r.shop_floor_free}`);
-    if(r.facilities_free) L.push(`설비   ${r.facilities_free}`);
+    if(r.area_min) put('면적   ', `전용 ${r.area_min}~${r.area_max||''}평`);
+    put('입주   ', r.open_when);
+    put('층     ', r.shop_floor_free);
+    put('설비   ', r.facilities_free);
+    put('주차   ', r.park_need ? `${r.park_need}대 필요` : '');
+    put('권리금 ', r.key_ok);
+    put('간판   ', r.sign_need);
+    put('참고   ', r.shop_note);
   }else{
-    if(r.deal) L.push(`거래   ${r.deal}`);
+    put('거래   ', r.deal);
     L.push(`예산   ${r.deal==='매매'?'매매가':'보증금'} ${won(+r.dep||0)}${+r.rent?` / 월 ${(+r.rent).toLocaleString()}만`:''}`);
-    const t = [(r.htype||[]).join(' · '), r.rooms && r.rooms!=='무관' ? r.rooms : ''].filter(Boolean).join(' · ');
-    if(t) L.push(`유형   ${t}`);
-    if(r.when_text) L.push(`입주   ${r.when_text}`);
-    const m = [...(r.musts||[]), r.must_free||''].filter(Boolean).join(' · ');
-    if(m) L.push(`필수   ${m}`);
-    if(r.floor) L.push(`층     ${r.floor}`);
-    if(r.house) L.push(`거주   ${r.house}`);
-    if(r.loan) L.push(`대출   ${r.loan}`);
+    put('유형   ', [(r.htype||[]).join(' · '), r.rooms && r.rooms!=='무관' ? r.rooms : ''].filter(Boolean).join(' · '));
+    put('입주   ', r.when_text);
+    put('필수   ', [...(r.musts||[]), r.must_free||''].filter(Boolean).join(' · '));
+    put('층     ', r.floor_avoid);
+    put('엘리베이터 ', r.elevator);
+    put('거주   ', r.household);
+    put('대출   ', r.loan_plan);
   }
-  if(r.memo) L.push(`메모   "${r.memo}"`);
+  put('메모   ', r.memo ? `"${r.memo}"` : '');
   L.push('');
   L.push(`연락처 ${r.name||''} ${fmtPhone(r.phone||'')}`.trim());
-  if(r.pref) L.push(`선호   ${r.pref}${(r.times||[]).length?` · ${(r.times||[]).join(' · ')}`:''}`);
-  L.push(`접수   ${String(r.created_at||'').replace('T',' ').slice(0,16)}`);
+  const when = [r.contact_pref, (r.contact_times||[]).join(' · ')].filter(Boolean).join(' · ');
+  put('선호   ', when);
+  put('접수   ', String(r.created_at||'').replace('T',' ').slice(0,16));
   L.push('');
   L.push('맞는 물건이 있으시면 직접 연락해 주세요.');
   return L.join('\n');
@@ -4389,6 +4397,10 @@ function signOutRemote(){
   fetch(`${SB_URL}/auth/v1/logout`, {method:'POST', headers: authHeaders(sess.access_token)}).catch(()=>{});
 }
 
+/* 함정칸은 화면에만 있고 상태에는 없다 - 보낼 때 직접 읽는다.
+   비워서 보내면 봇이 채워도 서버가 알 수 없다. 덫을 놓고 확인을 안 하던 셈이다. */
+const trapValue = () => { const el = $('#app [data-in="website"]'); return el ? el.value : ''; };
+
 /* 가입 신청을 서버로 보낸다. 키는 서버에만 있다. */
 const JOIN_T0 = Date.now();
 function sendAgent(f){
@@ -4404,7 +4416,7 @@ function sendAgent(f){
     biz_no: f['j-biz']||'',
     dev_type: f.jDev||'',
     done: f.jDone||'',
-    website: '', elapsed: Date.now() - JOIN_T0,
+    website: trapValue(), elapsed: Date.now() - JOIN_T0,
   };
   fetch('/api/agent', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)})
     .then(r => r.json().catch(()=>({})).then(j => {

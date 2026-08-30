@@ -51,6 +51,8 @@ export default async function handler(req, res) {
 
   /* 사람은 비워두는 칸. 채워져 있으면 사람이 아니다. */
   if (str(b.website)) return res.status(200).json({ ok: true });
+  /* 사람은 이 화면들을 3초 안에 통과하지 못한다 */
+  if (Number(b.elapsed) < 3000) return res.status(429).json({ error: '너무 빠릅니다. 잠시 후 다시 시도해 주세요' });
 
   const role  = ROLES.includes(b.role) ? b.role : null;
   const name  = str(b.name, 40);

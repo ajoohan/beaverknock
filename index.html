@@ -543,6 +543,63 @@ body.mo .chip{min-height:38px}
 .spin{animation:bkspin .8s linear infinite}
 @media (prefers-reduced-motion:reduce){.spin{animation:none;opacity:.5}}
 
+
+/* ══════════ 모션 레이어 ══════════
+   transform 과 opacity 만 움직인다. 레이아웃을 건드리면 프레임이 깨진다. */
+
+/* 스크롤로 들어오는 것 - 접힌 곳 아래도 살아 있게 */
+[data-reveal]{opacity:0;transform:translate3d(0,18px,0);
+  transition:opacity .5s var(--e-out), transform .55s var(--e-out)}
+[data-reveal="in"]{opacity:1;transform:none}
+[data-reveal][data-d="1"]{transition-delay:.06s}
+[data-reveal][data-d="2"]{transition-delay:.12s}
+[data-reveal][data-d="3"]{transition-delay:.18s}
+
+/* 목록이 걸러질 때 - 남은 것들이 제자리를 찾아 든다 */
+@keyframes settle{from{opacity:0;transform:translate3d(0,8px,0) scale(.995)}to{opacity:1;transform:none}}
+[data-settle] > *{animation:settle .34s var(--e-out) both}
+[data-settle] > *:nth-child(1){animation-delay:.01s}
+[data-settle] > *:nth-child(2){animation-delay:.04s}
+[data-settle] > *:nth-child(3){animation-delay:.07s}
+[data-settle] > *:nth-child(4){animation-delay:.10s}
+[data-settle] > *:nth-child(5){animation-delay:.13s}
+[data-settle] > *:nth-child(n+6){animation-delay:.15s}
+
+/* 탭 인디케이터 - 붙었다 떼어지지 않고 미끄러진다 */
+.nav .items{position:relative}
+.nav .items::after{content:'';position:absolute;left:var(--ux,0);top:var(--uy,100%);
+  width:var(--uw,0);height:2px;border-radius:2px;background:var(--ind);
+  opacity:var(--uo,0);transition:left .34s var(--e-out),width .34s var(--e-out),opacity .2s ease;
+  pointer-events:none}
+
+/* 모달 - 스프링으로 선다 */
+@keyframes modalIn{from{opacity:0;transform:translate3d(0,12px,0) scale(.97)}to{opacity:1;transform:none}}
+@keyframes veilIn{from{opacity:0}to{opacity:1}}
+.modal{animation:veilIn .18s ease both}
+.modal .box{animation:modalIn .34s var(--e-spring) both}
+body.mo .modal .box{animation:sheetIn .34s var(--e-out) both}
+@keyframes sheetIn{from{transform:translate3d(0,100%,0)}to{transform:none}}
+
+/* 토스트 - 튀어 올랐다 자리를 잡는다 */
+#toast{transition:opacity .2s ease, transform .38s var(--e-spring)}
+
+/* 누를 수 있는 것은 눌리는 느낌이 나야 한다 */
+.card.clickable:active{transform:translateY(0) scale(.994)}
+.aclist button:active{transform:scale(.99)}
+
+/* 표의 행도 살아 있게 */
+tbody tr.clickable{transition:background var(--t-fast) ease}
+tbody tr.clickable:hover{background:var(--n50)}
+
+/* 숫자가 올라가는 동안은 자리를 잡아둔다 - 폭이 흔들리면 옆이 밀린다 */
+.num{font-variant-numeric:tabular-nums}
+
+@media (prefers-reduced-motion:reduce){
+  [data-reveal]{opacity:1!important;transform:none!important}
+  [data-settle] > *{animation:none!important}
+  .nav .items::after{transition:none}
+}
+
 /* 주소 자동완성 - 고를 수 있는 것만 고르게 한다 */
 .ac{position:relative;width:100%}
 .aclist{position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:40;background:var(--white);
@@ -2005,8 +2062,97 @@ function regionPicker(d, shop){
     ` : zonesHTML(LIST_GROUPS(shop), d.dongs)}`;
 }
 
+
+/* ══════════ 운영 요약 ══════════
+   숫자는 전부 실제 행에서 나온다. 지어내지 않는다. */
+const DAY = 86400000;
+const agoDays = t => Math.floor((Date.now() - new Date(t).getTime()) / DAY);
+
+function opsSummary(rows, agents){
+  const r = rows || [], a = agents || [];
+  const today = r.filter(x => agoDays(x.created_at) < 1).length;
+  const week  = r.filter(x => agoDays(x.created_at) < 7).length;
+  const todo  = r.filter(x => !OPS.sent[x.id]).length;
+  const shop  = r.filter(x => x.kind === 'shop').length;
+
+  /* 지역별 - 조건 하나가 여러 동을 담을 수 있어 동마다 센다 */
+  const byDong = {};
+  r.forEach(x => (x.dongs || []).forEach(d => { byDong[d] = (byDong[d] || 0) + 1; }));
+  const top = Object.entries(byDong).sort((p,q)=>q[1]-p[1]).slice(0, 6);
+
+  /* 최근 7일 - 오늘이 오른쪽 끝 */
+  const days = Array.from({length:7}, (_,i)=>{
+    const d = 6 - i;
+    return r.filter(x => agoDays(x.created_at) === d).length;
+  });
+  const peak = Math.max(1, ...days);
+
+  const agTodo = a.filter(x => (x.status||'new') === 'new').length;
+
+  const tile = (label, val, sub, tone) => `
+    <div class="card pad" style="padding:16px 18px">
+      <span style="display:block;font-size:11.5px;font-weight:800;color:var(--n500);margin-bottom:6px">${label}</span>
+      <b class="num countable" style="display:block;font-size:26px;font-weight:800;letter-spacing:-.03em;
+        color:${tone||'var(--n900)'};line-height:1.1">${val}</b>
+      ${sub?`<span style="display:block;margin-top:5px;font-size:11.5px;color:var(--n500)">${sub}</span>`:''}
+    </div>`;
+
+  return `
+  <div style="display:grid;grid-template-columns:repeat(${isMo()?2:4},minmax(0,1fr));gap:10px;margin-bottom:12px">
+    ${tile('오늘 들어온 조건', today, week + '건 / 최근 7일')}
+    ${tile('아직 안 보낸 것', todo, todo ? '중개사에게 전달 전' : '전부 보냈습니다', todo?'var(--clay700)':'var(--ok)')}
+    ${tile('가입 신청 대기', agTodo, a.length ? `전체 ${a.length}건` : '아직 없음', agTodo?'var(--ind)':'var(--n900)')}
+    ${tile('상가 : 주거', `${shop} : ${r.length - shop}`, '누적 ' + r.length + '건')}
+  </div>
+
+  <div style="display:grid;grid-template-columns:${isMo()?'1fr':'1.1fr 1fr'};gap:10px;margin-bottom:14px">
+    <div class="card pad" style="padding:16px 18px">
+      <span style="display:block;font-size:11.5px;font-weight:800;color:var(--n500);margin-bottom:12px">최근 7일 유입</span>
+      <div style="display:flex;align-items:flex-end;gap:6px;height:74px">
+        ${days.map((n,i)=>`
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px">
+            <span class="num" style="font-size:11px;font-weight:800;color:${n?'var(--ind)':'var(--n300)'}">${n}</span>
+            <i class="growbar" style="display:block;width:100%;border-radius:4px 4px 0 0;
+              background:${i===6?'var(--ind)':'var(--ind300)'};opacity:${n?1:.25};
+              height:${Math.max(3, Math.round(n/peak*44))}px"></i>
+            <span style="font-size:10px;color:var(--n500)">${i===6?'오늘':(6-i)+'일'}</span>
+          </div>`).join('')}
+      </div>
+    </div>
+    <div class="card pad" style="padding:16px 18px">
+      <span style="display:block;font-size:11.5px;font-weight:800;color:var(--n500);margin-bottom:12px">많이 찾는 지역</span>
+      ${top.length ? `<div style="display:flex;flex-direction:column;gap:8px">
+        ${top.map(([d,n])=>`
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="flex:none;width:${isMo()?68:84}px;font-size:12.5px;font-weight:700;color:var(--n900);
+              overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(d)}</span>
+            <i style="flex:1;height:7px;border-radius:4px;background:var(--n100);position:relative;overflow:hidden">
+              <b style="position:absolute;inset:0 auto 0 0;width:${Math.round(n/top[0][1]*100)}%;
+                background:var(--ind300);border-radius:4px"></b></i>
+            <span class="num" style="flex:none;font-size:12px;font-weight:800;color:var(--n500)">${n}</span>
+          </div>`).join('')}
+      </div>` : `<p style="margin:0;font-size:12.5px;color:var(--n500)">조건이 쌓이면 어느 동이 몰리는지 보입니다.</p>`}
+    </div>
+  </div>`;
+}
+
 /* 가입 신청 목록 - 우리가 연락해야 할 사람들 */
 const AG_ROLE = {agent:'공인중개사', owner:'소유자', developer:'시행사'};
+
+const AG_STATUS = {new:['b-warn','대기'], contacted:['b-ind','연락함'], approved:['b-ok','승인'], rejected:['b-mute','보류']};
+
+function agSetStatus(id, status){
+  const row = (AG.rows||[]).find(r=>r.id===id); if(!row) return;
+  const before = row.status || 'new';
+  row.status = status; render();                 /* 먼저 바꾸고 - 기다리게 하지 않는다 */
+  fetch('/api/agent-status', {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({pass: OPS.pass, id, status})})
+    .then(r => r.json().catch(()=>({})).then(j => {
+      if(!r.ok){ row.status = before; render(); toast(j.error || '상태를 바꾸지 못했습니다'); }
+    }))
+    .catch(()=>{ row.status = before; render(); toast('네트워크 문제로 바꾸지 못했습니다'); });
+}
+
 
 function agentPanel(){
   const q = AG.q.trim().toLowerCase();
@@ -2042,6 +2188,7 @@ function agentPanel(){
         style="flex:1;min-width:150px;max-width:260px;padding:7px 12px;font-size:12.5px;height:auto">
       ${chip(AG.reveal?'연락처 원문':'연락처 가림', AG.reveal, 'ag-reveal','')}
       <button class="btn ghost sm" data-act="ag-load">새로고침</button>
+      <button class="btn sec sm" data-act="ag-csv">CSV 내려받기</button>
     </div>
 
     <div class="card pad" style="padding:0;overflow:hidden">
@@ -2055,19 +2202,28 @@ function agentPanel(){
       <div style="overflow-x:auto">
         <table style="width:100%;border-collapse:collapse;font-size:13px;white-space:nowrap">
           <thead><tr style="background:var(--n50)">
-            ${['신청','역할','성함','연락처','사무소 · 물건','등록번호 · 사업자','이메일'].map(h=>
+            ${['신청','상태','역할','성함','연락처','사무소 · 물건','등록번호 · 사업자','이메일'].map(h=>
               `<th style="text-align:left;padding:10px 14px;font-size:11.5px;font-weight:800;color:var(--n500)">${h}</th>`).join('')}
           </tr></thead>
           <tbody>${rows.map(r=>`
             <tr style="border-top:1px solid var(--n100)">
               <td style="padding:11px 14px;color:var(--n500)">${esc(String(r.created_at||'').replace('T',' ').slice(5,16))}</td>
+              <td style="padding:11px 14px"><span class="badge ${(AG_STATUS[r.status||'new']||AG_STATUS.new)[0]}">${(AG_STATUS[r.status||'new']||AG_STATUS.new)[1]}</span></td>
               <td style="padding:11px 14px"><span class="badge ${r.role==='agent'?'b-ok':r.role==='owner'?'b-ind':'b-warn'}">${AG_ROLE[r.role]||r.role}</span></td>
               <td style="padding:11px 14px;font-weight:700">${esc(r.name||'')}</td>
               <td style="padding:11px 14px" class="num">${esc(r.phone||'')}</td>
               <td style="padding:11px 14px">${esc(r.office||r.addr||'')}</td>
               <td style="padding:11px 14px" class="num">${esc(r.reg_no||r.biz_no||'')}</td>
               <td style="padding:11px 14px;color:var(--n500)">${esc(r.email||'')}</td>
-            </tr>`).join('')}</tbody>
+            </tr>
+            <tr><td colspan="8" style="padding:0 14px 12px">
+              <div class="chips" style="gap:6px">
+                ${Object.entries(AG_STATUS).map(([k,[,t]])=>`
+                  <button class="chip ${((r.status||'new')===k)?'on':''}" data-act="ag-status" data-v="${esc(r.id)}|${k}"
+                    style="padding:5px 12px;font-size:11.5px">${t}</button>`).join('')}
+                ${r.phone && !/\*/.test(r.phone) ? `<a href="tel:${esc(r.phone)}" class="chip" style="padding:5px 12px;font-size:11.5px">전화 걸기</a>` : ''}
+                ${r.email ? `<a href="mailto:${esc(r.email)}" class="chip" style="padding:5px 12px;font-size:11.5px">메일 쓰기</a>` : ''}
+              </div></td></tr>`).join('')}</tbody>
         </table>
       </div>`}
     </div>
@@ -3826,6 +3982,19 @@ function opsFetch(){
     .finally(()=>{ OPS.loading = false; render(); });
 }
 
+function agCsv(){
+  if(!AG.rows || !AG.rows.length) return toast('내려받을 자료가 없습니다'), true;
+  const cols = ['created_at','status','role','name','phone','email','office','reg_no','addr','relation','biz_no','dev_type','done'];
+  const esc2 = v => `"${String(Array.isArray(v)?v.join(' · '):(v??'')).replace(/"/g,'""')}"`;
+  const csv = [cols.join(',')].concat(AG.rows.map(r=>cols.map(c=>esc2(r[c])).join(','))).join('\n');
+  const blob = new Blob(['\ufeff'+csv], {type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `비버노크_가입신청_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click(); URL.revokeObjectURL(a.href);
+  return true;
+}
+
 function opsCsv(){
   if(!OPS.rows || !OPS.rows.length) return toast('내려받을 자료가 없습니다'), true;
   const cols = ['created_at','kind','name','phone','dongs','deal','dep','rent','biz',
@@ -3871,6 +4040,7 @@ V['#/ops/live'] = () => {
       ${chip(`가입 신청${AG.rows?` ${AG.rows.length}`:''}`, OPS.tab==='agent', 'ops-tab','agent')}
     </div>
     ${OPS.tab==='agent' ? agentPanel() : `
+    ${opsSummary(all, AG.rows)}
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px">
       <div class="chips" style="gap:6px">
         ${chip('전체', !OPS.kind, 'ops-kind','')}${chip('주거', OPS.kind==='home','ops-kind','home')}${chip('상가', OPS.kind==='shop','ops-kind','shop')}
@@ -4247,6 +4417,8 @@ function render(){
   }
   S.lastRoute = h;
   refreshAddr();   /* 목록은 DOM 에만 있다 - 재렌더마다 다시 채워준다 */
+  slideUnderline();
+  requestAnimationFrame(()=>armReveal(app));
   // 슬롯 타이머
   if(h.startsWith('#/partner/propose/')) startTimer(); else stopTimer();
   /* 위치는 로그인 화면에서 미리 여쭙고, 동의하신 경우에만 불러온다.
@@ -4427,6 +4599,56 @@ function sendAgent(f){
     .catch(() => { S.form.jSent = 'fail'; toast('네트워크 문제로 신청이 저장되지 않았습니다'); render(); });
 }
 
+
+/* ══════════ 모션 배선 ══════════ */
+
+/* 스크롤로 들어올 때 한 번만 세운다.
+   화면에 이미 보이는 것은 건드리지 않는다 - 전환 스태거가 이미 맡고 있다. */
+let REVEAL_IO = null;
+function armReveal(root){
+  if(REDUCED()) return;
+  if(!('IntersectionObserver' in window)) return;
+  if(!REVEAL_IO){
+    REVEAL_IO = new IntersectionObserver(es => {
+      es.forEach(e => { if(e.isIntersecting){
+        e.target.setAttribute('data-reveal','in');
+        REVEAL_IO.unobserve(e.target);
+      }});
+    }, {root: root, rootMargin: '0px 0px -8% 0px', threshold: .06});
+  }
+  const h = root.clientHeight || innerHeight;
+  let n = 0;
+  root.querySelectorAll('.card, .recap, section, .beaverbox').forEach(el => {
+    if(el.closest('[data-reveal]')) return;
+    const top = el.getBoundingClientRect().top - root.getBoundingClientRect().top;
+    if(top < h - 40) return;              /* 이미 보이는 것은 그냥 둔다 */
+    el.setAttribute('data-reveal','');
+    el.setAttribute('data-d', String((n++ % 3) + 1));
+    REVEAL_IO.observe(el);
+  });
+}
+
+/* 목록이 걸러졌을 때 남은 것들이 제자리를 찾아 들게 한다 */
+function settle(sel){
+  if(REDUCED()) return;
+  const el = $('#app ' + sel); if(!el) return;
+  el.removeAttribute('data-settle');
+  void el.offsetWidth;                    /* 애니메이션을 다시 켜려면 한 번 끊어야 한다 */
+  el.setAttribute('data-settle','');
+}
+
+/* 상단 탭 밑줄이 붙었다 떼어지지 않고 미끄러지게 */
+function slideUnderline(){
+  const box = $('#app .nav .items'); if(!box) return;
+  const on = box.querySelector('a.on');
+  if(!on){ box.style.setProperty('--uo','0'); return; }
+  const b = box.getBoundingClientRect(), r = on.getBoundingClientRect();
+  box.style.setProperty('--ux', (r.left - b.left) + 'px');
+  box.style.setProperty('--uw', r.width + 'px');
+  box.style.setProperty('--uy', (r.bottom - b.top + 6) + 'px');
+  box.style.setProperty('--uo', '1');
+}
+
 /* ══════════ 이벤트 ══════════ */
 document.addEventListener('click', e=>{
   const goEl = e.target.closest('[data-go]');
@@ -4453,9 +4675,9 @@ document.addEventListener('input', e=>{
   if(k==='reportDetail'){ S.form.reportDetail=v; return; }
   if(k==='email'||k==='pw'||k==='pw2'){ S[k]=v; refreshLoginBtn(); return; }
   if(k==='opsPass'){ OPS.pass=v; const b=$('#app [data-act="ops-load"]'); if(b) b.disabled=!v; return; }
-  if(k==='opsQ'){ OPS.q=v; OPS.open=''; render(); const el=$('#app [data-in="opsQ"]');
+  if(k==='opsQ'){ OPS.q=v; OPS.open=''; render(); settle('tbody'); const el=$('#app [data-in="opsQ"]');
     if(el){ el.focus(); el.setSelectionRange(el.value.length, el.value.length); } return; }
-  if(k==='agQ'){ AG.q=v; render(); const el=$('#app [data-in="agQ"]');
+  if(k==='agQ'){ AG.q=v; render(); settle('tbody'); const el=$('#app [data-in="agQ"]');
     if(el){ el.focus(); el.setSelectionRange(el.value.length, el.value.length); } return; }
   if(k==='findPhone'){ S.findPhone = autoHyphen(el); return; }
   if(k==='findName'||k==='resetEmail'){ S[k]=v; return; }
@@ -4527,9 +4749,11 @@ function handle(a,v,el){
     case 'ops-load':   opsFetch(); return true;
     case 'ops-tab':    OPS.tab = v; if(v==='agent' && !AG.rows && OPS.pass) agFetch(); render(); return true;
     case 'ag-load':    agFetch(); return true;
-    case 'ag-role':    AG.role = AG.role===v ? '' : v; render(); return true;
+    case 'ag-role':    AG.role = AG.role===v ? '' : v; render(); settle('tbody'); return true;
     case 'ag-reveal':  AG.reveal = !AG.reveal; agFetch(); return true;
-    case 'ops-only':   OPS.only = OPS.only===v ? '' : v; OPS.open=''; render(); return true;
+    case 'ag-status': { const [id, st] = String(v).split('|'); agSetStatus(id, st); return true; }
+    case 'ag-csv':     return agCsv();
+    case 'ops-only':   OPS.only = OPS.only===v ? '' : v; OPS.open=''; render(); settle('tbody'); return true;
     case 'ops-open':   OPS.open = OPS.open===v ? '' : v; render(); return true;
     case 'ops-sent': {
       if(OPS.sent[v]) delete OPS.sent[v]; else OPS.sent[v] = Date.now();

@@ -4608,6 +4608,9 @@ let REVEAL_IO = null;
 function armReveal(root){
   if(REDUCED()) return;
   if(!('IntersectionObserver' in window)) return;
+  /* 백그라운드 탭에서는 높이가 0 으로 잡힌다. 그때 무장하면 보이는 것까지 숨기고,
+     관찰자는 영영 안 깨어난다 - 내용이 통째로 사라진 것처럼 보인다. 그냥 두고 나간다. */
+  if(!root.clientHeight) return;
   if(!REVEAL_IO){
     REVEAL_IO = new IntersectionObserver(es => {
       es.forEach(e => { if(e.isIntersecting){
@@ -4616,7 +4619,7 @@ function armReveal(root){
       }});
     }, {root: root, rootMargin: '0px 0px -8% 0px', threshold: .06});
   }
-  const h = root.clientHeight || innerHeight;
+  const h = root.clientHeight;
   let n = 0;
   root.querySelectorAll('.card, .recap, section, .beaverbox').forEach(el => {
     if(el.closest('[data-reveal]')) return;
@@ -4626,6 +4629,12 @@ function armReveal(root){
     el.setAttribute('data-d', String((n++ % 3) + 1));
     REVEAL_IO.observe(el);
   });
+  /* 관찰자가 어떤 이유로든 안 깨어나도 내용이 갇히면 안 된다.
+     숨긴 채로 두느니 모션을 포기하고 보여준다. */
+  clearTimeout(armReveal._t);
+  armReveal._t = setTimeout(()=>{
+    root.querySelectorAll('[data-reveal=""]').forEach(el=>el.setAttribute('data-reveal','in'));
+  }, 2600);
 }
 
 /* 목록이 걸러졌을 때 남은 것들이 제자리를 찾아 들게 한다 */

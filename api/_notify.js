@@ -23,7 +23,12 @@ const esc = s => String(s ?? '').replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&
 const withTimeout = (p, ms) =>
   Promise.race([p, new Promise(r => setTimeout(() => r({ skipped: 'timeout' }), ms))]);
 
-export async function notify(req, { subject, rows, link }) {
+export async function notify(req, opts) {
+  /* 알림은 어떤 경우에도 던지지 않는다. 이미 저장된 접수가 500 으로 보이면 안 된다. */
+  try { return await send(req, opts); } catch (e) { return { skipped: 'error' }; }
+}
+
+async function send(req, { subject, rows, link }) {
   const key = process.env.RESEND_API_KEY;
   if (!key) return { skipped: 'no key' };
 

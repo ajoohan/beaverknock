@@ -10,7 +10,7 @@
  */
 
 import crypto from 'node:crypto';
-import { notify, mask } from './_notify.js';
+import { notify, mask } from '../lib/notify.js';
 
 const TABLE = 'bk_agent';
 

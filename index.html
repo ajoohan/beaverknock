@@ -1373,7 +1373,7 @@ V['#/'] = () => `
     <div style="display:flex;gap:16px">
       <a data-go="#/guide" style="font-size:11.5px;color:var(--n500);text-decoration:underline;text-underline-offset:3px">이용 안내</a>
       <a data-go="#/faq" style="font-size:11.5px;color:var(--n500);text-decoration:underline;text-underline-offset:3px">자주 묻는 질문</a>
-      <a data-go="#/privacy" style="font-size:11.5px;color:var(--n500);text-decoration:underline;text-underline-offset:3px">개인정보 처리방침</a>
+      <a href="/privacy" target="_blank" rel="noopener" style="font-size:11.5px;color:var(--n500);text-decoration:underline;text-underline-offset:3px">개인정보 처리방침</a>
       <a data-go="#/brand" style="font-size:11.5px;color:var(--n500);text-decoration:underline;text-underline-offset:3px">브랜드</a>
     </div>
   </div>`}
@@ -1486,7 +1486,7 @@ V['#/login'] = () => {
       <div style="display:flex;flex-direction:column;gap:8px">${SNS.map(snsButton).join('')}</div>
 
       <p style="margin:0;text-align:center;font-size:11.5px;line-height:1.75;color:var(--n500)">
-        로그인하시면 <a href="/terms" target="_blank" rel="noopener" style="color:var(--ind);font-weight:700;text-decoration:underline;text-underline-offset:2px">이용약관</a>과 <a data-go="#/privacy" style="color:var(--ind);font-weight:700;text-decoration:underline;text-underline-offset:2px">개인정보 처리방침</a>에 동의하신 것으로 봅니다.<br>
+        로그인하시면 <a href="/terms" target="_blank" rel="noopener" style="color:var(--ind);font-weight:700;text-decoration:underline;text-underline-offset:2px">이용약관</a>과 <a href="/privacy" target="_blank" rel="noopener" style="color:var(--ind);font-weight:700;text-decoration:underline;text-underline-offset:2px">개인정보 처리방침</a>에 동의하신 것으로 봅니다.<br>
         조건을 걸으실 때 <b style="color:var(--n700)">본인확인</b>을 한 번 더 받습니다.</p>
     </div>
   </div>
@@ -2221,7 +2221,7 @@ V['#/contact'] = () => { const d=S.draft; const ok = d.verified && phoneOk(d.pho
           <small>필수 2개와 선택 1개를 한 번에 동의합니다 - 선택 항목은 따로 해제하실 수 있습니다</small></span></div>
         <div class="chk ${d.a1?'on':''}" data-act="agree" data-v="a1">
           <span class="box">${ICON_CHECK}</span><span class="txt"><b style="color:var(--ind)">(필수)</b> <b style="color:var(--n900)">개인정보 제3자 제공</b>에 동의합니다
-          <a data-go="#/privacy" style="margin-left:6px;font-size:11.5px;font-weight:700;color:var(--ind);text-decoration:underline;text-underline-offset:2px">전문 보기</a>
+          <a href="/privacy" target="_blank" rel="noopener" style="margin-left:6px;font-size:11.5px;font-weight:700;color:var(--ind);text-decoration:underline;text-underline-offset:2px">전문 보기</a>
           <small>제공받는 자: 해당 지역 공인중개사사무소(조건당 최대 5곳) · 항목: 본인확인된 이름·연락처·조건 전체 · 보유: 3개월 후 파기. 거부하실 수 있으나 거부 시 조건 전달이 불가능합니다.</small></span></div>
         <div class="chk ${d.a2?'on':''}" data-act="agree" data-v="a2">
           <span class="box">${ICON_CHECK}</span><span class="txt"><b style="color:var(--ind)">(필수)</b> <b style="color:var(--n900)">알림이 여러 차례 발송</b>되는 것에 동의합니다
@@ -2791,7 +2791,7 @@ V['#/partner/propose'] = (id) => { const d=S.demands.find(x=>x.id===id); if(!d) 
         </div>
         ${f.filled? `<div style="background:var(--n50);padding:12px 15px;font-size:13px;line-height:1.75;color:var(--n500)">
           <b style="color:var(--n700)">자동으로 채웠습니다 (수정 가능)</b> - 전용 ${g('area')}㎡ (${(g('area')/3.305785).toFixed(1)}평) · 사용승인 2016.06 · 총 25층 · 주차 세대당 1.2대 · 위반건축물 해당없음</div>`
-        : `<p style="margin:0;font-size:12.5px;color:var(--n500)"><b style="color:var(--n900)">호실까지 넣으셔야</b> 건축물대장이 정확히 불러와집니다 - 손님에게는 <b style="color:var(--n900)">호실을 빼고</b> 보여드립니다. 자동채움에 실패해도 수동 입력으로 계속 진행됩니다.${S.listings.length?` 또는 <button data-go="#/partner/listings" style="font-weight:700;color:var(--ind);text-decoration:underline">내 물건에서 불러오기</button>`:``}</p>${f.fromListing?`<p style="margin:9px 0 0;font-size:12.5px;font-weight:700;color:var(--ok)">✓ 내 물건에서 불러왔습니다 - 필요한 곳만 고치세요</p>`:``}`}
+        : `<p style="margin:0;font-size:12.5px;color:var(--n500)"><b style="color:var(--n900)">호실까지 넣으셔야</b> 건축물대장이 정확히 불러와집니다 - 손님에게는 <b style="color:var(--n900)">호실을 빼고</b> 보여드립니다. 자동채움에 실패해도 수동 입력으로 계속 진행됩니다.${S.listings.length?` 또는 <a data-go="#/partner/listings" style="display:inline-block;padding:4px 2px;font-weight:700;color:var(--ind);text-decoration:underline">내 물건에서 불러오기</a>`:``}</p>${f.fromListing?`<p style="margin:9px 0 0;font-size:12.5px;font-weight:700;color:var(--ok)">✓ 내 물건에서 불러왔습니다 - 필요한 곳만 고치세요</p>`:``}`}
       </div>
       <div class="card pad">
         <span class="sect"><span style="color:var(--ind)">2.</span> 필수 정보</span>
@@ -3964,100 +3964,6 @@ V['#/ops/live'] = () => {
 </div>`;};
 
 
-/* ══════════ 개인정보 처리방침 ══════════
-   실제로 저장하는 컬럼(bk_demand)과 어긋나면 안 된다.
-   법인 정보·책임자처럼 사람이 채워야 하는 칸은 PP_BLANK 로 표시해 둔다. */
-const PP_BLANK = '<span style="background:var(--clay100);color:var(--clay700);padding:1px 7px;border-radius:5px;font-weight:700;font-size:12.5px">채워주세요</span>';
-
-const PP = [
-  ['1. 무엇을 받나요',
-   `조건을 등록하실 때 아래를 받습니다.
-    <div class="kv"><dt>본인확인</dt><dd>이름 · 휴대폰 번호 · 생년월일 · 확인 수단(문자 또는 PASS)</dd></div>
-    <div class="kv"><dt>찾으시는 조건</dt><dd>지역 · 거래 방식 · 예산 · 면적 · 업종 · 입주 시기 · 그 밖에 적어주신 내용 전부</dd></div>
-    <div class="kv"><dt>연락 선호</dt><dd>편한 연락 방법 · 연락 가능한 시간</dd></div>
-    <div class="kv"><dt>자동 수집</dt><dd>접속 IP의 단방향 해시 · 브라우저 정보 · 유입 경로</dd></div>
-    <p style="margin:12px 0 0">IP 주소 원본은 저장하지 않습니다. 되돌릴 수 없는 해시로만 남기며,
-    짧은 시간에 몰리는 허위 접수를 세는 데만 씁니다.</p>`],
-
-  ['2. 왜 받나요',
-   `적어주신 조건을 <b>해당 지역 공인중개사사무소에 전달</b>하기 위해서입니다.
-    그 밖의 목적으로는 쓰지 않습니다. 광고 수신에 따로 동의하신 경우에만 서비스 소식을 보내드립니다.`],
-
-  ['3. 누구에게 전달되나요',
-   `<div class="kv"><dt>받는 곳</dt><dd>조건에 해당하는 지역의 공인중개사사무소</dd></div>
-    <div class="kv"><dt>전달 범위</dt><dd>조건 1건당 최대 5곳</dd></div>
-    <div class="kv"><dt>전달 항목</dt><dd>본인확인된 이름 · 연락처 · 조건 전체</dd></div>
-    <div class="kv"><dt>목적</dt><dd>맞는 물건이 있을 때 직접 연락드리기 위함</dd></div>
-    <p style="margin:12px 0 0">거부하실 수 있습니다. 다만 거부하시면 조건을 전달할 수 없어 서비스를 이용하실 수 없습니다.</p>`],
-
-  ['4. 얼마나 보관하나요',
-   `<b style="color:var(--n900)">제공일로부터 3개월</b>이 지나면 자동으로 파기합니다.
-    매일 정해진 시각에 기한이 지난 조건을 지우고, 지운 건수를 기록으로 남깁니다.
-    그 전이라도 삭제를 요청하시면 지체 없이 지워 드립니다.`],
-
-  ['5. 어디에 맡기나요',
-   `서비스를 돌리기 위해 아래에 처리를 맡깁니다.
-    <div class="kv"><dt>Supabase</dt><dd>조건 데이터 보관 · 서버 위치 대한민국(서울)</dd></div>
-    <div class="kv"><dt>Vercel</dt><dd>웹 화면 제공</dd></div>`],
-
-  ['6. 어떤 권리가 있나요',
-   `언제든 <b>열람 · 정정 · 삭제 · 처리정지</b>를 요구하실 수 있습니다.
-    아래 연락처로 알려주시면 확인 후 처리해 드립니다.
-    법정대리인을 통해서도 요구하실 수 있습니다.`],
-
-  ['7. 안전하게 두고 있나요',
-   `<div class="kv"><dt>접근 제한</dt><dd>조건은 운영자 인증을 거쳐야만 볼 수 있습니다. 브라우저에서는 직접 조회할 수 없습니다.</dd></div>
-    <div class="kv"><dt>화면 표시</dt><dd>운영 화면에서도 연락처는 기본으로 가려 보여줍니다.</dd></div>
-    <div class="kv"><dt>전송 구간</dt><dd>전 구간 HTTPS 암호화</dd></div>`],
-
-  ['8. 하지 않는 것',
-   `<div class="kv"><dt>매물 중개</dt><dd>저희는 조건을 전달만 하며 거래에 관여하지 않습니다.</dd></div>
-    <div class="kv"><dt>비용 청구</dt><dd>이용자와 중개사 모두에게 어떤 비용도 받지 않습니다.</dd></div>
-    <div class="kv"><dt>판매·공유</dt><dd>개인정보를 팔거나 위 3항 외의 곳에 넘기지 않습니다.</dd></div>`],
-
-  ['9. 문의',
-   `<div class="kv"><dt>서비스명</dt><dd>비버노크</dd></div>
-    <div class="kv"><dt>운영</dt><dd>플러스토닉</dd></div>
-    <div class="kv"><dt>개인정보 보호책임자</dt><dd>${PP_BLANK}</dd></div>
-    <div class="kv"><dt>연락처</dt><dd>${PP_BLANK}</dd></div>
-    <div class="kv"><dt>사업자등록번호</dt><dd>${PP_BLANK}</dd></div>
-    <div class="kv"><dt>주소</dt><dd>${PP_BLANK}</dd></div>
-    <p style="margin:12px 0 0">개인정보 침해에 관한 상담이 필요하시면
-    개인정보침해신고센터(118) · 개인정보 분쟁조정위원회(1833-6972)에 문의하실 수 있습니다.</p>`],
-];
-
-V['#/privacy'] = () => `
-<div class="scr fade" style="background:var(--n50)">
-  <div class="nav solid pad">
-    <a data-go="#/" style="flex:none">${logoLockup({h:24})}</a>
-    <div class="right"><a data-go="#/" style="font-size:13px;font-weight:600;color:var(--n700)">← 처음으로</a></div>
-  </div>
-  <div class="pad" style="flex:1;overflow:auto;padding-top:${isMo()?20:32}px;padding-bottom:40px;max-width:760px;margin:0 auto;width:100%">
-    <span class="eyebrow">PRIVACY</span>
-    <h1 class="t" style="font-size:${isMo()?21:25}px;margin:7px 0 10px">개인정보 처리방침</h1>
-    <p style="margin:0 0 22px;font-size:13.5px;line-height:1.75;color:var(--n700)">
-      비버노크는 조건을 전달하는 데 필요한 최소한만 받고, <b style="color:var(--n900)">3개월이 지나면 지웁니다.</b>
-      아래는 실제로 저장하는 항목 그대로입니다.</p>
-
-    <div class="card pad" style="background:var(--clay100);border-color:var(--clay200);margin-bottom:20px">
-      <b style="display:block;font-size:14px;font-weight:800;color:var(--clay700);margin-bottom:6px">아직 채우지 않은 칸이 있습니다</b>
-      <p style="margin:0;font-size:13px;line-height:1.75;color:var(--n700)">
-        보호책임자·사업자 정보는 실제 값으로 채운 뒤 공개하셔야 합니다.
-        이 문서는 실제 처리 내용을 그대로 적은 초안이며, 공개 전에 법률 검토를 받으시길 권합니다.</p>
-    </div>
-
-    ${PP.map(([t, body], i) => `
-      <div class="card pad" style="margin-bottom:12px">
-        <b style="display:block;font-size:15px;font-weight:800;letter-spacing:-.02em;color:var(--n900);margin-bottom:10px">${t}</b>
-        <div style="font-size:13.5px;line-height:1.75;color:var(--n700)">${body}</div>
-      </div>`).join('')}
-
-    <p style="margin:18px 0 0;font-size:11.5px;line-height:1.75;color:var(--n500)">
-      이 방침은 2026년 8월 29일부터 적용됩니다. 내용이 바뀌면 시행 7일 전부터 이 화면에 알려드립니다.</p>
-  </div>
-</div>`;
-
-
 /* 커서 위치를 카드에 넘겨준다 - CSS 가 빛을 그린다.
    rAF 로 묶어 프레임당 한 번만 쓴다. */
 (function(){
@@ -4283,6 +4189,8 @@ function render(){
   /* 내 정보 영역은 로그인이 필요하다 */
   /* 지표 대시보드는 아직 예시 숫자다. 실데이터 화면의 암호를 통과하기 전에는 열지 않는다. */
   if(h==='#/ops' && !OPS.rows){ location.replace('#/ops/live'); return; }
+  /* 개인정보 처리방침은 한 벌뿐이다 - 옛 주소로 들어오면 그 문서로 보낸다 */
+  if(h==='#/privacy'){ location.replace('/privacy'); return; }
   /* 이미 본인확인을 하셨다면 그대로 이어간다 */
   if(h==='#/contact' && !S.draft.verified && S.idv){
     Object.assign(S.draft, {verified:true, vstep:'done', vmethod:S.idv.vmethod, vat:S.idv.vat,

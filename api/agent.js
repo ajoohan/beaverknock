@@ -11,6 +11,7 @@
 
 import crypto from 'node:crypto';
 import { notify, mask } from './_notify.js';
+import { checkShape } from './agent-verify.js';
 
 const TABLE = 'bk_agent';
 
@@ -65,6 +66,8 @@ export default async function handler(req, res) {
     !name || name.length < 2                     ? '성함을 확인해 주세요' :
     !/^01[016789][0-9]{7,8}$/.test(phone)        ? '연락처 형식이 맞지 않습니다' :
     role === 'agent' && !str(b.reg_no)           ? '개설등록번호가 없습니다' :
+    /* 화면을 우회해 들어와도 형식은 여기서 다시 본다 */
+    role === 'agent' && !checkShape(b.reg_no).ok ? checkShape(b.reg_no).reason :
     null;
   if (bad) return res.status(400).json({ error: bad });
 
@@ -82,6 +85,7 @@ export default async function handler(req, res) {
     email:    str(b.email, 120),
     office:   str(b.office, 80),
     reg_no:   str(b.reg_no, 40),
+    reg_verified: b.reg_verified === true,
     addr:     str(b.addr, 200),
     relation: str(b.relation, 40),
     biz_no:   str(b.biz_no, 20),
@@ -132,7 +136,7 @@ export default async function handler(req, res) {
         ['성함', row.name || '-'],
         ['연락처', mask(row.phone)],
         ['사무소 · 물건', row.office || row.addr || '-'],
-        ['등록번호 · 사업자', row.reg_no || row.biz_no || '-'],
+        ['등록번호 · 사업자', (row.reg_no || row.biz_no || '-') + (row.reg_no ? (row.reg_verified ? ' (공공데이터 확인됨)' : ' (형식만 확인)') : '')],
         ['이메일', row.email || '-'],
       ],
       link: '/#/ops/live',

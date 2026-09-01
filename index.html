@@ -3335,7 +3335,7 @@ V["#/partner/join"] = () => {
   }
   if(step===3 && role==='agent') body = `
     <h1 class="t" style="font-size:${isMo()?21:25}px">중개사무소 개설등록번호를<br class="mbr">  입력해 주세요</h1>
-    <p class="sub measure">전국 공인중개사무소 공공데이터와 자동 대조합니다. 일치하면 즉시 시작됩니다.</p>
+    <p class="sub measure">경기도 부동산중개업 공공데이터와 자동 대조합니다. 일치하면 즉시 시작됩니다.</p>
     <div style="margin-bottom:16px"><span class="lab">사무소 상호 <span class="req">*</span></span>
       <input class="inp" data-in="j-office" value="${esc(f['j-office']||'')}" placeholder="예) 미사중앙공인중개사사무소"></div>
     <span class="lab">개설등록번호 <span class="req">*</span></span>
@@ -3348,7 +3348,7 @@ V["#/partner/join"] = () => {
         <span class="badge b-ok" style="margin-bottom:7px">공공데이터 확인됨</span>
         <b style="display:block;font-size:15px;font-weight:800">${esc(f.jCheck.office||'등록된 사무소')}</b>
         <span style="display:block;font-size:13px;line-height:1.7;color:var(--n700);margin:5px 0 14px">
-          ${[f.jCheck.rep&&('대표 '+f.jCheck.rep), f.jCheck.addr, f.jCheck.state].filter(Boolean).map(esc).join(' · ')}<br>
+          ${[f.jCheck.rep&&('대표 '+f.jCheck.rep), f.jCheck.addr, f.jCheck.state, f.jCheck.since].filter(Boolean).map(esc).join(' · ')}<br>
           등록번호 ${esc(f.jCheck.reg_no)}</span>
         <button class="btn blk" data-act="j-confirm" style="background:var(--ok);color:#fff;padding:14px 0">제 사무소가 맞습니다</button></div>` : `
       <div class="card pad" style="margin-top:14px;background:var(--n50);box-shadow:none">

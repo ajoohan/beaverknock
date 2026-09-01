@@ -181,7 +181,7 @@ export default async function handler(req, res) {
   }
 
   /* 알림이 안 가도 접수는 성공이다. 붙잡아 두지 않는다. */
-  await notify(req, {
+  const sent = await notify(req, {
     subject: `새 조건 · ${row.kind === 'shop' ? '상가' : '주거'} · ${(row.dongs || []).join(' · ') || '하남'}`,
     rows: [
       ['유형', row.kind === 'shop' ? '상가' : '주거'],
@@ -195,5 +195,5 @@ export default async function handler(req, res) {
     link: '/#/ops/live',
   });
 
-  res.status(201).json({ ok: true });
+  res.status(201).json({ ok: true, notified: sent && sent.ok ? 'ok' : (sent && sent.skipped) || 'unknown' });
 }

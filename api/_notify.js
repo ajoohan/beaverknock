@@ -28,7 +28,7 @@ const withTimeout = (p, ms) =>
 
 export async function notify(req, opts) {
   /* 알림은 어떤 경우에도 던지지 않는다. 이미 저장된 접수가 500 으로 보이면 안 된다. */
-  try { return await send(req, opts); } catch (e) { return { skipped: 'error' }; }
+  try { return await send(req, opts); } catch (e) { return { skipped: 'error', detail: e && e.message }; }
 }
 
 async function send(req, { subject, rows, link }) {
@@ -61,7 +61,10 @@ async function send(req, { subject, rows, link }) {
       body: JSON.stringify({ from, to: [to], subject: `[비버노크] ${subject}`, html }),
     }), 2500);
     if (r && r.skipped) return r;
-    return r.ok ? { ok: true } : { skipped: 'send failed' };
+    if (r.ok) return { ok: true };
+    /* Resend 가 거절한 이유를 그대로 살린다 - 도메인 미인증인지 키가 틀렸는지 갈린다 */
+    const t = await r.text().catch(() => '');
+    return { skipped: `send failed ${r.status}`, detail: t.slice(0, 160) };
   } catch (e) {
     return { skipped: 'error' };
   }

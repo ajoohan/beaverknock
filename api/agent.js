@@ -129,7 +129,7 @@ export default async function handler(req, res) {
       }
       return res.status(500).json({ error: '저장에 실패했습니다' });
     }
-    await notify(req, {
+    const sent = await notify(req, {
       subject: `새 가입 신청 · ${ROLE_KO[row.role] || row.role}`,
       rows: [
         ['역할', ROLE_KO[row.role] || row.role],
@@ -141,7 +141,7 @@ export default async function handler(req, res) {
       ],
       link: '/#/ops/live',
     });
-    return res.status(200).json({ ok: true });
+    return res.status(200).json({ ok: true, notified: sent && sent.ok ? 'ok' : (sent && sent.skipped) || 'unknown' });
   } catch (e) {
     return res.status(500).json({ error: '저장 중 문제가 생겼습니다' });
   }

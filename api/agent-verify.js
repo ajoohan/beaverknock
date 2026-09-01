@@ -1,8 +1,14 @@
 /* 개설등록번호 확인.
  *
- * 조회처: 경기데이터드림 "부동산 중개업 사무소 정보 현황"
+ * 1차 조회처: 전국 명부 (api/_brokers.js · 국토교통부 · 106,749곳)
+ *   서울은 오픈API 가 종료됐고 지자체 API 는 제각각이라 파일을 통째로 들고 있다.
+ *   네트워크를 타지 않아 빠르고 도로명주소까지 나온다.
+ *
+ * 2차 조회처: 경기데이터드림 "부동산 중개업 사무소 정보 현황"
  *   https://openapi.gg.go.kr/Rlestatebrkragofc
  *   경기도 전역 30,432건 · 하남시 872건 · 호출 제한 없음
+ *   파일은 사람이 갱신해야 하니, 파일에 없으면 여기로 한 번 더 물어본다 -
+ *   이번 주에 개설한 하남 사무소가 파일에는 아직 없을 수 있다.
  *   인증키 발급: https://data.gg.go.kr/portal/openapi/insertApikeyPage.do
  *
  * 이 API 는 등록번호로 직접 조회하지 못한다. 요청인자가 시군명·시군코드뿐이라
@@ -15,6 +21,8 @@
  * 선택 환경변수
  *   GG_API_KEY   경기데이터드림 인증키 (없으면 형식만 본다)
  */
+
+import { findByKey, findByName, STATE_NM, STD_DATE } from './_brokers.js';
 
 const API = 'https://openapi.gg.go.kr/Rlestatebrkragofc';
 const DEFAULT_SIGUN = '하남시';
@@ -57,6 +65,12 @@ function keyOf(v) {
 /* 상호는 표기가 흔들린다 - '미사중앙공인중개사사무소' / '미사중앙 공인중개사 사무소' */
 const nameKey = v => norm(v).replace(/[()\-·.]/g, '')
   .replace(/(공인)?중개사?(사무소|사무실|중개인)?$/, '').toUpperCase();
+
+/* 1984-05 를 그대로 보여주면 자료 같다. 사람이 읽는 말로 바꾼다. */
+function koMonth(v) {
+  const m = /^(\d{4})-(\d{2})$/.exec(String(v ?? ''));
+  return m ? `${m[1]}년 ${Number(m[2])}월 등록` : (v || null);
+}
 
 const cache = new Map();
 
@@ -106,67 +120,59 @@ export default async function handler(req, res) {
   const shape = checkShape(b.reg_no);
   if (!shape.ok) return res.status(400).json({ error: shape.reason });
 
-  /* 왜 못 봤는지는 남긴다. 삼키면 다음에 또 헤맨다 - 키 자체는 담지 않는다. */
+  const key = keyOf(shape.value);
+  const ok = (hit, source, regNo) => {
+    const st = typeof hit.state === 'number' ? STATE_NM[hit.state] : hit.state;
+    if (st && st !== '영업중') {
+      return res.status(200).json({
+        ok: true, verified: false, reg_no: regNo, office: hit.office || null,
+        note: `등록은 확인했지만 현재 상태가 '${st}' 입니다. 담당자가 확인한 뒤 연락드립니다.`,
+      });
+    }
+    return res.status(200).json({
+      ok: true, verified: true, reg_no: regNo,
+      office: hit.office || null, rep: hit.rep || null, addr: hit.addr || null,
+      state: st || null, since: koMonth(hit.since), source,
+    });
+  };
   const unverified = (note, detail) => res.status(200).json({
     ok: true, verified: false, reg_no: shape.value, note,
     ...(detail ? { detail: String(detail).slice(0, 200) } : {}),
   });
 
-  const key = process.env.GG_API_KEY;
-  if (!key) {
-    return unverified('번호 형식은 확인했습니다. 실제 등록 여부는 담당자가 확인한 뒤 연락드립니다.');
-  }
+  /* ① 전국 명부 - 네트워크를 타지 않는다 */
+  const local = findByKey(key);
+  if (local) return ok(local, `국토교통부 (${STD_DATE} 기준)`, shape.value);
 
-  /* 경기도 자료다. 하남 밖 번호는 자동으로 가리지 못한다 - 그렇다고 말한다. */
+  /* ② 경기 실시간 - 파일 기준일 이후 개설한 곳을 위해 한 번 더 본다 */
+  const gkey = process.env.GG_API_KEY;
   const sigun = norm(b.sigun) || DEFAULT_SIGUN;
-
-  try {
-    const rows = await fetchSigun(sigun, key);
-    if (!rows.length) return unverified('조회할 자료를 받지 못했습니다. 담당자가 확인한 뒤 연락드립니다.');
-
-    const want = keyOf(shape.value);
-    let hit = rows.find(r => keyOf(r.COPRTN_REG_NO) === want);
-
-    if (!hit) {
-      /* 번호는 못 찾아도 상호가 정확히 맞으면 오타일 수 있다 - 알려만 준다 */
-      const wantName = nameKey(b.office);
-      const byName = wantName.length >= 2
-        ? rows.find(r => nameKey(r.BIZMAN_CMPNM_INFO) === wantName) : null;
-      if (byName) {
-        return res.status(200).json({
-          ok: true, verified: false, reg_no: shape.value,
-          note: `${sigun}에 '${byName.BIZMAN_CMPNM_INFO}' 는 있지만 등록번호가 다릅니다`
-              + ` (등록된 번호 ${byName.COPRTN_REG_NO}). 번호를 다시 확인해 주세요.`,
-        });
+  if (gkey) {
+    try {
+      const rows = await fetchSigun(sigun, gkey);
+      const hit = rows.find(r => keyOf(r.COPRTN_REG_NO) === key);
+      if (hit) {
+        const d = norm(hit.REGIST_DE);
+        return ok({
+          office: hit.BIZMAN_CMPNM_INFO, rep: hit.BRKR_NM,
+          addr: hit.LEGALDONG_NM || hit.SIGUN_NM, state: norm(hit.STATE_DIV_NM),
+          since: /^\d{8}$/.test(d) ? `${d.slice(0,4)}-${d.slice(4,6)}` : null,
+        }, '경기데이터드림', hit.COPRTN_REG_NO || shape.value);
       }
-      return unverified(
-        `${sigun} 공공데이터에서 찾지 못했습니다. 최근 개설하셨거나 다른 지역이면 아직 없을 수 있습니다`
-        + ' - 신청은 접수되며 담당자가 확인 후 연락드립니다.');
+    } catch (e) {
+      console.error('[agent-verify] gg', sigun, e && e.message);
     }
-
-    const state = norm(hit.STATE_DIV_NM);
-    if (state && !STATE_OK.has(state)) {
-      return res.status(200).json({
-        ok: true, verified: false, reg_no: shape.value,
-        office: hit.BIZMAN_CMPNM_INFO || null,
-        note: `등록은 확인했지만 현재 상태가 '${state}' 입니다. 담당자가 확인한 뒤 연락드립니다.`,
-      });
-    }
-
-    const d = norm(hit.REGIST_DE);
-    return res.status(200).json({
-      ok: true, verified: true,
-      reg_no: hit.COPRTN_REG_NO || shape.value,
-      office: hit.BIZMAN_CMPNM_INFO || null,
-      rep:    hit.BRKR_NM || null,
-      addr:   hit.LEGALDONG_NM || hit.SIGUN_NM || null,
-      state:  state || null,
-      since:  /^\d{8}$/.test(d) ? `${d.slice(0,4)}년 ${+d.slice(4,6)}월 등록` : null,
-      source: '경기데이터드림',
-    });
-  } catch (e) {
-    console.error('[agent-verify]', sigun, e && e.message);
-    return unverified('지금은 조회처에 닿지 못했습니다. 담당자가 확인한 뒤 연락드립니다.',
-      (e && e.message) || 'unknown');
   }
+
+  /* ③ 번호로 못 찾았다. 상호가 정확히 맞으면 오타일 수 있으니 알려만 준다. */
+  const byName = findByName(nameKey(b.office));
+  if (byName) {
+    return unverified(
+      `'${byName.office}' 는 명부에 있지만 등록번호가 다릅니다`
+      + ` (등록된 번호 ${byName.reg_no}). 번호를 다시 확인해 주세요.`);
+  }
+
+  return unverified(
+    '전국 공공데이터에서 찾지 못했습니다. 최근 개설하셨다면 아직 반영되지 않았을 수 있습니다'
+    + ' - 신청은 접수되며 담당자가 확인 후 연락드립니다.');
 }

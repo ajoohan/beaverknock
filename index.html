@@ -820,7 +820,7 @@ const BIZ = {
   '기타':{fac:[], lic:'업종에 따라 다릅니다', note:''},
 };
 const DEALS=['전세','월세','매매'], HTYPES=['아파트','오피스텔','빌라·연립','원룸·투룸','상관없음'];
-const ROOMS=['1~2룸','3룸','4룸+','무관'], WHENS=['지금 바로','1개월 이내','2~3개월','3개월 이후','미정'];
+const ROOMS=['1~2룸','3룸','4룸+','무관'];
 const MUSTS=['주차 가능','엘리베이터','반려동물','역세권','초등학교 도보','즉시 입주'];
 const FLOORS=['반지하 제외','1층 제외','탑층 제외','무관'], HOUSE=['1인','2인','3인','3인 이상'];
 const LOANS=['있음','없음'];
@@ -972,9 +972,9 @@ const WHO = {
   home: {kind:'home', t:'살 집을 찾아요', d:'전월세 · 매매 · 아파트 · 오피스텔 · 빌라', slots:5, tag:'주거'},
   shop: {kind:'shop', t:'가게 자리를 찾아요', d:'상가 · 점포 - 업종과 상권, 면적으로 조건을 겁니다', slots:5, tag:'상가'},
 };
-const blankDraft = () => ({who:'',kind:'',deal:'',dongs:[],dep:'',rent:'',htype:[],rooms:'',when:'',musts:[],
+const blankDraft = () => ({who:'',kind:'',deal:'',dongs:[],dep:'',rent:'',htype:[],rooms:'',musts:[],
   openWhen:'',
-  dongFree:'',whenFree:'',mustFree:'',elev:'',
+  dongFree:'',mustFree:'',elev:'',
   keyOk:'',signNeed:'',parkNeed:'',shopNote:'',shopFloorFree:'',facFree:'',mapView:'map',mapLevel:'hanam',
   biz:'',areaMin:'',areaMax:'',key:'',
   memo:'',floor:'',house:'',loan:'',name:'',phone:'',pref:'문자·카톡',times:[],a1:false,a2:false,a3:false,
@@ -1391,7 +1391,7 @@ function draftLines(d){
     if(d.facFree) L.push(`설비 - ${d.facFree}`);
   } else {
     L.push(`보증금 ${won(+d.dep||0)}${+d.rent?` / 월 ${d.rent}`:''}`);
-    L.push(`${d.htype.join(' · ')||'유형 무관'}${d.when?` · ${d.when} 입주`:''}`);
+    L.push(d.htype.join(' · ')||'유형 무관');
     if(d.musts.length) L.push(d.musts.join(' · '));
   }
   if(d.floor) L.push(d.floor);
@@ -1413,7 +1413,6 @@ function draftSummary(d){
     put('거래', d.deal);
     put('예산', `${d.deal==='매매'?'매매가':'보증금'} ${won(+d.dep||0)}${+d.rent?` / 월 ${man(d.rent)}만`:''}`);
     put('유형', [d.htype.join(' · '), d.rooms && d.rooms!=='무관' ? d.rooms : ''].filter(Boolean).join(' · '));
-    put('입주', d.when==='직접 입력' ? d.whenFree : d.when);
     put('필수', [...d.musts.filter(x=>x!=='기타'), d.mustFree||''].filter(Boolean).join(' · '));
     put('층', d.floor);
     put('거주', d.house);
@@ -1796,9 +1795,6 @@ V['#/register'] = () => {
       <div><span class="lab">주택 유형 <span class="req">*</span></span>${chipsHTML(HTYPES, d.htype, 'htype', true)}</div>
       <div class="grid2 mo1">
         <div><span class="lab">방 수</span>${chipsHTML(ROOMS, d.rooms, 'rooms', false)}</div>
-        <div><span class="lab">입주 희망 시기 <span class="req">*</span></span>${chipsHTML(WHENS.concat(['직접 입력']), d.when, 'when', false)}
-          ${d.when==='직접 입력'?`<input class="inp" data-in="whenFree" value="${esc(d.whenFree||'')}" placeholder="예) 26년 9월 15일~10월 15일 중 협의 가능 / 26년 10월 17일만 가능" style="margin-top:9px">`:''}
-          <p style="margin:8px 0 0;font-size:11.5px;color:var(--n500)">날짜가 정해져 있으면 직접 적어주세요 - 중개사가 헛걸음을 줄일 수 있습니다.</p></div>
       </div>
       <div><span class="lab">꼭 필요한 것</span>${chipsHTML(MUSTS.concat(['기타']), d.musts, 'musts', true)}
         ${d.musts.includes('기타')?`<input class="inp" data-in="mustFree" value="${esc(d.mustFree||'')}" placeholder="예) 붙박이장 필수, 남향, 관리비 10만원 이하" style="margin-top:9px">`:''}</div>
@@ -3976,7 +3972,6 @@ function demandPayload(d, slotN){
 
     htype: shop ? [] : (d.htype || []),
     rooms: shop ? null : t(d.rooms),
-    when_text: shop ? null : (d.when === '직접 입력' ? t(d.whenFree) : t(d.when)),
     musts: shop ? [] : (d.musts || []),
     must_free: shop ? null : t(d.mustFree),
     floor_avoid: shop ? null : t(d.floor),
@@ -4955,7 +4950,7 @@ function handle(a,v,el){
     case 'musts': toggleIn(d.musts,v); render(); return true;
     case 'times': toggleIn(d.times,v); render(); return true;
     case 'moveWhy': case 'openWhen':
-    case 'rooms': case 'when': case 'floor': case 'house': case 'loan': case 'pref':
+    case 'rooms': case 'floor': case 'house': case 'loan': case 'pref':
       d[a]= d[a]===v? '' : v; render(); return true;
     case 'agree': d[v]=!d[v]; render(); return true;
     /* 하나라도 빠져 있으면 모두 켜고, 다 켜져 있으면 모두 끈다 */
@@ -5037,7 +5032,6 @@ function handle(a,v,el){
       if(!+d.dep) return toast('보증금을 입력해 주세요'), true;
       if(shop && !+d.rent) return toast('월세를 입력해 주세요'), true;
       if(!shop && !d.htype.length) return toast('주택 유형을 선택해 주세요'), true;
-      if(!shop && !d.when) return toast('입주 희망 시기를 선택해 주세요'), true;
       go('#/contact'); return true; }
 
     case 'submit': {
@@ -5057,7 +5051,7 @@ function handle(a,v,el){
           : {dongs:d.dongs, deal:d.deal, depMax:+d.dep||null, rentMax:+d.rent||null,
              feeIncluded:true, rooms:d.rooms==='3룸'?3:d.rooms==='4룸+'?4:d.rooms==='1~2룸'?1:null, musts:d.musts},
         req:[['지역',d.dongs.join(' · ')],['예산',draftLines(d)[0]||''],['유형',(d.htype||[]).join(' · ')||d.biz||''],
-             ['입주',d.when||'미정']].filter(r=>r[1]),
+             ].filter(r=>r[1]),
         det:(d.kind==='shop'
               ? [['층',d.shopFloorFree||''],['설비',d.facFree||''],['업종',d.biz||'']]
               : [['층',d.floor||''],['거주',d.house||''],['대출',d.loan||'']]).filter(r=>r[1]),

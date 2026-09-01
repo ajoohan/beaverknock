@@ -65,15 +65,19 @@ async function fetchSigun(sigun, key) {
   if (hit && Date.now() - hit.at < TTL) return hit.rows;
 
   const rows = [];
-  for (let page = 1; page <= 6; page++) {
+  const size = Number(process.env.GG_PAGE_SIZE) || 1000;
+  for (let page = 1; page <= Math.ceil(6000 / size); page++) {
     const url = `${API}?KEY=${encodeURIComponent(key)}&Type=json`
-      + `&pIndex=${page}&pSize=1000&SIGUN_NM=${encodeURIComponent(sigun)}`;
+      + `&pIndex=${page}&pSize=${size}&SIGUN_NM=${encodeURIComponent(sigun)}`;
     const r = await fetch(url, { headers: { Accept: 'application/json' } });
-    if (!r.ok) throw new Error('lookup http ' + r.status);
-    const j = await r.json();
-    if (j.RESULT) throw new Error(j.RESULT.MESSAGE || 'lookup rejected');
+    if (!r.ok) throw new Error('http ' + r.status);
+    const text = await r.text();
+    let j; try { j = JSON.parse(text); }
+    catch { throw new Error('json 아님: ' + text.slice(0, 120)); }
+    /* 키가 틀렸거나 상한을 넘으면 여기로 온다 - 메시지를 그대로 살린다 */
+    if (j.RESULT) throw new Error(j.RESULT.CODE + ' ' + (j.RESULT.MESSAGE || ''));
     const body = j.Rlestatebrkragofc;
-    if (!Array.isArray(body)) throw new Error('lookup shape');
+    if (!Array.isArray(body)) throw new Error('모양이 다름: ' + Object.keys(j).join(','));
     const total = body[0]?.head?.[0]?.list_total_count ?? 0;
     const got = body[1]?.row || [];
     rows.push(...got);
@@ -96,8 +100,10 @@ export default async function handler(req, res) {
   const shape = checkShape(b.reg_no);
   if (!shape.ok) return res.status(400).json({ error: shape.reason });
 
-  const unverified = note => res.status(200).json({
+  /* 왜 못 봤는지는 남긴다. 삼키면 다음에 또 헤맨다 - 키 자체는 담지 않는다. */
+  const unverified = (note, detail) => res.status(200).json({
     ok: true, verified: false, reg_no: shape.value, note,
+    ...(detail ? { detail: String(detail).slice(0, 200) } : {}),
   });
 
   const key = process.env.GG_API_KEY;
@@ -153,6 +159,8 @@ export default async function handler(req, res) {
       source: '경기데이터드림',
     });
   } catch (e) {
-    return unverified('지금은 조회처에 닿지 못했습니다. 담당자가 확인한 뒤 연락드립니다.');
+    console.error('[agent-verify]', sigun, e && e.message);
+    return unverified('지금은 조회처에 닿지 못했습니다. 담당자가 확인한 뒤 연락드립니다.',
+      (e && e.message) || 'unknown');
   }
 }

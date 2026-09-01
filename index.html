@@ -5170,7 +5170,7 @@ function handle(a,v,el){
       if(!no) return toast('등록번호를 적어주세요'), true;
       S.form.jChecking = true; S.form.jRegErr = ''; S.form.jCheck = null; render();
       fetch('/api/agent-verify', {method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({reg_no: no})})
+        body: JSON.stringify({reg_no: no, office: S.form['j-office']||''})})
         .then(r => r.json().catch(()=>({})).then(j => {
           S.form.jChecking = false;
           if(r.ok && j.ok){ S.form.jCheck = j; }

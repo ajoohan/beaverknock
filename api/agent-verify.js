@@ -69,7 +69,13 @@ async function fetchSigun(sigun, key) {
   for (let page = 1; page <= Math.ceil(6000 / size); page++) {
     const url = `${API}?KEY=${encodeURIComponent(key)}&Type=json`
       + `&pIndex=${page}&pSize=${size}&SIGUN_NM=${encodeURIComponent(sigun)}`;
-    const r = await fetch(url, { headers: { Accept: 'application/json' } });
+    /* 기본 UA 로는 500 이 온다. 평범한 브라우저처럼 물어본다. */
+    const r = await fetch(url, { headers: {
+      Accept: 'application/json,text/plain,*/*',
+      'Accept-Language': 'ko-KR,ko;q=0.9',
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                  + ' (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+    } });
     if (!r.ok) throw new Error('http ' + r.status);
     const text = await r.text();
     let j; try { j = JSON.parse(text); }

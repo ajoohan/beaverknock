@@ -2193,6 +2193,17 @@ function demandCards(rows){
   </div>`;
 }
 
+/* 심사에서 실제로 손이 가는 건 '미확인' 뿐이다. 그 수를 먼저 보여준다. */
+function agentNeedCheck(rows){
+  const n = (rows||[]).filter(r => r.role==='agent' && !r.reg_verified).length;
+  if(!n) return '';
+  return `<div class="card pad" style="margin:0 0 12px;background:var(--warnbg);border-color:#E8D5A8;box-shadow:none">
+    <b style="font-size:13px;font-weight:800">등록번호 미확인 ${n}건</b>
+    <span style="display:block;margin-top:3px;font-size:12px;line-height:1.6;color:var(--n700)">
+      공공데이터에서 찾지 못한 신청입니다. 최근 개설했거나 번호를 잘못 적었을 수 있으니 직접 확인이 필요합니다.</span>
+  </div>`;
+}
+
 function agentCards(rows){
   return `<div style="display:flex;flex-direction:column;gap:1px;background:var(--n100)">
     ${rows.map(r=>{
@@ -2208,7 +2219,10 @@ function agentCards(rows){
         <b style="display:block;font-size:15px;font-weight:800;letter-spacing:-.02em">${esc(r.name||'')}</b>
         <span class="num" style="display:block;margin-top:2px;font-size:13px;color:var(--n700)">${esc(r.phone||'')}</span>
         ${(r.office||r.addr)?`<span style="display:block;margin-top:4px;font-size:12.5px;color:var(--n700)">${esc(r.office||r.addr)}</span>`:''}
-        ${(r.reg_no||r.biz_no)?`<span class="num" style="display:block;margin-top:2px;font-size:12px;color:var(--n500)">${esc(r.reg_no||r.biz_no)}</span>`:''}
+        ${(r.reg_no||r.biz_no)?`<span style="display:flex;align-items:center;gap:6px;margin-top:3px">
+          <span class="num" style="font-size:12px;color:var(--n500)">${esc(r.reg_no||r.biz_no)}</span>
+          ${r.role==='agent' ? `<span class="badge ${r.reg_verified?'b-ok':'b-warn'}" style="font-size:10.5px;padding:1px 7px">${r.reg_verified?'공공데이터 확인':'미확인 · 수동 확인 필요'}</span>` : ''}
+        </span>`:''}
         ${r.email?`<span style="display:block;margin-top:2px;font-size:12px;color:var(--n500)">${esc(r.email)}</span>`:''}
         <div class="chips" style="gap:6px;margin-top:10px">
           ${Object.entries(AG_STATUS).map(([k,[,t]])=>`
@@ -2352,6 +2366,8 @@ function agentPanel(){
       <button class="btn sec sm" data-act="ag-csv">CSV 내려받기</button>
     </div>
 
+    ${agentNeedCheck(all)}
+
     <div class="card pad" style="padding:0;overflow:hidden">
       <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--hair)">
         <b style="font-size:15px;font-weight:800">${rows.length===all.length?`신청 ${all.length}건`:`${rows.length}건 / 전체 ${all.length}건`}</b>
@@ -2375,7 +2391,10 @@ function agentPanel(){
               <td style="padding:11px 14px;font-weight:700">${esc(r.name||'')}</td>
               <td style="padding:11px 14px" class="num">${esc(r.phone||'')}</td>
               <td style="padding:11px 14px">${esc(r.office||r.addr||'')}</td>
-              <td style="padding:11px 14px" class="num">${esc(r.reg_no||r.biz_no||'')}</td>
+              <td style="padding:11px 14px">
+                <span class="num">${esc(r.reg_no||r.biz_no||'')}</span>
+                ${r.role==='agent'&&(r.reg_no||'') ? `<span class="badge ${r.reg_verified?'b-ok':'b-warn'}" style="margin-left:6px;font-size:10.5px;padding:1px 7px">${r.reg_verified?'확인':'미확인'}</span>` : ''}
+              </td>
               <td style="padding:11px 14px;color:var(--n500)">${esc(r.email||'')}</td>
             </tr>
             <tr><td colspan="8" style="padding:0 14px 12px">

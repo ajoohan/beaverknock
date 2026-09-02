@@ -14,6 +14,26 @@ import { notify, mask } from './_notify.js';
 
 const TABLE = 'bk_demand';
 
+/* 유형은 넷이다. 목록에 없는 값은 받지 않는다 - 화면을 우회해 들어와도 여기서 걸린다.
+   갈림길은 '주거냐 아니냐' 하나뿐이고, 상가·오피스·창고의 차이는 spec 에 담긴다. */
+const KINDS = ['home', 'shop', 'office', 'storage'];
+const KIND_KO = { home: '주거', shop: '상가', office: '오피스', storage: '창고' };
+const SPEC_KEYS = { office: ['headcount', 'bld_type'], storage: ['ceil_h', 'dock', 'temp'] };
+
+/* 넘어온 것을 그대로 넣지 않는다 - 유형에 있는 열쇠만, 길이도 잘라서 담는다. */
+function spec(kind, v) {
+  const keys = SPEC_KEYS[kind];
+  if (!keys || !v || typeof v !== 'object') return null;
+  const out = {};
+  for (const k of keys) {
+    const x = v[k];
+    if (x === null || x === undefined || x === '') continue;
+    out[k] = typeof x === 'number' ? x : String(x).slice(0, 40);
+  }
+  return Object.keys(out).length ? out : null;
+}
+const NONHOME = k => k === 'shop' || k === 'office' || k === 'storage';
+
 /* 같은 인스턴스가 살아 있는 동안의 연타 방지.
    서버리스라 인스턴스가 갈리면 초기화된다 — 지속적인 차단은 아래 DB 카운트가 맡는다. */
 const burst = new Map();
@@ -64,7 +84,7 @@ export default async function handler(req, res) {
   const now = Date.now();
 
   /* ── 값 검사 — 화면을 우회해 들어오는 요청도 여기서 걸린다 ── */
-  const kind = b.kind === 'shop' ? 'shop' : b.kind === 'home' ? 'home' : null;
+  const kind = KINDS.includes(b.kind) ? b.kind : null;
   const dongs = arr(b.dongs);
   const name = str(b.name, 40);
   const phone = String(b.phone ?? '').replace(/-/g, '');
@@ -108,30 +128,34 @@ export default async function handler(req, res) {
 
   const row = {
     kind, who: kind, dongs,
-    deal: kind === 'shop' ? null : str(b.deal, 20),
+    deal: NONHOME(kind) ? null : str(b.deal, 20),
     dep: int(b.dep), rent: int(b.rent), fee_included: true,
     key_money: kind === 'shop' ? int(b.key_money) : null,
 
-    htype: kind === 'shop' ? [] : arr(b.htype),
-    rooms: kind === 'shop' ? null : str(b.rooms, 20),
-    when_text: kind === 'shop' ? null : str(b.when_text, 200),
-    musts: kind === 'shop' ? [] : arr(b.musts),
-    must_free: kind === 'shop' ? null : str(b.must_free, 300),
-    floor_avoid: kind === 'shop' ? null : str(b.floor_avoid, 20),
-    household: kind === 'shop' ? null : str(b.household, 20),
-    elevator: kind === 'shop' ? null : str(b.elevator, 20),
-    loan_plan: kind === 'shop' ? null : str(b.loan_plan, 20),
+    htype: NONHOME(kind) ? [] : arr(b.htype),
+    rooms: NONHOME(kind) ? null : str(b.rooms, 20),
+    when_text: NONHOME(kind) ? null : str(b.when_text, 200),
+    musts: NONHOME(kind) ? [] : arr(b.musts),
+    must_free: NONHOME(kind) ? null : str(b.must_free, 300),
+    floor_avoid: NONHOME(kind) ? null : str(b.floor_avoid, 20),
+    household: NONHOME(kind) ? null : str(b.household, 20),
+    elevator: NONHOME(kind) ? null : str(b.elevator, 20),
+    loan_plan: NONHOME(kind) ? null : str(b.loan_plan, 20),
 
-    biz: kind === 'shop' ? str(b.biz, 100) : null,
-    area_min: kind === 'shop' ? num(b.area_min) : null,
-    area_max: kind === 'shop' ? num(b.area_max) : null,
-    shop_floor_free: kind === 'shop' ? str(b.shop_floor_free, 300) : null,
-    facilities_free: kind === 'shop' ? str(b.facilities_free, 300) : null,
+    biz: NONHOME(kind) ? str(b.biz, 100) : null,
+    area_min: NONHOME(kind) ? num(b.area_min) : null,
+    area_max: NONHOME(kind) ? num(b.area_max) : null,
+    shop_floor_free: NONHOME(kind) ? str(b.shop_floor_free, 300) : null,
+    facilities_free: NONHOME(kind) ? str(b.facilities_free, 300) : null,
     key_ok: kind === 'shop' ? str(b.key_ok, 30) : null,
     sign_need: kind === 'shop' ? str(b.sign_need, 30) : null,
-    park_need: kind === 'shop' ? int(b.park_need) : null,
-    shop_note: kind === 'shop' ? str(b.shop_note, 500) : null,
-    open_when: kind === 'shop' ? str(b.open_when, 30) : null,
+    park_need: NONHOME(kind) ? int(b.park_need) : null,
+    shop_note: NONHOME(kind) ? str(b.shop_note, 500) : null,
+    open_when: NONHOME(kind) ? str(b.open_when, 30) : null,
+
+    /* 유형마다 다른 몇 가지. 칸을 새로 파지 않고 한 곳에 담는다 -
+       사무실은 인원·건물, 창고는 층고·하역·온도. */
+    spec: spec(kind, b.spec),
 
     memo: str(b.memo, 1000),
 
@@ -160,19 +184,23 @@ export default async function handler(req, res) {
 
   try {
     let r = await insert(row);
-    /* ip_hash 컬럼(0005 마이그레이션)이 아직 없으면 그 칸만 빼고 다시 넣는다.
-       스팸 방어 하나 때문에 손님 조건을 잃을 수는 없다. */
+    /* 표에 아직 없는 칸이 있으면 그 칸만 빼고 다시 넣는다.
+       칸 하나 때문에 손님 조건을 통째로 잃을 수는 없다.
+       마이그레이션이 늦어도 접수는 살아 있고, 로그에 무엇이 빠졌는지 남는다. */
     if (!r.ok) {
-      const t = await r.text();
-      if (t.includes('ip_hash')) {
-        console.warn('ip_hash 컬럼 없음 — 해당 칸 없이 저장한다 (0005 마이그레이션 필요)');
-        const { ip_hash, ...rest } = row;
-        r = await insert(rest);
+      let t = await r.text();
+      for (let i = 0; i < 4 && !r.ok; i++) {
+        const miss = Object.keys(row).find(k =>
+          k !== 'kind' && new RegExp(`'${k}' column|column "${k}"`).test(t));
+        if (!miss) break;
+        console.warn(`${miss} 칸 없음 — 그 칸 없이 저장한다 (마이그레이션 필요)`);
+        delete row[miss];
+        r = await insert(row);
+        if (!r.ok) t = await r.text();
       }
       if (!r.ok) {
-        const t2 = r.bodyUsed ? t : await r.text();
-        console.error('접수 저장 실패', r.status, t2.slice(0, 300));
-        return res.status(502).json({ error: '저장하지 못했습니다', detail: t2.slice(0, 200) });
+        console.error('접수 저장 실패', r.status, t.slice(0, 300));
+        return res.status(502).json({ error: '저장하지 못했습니다', detail: t.slice(0, 200) });
       }
     }
   } catch (e) {
@@ -182,11 +210,11 @@ export default async function handler(req, res) {
 
   /* 알림이 안 가도 접수는 성공이다. 붙잡아 두지 않는다. */
   const sent = await notify(req, {
-    subject: `새 조건 · ${row.kind === 'shop' ? '상가' : '주거'} · ${(row.dongs || []).join(' · ') || '하남'}`,
+    subject: `새 조건 · ${KIND_KO[row.kind] || '주거'} · ${(row.dongs || []).join(' · ') || '하남'}`,
     rows: [
-      ['유형', row.kind === 'shop' ? '상가' : '주거'],
+      ['유형', KIND_KO[row.kind] || '주거'],
       ['지역', (row.dongs || []).join(' · ') || '-'],
-      ['예산', row.kind === 'shop'
+      ['예산', NONHOME(row.kind)
         ? `보증금 ${row.dep ?? 0}만 / 월 ${row.rent ?? 0}만`
         : `${row.deal || ''} ${row.dep ?? 0}만${row.rent ? ` / 월 ${row.rent}만` : ''}`.trim()],
       ['성함', row.name || '-'],

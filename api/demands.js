@@ -55,7 +55,7 @@ export default async function handler(req, res) {
   }
 
   const limit  = Math.min(parseInt(payload.limit, 10) || 200, 1000);
-  const kind   = payload.kind;                 // home | shop
+  const kind   = payload.kind;                 // home | shop | office | storage
   const days   = parseInt(payload.days, 10) || 0;
   const reveal = payload.reveal === true;      // 연락처 원문 보기
 
@@ -63,7 +63,7 @@ export default async function handler(req, res) {
   q.set('select', '*');
   q.set('order', 'created_at.desc');
   q.set('limit', String(limit));
-  if (kind === 'home' || kind === 'shop') q.set('kind', 'eq.' + kind);
+  if (['home', 'shop', 'office', 'storage'].includes(kind)) q.set('kind', 'eq.' + kind);
   if (days > 0) q.set('created_at', 'gte.' + new Date(Date.now() - days * 864e5).toISOString());
 
   let rows;

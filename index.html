@@ -2786,7 +2786,7 @@ V['#/inbox'] = () => {
     <div style="flex:1;display:flex;flex-direction:column;gap:14px;min-width:0;padding-bottom:26px">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
         <span style="font-size:${isMo()?15:17}px;font-weight:800">제안 ${list.length}건</span>
-        ${isMo()? `<select class="inp" data-act="pick-cond-sel" style="width:auto;padding:8px 10px;font-size:12.5px;font-weight:700">
+        ${isMo()? `<select class="inp" data-act="pick-cond-sel" style="width:auto;padding:8px 10px;font-weight:700">
           ${S.conds.map(c=>`<option value="${c.id}" ${c.id===S.inboxCond?'selected':''}>${esc(c.title)}</option>`).join('')}</select>`
         : `<span style="font-size:12.5px;color:var(--n500)">${esc(cond?cond.title:'')} · 다른 점을 먼저 보여드립니다</span>`}
       </div>

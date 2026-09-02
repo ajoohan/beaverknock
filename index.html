@@ -138,6 +138,9 @@ body.mo .grid2.mo1{grid-template-columns:1fr}
 
 .badge{display:inline-block;border-radius:var(--r-full);padding:4px 11px;font-size:11.5px;font-weight:800;white-space:nowrap}
 .b-ok{background:var(--okbg);color:var(--ok)} .b-warn{background:var(--warnbg);color:var(--warn)}
+/* 글자 링크는 눌리는 자리가 글자 높이(15px)뿐이라 손가락으로 맞히기 어렵다.
+   보이는 모습은 그대로 두고 위아래 여백만 준다 - 줄 높이는 음수 마진으로 되돌린다. */
+.sublinks a{padding:14px 8px;margin:-14px 0;display:inline-block}
 .b-ind{background:var(--ind100);color:var(--ind)} .b-mute{background:var(--n100);color:var(--n500)}
 .b-danger{background:var(--dangerbg);color:var(--danger)}
 
@@ -503,6 +506,10 @@ h1.t + .sub, .sub{font-size:15px;line-height:1.75;color:var(--n500)}
 
 /* ── 입력: 존재감 ── */
 .inp{padding:14px 15px;font-size:15px}
+  /* iOS 는 16px 미만 입력칸을 탭하면 화면을 확대하고 그대로 둔다.
+     maximum-scale 로 막는 방법도 있지만 그건 손가락으로 키우는 것까지 막는다.
+     글자를 16px 로 올리는 쪽이 맞다 - 화면에서도 읽기 편해진다. */
+  .inp, input, select, textarea{font-size:16px}
 .inp::placeholder{color:#B5AFA5}
 
 /* ── 칩: 더 단단하게 ── */
@@ -1606,9 +1613,9 @@ V['#/login'] = () => {
       </div>
 
       <!-- 찾기 줄 -->
-      <div style="display:flex;justify-content:center;align-items:center;gap:10px;font-size:13px;color:var(--n500)">
+      <div class="sublinks" style="display:flex;justify-content:center;align-items:center;gap:4px;font-size:13px;color:var(--n500)">
         ${S.signup
-          ? `<span>이미 계정이 있으신가요?</span><a data-act="signup-toggle" style="font-weight:700;color:var(--ind)">로그인</a>`
+          ? `<span style="padding:0 2px">이미 계정이 있으신가요?</span><a data-act="signup-toggle" style="font-weight:700;color:var(--ind)">로그인</a>`
           : `<a data-go="#/find-id" style="color:var(--n700)">아이디 찾기</a>${bar}
              <a data-go="#/reset-pw" style="color:var(--n700)">비밀번호 찾기</a>${bar}
              <a data-act="signup-toggle" style="font-weight:700;color:var(--ind)">회원가입</a>`}
@@ -4113,7 +4120,7 @@ function opsShare(r){
     put('입주   ', r.when_text);
     put('필수   ', [...(r.musts||[]), r.must_free||''].filter(Boolean).join(' · '));
     put('층     ', r.floor_avoid);
-    put('엘리베이터 ', r.elevator);
+    put('승강기 ', r.elevator);
     put('거주   ', r.household);
     put('대출   ', r.loan_plan);
   }

@@ -1412,6 +1412,15 @@ function zonesHTML(zones, sel){
     </details>`;}).join('');}
 
 /* ---------- 조건 요약 생성 ---------- */
+/* 최대를 비우면 '전용 30~평 (99.2~㎡)' 처럼 끝이 잘려 보였다.
+   최대는 필수가 아니니, 없으면 '이상' 으로 읽히게 쓴다. */
+const PY_M2 = 3.305785;
+function areaText(min, max){
+  if(!min) return '';
+  const m2 = v => (v*PY_M2).toFixed(1);
+  return max ? `전용 ${min}~${max}평 (${m2(min)}~${m2(max)}㎡)`
+             : `전용 ${min}평 이상 (${m2(min)}㎡ 이상)`;
+}
 function draftTitle(d){
   if(NONHOME(d.kind)) return `${d.dongs[0]||'하남'}${d.dongs.length>1?' 외 '+(d.dongs.length-1):''} · ${d.biz||(WHO[d.kind]||{}).tag||'상가'}${d.areaMin?` · ${d.areaMin}~${d.areaMax||''}평`:''}`;
   const rooms = d.rooms && d.rooms!=='무관' ? ` · ${d.rooms}` : '';
@@ -1421,10 +1430,13 @@ function draftLines(d){
   const L=[];
   if(NONHOME(d.kind)){
     L.push(`보증금 ${won(+d.dep||0)} / 월 ${d.rent||0}${d.kind==='shop'&&d.key?` · 권리금 ${won(+d.key)}까지`:''}`);
-    if(d.areaMin) L.push(`전용 ${d.areaMin}~${d.areaMax||''}평 (${(d.areaMin*3.305785).toFixed(1)}~${d.areaMax?(d.areaMax*3.305785).toFixed(1):''}㎡)${d.shopFloorFree?` · ${d.shopFloorFree}`:''}`);
+    if(d.areaMin) L.push(`${areaText(d.areaMin, d.areaMax)}${d.shopFloorFree?` · ${d.shopFloorFree}`:''}`);
     else if(d.shopFloorFree) L.push(d.shopFloorFree);
-    if(d.kind==='office' && d.headcount) L.push(`상주 ${d.headcount}명${d.bldType?` · ${d.bldType}`:''}`);
-    if(d.kind==='storage') { const t=[d.ceilH&&`층고 ${d.ceilH}m 이상`, d.dock, d.temp].filter(Boolean); if(t.length) L.push(t.join(' · ')); }
+    /* 카드는 줄이 서너 개뿐이다. '상관없음' 은 아무것도 말하지 않으니 요약에서 뺀다.
+       중개사에게 보내는 글과 확인 화면에는 그대로 남긴다 - 거기서는 '따지지 않는다' 는 정보다. */
+    const said = v => v && v !== '상관없음' ? v : '';
+    if(d.kind==='office'){ const t=[d.headcount&&`상주 ${d.headcount}명`, said(d.bldType)].filter(Boolean); if(t.length) L.push(t.join(' · ')); }
+    if(d.kind==='storage'){ const t=[d.ceilH&&`층고 ${d.ceilH}m 이상`, said(d.dock), said(d.temp)].filter(Boolean); if(t.length) L.push(t.join(' · ')); }
     if(d.facFree) L.push(`설비 - ${d.facFree}`);
   } else {
     L.push(`보증금 ${won(+d.dep||0)}${+d.rent?` / 월 ${d.rent}`:''}`);
@@ -1441,7 +1453,7 @@ function draftSummary(d){
   if(NONHOME(d.kind)){
     put(words(d.kind).what, d.biz);
     put('예산', `보증금 ${won(+d.dep||0)} / 월 ${man(d.rent)}만${d.kind==='shop'&&d.key?` · 권리금 ${won(+d.key)}까지`:''}`);
-    if(d.areaMin) put('면적', `전용 ${d.areaMin}~${d.areaMax||''}평 (${(d.areaMin*3.305785).toFixed(1)}~${d.areaMax?(d.areaMax*3.305785).toFixed(1):''}㎡)`);
+    if(d.areaMin) put('면적', areaText(d.areaMin, d.areaMax));
     put('입주', d.openWhen);
     put('층', d.shopFloorFree);
     if(d.kind==='office'){ put('인원', d.headcount && `상주 ${d.headcount}명`); put('건물', d.bldType); }
@@ -1461,11 +1473,12 @@ function draftSummary(d){
   return R;
 }
 function detailPct(d){
-  /* 선택 항목은 유형마다 다르다 - 상가에 '거주 인원'을 묻지 않는다 */
-  const opt = d.kind==='shop'   ? ['memo','openWhen','keyOk','signNeed','parkNeed']
-            : d.kind==='office'  ? ['memo','openWhen','headcount','bldType','parkNeed']
-            : d.kind==='storage' ? ['memo','openWhen','ceilH','dock','temp']
-            :                      ['memo','floor','house','elev','loan'];
+  /* 이 게이지는 '이 화면(#/detail)에서 더 채울 수 있는 것' 을 센다.
+     앞 화면에서 묻는 항목을 여기 넣으면 게이지가 움직이지 않아 사람을 속인다.
+     선택 항목은 유형마다 다르다 - 상가에 '거주 인원'을 묻지 않는다. */
+  const opt = d.kind==='shop' ? ['memo','keyOk','signNeed','parkNeed','shopNote']
+            : NONHOME(d.kind) ? ['memo','parkNeed','shopNote']
+            :                   ['memo','floor','house','elev','loan'];
   let n=0; opt.forEach(k=>{ if(d[k]) n++; });
   return Math.round(40 + (n/opt.length)*60);
 }
@@ -1894,18 +1907,16 @@ V['#/detail'] = () => { const d=S.draft, pct=detailPct(d); return `
           placeholder="예) 아이가 있어서 조용한 곳이면 좋겠어요. 이번 달 안에 꼭 옮겨야 하는 사정이 있습니다.">${esc(d.memo)}</textarea>
       </div>
       ${NONHOME(d.kind) ? `
-      <div><span class="lab">입주 희망일 <span class="opt">정해진 날이 있으면 그대로 적어주세요</span></span>
-        <input class="inp" data-in="openWhen" value="${esc(d.openWhen||'')}"
-          placeholder="예) 26년 10월 중 / 계약 후 2개월 이내 / 협의 가능">
-        <p style="margin:8px 0 0;font-size:11.5px;color:var(--n500)">날짜가 구체적일수록 중개사가 헛걸음을 줄입니다.</p></div>
       ${d.kind==='shop' ? `
       <div><span class="lab">권리금이 있는 자리도 보시겠어요?</span>${chipsHTML(['괜찮습니다','무권리만','금액 보고 판단'], d.keyOk||'', 'keyOk', false)}</div>` : ''}
+      ${d.kind==='shop' ? `
       <div class="grid2 mo1">
-        ${d.kind==='shop' ? `
-        <div><span class="lab">간판 · 외부 노출</span>${chipsHTML(['1층 노출 필수','간판만 보이면 됨','상관없음'], d.signNeed||'', 'signNeed', false)}</div>` : ''}
+        <div><span class="lab">간판 · 외부 노출</span>${chipsHTML(['1층 노출 필수','간판만 보이면 됨','상관없음'], d.signNeed||'', 'signNeed', false)}</div>
         <div><span class="lab">필요한 주차 대수</span>
-          <div class="unit"><input class="inp" data-in="parkNeed" inputmode="numeric" value="${esc(d.parkNeed||'')}" placeholder="${d.kind==='storage'?'0':'0'}"><span>대</span></div></div>
-      </div>
+          <div class="unit"><input class="inp" data-in="parkNeed" inputmode="numeric" value="${esc(d.parkNeed||'')}" placeholder="0"><span>대</span></div></div>
+      </div>` : `
+      <div style="max-width:${isMo()?'100%':'50%'}"><span class="lab">필요한 주차 대수</span>
+        <div class="unit"><input class="inp" data-in="parkNeed" inputmode="numeric" value="${esc(d.parkNeed||'')}" placeholder="0"><span>대</span></div></div>`}
       <div><span class="lab">그 밖에 자리를 볼 때 중요한 점<span class="opt" style="display:block;margin-top:4px">${
           d.kind==='office' ? '건물 관리 상태, 주변 편의시설, 출퇴근 동선 등 편하게 적어주세요'
         : d.kind==='storage'? '진입로 폭, 대형차 접근, 24시간 출입 여부 등 편하게 적어주세요'
@@ -3602,7 +3613,7 @@ V["#/partner/settings"] = () => {
     <div style="display:grid;grid-template-columns:${isMo()?'1fr':'1fr 300px'};gap:${isMo()?14:18}px;align-items:start">
       <div style="display:flex;flex-direction:column;gap:14px">
         ${sect('1','취급 유형','', chipsHTML(['주거 전월세','상가·점포','오피스','창고'], sc.assets,'sc-assets',true) +
-          `<div class="chips" style="margin-top:8px">${['사무실','토지','창고·공장','건물(통)'].map(x=>
+          `<div class="chips" style="margin-top:8px">${['토지','공장','건물(통)'].map(x=>
             `<span class="chip" style="border-style:dashed;color:#C9C4BB;cursor:default">${x} · 준비 중</span>`).join('')}</div>`)}
         ${sc.assets.includes('주거 전월세') ? sect('2','거래 방식','', chipsHTML(['월세','전세','매매'], sc.deals,'sc-deals',true)) : ''}
         ${sect('3','활동 지역','생활권 이름을 눌러 한 번에 고를 수 있습니다',

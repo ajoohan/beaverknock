@@ -34,6 +34,22 @@ function spec(kind, v) {
 }
 const NONHOME = k => k === 'shop' || k === 'office' || k === 'storage';
 
+/* '그 칸이 아예 없다' 는 오류만 골라낸다.
+   컬럼 이름은 not-null 위반 메시지에도 똑같이 들어 있어서, 이름만 보고 지우면
+   값이 비어 실패한 칸까지 버리고 DB 기본값으로 조용히 저장해 버린다 -
+   보증금을 못 받았는데 0원짜리 조건이 중개사에게 나가는 식이다. */
+const NO_COLUMN = [
+  /Could not find the '([a-z_]+)' column/i,          // PGRST204 (스키마 캐시)
+  /column "([a-z_]+)".{0,80}?does not exist/is,      // 42703
+];
+function missingColumn(row, text) {
+  for (const re of NO_COLUMN) {
+    const m = re.exec(text);
+    if (m && m[1] !== 'kind' && m[1] in row) return m[1];
+  }
+  return null;
+}
+
 /* 같은 인스턴스가 살아 있는 동안의 연타 방지.
    서버리스라 인스턴스가 갈리면 초기화된다 — 지속적인 차단은 아래 DB 카운트가 맡는다. */
 const burst = new Map();
@@ -190,8 +206,7 @@ export default async function handler(req, res) {
     if (!r.ok) {
       let t = await r.text();
       for (let i = 0; i < 4 && !r.ok; i++) {
-        const miss = Object.keys(row).find(k =>
-          k !== 'kind' && new RegExp(`'${k}' column|column "${k}"`).test(t));
+        const miss = missingColumn(row, t);
         if (!miss) break;
         console.warn(`${miss} 칸 없음 — 그 칸 없이 저장한다 (마이그레이션 필요)`);
         delete row[miss];

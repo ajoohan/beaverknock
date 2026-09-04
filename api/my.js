@@ -43,14 +43,16 @@ export default async function handler(req, res) {
     const pr = await fetch(sbUrl('bk_proposal', pq.toString()), { headers: sbHeaders() });
     const proposals = pr.ok ? await pr.json() : [];
 
-    /* 제안을 보낸 중개사의 사무소 이름만 붙인다. 연락처는 붙이지 않는다 -
-       손님이 '연결' 을 누르기 전까지는 서로의 번호가 오가지 않는 것이 이 서비스의 약속이다. */
+    /* 누가 보냈는지는 '어떤 자격인지' 까지만 알린다. 사무소 이름도 보내지 않는다 -
+       손님이 '연결' 을 누르기 전까지는 서로를 특정할 수 있는 것이 오가지 않는다.
+       사무소를 밝히는 것은 손님이 연결을 고른 그 순간이다. */
+    const ROLE_KO = { agent: '공인중개사', owner: '소유자', developer: '시행사' };
     const agentIds = [...new Set(proposals.map(p => p.agent_id).filter(Boolean))];
-    let offices = {};
+    let by = {};
     if (agentIds.length) {
-      const aq = new URLSearchParams({ select: 'id,office,name', id: `in.(${agentIds.join(',')})` });
+      const aq = new URLSearchParams({ select: 'id,role', id: `in.(${agentIds.join(',')})` });
       const ar = await fetch(sbUrl('bk_agent', aq.toString()), { headers: sbHeaders() });
-      if (ar.ok) for (const a of await ar.json()) offices[a.id] = a.office || '공인중개사사무소';
+      if (ar.ok) for (const a of await ar.json()) by[a.id] = ROLE_KO[a.role] || '공인중개사';
     }
 
     return res.status(200).json({
@@ -65,7 +67,7 @@ export default async function handler(req, res) {
       })),
       proposals: proposals.map(p => ({
         id: p.id, demand_id: p.demand_id, status: p.status,
-        office: offices[p.agent_id] || '공인중개사사무소',
+        by: by[p.agent_id] || '공인중개사',
         bname: p.bname, addr_area: String(p.addr || '').split(' ').slice(0, 2).join(' '),
         dep: p.dep, rent: p.rent, fee: p.fee, fee_type: p.fee_type, fee_items: p.fee_items,
         area_sup: p.area_sup, area: p.area, rooms: p.rooms, baths: p.baths, dir: p.dir,

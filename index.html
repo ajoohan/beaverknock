@@ -3291,7 +3291,7 @@ V['#/partner/propose'] = (id) => { const d=S.demands.find(x=>x.id===id); if(!d) 
       <div class="card pad" style="${isMo()?'':'position:sticky;top:0'}">
         <div style="display:flex;justify-content:space-between;margin-bottom:12px">
           <span style="font-size:13px;font-weight:800;color:var(--ind)">명시사항 검사</span>
-          <span class="num" data-checkcount style="font-size:13px;font-weight:800;color:${allOk?'var(--ok)':'var(--n500)'}">${allOk?'모두 충족':'충족'} (${passed}/12)</span>
+          <span class="num" data-checkcount style="font-size:13px;font-weight:800;color:${allOk?'var(--ok)':'var(--n500)'}">${allOk?'모두 충족':'충족'} (${passed}/${checks.length})</span>
         </div>
         <div data-checks style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px">
           ${checks.map(([k,ok])=>`<span style="font-size:12.5px;font-weight:600;color:${ok?'var(--ok)':'var(--danger)'}">${ok?'✓':'✕'} ${k}</span>`).join('')}
@@ -3300,7 +3300,7 @@ V['#/partner/propose'] = (id) => { const d=S.demands.find(x=>x.id===id); if(!d) 
           ${beaverlyMini(46)}
           <p style="margin:0;font-size:11.5px;line-height:1.6;color:var(--n500)">발송 후 수정은 불가합니다 - 열람 전 회수만 가능합니다. 작성 내용은 30초마다 자동 저장됩니다.</p></div>
       </div>
-      <button class="btn pri blk" style="padding:17px 0;font-size:15px" data-act="send-proposal" data-v="${d.id}" ${allOk && S.timeLeft>0 ?'':'disabled'}>제안 보내기</button>
+      <button class="btn pri blk" style="padding:17px 0;font-size:15px" data-act="send-proposal" data-v="${d.id}" ${S.timeLeft>0 ?'':'disabled'}>제안 보내기</button>
       <span style="text-align:center;font-size:11.5px;color:var(--n500)">${S.timeLeft===0?'슬롯 예약이 만료됐습니다 - 수요 상세에서 다시 시도하세요':'즉시 전달됩니다 - 검증 대기 없음'}</span>
     </div>
   </div>

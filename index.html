@@ -948,6 +948,8 @@ const SCOPE_DEFAULT = {
   depFloor:'', rentFloor:'',
   biz:['카페·디저트','음식점(주류X)','미용실·네일','학원·교습소'],
   excluded:[], hourFrom:'09', hourTo:'19', cap:'10', paused:false,
+  /* 기본값이 들어 있어 '비었는가' 로는 정했는지 알 수 없다. 손댄 적이 있는지를 따로 센다. */
+  regionsSet:false,
 };
 const EXCLUDES = [
   {g:'주거', items:['반려동물 가능 요구','1층 필수 요구']},
@@ -3055,17 +3057,18 @@ V['#/partner'] = () => `
     <span style="flex:none">${logoLockup({h:isMo()?21:26,mode:"dark",partner:true,tag:!isMo()})}</span>
     <div class="right" style="color:#9AA3BF">
       <a data-go="#/" style="font-size:${isMo()?12.5:13.5}px;font-weight:600">${isMo()?'손님 화면':'손님 화면 보기'}</a>
-      <button class="btn sm" data-go="#/partner/demands" style="background:var(--ind300);color:#fff;padding:${isMo()?'9px 15px':'10px 20px'};font-size:${isMo()?13:14}px">${isMo()?'시작하기':'무료로 시작하기'}</button>
+      <button class="btn sm" data-go="#/partner/join" style="background:var(--ind300);color:#fff;padding:${isMo()?'9px 15px':'10px 20px'};font-size:${isMo()?13:14}px">${isMo()?'가입':'중개사 가입'}</button>
     </div>
   </div>
   <div class="pad" style="flex:1;display:flex;align-items:center;gap:40px">
    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:22px;max-width:${isMo()?'none':'820px'}">
     <span style="align-self:flex-start;font-size:12.5px;font-weight:800;color:#9AA3BF;border:1px solid var(--navy600);border-radius:var(--r-full);padding:8px 18px">클로즈 베타 · 하남에서 먼저 시작합니다</span>
     <h1 class="t" style="font-size:${isMo()?25:40}px;color:#fff;line-height:1.28;letter-spacing:-.052em;max-width:20ch">하남에서 집·가게를 구하는 손님이<br><span style="color:var(--ind300)">조건을 걸어두고</span> 기다리고 있습니다</h1>
-    <p style="margin:0;font-size:${isMo()?14:17}px;line-height:1.75;color:#9AA3BF"><b style="color:#F0EDE7">비용은 없습니다. 매물을 올리실 필요도 없습니다.</b><br class="mbr"> 네이버·직방에 올리는 광고비와 다릅니다 - 이미 원하는 게 정해진 손님입니다.</p>
+    <p style="margin:0;font-size:${isMo()?14:17}px;line-height:1.75;color:#9AA3BF"><b style="color:#F0EDE7">제안을 보내는 데 드는 비용은 없습니다. 매물을 올리실 필요도 없습니다.</b><br class="mbr"> 네이버·직방에 올리는 광고비와 다릅니다 - 이미 원하는 게 정해진 손님입니다.</p>
     <div style="display:flex;align-items:center;gap:18px;${isMo()?'flex-direction:column;align-items:stretch':''}">
-      <button class="btn ${isMo()?'blk':''}" data-go="#/partner/demands" style="background:var(--ind300);color:#fff;padding:17px 40px;font-size:17px">대기 중인 손님 보기</button>
-      <span style="font-size:12.5px;line-height:1.6;color:var(--navy400)">개설등록번호만 있으면 즉시 시작 ·<br class="mbr"> 중개사 과금 경로는 영구히 닫혀 있습니다</span>
+      <button class="btn ${isMo()?'blk':''}" data-go="#/partner/join" style="background:var(--ind300);color:#fff;padding:17px 40px;font-size:17px">중개사 가입하기</button>
+      <a data-go="#/partner/demands" style="font-size:14px;font-weight:700;color:var(--ind300);text-decoration:underline;text-underline-offset:3px;padding:6px 2px">먼저 둘러보기</a>
+      <span style="font-size:12.5px;line-height:1.6;color:var(--navy400)">개설등록번호만 있으면 즉시 시작 ·<br class="mbr"> 손님에게 제안을 보내는 데는 과금하지 않습니다</span>
     </div>
    </div>
    ${isMo()?'':`<div style="flex:none;position:relative;display:flex;align-items:center;justify-content:center">
@@ -3106,6 +3109,11 @@ V['#/partner/demands'] = () => {
       <p class="sub" style="font-size:13px">매칭 적합도 순 - 선착순이 아닙니다 · 내 품질 점수 <b style="color:var(--n900)">${qualityScore()}점</b>이 노출 순위에 반영됩니다. 손님 연락처는 연결 확정 전까지 표시되지 않습니다.</p></div>
       <div class="chips">${['전체', ...Object.values(WHO).map(w=>w.tag)].map(x=>`<button class="chip ${f===x?'on':''}" data-act="dfilter" data-v="${x}">${x}</button>`).join('')}</div>
     </div>
+    ${!S.scope.regionsSet ? `<div class="card pad" style="border-color:#E8D5A8;background:var(--warnbg);box-shadow:none;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+      <span style="min-width:0"><b style="display:block;font-size:13.5px">활동 지역을 아직 정하지 않으셨습니다</b>
+      <span style="display:block;margin-top:3px;font-size:12.5px;line-height:1.6;color:var(--n700)">
+        어디까지 가실 수 있는지 정해두셔야 맞는 손님만 보여드립니다. 정하기 전에는 제안을 보내실 수 없습니다.</span></span>
+      <a class="btn pri sm" data-go="#/partner/settings" style="flex:none">활동 지역 정하기</a></div>` : ''}
     ${S.scope.paused ? `<div class="card pad" style="border-color:var(--n300);background:var(--n100);box-shadow:none;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
       <b style="font-size:13.5px">알림을 중단해 두셨습니다 - 새 손님이 와도 카톡이 가지 않습니다</b>
       <button class="btn sec sm" data-act="sc-pause">알림 재개</button></div>` : ''}
@@ -3135,7 +3143,7 @@ V['#/partner/demands'] = () => {
       </div>`).join('')}
     </div>
     <div class="beaverbox" style="margin-top:6px;margin-bottom:${isMo()?'12px':'0'};max-width:${isMo()?'none':'640px'}">${beaverlyMini(56)}
-      <p>매물 1건 노출에 2천원을 쓰는 대신, <b style="color:var(--n900)">수요가 확인된 손님에게만 무료로</b> 제안하세요. 이 방침은 영구적입니다.</p></div>
+      <p>매물 1건 노출에 2천원을 쓰는 대신, <b style="color:var(--n900)">수요가 확인된 손님에게만</b> 제안하세요. 손님에게 제안을 보내는 데는 비용을 받지 않습니다.</p></div>
   </div>
   ${tabbar('d','p')}
 </div>`;};
@@ -3197,11 +3205,10 @@ V['#/partner/demand'] = (id) => { const d=S.demands.find(x=>x.id===id); if(!d) r
 /* ---------- S-06 제안 작성 ---------- */
 V['#/partner/propose'] = (id) => { const d=S.demands.find(x=>x.id===id); if(!d) return V['#/partner/demands']();
   const f=S.form; const g=k=>f[k]||'';
-  const floorOk = f.floorMode==='비공개' || (f.floorMode==='정확한 층'? !!f.floorNo : f.floorMode==='고·중·저'? !!f.band : false);
-  const checks=[
-    ['소재지', !!g('addr').trim()],['건물명', !!g('bname').trim()],['면적', +g('area')>0],['가격', +g('dep')>0],
-    ['거래형태', true],['방/욕실', !!g('rooms') && !!g('baths')],['입주가능일', !!g('moveIn')],['방향', !!g('dir')],
-    ['관리비', g('fee')!=='' && !!g('feeType')],['층 표기', floorOk],['공급면적', +g('areaSup')>0],['주차장', !!g('park')]];
+  /* 수요 유형을 form 에 안 담고 들어온 경우(새로고침 등)에도 어긋나지 않게 맞춰둔다 */
+  if(f.pkind !== d.kind) f.pkind = d.kind;
+  const home = d.kind === 'home';
+  const checks = proposeChecks(f);
   const passed = checks.filter(c=>c[1]).length, allOk = passed===checks.length;
   const mm=String(Math.floor(S.timeLeft/60)).padStart(2,'0'), ss=String(S.timeLeft%60).padStart(2,'0');
   return `
@@ -3239,11 +3246,15 @@ V['#/partner/propose'] = (id) => { const d=S.demands.find(x=>x.id===id); if(!d) 
             <span data-py="area" style="display:block;margin-top:4px;font-size:11.5px;font-weight:700;color:var(--n500)">${+g('area')>0?`${(+g('area')/3.305785).toFixed(1)}평`:''}</span></div>
           <div><span class="lab" style="font-size:12.5px">보증금</span><div class="unit"><input class="inp num" data-in="dep" inputmode="numeric" value="${esc(g('dep'))}" placeholder="0" style="padding:11px 13px;font-size:14px"><span>만원</span></div></div>
           <div><span class="lab" style="font-size:12.5px">월세</span><div class="unit"><input class="inp num" data-in="rent" inputmode="numeric" value="${esc(g('rent'))}" placeholder="0" style="padding:11px 13px;font-size:14px"><span>만원</span></div></div>
-          <div><span class="lab" style="font-size:12.5px">관리비</span><div class="unit"><input class="inp num" data-in="fee" inputmode="numeric" value="${esc(g('fee'))}" placeholder="0" style="padding:11px 13px;font-size:14px"><span>만원</span></div></div>
+          ${home ? `
           <div><span class="lab" style="font-size:12.5px">방/욕실</span><div style="display:flex;gap:6px">
             <input class="inp num" data-in="rooms" inputmode="numeric" value="${esc(g('rooms'))}" placeholder="방" style="padding:11px 13px;font-size:14px">
-            <input class="inp num" data-in="baths" inputmode="numeric" value="${esc(g('baths'))}" placeholder="욕실" style="padding:11px 13px;font-size:14px"></div></div>
+            <input class="inp num" data-in="baths" inputmode="numeric" value="${esc(g('baths'))}" placeholder="욕실" style="padding:11px 13px;font-size:14px"></div></div>` : ''}
         </div>
+        <!-- 관리비는 금액·부과방식·포함비목을 한 덩어리로 둔다. 금액이 격자 안에
+             흩어져 있으면 부과방식을 고를 때 얼마인지가 눈에 안 들어온다. -->
+        <div style="margin-top:14px"><span class="lab" style="font-size:12.5px">관리비</span>
+          <div class="unit" style="max-width:${isMo()?'none':'220px'}"><input class="inp num" data-in="fee" inputmode="numeric" value="${esc(g('fee'))}" placeholder="0" style="padding:11px 13px;font-size:14px"><span>만원</span></div></div>
         <div style="margin-top:14px"><span class="lab" style="font-size:12.5px">관리비 부과방식</span>
           ${chipsHTML(['임대인이 직접부과','관리규약에 따라 부과','그 밖의 부과 방식','확인불가'], g('feeType'),'feeType',false)}</div>
         <div style="margin-top:14px"><span class="lab" style="font-size:12.5px">관리비 포함비목 <span class="opt">포함되는 항목을 그대로 적어주세요</span></span>
@@ -3254,7 +3265,7 @@ V['#/partner/propose'] = (id) => { const d=S.demands.find(x=>x.id===id); if(!d) 
           ${f.floorMode==='고·중·저'? `<div style="margin-top:9px">${chipsHTML(['고층','중층','저층'], f.band,'band',false)}</div>`:''}
         </div>
         <div style="margin-top:14px"><span class="lab" style="font-size:12.5px">입주 가능일</span>${chipsHTML(['즉시','협의','날짜 지정'], g('moveIn'),'moveIn',false)}</div>
-        <div style="margin-top:14px"><span class="lab" style="font-size:12.5px">방향 (거실 기준)</span>${chipsHTML(['동','서','남','북','남동','남서','북동','북서'], g('dir'),'dir',false)}</div>
+        ${home ? `<div style="margin-top:14px"><span class="lab" style="font-size:12.5px">방향 (거실 기준)</span>${chipsHTML(['동','서','남','북','남동','남서','북동','북서'], g('dir'),'dir',false)}</div>` : ''}
         <div class="grid2 mo1" style="margin-top:14px;gap:12px">
           <div><span class="lab" style="font-size:12.5px">사용승인일</span>
             <input class="inp" data-in="approved" value="${esc(g('approved'))}" placeholder="예) 2016.06.24" style="padding:11px 13px;font-size:14px"></div>
@@ -5124,19 +5135,34 @@ function refreshListingBtn(){
   const b=$('#app [data-act="save-listing"]'); if(b) b.disabled=!ok;
   const hint=$('#app [data-lhint]'); if(hint) hint.textContent = ok?'등록 즉시 대기 손님과 대조합니다':'* 표시 항목을 채워주세요';
 }
+/* 검사 목록은 한 곳에서만 만든다.
+   화면과 새로고침이 각자 만들면 언젠가 어긋나고, 그때 버튼만 안 눌린다. */
+function proposeChecks(f){
+  const g = k => f[k] || '';
+  const home = (f.pkind || 'home') === 'home';
+  const floorOk = f.floorMode==='비공개' || (f.floorMode==='정확한 층'? !!f.floorNo : f.floorMode==='고·중·저'? !!f.band : false);
+  return [
+    ['소재지', !!g('addr').trim()], ['건물명', !!g('bname').trim()],
+    ['공급면적', +g('areaSup')>0], ['전용면적', +g('area')>0], ['가격', +g('dep')>0],
+    /* 방 수와 방향은 살 집을 볼 때 쓰는 잣대다. 가게·사무실·창고에는 묻지 않는다. */
+    ...(home ? [['방/욕실', !!g('rooms') && !!g('baths')], ['방향', !!g('dir')]] : []),
+    ['관리비', g('fee')!=='' && !!g('feeType')],
+    ['층 표기', floorOk], ['입주가능일', !!g('moveIn')], ['주차장', !!g('park')],
+  ];
+}
+
 function refreshChecks(){
   if(!S.route.startsWith('#/partner/propose')) return;
   const f=S.form, g=k=>f[k]||'';
-  const floorOk = f.floorMode==='비공개' || (f.floorMode==='정확한 층'? !!f.floorNo : f.floorMode==='고·중·저'? !!f.band : false);
-  const checks=[['소재지',!!g('addr').trim()],['건물명',!!g('bname').trim()],['면적',+g('area')>0],['가격',+g('dep')>0],
-    ['거래형태',true],['방/욕실',!!g('rooms')&&!!g('baths')],['입주가능일',!!g('moveIn')],['방향',!!g('dir')],
-    ['관리비',g('fee')!==''&&!!g('feeType')],['층 표기',floorOk],['공급면적',+g('areaSup')>0],['주차장',!!g('park')]];
+  const checks=proposeChecks(f);
   const passed=checks.filter(c=>c[1]).length, allOk=passed===checks.length;
   const panel=$('#app [data-checks]');
   if(panel) panel.innerHTML = checks.map(([k,ok])=>`<span style="font-size:12.5px;font-weight:600;color:${ok?'var(--ok)':'var(--danger)'}">${ok?'✓':'✕'} ${k}</span>`).join('');
   const cnt=$('#app [data-checkcount]');
-  if(cnt){ cnt.textContent=`${allOk?'모두 충족':'충족'} (${passed}/12)`; cnt.style.color = allOk?'var(--ok)':'var(--n500)'; }
-  const btn=$('#app [data-act="send-proposal"]'); if(btn) btn.disabled = !(allOk && S.timeLeft>0);
+  if(cnt){ cnt.textContent=`${allOk?'모두 충족':'충족'} (${passed}/${checks.length})`; cnt.style.color = allOk?'var(--ok)':'var(--n500)'; }
+  /* 버튼을 죽이지 않는다 - 눌렀을 때 무엇이 빠졌는지 말해주는 편이 낫다.
+     회색 버튼만 보면 왜 안 되는지 알 수 없어 중개사가 화면을 헤맨다. */
+  const btn=$('#app [data-act="send-proposal"]'); if(btn) btn.disabled = S.timeLeft<=0;
   /* 면적 평 병기 - 중개사 회신: 공급면적이 가장 중요하고 평으로 같이 봐야 한다 */
   ['areaSup','area'].forEach(k=>{ const el=$(`#app [data-py="${k}"]`);
     if(el) el.textContent = +g(k)>0 ? `${(+g(k)/3.305785).toFixed(1)}평` : ''; });
@@ -5363,8 +5389,16 @@ function handle(a,v,el){
     /* 공급자 */
     case 'dfilter': S.form.dfilter=v; render(); return true;
     case 'ptab': S.form.ptab=v; render(); return true;
-    case 'start-propose': S.form={dfilter:S.form.dfilter, ptab:S.form.ptab, photos:0}; S.timeLeft=900;
-      go('#/partner/propose/'+v); return true;
+    case 'start-propose': { const dm=S.demands.find(x=>x.id===v);
+      /* 활동 지역을 정하지 않은 채로는 제안을 보낼 수 없다. 어디까지 가실 수 있는지
+         모르는 상태로 손님에게 제안이 나가면 헛걸음이 그대로 손님 몫이 된다. */
+      if(!S.scope.regionsSet || !S.scope.regions.length){
+        toast('활동 지역을 먼저 정해주세요');
+        S.form.scopeFocus = true; go('#/partner/settings'); return true;
+      }
+      /* 손님이 무엇을 찾는지 들고 간다 - 상가 자리에 방 수와 방향을 물으면 안 된다 */
+      S.form={dfilter:S.form.dfilter, ptab:S.form.ptab, photos:0, pkind:(dm&&dm.kind)||'home'};
+      S.timeLeft=900; go('#/partner/propose/'+v); return true; }
     case 'lookup': { if(!(S.form.addr||'').trim()) return toast('주소를 입력해 주세요'), true;
       S.form.filled=true; S.form.bname = S.form.addr.includes('미사')?'미사강변 ○○아파트':'○○빌라';
       S.form.areaSup='84.96'; S.form.area='59.82'; S.form.approved='2016.06.24';
@@ -5373,11 +5407,23 @@ function handle(a,v,el){
       S.form[a]= S.form[a]===v? '' : v; render(); return true;
     case 'photo': { const n=+v; S.form.photos = n < (S.form.photos||0) ? n : n+1; render(); return true; }
     case 'send-proposal': { const d2=S.demands.find(x=>x.id===v);
+      /* 회색 버튼만 보여주면 왜 안 되는지 알 수 없다 - 빠진 것을 그대로 말한다.
+         빠진 칸으로 화면도 옮겨준다. 스무 칸을 눈으로 훑게 두지 않는다. */
+      const miss = proposeChecks(S.form).filter(c=>!c[1]).map(c=>c[0]);
+      if(miss.length){
+        toast(`${miss.slice(0,3).join(' · ')}${miss.length>3?` 외 ${miss.length-3}가지`:''}${miss.length>1?'을(를)':'을(를)'} 채워주세요`);
+        const box=$('#app [data-checks]');
+        if(box){ box.scrollIntoView({behavior:'smooth', block:'center'});
+          box.animate([{opacity:.35},{opacity:1}], {duration:520, iterations:2}); }
+        return true;
+      }
+      if(S.timeLeft<=0) return toast('예약 시간이 끝났습니다 - 수요 목록에서 다시 시작해 주세요'), true;
       const key=(S.form.addr||'').replace(/\s/g,'');
       S.sentAddr = S.sentAddr || {};
       if(S.sentAddr[d2.id+'|'+key]) return toast('이미 제안된 물건입니다 - 같은 주소는 한 번만 보낼 수 있습니다'), true;
       S.sentAddr[d2.id+'|'+key] = true;
-      S.myprops.unshift({id:'mp'+Date.now(), title:`${S.form.bname} · ${S.form.rooms}룸`,
+      S.myprops.unshift({id:'mp'+Date.now(),
+        title:`${S.form.bname}${(S.form.pkind||'home')==='home' && S.form.rooms ? ` · ${S.form.rooms}룸` : ''}`,
         price:`보증금 ${(+S.form.dep).toLocaleString()} / 월 ${S.form.rent||0} · 관리비 ${S.form.fee||0}`,
         line:`${d2.region} · ${d2.lines[0]}`, status:'sent', at:'방금', expires:7});
       if(d2) d2.slotsLeft=Math.max(0,d2.slotsLeft-1);
@@ -5421,8 +5467,8 @@ function handle(a,v,el){
     /* ── S-03 활동 조건 ── */
     case 'sc-assets': case 'sc-deals': case 'sc-biz':
       toggleIn(S.scope[a.slice(3)], v); render(); return true;
-    case 'sc-region': toggleIn(S.scope.regions, v); render(); return true;
-    case 'sc-zone': { const z = ZONES.find(x=>x.t===v); if(z){
+    case 'sc-region': toggleIn(S.scope.regions, v); S.scope.regionsSet=true; render(); return true;
+    case 'sc-zone': { S.scope.regionsSet=true; const z = ZONES.find(x=>x.t===v); if(z){
         const all = z.dongs.every(d=>S.scope.regions.includes(d));
         z.dongs.forEach(d=>{ const i=S.scope.regions.indexOf(d);
           if(all && i>=0) S.scope.regions.splice(i,1);

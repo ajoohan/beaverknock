@@ -1091,6 +1091,8 @@ const S = {
   vtimer:null, vsec:180, geo:null, geoState:'idle', geoTried:false, saved:false, lastRoute:null, enterT:null,
   user:null, afterLogin:null, email:'', pw:'', pw2:'', signup:false,
   idvCfg:null, idvBusy:false, idvToken:null,
+  mineLoading:false, mineAt:0, mineErr:'',
+  feedLoading:false, feedAt:0, feedErr:'', feedNeed:'', feedHidden:{region:0,slot:0}, agent:null,
   findName:'', findPhone:'', findErr:'', foundEmail:'', resetEmail:'', resetErr:'', resetSent:'',
 };
 
@@ -1413,6 +1415,138 @@ function zonesHTML(zones, sel){
       </summary>
       <div style="padding-top:4px">${chipsHTML(z.d, sel, 'dong', true)}</div>
     </details>`;}).join('');}
+
+/* ══════════ 서버와 잇는 부분 ══════════
+   지금까지 손님 화면과 중개사 화면은 브라우저 메모리의 시드를 봤다.
+   조건은 DB 까지 갔지만 거기서 끝이었고, 제안은 보낸 사람 화면에만 남았다.
+
+   뷰는 그대로 두고 자료의 모양만 맞춘다 - 고칠 곳이 적을수록 어긋날 곳도 적다. */
+
+function apiFetch(path, opts){
+  const o = Object.assign({}, opts);
+  o.headers = Object.assign({'Content-Type':'application/json'}, o.headers||{});
+  const sess = store.get();
+  if(sess && sess.access_token) o.headers.Authorization = 'Bearer ' + sess.access_token;
+  return fetch(path, o);
+}
+
+const won2 = n => (+n||0) >= 10000 ? `${(+n/10000).toFixed((+n%10000)?1:0)}억` : `${(+n||0).toLocaleString()}만`;
+const agoText = iso => {
+  const t = new Date(iso).getTime(); if(!t) return '';
+  const m = Math.floor((Date.now()-t)/60000);
+  return m<1?'방금': m<60?`${m}분 전`: m<1440?`${Math.floor(m/60)}시간 전`: `${Math.floor(m/1440)}일 전`;
+};
+
+/* 서버 조건 → 손님 '내 조건' 카드 */
+function condFromRow(d){
+  const shop = NONHOME(d.kind);
+  const L = [];
+  L.push(`보증금 ${won2(d.dep)}${d.rent?` / 월 ${(+d.rent).toLocaleString()}만`:''}`);
+  if(shop){ if(d.area_min) L.push(areaText(d.area_min, d.area_max)); }
+  else { L.push((d.htype||[]).join(' · ')||'유형 무관'); }
+  if(d.memo) L.push(`"${String(d.memo).slice(0,40)}${String(d.memo).length>40?'…':''}"`);
+  return {
+    id:d.id, kind:d.kind, who:d.kind,
+    title:`${(d.dongs||[]).slice(0,2).join('·')||'서울·경기'}${(d.dongs||[]).length>2?' 외':''} · ${shop?(d.biz||d.kind_ko):(d.deal||'전월세')}${!shop&&d.rooms&&d.rooms!=='무관'?` · ${d.rooms}`:''}`,
+    lines:L.filter(Boolean), status:'active',
+    slots:d.slots||5, slotsLeft:d.slots_left, at:agoText(d.created_at), expires:30,
+    pct:0, memo:d.memo||'', missed:0,
+  };
+}
+
+/* 서버 제안 → 손님 제안함 카드 */
+function propFromRow(p){
+  return {
+    id:p.id, cond:p.demand_id, isNew:p.status==='sent', read:p.status!=='sent',
+    photos:p.photos||0, title:p.bname || p.addr_area || '물건', dong:p.addr_area||'',
+    dep:p.dep, rent:p.rent, fee:p.fee, feeType:p.fee_type||'', py:p.area_sup?+(p.area_sup/3.305785).toFixed(1):0,
+    floor:p.floor||'', parking:p.park||'문의', moveIn:p.move_in||'협의',
+    diff:[], match:[], msg:p.msg||'',
+    agency:{name:p.office, rep:'', reg:'', addr:p.addr_area||''},
+    at:agoText(p.created_at), approved:p.approved||'', floors:0, violation:false,
+    loan:0, lease:false, risk:'', status:p.status,
+  };
+}
+
+/* 서버 조건 → 중개사 수요 카드 */
+function demandFromRow(d){
+  const shop = NONHOME(d.kind);
+  const L = [];
+  L.push(`보증금 ${won2(d.dep)}${d.rent?` / 월 ${(+d.rent).toLocaleString()}만`:''}`);
+  if(shop){ if(d.area_min) L.push(areaText(d.area_min, d.area_max));
+            if(d.shop_floor_free) L.push(d.shop_floor_free);
+            if(d.facilities_free) L.push(`설비 - ${d.facilities_free}`); }
+  else { L.push([(d.htype||[]).join(' · '), d.rooms].filter(Boolean).join(' · ')||'유형 무관');
+         if((d.musts||[]).length || d.must_free) L.push([...(d.musts||[]), d.must_free||''].filter(Boolean).join(' · ')); }
+  const req = [['지역',(d.dongs||[]).join(' · ')||'-'],
+               ['예산',`보증금 ${won2(d.dep)}${d.rent?` / 월 ${(+d.rent).toLocaleString()}만`:''}`]];
+  if(shop){ if(d.biz) req.push([d.kind==='storage'?'품목':d.kind==='office'?'업무':'업종', d.biz]);
+            if(d.area_min) req.push(['면적', areaText(d.area_min,d.area_max)]); }
+  else { if((d.htype||[]).length) req.push(['유형',(d.htype||[]).join(' · ')]);
+         if(d.rooms) req.push(['방 수',d.rooms]); }
+  if(d.open_when) req.push(['입주',d.open_when]);
+  const det=[];
+  const put=(k,v)=>{ if(v && String(v).trim()) det.push([k,String(v)]); };
+  put('층', d.floor_avoid || d.shop_floor_free); put('엘리베이터', d.elevator);
+  put('거주', d.household); put('대출', d.loan_plan); put('주차', d.park_need?`${d.park_need}대`:'');
+  put('권리금', d.key_ok); put('간판', d.sign_need); put('참고', d.shop_note);
+  const sp = d.spec||{};
+  put('인원', sp.headcount?`상주 ${sp.headcount}명`:''); put('건물', sp.bld_type);
+  put('층고', sp.ceil_h?`${sp.ceil_h}m 이상`:''); put('하역', sp.dock); put('온도', sp.temp);
+  return {
+    id:d.id, kind:d.kind, who:d.kind,
+    deal: shop ? (d.biz || d.kind_ko) : (d.deal || '월세'),
+    region:(d.dongs||[]).join(' · ')||'서울·경기',
+    slotsLeft:d.slots_left, at:agoText(d.created_at), pct:0,
+    urgent:(d.slots_left||0)<=1, lines:L.filter(Boolean), memo:d.memo||'',
+    mine:!!d.mine,
+    m:{dongs:d.dongs||[], deal:d.deal, biz:d.biz,
+       depMax:d.dep, rentMax:d.rent, rooms:parseInt(d.rooms,10)||0, musts:d.musts||[]},
+    req, det, check:[],
+  };
+}
+
+/* 손님: 내 조건과 거기에 온 제안을 서버에서 받는다.
+   시드는 로그인하지 않았을 때만 보여준다 - '예시' 배지가 붙어 있다. */
+function loadMine(force){
+  const sess = store.get();
+  if(!sess || !sess.access_token) return;
+  if(S.mineLoading || (S.mineAt && !force && Date.now()-S.mineAt < 20000)) return;
+  S.mineLoading = true;
+  apiFetch('/api/my')
+    .then(r => r.json().catch(()=>({})).then(j => {
+      S.mineLoading = false; S.mineAt = Date.now();
+      if(!j.ok){ S.mineErr = j.error || ''; render(); return; }
+      S.mineErr = '';
+      S.conds = (j.demands||[]).map(condFromRow);
+      S.props = (j.proposals||[]).map(propFromRow);
+      if(S.conds.length && !S.conds.some(c=>c.id===S.inboxCond)) S.inboxCond = S.conds[0].id;
+      render();
+    }))
+    .catch(()=>{ S.mineLoading=false; render(); });
+}
+
+/* 중개사: 내 활동 조건에 맞는 손님 조건을 서버에서 받는다. */
+function loadFeed(force){
+  const sess = store.get();
+  if(!sess || !sess.access_token){ S.feedErr='로그인이 필요합니다'; S.feedNeed='login'; return; }
+  if(S.feedLoading || (S.feedAt && !force && Date.now()-S.feedAt < 20000)) return;
+  S.feedLoading = true;
+  apiFetch('/api/feed', {method:'POST', body: JSON.stringify({
+    kinds: Object.keys(WHO).filter(k => S.scope.assets.includes(
+      k==='home'?'주거 전월세': k==='shop'?'상가·점포': k==='office'?'오피스':'창고')),
+    regions: S.scope.regionsSet ? S.scope.regions : [],
+  })})
+    .then(r => r.json().catch(()=>({})).then(j => {
+      S.feedLoading = false; S.feedAt = Date.now();
+      if(!j.ok){ S.feedErr = j.error || '불러오지 못했습니다'; S.feedNeed = j.need || ''; render(); return; }
+      S.feedErr=''; S.feedNeed=''; S.agent = j.agent || null;
+      S.demands = (j.rows||[]).map(demandFromRow);
+      S.feedHidden = j.hidden || {region:0, slot:0};
+      render();
+    }))
+    .catch(()=>{ S.feedLoading=false; S.feedErr='네트워크 문제로 불러오지 못했습니다'; render(); });
+}
 
 /* ---------- 조건 요약 생성 ---------- */
 /* 최대를 비우면 '전용 30~평 (99.2~㎡)' 처럼 끝이 잘려 보였다.
@@ -4775,6 +4909,9 @@ function render(){
   requestAnimationFrame(()=>armReveal(app));
   // 슬롯 타이머
   if(h.startsWith('#/partner/propose/')) startTimer(); else stopTimer();
+  /* 화면에 들어갈 때 서버에서 받아온다. 20초 안에 다시 들어오면 그대로 쓴다. */
+  if(h==='#/my' || h==='#/inbox' || h.startsWith('#/proposal/')) loadMine(false);
+  if(h==='#/partner/demands' || h.startsWith('#/partner/demand/')) loadFeed(false);
   /* 위치는 먼저 묻지 않는다. 사이트에 들어오자마자 권한창이 뜨면 대부분 거절하고,
      거절당한 권한은 되돌리기 어렵다. 지도에서 '📍 현재 위치로' 를 누른 사람에게만 묻는다. */
   if(!(h==='#/contact' && S.draft.vstep==='code')) stopVTimer();
@@ -5445,17 +5582,33 @@ function handle(a,v,el){
         return true;
       }
       if(S.timeLeft<=0) return toast('예약 시간이 끝났습니다 - 수요 목록에서 다시 시작해 주세요'), true;
-      const key=(S.form.addr||'').replace(/\s/g,'');
-      S.sentAddr = S.sentAddr || {};
-      if(S.sentAddr[d2.id+'|'+key]) return toast('이미 제안된 물건입니다 - 같은 주소는 한 번만 보낼 수 있습니다'), true;
-      S.sentAddr[d2.id+'|'+key] = true;
-      S.myprops.unshift({id:'mp'+Date.now(),
-        title:`${S.form.bname}${(S.form.pkind||'home')==='home' && S.form.rooms ? ` · ${S.form.rooms}룸` : ''}`,
-        price:`보증금 ${(+S.form.dep).toLocaleString()} / 월 ${S.form.rent||0} · 관리비 ${S.form.fee||0}`,
-        line:`${d2.region} · ${d2.lines[0]}`, status:'sent', at:'방금', expires:7});
-      if(d2) d2.slotsLeft=Math.max(0,d2.slotsLeft-1);
-      stopTimer(); S.form={ptab:'sent'}; toast('제안을 보냈습니다 - 손님에게 즉시 전달됩니다');
-      go('#/partner/proposals'); return true; }
+      if(S.proposing) return true;
+
+      /* 서버로 보낸다. 지금까지는 이 화면 메모리에만 남고 손님에게 가지 않았다. */
+      S.proposing = true; render();
+      const f = S.form;
+      apiFetch('/api/proposal', {method:'POST', body: JSON.stringify({
+        demand_id: d2.id, addr: f.addr, bname: f.bname,
+        dep: f.dep, rent: f.rent, fee: f.fee, fee_type: f.feeType, fee_items: f.feeItems,
+        area_sup: f.areaSup, area: f.area, rooms: f.rooms, baths: f.baths, dir: f.dir,
+        floor_mode: f.floorMode, floor_no: f.floorNo, band: f.band,
+        move_in: f.moveIn, park: f.park, approved: f.approved,
+        photos: f.photos||0, msg: f.msg,
+      })})
+        .then(r => r.json().catch(()=>({})).then(j => {
+          S.proposing = false;
+          if(!(r.ok && j.ok)){ render(); return toast(j.error || '제안을 보내지 못했습니다'); }
+          if(d2) d2.slotsLeft = j.slots_left;
+          S.myprops.unshift({id:j.id,
+            title:`${f.bname||f.addr}${(f.pkind||'home')==='home' && f.rooms ? ` · ${f.rooms}룸` : ''}`,
+            price:`보증금 ${(+f.dep||0).toLocaleString()} / 월 ${f.rent||0} · 관리비 ${f.fee||0}`,
+            line:`${d2.region} · ${d2.lines[0]||''}`, status:'sent', at:'방금', expires:7});
+          stopTimer(); S.form={ptab:'sent'}; S.feedAt=0;
+          toast('제안을 보냈습니다 - 손님 제안함으로 전달됐습니다');
+          go('#/partner/proposals');
+        }))
+        .catch(()=>{ S.proposing=false; render(); toast('네트워크 문제로 제안을 보내지 못했습니다'); });
+      return true; }
     case 'pick-tag': S.tagline = v; toast('한 줄 설명을 바꿨습니다 - 헤더를 확인해 보세요'); render(); return true;
 
     /* ── S-02 가입·인증 ── */

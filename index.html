@@ -2501,6 +2501,13 @@ const VMETHODS = [
 ];
 const CARRIERS = ['SKT','KT','LG U+','알뜰폰'];
 const phoneOk = p => /^01[016789][0-9]{7,8}$/.test(String(p).replace(/-/g,''));
+/* 받침이 있으면 '을', 없으면 '를'. 한글 음절은 '가'(0xAC00)부터 28개씩 끊어지고
+   그 안의 자리값이 0 이면 받침이 없다. '6가지을(를)' 같은 말을 없앤다. */
+function josa(word, withBatchim, without){
+  const c = String(word||'').trim().slice(-1).charCodeAt(0);
+  if(!(c >= 0xAC00 && c <= 0xD7A3)) return withBatchim;
+  return (c - 0xAC00) % 28 ? withBatchim : without;
+}
 const phoneOk2 = phoneOk;
 const fmtPhone = p => { const n=String(p).replace(/-/g,'');
   return n.length>=10 ? n.replace(/^(01[016789])([0-9]{3,4})([0-9]{4})$/,'$1-$2-$3') : n; };
@@ -5411,7 +5418,8 @@ function handle(a,v,el){
          빠진 칸으로 화면도 옮겨준다. 스무 칸을 눈으로 훑게 두지 않는다. */
       const miss = proposeChecks(S.form).filter(c=>!c[1]).map(c=>c[0]);
       if(miss.length){
-        toast(`${miss.slice(0,3).join(' · ')}${miss.length>3?` 외 ${miss.length-3}가지`:''}${miss.length>1?'을(를)':'을(를)'} 채워주세요`);
+        const head = miss.slice(0,3).join(' · ') + (miss.length>3 ? ` 외 ${miss.length-3}가지` : '');
+        toast(`${head}${josa(head,'을','를')} 채워주세요`);
         const box=$('#app [data-checks]');
         if(box){ box.scrollIntoView({behavior:'smooth', block:'center'});
           box.animate([{opacity:.35},{opacity:1}], {duration:520, iterations:2}); }

@@ -1519,7 +1519,11 @@ function loadMine(force){
       S.mineLoading = false; S.mineAt = Date.now();
       if(!j.ok){ S.mineErr = j.error || ''; render(); return; }
       S.mineErr = '';
-      S.conds = (j.demands||[]).map(condFromRow);
+      const got = (j.demands||[]).map(condFromRow);
+      /* 서버가 빈 목록을 주는데 방금 낸 조건이 화면에 있으면 그대로 둔다.
+         눈앞에서 사라지면 접수가 실패한 것처럼 보인다. */
+      const local = S.conds.filter(c => !c.seed && !got.some(g => g.id === c.id));
+      S.conds = got.length || !local.length ? got : local;
       S.props = (j.proposals||[]).map(propFromRow);
       if(S.conds.length && !S.conds.some(c=>c.id===S.inboxCond)) S.inboxCond = S.conds[0].id;
       render();
@@ -4316,10 +4320,8 @@ function saveDemand(d, slotN){
       elapsed: Date.now() - FORM_T0,     /* 너무 빠른 제출은 서버가 막는다 */
     });
   } catch(e){ console.warn('조건 변환 실패', e); return; }
-  fetch('/api/demand', {
-    method:'POST', headers:{'Content-Type':'application/json'}, body,
-  }).then(r=>{
-    if(r.ok){ S.saved = true; return; }
+  apiFetch('/api/demand', { method:'POST', body }).then(r=>{
+    if(r.ok){ S.saved = true; S.mineAt = 0; loadMine(true); return; }
     return r.json().catch(()=>({})).then(j=>{
       console.warn('조건 저장 실패', r.status, j);
       /* 확인한 지 30분이 지나면 표가 만료된다. 확인했다고 표시해 둔 채로 두면
@@ -4992,7 +4994,7 @@ async function idvStart(){
 async function idvFinish(id){
   S.idvBusy = true; render();
   try{
-    const r = await fetch('/api/idv', {method:'POST', headers:{'Content-Type':'application/json'},
+    const r = await apiFetch('/api/idv', {method:'POST',
       body: JSON.stringify({identity_verification_id: id})});
     const j = await r.json().catch(()=>({}));
     S.idvBusy = false;
@@ -5168,7 +5170,7 @@ function sendAgent(f){
     done: f.jDone||'',
     website: trapValue(), elapsed: Date.now() - JOIN_T0,
   };
-  fetch('/api/agent', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)})
+  apiFetch('/api/agent', {method:'POST', body: JSON.stringify(body)})
     .then(r => r.json().catch(()=>({})).then(j => {
       if(r.ok){ S.form.jSent = j.already ? 'already' : 'ok'; }
       else { S.form.jSent = 'fail'; toast(j.error || '신청 저장에 실패했습니다'); }

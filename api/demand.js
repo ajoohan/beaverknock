@@ -11,6 +11,7 @@
 
 import crypto from 'node:crypto';
 import { notify, mask } from './_notify.js';
+import { readIdv } from './_idv.js';
 
 const TABLE = 'bk_demand';
 
@@ -102,8 +103,18 @@ export default async function handler(req, res) {
   /* ── 값 검사 — 화면을 우회해 들어오는 요청도 여기서 걸린다 ── */
   const kind = KINDS.includes(b.kind) ? b.kind : null;
   const dongs = arr(b.dongs);
-  const name = str(b.name, 40);
-  const phone = String(b.phone ?? '').replace(/-/g, '');
+
+  /* 본인확인이 붙어 있으면 화면에서 적은 이름을 쓰지 않는다.
+     처리방침에 '본인확인된 이름을 전달한다' 고 적어둔 이상, 손으로 고친 이름이
+     중개사에게 나가면 안 된다. 표가 없거나 서명이 어긋나면 접수 자체를 막는다. */
+  const idvOn = !!process.env.PORTONE_API_SECRET;
+  const idv = idvOn ? readIdv(b.idv_token) : null;
+  if (idvOn && !idv) {
+    return res.status(401).json({ error: '본인확인을 먼저 받아주세요', need_idv: true });
+  }
+
+  const name = idv ? str(idv.name, 40) : str(b.name, 40);
+  const phone = idv ? idv.phone : String(b.phone ?? '').replace(/-/g, '');
   const bad =
     !kind ? '유형이 없습니다' :
     !dongs.length ? '지역을 하나 이상 골라주세요' :
@@ -176,9 +187,12 @@ export default async function handler(req, res) {
     memo: str(b.memo, 1000),
 
     name, phone,
-    birth: str(b.birth, 8),
-    verify_method: b.verify_method === 'pass' ? 'pass' : b.verify_method === 'sms' ? 'sms' : null,
-    verified_at: b.verified_at ? new Date().toISOString() : null,
+    birth: idv ? str(idv.birth, 8) : str(b.birth, 8),
+    /* 확인 수단과 시각도 표에서 가져온다 - 브라우저가 적어 보낸 값을 믿지 않는다 */
+    verify_method: idv ? 'portone'
+      : b.verify_method === 'pass' ? 'pass' : b.verify_method === 'sms' ? 'sms' : null,
+    verified_at: idv ? new Date(idv.at).toISOString()
+      : (b.verified_at ? new Date().toISOString() : null),
 
     contact_pref: str(b.contact_pref, 30),
     contact_times: arr(b.contact_times, 10),

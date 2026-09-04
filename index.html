@@ -1088,6 +1088,7 @@ const S = {
   inboxCond:'c1', modal:null, form:{}, timer:null, timeLeft:900, safeNo:null, sentAddr:{}, matched:0,
   vtimer:null, vsec:180, geo:null, geoState:'idle', geoTried:false, saved:false, lastRoute:null, enterT:null,
   user:null, afterLogin:null, email:'', pw:'', pw2:'', signup:false,
+  idvCfg:null, idvBusy:false, idvToken:null,
   findName:'', findPhone:'', findErr:'', foundEmail:'', resetEmail:'', resetErr:'', resetSent:'',
 };
 
@@ -2524,7 +2525,7 @@ const maskPhone = p => { const n=String(p).replace(/-/g,'');
 
 function verifyCard(d){
   if(d.verified){
-    const m = VMETHODS.find(x=>x.k===d.vmethod);
+    const m = d.vmethod==='portone' ? {t:'휴대폰 본인확인'} : VMETHODS.find(x=>x.k===d.vmethod);
     return `
     <div class="card pad" style="background:var(--okbg);border:1.5px solid #A5CDB6;box-shadow:none">
       <div class="vcard" style="display:flex;align-items:center;gap:11px">
@@ -2537,6 +2538,22 @@ function verifyCard(d){
         </div>
         <button class="btn ghost sm vbtn" data-act="v-reset" style="flex:none;font-size:12.5px">다시 인증</button>
       </div>
+    </div>`;
+  }
+
+  /* 붙어 있으면 통신사도 인증번호도 우리가 묻지 않는다 - 포트원 창이 다 한다.
+     아직이면 예전 화면을 그대로 두되, 흉내라는 것을 밝힌다. */
+  if(S.idvCfg && S.idvCfg.enabled){
+    return `
+    <div class="card pad" style="border:1.5px solid var(--ind200);background:var(--ind50)">
+      <span class="sect" style="margin-bottom:6px">본인확인 <span class="req">*</span></span>
+      <p style="margin:0 0 14px;font-size:12.5px;line-height:1.75;color:var(--n700)">
+        확인된 <b style="color:var(--n900)">이름과 연락처만</b> 중개사에게 전달됩니다. 장난 문의와 허위 조건을 막기 위한 절차이며,
+        <b style="color:var(--n900)">주민등록번호는 저장하지 않습니다.</b></p>
+      <button class="btn pri" data-act="idv" style="width:100%;padding:15px 0;font-size:15px" ${S.idvBusy?'disabled':''}>
+        ${S.idvBusy?'확인 중…':'휴대폰으로 본인확인'}</button>
+      <p style="margin:11px 0 0;font-size:11.5px;line-height:1.7;color:var(--n500)">
+        통신사 창이 열립니다. 끝나면 이 화면으로 돌아옵니다.</p>
     </div>`;
   }
 
@@ -2591,6 +2608,8 @@ function verifyCard(d){
     <p style="margin:0 0 14px;font-size:12.5px;line-height:1.75;color:var(--n700)">
       확인된 <b style="color:var(--n900)">이름과 연락처만</b> 중개사에게 전달됩니다. 장난 문의와 허위 조건을 막기 위한 절차이며,
       <b style="color:var(--n900)">주민등록번호는 저장하지 않습니다.</b></p>
+    <p style="margin:-6px 0 14px;padding:10px 13px;background:var(--warnbg);font-size:11.5px;line-height:1.7;color:var(--n700)">
+      본인확인 모듈을 붙이는 중입니다. 지금은 시험 화면이라 실제 확인이 이뤄지지 않습니다.</p>
     <div class="grid2 mo1" style="gap:10px">${VMETHODS.map(x=>{ const on = m===x.k; return `
       <button data-act="vmethod" data-v="${x.k}" style="display:flex;gap:11px;align-items:flex-start;text-align:left;
         padding:14px 15px;border-radius:12px;cursor:pointer;transition:border-color .14s ease,box-shadow .14s ease;
@@ -4116,6 +4135,7 @@ function demandPayload(d, slotN){
     phone: String(d.phone || '').replace(/-/g, ''),
     birth: t(d.birth),
     verify_method: d.vmethod || null,
+    idv_token: S.idvToken || null,
     verified_at: d.verified ? new Date().toISOString() : null,
 
     contact_pref: t(d.pref),
@@ -4147,6 +4167,14 @@ function saveDemand(d, slotN){
     if(r.ok){ S.saved = true; return; }
     return r.json().catch(()=>({})).then(j=>{
       console.warn('조건 저장 실패', r.status, j);
+      /* 확인한 지 30분이 지나면 표가 만료된다. 확인했다고 표시해 둔 채로 두면
+         눌러도 계속 실패한다 - 상태를 되돌려 다시 받게 한다. */
+      if(j.need_idv){
+        S.idvToken=null; S.idv=null;
+        Object.assign(S.draft, {verified:false, vstep:'idle', vat:''});
+        S.saved=false; render();
+        return toast('본인확인이 만료되었습니다 - 다시 확인해 주세요');
+      }
       toast(j.error || '조건은 화면에 남았지만 서버 저장에 실패했습니다');
     });
   }).catch(e=>{ console.warn('조건 저장 실패', e);
@@ -4730,6 +4758,91 @@ function startVTimer(){ if(S.vtimer) return;
     if(S.vsec===0){ stopVTimer(); toast('인증 시간이 지났습니다 · 재발송을 눌러주세요'); }
   },1000);}
 function stopVTimer(){ if(S.vtimer){clearInterval(S.vtimer); S.vtimer=null;} }
+/* ══════════ 본인확인 (포트원 V2 · KG이니시스 통합본인인증) ══════════
+   브라우저가 "확인했습니다" 라고 말하는 것은 믿지 않는다.
+   포트원 창이 끝나면 건 번호만 받아 서버로 넘기고, 서버가 포트원에 직접 물어본다.
+   확인된 이름·번호는 서명된 표로 돌아오고, 조건을 낼 때 그 표를 함께 낸다. */
+const IDV_SDK  = 'https://cdn.portone.io/v2/browser-sdk.js';
+const IDV_KEEP = 'bk.idv.draft';
+
+function idvSdk(){
+  if(window.PortOne) return Promise.resolve(window.PortOne);
+  return new Promise((ok, no)=>{
+    const el = document.createElement('script');
+    el.src = IDV_SDK; el.async = true;
+    el.onload  = () => window.PortOne ? ok(window.PortOne) : no(new Error('sdk'));
+    el.onerror = () => no(new Error('sdk'));
+    document.head.appendChild(el);
+  });
+}
+
+/* 설정은 서버가 쥐고 있다. 붙어 있지 않으면 화면도 그렇다고 말한다. */
+function idvConfig(){
+  if(S.idvCfg) return Promise.resolve(S.idvCfg);
+  return fetch('/api/idv').then(r=>r.json()).then(j=>{ S.idvCfg = j || {enabled:false}; return S.idvCfg; })
+    .catch(()=>{ S.idvCfg = {enabled:false}; return S.idvCfg; });
+}
+
+async function idvStart(){
+  const cfg = await idvConfig();
+  if(!cfg.enabled) return toast('본인확인이 아직 연결되지 않았습니다');
+
+  let PortOne;
+  try{ PortOne = await idvSdk(); }
+  catch(e){ return toast('본인확인 창을 열지 못했습니다 - 잠시 후 다시 시도해 주세요'); }
+
+  /* 휴대폰에서는 페이지가 통째로 넘어갔다 온다. 쓰던 조건을 잃지 않게 담아둔다. */
+  try{ sessionStorage.setItem(IDV_KEEP, JSON.stringify(S.draft)); }catch(e){}
+
+  const id = 'bk-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2,10);
+  S.idvBusy = true; render();
+  try{
+    const res = await PortOne.requestIdentityVerification({
+      storeId: cfg.store_id, channelKey: cfg.channel_key,
+      identityVerificationId: id,
+      /* 해시는 빼고 보낸다 - 물음표가 해시 안으로 들어가면 못 읽는다 */
+      redirectUrl: location.origin + location.pathname,
+    });
+    if(res && res.code){ S.idvBusy=false; render(); return toast(res.message || '본인확인을 마치지 못했습니다'); }
+    await idvFinish((res && res.identityVerificationId) || id);
+  }catch(e){
+    S.idvBusy=false; render(); toast('본인확인을 마치지 못했습니다');
+  }
+}
+
+async function idvFinish(id){
+  S.idvBusy = true; render();
+  try{
+    const r = await fetch('/api/idv', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({identity_verification_id: id})});
+    const j = await r.json().catch(()=>({}));
+    S.idvBusy = false;
+    if(!r.ok || !j.ok){ render(); return toast(j.error || '본인확인을 확인하지 못했습니다'); }
+    const t=new Date();
+    const vat=`${t.getFullYear()}.${String(t.getMonth()+1).padStart(2,'0')}.${String(t.getDate()).padStart(2,'0')}`;
+    S.idvToken = j.token;
+    S.idv = {name:j.name, phone:j.phone, vmethod:'portone', vat};
+    Object.assign(S.draft, {verified:true, vstep:'done', vmethod:'portone', vat,
+      name:j.name, phone:fmtPhone(j.phone), birth:j.birth||''});
+    render(); toast('본인 확인이 완료되었습니다');
+  }catch(e){ S.idvBusy=false; render(); toast('본인확인을 확인하지 못했습니다'); }
+}
+
+/* 휴대폰에서 돌아온 길. 담아둔 조건을 되살린 뒤 결과를 확인한다. */
+function readIdvRedirect(){
+  const id = new URLSearchParams(location.search).get('identityVerificationId');
+  if(!id) return false;
+  history.replaceState(null, '', location.pathname);
+  try{
+    const kept = sessionStorage.getItem(IDV_KEEP);
+    if(kept) S.draft = Object.assign(blankDraft(), JSON.parse(kept));
+    sessionStorage.removeItem(IDV_KEEP);
+  }catch(e){}
+  location.hash = '#/contact';
+  idvFinish(id);
+  return true;
+}
+
 function verifyDone(d){
   d.verified=true; d.vstep='done'; d.vcode='';
   const t=new Date();
@@ -5130,6 +5243,7 @@ function handle(a,v,el){
       toast('로그아웃했습니다'); go('#/'); return true; }
 
     /* ── 본인확인 ── */
+    case 'idv': idvStart(); return true;
     case 'vmethod': d.vmethod = d.vmethod===v ? '' : v; d.vstep='idle'; d.vcode=''; stopVTimer(); render(); return true;
     case 'carrier': d.carrier = d.carrier===v ? '' : v; render(); return true;
     case 'v-back': d.vstep='idle'; d.vcode=''; stopVTimer(); render(); return true;
@@ -5153,7 +5267,7 @@ function handle(a,v,el){
     case 'v-approve': verifyDone(d); return true;
     case 'v-reset': {
       /* 다른 명의로 다시 받겠다는 뜻이다 - 남겨둔 확인 결과도 함께 지운다 */
-      d.verified=false; d.vstep='idle'; d.vcode=''; d.vat=''; S.idv=null;
+      d.verified=false; d.vstep='idle'; d.vcode=''; d.vat=''; S.idv=null; S.idvToken=null;
       stopVTimer(); render(); return true; }
 
     case 'next-register': {
@@ -5406,9 +5520,11 @@ window.addEventListener('hashchange', render);
 
 /* 돌아온 주소에 토큰이 붙어 있으면 먼저 걷어낸다 - 해시 라우터와 자리가 겹친다.
    저장된 세션이 있으면 되살린 뒤에 그린다. 안 그러면 로그인한 사람을 로그인 화면으로 보낸다. */
-if(!readAuthRedirect()){
+if(!readAuthRedirect() && !readIdvRedirect()){
   if(store.get()) hydrate().then(()=>render()); else render();
 }
+/* 본인확인이 붙어 있는지 먼저 알아둔다 - 화면이 준비 중을 보여줄지 정한다 */
+idvConfig().then(c=>{ if(c.enabled && S.route==='#/contact') render(); });
 </script>
 </body>
 </html>

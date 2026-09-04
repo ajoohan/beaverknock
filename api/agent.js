@@ -12,6 +12,7 @@
 import crypto from 'node:crypto';
 import { notify, mask } from './_notify.js';
 import { checkShape } from './agent-verify.js';
+import { userFrom } from './_auth.js';
 
 const TABLE = 'bk_agent';
 
@@ -80,8 +81,12 @@ export default async function handler(req, res) {
   }
   hits.push(now); burst.set(ip, hits);
 
+  /* 계정과 이어둬야 나중에 '내가 승인된 파트너인가' 를 물을 수 있다 */
+  const owner = await userFrom(req);
+
   const row = {
     role, name, phone,
+    user_id: owner ? owner.id : null,
     email:    str(b.email, 120),
     office:   str(b.office, 80),
     reg_no:   str(b.reg_no, 40),

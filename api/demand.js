@@ -12,6 +12,7 @@
 import crypto from 'node:crypto';
 import { notify, mask } from './_notify.js';
 import { readIdv } from './_idv.js';
+import { userFrom } from './_auth.js';
 
 const TABLE = 'bk_demand';
 
@@ -153,8 +154,13 @@ export default async function handler(req, res) {
     /* 조회가 실패해도(컬럼 없음 등) 접수는 막지 않는다 — 앞의 두 방어는 이미 통과했다 */
   } catch { /* 무시 */ }
 
+  /* 로그인하고 내신 조건이면 주인을 적어둔다 - 그래야 본인이 다시 볼 수 있다.
+     비로그인 접수도 그대로 받는다. 조건을 거는 데 계정을 요구하지는 않는다. */
+  const owner = await userFrom(req);
+
   const row = {
     kind, who: kind, dongs,
+    user_id: owner ? owner.id : null,
     deal: NONHOME(kind) ? null : str(b.deal, 20),
     dep: int(b.dep), rent: int(b.rent), fee_included: true,
     key_money: kind === 'shop' ? int(b.key_money) : null,

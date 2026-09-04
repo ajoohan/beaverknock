@@ -4681,8 +4681,25 @@ V['#/faq'] = () => docShell('FAQ', '자주 묻는 질문',
   </div>`);
 
 /* ══════════ 라우터 ══════════ */
+/* 가입 화면을 벗어나면 작성 내용을 비운다. 그대로 두면 다시 들어왔을 때
+   중간 단계부터 시작하고, 같은 기기를 다른 분이 써도 앞사람의 이름·연락처·
+   등록번호가 그대로 보인다. */
+function resetJoin(){
+  const f = S.form || {};
+  const had = ['j-name','j-phone','j-office','j-reg','j-addr','j-biz','j-email']
+    .some(k => String(f[k] || '').trim());
+  const done = f.jSent === 'ok' || f.jSent === 'already';
+  for(const k of Object.keys(f)){
+    if(k === 'jStep' || k === 'jRole' || k === 'jSent' || k.startsWith('j-') || k.startsWith('jR') ||
+       k === 'jCheck' || k === 'jChecking' || k === 'jDev' || k === 'jDone' || k === 'jMatched') delete f[k];
+  }
+  /* 다 보내고 나가는 길에는 아무 말도 하지 않는다 - 끝난 일이다 */
+  if(had && !done) setTimeout(()=>toast('가입 작성 내용을 비웠습니다 - 다시 들어오시면 처음부터입니다'), 80);
+}
+
 function render(){
   let h = location.hash || '#/';
+  if(S.lastRoute === '#/partner/join' && h !== '#/partner/join') resetJoin();
   /* 계정을 확인하는 몇백 밀리초 - 어떤 가드도 타지 않고 그냥 기다린다 */
   if(S.authBusy){
     $('#app').innerHTML = `

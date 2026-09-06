@@ -24,9 +24,9 @@
 <style>
 /* ===== 비버노크 디자인 토큰 (03_브랜드/tokens.css) ===== */
 :root{
-  --ind900:#23255C; --ind700:#31336F; --ind:#3D3F8F; --ind300:#6E70BC; --ind100:#E9E9F7; --ind50:#F5F5FC;
+  --ind900:#23255C; --ind700:#31336F; --ind:#3D3F8F; --ind300:#6E70BC; --ind-dark:#8C8ED0; --ind100:#E9E9F7; --ind50:#F5F5FC;
   --navy900:#0C1129; --navy800:#121936; --navy700:#1C2547; --navy600:#2E3A62; --navy400:#4C5678;
-  --clay900:#5E472B; --clay700:#8A6A45; --clay:#C9A87C; --clay200:#E0CBAC; --clay100:#F5EDE2;
+  --clay900:#5E472B; --clay700:#7E5F3C; --clay:#C9A87C; --clay200:#E0CBAC; --clay100:#F5EDE2;
   --n900:#1F1D1A; --n700:#4A4640; --n500:#6E6859; --n300:#D6D1C8; --n100:#F0EDE7; --n50:#FAF8F5; --white:#fff;
   --ok:#1B7A46; --okbg:#EAF6EF; --danger:#B22B31; --dangerbg:#FBEFEF; --warn:#C2660A; --warnbg:#FEF3E7;
   --r-sm:8px; --r-md:12px; --r-lg:18px; --r-full:999px;
@@ -829,6 +829,10 @@ h1.t[style*="font-size:31"],h1.t[style*="font-size:40"],h1.t[style*="font-size:5
 
 /* 문단 안에서 끊기면 안 되는 한국어 */
 p,li,dd,.sub,.lines,.opt{line-break:strict;overflow-wrap:break-word}
+
+/* 어두운 배경 위에서는 강조색을 밝은 쪽으로 바꿔 끼운다.
+   ind300 은 흰 바탕에서 쓰라고 만든 값이라 네이비 위에서는 3.35:1 까지 떨어진다. */
+.scr.dark [style*="var(--ind300)"]{color:var(--ind-dark) !important}
 
 /* ── 그림자 ──
    한 겹짜리 그림자는 스티커처럼 뜬다. 가까운 그림자와 먼 그림자를

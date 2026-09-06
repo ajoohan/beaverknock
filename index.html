@@ -4268,7 +4268,7 @@ function modalHTML(){
       : status==='rejected' ? '보류하면 손님 조건이 다시 보이지 않습니다. 되돌릴 수 있습니다.'
       : '표시만 바뀝니다. 열람 권한과는 무관합니다.';
     return `<div class="modal" data-act="modal-bg"><div class="box" data-stop>
-      <h3 style="margin:0 0 6px;font-size:17px;font-weight:800;letter-spacing:-.03em">${ids.length}건을 ${esc(label)}(으)로 바꿀까요?</h3>
+      <h3 style="margin:0 0 6px;font-size:17px;font-weight:800;letter-spacing:-.03em">${ids.length}건을 ${esc(label)}${josa(label,'으로','로')} 바꿀까요?</h3>
       <p style="margin:0 0 14px;font-size:13px;line-height:1.7;color:var(--n500)">${what}</p>
       <div style="max-height:180px;overflow:auto;background:var(--n50);padding:11px 14px;display:flex;flex-direction:column;gap:6px">
         ${rows.slice(0,12).map(r=>`<span style="font-size:12.5px;line-height:1.5">
@@ -4278,7 +4278,7 @@ function modalHTML(){
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:16px">
         <button class="btn sec" style="padding:14px 0" data-act="modal-close">취소</button>
-        <button class="btn ${status==='rejected'?'sec':'pri'}" style="padding:14px 0${status==='rejected'?';background:var(--danger);color:#fff;border-color:var(--danger)':''}" data-act="ag-bulk-go">${esc(label)}로 바꾸기</button>
+        <button class="btn ${status==='rejected'?'sec':'pri'}" style="padding:14px 0${status==='rejected'?';background:var(--danger);color:#fff;border-color:var(--danger)':''}" data-act="ag-bulk-go">${esc(label)}${josa(label,'으로','로')} 바꾸기</button>
       </div></div></div>`;
   }
   return '';
@@ -4483,7 +4483,8 @@ function agSetMany(ids, status){
         render(); return toast(j.error || '상태를 바꾸지 못했습니다');
       }
       AG.pick = {}; render();
-      toast(`${ids.length}건을 ${(AG_STATUS[status]||[])[1] || status}(으)로 바꿨습니다`);
+      const nm = (AG_STATUS[status]||[])[1] || status;
+      toast(`${ids.length}건을 ${nm}${josa(nm,'으로','로')} 바꿨습니다`);
     }))
     .catch(()=>{ AG.busy=false;
       before.forEach(([id, st]) => { const x=(AG.rows||[]).find(y=>y.id===id); if(x) x.status=st; });

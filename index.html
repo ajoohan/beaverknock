@@ -779,6 +779,91 @@ body.mo #frame{box-shadow:0 2px 8px rgba(28,37,71,.10),0 28px 64px rgba(28,37,71
 
 /* 모바일: 하단 고정 CTA와 탭바 동시 존재 방지 */
 body.mo .foot + .tabbar{border-top:none}
+
+/* ══════════════════════════════════════════════════════════════
+   마무리 – 글자와 움직임의 성격
+   ──────────────────────────────────────────────────────────────
+   화면 하나하나를 다시 그리는 대신, 모든 화면이 공유하는 성질만 손본다.
+   크기는 곳곳에 인라인으로 박혀 있어 CSS 로 강제하지 못하지만,
+   자간·줄간격·숫자 정렬·움직임은 여기서 한 번에 잡힌다.
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── 글자 ──
+   한글은 라틴보다 글자가 빽빽해서, 같은 자간이면 답답해 보인다.
+   큰 글자일수록 좁히고 작은 글자는 풀어주는 것이 광학적으로 맞다.
+   본문 자간을 0 에 두고 제목만 좁히면 '설계된 화면' 처럼 읽힌다. */
+body{
+  letter-spacing:-.003em;                    /* 거의 0 - 눈에 띄지 않게 조인다 */
+  font-feature-settings:"case" 1,"ss01" 1;
+  text-rendering:optimizeLegibility;
+  font-optical-sizing:auto;
+}
+
+/* 제목: 크기가 커질수록 더 좁힌다 */
+.t{letter-spacing:-.035em;line-height:1.34;text-wrap:balance;word-break:keep-all}
+.t[style*="font-size:31"],.t[style*="font-size:40"],.t[style*="font-size:56"]{letter-spacing:-.046em;line-height:1.24}
+
+/* 본문: 한글은 줄사이를 넉넉히 줘야 읽힌다 */
+.sub{line-height:1.72;letter-spacing:-.004em;word-break:keep-all}
+.lines{line-height:1.78;letter-spacing:-.004em;word-break:keep-all}
+
+/* 작은 글자는 자간을 풀어준다 - 조이면 뭉쳐 보인다 */
+.badge,.eyebrow,.sect{font-feature-settings:"tnum" 1}
+.lab{letter-spacing:-.008em;line-height:1.5}
+
+/* 숫자는 자리를 맞춘다. 금액·날짜·전화번호가 표에서 흔들리면
+   그것만으로 값싸 보인다. */
+.num,.badge,.unit,table,.kv dd,input[inputmode="numeric"],input[inputmode="decimal"]{
+  font-variant-numeric:tabular-nums;
+  font-feature-settings:"tnum" 1;
+}
+
+/* 문단 안에서 끊기면 안 되는 한국어 */
+p,li,dd,.sub,.lines,.opt{line-break:strict;overflow-wrap:break-word}
+
+/* ── 그림자 ──
+   한 겹짜리 그림자는 스티커처럼 뜬다. 가까운 그림자와 먼 그림자를
+   겹쳐야 종이가 놓인 것처럼 보인다. */
+:root{
+  --sh1:0 1px 2px rgba(35,37,92,.04), 0 6px 18px rgba(35,37,92,.05);
+  --sh2:0 2px 4px rgba(35,37,92,.05), 0 14px 34px rgba(35,37,92,.09);
+  --sh3:0 3px 8px rgba(61,63,143,.16), 0 18px 44px rgba(61,63,143,.22);
+}
+
+/* ── 움직임 ──
+   지금까지 .12s / .14s / .15s / ease 가 제각각이라 화면마다 리듬이 달랐다.
+   토큰은 이미 있었는데 쓰이지 않았다. 한 박자로 맞춘다. */
+.card{transition:transform var(--t-mid) var(--e-out),box-shadow var(--t-mid) var(--e-out),border-color var(--t-mid) var(--e-out)}
+.btn {transition:transform var(--t-fast) var(--e-spring),background var(--t-fast) var(--e-out),box-shadow var(--t-mid) var(--e-out),border-color var(--t-fast) var(--e-out)}
+.chip{transition:background var(--t-fast) var(--e-out),border-color var(--t-fast) var(--e-out),color var(--t-fast) var(--e-out),transform var(--t-fast) var(--e-spring)}
+.inp {transition:border-color var(--t-fast) var(--e-out),box-shadow var(--t-fast) var(--e-out),background var(--t-fast) var(--e-out)}
+.badge{transition:background var(--t-fast) var(--e-out),color var(--t-fast) var(--e-out)}
+
+/* 누를 때의 반응 - 손끝에 걸리는 느낌을 만든다 */
+.btn:active,.chip:active{transform:scale(.975)}
+.card.clickable:active{transform:scale(.994)}
+
+/* 초점은 지우지 않는다. 키보드로 다니는 사람에게는 이것이 유일한 단서다. */
+:where(button,a,input,select,textarea,[tabindex]):focus-visible{
+  outline:2px solid var(--ind);
+  outline-offset:2px;
+  border-radius:6px;
+}
+
+/* ── 진입 ──
+   화면이 통째로 나타나기보다, 위에서 가볍게 내려앉는 편이 덜 소란스럽다. */
+@keyframes riseIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+#app[data-enter] .scr > *{animation:riseIn var(--t-slow) var(--e-out) both}
+#app[data-enter] .scr > *:nth-child(2){animation-delay:.04s}
+#app[data-enter] .scr > *:nth-child(3){animation-delay:.08s}
+#app[data-enter] .scr > *:nth-child(4){animation-delay:.12s}
+
+/* 움직임을 줄여달라고 하신 분께는 전부 멈춘다 */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;
+    transition-duration:.01ms !important;scroll-behavior:auto !important}
+}
+
 </style>
 </head>
 <body class="pc">

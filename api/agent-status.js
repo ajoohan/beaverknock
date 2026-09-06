@@ -42,11 +42,18 @@ export default async function handler(req, res) {
   if (!sameSecret(p.pass, BK_OPS_PASS)) {
     return res.status(401).json({ error: '접근 암호가 맞지 않습니다' });
   }
-  if (!UUID.test(String(p.id || ''))) return res.status(400).json({ error: '대상이 올바르지 않습니다' });
-  if (!STATUS.includes(p.status))     return res.status(400).json({ error: '알 수 없는 상태입니다' });
+  /* 한 건이든 여럿이든 같은 길로 처리한다 - 목록에서 골라 한 번에 바꾸는 일이 잦다 */
+  const ids = Array.isArray(p.ids) ? p.ids : (p.id ? [p.id] : []);
+  if (!ids.length)          return res.status(400).json({ error: '대상이 없습니다' });
+  if (ids.length > 100)     return res.status(400).json({ error: '한 번에 100건까지만 바꿀 수 있습니다' });
+  if (!ids.every(x => UUID.test(String(x || '')))) return res.status(400).json({ error: '대상이 올바르지 않습니다' });
+  if (!STATUS.includes(p.status)) return res.status(400).json({ error: '알 수 없는 상태입니다' });
 
   try {
-    const r = await fetch(`${BK_URL}/rest/v1/${TABLE}?id=eq.${encodeURIComponent(p.id)}`, {
+    const q = ids.length === 1
+      ? `id=eq.${encodeURIComponent(ids[0])}`
+      : `id=in.(${ids.map(encodeURIComponent).join(',')})`;
+    const r = await fetch(`${BK_URL}/rest/v1/${TABLE}?${q}`, {
       method: 'PATCH',
       headers: {
         apikey: BK_SECRET_KEY,
@@ -57,7 +64,7 @@ export default async function handler(req, res) {
       body: JSON.stringify({ status: p.status }),
     });
     if (!r.ok) return res.status(500).json({ error: '상태를 바꾸지 못했습니다' });
-    return res.status(200).json({ ok: true, status: p.status });
+    return res.status(200).json({ ok: true, status: p.status, count: ids.length });
   } catch (e) {
     return res.status(500).json({ error: '상태 변경 중 문제가 생겼습니다' });
   }

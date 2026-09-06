@@ -2429,8 +2429,10 @@ function agentCards(rows){
     ${rows.map(r=>{
       const st = AG_STATUS[r.status||'new'] || AG_STATUS.new;
       return `
-      <div style="background:var(--white);padding:14px 16px">
+      <div style="background:var(--white);padding:14px 16px;${AG.pick[r.id]?'box-shadow:inset 3px 0 0 var(--ind)':''}">
         <div style="display:flex;align-items:center;gap:7px;margin-bottom:7px;flex-wrap:wrap">
+          <input type="checkbox" data-act="ag-pick" data-v="${esc(r.id)}" ${AG.pick[r.id]?'checked':''}
+            style="width:17px;height:17px;accent-color:var(--ind);cursor:pointer;flex:none">
           <span class="badge ${st[0]}">${st[1]}</span>
           <span class="badge ${r.role==='agent'?'b-ok':r.role==='owner'?'b-ind':'b-warn'}">${AG_ROLE[r.role]||r.role}</span>
           <span style="flex:1"></span>
@@ -2536,28 +2538,27 @@ const AG_ROLE = {agent:'공인중개사', owner:'소유자', developer:'시행�
 
 const AG_STATUS = {new:['b-warn','대기'], contacted:['b-ind','연락함'], approved:['b-ok','승인'], rejected:['b-mute','보류']};
 
-function agSetStatus(id, status){
-  const row = (AG.rows||[]).find(r=>r.id===id); if(!row) return;
-  const before = row.status || 'new';
-  row.status = status; render();                 /* 먼저 바꾸고 - 기다리게 하지 않는다 */
-  fetch('/api/agent-status', {method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({pass: OPS.pass, id, status})})
-    .then(r => r.json().catch(()=>({})).then(j => {
-      if(!r.ok){ row.status = before; render(); toast(j.error || '상태를 바꾸지 못했습니다'); }
-    }))
-    .catch(()=>{ row.status = before; render(); toast('네트워크 문제로 바꾸지 못했습니다'); });
-}
+/* 한 건도 여러 건과 같은 길을 탄다 - 두 벌로 두면 한쪽만 고쳐진다 */
+const agSetStatus = (id, status) => agSetMany([id], status);
 
 
-function agentPanel(){
+/* 지금 화면에 보이는 행. 목록과 일괄 처리가 각자 고르면
+   본인이 못 본 것까지 바꾸게 된다 - 한 곳에서만 정한다. */
+function agVisible(){
   const q = AG.q.trim().toLowerCase();
-  const all = AG.rows;
-  const rows = !all ? [] : all.filter(r=>{
+  return (AG.rows||[]).filter(r=>{
     if(AG.role && r.role !== AG.role) return false;
     if(!q) return true;
     return [r.name, r.office, r.phone, r.addr, r.reg_no, r.email]
       .filter(Boolean).join(' ').toLowerCase().includes(q);
   });
+}
+
+function agentPanel(){
+  const all = AG.rows;
+  const rows = agVisible();
+  const picked = agPicked(rows);
+  const allPicked = rows.length && picked.length === rows.length;
   const chip = (label, on, act, v) =>
     `<button class="chip ${on?'on':''}" data-act="${act}" data-v="${v}" style="padding:7px 14px;font-size:12.5px">${label}</button>`;
 
@@ -2588,8 +2589,24 @@ function agentPanel(){
 
     ${agentNeedCheck(all)}
 
+    ${picked.length ? `
+    <div class="card pad" style="margin-bottom:12px;border-color:var(--ind200);background:var(--ind50);box-shadow:none;
+      display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+      <b style="font-size:13.5px;font-weight:800;color:var(--ind)">${picked.length}건 선택됨</b>
+      <div class="chips" style="gap:6px">
+        ${Object.entries(AG_STATUS).map(([k,[,t]])=>`
+          <button class="chip" data-act="ag-bulk" data-v="${k}" style="padding:7px 14px;font-size:12.5px"
+            ${AG.busy?'disabled':''}>${t}</button>`).join('')}
+        <button class="chip" data-act="ag-pick-all" style="padding:7px 14px;font-size:12.5px">선택 해제</button>
+      </div>
+    </div>` : ''}
+
     <div class="card pad" style="padding:0;overflow:hidden">
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--hair)">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--hair)">
+        ${rows.length ? `<label style="display:flex;align-items:center;gap:9px;cursor:pointer;flex:none">
+          <input type="checkbox" data-act="ag-pick-all" ${allPicked?'checked':''}
+            style="width:17px;height:17px;accent-color:var(--ind);cursor:pointer">
+          <span style="font-size:12.5px;font-weight:700;color:var(--n500)">전체</span></label>` : ''}
         <b style="font-size:15px;font-weight:800">${rows.length===all.length?`신청 ${all.length}건`:`${rows.length}건 / 전체 ${all.length}건`}</b>
         <span style="font-size:11.5px;color:var(--n500)">${AG.at?esc(AG.at.replace('T',' ').slice(0,16)):''} 기준</span>
       </div>
@@ -2600,11 +2617,15 @@ function agentPanel(){
       <div style="overflow-x:auto">
         <table style="width:100%;border-collapse:collapse;font-size:13px;white-space:nowrap">
           <thead><tr style="background:var(--n50)">
+            <th style="width:38px;padding:10px 0 10px 14px"></th>
             ${['신청','상태','역할','성함','연락처','사무소 · 물건','등록번호 · 사업자','이메일'].map(h=>
               `<th style="text-align:left;padding:10px 14px;font-size:11.5px;font-weight:800;color:var(--n500)">${h}</th>`).join('')}
           </tr></thead>
           <tbody>${rows.map(r=>`
-            <tr style="border-top:1px solid var(--n100)">
+            <tr style="border-top:1px solid var(--n100);${AG.pick[r.id]?'background:var(--ind50)':''}">
+              <td style="padding:11px 0 11px 14px">
+                <input type="checkbox" data-act="ag-pick" data-v="${esc(r.id)}" ${AG.pick[r.id]?'checked':''}
+                  style="width:17px;height:17px;accent-color:var(--ind);cursor:pointer"></td>
               <td style="padding:11px 14px;color:var(--n500)">${esc(String(r.created_at||'').replace('T',' ').slice(5,16))}</td>
               <td style="padding:11px 14px"><span class="badge ${(AG_STATUS[r.status||'new']||AG_STATUS.new)[0]}">${(AG_STATUS[r.status||'new']||AG_STATUS.new)[1]}</span></td>
               <td style="padding:11px 14px"><span class="badge ${r.role==='agent'?'b-ok':r.role==='owner'?'b-ind':'b-warn'}">${AG_ROLE[r.role]||r.role}</span></td>
@@ -2617,7 +2638,7 @@ function agentPanel(){
               </td>
               <td style="padding:11px 14px;color:var(--n500)">${esc(r.email||'')}</td>
             </tr>
-            <tr><td colspan="8" style="padding:0 14px 12px">
+            <tr><td colspan="9" style="padding:0 14px 12px">
               <div class="chips" style="gap:6px">
                 ${Object.entries(AG_STATUS).map(([k,[,t]])=>`
                   <button class="chip ${((r.status||'new')===k)?'on':''}" data-act="ag-status" data-v="${esc(r.id)}|${k}"
@@ -4237,6 +4258,29 @@ function modalHTML(){
         <button class="btn pri" style="padding:14px 0" data-act="do-close" ${S.modal.reason?'':'disabled'}>종료하기</button>
       </div></div></div>`;
   }
+  if(S.modal.type==='ag-bulk'){
+    const {ids, status} = S.modal;
+    const label = (AG_STATUS[status]||[])[1] || status;
+    const rows = (AG.rows||[]).filter(r=>ids.includes(r.id));
+    /* 무엇이 바뀌는지 먼저 보여준다 - 승인은 그 사람이 손님 조건을 보게 되는 일이다 */
+    const what = status==='approved'
+      ? '승인하면 이분들이 <b style="color:var(--n900)">손님 조건을 열람</b>하고 제안을 보낼 수 있습니다.'
+      : status==='rejected' ? '보류하면 손님 조건이 다시 보이지 않습니다. 되돌릴 수 있습니다.'
+      : '표시만 바뀝니다. 열람 권한과는 무관합니다.';
+    return `<div class="modal" data-act="modal-bg"><div class="box" data-stop>
+      <h3 style="margin:0 0 6px;font-size:17px;font-weight:800;letter-spacing:-.03em">${ids.length}건을 ${esc(label)}(으)로 바꿀까요?</h3>
+      <p style="margin:0 0 14px;font-size:13px;line-height:1.7;color:var(--n500)">${what}</p>
+      <div style="max-height:180px;overflow:auto;background:var(--n50);padding:11px 14px;display:flex;flex-direction:column;gap:6px">
+        ${rows.slice(0,12).map(r=>`<span style="font-size:12.5px;line-height:1.5">
+          <b style="font-weight:800">${esc(r.name||'-')}</b>
+          <span style="color:var(--n500)"> · ${esc(AG_ROLE[r.role]||r.role||'')} · ${esc(r.office||r.addr||r.phone||'')}</span></span>`).join('')}
+        ${rows.length>12?`<span style="font-size:12px;color:var(--n500)">외 ${rows.length-12}건</span>`:''}
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:16px">
+        <button class="btn sec" style="padding:14px 0" data-act="modal-close">취소</button>
+        <button class="btn ${status==='rejected'?'sec':'pri'}" style="padding:14px 0${status==='rejected'?';background:var(--danger);color:#fff;border-color:var(--danger)':''}" data-act="ag-bulk-go">${esc(label)}로 바꾸기</button>
+      </div></div></div>`;
+  }
   return '';
 }
 
@@ -4417,7 +4461,34 @@ function fallbackCopy(txt, ok){
 }
 
 /* 가입 신청 — 조건과 같은 암호를 쓴다 */
-const AG = { rows:null, loading:false, err:'', at:'', reveal:false, role:'', q:'', note:'' };
+const AG = { rows:null, loading:false, err:'', at:'', reveal:false, role:'', q:'', note:'', pick:{}, busy:false };
+
+/* 고른 건들. 화면에서 사라진 행(필터가 바뀌어 안 보이는 것)까지 처리하면
+   본인이 못 본 것을 바꾸게 된다 - 보이는 것 중에서만 센다. */
+const agPicked = rows => (rows||[]).filter(r => AG.pick[r.id]).map(r => r.id);
+
+/* 여러 건을 한 번에 바꾼다. 되돌릴 수 있게 이전 상태를 들고 간다. */
+function agSetMany(ids, status){
+  if(!ids.length || AG.busy) return;
+  const rows = (AG.rows||[]).filter(r => ids.includes(r.id));
+  const before = rows.map(r => [r.id, r.status || 'new']);
+  rows.forEach(r => r.status = status);
+  AG.busy = true; render();
+  fetch('/api/agent-status', {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({pass: OPS.pass, ids, status})})
+    .then(r => r.json().catch(()=>({})).then(j => {
+      AG.busy = false;
+      if(!r.ok){
+        before.forEach(([id, st]) => { const x=(AG.rows||[]).find(y=>y.id===id); if(x) x.status=st; });
+        render(); return toast(j.error || '상태를 바꾸지 못했습니다');
+      }
+      AG.pick = {}; render();
+      toast(`${ids.length}건을 ${(AG_STATUS[status]||[])[1] || status}(으)로 바꿨습니다`);
+    }))
+    .catch(()=>{ AG.busy=false;
+      before.forEach(([id, st]) => { const x=(AG.rows||[]).find(y=>y.id===id); if(x) x.status=st; });
+      render(); toast('네트워크 문제로 바꾸지 못했습니다'); });
+}
 
 function agFetch(){
   if(AG.loading || !OPS.pass) return;
@@ -5356,7 +5427,22 @@ function handle(a,v,el){
     case 'ag-load':    agFetch(); return true;
     case 'ag-role':    AG.role = AG.role===v ? '' : v; render(); settle('tbody'); return true;
     case 'ag-reveal':  AG.reveal = !AG.reveal; agFetch(); return true;
-    case 'ag-status': { const [id, st] = String(v).split('|'); agSetStatus(id, st); return true; }
+    case 'ag-status': { const [id, st] = String(v).split('|');
+      /* 승인·보류는 되돌리기 번거로운 일이라 한 번 묻는다. 연락함·대기는 표시만 바뀌니 그냥 바꾼다. */
+      if(st==='approved' || st==='rejected'){ S.modal={type:'ag-bulk', ids:[id], status:st}; render(); return true; }
+      agSetStatus(id, st); return true; }
+    case 'ag-pick': { AG.pick[v] = !AG.pick[v]; render(); return true; }
+    case 'ag-pick-all': {
+      const rows = agVisible();
+      const all = rows.length && rows.every(r=>AG.pick[r.id]);
+      rows.forEach(r => { if(all) delete AG.pick[r.id]; else AG.pick[r.id]=true; });
+      render(); return true; }
+    case 'ag-bulk': {
+      const ids = agPicked(agVisible());
+      if(!ids.length) return toast('먼저 처리할 건을 골라주세요'), true;
+      if(v==='approved' || v==='rejected'){ S.modal={type:'ag-bulk', ids, status:v}; render(); return true; }
+      agSetMany(ids, v); return true; }
+    case 'ag-bulk-go': { const m=S.modal; S.modal=null; agSetMany(m.ids, m.status); return true; }
     case 'ag-csv':     return agCsv();
     case 'ops-only':   OPS.only = OPS.only===v ? '' : v; OPS.open=''; render(); settle('tbody'); return true;
     case 'ops-open':   OPS.open = OPS.open===v ? '' : v; render(); return true;

@@ -799,9 +799,14 @@ body{
   font-optical-sizing:auto;
 }
 
-/* 제목: 크기가 커질수록 더 좁힌다 */
-.t{letter-spacing:-.035em;line-height:1.34;text-wrap:balance;word-break:keep-all}
-.t[style*="font-size:31"],.t[style*="font-size:40"],.t[style*="font-size:56"]{letter-spacing:-.046em;line-height:1.24}
+/* 제목: 크기가 커질수록 더 좁힌다.
+   앞서 h1.t 로 선언된 규칙이 있어 선택자를 맞춰야 먹는다 - .t 만으로는 진다.
+   21~25px 한글 제목에 -.052em 은 글자가 뭉쳐 보인다. */
+.t,h1.t,h2.t{letter-spacing:-.032em;line-height:1.38;text-wrap:balance;word-break:keep-all}
+h1.t[style*="font-size:31"],h1.t[style*="font-size:40"],h1.t[style*="font-size:56"],
+.t[style*="font-size:31"],.t[style*="font-size:40"],.t[style*="font-size:56"]{
+  letter-spacing:-.046em;line-height:1.2;
+}
 
 /* 본문: 한글은 줄사이를 넉넉히 줘야 읽힌다 */
 .sub{line-height:1.72;letter-spacing:-.004em;word-break:keep-all}

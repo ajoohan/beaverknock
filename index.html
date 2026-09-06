@@ -832,7 +832,9 @@ p,li,dd,.sub,.lines,.opt{line-break:strict;overflow-wrap:break-word}
 
 /* 어두운 배경 위에서는 강조색을 밝은 쪽으로 바꿔 끼운다.
    ind300 은 흰 바탕에서 쓰라고 만든 값이라 네이비 위에서는 3.35:1 까지 떨어진다. */
-.scr.dark [style*="var(--ind300)"]{color:var(--ind-dark) !important}
+/* 글자에 쓴 것만 바꾼다. background:var(--ind300) 인 버튼까지 잡으면
+   흰 글자가 연보라가 되어 버튼이 통째로 안 읽힌다(실제로 1.46:1 이 났다). */
+.scr.dark [style*="color:var(--ind300)"]:not([style*="background:var(--ind300)"]){color:var(--ind-dark) !important}
 
 /* ── 그림자 ──
    한 겹짜리 그림자는 스티커처럼 뜬다. 가까운 그림자와 먼 그림자를

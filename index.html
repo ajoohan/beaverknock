@@ -80,7 +80,7 @@ body.mo .logo{font-size:15px}
 .nav .items a{font-size:14px;font-weight:600;color:var(--n500);padding:8px 13px;border-radius:var(--r-sm)}
 .nav .items a:hover{background:var(--n50);color:var(--n700)}
 .nav .items a.on{font-weight:800;color:var(--ind);background:var(--ind50)}
-.nav .right{margin-left:auto;display:flex;align-items:center;gap:16px;font-size:13px;color:var(--n500)}
+.nav .right{margin-left:auto;display:flex;align-items:center;gap:16px;font-size:13.5px;color:var(--n500)}
 body.mo .nav .items{display:none}
 .back{font-size:14px;color:var(--n500);font-weight:600;padding:6px 10px;border-radius:var(--r-sm)}
 .back:hover{background:var(--n50)}
@@ -99,7 +99,7 @@ body.mo .nav .items{display:none}
 .btn.ghost:hover{background:var(--n100);border-color:var(--n300)}
 .btn.lg{padding:17px 44px;font-size:17px}
 .btn.md{padding:13px 28px;font-size:14px}
-.btn.sm{padding:9px 18px;font-size:13px;font-weight:700}
+.btn.sm{padding:9px 18px;font-size:13.5px;font-weight:700}
 .btn.blk{width:100%}
 .btn[disabled]{background:var(--n100)!important;color:#C9C4BB!important;box-shadow:none!important;cursor:not-allowed;border-color:var(--n100)!important}
 
@@ -136,7 +136,7 @@ body.mo .card.pad{padding:17px}
 .grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
 body.mo .grid2.mo1{grid-template-columns:1fr}
 
-.badge{display:inline-block;border-radius:var(--r-full);padding:4px 11px;font-size:11.5px;font-weight:800;white-space:nowrap}
+.badge{display:inline-block;border-radius:var(--r-full);padding:4px 11px;font-size:11px;font-weight:800;white-space:nowrap}
 .b-ok{background:var(--okbg);color:var(--ok)} .b-warn{background:var(--warnbg);color:var(--warn)}
 /* 글자 링크는 눌리는 자리가 글자 높이(15px)뿐이라 손가락으로 맞히기 어렵다.
    보이는 모습은 그대로 두고 위아래 여백만 준다 - 줄 높이는 음수 마진으로 되돌린다. */
@@ -171,7 +171,7 @@ hr.hair{border:none;border-top:1px solid var(--n100);margin:0}
 body.mo .rail{display:none}
 .rail .step{display:flex;gap:14px;align-items:center;padding:10px 0}
 .rail .dot{flex:none;width:28px;height:28px;border-radius:var(--r-full);display:flex;align-items:center;justify-content:center;
-  font-size:13px;font-weight:800;border:1.5px solid var(--n300);color:var(--n500)}
+  font-size:13.5px;font-weight:800;border:1.5px solid var(--n300);color:var(--n500)}
 .rail .step.on .dot{background:var(--ind);border-color:var(--ind);color:#fff}
 .rail .step.done .dot{background:var(--ok);border-color:var(--ok);color:#fff}
 .rail .step span{font-size:14px;font-weight:600;color:var(--n500)}
@@ -218,7 +218,7 @@ body.mo .modal .box{border-radius:22px 22px 0 0;max-width:none}
 /* 비버 안내 박스 */
 .beaverbox{display:flex;align-items:center;gap:14px;padding:15px 18px;background:rgba(245,237,226,.92);border-radius:var(--r-lg)}
 .beaverbox svg{width:58px;flex:none}
-.beaverbox p{margin:0;font-size:13px;line-height:1.6;color:var(--n700)}
+.beaverbox p{margin:0;font-size:13.5px;line-height:1.6;color:var(--n700)}
 
 /* 스크롤 페이드인 */
 .fade{animation:fade .28s ease-out both}
@@ -265,8 +265,8 @@ body.mo .modal .box{border-radius:22px 22px 0 0;max-width:none}
 #app :focus-visible{outline-offset:3px}
 
 /* 마이크로 라벨 - 섹션 표식 */
-.sect{letter-spacing:.02em;font-size:11.5px}
-.eyebrow{display:inline-flex;align-items:center;gap:7px;font-size:10.5px;font-weight:700;
+.sect{letter-spacing:.02em;font-size:11px}
+.eyebrow{display:inline-flex;align-items:center;gap:7px;font-size:11px;font-weight:700;
   letter-spacing:.14em;text-transform:uppercase;color:var(--n500)}
 .eyebrow::before{content:"";width:14px;height:1.5px;background:var(--clay);border-radius:2px}
 
@@ -461,7 +461,7 @@ h1.t + .sub, .sub{font-size:15px;line-height:1.75;color:var(--n500)}
 
 /* 화면 이름표 - 짧은 선 하나로는 라벨로 안 읽힌다 */
 .eyebrow{
-  font-size:10.5px;font-weight:800;letter-spacing:.14em;color:var(--clay700);
+  font-size:11px;font-weight:800;letter-spacing:.14em;color:var(--clay700);
   background:var(--clay100);border:1px solid var(--clay200);
   padding:5px 11px 5px 9px;border-radius:7px;
 }
@@ -509,7 +509,7 @@ h1.t + .sub, .sub{font-size:15px;line-height:1.75;color:var(--n500)}
   /* iOS 는 16px 미만 입력칸을 탭하면 화면을 확대하고 그대로 둔다.
      maximum-scale 로 막는 방법도 있지만 그건 손가락으로 키우는 것까지 막는다.
      글자를 16px 로 올리는 쪽이 맞다 - 화면에서도 읽기 편해진다. */
-  .inp, input, select, textarea{font-size:16px}
+  .inp, input, select, textarea{font-size:15px}
 .inp::placeholder{color:#B5AFA5}
 
 /* ── 칩: 더 단단하게 ── */
@@ -517,7 +517,7 @@ h1.t + .sub, .sub{font-size:15px;line-height:1.75;color:var(--n500)}
 .chip.on{font-weight:800}
 
 /* ── 뱃지: 납작하게, 대문자 간격 ── */
-.badge{border-radius:7px;padding:5px 10px;font-size:10.5px;letter-spacing:.01em}
+.badge{border-radius:7px;padding:5px 10px;font-size:11px;letter-spacing:.01em}
 
 /* ── 구분선은 얇게, 대신 여백으로 나눈다 ── */
 .foot{border-top:1px solid var(--hair)}
@@ -564,7 +564,7 @@ body.mo .chip{min-height:38px}
 body.mo svg.map{max-height:200px}
 /* 지도 위 도구줄을 한 줄로 눌러 담는다 */
 body.mo .maptools{gap:6px}
-body.mo .maptools .btn{padding:7px 11px!important;font-size:12px!important}
+body.mo .maptools .btn{padding:7px 11px!important;font-size:12.5px!important}
 
 /* 좁으면 세로로 - 옆에서 폭을 뺏으면 제목이 두 줄로 깨진다 */
 body.mo .vcard{flex-wrap:wrap}
@@ -687,7 +687,7 @@ tbody tr.clickable:hover{background:var(--n50)}
 .aclist button:last-child{border-bottom:none}
 .aclist button:hover,.aclist button.hi{background:var(--ind50)}
 .aclist button b{font-size:14px;font-weight:800;color:var(--n900);white-space:nowrap}
-.aclist button small{font-size:11.5px;color:var(--n500)}
+.aclist button small{font-size:11px;color:var(--n500)}
 .aclist .none{padding:13px 14px;font-size:12.5px;line-height:1.7;color:var(--n500)}
 
 /* 전달될 조건 - 이 화면의 결론이다. 문서처럼 세운다.
@@ -699,21 +699,21 @@ tbody tr.clickable:hover{background:var(--n50)}
 .recap .rc-eb{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:800;
   letter-spacing:.09em;color:var(--ind)}
 .recap .rc-eb i{display:block;width:15px;height:2px;border-radius:2px;background:var(--ind)}
-.recap .rc-ttl{display:block;margin-top:9px;font-size:19px;font-weight:800;letter-spacing:-.032em;
+.recap .rc-ttl{display:block;margin-top:9px;font-size:17px;font-weight:800;letter-spacing:-.032em;
   line-height:1.35;color:var(--n900);word-break:keep-all}
 .recap .rc-body{padding:4px 22px}
 .recap .rc-row{display:flex;gap:16px;align-items:flex-start;padding:11px 0;border-top:1px solid var(--n50)}
 .recap .rc-row:first-child{border-top:none}
-.recap .rc-k{flex:none;width:64px;padding-top:2px;font-size:11.5px;font-weight:800;color:var(--n500)}
+.recap .rc-k{flex:none;width:64px;padding-top:2px;font-size:11px;font-weight:800;color:var(--n500)}
 .recap .rc-v{flex:1;min-width:0;font-size:14px;font-weight:700;line-height:1.6;color:var(--n900);word-break:keep-all}
 .recap .rc-tags{display:flex;flex-wrap:wrap;gap:5px}
 .recap .rc-tags span{font-size:12.5px;font-weight:700;color:var(--ind);background:var(--ind50);
   border-radius:var(--r-full);padding:3px 11px}
 .recap .rc-memo{margin:2px 22px 18px;padding:12px 15px;background:var(--n50);
   border-left:2.5px solid var(--ind300);border-radius:0 10px 10px 0;
-  font-size:13px;line-height:1.75;color:var(--n700);word-break:keep-all}
+  font-size:13.5px;line-height:1.75;color:var(--n700);word-break:keep-all}
 .recap .rc-note{padding:12px 22px;border-top:1px solid var(--hair);background:var(--n50);
-  font-size:11.5px;line-height:1.65;color:var(--n500);word-break:keep-all}
+  font-size:11px;line-height:1.65;color:var(--n500);word-break:keep-all}
 body.mo .recap .rc-top{padding:16px 17px 13px}
 body.mo .recap .rc-ttl{font-size:17px}
 body.mo .recap .rc-body{padding:2px 17px}
@@ -726,7 +726,7 @@ body.mo .recap .rc-note{padding:11px 17px}
 .lab .opt{display:inline-block;margin-top:2px}
 
 /* 리스트 줄 간격 (조건 요약 등) */
-.lines{font-size:13px;line-height:1.75;color:var(--n700)}
+.lines{font-size:13.5px;line-height:1.75;color:var(--n700)}
 
 /* 비버박스 */
 .beaverbox{border:1px solid rgba(200,168,124,.35)}
@@ -746,7 +746,7 @@ body.mo #frame{box-shadow:0 2px 8px rgba(28,37,71,.10),0 28px 64px rgba(28,37,71
   backdrop-filter:saturate(1.6) blur(14px);border-top:1px solid var(--hair);
   padding:8px 6px calc(8px + env(safe-area-inset-bottom));flex:none}
 .tabbar a{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 0;
-  color:var(--n500);font-size:10.5px;font-weight:600;border-radius:12px;transition:color .15s,background .15s}
+  color:var(--n500);font-size:11px;font-weight:600;border-radius:12px;transition:color .15s,background .15s}
 .tabbar a svg{width:21px;height:21px}
 .tabbar a.on{color:var(--ind);font-weight:800}
 .tabbar a:active{background:var(--n50)}
@@ -764,7 +764,7 @@ body.mo #frame{box-shadow:0 2px 8px rgba(28,37,71,.10),0 28px 64px rgba(28,37,71
 
 /* 선택 항목 개수 뱃지 */
 .cnt{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;
-  border-radius:var(--r-full);background:var(--ind);color:#fff;font-size:10.5px;font-weight:800;margin-left:6px}
+  border-radius:var(--r-full);background:var(--ind);color:#fff;font-size:11px;font-weight:800;margin-left:6px}
 
 /* 스켈레톤 (화면설계서: 스피너 금지) */
 @keyframes shim{0%{background-position:-380px 0}100%{background-position:380px 0}}
@@ -1193,7 +1193,7 @@ const S = {
 /* ---------- 유틸 ---------- */
 /* 예시 데이터임을 항목마다 밝힌다. 실제로 등록·수신한 것에는 붙지 않는다. */
 const demoTag = (o, style='') => o && o.seed
-  ? `<span class="badge" style="background:var(--clay100);border:1px solid var(--clay200);color:var(--clay700);font-size:10.5px;font-weight:800;padding:2px 8px;${style}">예시</span>`
+  ? `<span class="badge" style="background:var(--clay100);border:1px solid var(--clay200);color:var(--clay700);font-size:11px;font-weight:800;padding:2px 8px;${style}">예시</span>`
   : '';
 
 function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show');
@@ -1500,12 +1500,12 @@ function zonesHTML(zones, sel){
     const open = i===0 || picked>0;
     return `<details class="zgroup" ${open?'open':''} style="margin-bottom:10px">
       <summary style="display:flex;align-items:center;gap:7px;cursor:pointer;list-style:none;
-        font-size:11.5px;font-weight:800;color:var(--n500);padding:7px 0;user-select:none">
+        font-size:11px;font-weight:800;color:var(--n500);padding:7px 0;user-select:none">
         <svg class="caret" viewBox="0 0 12 12" style="width:10px;height:10px;flex:none;transition:transform var(--t-fast) ease">
           <path d="M4 2.5 L8 6 L4 9.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         <span>${esc(z.t)}</span>
-        ${picked?`<span class="badge b-ind" style="padding:1px 8px;font-size:10.5px">${picked}</span>`:
-                 `<span style="font-size:10.5px;color:var(--n300);font-weight:700">${z.d.length}</span>`}
+        ${picked?`<span class="badge b-ind" style="padding:1px 8px;font-size:11px">${picked}</span>`:
+                 `<span style="font-size:11px;color:var(--n300);font-weight:700">${z.d.length}</span>`}
       </summary>
       <div style="padding-top:4px">${chipsHTML(z.d, sel, 'dong', true)}</div>
     </details>`;}).join('');}
@@ -1762,11 +1762,11 @@ V['#/'] = () => `
     <span style="position:relative;z-index:2;padding-bottom:10px">${knockScene(150)}</span>
   </div>
   <div style="flex:none;padding:12px 22px 24px;background:var(--white);border-top:1px solid var(--n100);display:flex;flex-direction:column;gap:10px;position:relative;z-index:3">
-    <div style="display:flex;justify-content:center;gap:9px;font-size:11.5px;color:var(--n500)">
+    <div style="display:flex;justify-content:center;gap:9px;font-size:11px;color:var(--n500)">
       <span>① 조건 등록</span><span style="color:var(--n300)">-</span><span>② 맞으면 연락</span><span style="color:var(--n300)">-</span><span>③ 직접 상담</span>
     </div>
     <button class="btn pri blk" data-go="#/kind" style="padding:16px 0;font-size:17px">내 조건 걸어두기</button>
-    <span style="text-align:center;font-size:11.5px;line-height:1.6;color:var(--n500)"><b style="color:var(--n700);font-weight:700">30초 간편가입</b><br>무료서비스</span>
+    <span style="text-align:center;font-size:11px;line-height:1.6;color:var(--n500)"><b style="color:var(--n700);font-weight:700">30초 간편가입</b><br>무료서비스</span>
   </div>`
   : `
   <!-- PC: 왼쪽 문구 / 오른쪽 캐릭터. 가운데 정렬을 버리고 축을 왼쪽에 둔다 -->
@@ -1781,7 +1781,7 @@ V['#/'] = () => `
         원하는 집·가게의 조건을 남기면, 맞는 물건이 있는 공인중개사가 직접 연락합니다.</p>
       <div style="display:flex;align-items:center;gap:16px;margin-top:4px">
         <button class="btn pri" data-go="#/kind" style="padding:18px 44px;font-size:17px;box-shadow:var(--sh3)">내 조건 걸어두기</button>
-        <span style="font-size:13px;line-height:1.55;color:var(--n500)"><b style="color:var(--n700);font-weight:700">30초 간편가입</b><br>무료서비스</span>
+        <span style="font-size:13.5px;line-height:1.55;color:var(--n500)"><b style="color:var(--n700);font-weight:700">30초 간편가입</b><br>무료서비스</span>
       </div>
     </div>
     <div style="position:relative;height:100%;display:flex;align-items:flex-end;justify-content:center;min-height:0">
@@ -1808,10 +1808,10 @@ V['#/'] = () => `
   <div style="flex:none;position:relative;z-index:3;background:var(--white);border-top:1px solid var(--hair);padding:10px 76px 12px;display:flex;align-items:center;justify-content:space-between;gap:20px">
     ${logoLockup({h:18,en:true,tag:true,stack:true})}
     <div style="display:flex;gap:16px">
-      <a data-go="#/guide" style="font-size:11.5px;color:var(--n500);text-decoration:underline;text-underline-offset:3px">이용 안내</a>
-      <a data-go="#/faq" style="font-size:11.5px;color:var(--n500);text-decoration:underline;text-underline-offset:3px">자주 묻는 질문</a>
-      <a href="/privacy" target="_blank" rel="noopener" style="font-size:11.5px;color:var(--n500);text-decoration:underline;text-underline-offset:3px">개인정보 처리방침</a>
-      <a data-go="#/brand" style="font-size:11.5px;color:var(--n500);text-decoration:underline;text-underline-offset:3px">브랜드</a>
+      <a data-go="#/guide" style="font-size:11px;color:var(--n500);text-decoration:underline;text-underline-offset:3px">이용 안내</a>
+      <a data-go="#/faq" style="font-size:11px;color:var(--n500);text-decoration:underline;text-underline-offset:3px">자주 묻는 질문</a>
+      <a href="/privacy" target="_blank" rel="noopener" style="font-size:11px;color:var(--n500);text-decoration:underline;text-underline-offset:3px">개인정보 처리방침</a>
+      <a data-go="#/brand" style="font-size:11px;color:var(--n500);text-decoration:underline;text-underline-offset:3px">브랜드</a>
     </div>
   </div>`}
 </div>`;
@@ -1848,7 +1848,7 @@ function snsButton(x){ return `
     transition:filter .14s ease,box-shadow .14s ease">
     <span style="flex:none;display:flex">${x.ic}</span>${x.t}
     ${x.soon?`<span aria-label="${x.soon}" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);
-      font-size:10.5px;font-weight:800;letter-spacing:0;padding:3px 8px;border-radius:var(--r-full);white-space:nowrap;
+      font-size:11px;font-weight:800;letter-spacing:0;padding:3px 8px;border-radius:var(--r-full);white-space:nowrap;
       background:${x.fg==='#fff'?'rgba(255,255,255,.18)':'rgba(0,0,0,.10)'};color:${x.fg}">${x.soon}</span>`:''}
   </button>`;}
 
@@ -1906,7 +1906,7 @@ V['#/login'] = () => {
       </div>
 
       <!-- 찾기 줄 -->
-      <div class="sublinks" style="display:flex;justify-content:center;align-items:center;gap:4px;font-size:13px;color:var(--n500)">
+      <div class="sublinks" style="display:flex;justify-content:center;align-items:center;gap:4px;font-size:13.5px;color:var(--n500)">
         ${S.signup
           ? `<span style="padding:0 2px">이미 계정이 있으신가요?</span><a data-act="signup-toggle" style="font-weight:700;color:var(--ind)">로그인</a>`
           : `<a data-go="#/find-id" style="color:var(--n700)">아이디 찾기</a>${bar}
@@ -1916,13 +1916,13 @@ V['#/login'] = () => {
 
       <div style="display:flex;align-items:center;gap:12px;margin:2px 0">
         <i style="flex:1;height:1px;background:var(--hair)"></i>
-        <span style="font-size:11.5px;color:var(--n500)">간편 로그인</span>
+        <span style="font-size:11px;color:var(--n500)">간편 로그인</span>
         <i style="flex:1;height:1px;background:var(--hair)"></i>
       </div>
 
       <div style="display:flex;flex-direction:column;gap:8px">${SNS.map(snsButton).join('')}</div>
 
-      <p style="margin:0;text-align:center;font-size:11.5px;line-height:1.75;color:var(--n500)">
+      <p style="margin:0;text-align:center;font-size:11px;line-height:1.75;color:var(--n500)">
         로그인하시면 <a href="/terms" target="_blank" rel="noopener" style="color:var(--ind);font-weight:700;text-decoration:underline;text-underline-offset:2px">이용약관</a>과 <a href="/privacy" target="_blank" rel="noopener" style="color:var(--ind);font-weight:700;text-decoration:underline;text-underline-offset:2px">개인정보 처리방침</a>에 동의하신 것으로 봅니다.<br>
         조건을 걸으실 때 <b style="color:var(--n700)">본인확인</b>을 한 번 더 받습니다.</p>
     </div>
@@ -1965,7 +1965,7 @@ V['#/find-id'] = () => findShell('아이디 찾기',
         보안을 위해 일부만 보여드립니다. 전체가 기억나지 않으시면 비밀번호 찾기에서 이 번호로 다시 확인하실 수 있습니다.</p>
     </div>
     <button class="btn pri" data-go="#/login" style="width:100%;padding:14px 0;font-size:15px">로그인하러 가기</button>
-    <a data-go="#/reset-pw" style="text-align:center;font-size:13px;color:var(--n700)">비밀번호도 잊으셨나요?</a>`
+    <a data-go="#/reset-pw" style="text-align:center;font-size:13.5px;color:var(--n700)">비밀번호도 잊으셨나요?</a>`
   : `
     <div style="display:flex;flex-direction:column;gap:11px">
       <input class="inp" data-in="findName" value="${esc(S.findName||'')}" placeholder="이름" aria-label="이름">
@@ -1985,7 +1985,7 @@ V['#/reset-pw'] = () => findShell('비밀번호 찾기',
         메일이 보이지 않으면 스팸함도 확인해 주세요. 링크는 30분 동안 유효합니다.</p>
     </div>
     <button class="btn pri" data-go="#/login" style="width:100%;padding:14px 0;font-size:15px">로그인으로 돌아가기</button>
-    <a data-act="reset-again" style="text-align:center;font-size:13px;color:var(--n700)">다른 주소로 다시 보내기</a>`
+    <a data-act="reset-again" style="text-align:center;font-size:13.5px;color:var(--n700)">다른 주소로 다시 보내기</a>`
   : `
     <div style="display:flex;flex-direction:column;gap:11px">
       <input class="inp" data-in="resetEmail" type="email" value="${esc(S.resetEmail||'')}"
@@ -1993,7 +1993,7 @@ V['#/reset-pw'] = () => findShell('비밀번호 찾기',
       <span data-warn="reset" class="warn">${S.resetErr||''}</span>
       <button class="btn pri" data-act="do-reset" style="width:100%;padding:14px 0;font-size:15px">재설정 링크 보내기</button>
     </div>
-    <a data-go="#/find-id" style="text-align:center;font-size:13px;color:var(--n700)">아이디가 기억나지 않으세요?</a>`);
+    <a data-go="#/find-id" style="text-align:center;font-size:13.5px;color:var(--n700)">아이디가 기억나지 않으세요?</a>`);
 
 /* ---------- D-02 유형 선택 ---------- */
 V['#/kind'] = () => `
@@ -2011,10 +2011,10 @@ V['#/kind'] = () => `
           <span style="min-width:0">
             <span style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
               <b style="font-size:${isMo()?17:17}px;font-weight:800;letter-spacing:-.03em">${w.t}</b>
-              <span class="badge ${k==='home'?'b-ind':'b-mute'}" style="font-size:10.5px">${w.tag}</span>
-              ${w.slots>5?`<span class="badge b-ok" style="font-size:10.5px">제안 ${w.slots}건</span>`:''}
+              <span class="badge ${k==='home'?'b-ind':'b-mute'}" style="font-size:11px">${w.tag}</span>
+              ${w.slots>5?`<span class="badge b-ok" style="font-size:11px">제안 ${w.slots}건</span>`:''}
             </span>
-            <span style="font-size:13px;line-height:1.6;color:var(--n500)">${w.d}</span></span>
+            <span style="font-size:13.5px;line-height:1.6;color:var(--n500)">${w.d}</span></span>
           <svg viewBox="0 0 24 24" style="width:21px;flex:none" fill="none" stroke="#3D3F8F" stroke-width="2.2" stroke-linecap="round"><path d="M9 5 L16 12 L9 19"/></svg>
         </button>`).join('')}
       </div>
@@ -2044,7 +2044,7 @@ V['#/register'] = () => {
       ${shop? `
       <div><span class="lab">${w.what} <span class="req">*</span> <span class="opt">${w.whatOpt}</span></span>
         <input class="inp" data-in="biz" value="${esc(d.biz)}" placeholder="${w.whatPh}">
-        <p style="margin:8px 0 0;font-size:11.5px;line-height:1.6;color:var(--n500)">${w.note}</p>
+        <p style="margin:8px 0 0;font-size:11px;line-height:1.6;color:var(--n500)">${w.note}</p>
       </div>
 <div><span class="lab">${w.area} <span class="req">*</span> <span class="opt">지도에서 고르거나 검색해서 고르세요 (여러 곳 가능)</span></span>
         <div class="ac" style="margin-bottom:12px">
@@ -2061,7 +2061,7 @@ V['#/register'] = () => {
             <div class="unit"><input class="inp" data-in="areaMin" inputmode="numeric" value="${esc(d.areaMin)}" placeholder="최소"><span>평(전용)</span></div>
             <div class="unit"><input class="inp" data-in="areaMax" inputmode="numeric" value="${esc(d.areaMax)}" placeholder="최대"><span>평(전용)</span></div>
           </div>
-          ${d.areaMin?`<span style="display:block;margin-top:6px;font-size:11.5px;font-weight:700;color:var(--ind)">전용 약 ${(d.areaMin*3.305785).toFixed(1)}${d.areaMax?`~${(d.areaMax*3.305785).toFixed(1)}`:''} ㎡</span>`:''}
+          ${d.areaMin?`<span style="display:block;margin-top:6px;font-size:11px;font-weight:700;color:var(--ind)">전용 약 ${(d.areaMin*3.305785).toFixed(1)}${d.areaMax?`~${(d.areaMax*3.305785).toFixed(1)}`:''} ㎡</span>`:''}
         </div>
         ${K==='shop' ? `
         <div><span class="lab">권리금 <span class="opt">감당 가능한 상한 - ○○○만원 이하</span></span>
@@ -2080,7 +2080,7 @@ V['#/register'] = () => {
       <div><span class="lab">입주 희망일 <span class="opt">정해진 날이 있으면 그대로 적어주세요</span></span>
         <input class="inp" data-in="openWhen" value="${esc(d.openWhen||'')}"
           placeholder="예) 26년 10월 중 / 계약 후 2개월 이내 / 협의 가능">
-        <p style="margin:8px 0 0;font-size:11.5px;color:var(--n500)">날짜가 구체적일수록 중개사가 헛걸음을 줄입니다.</p></div>
+        <p style="margin:8px 0 0;font-size:11px;color:var(--n500)">날짜가 구체적일수록 중개사가 헛걸음을 줄입니다.</p></div>
       <div><span class="lab">층 조건 <span class="opt">원하시는 층을 그대로 적어주세요</span></span>
         <input class="inp" data-in="shopFloorFree" value="${esc(d.shopFloorFree||'')}" placeholder="예) 1층만 / 2층 이상도 괜찮음 / 지하는 제외"></div>
       <div><span class="lab">꼭 필요한 설비 <span class="opt">없으면 비워두셔도 됩니다</span></span>
@@ -2109,7 +2109,7 @@ V['#/register'] = () => {
       <div class="grid2 mo1">
         <div><span class="lab">${d.deal==='매매'?'매매가':'보증금'} <span class="req">*</span> <span class="opt">${d.deal==='매매'?'매매 희망가':d.deal==='월세'?'월세 보증금':'전세 보증금'}</span></span>
           <div class="unit"><input class="inp" data-in="dep" inputmode="numeric" value="${esc(d.dep)}" placeholder="${d.deal==='매매'?'매매가':'보증금'}"><span>만원</span></div>
-          ${+d.dep?`<span style="display:block;margin-top:6px;font-size:11.5px;font-weight:700;color:var(--ind)">${won(+d.dep)}원</span>`:''}
+          ${+d.dep?`<span style="display:block;margin-top:6px;font-size:11px;font-weight:700;color:var(--ind)">${won(+d.dep)}원</span>`:''}
         </div>
         <div><span class="lab">월세 ${d.deal==='월세'?'<span class="req">*</span>':''} <span class="opt">${d.deal==='월세'?'매월 내실 금액':'전세·매매는 비워두세요'}</span></span>
           <div class="unit"><input class="inp" data-in="rent" inputmode="numeric" value="${esc(d.rent)}" placeholder="0"><span>만원</span></div></div>
@@ -2142,8 +2142,8 @@ V['#/detail'] = () => { const d=S.draft, pct=detailPct(d); return `
 
       <div class="card pad" style="padding:16px 20px">
         <div style="display:flex;justify-content:space-between;margin-bottom:9px">
-          <span data-pct style="font-size:13px;font-weight:800;color:var(--ind)">지금 ${pct}%</span>
-          <span style="font-size:11.5px;color:var(--n500)">${pct>=90?'충분합니다 · 제안 품질이 올라갑니다':'다 채우면 우선 매칭에 도움이 됩니다'}</span>
+          <span data-pct style="font-size:13.5px;font-weight:800;color:var(--ind)">지금 ${pct}%</span>
+          <span style="font-size:11px;color:var(--n500)">${pct>=90?'충분합니다 · 제안 품질이 올라갑니다':'다 채우면 우선 매칭에 도움이 됩니다'}</span>
         </div>
         <div class="gauge"><i style="width:${pct}%"></i></div>
       </div>
@@ -2449,7 +2449,7 @@ function regionPicker(d, shop){
   const wide = lv==='seoul' ? '서울 전체' : lv==='hanam' ? '하남 어디든' : '';
   return `
     <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;flex-wrap:wrap">
-      <span style="font-size:11.5px;font-weight:600;color:var(--n500)">${map?crumbs:(shop?'자주 찾는 상권':'자주 찾는 지역')}</span>
+      <span style="font-size:11px;font-weight:600;color:var(--n500)">${map?crumbs:(shop?'자주 찾는 상권':'자주 찾는 지역')}</span>
       <div class="chips" style="flex:none;gap:6px">
         <button class="chip ${map?'on':''}" data-act="region-view" data-v="map" style="padding:7px 15px;font-size:12.5px">지도</button>
         <button class="chip ${map?'':'on'}" data-act="region-view" data-v="list" style="padding:7px 15px;font-size:12.5px">목록</button>
@@ -2465,7 +2465,7 @@ function regionPicker(d, shop){
     ${wide?`<div class="chips" style="margin-top:9px">
       <button class="chip ${d.dongs.includes(wide)?'on':''}" data-act="dong" data-v="${wide}" style="padding:7px 15px;font-size:12.5px">${wide}</button>
     </div>`:''}
-    <p style="margin:9px 0 0;font-size:11.5px;line-height:1.6;color:var(--n500)">
+    <p style="margin:9px 0 0;font-size:11px;line-height:1.6;color:var(--n500)">
       ${geoLine?`${esc(geoLine)}<br>`:''}실제 행정경계에 가깝게 그린 개념도입니다 - 위치 정보는 지도를 맞추는 데만 쓰고 저장하지 않습니다.</p>
     ` : zonesHTML(LIST_GROUPS(shop), d.dongs)}`;
 }
@@ -2490,11 +2490,11 @@ function demandCards(rows){
       <div style="background:var(--white);padding:14px 16px;${sent?'opacity:.6;':''}">
         <div class="clickable" data-act="ops-open" data-v="${esc(r.id)}" style="cursor:pointer">
           <div style="display:flex;align-items:center;gap:7px;margin-bottom:7px;flex-wrap:wrap">
-            ${fresh&&!sent?`<span class="badge" style="background:var(--ind);color:#fff;padding:1px 8px;font-size:10px">NEW</span>`:''}
+            ${fresh&&!sent?`<span class="badge" style="background:var(--ind);color:#fff;padding:1px 8px;font-size:11px">NEW</span>`:''}
             <span class="badge ${shop?'b-warn':'b-ok'}">${shop?'상가':'주거'}</span>
             ${sent?`<span class="badge b-mute">보냄</span>`:''}
             <span style="flex:1"></span>
-            <span style="font-size:11.5px;color:var(--n500)">${esc(String(r.created_at||'').replace('T',' ').slice(5,16))}</span>
+            <span style="font-size:11px;color:var(--n500)">${esc(String(r.created_at||'').replace('T',' ').slice(5,16))}</span>
           </div>
           <b style="display:block;font-size:15px;font-weight:800;letter-spacing:-.02em;margin-bottom:4px">
             ${esc((r.dongs||[]).join(' · ')||'-')}</b>
@@ -2523,8 +2523,8 @@ function agentNeedCheck(rows){
   const n = (rows||[]).filter(r => r.role==='agent' && !r.reg_verified).length;
   if(!n) return '';
   return `<div class="card pad" style="margin:0 0 12px;background:var(--warnbg);border-color:#E8D5A8;box-shadow:none">
-    <b style="font-size:13px;font-weight:800">등록번호 미확인 ${n}건</b>
-    <span style="display:block;margin-top:3px;font-size:12px;line-height:1.6;color:var(--n700)">
+    <b style="font-size:13.5px;font-weight:800">등록번호 미확인 ${n}건</b>
+    <span style="display:block;margin-top:3px;font-size:12.5px;line-height:1.6;color:var(--n700)">
       공공데이터에서 찾지 못한 신청입니다. 최근 개설했거나 번호를 잘못 적었을 수 있으니 직접 확인이 필요합니다.</span>
   </div>`;
 }
@@ -2541,16 +2541,16 @@ function agentCards(rows){
           <span class="badge ${st[0]}">${st[1]}</span>
           <span class="badge ${r.role==='agent'?'b-ok':r.role==='owner'?'b-ind':'b-warn'}">${AG_ROLE[r.role]||r.role}</span>
           <span style="flex:1"></span>
-          <span style="font-size:11.5px;color:var(--n500)">${esc(String(r.created_at||'').replace('T',' ').slice(5,16))}</span>
+          <span style="font-size:11px;color:var(--n500)">${esc(String(r.created_at||'').replace('T',' ').slice(5,16))}</span>
         </div>
         <b style="display:block;font-size:15px;font-weight:800;letter-spacing:-.02em">${esc(r.name||'')}</b>
-        <span class="num" style="display:block;margin-top:2px;font-size:13px;color:var(--n700)">${esc(r.phone||'')}</span>
+        <span class="num" style="display:block;margin-top:2px;font-size:13.5px;color:var(--n700)">${esc(r.phone||'')}</span>
         ${(r.office||r.addr)?`<span style="display:block;margin-top:4px;font-size:12.5px;color:var(--n700)">${esc(r.office||r.addr)}</span>`:''}
         ${(r.reg_no||r.biz_no)?`<span style="display:flex;align-items:center;gap:6px;margin-top:3px">
-          <span class="num" style="font-size:12px;color:var(--n500)">${esc(r.reg_no||r.biz_no)}</span>
-          ${r.role==='agent' ? `<span class="badge ${r.reg_verified?'b-ok':'b-warn'}" style="font-size:10.5px;padding:1px 7px">${r.reg_verified?'공공데이터 확인':'미확인 · 수동 확인 필요'}</span>` : ''}
+          <span class="num" style="font-size:12.5px;color:var(--n500)">${esc(r.reg_no||r.biz_no)}</span>
+          ${r.role==='agent' ? `<span class="badge ${r.reg_verified?'b-ok':'b-warn'}" style="font-size:11px;padding:1px 7px">${r.reg_verified?'공공데이터 확인':'미확인 · 수동 확인 필요'}</span>` : ''}
         </span>`:''}
-        ${r.email?`<span style="display:block;margin-top:2px;font-size:12px;color:var(--n500)">${esc(r.email)}</span>`:''}
+        ${r.email?`<span style="display:block;margin-top:2px;font-size:12.5px;color:var(--n500)">${esc(r.email)}</span>`:''}
         ${(r.phone && !/\*/.test(r.phone)) || r.email ? `
         <div style="display:flex;gap:7px;margin-top:8px">
           ${r.phone && !/\*/.test(r.phone) ? `<a class="btn sec sm" href="tel:${esc(r.phone)}" style="flex:1;padding:10px 0;text-align:center">전화 걸기</a>`:''}
@@ -2588,10 +2588,10 @@ function opsSummary(rows, agents){
 
   const tile = (label, val, sub, tone) => `
     <div class="card pad" style="padding:16px 18px">
-      <span style="display:block;font-size:11.5px;font-weight:800;color:var(--n500);margin-bottom:6px">${label}</span>
-      <b class="num countable" style="display:block;font-size:26px;font-weight:800;letter-spacing:-.03em;
+      <span style="display:block;font-size:11px;font-weight:800;color:var(--n500);margin-bottom:6px">${label}</span>
+      <b class="num countable" style="display:block;font-size:25px;font-weight:800;letter-spacing:-.03em;
         color:${tone||'var(--n900)'};line-height:1.1">${val}</b>
-      ${sub?`<span style="display:block;margin-top:5px;font-size:11.5px;color:var(--n500)">${sub}</span>`:''}
+      ${sub?`<span style="display:block;margin-top:5px;font-size:11px;color:var(--n500)">${sub}</span>`:''}
     </div>`;
 
   return `
@@ -2604,7 +2604,7 @@ function opsSummary(rows, agents){
 
   <div style="display:grid;grid-template-columns:${isMo()?'1fr':'1.1fr 1fr'};gap:10px;margin-bottom:14px">
     <div class="card pad" style="padding:16px 18px">
-      <span style="display:block;font-size:11.5px;font-weight:800;color:var(--n500);margin-bottom:12px">최근 7일 유입</span>
+      <span style="display:block;font-size:11px;font-weight:800;color:var(--n500);margin-bottom:12px">최근 7일 유입</span>
       <div style="display:flex;align-items:flex-end;gap:6px;height:74px">
         ${days.map((n,i)=>`
           <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px">
@@ -2612,12 +2612,12 @@ function opsSummary(rows, agents){
             <i class="growbar" style="display:block;width:100%;border-radius:4px 4px 0 0;
               background:${i===6?'var(--ind)':'var(--ind300)'};opacity:${n?1:.25};
               height:${Math.max(3, Math.round(n/peak*44))}px"></i>
-            <span style="font-size:10px;color:var(--n500)">${i===6?'오늘':(6-i)+'일'}</span>
+            <span style="font-size:11px;color:var(--n500)">${i===6?'오늘':(6-i)+'일'}</span>
           </div>`).join('')}
       </div>
     </div>
     <div class="card pad" style="padding:16px 18px">
-      <span style="display:block;font-size:11.5px;font-weight:800;color:var(--n500);margin-bottom:12px">많이 찾는 지역</span>
+      <span style="display:block;font-size:11px;font-weight:800;color:var(--n500);margin-bottom:12px">많이 찾는 지역</span>
       ${top.length ? `<div style="display:flex;flex-direction:column;gap:8px">
         ${top.map(([d,n])=>`
           <div style="display:flex;align-items:center;gap:10px">
@@ -2626,7 +2626,7 @@ function opsSummary(rows, agents){
             <i style="flex:1;height:7px;border-radius:4px;background:var(--n100);position:relative;overflow:hidden">
               <b style="position:absolute;inset:0 auto 0 0;width:${Math.round(n/top[0][1]*100)}%;
                 background:var(--ind300);border-radius:4px"></b></i>
-            <span class="num" style="flex:none;font-size:12px;font-weight:800;color:var(--n500)">${n}</span>
+            <span class="num" style="flex:none;font-size:12.5px;font-weight:800;color:var(--n500)">${n}</span>
           </div>`).join('')}
       </div>` : `<p style="margin:0;font-size:12.5px;color:var(--n500)">조건이 쌓이면 어느 동이 몰리는지 보입니다.</p>`}
     </div>
@@ -2706,18 +2706,18 @@ function agentPanel(){
             style="width:17px;height:17px;accent-color:var(--ind);cursor:pointer">
           <span style="font-size:12.5px;font-weight:700;color:var(--n500)">전체</span></label>` : ''}
         <b style="font-size:15px;font-weight:800">${rows.length===all.length?`신청 ${all.length}건`:`${rows.length}건 / 전체 ${all.length}건`}</b>
-        <span style="font-size:11.5px;color:var(--n500)">${AG.at?esc(AG.at.replace('T',' ').slice(0,16)):''} 기준</span>
+        <span style="font-size:11px;color:var(--n500)">${AG.at?esc(AG.at.replace('T',' ').slice(0,16)):''} 기준</span>
       </div>
       ${rows.length===0 ? `<div style="padding:40px 18px;text-align:center">
         <p style="margin:0 0 5px;font-size:15px;font-weight:800">${all.length?'조건에 맞는 신청이 없습니다':'아직 신청이 없습니다'}</p>
-        <p style="margin:0;font-size:13px;color:var(--n500)">${all.length?'찾는 말을 바꿔보세요.':'중개사 가입 화면으로 신청이 들어오면 여기에 쌓입니다.'}</p></div>`
+        <p style="margin:0;font-size:13.5px;color:var(--n500)">${all.length?'찾는 말을 바꿔보세요.':'중개사 가입 화면으로 신청이 들어오면 여기에 쌓입니다.'}</p></div>`
       : isMo() ? agentCards(rows) : `
       <div style="overflow-x:auto">
-        <table style="width:100%;border-collapse:collapse;font-size:13px;white-space:nowrap">
+        <table style="width:100%;border-collapse:collapse;font-size:13.5px;white-space:nowrap">
           <thead><tr style="background:var(--n50)">
             <th style="width:38px;padding:10px 0 10px 14px"></th>
             ${['신청','상태','역할','성함','연락처','사무소 · 물건','등록번호 · 사업자','이메일'].map(h=>
-              `<th style="text-align:left;padding:10px 14px;font-size:11.5px;font-weight:800;color:var(--n500)">${h}</th>`).join('')}
+              `<th style="text-align:left;padding:10px 14px;font-size:11px;font-weight:800;color:var(--n500)">${h}</th>`).join('')}
           </tr></thead>
           <tbody>${rows.map(r=>`
             <tr style="border-top:1px solid var(--n100);${AG.pick[r.id]?'background:var(--ind50)':''}">
@@ -2732,20 +2732,20 @@ function agentPanel(){
               <td style="padding:11px 14px">${esc(r.office||r.addr||'')}</td>
               <td style="padding:11px 14px">
                 <span class="num">${esc(r.reg_no||r.biz_no||'')}</span>
-                ${r.role==='agent'&&(r.reg_no||'') ? `<span class="badge ${r.reg_verified?'b-ok':'b-warn'}" style="margin-left:6px;font-size:10.5px;padding:1px 7px">${r.reg_verified?'확인':'미확인'}</span>` : ''}
+                ${r.role==='agent'&&(r.reg_no||'') ? `<span class="badge ${r.reg_verified?'b-ok':'b-warn'}" style="margin-left:6px;font-size:11px;padding:1px 7px">${r.reg_verified?'확인':'미확인'}</span>` : ''}
               </td>
               <td style="padding:11px 14px;color:var(--n500)">${esc(r.email||'')}</td>
             </tr>
             ${(r.phone && !/\*/.test(r.phone)) || r.email ? `
             <tr><td colspan="9" style="padding:0 14px 10px">
               <div class="chips" style="gap:6px">
-                ${r.phone && !/\*/.test(r.phone) ? `<a href="tel:${esc(r.phone)}" class="chip" style="padding:5px 12px;font-size:11.5px">전화 걸기</a>` : ''}
-                ${r.email ? `<a href="mailto:${esc(r.email)}" class="chip" style="padding:5px 12px;font-size:11.5px">메일 쓰기</a>` : ''}
+                ${r.phone && !/\*/.test(r.phone) ? `<a href="tel:${esc(r.phone)}" class="chip" style="padding:5px 12px;font-size:11px">전화 걸기</a>` : ''}
+                ${r.email ? `<a href="mailto:${esc(r.email)}" class="chip" style="padding:5px 12px;font-size:11px">메일 쓰기</a>` : ''}
               </div></td></tr>` : ''}`).join('')}</tbody>
         </table>
       </div>`}
     </div>
-    ${AG.note?`<p style="margin:10px 0 0;font-size:12px;color:var(--n500)">${esc(AG.note)}</p>`:''}`;
+    ${AG.note?`<p style="margin:10px 0 0;font-size:12.5px;color:var(--n500)">${esc(AG.note)}</p>`:''}`;
 }
 
 /* ══════════ 본인확인 ══════════
@@ -2817,7 +2817,7 @@ function verifyCard(d){
         <b style="color:var(--n900)">주민등록번호는 저장하지 않습니다.</b></p>
       <button class="btn pri" data-act="idv" style="width:100%;padding:15px 0;font-size:15px" ${S.idvBusy?'disabled':''}>
         ${S.idvBusy?'확인 중…':'휴대폰으로 본인확인'}</button>
-      <p style="margin:11px 0 0;font-size:11.5px;line-height:1.7;color:var(--n500)">
+      <p style="margin:11px 0 0;font-size:11px;line-height:1.7;color:var(--n500)">
         통신사 창이 열립니다. 끝나면 이 화면으로 돌아옵니다.</p>
     </div>`;
   }
@@ -2833,7 +2833,7 @@ function verifyCard(d){
   const phoneField = `
     <div style="margin-top:12px"><span class="lab" style="font-size:12.5px">휴대폰 번호 <span class="req">*</span> <span class="opt">본인 명의</span></span>
       <input class="inp num" data-in="phone" inputmode="numeric" value="${esc(d.phone)}" placeholder="010-1234-5678" maxlength="13" style="padding:11px 13px;font-size:14px">
-      ${d.phone && !phoneOk(d.phone)?'<span style="display:block;margin-top:6px;font-size:11.5px;font-weight:700;color:var(--danger)">번호 형식을 확인해 주세요</span>':''}</div>`;
+      ${d.phone && !phoneOk(d.phone)?'<span style="display:block;margin-top:6px;font-size:11px;font-weight:700;color:var(--danger)">번호 형식을 확인해 주세요</span>':''}</div>`;
 
   let body = '';
   if(m==='sms'){
@@ -2845,7 +2845,7 @@ function verifyCard(d){
             <span data-vtimer style="font-weight:800;color:${S.vsec<60?'var(--danger)':'var(--ind)'}">${String(Math.floor(S.vsec/60)).padStart(2,'0')}:${String(S.vsec%60).padStart(2,'0')}</span></div>
           <button class="btn sec sm" data-act="v-send" style="flex:none;padding:0 16px">재발송</button>
         </div>
-        <p style="margin:9px 0 0;font-size:11.5px;color:var(--n500)">문자가 오지 않으면 스팸함을 확인하시거나 재발송을 눌러주세요.</p>
+        <p style="margin:9px 0 0;font-size:11px;color:var(--n500)">문자가 오지 않으면 스팸함을 확인하시거나 재발송을 눌러주세요.</p>
         <button class="btn pri" data-act="v-confirm" style="width:100%;margin-top:13px;padding:14px 0;font-size:15px" ${d.vcode.length===6?'':'disabled'}>인증번호 확인</button>
       </div>`
     : `${idFields}
@@ -2873,7 +2873,7 @@ function verifyCard(d){
     <p style="margin:0 0 14px;font-size:12.5px;line-height:1.75;color:var(--n700)">
       확인된 <b style="color:var(--n900)">이름과 연락처만</b> 중개사에게 전달됩니다. 장난 문의와 허위 조건을 막기 위한 절차이며,
       <b style="color:var(--n900)">주민등록번호는 저장하지 않습니다.</b></p>
-    <p style="margin:-6px 0 14px;padding:10px 13px;background:var(--warnbg);font-size:11.5px;line-height:1.7;color:var(--n700)">
+    <p style="margin:-6px 0 14px;padding:10px 13px;background:var(--warnbg);font-size:11px;line-height:1.7;color:var(--n700)">
       본인확인 모듈을 붙이는 중입니다. 지금은 시험 화면이라 실제 확인이 이뤄지지 않습니다.</p>
     <div class="grid2 mo1" style="gap:10px">${VMETHODS.map(x=>{ const on = m===x.k; return `
       <button data-act="vmethod" data-v="${x.k}" style="display:flex;gap:11px;align-items:flex-start;text-align:left;
@@ -2885,10 +2885,10 @@ function verifyCard(d){
           ${on?'<i style="display:block;width:8px;height:8px;border-radius:var(--r-full);background:var(--ind)"></i>':''}</span>
         <span style="flex:1;min-width:0">
           <b style="display:block;font-size:14px;font-weight:800;color:${on?'var(--ind)':'var(--n900)'}">${x.t}</b>
-          <span style="display:block;margin-top:3px;font-size:11.5px;line-height:1.6;color:var(--n500)">${x.d}</span>
+          <span style="display:block;margin-top:3px;font-size:11px;line-height:1.6;color:var(--n500)">${x.d}</span>
         </span>
       </button>`;}).join('')}</div>
-    ${m? `<p style="margin:11px 0 0;font-size:11.5px;color:var(--n500)">${esc(VMETHODS.find(x=>x.k===m).s)}</p>` : ''}
+    ${m? `<p style="margin:11px 0 0;font-size:11px;color:var(--n500)">${esc(VMETHODS.find(x=>x.k===m).s)}</p>` : ''}
     ${body}
   </div>`;
 }
@@ -2920,7 +2920,7 @@ V['#/contact'] = () => { const d=S.draft; const ok = d.verified && phoneOk(d.pho
           <small>필수 2개와 선택 1개를 한 번에 동의합니다 - 선택 항목은 따로 해제하실 수 있습니다</small></span></div>
         <div class="chk ${d.a1?'on':''}" data-act="agree" data-v="a1">
           <span class="box">${ICON_CHECK}</span><span class="txt"><b style="color:var(--ind)">(필수)</b> <b style="color:var(--n900)">개인정보 제3자 제공</b>에 동의합니다
-          <a href="/privacy" target="_blank" rel="noopener" style="margin-left:6px;font-size:11.5px;font-weight:700;color:var(--ind);text-decoration:underline;text-underline-offset:2px">전문 보기</a>
+          <a href="/privacy" target="_blank" rel="noopener" style="margin-left:6px;font-size:11px;font-weight:700;color:var(--ind);text-decoration:underline;text-underline-offset:2px">전문 보기</a>
           <small>제공받는 자: 해당 지역 공인중개사사무소(조건당 최대 5곳) · 항목: 본인확인된 이름·연락처·조건 전체 · 보유: 3개월 후 파기. 거부하실 수 있으나 거부 시 조건 전달이 불가능합니다.</small></span></div>
         <div class="chk ${d.a2?'on':''}" data-act="agree" data-v="a2">
           <span class="box">${ICON_CHECK}</span><span class="txt"><b style="color:var(--ind)">(필수)</b> <b style="color:var(--n900)">알림이 여러 차례 발송</b>되는 것에 동의합니다
@@ -3033,13 +3033,13 @@ V['#/my'] = () => {
       ${c.status!=='closed'? `
         <div style="background:var(--n50);padding:11px 14px;margin-bottom:13px">
           <div style="display:flex;justify-content:space-between;margin-bottom:7px">
-            <span style="font-size:11.5px;font-weight:800;color:var(--ind)">조건 입력 ${c.pct}%</span>
-            <a data-go="#/detail" style="font-size:11.5px;color:var(--n500);text-decoration:underline">더 채우면 맞는 제안이 옵니다</a>
+            <span style="font-size:11px;font-weight:800;color:var(--ind)">조건 입력 ${c.pct}%</span>
+            <a data-go="#/detail" style="font-size:11px;color:var(--n500);text-decoration:underline">더 채우면 맞는 제안이 옵니다</a>
           </div><div class="gauge" style="height:5px"><i style="width:${c.pct}%"></i></div>
         </div>
         ${cnt===0 && (c.status==='expiring'||c.expires<10)? `
         <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--warnbg);padding:12px 15px;margin-bottom:13px">
-          <span style="font-size:13px;line-height:1.45;color:var(--n700)">아직 제안이 없습니다 - 지금 조건에 맞는 물건이 없을 수 있어요.</span>
+          <span style="font-size:13.5px;line-height:1.45;color:var(--n700)">아직 제안이 없습니다 - 지금 조건에 맞는 물건이 없을 수 있어요.</span>
           <button class="btn pri sm" data-go="#/relax" style="flex:none">실거래로 확인</button></div>`:''}
         <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
           <span style="font-size:12.5px;color:var(--n500)">등록 ${esc(c.at)} · 만료까지 ${c.expires}일</span>
@@ -3050,7 +3050,7 @@ V['#/my'] = () => {
             <button class="btn sec sm" data-act="extend" data-v="${c.id}" ${c.expires>7?'disabled':''}>연장</button>
           </div>
         </div>`
-      : `<p style="margin:0;font-size:13px;color:var(--n500)">종료된 조건입니다${c.closeReason?` · 사유: ${esc(c.closeReason)}`:''}. 다시 구하시게 되면 새로 등록해 주세요.</p>`}
+      : `<p style="margin:0;font-size:13.5px;color:var(--n500)">종료된 조건입니다${c.closeReason?` · 사유: ${esc(c.closeReason)}`:''}. 다시 구하시게 되면 새로 등록해 주세요.</p>`}
     </div>`;}).join('');
   return `
 <div class="scr fade">
@@ -3071,7 +3071,7 @@ V['#/my'] = () => {
     ${S.user? `
     <div class="card pad" style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
       <div style="flex:none;width:42px;height:42px;border-radius:var(--r-full);background:var(--ind50);
-        display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:var(--ind)">
+        display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:var(--ind)">
         ${esc((S.user.name||'?').slice(0,1))}</div>
       <div style="flex:1;min-width:0">
         <b style="display:block;font-size:15px;font-weight:800;color:var(--n900);letter-spacing:-.02em">${esc(S.user.name||'회원')} 님</b>
@@ -3080,11 +3080,11 @@ V['#/my'] = () => {
       </div>
       <span class="badge b-mute" style="flex:none">${esc(S.user.label||'')} 계정</span>
     </div>
-    <p style="margin:-6px 0 0;font-size:11.5px;line-height:1.7;color:var(--n500)">
+    <p style="margin:-6px 0 0;font-size:11px;line-height:1.7;color:var(--n500)">
       ${esc(S.user.label||'')} 계정에서 받은 <b style="color:var(--n700)">이름</b>은 중개사에게 전달되는 조건에 함께 쓰이고,
       <b style="color:var(--n700)">이메일</b>은 이 계정을 알아보고 걸어두신 조건을 다시 불러오는 데만 씁니다.</p>` : ''}
     ${S.conds.length? rows : `<div class="empty"><p style="margin:0 0 6px;font-size:15px;font-weight:800">아직 등록한 조건이 없습니다</p>
-      <p style="margin:0 0 18px;font-size:13px;color:var(--n500)">조건을 걸어두면 맞는 물건이 있을 때만 연락이 옵니다.</p>
+      <p style="margin:0 0 18px;font-size:13.5px;color:var(--n500)">조건을 걸어두면 맞는 물건이 있을 때만 연락이 옵니다.</p>
       <button class="btn pri md" data-act="restart">조건 등록하기</button></div>`}
     <div class="beaverbox" style="margin-top:auto;margin-bottom:${isMo()?'14px':'26px'};max-width:${isMo()?'none':'560px'}">
       ${beaverlyMini(56)}<p>조건을 종료하실 땐 <b style="color:var(--n900)">사유</b>를 꼭 알려주세요. 서비스를 고치는 데 가장 큰 도움이 됩니다.</p></div>
@@ -3100,22 +3100,22 @@ V['#/inbox'] = () => {
     <div class="card ${p.isNew?'hi':''} clickable fade" data-go="#/proposal/${p.id}" style="overflow:hidden;${p.read&&!p.isNew?'opacity:.85':''}">
       <div style="height:${isMo()?128:150}px;background:${p.photos?'var(--ind100)':'var(--n100)'};display:flex;align-items:center;justify-content:center;position:relative">
         ${p.photos? `<svg viewBox="0 0 24 24" style="width:26px" fill="none" stroke="#6E70BC" stroke-width="1.5"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.6"/><path d="M3 16 L9 11 L14 15 L17 13 L21 16"/></svg>`
-          : `<span style="font-size:11.5px;color:var(--n500)">사진 미첨부</span>`}
+          : `<span style="font-size:11px;color:var(--n500)">사진 미첨부</span>`}
         ${p.isNew? `<span class="badge b-ind" style="position:absolute;left:12px;top:12px;background:var(--ind);color:#fff">NEW</span>`
           : `<span class="badge b-mute" style="position:absolute;left:12px;top:12px">읽음</span>`}
-        ${p.photos? `<span style="position:absolute;right:12px;bottom:10px;background:rgba(12,17,41,.62);color:#fff;font-size:10.5px;font-weight:700;border-radius:var(--r-full);padding:3px 9px">사진 ${p.photos}장</span>`:''}
+        ${p.photos? `<span style="position:absolute;right:12px;bottom:10px;background:rgba(12,17,41,.62);color:#fff;font-size:11px;font-weight:700;border-radius:var(--r-full);padding:3px 9px">사진 ${p.photos}장</span>`:''}
       </div>
       <div style="padding:16px 18px;display:flex;flex-direction:column;gap:9px">
         <div><b style="display:block;font-size:15px;font-weight:800;letter-spacing:-.02em">${esc(p.title)} ${demoTag(p,'vertical-align:middle')}</b>
         <span class="num" style="font-size:13.5px;color:var(--n700)">${p.rent? `보증금 ${p.dep.toLocaleString()} / 월 ${p.rent}` : `전세 ${won(p.dep)}`} · 관리비 ${p.fee}</span>
         <span style="display:block;font-size:12.5px;color:var(--n500)">${p.dong} · 전용 ${p.py}평 · ${p.floor} · 주차 ${esc(p.parking)}</span></div>
         <div style="border-top:1px solid var(--n100);padding-top:9px;display:flex;flex-direction:column;gap:5px">
-          ${p.diff.map(t=>`<div style="display:flex;gap:7px"><span class="badge b-warn" style="flex:none;font-size:10.5px;padding:2px 8px">다름</span><span style="font-size:12.5px;line-height:1.45;color:var(--n700)">${esc(t)}</span></div>`).join('')}
-          <div style="display:flex;gap:7px"><span class="badge b-ok" style="flex:none;font-size:10.5px;padding:2px 8px">일치</span><span style="font-size:12.5px;line-height:1.45;color:var(--n700)">${p.match.map(esc).join(' · ')}</span></div>
+          ${p.diff.map(t=>`<div style="display:flex;gap:7px"><span class="badge b-warn" style="flex:none;font-size:11px;padding:2px 8px">다름</span><span style="font-size:12.5px;line-height:1.45;color:var(--n700)">${esc(t)}</span></div>`).join('')}
+          <div style="display:flex;gap:7px"><span class="badge b-ok" style="flex:none;font-size:11px;padding:2px 8px">일치</span><span style="font-size:12.5px;line-height:1.45;color:var(--n700)">${p.match.map(esc).join(' · ')}</span></div>
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center">
-          <span style="font-size:11.5px;color:var(--n500)">${esc(p.agency.name)} · ${p.at}</span>
-          <span style="font-size:13px;font-weight:800;color:var(--ind)">자세히 →</span></div>
+          <span style="font-size:11px;color:var(--n500)">${esc(p.agency.name)} · ${p.at}</span>
+          <span style="font-size:13.5px;font-weight:800;color:var(--ind)">자세히 →</span></div>
       </div>
     </div>`;
   const empty = () => {
@@ -3123,7 +3123,7 @@ V['#/inbox'] = () => {
     return `<div class="empty">
       <span style="display:flex;justify-content:center;margin-bottom:8px">${beaverly(126)}</span>
       <p style="margin:0 0 8px;font-size:15px;font-weight:800">${over?'아직 도착한 제안이 없습니다':'조건이 중개사에게 전달됐습니다'}</p>
-      <p style="margin:0 auto 18px;max-width:420px;font-size:13px;line-height:1.6;color:var(--n500)">
+      <p style="margin:0 auto 18px;max-width:420px;font-size:13.5px;line-height:1.6;color:var(--n500)">
         ${over?'지금 조건에 맞는 물건이 시장에 없을 수 있습니다. 실제 거래 데이터로 확인해 보세요.':'제안이 오면 카톡으로 알려드립니다. 들어와서 기다리실 필요 없습니다.'}</p>
       ${over? `<button class="btn pri md" data-go="#/relax">어떻게 하면 제안이 올까요?</button>`
             : `<button class="btn sec md" data-go="#/detail">조건 더 채우기</button>`}
@@ -3134,12 +3134,12 @@ V['#/inbox'] = () => {
   <div class="pad" style="flex:1;padding-top:${isMo()?18:30}px;display:flex;gap:26px;max-width:${isMo()?'none':'1180px'};margin:0 auto;width:100%;${isMo()?'flex-direction:column':''}">
     ${isMo()?'':`
     <div style="flex:none;width:320px;display:flex;flex-direction:column;gap:12px">
-      <span style="font-size:13px;font-weight:800;color:var(--n500)">내 조건</span>
+      <span style="font-size:13.5px;font-weight:800;color:var(--n500)">내 조건</span>
       ${S.conds.map(c=>{const n=S.props.filter(p=>p.cond===c.id&&p.status!=='hidden').length;
         return `<div class="card ${c.id===S.inboxCond?'hi':''} clickable" data-act="pick-cond" data-v="${c.id}" style="padding:16px 18px">
           <div style="display:flex;justify-content:space-between;margin-bottom:7px">
             <span class="badge ${c.status==='active'?'b-ok':c.status==='expiring'?'b-warn':'b-mute'}">${c.status==='active'?'활성':c.status==='expiring'?'만료임박':'종료'}</span>
-            <span style="font-size:11.5px;font-weight:800;color:${n?'var(--ind)':'var(--n500)'}">제안 ${n}/5</span></div>
+            <span style="font-size:11px;font-weight:800;color:${n?'var(--ind)':'var(--n500)'}">제안 ${n}/5</span></div>
           <b style="display:block;font-size:14px;font-weight:800;letter-spacing:-.02em;margin-bottom:4px">${esc(c.title)} ${demoTag(c,'vertical-align:middle')}</b>
           <span style="font-size:12.5px;line-height:1.6;color:var(--n700)">${c.lines[0]?esc(c.lines[0]):''}</span></div>`;}).join('')}
       <div class="beaverbox" style="margin-top:auto;margin-bottom:26px">${beaverlyMini(56)}
@@ -3178,7 +3178,7 @@ V['#/proposal'] = (id) => { const p=S.props.find(x=>x.id===id); if(!p) return V[
         <div class="kv"><dt>위반건축물</dt><dd style="color:${p.violation?'var(--danger)':'var(--ok)'};font-weight:700">${p.violation?'있음':'해당 없음'}</dd></div>
         <div class="kv"><dt>융자금</dt><dd class="num">${p.loan?p.loan.toLocaleString()+'만원':'없음'}</dd></div>
       </div>
-      <p style="margin:8px 0 0;padding-top:9px;border-top:1px solid var(--n100);font-size:11.5px;line-height:1.6;color:var(--n500)">
+      <p style="margin:8px 0 0;padding-top:9px;border-top:1px solid var(--n100);font-size:11px;line-height:1.6;color:var(--n500)">
         ${esc(p.risk)}<br class="mbr"> 참고 지표이며 실제와 다를 수 있습니다 - 계약 전 등기사항증명서와 건축물대장을 직접 확인하세요.</p></div>
     <div class="card pad" style="display:flex;justify-content:space-between;align-items:center;gap:12px">
       <div><b style="display:block;font-size:14px;font-weight:800">${esc(p.agency.name)}가 보낸 제안입니다</b>
@@ -3194,8 +3194,8 @@ V['#/proposal'] = (id) => { const p=S.props.find(x=>x.id===id); if(!p) return V[
     <div style="flex:none;width:${isMo()?'100%':'520px'};display:flex;flex-direction:column;gap:12px">
       <div style="height:${isMo()?200:360}px;${isMo()?'':'border-radius:var(--r-lg);'}background:${p.photos?'var(--ind100)':'var(--n100)'};display:flex;align-items:center;justify-content:center;position:relative">
         ${p.photos? `<svg viewBox="0 0 24 24" style="width:38px" fill="none" stroke="#6E70BC" stroke-width="1.4"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.6"/><path d="M3 16 L9 11 L14 15 L17 13 L21 16"/></svg>
-          <span style="position:absolute;right:14px;bottom:12px;background:rgba(12,17,41,.62);color:#fff;font-size:11.5px;font-weight:700;border-radius:var(--r-full);padding:4px 11px" class="num">1 / ${p.photos}</span>`
-        : `<span style="font-size:13px;color:var(--n500)">사진 미첨부</span>`}
+          <span style="position:absolute;right:14px;bottom:12px;background:rgba(12,17,41,.62);color:#fff;font-size:11px;font-weight:700;border-radius:var(--r-full);padding:4px 11px" class="num">1 / ${p.photos}</span>`
+        : `<span style="font-size:13.5px;color:var(--n500)">사진 미첨부</span>`}
       </div>
       ${isMo()?'':`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
         ${[0,1,2].map(i=>`<div style="height:88px;background:var(--ind100);${i===0?'border:2px solid var(--ind)':''}"></div>`).join('')}</div>`}
@@ -3204,8 +3204,8 @@ V['#/proposal'] = (id) => { const p=S.props.find(x=>x.id===id); if(!p) return V[
       <div>
         <h1 class="t" style="font-size:${isMo()?21:25}px">${esc(p.title)} ${demoTag(p,'vertical-align:middle')}</h1>
         <p class="num" style="margin:7px 0 0;font-size:${isMo()?17:21}px;font-weight:800;color:var(--ind)">${p.rent? `보증금 ${p.dep.toLocaleString()} / 월 ${p.rent}` : `전세 ${won(p.dep)}`}
-          <span style="font-size:13px;font-weight:600;color:var(--n500)">관리비 ${p.fee} (${esc(p.feeType)})</span></p>
-        <p style="margin:5px 0 0;font-size:13px;color:var(--n500)">${p.dong} · 전용 ${p.py}평 (${(p.py*3.305785).toFixed(1)}㎡) · ${p.floor} · 입주 ${esc(p.moveIn)}</p>
+          <span style="font-size:13.5px;font-weight:600;color:var(--n500)">관리비 ${p.fee} (${esc(p.feeType)})</span></p>
+        <p style="margin:5px 0 0;font-size:13.5px;color:var(--n500)">${p.dong} · 전용 ${p.py}평 (${(p.py*3.305785).toFixed(1)}㎡) · ${p.floor} · 입주 ${esc(p.moveIn)}</p>
       </div>
       ${info}
       <div style="margin-top:auto;padding:16px 0 26px;display:grid;grid-template-columns:1fr 2.2fr;gap:10px">
@@ -3239,8 +3239,8 @@ V['#/connect'] = (id) => { const p=S.props.find(x=>x.id===id); if(!p) return V['
       <div class="card pad" style="text-align:center;box-shadow:var(--sh2)">
         <span style="display:block;font-size:12.5px;font-weight:800;color:var(--n500);margin-bottom:6px">안심번호 · 30일간 유효</span>
         <span class="num" style="font-size:${isMo()?25:31}px;font-weight:800;letter-spacing:-.02em;color:var(--ind)">${S.safeNo}</span>
-        <span style="display:block;margin-top:7px;font-size:11.5px;color:var(--n500)">내 번호는 공개되지 않습니다 · 기간이 지나면 자동 소멸</span></div>
-      <p style="margin:0;font-size:13px;line-height:1.75;color:var(--n700);background:var(--n50);padding:14px 18px;text-align:left">
+        <span style="display:block;margin-top:7px;font-size:11px;color:var(--n500)">내 번호는 공개되지 않습니다 · 기간이 지나면 자동 소멸</span></div>
+      <p style="margin:0;font-size:13.5px;line-height:1.75;color:var(--n700);background:var(--n50);padding:14px 18px;text-align:left">
         이후 상담과 계약은 <b>중개사무소와 직접</b> 진행하시면 됩니다.<br class="mbr"> 저희는 거래에 관여하지 않으며 어떤 비용도 받지 않습니다.</p>
       <div style="display:flex;gap:10px;${isMo()?'flex-direction:column':''}">
         <button class="btn pri md ${isMo()?'blk':''}" data-go="#/inbox">제안함으로</button>
@@ -3305,9 +3305,9 @@ V['#/relax'] = () => `
         ${[['1층 · 12~18평 · 월 180 이하','1건',false],['1층 · 12~18평 · 월 210까지','9건',true],['2층 이상도 받으면','16건',false]]
           .map(([l,n,hi],i)=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:13px 0;${i<2?'border-bottom:1px solid var(--n100)':''}">
             <span style="font-size:14px;${hi?'font-weight:800;color:var(--ind)':'color:var(--n700)'}">${l}</span>
-            <span class="num" style="font-size:15px;font-weight:${hi?900:800};${hi?'color:var(--ind)':''}">${n}${hi?' <span class="badge b-ind" style="font-size:10.5px">여기</span>':''}</span></div>`).join('')}
+            <span class="num" style="font-size:15px;font-weight:${hi?900:800};${hi?'color:var(--ind)':''}">${n}${hi?' <span class="badge b-ind" style="font-size:11px">여기</span>':''}</span></div>`).join('')}
       </div>
-      <p style="margin:0;font-size:11.5px;color:var(--n500)">국토교통부 실거래가 공개시스템 - 참고 지표이며 실제와 다를 수 있습니다.</p>
+      <p style="margin:0;font-size:11px;color:var(--n500)">국토교통부 실거래가 공개시스템 - 참고 지표이며 실제와 다를 수 있습니다.</p>
     </div>
     <div style="width:${isMo()?'100%':'440px'};display:flex;flex-direction:column;gap:12px">
       <span style="font-size:15px;font-weight:800">한 가지만 바꿔보시겠어요?</span>
@@ -3316,7 +3316,7 @@ V['#/relax'] = () => `
          ['하남시청역 상권 추가하기','10분 거리 · 거래 5건 추가']].map(([t,d])=>`
         <button class="card clickable" data-act="relax" data-v="${esc(t)}" style="padding:18px 22px;text-align:left">
           <b style="display:block;font-size:15px;font-weight:800;color:var(--ind);margin-bottom:4px">${t}</b>
-          <span style="font-size:13px;color:var(--n500)">${d}</span></button>`).join('')}
+          <span style="font-size:13.5px;color:var(--n500)">${d}</span></button>`).join('')}
       <button class="btn ghost" data-go="#/inbox" style="padding:12px 0">그냥 기다릴게요</button>
     </div>
   </div>
@@ -3351,12 +3351,12 @@ V['#/partner'] = () => `
   <div class="pad" style="flex:none;border-top:1px solid var(--navy700);padding-top:24px;padding-bottom:30px;display:flex;gap:40px;align-items:center;${isMo()?'flex-direction:column;align-items:stretch':''}">
     <div style="display:flex;gap:36px;flex:1;${isMo()?'flex-direction:column;gap:14px':''}">
       ${[['01','활동 지역 설정','취급 유형·지역·예산 하한'],['02','맞는 손님 카톡 알림','원하는 시간대 · 1일 상한 내'],['03','물건 있으면 90초 제안','손님이 검토 후 연락을 결정']].map(([n,t,d])=>`
-        <div><span style="display:block;font-size:13px;font-weight:800;color:var(--ind300);margin-bottom:4px">${n}</span>
+        <div><span style="display:block;font-size:13.5px;font-weight:800;color:var(--ind300);margin-bottom:4px">${n}</span>
         <span style="display:block;font-size:15px;font-weight:800;color:#F0EDE7;letter-spacing:-.02em">${t}</span>
         <span style="font-size:12.5px;color:#9AA3BF">${d}</span></div>`).join('')}
     </div>
     <div style="flex:none;width:${isMo()?'100%':'350px'};background:var(--navy800);border:1px solid var(--navy600);padding:16px 22px">
-      <span style="display:block;font-size:11.5px;font-weight:800;color:#9AA3BF;margin-bottom:7px">지금 쓰시는 방식과 비교하면</span>
+      <span style="display:block;font-size:11px;font-weight:800;color:#9AA3BF;margin-bottom:7px">지금 쓰시는 방식과 비교하면</span>
       <span style="font-size:13.5px;line-height:1.75;color:#F0EDE7">매물을 올려두고 연락이 오기를 기다리는 방식과 다릅니다.<br class="mbr"> 여기서는 <b style="color:var(--ind300)">수요가 확인된 손님에게만, 무료로</b> 보냅니다.</span>
     </div>
   </div>
@@ -3378,7 +3378,7 @@ V['#/partner/demands'] = () => {
     <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap">
       <div><span class="eyebrow">DEMAND FEED</span>
       <h1 class="t" style="font-size:${isMo()?21:25}px;margin-top:7px">내 조건에 맞는 손님 <span style="color:var(--ind)">${list.length}건</span></h1>
-      <p class="sub" style="font-size:13px">매칭 적합도 순 - 선착순이 아닙니다 · 내 품질 점수 <b style="color:var(--n900)">${qualityScore()}점</b>이 노출 순위에 반영됩니다. 손님 연락처는 연결 확정 전까지 표시되지 않습니다.</p></div>
+      <p class="sub" style="font-size:13.5px">매칭 적합도 순 - 선착순이 아닙니다 · 내 품질 점수 <b style="color:var(--n900)">${qualityScore()}점</b>이 노출 순위에 반영됩니다. 손님 연락처는 연결 확정 전까지 표시되지 않습니다.</p></div>
       <div class="chips">${['전체', ...Object.values(WHO).map(w=>w.tag)].map(x=>`<button class="chip ${f===x?'on':''}" data-act="dfilter" data-v="${x}">${x}</button>`).join('')}</div>
     </div>
     ${S.feedErr ? `<div class="card pad" style="border-color:#E8D5A8;background:var(--warnbg);box-shadow:none;
@@ -3402,22 +3402,22 @@ V['#/partner/demands'] = () => {
       <b style="font-size:13.5px">알림을 중단해 두셨습니다 - 새 손님이 와도 카톡이 가지 않습니다</b>
       <button class="btn sec sm" data-act="sc-pause">알림 재개</button></div>` : ''}
     ${hidden ? `<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:var(--n50);border:1px solid var(--hair);padding:11px 16px">
-      <span style="font-size:13px;color:var(--n700)">활동 조건에 맞지 않아 <b style="color:var(--n900)">${hidden}건</b>을 보여드리지 않았습니다</span>
-      <a data-go="#/partner/settings" style="font-size:13px;font-weight:800;color:var(--ind)">활동 조건 넓히기 →</a></div>` : ''}
+      <span style="font-size:13.5px;color:var(--n700)">활동 조건에 맞지 않아 <b style="color:var(--n900)">${hidden}건</b>을 보여드리지 않았습니다</span>
+      <a data-go="#/partner/settings" style="font-size:13.5px;font-weight:800;color:var(--ind)">활동 조건 넓히기 →</a></div>` : ''}
     <div style="display:grid;grid-template-columns:repeat(${isMo()?1:2},minmax(0,1fr));gap:16px">
       ${list.map(d=>`
       <div class="card pad fade" style="display:flex;flex-direction:column;gap:11px;${d.mine?'opacity:.78':''}">
         <div style="display:flex;justify-content:space-between;align-items:center">
           <span style="display:flex;align-items:center;gap:7px">
             <span style="font-size:13.5px;font-weight:800;color:var(--ind)">${d.kind==='home'?'주거':'상가'} · ${esc(d.deal)}</span>
-            ${d.who&&WHO[d.who]&&d.who!=='home'?`<span class="badge b-mute" style="font-size:10.5px">${WHO[d.who].tag}</span>`:''}</span>
+            ${d.who&&WHO[d.who]&&d.who!=='home'?`<span class="badge b-mute" style="font-size:11px">${WHO[d.who].tag}</span>`:''}</span>
           <span style="display:flex;align-items:center;gap:8px">
             ${d.urgent?'<span class="badge b-warn">마감 임박</span>':''}
             <span style="font-size:12.5px;font-weight:800;color:var(--n700)">남은 슬롯 <span class="num">${d.slotsLeft}/5</span></span></span>
         </div>
         <b style="font-size:${isMo()?15:17}px;font-weight:800;letter-spacing:-.02em">${esc(d.region)} ${demoTag(d,'vertical-align:middle')}</b>
         <div class="lines" style="font-size:14px">${d.lines.map(esc).join('<br>')}</div>
-        ${d.memo?`<p style="margin:0;background:var(--ind50);padding:11px 14px;font-size:13px;line-height:1.6;color:var(--ind700);font-style:italic">"${esc(d.memo.length>52?d.memo.slice(0,52)+'…':d.memo)}"</p>`:''}
+        ${d.memo?`<p style="margin:0;background:var(--ind50);padding:11px 14px;font-size:13.5px;line-height:1.6;color:var(--ind700);font-style:italic">"${esc(d.memo.length>52?d.memo.slice(0,52)+'…':d.memo)}"</p>`:''}
         <div style="display:flex;justify-content:space-between;align-items:center;margin-top:auto;padding-top:2px">
           <span style="font-size:12.5px;color:var(--n500)">등록 ${esc(d.at)} · 입력 ${d.pct}%</span>
           ${d.mine? `<button class="btn sm" data-go="#/partner/proposals" style="background:var(--n100);color:var(--n500)">제안함 · 열람됨</button>`
@@ -3442,11 +3442,11 @@ V['#/partner/demand'] = (id) => { const d=S.demands.find(x=>x.id===id); if(!d) r
       <a class="back" data-go="#/partner/demands">← 수요 목록</a>
       <span style="display:flex;gap:8px;align-items:center">
         ${d.urgent?'<span class="badge b-warn">마감 임박</span>':''}
-        <span style="font-size:13px;font-weight:800;color:var(--n700)">남은 슬롯 <span class="num">${d.slotsLeft}/5</span></span></span>
+        <span style="font-size:13.5px;font-weight:800;color:var(--n700)">남은 슬롯 <span class="num">${d.slotsLeft}/5</span></span></span>
     </div>
     <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap">
       <h1 class="t" style="font-size:${isMo()?17:21}px">${d.kind==='home'?'주거':'상가'} · ${esc(d.deal)} <span style="font-size:15px;color:var(--ind)">${esc(d.region)}</span> ${demoTag(d,'vertical-align:middle')}</h1>
-      <span style="font-size:13px;color:var(--n500)">등록 ${esc(d.at)} · ${esc(d.region||'서울·경기')}</span>
+      <span style="font-size:13.5px;color:var(--n500)">등록 ${esc(d.at)} · ${esc(d.region||'서울·경기')}</span>
     </div>
     <div class="card pad">
       <span class="sect">필수 조건</span>
@@ -3457,7 +3457,7 @@ V['#/partner/demand'] = (id) => { const d=S.demands.find(x=>x.id===id); if(!d) r
     <div class="card pad">
       <span class="sect">상세 조건 (입력 ${d.pct}%)</span>
       ${d.det.map(([k,v])=>`<div class="kv"><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}
-      <p style="margin:8px 0 0;font-size:11.5px;color:var(--n500)">미입력 항목은 표시하지 않습니다 - 추측하지 마세요.</p>
+      <p style="margin:8px 0 0;font-size:11px;color:var(--n500)">미입력 항목은 표시하지 않습니다 - 추측하지 마세요.</p>
     </div>
     ${d.memo? `<div class="card pad" style="background:var(--ind50);border:1.8px solid rgba(61,63,143,.35)">
       <span class="sect">손님이 직접 쓴 사정</span>
@@ -3478,10 +3478,10 @@ V['#/partner/demand'] = (id) => { const d=S.demands.find(x=>x.id===id); if(!d) r
             <span class="num" style="display:block;font-size:12.5px;color:var(--n700)">${priceOf(L)} · ${esc(specOf(L))}</span></div>
           <button class="btn pri sm" data-act="propose-with" data-v="${L.id}|${d.id}">이 물건으로 제안</button>
         </div>`).join('')}
-        <p style="margin:9px 0 0;font-size:11.5px;color:var(--n700)">불러오면 금액·면적·층이 자동으로 채워집니다.</p></div>`;})()}
+        <p style="margin:9px 0 0;font-size:11px;color:var(--n700)">불러오면 금액·면적·층이 자동으로 채워집니다.</p></div>`;})()}
     <div style="margin-top:auto;padding-top:8px">
       <button class="btn pri blk" style="padding:17px 0;font-size:17px" data-act="start-propose" data-v="${d.id}">${listingsFor(d).length?'새로 작성해서 제안하기':'이 손님에게 제안하기 (약 90초)'} (약 90초)</button>
-      <p style="margin:9px 0 0;text-align:center;font-size:11.5px;color:var(--n500)">누르면 슬롯 1건이 15분간 예약됩니다 · 손님의 성함·연락처는 연결 확정 전까지 표시되지 않습니다</p>
+      <p style="margin:9px 0 0;text-align:center;font-size:11px;color:var(--n500)">누르면 슬롯 1건이 15분간 예약됩니다 · 손님의 성함·연락처는 연결 확정 전까지 표시되지 않습니다</p>
     </div>
   </div>
 </div>`;};
@@ -3501,8 +3501,8 @@ V['#/partner/propose'] = (id) => { const d=S.demands.find(x=>x.id===id); if(!d) 
     <a data-go="#/partner" style="flex:none">${logoLockup({h:24,partner:true,tag:!isMo()})}</a>
     <a class="back" data-go="#/partner/demand/${d.id}">← 수요 상세</a>
     <div class="right">
-      ${isMo()?'':`<span style="font-size:13px">손님 조건: ${esc(d.region)} · ${esc(d.lines[0])}</span>`}
-      <span class="badge num" style="background:${S.timeLeft<180?'var(--dangerbg)':'var(--ind50)'};color:${S.timeLeft<180?'var(--danger)':'var(--ind)'};padding:7px 13px;font-size:13px">슬롯 예약 ${mm}:${ss}</span>
+      ${isMo()?'':`<span style="font-size:13.5px">손님 조건: ${esc(d.region)} · ${esc(d.lines[0])}</span>`}
+      <span class="badge num" style="background:${S.timeLeft<180?'var(--dangerbg)':'var(--ind50)'};color:${S.timeLeft<180?'var(--danger)':'var(--ind)'};padding:7px 13px;font-size:13.5px">슬롯 예약 ${mm}:${ss}</span>
     </div>
   </div>
   <div class="pad" style="flex:1;padding-top:20px;padding-bottom:26px;max-width:${isMo()?'none':'1180px'};margin:0 auto;width:100%;display:flex;gap:20px;${isMo()?'flex-direction:column':''}">
@@ -3514,7 +3514,7 @@ V['#/partner/propose'] = (id) => { const d=S.demands.find(x=>x.id===id); if(!d) 
           <input class="inp" data-in="addr" value="${esc(g('addr'))}" placeholder="도로명 주소 + 동·호수까지 (예: 미사강변대로 220, 101동 1503호)">
           <button class="btn pri sm" data-act="lookup" style="flex:none;padding:0 20px">검색</button>
         </div>
-        ${f.filled? `<div style="background:var(--n50);padding:12px 15px;font-size:13px;line-height:1.75;color:var(--n500)">
+        ${f.filled? `<div style="background:var(--n50);padding:12px 15px;font-size:13.5px;line-height:1.75;color:var(--n500)">
           <b style="color:var(--n700)">자동으로 채웠습니다 (수정 가능)</b> - 전용 ${g('area')}㎡ (${(g('area')/3.305785).toFixed(1)}평) · 사용승인 2016.06 · 총 25층 · 주차 세대당 1.2대 · 위반건축물 해당없음</div>`
         : `<p style="margin:0;font-size:12.5px;color:var(--n500)"><b style="color:var(--n900)">호실까지 넣으셔야</b> 건축물대장이 정확히 불러와집니다 - 손님에게는 <b style="color:var(--n900)">호실을 빼고</b> 보여드립니다. 자동채움에 실패해도 수동 입력으로 계속 진행됩니다.${S.listings.length?` 또는 <a data-go="#/partner/listings" style="display:inline-block;padding:4px 2px;font-weight:700;color:var(--ind);text-decoration:underline">내 물건에서 불러오기</a>`:``}</p>${f.fromListing?`<p style="margin:9px 0 0;font-size:12.5px;font-weight:700;color:var(--ok)">✓ 내 물건에서 불러왔습니다 - 필요한 곳만 고치세요</p>`:``}`}
       </div>
@@ -3524,10 +3524,10 @@ V['#/partner/propose'] = (id) => { const d=S.demands.find(x=>x.id===id); if(!d) 
           <div><span class="lab" style="font-size:12.5px">건물명</span><input class="inp" data-in="bname" value="${esc(g('bname'))}" placeholder="미사강변 ○○아파트" style="padding:11px 13px;font-size:14px"></div>
           <div><span class="lab" style="font-size:12.5px">공급면적 <span style="color:var(--danger)">*</span></span>
             <div class="unit"><input class="inp num" data-in="areaSup" inputmode="decimal" value="${esc(g('areaSup'))}" placeholder="0" style="padding:11px 13px;font-size:14px"><span>㎡</span></div>
-            <span data-py="areaSup" style="display:block;margin-top:4px;font-size:11.5px;font-weight:700;color:var(--ind)">${+g('areaSup')>0?`${(+g('areaSup')/3.305785).toFixed(1)}평`:''}</span></div>
+            <span data-py="areaSup" style="display:block;margin-top:4px;font-size:11px;font-weight:700;color:var(--ind)">${+g('areaSup')>0?`${(+g('areaSup')/3.305785).toFixed(1)}평`:''}</span></div>
           <div><span class="lab" style="font-size:12.5px">전용면적</span>
             <div class="unit"><input class="inp num" data-in="area" inputmode="decimal" value="${esc(g('area'))}" placeholder="0" style="padding:11px 13px;font-size:14px"><span>㎡</span></div>
-            <span data-py="area" style="display:block;margin-top:4px;font-size:11.5px;font-weight:700;color:var(--n500)">${+g('area')>0?`${(+g('area')/3.305785).toFixed(1)}평`:''}</span></div>
+            <span data-py="area" style="display:block;margin-top:4px;font-size:11px;font-weight:700;color:var(--n500)">${+g('area')>0?`${(+g('area')/3.305785).toFixed(1)}평`:''}</span></div>
           <div><span class="lab" style="font-size:12.5px">보증금</span><div class="unit"><input class="inp num" data-in="dep" inputmode="numeric" value="${esc(g('dep'))}" placeholder="0" style="padding:11px 13px;font-size:14px"><span>만원</span></div></div>
           <div><span class="lab" style="font-size:12.5px">월세</span><div class="unit"><input class="inp num" data-in="rent" inputmode="numeric" value="${esc(g('rent'))}" placeholder="0" style="padding:11px 13px;font-size:14px"><span>만원</span></div></div>
           ${home ? `
@@ -3568,24 +3568,24 @@ V['#/partner/propose'] = (id) => { const d=S.demands.find(x=>x.id===id); if(!d) 
         <span class="sect"><span style="color:var(--ind)">4.</span> 한마디 <span style="font-weight:600;color:var(--n500)">다른 점을 먼저, 솔직하게</span></span>
         <textarea class="inp" rows="3" data-in="msg" style="resize:vertical;line-height:1.6;${f.msg?'border-color:var(--ind)':''}"
           placeholder="요청하신 조건 중 지역·예산·방수는 맞고, 엘리베이터는 없습니다. 대신 2층이라…">${esc(g('msg'))}</textarea>
-        <p data-msgcount style="margin:6px 0 0;text-align:right;font-size:11.5px;color:var(--n500)" class="num">${(f.msg||'').length}/200</p>
+        <p data-msgcount style="margin:6px 0 0;text-align:right;font-size:11px;color:var(--n500)" class="num">${(f.msg||'').length}/200</p>
       </div>
     </div>
     <div style="flex:none;width:${isMo()?'100%':'320px'};display:flex;flex-direction:column;gap:13px">
       <div class="card pad" style="${isMo()?'':'position:sticky;top:0'}">
         <div style="display:flex;justify-content:space-between;margin-bottom:12px">
-          <span style="font-size:13px;font-weight:800;color:var(--ind)">명시사항 검사</span>
-          <span class="num" data-checkcount style="font-size:13px;font-weight:800;color:${allOk?'var(--ok)':'var(--n500)'}">${allOk?'모두 충족':'충족'} (${passed}/${checks.length})</span>
+          <span style="font-size:13.5px;font-weight:800;color:var(--ind)">명시사항 검사</span>
+          <span class="num" data-checkcount style="font-size:13.5px;font-weight:800;color:${allOk?'var(--ok)':'var(--n500)'}">${allOk?'모두 충족':'충족'} (${passed}/${checks.length})</span>
         </div>
         <div data-checks style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px">
           ${checks.map(([k,ok])=>`<span style="font-size:12.5px;font-weight:600;color:${ok?'var(--ok)':'var(--danger)'}">${ok?'✓':'✕'} ${k}</span>`).join('')}
         </div>
         <div style="display:flex;gap:10px;align-items:center;margin-top:12px;padding-top:10px;border-top:1px solid var(--n100)">
           ${beaverlyMini(46)}
-          <p style="margin:0;font-size:11.5px;line-height:1.6;color:var(--n500)">발송 후 수정은 불가합니다 - 열람 전 회수만 가능합니다. 작성 내용은 30초마다 자동 저장됩니다.</p></div>
+          <p style="margin:0;font-size:11px;line-height:1.6;color:var(--n500)">발송 후 수정은 불가합니다 - 열람 전 회수만 가능합니다. 작성 내용은 30초마다 자동 저장됩니다.</p></div>
       </div>
       <button class="btn pri blk" style="padding:17px 0;font-size:15px" data-act="send-proposal" data-v="${d.id}" ${S.timeLeft>0 ?'':'disabled'}>제안 보내기</button>
-      <span style="text-align:center;font-size:11.5px;color:var(--n500)">${S.timeLeft===0?'슬롯 예약이 만료됐습니다 - 수요 상세에서 다시 시도하세요':'즉시 전달됩니다 - 검증 대기 없음'}</span>
+      <span style="text-align:center;font-size:11px;color:var(--n500)">${S.timeLeft===0?'슬롯 예약이 만료됐습니다 - 수요 상세에서 다시 시도하세요':'즉시 전달됩니다 - 검증 대기 없음'}</span>
     </div>
   </div>
 </div>`;};
@@ -3613,10 +3613,10 @@ V['#/partner/proposals'] = () => {
         <span class="num" style="font-size:14px;color:var(--n700)">${esc(p.price)}</span>
         <span style="display:block;font-size:12.5px;color:var(--n500);margin-top:2px">손님 조건: ${esc(p.line)}</span>
         ${p.status==='selected'&&p.safe? `<div style="margin-top:10px;background:var(--okbg);padding:11px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-          <span style="font-size:11.5px;font-weight:800;color:var(--ok)">안심번호 · ${p.days}일 남음</span>
+          <span style="font-size:11px;font-weight:800;color:var(--ok)">안심번호 · ${p.days}일 남음</span>
           <span class="num" style="font-size:17px;font-weight:800;color:var(--ok)">${p.safe}</span>
           <span style="font-size:12.5px;color:var(--n700)">이후 상담은 전화로 진행하세요</span></div>`:''}
-        ${p.reason? `<p style="margin:10px 0 0;background:var(--n50);padding:11px 15px;font-size:13px;line-height:1.6;color:var(--n700)">${esc(p.reason)}</p>`:''}
+        ${p.reason? `<p style="margin:10px 0 0;background:var(--n50);padding:11px 15px;font-size:13.5px;line-height:1.6;color:var(--n700)">${esc(p.reason)}</p>`:''}
         <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;gap:10px;flex-wrap:wrap">
           <span style="font-size:12.5px;color:var(--n500)">발송 ${esc(p.at)}${p.expires!=null?` · 만료까지 ${p.expires}일`:''}</span>
           <div style="display:flex;gap:7px">
@@ -3627,9 +3627,9 @@ V['#/partner/proposals'] = () => {
       </div>`;}).join('')
     : `<div class="empty"><span style="display:flex;justify-content:center;margin-bottom:8px">${beaverly(120)}</span>
        <p style="margin:0 0 6px;font-size:15px;font-weight:800">아직 보낸 제안이 없습니다</p>
-       <p style="margin:0 0 18px;font-size:13px;color:var(--n500)">지금 서울·경기에서 12명의 손님이 조건을 걸어두고 기다립니다.</p>
+       <p style="margin:0 0 18px;font-size:13.5px;color:var(--n500)">지금 서울·경기에서 12명의 손님이 조건을 걸어두고 기다립니다.</p>
        <button class="btn pri md" data-go="#/partner/demands">수요 목록 보기</button></div>`}
-    <p style="margin:2px 0 ${isMo()?'12px':'0'};font-size:11.5px;line-height:1.6;color:var(--n500)">발송 후 수정은 불가합니다 - 전달 내용의 무결성을 위해 회수 후 재작성만 가능합니다. 회수는 손님이 열람하기 전에만 됩니다.</p>
+    <p style="margin:2px 0 ${isMo()?'12px':'0'};font-size:11px;line-height:1.6;color:var(--n500)">발송 후 수정은 불가합니다 - 전달 내용의 무결성을 위해 회수 후 재작성만 가능합니다. 회수는 손님이 열람하기 전에만 됩니다.</p>
   </div>
   ${tabbar('p','p')}
 </div>`;};
@@ -3646,19 +3646,19 @@ V['#/ops'] = () => {
   const maxD=Math.max(...daily.map(d=>d[2]));
   return `
 <div class="scr fade" style="background:var(--n50)">
-  <div class="nav solid pad"><a data-go="#/" style="flex:none">${logoLockup({h:24})}<span style="margin-left:9px;font-size:11.5px;font-weight:700;color:var(--n500)">운영</span>
+  <div class="nav solid pad"><a data-go="#/" style="flex:none">${logoLockup({h:24})}<span style="margin-left:9px;font-size:11px;font-weight:700;color:var(--n500)">운영</span>
       <span class="badge" style="margin-left:8px;background:var(--clay100);border:1px solid var(--clay200);color:var(--clay700);padding:3px 9px;font-size:11px;font-weight:800">아래 숫자는 예시입니다</span></a>
     <div class="items"><a data-go="#/my">수요자 화면</a><a data-go="#/partner/demands">공급자 화면</a></div>
     <div class="right" style="gap:14px"><a data-go="#/ops/live" style="font-weight:700;color:var(--ind);cursor:pointer">접수 조건 →</a><span>5분 배치 갱신 · A-04</span></div></div>
   <div class="pad" style="flex:1;padding-top:26px;padding-bottom:26px;max-width:${isMo()?'none':'1100px'};margin:0 auto;width:100%;display:flex;flex-direction:column;gap:16px">
     <div class="card pad" style="background:var(--warnbg);border-color:#E3C98A;box-shadow:none">
-      <span style="font-size:13px;font-weight:700;color:var(--n700)">⚠ 활성 공급자 14명 - 15명 미만: 회전 없이 전원 알림 중 (콜드스타트 상태)</span></div>
+      <span style="font-size:13.5px;font-weight:700;color:var(--n700)">⚠ 활성 공급자 14명 - 15명 미만: 회전 없이 전원 알림 중 (콜드스타트 상태)</span></div>
     <div style="display:grid;grid-template-columns:repeat(${isMo()?2:4},minmax(0,1fr));gap:12px">
       ${tiles.map(([k,v,s,def,main])=>`<div class="card" style="padding:16px;${main?'border:1.5px solid rgba(61,63,143,.4);background:rgba(245,245,252,.6)':''}">
         <span style="display:block;font-size:12.5px;font-weight:800;color:var(--n500)">${k}${main?' <span style="color:var(--ind)">주지표</span>':''}</span>
         <span class="num" style="font-size:25px;font-weight:800;letter-spacing:-.02em;${main?'color:var(--ind)':''}">${v}</span>
-        ${s?`<span style="display:block;font-size:11.5px;font-weight:700;color:var(--ok)">${s}</span>`:''}
-        <p style="margin:6px 0 0;font-size:10.5px;line-height:1.45;color:#A8A29A">${def}</p></div>`).join('')}
+        ${s?`<span style="display:block;font-size:11px;font-weight:700;color:var(--ok)">${s}</span>`:''}
+        <p style="margin:6px 0 0;font-size:11px;line-height:1.45;color:#A8A29A">${def}</p></div>`).join('')}
     </div>
     <div style="display:grid;grid-template-columns:repeat(${isMo()?1:2},minmax(0,1fr));gap:16px">
       <div class="card pad">
@@ -3666,8 +3666,8 @@ V['#/ops'] = () => {
         ${funnel.map(([k,v])=>`<div style="display:flex;align-items:center;gap:12px;margin-bottom:7px">
           <span style="width:72px;flex:none;font-size:12.5px;font-weight:700;color:var(--n500)">${k}</span>
           <div style="flex:1;height:22px;background:var(--n100);border-radius:6px;overflow:hidden"><i style="display:block;height:100%;width:${v/60*100}%;background:rgba(61,63,143,.8);border-radius:6px"></i></div>
-          <span class="num" style="width:26px;text-align:right;font-size:13px;font-weight:800">${v}</span></div>`).join('')}
-        <p style="margin:6px 0 0;font-size:11.5px;color:var(--n500)">성사는 7일 후 확인 카톡 자발 응답 기반 · 응답률 41%</p>
+          <span class="num" style="width:26px;text-align:right;font-size:13.5px;font-weight:800">${v}</span></div>`).join('')}
+        <p style="margin:6px 0 0;font-size:11px;color:var(--n500)">성사는 7일 후 확인 카톡 자발 응답 기반 · 응답률 41%</p>
       </div>
       <div class="card pad">
         <span class="sect">미제안 사유 분포 <span style="font-weight:600;color:var(--n500)">숫자보다 사유가 우선</span></span>
@@ -3676,7 +3676,7 @@ V['#/ops'] = () => {
           <div style="flex:1;height:15px;background:var(--n100);border-radius:5px;overflow:hidden"><i style="display:block;height:100%;width:${p}%;background:${w?'rgba(178,43,49,.7)':'rgba(61,63,143,.6)'};border-radius:5px"></i></div>
           <span class="num" style="width:32px;text-align:right;font-size:12.5px;font-weight:800">${p}%</span></div>`).join('')}
         <div style="margin-top:12px;padding-top:11px;border-top:1px solid var(--n100);display:flex;gap:8px;flex-wrap:wrap">
-          ${[['여기서 구함',31],['다른 데서 구함',44],['포기',25]].map(([l,p])=>`<span style="background:var(--n50);border-radius:var(--r-sm);padding:7px 12px;font-size:11.5px;font-weight:700;color:var(--n700)">${l} <b class="num" style="color:var(--ind)">${p}%</b></span>`).join('')}
+          ${[['여기서 구함',31],['다른 데서 구함',44],['포기',25]].map(([l,p])=>`<span style="background:var(--n50);border-radius:var(--r-sm);padding:7px 12px;font-size:11px;font-weight:700;color:var(--n700)">${l} <b class="num" style="color:var(--ind)">${p}%</b></span>`).join('')}
         </div>
       </div>
     </div>
@@ -3688,7 +3688,7 @@ V['#/ops'] = () => {
             <i style="width:9px;height:${c/maxD*100}%;background:var(--n300);border-radius:3px 3px 0 0"></i>
             <i style="width:9px;height:${p/maxD*100}%;background:rgba(61,63,143,.8);border-radius:3px 3px 0 0"></i>
             <i style="width:9px;height:${s/maxD*100}%;background:rgba(27,122,70,.7);border-radius:3px 3px 0 0"></i>
-          </div><span class="num" style="font-size:10.5px;color:var(--n500)">${d}</span></div>`).join('')}
+          </div><span class="num" style="font-size:11px;color:var(--n500)">${d}</span></div>`).join('')}
       </div>
     </div>
   </div>
@@ -3715,7 +3715,7 @@ V["#/partner/join"] = () => {
     <div style="display:flex;flex-direction:column;gap:11px;margin-top:6px">
       ${JOIN_ROLES.map(r=>`<button class="card clickable" data-act="j-role" data-v="${r.k}" style="padding:${isMo()?'20px':'24px 26px'};text-align:left;display:flex;justify-content:space-between;align-items:center;gap:14px">
         <span><b style="display:block;font-size:${isMo()?17:17}px;font-weight:800;letter-spacing:-.03em;margin-bottom:4px">${r.t}</b>
-        <span style="font-size:13px;color:var(--n500)">${r.d}</span></span>
+        <span style="font-size:13.5px;color:var(--n500)">${r.d}</span></span>
         <svg viewBox="0 0 24 24" style="width:21px;flex:none" fill="none" stroke="#3D3F8F" stroke-width="2.2" stroke-linecap="round"><path d="M9 5 L16 12 L9 19"/></svg>
       </button>`).join('')}
     </div>`;
@@ -3758,7 +3758,7 @@ V["#/partner/join"] = () => {
       <div class="card pad" style="margin-top:14px;border-color:#A5CDB6;background:var(--okbg)">
         <span class="badge b-ok" style="margin-bottom:7px">공공데이터 확인됨</span>
         <b style="display:block;font-size:15px;font-weight:800">${esc(f.jCheck.office||'등록된 사무소')}</b>
-        <span style="display:block;font-size:13px;line-height:1.7;color:var(--n700);margin:5px 0 14px">
+        <span style="display:block;font-size:13.5px;line-height:1.7;color:var(--n700);margin:5px 0 14px">
           ${[f.jCheck.rep&&('대표 '+f.jCheck.rep), f.jCheck.addr, f.jCheck.state, f.jCheck.since].filter(Boolean).map(esc).join(' · ')}<br>
           등록번호 ${esc(f.jCheck.reg_no)}</span>
         <button class="btn blk" data-act="j-confirm" style="background:var(--ok);color:#fff;padding:14px 0">제 사무소가 맞습니다</button></div>` : `
@@ -3787,7 +3787,7 @@ V["#/partner/join"] = () => {
     <div style="margin-top:6px"><span class="lab">사업 유형 <span class="req">*</span></span>
       ${chipsHTML(['지식산업센터','상가·근린생활','오피스','창고·물류'], f.jDev||'', 'j-dev', false)}
       <div class="card pad" style="margin-top:10px;background:var(--warnbg);border-color:#E3C98A;box-shadow:none">
-        <b style="display:block;font-size:13px;color:var(--warn);margin-bottom:5px">1차는 비주택 · 준공 후 미분양만 받습니다</b>
+        <b style="display:block;font-size:13.5px;color:var(--warn);margin-bottom:5px">1차는 비주택 · 준공 후 미분양만 받습니다</b>
         <span style="font-size:12.5px;line-height:1.6;color:var(--n700)">
           주택 분양은 <b style="color:var(--n900)">분양신고 수리 통보 전 어떤 형태로도 노출이 금지</b>되어 있습니다(건축물분양법 제6조 제1항 · 실제 벌금 판례).
           <b style="color:var(--n900)">분양권 전매</b>도 다루지 않습니다 - 중개대상물이 되어 제18조의2 방어선이 무너집니다.</span>
@@ -3799,8 +3799,8 @@ V["#/partner/join"] = () => {
       ${f.jDone==='준공 예정'? `<p style="margin:9px 0 0;background:var(--dangerbg);padding:12px 15px;font-size:12.5px;line-height:1.6;color:var(--danger);font-weight:700">
         준공 전 물건은 등록할 수 없습니다. 준공 후 다시 신청해 주세요.</p>`:''}</div>
     <div style="margin-top:16px"><span class="lab">증빙 서류</span>
-      <button class="card clickable" style="width:100%;padding:26px;border-style:dashed;text-align:center;font-size:13px;font-weight:700;color:var(--n500)">
-        + 분양신고 수리 통보서 또는 입주자모집공고 승인서<br><span style="font-weight:500;font-size:11.5px">PDF · 이미지 · 10MB 이하</span></button></div>
+      <button class="card clickable" style="width:100%;padding:26px;border-style:dashed;text-align:center;font-size:13.5px;font-weight:700;color:var(--n500)">
+        + 분양신고 수리 통보서 또는 입주자모집공고 승인서<br><span style="font-weight:500;font-size:11px">PDF · 이미지 · 10MB 이하</span></button></div>
     <button class="btn pri blk" style="margin-top:18px;padding:16px 0" data-act="j-confirm" ${f.jDev && f.jDone==='준공 완료' ?'':'disabled'}>심사 요청하기</button>`;
   if(step===4){
     const instant = role==='agent';
@@ -3836,7 +3836,7 @@ V["#/partner/join"] = () => {
   <div style="flex:1;display:flex;justify-content:center;padding:${isMo()?'20px 22px 30px':'32px 40px 40px'}">
     <div style="width:100%;max-width:560px;display:flex;flex-direction:column;gap:14px">
       ${isMo()?'':`<div style="display:flex;gap:8px;margin-bottom:6px">${steps.map((t,i)=>`
-        <span style="flex:1;padding:9px 0;text-align:center;font-size:11.5px;font-weight:${i+1===step?800:600};border-radius:var(--r-full);
+        <span style="flex:1;padding:9px 0;text-align:center;font-size:11px;font-weight:${i+1===step?800:600};border-radius:var(--r-full);
           background:${i+1===step?'var(--ind)':i+1<step?'var(--okbg)':'var(--n100)'};color:${i+1===step?'#fff':i+1<step?'var(--ok)':'var(--n500)'}">${t}</span>`).join('')}</div>`}
       ${body}
     </div>
@@ -3854,14 +3854,14 @@ V["#/partner/stats"] = () => {
   const tile = (k,v,sub,avg,main) => `<div class="card" style="padding:16px 18px;${main?'border-color:rgba(61,63,143,.4);background:rgba(245,245,252,.6)':''}">
     <span style="display:block;font-size:12.5px;font-weight:800;color:var(--n500)">${k}</span>
     <span class="num" style="font-size:25px;font-weight:800;letter-spacing:-.02em;${main?'color:var(--ind)':''}">${v}</span>
-    ${sub?`<span style="display:block;font-size:11.5px;font-weight:700;color:${avg==null?'var(--n500)':avg?'var(--ok)':'var(--warn)'}">${sub}</span>`:''}</div>`;
+    ${sub?`<span style="display:block;font-size:11px;font-weight:700;color:${avg==null?'var(--n500)':avg?'var(--ok)':'var(--warn)'}">${sub}</span>`:''}</div>`;
   return `
 <div class="scr fade" style="background:var(--n50)">
   ${navPartner('st')}
   <div class="pad" style="flex:1;padding-top:${isMo()?18:30}px;padding-bottom:26px;max-width:${isMo()?'none':'1000px'};margin:0 auto;width:100%;display:flex;flex-direction:column;gap:14px">
     <div><span class="eyebrow">PERFORMANCE</span>
       <h1 class="t" style="font-size:${isMo()?21:25}px;margin-top:7px">성과</h1>
-      <p class="sub" style="font-size:13px">8월 기준 · 좋은 제안을 쓰는 것이 이기는 길입니다.</p></div>
+      <p class="sub" style="font-size:13.5px">8월 기준 · 좋은 제안을 쓰는 것이 이기는 길입니다.</p></div>
 
     <div style="display:grid;grid-template-columns:repeat(${isMo()?2:4},minmax(0,1fr));gap:12px">
       ${tile('8월 제안', sent+'건', '발송 기준', null)}
@@ -3874,14 +3874,14 @@ V["#/partner/stats"] = () => {
       <div class="card pad">
         <span class="sect">점수는 이렇게 계산됩니다</span>
         <p style="margin:0 0 12px;font-size:12.5px;line-height:1.6;color:var(--n500)">산식을 공개합니다 - 순위는 광고비가 아니라 제안의 질로만 정해집니다.</p>
-        <table style="width:100%;font-size:13px;border-collapse:collapse">
+        <table style="width:100%;font-size:13.5px;border-collapse:collapse">
           ${[['열람률','40%','제안 열람 수 ÷ 발송 수'],['선택률','40%','연결 수 ÷ 열람 수'],['신고·반려','20%','무신고 가점 · 허위 신고 확정 시 큰 감점']]
             .map(([k,w,v],i)=>`<tr style="${i<2?'border-bottom:1px solid var(--hair)':''}">
               <td style="padding:9px 0;font-weight:800">${k}</td>
               <td class="num" style="padding:9px 8px;text-align:center;font-weight:800;color:var(--ind)">${w}</td>
               <td style="padding:9px 0;color:var(--n500)">${v}</td></tr>`).join('')}
         </table>
-        <p style="margin:10px 0 0;font-size:11.5px;line-height:1.6;color:var(--n500)">
+        <p style="margin:10px 0 0;font-size:11px;line-height:1.6;color:var(--n500)">
           손님 잘못으로 끝난 제안(미열람 만료 등)은 <b style="color:var(--n900)">분모에서 빠집니다</b> - 점수에 불이익이 없습니다.</p>
       </div>
       <div class="card pad">
@@ -3891,12 +3891,12 @@ V["#/partner/stats"] = () => {
              '한마디에 <b style="color:var(--n900)">다른 점을 먼저</b> 쓰면 선택률이 올라갑니다 - 맞는 것만 나열한 제안은 열람 후 이탈이 큽니다',
              '관리비를 정확히 적은 제안은 신고율이 0에 가깝습니다',
              '<b style="color:var(--n900)">내 물건</b>을 미리 올려두면 새 손님이 올 때 바로 제안할 수 있어 선택률이 높습니다']
-            .map(t=>`<span style="display:flex;gap:10px;font-size:13px;line-height:1.6;color:var(--n700)">
+            .map(t=>`<span style="display:flex;gap:10px;font-size:13.5px;line-height:1.6;color:var(--n700)">
               <i style="flex:none;width:6px;height:6px;border-radius:50%;background:var(--ind);margin-top:8px"></i>${t}</span>`).join('')}
         </div>
       </div>
     </div>
-    <p style="margin:2px 0 ${isMo()?'12px':'0'};font-size:11.5px;line-height:1.75;color:var(--n500)">
+    <p style="margin:2px 0 ${isMo()?'12px':'0'};font-size:11px;line-height:1.75;color:var(--n500)">
       건별 이력은 <a data-go="#/partner/proposals" style="font-weight:800;color:var(--ind);text-decoration:underline">내 제안</a>에서 봅니다 - 이 화면은 집계와 순위만 다룹니다.</p>
   </div>
   ${tabbar('st','p')}
@@ -3920,7 +3920,7 @@ V["#/partner/settings"] = () => {
     <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap">
       <div><span class="eyebrow">ACTIVITY SCOPE</span>
         <h1 class="t" style="font-size:${isMo()?21:25}px;margin-top:7px">활동 조건 설정</h1>
-        <p class="sub" style="font-size:13px">저장 즉시 새 조건부터 적용됩니다 · 이미 발송된 알림에는 소급되지 않습니다.</p></div>
+        <p class="sub" style="font-size:13.5px">저장 즉시 새 조건부터 적용됩니다 · 이미 발송된 알림에는 소급되지 않습니다.</p></div>
       <button class="btn pri sm" data-act="scope-save" style="padding:11px 22px">저장</button>
     </div>
 
@@ -3932,10 +3932,10 @@ V["#/partner/settings"] = () => {
         ${sc.assets.includes('주거 전월세') ? sect('2','거래 방식','', chipsHTML(['월세','전세','매매'], sc.deals,'sc-deals',true)) : ''}
         ${sect('3','활동 지역','생활권 이름을 눌러 한 번에 고를 수 있습니다',
           `<div class="chips" style="margin-bottom:10px">${ZONES.slice(0,3).map(z=>
-            `<button class="chip" data-act="sc-zone" data-v="${esc(z.t)}" style="font-size:11.5px;padding:7px 13px;background:var(--ind50);border-color:#DCDDF3;color:var(--ind);font-weight:700">${esc(z.t)} 전체</button>`).join('')}</div>`
+            `<button class="chip" data-act="sc-zone" data-v="${esc(z.t)}" style="font-size:11px;padding:7px 13px;background:var(--ind50);border-color:#DCDDF3;color:var(--ind);font-weight:700">${esc(z.t)} 전체</button>`).join('')}</div>`
           + zonesHTML(sc.assets.includes('상가·점포') && !sc.assets.includes('주거 전월세') ? SHOP_ZONES : ZONES, sc.regions).replace(/data-act="dong"/g,'data-act="sc-region"')
           + (sc.assets.includes('상가·점포') && sc.assets.includes('주거 전월세')
-             ? `<div style="margin-top:12px"><span style="display:block;font-size:11.5px;font-weight:800;color:var(--n500);margin-bottom:8px">상가 상권</span>${chipsHTML(['미사역 상권','하남시청역','스타필드 인근'], sc.regions,'sc-region',true)}</div>` : ''))}
+             ? `<div style="margin-top:12px"><span style="display:block;font-size:11px;font-weight:800;color:var(--n500);margin-bottom:8px">상가 상권</span>${chipsHTML(['미사역 상권','하남시청역','스타필드 인근'], sc.regions,'sc-region',true)}</div>` : ''))}
         ${sect('4','예산 하한','이보다 낮은 예산의 손님은 알림에서 제외됩니다 · 비우면 제한 없음',
           `<div class="grid2" style="max-width:420px">
             <div class="unit"><input class="inp num" data-in="sc-depFloor" inputmode="numeric" value="${esc(sc.depFloor)}" placeholder="보증금 하한"><span>만원</span></div>
@@ -3943,10 +3943,10 @@ V["#/partner/settings"] = () => {
         ${sc.assets.includes('상가·점포') ? sect('5','상가 취급 업종','', chipsHTML(Object.keys(BIZ), sc.biz,'sc-biz',true)) : ''}
         ${sect('6','취급 불가 항목','이 항목이 필요한 손님에게는 알림이 가지 않습니다. <b style="color:var(--n900)">확실히 취급하지 않는 것만</b> 체크하세요.',
           EXCLUDES.map(g=>`<div style="margin-bottom:6px">
-            <span style="display:block;font-size:11.5px;font-weight:800;color:var(--n500);margin-bottom:2px">${g.g}</span>
+            <span style="display:block;font-size:11px;font-weight:800;color:var(--n500);margin-bottom:2px">${g.g}</span>
             ${g.items.map(it=>`<div class="chk ${sc.excluded.includes(it)?'on':''}" data-act="sc-exclude" data-v="${esc(it)}" style="padding:9px 0">
               <span class="box">${ICON_CHECK}</span><span class="txt">${esc(it)}</span></div>`).join('')}</div>`).join('')
-          + (sc.excluded.length ? `<p style="margin:8px 0 0;padding:11px 15px;font-size:13px;font-weight:700;background:${drop?'var(--dangerbg)':'var(--warnbg)'};color:${drop?'var(--danger)':'var(--warn)'}">
+          + (sc.excluded.length ? `<p style="margin:8px 0 0;padding:11px 15px;font-size:13.5px;font-weight:700;background:${drop?'var(--dangerbg)':'var(--warnbg)'};color:${drop?'var(--danger)':'var(--warn)'}">
               이 설정이면 대기 손님 ${base}건 → ${now}건이 됩니다${drop?' - 알림이 크게 줄어듭니다':''}</p>` : ''))}
         ${sect('7','알림 설정','',
           `<div style="display:flex;flex-wrap:wrap;align-items:center;gap:9px;font-size:14px">
@@ -3969,16 +3969,16 @@ V["#/partner/settings"] = () => {
           <span style="display:block;font-size:12.5px;font-weight:800;color:var(--n500)">지금 이 설정이면</span>
           <p style="margin:14px 0 2px;font-size:13.5px;color:var(--n700)">대기 중인 손님</p>
           <p class="num" style="margin:0;font-size:40px;font-weight:800;letter-spacing:-.03em;color:${now?'var(--ind)':'var(--danger)'}">${now}건</p>
-          <p style="margin:6px 0 14px;font-size:13px;color:var(--n700)">이번 주 새 조건 ${week}건</p>
+          <p style="margin:6px 0 14px;font-size:13.5px;color:var(--n700)">이번 주 새 조건 ${week}건</p>
           <div class="gauge" style="height:5px"><i style="width:${base?Math.round(now/Math.max(base,1)*100):0}%"></i></div>
-          <p style="margin:10px 0 0;font-size:11.5px;line-height:1.6;color:var(--n500)">설정을 바꾸면 숫자가 바로 바뀝니다</p>
+          <p style="margin:10px 0 0;font-size:11px;line-height:1.6;color:var(--n500)">설정을 바꾸면 숫자가 바로 바뀝니다</p>
         </div>
         ${now===0 ? `<div class="card pad" style="border-color:#E3C98A;background:var(--warnbg);box-shadow:none">
-          <b style="display:block;font-size:13px;color:var(--warn);margin-bottom:5px">이 설정으로는 알림이 오지 않습니다</b>
+          <b style="display:block;font-size:13.5px;color:var(--warn);margin-bottom:5px">이 설정으로는 알림이 오지 않습니다</b>
           <span style="font-size:12.5px;line-height:1.6;color:var(--n700)">서울·경기에서 이번 주 ${S.demands.length}건이 등록됐습니다.
             <b style="color:var(--n900)">취급 유형·예산 하한·취급 불가 항목</b>을 조금 넓혀보세요.</span></div>` : ''}
         ${sc.paused ? `<div class="card pad" style="border-color:var(--n300);background:var(--n100);box-shadow:none">
-          <b style="font-size:13px">알림 중단 중</b>
+          <b style="font-size:13.5px">알림 중단 중</b>
           <span style="display:block;font-size:12.5px;color:var(--n700);margin-top:4px">수요는 계속 쌓이며, 재개하면 그동안의 조건을 한 번에 보여드립니다.</span></div>` : ''}
       </div>
     </div>
@@ -3999,14 +3999,14 @@ V["#/partner/listings"] = () => {
     const ms = matchesFor(L);
     return `<div class="card pad clickable fade" data-go="#/partner/listing/${L.id}" style="display:flex;flex-direction:column;gap:10px">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
-        <span style="font-size:13px;font-weight:800;color:var(--ind)">${L.kind==='home'?'주거':'상가'} · ${esc(L.kind==='home'?L.deal:L.biz)}</span>
+        <span style="font-size:13.5px;font-weight:800;color:var(--ind)">${L.kind==='home'?'주거':'상가'} · ${esc(L.kind==='home'?L.deal:L.biz)}</span>
         ${ms.length? `<span class="badge b-ok">맞는 손님 ${ms.length}명</span>` : `<span class="badge b-mute">대기 중</span>`}
       </div>
       <b style="font-size:${isMo()?15:17}px;font-weight:800;letter-spacing:-.02em">${esc(L.name)} ${demoTag(L,'vertical-align:middle')}</b>
       <div class="lines"><span class="num">${priceOf(L)}</span><br>${esc(specOf(L))}</div>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-top:auto;padding-top:2px">
         <span style="font-size:12.5px;color:var(--n500)">등록 ${esc(L.at)} · 사진 ${L.photos}장</span>
-        <span style="font-size:13px;font-weight:800;color:${ms.length?'var(--ind)':'var(--n500)'}">${ms.length?'제안 보내기 →':'자세히 →'}</span>
+        <span style="font-size:13.5px;font-weight:800;color:${ms.length?'var(--ind)':'var(--n500)'}">${ms.length?'제안 보내기 →':'자세히 →'}</span>
       </div></div>`;}).join('');
   const total = S.listings.reduce((n,L)=>n+matchesFor(L).length,0);
   return `
@@ -4016,7 +4016,7 @@ V["#/partner/listings"] = () => {
     <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap">
       <div><span class="eyebrow">INVENTORY</span>
         <h1 class="t" style="font-size:${isMo()?21:25}px;margin-top:7px">내 물건 <span style="color:var(--ind)">${S.listings.length}건</span></h1>
-        <p class="sub" style="font-size:13px">미리 올려두면 새 손님이 들어올 때 <b style="color:var(--n900)">자동으로 대조</b>해 알려드립니다.</p></div>
+        <p class="sub" style="font-size:13.5px">미리 올려두면 새 손님이 들어올 때 <b style="color:var(--n900)">자동으로 대조</b>해 알려드립니다.</p></div>
       <button class="btn pri sm" data-go="#/partner/listing/new" style="padding:11px 20px">+ 매물 등록</button>
     </div>
     ${total? `<div class="card pad" style="border-color:rgba(27,122,70,.35);background:var(--okbg);box-shadow:none;display:flex;align-items:center;gap:12px">
@@ -4024,9 +4024,9 @@ V["#/partner/listings"] = () => {
       <span style="font-size:12.5px;color:var(--n700)">물건을 눌러 확인하세요</span></div>`:''}
     ${S.listings.length? `<div style="display:grid;grid-template-columns:repeat(${isMo()?1:2},minmax(0,1fr));gap:16px">${rows}</div>`
       : `<div class="empty">${beaverlyMini(110)}<p style="margin:8px 0 6px;font-size:15px;font-weight:800">아직 올려둔 물건이 없습니다</p>
-         <p style="margin:0 auto 18px;max-width:400px;font-size:13px;line-height:1.6;color:var(--n500)">보유하신 물건을 미리 올려두시면, 조건이 맞는 손님이 들어올 때 바로 알려드립니다.</p>
+         <p style="margin:0 auto 18px;max-width:400px;font-size:13.5px;line-height:1.6;color:var(--n500)">보유하신 물건을 미리 올려두시면, 조건이 맞는 손님이 들어올 때 바로 알려드립니다.</p>
          <button class="btn pri md" data-go="#/partner/listing/new">첫 매물 등록하기</button></div>`}
-    <p style="margin:2px 0 ${isMo()?'12px':'0'};font-size:11.5px;line-height:1.75;color:var(--n500)">
+    <p style="margin:2px 0 ${isMo()?'12px':'0'};font-size:11px;line-height:1.75;color:var(--n500)">
       올리신 물건은 <b style="color:var(--n900)">손님에게 목록으로 공개되지 않습니다.</b> 조건이 맞을 때 보내시는 제안 안에서만 보입니다.</p>
   </div>
   ${tabbar('l','p')}
@@ -4093,21 +4093,21 @@ V["#/partner/listing"] = (id) => {
   const card = ({d,st}) => `
     <div class="card pad fade" style="display:flex;flex-direction:column;gap:10px">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
-        <span style="font-size:13px;font-weight:800;color:var(--ind)">${d.kind==='home'?'주거':'상가'} · ${esc(d.deal)}</span>
+        <span style="font-size:13.5px;font-weight:800;color:var(--ind)">${d.kind==='home'?'주거':'상가'} · ${esc(d.deal)}</span>
         <span style="display:flex;gap:7px;align-items:center">
           ${d.urgent?'<span class="badge b-warn">마감 임박</span>':''}
           <span style="font-size:12.5px;font-weight:700;color:var(--n700)">슬롯 <span class="num">${d.slotsLeft}/5</span></span></span>
       </div>
       <b style="font-size:15px;font-weight:800;letter-spacing:-.02em">${esc(d.region)}</b>
-      <div class="lines" style="font-size:13px">${d.lines.slice(0,2).map(esc).join('<br>')}</div>
-      ${d.memo? `<p style="margin:0;background:var(--ind50);padding:10px 13px;font-size:13px;line-height:1.6;color:var(--ind700);font-style:italic">"${esc(d.memo.length>46?d.memo.slice(0,46)+'…':d.memo)}"</p>`:''}
+      <div class="lines" style="font-size:13.5px">${d.lines.slice(0,2).map(esc).join('<br>')}</div>
+      ${d.memo? `<p style="margin:0;background:var(--ind50);padding:10px 13px;font-size:13.5px;line-height:1.6;color:var(--ind700);font-style:italic">"${esc(d.memo.length>46?d.memo.slice(0,46)+'…':d.memo)}"</p>`:''}
       <div style="border-top:1px solid var(--hair);padding-top:10px;display:flex;flex-wrap:wrap;gap:6px">
-        ${st.slice(0,4).map(v=>`<span class="badge b-ok" style="font-size:10.5px">✓ ${v.k}${v.note?` · ${esc(v.note)}`:''}</span>`).join('')}
-        ${st[4].miss.length? `<span class="badge b-warn" style="font-size:10.5px">${esc(st[4].note)}</span>`
-          : `<span class="badge b-ok" style="font-size:10.5px">✓ 요청 항목 모두 충족</span>`}
+        ${st.slice(0,4).map(v=>`<span class="badge b-ok" style="font-size:11px">✓ ${v.k}${v.note?` · ${esc(v.note)}`:''}</span>`).join('')}
+        ${st[4].miss.length? `<span class="badge b-warn" style="font-size:11px">${esc(st[4].note)}</span>`
+          : `<span class="badge b-ok" style="font-size:11px">✓ 요청 항목 모두 충족</span>`}
       </div>
       <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:2px">
-        <a data-go="#/partner/demand/${d.id}" style="font-size:13px;font-weight:700;color:var(--n500);text-decoration:underline">조건 전문 보기</a>
+        <a data-go="#/partner/demand/${d.id}" style="font-size:13.5px;font-weight:700;color:var(--n500);text-decoration:underline">조건 전문 보기</a>
         <button class="btn pri sm" data-act="propose-with" data-v="${L.id}|${d.id}" style="padding:10px 20px">이 물건으로 제안</button>
       </div></div>`;
   return `
@@ -4117,10 +4117,10 @@ V["#/partner/listing"] = (id) => {
     <a class="back" data-go="#/partner/listings">← 내 물건</a>
     <div class="card pad" style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap">
       <div>
-        <span style="font-size:13px;font-weight:800;color:var(--ind)">${L.kind==='home'?'주거':'상가'} · ${esc(L.kind==='home'?L.deal:L.biz)}</span>
+        <span style="font-size:13.5px;font-weight:800;color:var(--ind)">${L.kind==='home'?'주거':'상가'} · ${esc(L.kind==='home'?L.deal:L.biz)}</span>
         <h1 class="t" style="font-size:${isMo()?21:25}px;margin-top:5px">${esc(L.name)} ${demoTag(L,'vertical-align:middle')}</h1>
         <p class="num" style="margin:6px 0 0;font-size:15px;font-weight:800;color:var(--ind)">${priceOf(L)}</p>
-        <p style="margin:4px 0 0;font-size:13px;color:var(--n500)">${esc(specOf(L))} · 입주 ${esc(L.moveIn)} · 사진 ${L.photos}장</p>
+        <p style="margin:4px 0 0;font-size:13.5px;color:var(--n500)">${esc(specOf(L))} · 입주 ${esc(L.moveIn)} · 사진 ${L.photos}장</p>
       </div>
       <button class="btn sec sm" data-act="del-listing" data-v="${L.id}" style="color:var(--danger)">내리기</button>
     </div>
@@ -4132,7 +4132,7 @@ V["#/partner/listing"] = (id) => {
     </div>
     ${ms.length? `<div style="display:grid;grid-template-columns:repeat(${isMo()?1:2},minmax(0,1fr));gap:16px">${ms.map(card).join('')}</div>`
       : `<div class="empty"><p style="margin:0 0 6px;font-size:15px;font-weight:800">아직 맞는 손님이 없습니다</p>
-         <p style="margin:0 auto;max-width:400px;font-size:13px;line-height:1.6;color:var(--n500)">새 손님이 들어오면 이 물건과 자동으로 대조해 카톡으로 알려드립니다. 그대로 두셔도 됩니다.</p></div>`}
+         <p style="margin:0 auto;max-width:400px;font-size:13.5px;line-height:1.6;color:var(--n500)">새 손님이 들어오면 이 물건과 자동으로 대조해 카톡으로 알려드립니다. 그대로 두셔도 됩니다.</p></div>`}
   </div>
   ${tabbar('l','p')}
 </div>`;};
@@ -4143,7 +4143,7 @@ V["#/brand"] = () => {
     <div style="padding:${isMo()?"24px 18px":"32px 26px"};display:flex;align-items:center;justify-content:center;min-height:${isMo()?96:118}px;background:${bg||"var(--white)"}">${inner}</div>
     <div style="padding:12px 16px;border-top:1px solid var(--hair);background:var(--n50)">
       <b style="display:block;font-size:12.5px;font-weight:700">${t}</b>
-      <span style="font-size:11.5px;color:var(--n500);line-height:1.6">${sub}</span></div></div>`;
+      <span style="font-size:11px;color:var(--n500);line-height:1.6">${sub}</span></div></div>`;
   return `
 <div class="scr fade" style="background:var(--n50)">
   <div class="nav solid pad"><a data-go="#/" style="flex:none">${logoLockup({h:25,tag:!isMo()})}</a>
@@ -4182,8 +4182,8 @@ V["#/brand"] = () => {
         ${WM_DEV.map(([n,fn,why])=>`<div class="card" style="padding:0;overflow:hidden">
           <div style="padding:${isMo()?"34px 20px":"46px 28px"};display:flex;align-items:center;justify-content:center;min-height:${isMo()?110:140}px">${fn({h:isMo()?36:46,m:"light"})}</div>
           <div style="padding:12px 18px;border-top:1px solid var(--hair);background:var(--n50)">
-            <b style="display:block;font-size:13px;font-weight:800">${n}</b>
-            <span style="font-size:11.5px;color:var(--n500);line-height:1.6">${why}</span></div>
+            <b style="display:block;font-size:13.5px;font-weight:800">${n}</b>
+            <span style="font-size:11px;color:var(--n500);line-height:1.6">${why}</span></div>
           <div style="display:flex;border-top:1px solid var(--hair)">
             <div style="flex:1;padding:16px 10px;display:flex;align-items:center;justify-content:center;background:var(--ind)">${fn({h:20,m:"dark"})}</div>
             <div style="flex:1;padding:16px 10px;display:flex;align-items:center;justify-content:center;background:var(--n100)">${fn({h:20,m:"mono"})}</div>
@@ -4194,10 +4194,10 @@ V["#/brand"] = () => {
       <div class="card" style="margin-top:14px;padding:0;overflow:hidden">
         <div style="padding:12px 18px;border-bottom:1px solid var(--hair);background:var(--n50)">
           <b style="font-size:12.5px;font-weight:800">헤더에 얹었을 때</b>
-          <span style="font-size:11.5px;color:var(--n500)"> - 실제로 가장 많이 보이는 크기입니다</span></div>
+          <span style="font-size:11px;color:var(--n500)"> - 실제로 가장 많이 보이는 크기입니다</span></div>
         ${[['D1',{}],['D2',{bw:.05,lw:.07,bl:.30}],['D5',{line:false,bw:.06,bl:.38}],['D6',{flat:true,bw:.06,lw:.085}]]
           .map(([n,op])=>`<div style="display:flex;align-items:center;gap:26px;padding:14px 20px;border-bottom:1px solid var(--hair)">
-            <span style="width:26px;font-size:10.5px;font-weight:800;color:var(--n500)">${n}</span>
+            <span style="width:26px;font-size:11px;font-weight:800;color:var(--n500)">${n}</span>
             ${wmDoor(24,"light",op)}
             <span style="margin-left:auto;display:flex;gap:14px;font-size:13.5px;color:var(--n500)">
               <span>내 조건</span><span>제안함</span></span>
@@ -4212,7 +4212,7 @@ V["#/brand"] = () => {
               <i style="width:18px;height:18px;border-radius:5px;background:${hex};flex:none"></i>
               <span style="font-size:12.5px"><b style="font-weight:800">${k}</b> <span class="num" style="color:var(--n500)">${hex}</span> · ${label}</span></span>`).join("")}
         </div>
-        <p style="margin:11px 0 0;font-size:11.5px;line-height:1.6;color:var(--n500)">
+        <p style="margin:11px 0 0;font-size:11px;line-height:1.6;color:var(--n500)">
           다크 배경에서는 「노크」가 흰색, 「비버」가 58% 흰색이 됩니다. 단색(먹) 인쇄에서도 같은 명도 차를 유지합니다.</p>
       </div>
     </div>
@@ -4226,14 +4226,14 @@ V["#/brand"] = () => {
           <div style="padding:${isMo()?"38px 20px":"48px 24px"};display:flex;align-items:center;justify-content:center;min-height:${isMo()?116:146}px">${wmImpact(isMo()?36:42,"light",k)}</div>
           <div style="padding:12px 16px;border-top:1px solid var(--hair);background:var(--n50);min-height:74px">
             <b style="display:block;font-size:12.5px;font-weight:800">${n}</b>
-            <span style="font-size:11.5px;color:var(--n500);line-height:1.6">${why}</span></div>
+            <span style="font-size:11px;color:var(--n500);line-height:1.6">${why}</span></div>
           <div style="display:flex;border-top:1px solid var(--hair)">
             <div style="flex:1;padding:16px 8px;display:flex;align-items:center;justify-content:center;background:var(--ind)">${wmImpact(19,"dark",k)}</div>
             <div style="flex:1;padding:16px 8px;display:flex;align-items:center;justify-content:center;background:var(--n100)">${wmImpact(19,"mono",k)}</div>
             <div style="flex:1;padding:16px 8px;display:flex;align-items:center;justify-content:center">${wmImpact(13,"light",k)}</div>
           </div></div>`).join("")}
       </div>
-      <p style="margin:12px 0 0;font-size:11.5px;line-height:1.75;color:var(--n500)">
+      <p style="margin:12px 0 0;font-size:11px;line-height:1.75;color:var(--n500)">
         13px 칸을 보십시오 - <b style="color:var(--n900)">K2 버스트 면</b>은 이 크기에서 형태가 뭉개지고,
         <b style="color:var(--n900)">K1·K5·K6</b>은 그대로 읽힙니다. 로고는 큰 화면보다 작은 화면에서 훨씬 자주 보입니다.</p>
     </div>
@@ -4245,19 +4245,19 @@ V["#/brand"] = () => {
           <div style="padding:${isMo()?"26px 18px":"34px 22px"};display:flex;align-items:center;justify-content:center;min-height:${isMo()?86:104}px">${fn(isMo()?30:36,"light")}</div>
           <div style="padding:12px 16px;border-top:1px solid var(--hair);background:var(--n50)">
             <b style="display:block;font-size:12.5px;font-weight:800">${n}</b>
-            <span style="font-size:11.5px;color:var(--n500);line-height:1.6">${why}</span></div></div>`).join("")}
+            <span style="font-size:11px;color:var(--n500);line-height:1.6">${why}</span></div></div>`).join("")}
       </div>
       <div class="card pad" style="margin-top:14px">
         <span class="sect">표기 규칙 - 붙여쓰기 / 띄어쓰기</span>
         <div style="display:grid;grid-template-columns:repeat(${isMo()?1:2},minmax(0,1fr));gap:12px;margin-top:4px">
           <div style="background:var(--n50);padding:14px 16px">
-            <b style="display:block;font-size:13px;margin-bottom:5px">Beaver Knock <span style="font-weight:600;color:var(--n500)">- 띄어쓰기</span></b>
+            <b style="display:block;font-size:13.5px;margin-bottom:5px">Beaver Knock <span style="font-weight:600;color:var(--n500)">- 띄어쓰기</span></b>
             <span style="font-size:12.5px;line-height:1.6;color:var(--n700)">로고·화면·인쇄물·명함·푸터 등 <b style="color:var(--n900)">눈에 보이는 모든 곳</b></span></div>
           <div style="background:var(--n50);padding:14px 16px">
-            <b style="display:block;font-size:13px;margin-bottom:5px">BeaverKnock <span style="font-weight:600;color:var(--n500)">- 붙여쓰기</span></b>
+            <b style="display:block;font-size:13.5px;margin-bottom:5px">BeaverKnock <span style="font-weight:600;color:var(--n500)">- 붙여쓰기</span></b>
             <span style="font-size:12.5px;line-height:1.6;color:var(--n700)"><b style="color:var(--n900)">상표 출원</b> · 도메인 · 이메일 · 코드·파일명</span></div>
         </div>
-        <p style="margin:11px 0 0;font-size:11.5px;line-height:1.6;color:var(--n500)">
+        <p style="margin:11px 0 0;font-size:11px;line-height:1.6;color:var(--n500)">
           출원본은 <b style="color:var(--n900)">단색 검정</b>으로 제출합니다 - 회색조가 섞이면 보호 범위가 좁아질 수 있습니다.
           한글이 항상 주(主)이고, 한 화면에 한글·영문을 나란히 크게 두지 않습니다.</p>
       </div>
@@ -4280,7 +4280,7 @@ V["#/brand"] = () => {
             </div>
             <div style="padding:11px 22px;border-top:1px solid var(--hair);background:var(--n50)">
               <b style="font-size:12.5px;font-weight:800">${n}</b>
-              <span style="font-size:11.5px;color:var(--n500)"> - ${why}</span></div>
+              <span style="font-size:11px;color:var(--n500)"> - ${why}</span></div>
           </div>`).join('')}
       </div>
 
@@ -4297,10 +4297,10 @@ V["#/brand"] = () => {
               <span style="flex:none;width:18px;height:18px;border-radius:50%;border:1.5px solid ${on?'var(--ind)':'var(--n300)'};background:${on?'var(--ind)':'transparent'};display:flex;align-items:center;justify-content:center">
                 ${on?'<i style="width:6px;height:6px;border-radius:50%;background:#fff"></i>':''}</span>
               <span style="flex:1"><b style="display:block;font-size:14px;font-weight:${on?800:600};color:${on?'var(--ind)':'var(--n900)'}">${esc(t)}</b>
-                ${i===0?`<span style="font-size:11.5px;color:var(--n500)">현재 적용본 · 「매물」을 쓰지 않아 표시·광고 논란을 피한다</span>`
-                      :i===1?`<span style="font-size:11.5px;color:var(--n500)">영역(부동산)을 밝힌다 - 처음 듣는 사람에게 더 친절</span>`
-                      :i===2?`<span style="font-size:11.5px;color:var(--n500)">브랜드 문장 그대로 - 가장 기억에 남는다</span>`
-                      :`<span style="font-size:11.5px;color:var(--n500)">동사형. 짧아서 헤더에 잘 맞는다</span>`}</span>
+                ${i===0?`<span style="font-size:11px;color:var(--n500)">현재 적용본 · 「매물」을 쓰지 않아 표시·광고 논란을 피한다</span>`
+                      :i===1?`<span style="font-size:11px;color:var(--n500)">영역(부동산)을 밝힌다 - 처음 듣는 사람에게 더 친절</span>`
+                      :i===2?`<span style="font-size:11px;color:var(--n500)">브랜드 문장 그대로 - 가장 기억에 남는다</span>`
+                      :`<span style="font-size:11px;color:var(--n500)">동사형. 짧아서 헤더에 잘 맞는다</span>`}</span>
             </button>`;}).join('')}
         </div>
       </div>
@@ -4325,10 +4325,10 @@ V["#/brand"] = () => {
         <div style="display:flex;align-items:center;justify-content:center;padding:12px 0">
           <span style="position:relative;display:inline-flex;padding:24px;border:1.4px dashed rgba(61,63,143,.4);border-radius:10px">
             ${logoLockup({h:30})}
-            <span style="position:absolute;left:7px;top:50%;transform:translateY(-50%);font-size:10.5px;font-weight:700;color:var(--ind)">글자높이</span>
+            <span style="position:absolute;left:7px;top:50%;transform:translateY(-50%);font-size:11px;font-weight:700;color:var(--ind)">글자높이</span>
           </span>
         </div>
-        <p style="margin:6px 0 0;font-size:11.5px;line-height:1.6;color:var(--n500)">사방으로 <b style="color:var(--n900)">글자 높이만큼</b> 비웁니다. 잔향 도트도 여백 안에 포함됩니다.</p>
+        <p style="margin:6px 0 0;font-size:11px;line-height:1.6;color:var(--n500)">사방으로 <b style="color:var(--n900)">글자 높이만큼</b> 비웁니다. 잔향 도트도 여백 안에 포함됩니다.</p>
       </div>
       <div class="card pad">
         <span class="sect">금지</span>
@@ -4337,7 +4337,7 @@ V["#/brand"] = () => {
              "비버리(마스코트)를 로고처럼 겹쳐 쓰지 않습니다",
              "잔향 도트의 개수·크기·순서를 바꾸지 않습니다",
              "가로세로 왜곡·그림자·외곽선을 넣지 않습니다"].map(t=>`
-            <span style="display:flex;gap:8px;font-size:13px;line-height:1.6;color:var(--n700)">
+            <span style="display:flex;gap:8px;font-size:13.5px;line-height:1.6;color:var(--n700)">
               <b style="flex:none;color:var(--danger)">✕</b>${t}</span>`).join("")}
         </div>
       </div>
@@ -4348,13 +4348,13 @@ V["#/brand"] = () => {
       ${beaverlyMini(isMo()?96:120)}
       <div style="flex:1;min-width:220px">
         <span class="sect">마스코트 비버리와의 관계</span>
-        <p style="margin:0;font-size:13px;line-height:1.75;color:var(--n700)" class="measure">
+        <p style="margin:0;font-size:13.5px;line-height:1.75;color:var(--n700)" class="measure">
           <b style="color:var(--n900)">비버리는 로고가 아닙니다.</b> 로고는 워드마크만으로 구성하고,
           비버리는 안내·빈 상태·일러스트에서 씁니다. 둘을 나란히 둘 수는 있으나 하나의 로고처럼 붙여 쓰지 않습니다.</p>
       </div>
     </div>
 
-    <p style="margin:0;font-size:11.5px;line-height:1.75;color:var(--n500)">
+    <p style="margin:0;font-size:11px;line-height:1.75;color:var(--n500)">
       비버노크 로고 시스템 v1.1 · 인디고 500 #3D3F8F · Pretendard 800 / 자간 −5.2% · 심볼(문 아이콘) 방향은 폐기</p>
   </div>
 </div>`;};
@@ -4366,7 +4366,7 @@ function modalHTML(){
     const REASONS=['여기서 구했어요','다른 데서 구했어요','당분간 안 구하기로 했어요'];
     return `<div class="modal" data-act="modal-bg"><div class="box" data-stop>
       <h3 style="margin:0 0 6px;font-size:17px;font-weight:800;letter-spacing:-.03em">조건을 종료할까요?</h3>
-      <p style="margin:0 0 18px;font-size:13px;line-height:1.6;color:var(--n500)">사유를 알려주시면 서비스를 고치는 데 큰 도움이 됩니다. <b style="color:var(--n700)">이 답이 저희의 유일한 성과 지표입니다.</b></p>
+      <p style="margin:0 0 18px;font-size:13.5px;line-height:1.6;color:var(--n500)">사유를 알려주시면 서비스를 고치는 데 큰 도움이 됩니다. <b style="color:var(--n700)">이 답이 저희의 유일한 성과 지표입니다.</b></p>
       ${REASONS.map(r=>`<button class="optbtn ${S.modal.reason===r?'on':''}" data-act="close-reason" data-v="${esc(r)}">${esc(r)}</button>`).join('')}
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:16px">
         <button class="btn sec" style="padding:14px 0" data-act="modal-close">취소</button>
@@ -4384,12 +4384,12 @@ function modalHTML(){
       : '표시만 바뀝니다. 열람 권한과는 무관합니다.';
     return `<div class="modal" data-act="modal-bg"><div class="box" data-stop>
       <h3 style="margin:0 0 6px;font-size:17px;font-weight:800;letter-spacing:-.03em">${ids.length}건을 ${esc(label)}${josa(label,'으로','로')} 바꿀까요?</h3>
-      <p style="margin:0 0 14px;font-size:13px;line-height:1.7;color:var(--n500)">${what}</p>
+      <p style="margin:0 0 14px;font-size:13.5px;line-height:1.7;color:var(--n500)">${what}</p>
       <div style="max-height:180px;overflow:auto;background:var(--n50);padding:11px 14px;display:flex;flex-direction:column;gap:6px">
         ${rows.slice(0,12).map(r=>`<span style="font-size:12.5px;line-height:1.5">
           <b style="font-weight:800">${esc(r.name||'-')}</b>
           <span style="color:var(--n500)"> · ${esc(AG_ROLE[r.role]||r.role||'')} · ${esc(r.office||r.addr||r.phone||'')}</span></span>`).join('')}
-        ${rows.length>12?`<span style="font-size:12px;color:var(--n500)">외 ${rows.length-12}건</span>`:''}
+        ${rows.length>12?`<span style="font-size:12.5px;color:var(--n500)">외 ${rows.length-12}건</span>`:''}
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:16px">
         <button class="btn sec" style="padding:14px 0" data-act="modal-close">취소</button>
@@ -4689,7 +4689,7 @@ V['#/ops/live'] = () => {
       <button class="btn pri blk" data-act="ops-load" style="padding:13px 0;font-size:15px" ${OPS.pass?'':'disabled'}>
         ${OPS.loading?'불러오는 중…':'조건 불러오기'}</button>
       ${OPS.err?`<p style="margin:11px 0 0;font-size:12.5px;line-height:1.6;color:var(--danger);font-weight:700">${esc(OPS.err)}</p>`:''}
-      <p style="margin:12px 0 0;font-size:11.5px;line-height:1.6;color:var(--n500)">
+      <p style="margin:12px 0 0;font-size:11px;line-height:1.6;color:var(--n500)">
         암호는 이 화면에만 잠시 남고 저장되지 않습니다. 새로고침하면 다시 물어봅니다.</p>
     </div>` : `
     <div class="chips" style="gap:6px;margin-bottom:14px">
@@ -4725,19 +4725,19 @@ V['#/ops/live'] = () => {
             return todo ? `<span class="badge b-warn">아직 안 보낸 것 ${todo}건</span>` : `<span class="badge b-ok">전부 보냈습니다</span>`; })()}
         </div>
         <div style="display:flex;align-items:center;gap:10px">
-          <span style="font-size:11.5px;color:var(--n500)">${OPS.at?esc(OPS.at.replace('T',' ').slice(0,16)):''} 기준</span>
-          <button class="btn ghost sm" data-act="ops-seen" style="padding:5px 11px;font-size:11.5px">여기까지 확인함</button>
+          <span style="font-size:11px;color:var(--n500)">${OPS.at?esc(OPS.at.replace('T',' ').slice(0,16)):''} 기준</span>
+          <button class="btn ghost sm" data-act="ops-seen" style="padding:5px 11px;font-size:11px">여기까지 확인함</button>
         </div>
       </div>
       ${rows.length===0 ? `<div style="padding:40px 18px;text-align:center">
         <p style="margin:0 0 5px;font-size:15px;font-weight:800">${all.length?'조건에 맞는 접수가 없습니다':'아직 접수된 조건이 없습니다'}</p>
-        <p style="margin:0;font-size:13px;color:var(--n500)">${all.length?'찾는 말이나 거른 조건을 바꿔보세요.':'링크로 조건이 들어오면 여기에 쌓입니다.'}</p></div>`
+        <p style="margin:0;font-size:13.5px;color:var(--n500)">${all.length?'찾는 말이나 거른 조건을 바꿔보세요.':'링크로 조건이 들어오면 여기에 쌓입니다.'}</p></div>`
       : isMo() ? demandCards(rows) : `
       <div style="overflow-x:auto">
-        <table style="width:100%;border-collapse:collapse;font-size:13px;white-space:nowrap">
+        <table style="width:100%;border-collapse:collapse;font-size:13.5px;white-space:nowrap">
           <thead><tr style="background:var(--n50)">
             ${['접수','유형','이름','연락처','지역','예산','핵심 조건','확인'].map(h=>
-              `<th style="text-align:left;padding:10px 14px;font-size:11.5px;font-weight:800;color:var(--n500);letter-spacing:.02em">${h}</th>`).join('')}
+              `<th style="text-align:left;padding:10px 14px;font-size:11px;font-weight:800;color:var(--n500);letter-spacing:.02em">${h}</th>`).join('')}
           </tr></thead>
           <tbody>${rows.map(r=>{
             const shop = NONHOME(r.kind);
@@ -4753,7 +4753,7 @@ V['#/ops/live'] = () => {
             return `<tr class="clickable" data-act="ops-open" data-v="${esc(r.id)}"
               style="border-top:1px solid var(--n100);cursor:pointer;${sent?'opacity:.55;':''}${open?'background:var(--ind50);':''}">
               <td style="padding:11px 14px;color:var(--n500)">
-                ${fresh&&!sent?`<span class="badge b-ind" style="margin-right:6px;background:var(--ind);color:#fff;padding:1px 7px;font-size:10px">NEW</span>`:''}
+                ${fresh&&!sent?`<span class="badge b-ind" style="margin-right:6px;background:var(--ind);color:#fff;padding:1px 7px;font-size:11px">NEW</span>`:''}
                 ${esc(String(r.created_at||'').replace('T',' ').slice(5,16))}</td>
               <td style="padding:11px 14px"><span class="badge ${shop?'b-warn':'b-ok'}">${shop?'상가':'주거'}</span></td>
               <td style="padding:11px 14px;font-weight:700">${esc(r.name||'')}</td>
@@ -4781,7 +4781,7 @@ V['#/ops/live'] = () => {
       </div>`}
     </div>
     `}
-    <p style="margin:12px 0 0;font-size:11.5px;line-height:1.75;color:var(--n500)">
+    <p style="margin:12px 0 0;font-size:11px;line-height:1.75;color:var(--n500)">
       ${OPS.reveal?'<b style="color:var(--danger)">연락처 원문이 보이는 상태입니다.</b> ':''}개인정보는 제공일로부터 3개월 뒤 파기됩니다.
       화면을 벗어나면 암호는 사라집니다.</p>`;
 
@@ -5032,7 +5032,7 @@ function render(){
       <div class="scr" style="align-items:center;justify-content:center;gap:14px;text-align:center;padding:40px 24px">
         <div class="spin" style="width:26px;height:26px;border:2.5px solid var(--ind100);border-top-color:var(--ind);border-radius:50%"></div>
         <b style="font-size:15px;font-weight:800;color:var(--n900)">로그인하고 있습니다</b>
-        <span style="font-size:13px;color:var(--n500)">계정을 확인하는 중입니다. 곧 이어집니다.</span>
+        <span style="font-size:13.5px;color:var(--n500)">계정을 확인하는 중입니다. 곧 이어집니다.</span>
       </div>`;
     S.lastRoute = null;
     return;

@@ -823,6 +823,10 @@ h1.t[style*="font-size:31"],h1.t[style*="font-size:40"],h1.t[style*="font-size:5
   font-feature-settings:"tnum" 1;
 }
 
+/* 안내문이 칸보다 길면 잘리는 대신 살짝 줄어든다 - 글자가 잘린 화면은 값싸 보인다 */
+.inp::placeholder{opacity:.62;letter-spacing:-.01em}
+@media (max-width:400px){ .inp::placeholder{font-size:.94em} }
+
 /* 문단 안에서 끊기면 안 되는 한국어 */
 p,li,dd,.sub,.lines,.opt{line-break:strict;overflow-wrap:break-word}
 
@@ -2032,7 +2036,10 @@ V['#/register'] = () => {
     ${rail(2, shop? w.rail : '조건을 걸어두면<br>맞는 물건이 문을 두드립니다')}
     <div class="formcol"><div class="in">
       <div><h1 class="t" style="font-size:${isMo()?21:25}px">${shop? w.ask : '어떤 집을 찾으세요?'}</h1>
-      <p class="sub">아는 것만 채우셔도 됩니다. <b style="color:var(--ind)">*</b> 표시만 필수입니다.</p></div>
+      <p class="sub">아는 것만 채우셔도 됩니다.
+        <span style="display:inline-flex;align-items:center;gap:5px;vertical-align:-1px">
+          <i style="width:5px;height:5px;border-radius:var(--r-full);background:var(--ind);display:block"></i>
+          <b style="color:var(--n700)">표시만 필수입니다.</b></span></p></div>
 
       ${shop? `
       <div><span class="lab">${w.what} <span class="req">*</span> <span class="opt">${w.whatOpt}</span></span>
@@ -2042,7 +2049,7 @@ V['#/register'] = () => {
 <div><span class="lab">${w.area} <span class="req">*</span> <span class="opt">지도에서 고르거나 검색해서 고르세요 (여러 곳 가능)</span></span>
         <div class="ac" style="margin-bottom:12px">
           <input class="inp" data-in="dongFree" value="${esc(d.dongFree||'')}" autocomplete="off"
-            placeholder="예) 미사, 신장, 강남, 수원 - 적으면 목록이 뜹니다" aria-label="${w.area} 검색">
+            placeholder="예) 미사, 신장, 강남 - 적으면 목록이 뜹니다" aria-label="${w.area} 검색">
           <div class="aclist" data-aclist></div></div>
         ${d.dongs.length?`<div class="chips" style="margin-bottom:12px">${d.dongs.map(x=>`
           <button class="chip on" data-act="dong" data-v="${esc(x)}">${esc(x)} ✕</button>`).join('')}</div>`:''}
@@ -2093,7 +2100,7 @@ V['#/register'] = () => {
 <div><span class="lab">찾으시는 동네 <span class="req">*</span> <span class="opt">지도에서 고르거나 검색해서 고르세요 (여러 곳 가능)</span></span>
         <div class="ac" style="margin-bottom:12px">
           <input class="inp" data-in="dongFree" value="${esc(d.dongFree||'')}" autocomplete="off"
-            placeholder="예) 미사, 덕풍, 강남, 수원 - 적으면 목록이 뜹니다" aria-label="동네 검색">
+            placeholder="예) 미사, 덕풍, 강남 - 적으면 목록이 뜹니다" aria-label="동네 검색">
           <div class="aclist" data-aclist></div></div>
         ${d.dongs.length?`<div class="chips" style="margin-bottom:12px">${d.dongs.map(x=>`
           <button class="chip on" data-act="dong" data-v="${esc(x)}">${esc(x)} ✕</button>`).join('')}</div>`:''}

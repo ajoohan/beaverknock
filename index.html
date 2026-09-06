@@ -1745,7 +1745,7 @@ V['#/'] = () => `
   <!-- 모바일: 세로. 문구가 먼저, 캐릭터는 남는 공간만 -->
   <div style="flex:none;display:flex;flex-direction:column;align-items:center;text-align:center;gap:13px;padding:20px 22px 0;position:relative;z-index:3">
     <span class="badge" style="background:var(--clay100);border:1px solid var(--clay200);color:var(--clay700);padding:7px 17px;font-size:12.5px"><b style="font-weight:800">클로즈 베타</b> · 서울·경기에서 먼저 시작합니다</span>
-    <h1 class="t" style="font-size:31px;letter-spacing:-.052em;line-height:1.32">찾아다니지 마세요.<br>조건을 걸어두면<br><span style="color:var(--ind)">문을 두드립니다.</span></h1>
+    <h1 class="t" style="font-size:31px;line-height:1.32">찾아다니지 마세요.<br>조건을 걸어두면<br><span style="color:var(--ind)">문을 두드립니다.</span></h1>
     <p style="margin:0;font-size:14px;line-height:1.75;color:var(--n700);max-width:30ch">원하는 집·가게의 조건을 남기면, 맞는 물건이 있는 공인중개사가 직접 연락합니다.</p>
   </div>
   <div style="flex:1;min-height:0;position:relative;z-index:2;display:flex;align-items:flex-end;justify-content:center;overflow:hidden">
@@ -1765,7 +1765,7 @@ V['#/'] = () => `
               align-items:center;gap:40px;padding:0 76px;max-width:1320px;margin:0 auto;width:100%">
     <div style="display:flex;flex-direction:column;align-items:flex-start;gap:20px;padding-bottom:28px">
       <span class="badge" style="background:var(--clay100);border:1px solid var(--clay200);color:var(--clay700);padding:7px 17px;font-size:12.5px"><b style="font-weight:800">클로즈 베타</b> · 서울·경기에서 먼저 시작합니다</span>
-      <h1 class="t" style="font-size:56px;letter-spacing:-.052em;line-height:1.14;max-width:15ch;text-align:left">
+      <h1 class="t" style="font-size:56px;line-height:1.14;max-width:15ch;text-align:left">
         찾아다니지 마세요.<br>조건을 걸어두면<br><span style="color:var(--ind);position:relative;display:inline-block">문을 두드립니다.<i style="position:absolute;left:0;right:0;bottom:.06em;height:.14em;background:rgba(201,168,124,.42);border-radius:2px;z-index:-1"></i></span>
       </h1>
       <p style="margin:0;font-size:17px;line-height:1.75;color:var(--n700);max-width:38ch;text-align:left">
@@ -3323,7 +3323,7 @@ V['#/partner'] = () => `
   <div class="pad" style="flex:1;display:flex;align-items:center;gap:40px">
    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:22px;max-width:${isMo()?'none':'820px'}">
     <span style="align-self:flex-start;font-size:12.5px;font-weight:800;color:#9AA3BF;border:1px solid var(--navy600);border-radius:var(--r-full);padding:8px 18px">클로즈 베타 · 서울·경기에서 먼저 시작합니다</span>
-    <h1 class="t" style="font-size:${isMo()?25:40}px;color:#fff;line-height:1.28;letter-spacing:-.052em;max-width:20ch">서울·경기에서 집·가게를 구하는 손님이<br><span style="color:var(--ind300)">조건을 걸어두고</span> 기다리고 있습니다</h1>
+    <h1 class="t" style="font-size:${isMo()?25:40}px;color:#fff;line-height:1.28;max-width:20ch">서울·경기에서 집·가게를 구하는 손님이<br><span style="color:var(--ind300)">조건을 걸어두고</span> 기다리고 있습니다</h1>
     <p style="margin:0;font-size:${isMo()?14:17}px;line-height:1.75;color:#9AA3BF"><b style="color:#F0EDE7">제안을 보내는 데 드는 비용은 없습니다. 매물을 올리실 필요도 없습니다.</b><br class="mbr"> 네이버·직방에 올리는 광고비와 다릅니다 - 이미 원하는 게 정해진 손님입니다.</p>
     <div style="display:flex;align-items:center;gap:18px;${isMo()?'flex-direction:column;align-items:stretch':''}">
       <button class="btn ${isMo()?'blk':''}" data-go="#/partner/join" style="background:var(--ind300);color:#fff;padding:17px 40px;font-size:17px">파트너로 가입하기</button>

@@ -53,6 +53,42 @@ export default async function handler(req, res) {
     if (!d) return res.status(404).json({ error: '없는 조건입니다' });
     if (!(d.slots_left > 0)) return res.status(409).json({ error: '이 조건은 제안이 마감됐습니다' });
 
+    /* 자리를 먼저 잡고 넣는다.
+       읽은 값 그대로일 때만 줄이도록 걸어(compare-and-swap) 두 사람이 동시에
+       마지막 자리를 가져가는 것을 막는다 - 그냥 읽고 빼면 둘 다 성공해서
+       '조건 1건당 5곳' 약속이 깨진다. 넣다 실패하면 자리를 돌려준다. */
+    const take = async () => {
+      let cur = d.slots_left;
+      for (let i = 0; i < 4; i++) {
+        if (!(cur > 0)) return { full: true };
+        const rr = await fetch(sbUrl('bk_demand', `id=eq.${demandId}&slots_left=eq.${cur}`), {
+          method: 'PATCH', headers: { ...sbHeaders(), Prefer: 'return=representation' },
+          body: JSON.stringify({ slots_left: cur - 1 }),
+        });
+        if (!rr.ok) return { error: await rr.text() };
+        const got = await rr.json().catch(() => []);
+        if (got.length) return { left: cur - 1 };
+        /* 그 사이 누가 가져갔다 - 다시 읽고 한 번 더 */
+        const again = await fetch(sbUrl('bk_demand', `select=slots_left&id=eq.${demandId}&limit=1`), { headers: sbHeaders() });
+        if (!again.ok) return { error: await again.text() };
+        cur = ((await again.json())[0] || {}).slots_left;
+      }
+      return { busy: true };
+    };
+    const seat = await take();
+    if (seat.full)  return res.status(409).json({ error: '이 조건은 제안이 마감됐습니다' });
+    if (seat.busy)  return res.status(409).json({ error: '다른 분이 먼저 보내는 중입니다 - 잠시 후 다시 시도해 주세요' });
+    if (seat.error) { console.error('[proposal] 슬롯 확보 실패', String(seat.error).slice(0, 200));
+      return res.status(502).json({ error: '제안을 보내지 못했습니다' }); }
+
+    /* 자리를 잡았으니, 넣다 실패하면 반드시 돌려준다 */
+    const giveBack = async () => {
+      await fetch(sbUrl('bk_demand', `id=eq.${demandId}&slots_left=eq.${seat.left}`), {
+        method: 'PATCH', headers: { ...sbHeaders(), Prefer: 'return=minimal' },
+        body: JSON.stringify({ slots_left: seat.left + 1 }),
+      }).catch(e => console.error('[proposal] 슬롯 반납 실패', e && e.message));
+    };
+
     const row = {
       demand_id: demandId, agent_id: chk.agent.id, agent_user: user.id,
       addr, bname: str(b.bname, 80),
@@ -71,6 +107,7 @@ export default async function handler(req, res) {
     });
     if (!ir.ok) {
       const t = await ir.text();
+      await giveBack();
       if (/duplicate key|23505/i.test(t)) {
         return res.status(409).json({ error: '이미 제안하신 물건입니다 - 같은 주소는 한 번만 보낼 수 있습니다' });
       }
@@ -82,24 +119,18 @@ export default async function handler(req, res) {
     }
     const saved = (await ir.json())[0] || {};
 
-    /* 슬롯을 하나 줄인다. 실패해도 제안은 이미 들어갔으니 접수는 성공이다. */
-    await fetch(sbUrl('bk_demand', 'id=eq.' + demandId), {
-      method: 'PATCH', headers: { ...sbHeaders(), Prefer: 'return=minimal' },
-      body: JSON.stringify({ slots_left: Math.max(0, (d.slots_left || 1) - 1) }),
-    }).catch(() => {});
-
     await notify(req, {
       subject: `새 제안 · ${(d.dongs || []).join(' · ') || '서울·경기'}`,
       rows: [
         ['사무소', chk.agent.office || '-'],
         ['물건', row.bname || row.addr],
         ['가격', `보증금 ${row.dep ?? 0}만${row.rent ? ` / 월 ${row.rent}만` : ''}`],
-        ['남은 슬롯', String(Math.max(0, (d.slots_left || 1) - 1))],
+        ['남은 슬롯', String(seat.left)],
       ],
       link: '/#/ops/live',
     });
 
-    return res.status(201).json({ ok: true, id: saved.id, slots_left: Math.max(0, (d.slots_left || 1) - 1) });
+    return res.status(201).json({ ok: true, id: saved.id, slots_left: seat.left });
   } catch (e) {
     console.error('[proposal]', e && e.message);
     return res.status(502).json({ error: 'DB에 닿지 못했습니다' });

@@ -47,7 +47,13 @@ export default async function handler(req, res) {
   let b = req.body;
   if (typeof b === 'string') { try { b = JSON.parse(b); } catch { b = {}; } }
   b = b || {};
-  const kinds = Array.isArray(b.kinds) ? b.kinds.filter(k => KIND_KO[k]) : [];
+  /* 빈 배열은 '가리지 않는다' 가 아니라 '아무것도 안 받겠다' 는 뜻이다.
+     지역은 그렇게 막아뒀는데 유형만 반대로 열려 있었다. */
+  const kinds = Array.isArray(b.kinds) ? b.kinds.filter(k => KIND_KO[k]) : Object.keys(KIND_KO);
+  if (!kinds.length) {
+    return res.status(200).json({ ok: true, agent: { id: chk.agent.id, office: chk.agent.office || null },
+      hidden: { region: 0, slot: 0, kind: 1 }, at: new Date().toISOString(), rows: [] });
+  }
   const regions = (Array.isArray(b.regions) ? b.regions : []).map(norm).filter(Boolean);
 
   try {
@@ -57,7 +63,7 @@ export default async function handler(req, res) {
             + 'key_ok,sign_need,park_need,shop_note,spec,memo,slots,slots_left',
       order: 'created_at.desc', limit: '200',
     });
-    if (kinds.length) q.set('kind', `in.(${kinds.join(',')})`);
+    q.set('kind', `in.(${kinds.join(',')})`);
     const r = await fetch(sbUrl('bk_demand', q.toString()), { headers: sbHeaders() });
     if (!r.ok) return res.status(502).json({ error: '조건을 불러오지 못했습니다' });
     let rows = await r.json();
@@ -77,9 +83,11 @@ export default async function handler(req, res) {
     /* 내가 이미 보낸 조건은 표시해 준다 */
     let mine = new Set();
     if (rows.length) {
+      /* 조건 id 를 전부 URL 에 싣지 않는다 - 200개면 7KB 가 넘어 414 로 잘린다.
+         내가 보낸 것만 받아와서 여기서 맞춰본다. */
       const pq = new URLSearchParams({
         select: 'demand_id', agent_id: 'eq.' + chk.agent.id,
-        demand_id: `in.(${rows.map(x => x.id).join(',')})`, limit: '200',
+        order: 'created_at.desc', limit: '1000',
       });
       const pr = await fetch(sbUrl('bk_proposal', pq.toString()), { headers: sbHeaders() });
       if (pr.ok) for (const p of await pr.json()) mine.add(p.demand_id);

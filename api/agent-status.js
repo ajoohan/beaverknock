@@ -59,12 +59,16 @@ export default async function handler(req, res) {
         apikey: BK_SECRET_KEY,
         Authorization: 'Bearer ' + BK_SECRET_KEY,
         'Content-Type': 'application/json',
-        Prefer: 'return=minimal',
+        /* 몇 건이 실제로 바뀌었는지 받아야 한다. minimal 로 두면 한 건도
+           안 바뀌어도 200 이 와서, 운영자는 승인했다고 믿고 중개사는 계속 막힌다. */
+        Prefer: 'return=representation',
       },
       body: JSON.stringify({ status: p.status }),
     });
     if (!r.ok) return res.status(500).json({ error: '상태를 바꾸지 못했습니다' });
-    return res.status(200).json({ ok: true, status: p.status, count: ids.length });
+    const changed = (await r.json().catch(() => [])).length;
+    if (!changed) return res.status(404).json({ error: '바뀐 건이 없습니다 - 목록을 새로고침해 주세요', count: 0 });
+    return res.status(200).json({ ok: true, status: p.status, count: changed, asked: ids.length });
   } catch (e) {
     return res.status(500).json({ error: '상태 변경 중 문제가 생겼습니다' });
   }

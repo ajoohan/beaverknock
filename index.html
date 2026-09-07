@@ -1562,7 +1562,11 @@ function condFromRow(d){
 /* 서버는 sent·read·accepted·rejected·withdrawn 로 적고,
    화면은 sent·viewed·selected·rejected·withdrawn 로 읽는다.
    옮기지 않으면 새로고침한 순간 '연결됨' 이 사라진다. */
-const P_STATUS = { read:'viewed', accepted:'selected', rejected:'hidden', reported:'hidden' };
+/* withdrawn 은 중개사가 거둔 것이다 - 손님 제안함에서도 빠져야 한다.
+   회수를 서버로 잇고서 이 줄을 안 고쳤으면, 거둔 제안이 손님에게는
+   그대로 남아 있었을 것이다. */
+const P_STATUS = { read:'viewed', accepted:'selected', rejected:'hidden',
+  reported:'hidden', withdrawn:'hidden' };
 /* 중개사가 보낸 제안 - 서버에서 가져온다.
    지금까지 이 목록은 그 브라우저 메모리에만 있어서, 새로고침하면 방금 보낸
    제안이 사라지고 예시만 남았다. */

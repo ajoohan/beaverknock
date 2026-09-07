@@ -1117,7 +1117,7 @@ const blankDraft = () => ({who:'',kind:'',deal:'',dongs:[],dep:'',rent:'',htype:
   headcount:'',bldType:'',ceilH:'',dock:'',temp:'',
   biz:'',areaMin:'',areaMax:'',key:'',
   memo:'',floor:'',house:'',loan:'',name:'',phone:'',pref:'문자·카톡',times:[],a1:false,a2:false,a3:false,
-  verified:false, vmethod:'', vstep:'idle', birth:'', carrier:'', vcode:'', vat:''});
+  verified:false, vmethod:'', vstep:'idle', birth:'', vat:''});
 
 const SEED_PROPOSALS = [
   {seed:true, id:'p1', cond:'c1', isNew:true, read:false, photos:3, title:'미사강변 ○○아파트 · 3룸', dong:'미사1동',
@@ -5654,10 +5654,8 @@ document.addEventListener('input', e=>{
   if(k in S.draft){ S.draft[k]=v;
     if(k==='memo'){ const g=$('#app .gauge i'), t=$('#app [data-pct]');
       const p=detailPct(S.draft); if(g) g.style.width=p+'%'; if(t) t.textContent=`지금 ${p}%`; }
-    if(k==='vcode'){ S.draft.vcode = v.replace(/[^0-9]/g,'').slice(0,6);
-      const b=$('#app [data-act="v-confirm"]'); if(b) b.disabled = S.draft.vcode.length!==6; return; }
     if(k==='phone'){ S.draft.phone = autoHyphen(el); }
-    if(k==='name'||k==='phone'||k==='birth'){ toggleSubmit(); }
+    if(k==='name'||k==='phone'){ toggleSubmit(); }
   }
 });
 function refreshLoginBtn(){

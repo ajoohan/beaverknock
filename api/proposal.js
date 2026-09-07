@@ -7,7 +7,7 @@
  * PATCH 손님이 상태를 바꾼다 - 자기 조건에 온 제안만
  */
 
-import { userFrom, sbHeaders, sbUrl } from './_auth.js';
+import { userFrom, sbHeaders, sbUrl, emailOf } from './_auth.js';
 import { approvedAgent } from './feed.js';
 import { notify } from './_notify.js';
 
@@ -17,6 +17,7 @@ const num = v => { const n = parseFloat(v); return Number.isFinite(n) ? n : null
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const MINE = ['read', 'accepted', 'rejected'];       /* 손님이 바꿀 수 있는 상태 */
+const ROLE_KO = { agent: '공인중개사', owner: '소유자', developer: '시행사' };
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
@@ -119,16 +120,44 @@ export default async function handler(req, res) {
     }
     const saved = (await ir.json())[0] || {};
 
-    await notify(req, {
-      subject: `새 제안 · ${(d.dongs || []).join(' · ') || '서울·경기'}`,
-      rows: [
-        ['사무소', chk.agent.office || '-'],
-        ['물건', row.bname || row.addr],
-        ['가격', `보증금 ${row.dep ?? 0}만${row.rent ? ` / 월 ${row.rent}만` : ''}`],
-        ['남은 슬롯', String(seat.left)],
-      ],
-      link: '/#/ops/live',
-    });
+    const where = (d.dongs || []).join(' · ') || '서울·경기';
+    const price = `보증금 ${row.dep ?? 0}만${row.rent ? ` / 월 ${row.rent}만` : ''}`;
+
+    /* 메일 둘을 나란히 보낸다.
+       줄줄이 기다리면 제안을 보낸 중개사가 그만큼 더 서 있는다.
+       손님 주소를 찾는 일도 운영자 메일과 겹쳐서 돌린다. */
+    const toP = emailOf(d.user_id);
+
+    /* 손님에게 알리는 쪽이 핵심이다.
+       걸어두고 잊는 서비스다. 제안이 와도 다시 들어와 보지 않으면 모르고,
+       모르는 사이에 자리가 차고 조건이 만료된다.
+       메일에는 소재지도 사무소 이름도 담지 않는다 - 그건 로그인해서 볼 것이고,
+       손님이 알 것은 '누가' 가 아니라 '어떤 자격의 사람인가' 까지다. */
+    await Promise.all([
+      notify(req, {
+        subject: `새 제안 · ${where}`,
+        rows: [
+          ['사무소', chk.agent.office || '-'],
+          ['물건', row.bname || row.addr],
+          ['가격', price],
+          ['남은 슬롯', String(seat.left)],
+        ],
+        link: '/#/ops/live',
+      }),
+      toP.then(to => to && notify(req, {
+        to,
+        subject: `${where}에 새 제안이 도착했습니다`,
+        rows: [
+          ['지역', where],
+          ['보낸 곳', ROLE_KO[chk.agent.role] || '공인중개사'],
+          ['가격', price],
+          ['남은 자리', `${seat.left}곳`],
+        ],
+        link: '/#/inbox',
+        cta: '제안 보러 가기',
+        note: '사진과 자세한 내용은 비버노크에서 확인하실 수 있습니다. 연락처는 연결을 누르시기 전까지 어느 쪽에도 넘어가지 않습니다.',
+      })),
+    ]);
 
     return res.status(201).json({ ok: true, id: saved.id, slots_left: seat.left });
   } catch (e) {

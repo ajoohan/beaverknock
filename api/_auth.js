@@ -56,3 +56,21 @@ export const sbHeaders = () => ({
 });
 export const sbUrl = (path, q) =>
   `${process.env.BK_URL}/rest/v1/${path}${q ? '?' + q : ''}`;
+
+/* 손님에게 알림을 보내려면 계정 메일이 필요하다.
+   조건 접수에서는 전화번호만 받는다 - 메일 주소는 로그인 계정 쪽에만 있다.
+   실패하면 null 을 준다. 메일 하나 때문에 제안이 막히면 안 된다. */
+export async function emailOf(userId) {
+  const { BK_URL, BK_SECRET_KEY } = process.env;
+  if (!BK_URL || !BK_SECRET_KEY || !userId) return null;
+  try {
+    const r = await fetch(`${BK_URL}/auth/v1/admin/users/${encodeURIComponent(userId)}`, {
+      headers: { apikey: BK_SECRET_KEY, Authorization: 'Bearer ' + BK_SECRET_KEY },
+    });
+    if (!r.ok) return null;
+    const j = await r.json();
+    return (j && j.email) || null;
+  } catch (e) {
+    return null;
+  }
+}

@@ -1,12 +1,18 @@
-/* 새 접수 알림 — 들어온 걸 알아야 움직인다.
+/* 알림 메일 — 들어온 걸 알아야 움직인다.
+ *
+ * 받는 사람은 둘이다.
+ *   운영자 - 새 접수가 들어왔다 (기본)
+ *   손님   - 내 조건에 제안이 왔다 (to 를 넘기면)
+ * 손님 쪽이 없으면 서비스가 성립하지 않는다. 걸어두고 잊는 서비스인데
+ * 제안이 온 걸 알려주지 않으면, 자리가 다 차고 조건이 만료될 때까지 모른다.
  *
  * api/ 안에 두고 이름을 _ 로 시작한다. 그러면 라우트가 되지도 않고
  * 정적 파일로 서빙되지도 않는다. lib/ 에 두면 웹으로 그대로 열린다.
  *
  * 원칙 둘.
  *  ① 알림 때문에 접수가 실패하면 안 된다. 메일이 안 가도 조건은 저장된다.
- *  ② 메일은 가장 허술한 통로다. 이름과 지역까지만 담고 연락처는 가린다.
- *     전체는 운영 화면에서 암호를 넣고 본다.
+ *  ② 메일은 가장 허술한 통로다. 지역과 값까지만 담고 연락처·소재지는 뺀다.
+ *     전체는 로그인해서(운영자는 암호를 넣고) 화면에서 본다.
  *
  * 필요한 환경변수
  *   RESEND_API_KEY   Resend API 키
@@ -31,17 +37,17 @@ export async function notify(req, opts) {
   try { return await send(req, opts); } catch (e) { return { skipped: 'error', detail: e && e.message }; }
 }
 
-async function send(req, { subject, rows, link }) {
+async function send(req, { subject, rows, link, to: toArg, cta, note }) {
   const key = process.env.RESEND_API_KEY;
   if (!key) return { skipped: 'no key' };
 
-  const to   = process.env.ALERT_TO   || 'beaverknock@gmail.com';
+  const to   = toArg || process.env.ALERT_TO || 'beaverknock@gmail.com';
   const from = process.env.ALERT_FROM || '비버노크 <noreply@rawpick.co.kr>';
   const host = process.env.ALERT_SITE
     || `https://${req.headers['x-forwarded-host'] || req.headers.host || 'beaverknockkorea.vercel.app'}`;
 
   const body = rows.map(([k, v]) =>
-    `<tr><td style="padding:7px 14px 7px 0;color:#857F76;font-size:13px;white-space:nowrap">${esc(k)}</td>` +
+    `<tr><td style="padding:7px 14px 7px 0;color:#6E6859;font-size:13px;white-space:nowrap">${esc(k)}</td>` +
     `<td style="padding:7px 0;color:#1F1D1A;font-size:14px;font-weight:600">${esc(v)}</td></tr>`).join('');
 
   const html = `<div style="font-family:-apple-system,'Malgun Gothic',sans-serif;max-width:520px;margin:0 auto;padding:26px 22px">
@@ -49,9 +55,9 @@ async function send(req, { subject, rows, link }) {
     <h1 style="margin:8px 0 18px;font-size:19px;font-weight:800;letter-spacing:-.02em;color:#1F1D1A">${esc(subject)}</h1>
     <table style="border-collapse:collapse;width:100%">${body}</table>
     <a href="${host}${link}" style="display:inline-block;margin-top:22px;padding:12px 22px;border-radius:10px;
-      background:#3D3F8F;color:#fff;font-size:14px;font-weight:700;text-decoration:none">운영 화면에서 보기</a>
-    <p style="margin:18px 0 0;font-size:11.5px;line-height:1.7;color:#857F76">
-      연락처는 가려서 보냅니다. 전체 내용은 운영 화면에서 암호를 넣고 확인하세요.</p>
+      background:#3D3F8F;color:#fff;font-size:14px;font-weight:700;text-decoration:none">${esc(cta || '운영 화면에서 보기')}</a>
+    <p style="margin:18px 0 0;font-size:11.5px;line-height:1.7;color:#6E6859">
+      ${esc(note || '연락처는 가려서 보냅니다. 전체 내용은 운영 화면에서 암호를 넣고 확인하세요.')}</p>
   </div>`;
 
   try {

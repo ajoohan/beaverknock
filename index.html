@@ -37,7 +37,9 @@
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
 body{font-family:var(--font);background:#E7E4DF;color:var(--n900);-webkit-font-smoothing:antialiased;
-  -moz-osx-font-smoothing:grayscale;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:0 0 60px}
+  -moz-osx-font-smoothing:grayscale;min-height:100vh;display:flex;flex-direction:column;align-items:center}
+/* 바닥 여백을 두지 않는다. #stage 가 이미 100dvh 라 화면을 꽉 채우는데,
+   그 아래로 60px 이 더 붙으면 창이 딱 그만큼 스크롤되고 회색 바닥이 드러난다. */
 /* 한글 조판 규칙: 어절(띄어쓰기) 단위로만 끊고, 긴 영문·숫자는 강제 줄바꿈 허용 */
 #app,#app *{word-break:keep-all;overflow-wrap:break-word;line-break:strict}
 #app h1,#app h2,#app h3,#app .t,#app b{text-wrap:balance}
@@ -3780,14 +3782,14 @@ V["#/partner/join"] = () => {
       <button class="btn pri" data-act="j-check" style="flex:none;padding:0 24px" ${f.jChecking?'disabled':''}>${f.jChecking?'확인 중…':'확인'}</button></div>
     <span data-warn="jreg" class="warn">${esc(f.jRegErr||'')}</span>
     ${f.jCheck ? (f.jCheck.verified ? `
-      <div class="card pad" style="margin-top:14px;border-color:#A5CDB6;background:var(--okbg)">
+      <div class="card pad" data-jcheck style="margin-top:14px;border-color:#A5CDB6;background:var(--okbg)">
         <span class="badge b-ok" style="margin-bottom:8px">공공데이터 확인됨</span>
         <b style="display:block;font-size:15px;font-weight:800">${esc(f.jCheck.office||'등록된 사무소')}</b>
         <span style="display:block;font-size:13.5px;line-height:1.7;color:var(--n700);margin:6px 0 14px">
           ${[f.jCheck.rep&&('대표 '+f.jCheck.rep), f.jCheck.addr, f.jCheck.state, f.jCheck.since].filter(Boolean).map(esc).join(' · ')}<br>
           등록번호 ${esc(f.jCheck.reg_no)}</span>
         <button class="btn blk" data-act="j-confirm" style="background:var(--ok);color:#fff;padding:14px 0">제 사무소가 맞습니다</button></div>` : `
-      <div class="card pad" style="margin-top:14px;background:var(--n50);box-shadow:none">
+      <div class="card pad" data-jcheck style="margin-top:14px;background:var(--n50);box-shadow:none">
         <span class="badge b-warn" style="margin-bottom:8px">형식만 확인</span>
         <b style="display:block;font-size:14px;font-weight:800">${esc(f.jCheck.reg_no)}</b>
         <p style="margin:6px 0 14px;font-size:12.5px;line-height:1.75;color:var(--n700)">${esc(f.jCheck.note||'')}</p>
@@ -5464,9 +5466,17 @@ document.addEventListener('click', e=>{
 document.addEventListener('input', e=>{
   const el=e.target.closest('[data-in]'); if(!el) return;
   const k=el.dataset.in, v=el.value;
-  if(k==='j-phone'){ S.form[k] = autoHyphen(el); return; }
-  if(k==='j-reg'){ S.form[k]=v; S.form.jCheck=null; S.form.jRegErr=''; render(); return; }
-  if(k.startsWith('j-')){ S.form[k]=v; render(); return; }
+  if(k==='j-phone'){ S.form[k] = autoHyphen(el); refreshJoin(); return; }
+  if(k==='j-reg'){ S.form[k]=v;
+    /* 방금 바꾼 번호와 확인 결과는 더 이상 같은 것이 아니다 - 치운다.
+       여기서 render() 하면 입력 칸이 교체돼 두 번째 글자가 안 들어간다. */
+    if(S.form.jCheck || S.form.jRegErr){
+      S.form.jCheck=null; S.form.jRegErr='';
+      const w=$('#app [data-warn="jreg"]'); if(w) w.textContent='';
+      const card=$('#app [data-jcheck]'); if(card) card.remove();
+    }
+    return; }
+  if(k.startsWith('j-')){ S.form[k]=v; refreshJoin(); return; }
   if(k.startsWith('sc-')){ S.scope[k.slice(3)] = v; render(); return; }
   if(k.startsWith('l') && S.route.startsWith('#/partner/listing')){ S.form[k]=v; refreshListingBtn(); return; }
   if(['addr','bname','area','areaSup','dep','rent','fee','feeItems','approved','rooms','baths','floorNo','msg'].includes(k) && S.route.startsWith('#/partner/propose')){
@@ -5506,6 +5516,20 @@ function refreshLoginBtn(){
   put('pw',    S.pw    && !pwOk    ? '8자 이상으로 만들어 주세요' : '');
   put('pw2',   S.pw2 ? (S.pw2===S.pw ? '비밀번호가 일치합니다' : '비밀번호가 서로 다릅니다') : '',
                S.pw2 && S.pw2===S.pw);
+}
+/* 파트너 가입 폼은 글자 하나마다 다시 그리면 안 된다.
+   render() 가 #app 을 통째로 갈아끼우는 구조라 입력 칸이 교체되면서 포커스가
+   날아가고, 두 번째 글자부터 아무 데도 들어가지 않는다 - 이름이 안 써졌다.
+   값에 따라 바뀌는 것은 경고 문구와 버튼 색뿐이니 그 둘만 고친다. */
+function refreshJoin(){
+  const f = S.form;
+  const nameOk  = (f['j-name']||'').trim().length >= 2;
+  const phoneOk = phoneOk2(f['j-phone']||'');
+  const put = (k, msg) => { const el=$(`#app [data-warn="${k}"]`); if(el) el.textContent = msg; };
+  put('jname',  (f['j-name']||'')  && !nameOk  ? '성함을 정확히 적어주세요' : '');
+  put('jphone', (f['j-phone']||'') && !phoneOk ? '번호를 확인해 주세요' : '');
+  const b = $('#app [data-act="j-pass"]');
+  if(b){ const ok = nameOk && phoneOk; b.classList.toggle('pri', ok); b.classList.toggle('sec', !ok); }
 }
 function toggleSubmit(){ const d=S.draft;
   const ok = d.verified && phoneOk(d.phone) && d.a1 && d.a2;

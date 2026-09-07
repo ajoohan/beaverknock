@@ -1189,7 +1189,7 @@ const S = {
   listings:JSON.parse(JSON.stringify(SEED_LISTINGS)),
   scope:JSON.parse(JSON.stringify(SCOPE_DEFAULT)),
   myprops:JSON.parse(JSON.stringify(SEED_MYPROP)),
-  inboxCond:'c1', modal:null, form:{}, timer:null, timeLeft:900, connecting:false, sentAddr:{}, matched:0,
+  inboxCond:'c1', modal:null, form:{}, timer:null, timeLeft:900, connecting:false, rejecting:false, sentAddr:{}, matched:0,
   vtimer:null, vsec:180, geo:null, geoState:'idle', geoTried:false, saved:false, lastRoute:null, enterT:null,
   user:null, afterLogin:null, email:'', pw:'', pw2:'', signup:false,
   idvCfg:null, idvBusy:false, idvToken:null,
@@ -1559,7 +1559,7 @@ function condFromRow(d){
 /* 서버는 sent·read·accepted·rejected·withdrawn 로 적고,
    화면은 sent·viewed·selected·rejected·withdrawn 로 읽는다.
    옮기지 않으면 새로고침한 순간 '연결됨' 이 사라진다. */
-const P_STATUS = { read:'viewed', accepted:'selected' };
+const P_STATUS = { read:'viewed', accepted:'selected', rejected:'hidden' };
 function propFromRow(p){
   return {
     id:p.id, cond:p.demand_id, isNew:p.status==='sent', read:p.status!=='sent',
@@ -5850,13 +5850,26 @@ function handle(a,v,el){
       if(S.inboxCond===c.id){ const alt=S.conds.find(x=>x.status!=='closed'); if(alt) S.inboxCond=alt.id; }
       S.modal=null; toast('종료했습니다 · 알려주셔서 감사합니다'); render(); return true; }
 
-    case 'reject': { const p=S.props.find(x=>x.id===v); p.status='hidden';
-      const c=S.conds.find(x=>x.id===p.cond); c.returned=(c.returned||0);
-      const d=S.demands.find(x=>x.region && x.id===p.demandId);
-      if(c.returned<2){ c.returned++; if(d) d.slotsLeft=Math.min(c.slots,d.slotsLeft+1);
-        toast(`관심 없음으로 표시했습니다 · 슬롯을 반환했습니다 (${c.returned}/2)`); }
-      else toast('관심 없음으로 표시했습니다 · 슬롯 반환은 조건당 2회까지입니다');
-      go('#/inbox'); return true; }
+    case 'reject': {
+      const p=S.props.find(x=>x.id===v); if(!p) return true;
+      /* 예시 카드는 서버에 없다 - 화면에서만 치운다 */
+      if(p.seed){ p.status='hidden'; toast('관심 없음으로 표시했습니다'); go('#/inbox'); return true; }
+      if(S.rejecting) return true;
+      S.rejecting=true; render();
+      apiFetch('/api/proposal', {method:'PATCH', body: JSON.stringify({id:v, status:'rejected'})})
+        .then(r => r.json().catch(()=>({})).then(j => {
+          S.rejecting=false;
+          if(!(r.ok && j.ok)){ render(); return toast(j.error || '표시하지 못했습니다'); }
+          p.status='hidden';
+          /* 몇 번 돌려받았는지는 서버가 센다 - 화면이 따로 세면 새로고침에 어긋난다 */
+          const c=S.conds.find(x=>x.id===p.cond);
+          if(c && j.slots_left!=null) c.slotsLeft = j.slots_left;
+          toast(j.refunded ? `관심 없음으로 표시했습니다 · 슬롯을 반환했습니다 (${j.returned}/2)`
+                           : '관심 없음으로 표시했습니다 · 슬롯 반환은 조건당 2회까지입니다');
+          S.mineAt = 0; go('#/inbox');
+        }))
+        .catch(()=>{ S.rejecting=false; render(); toast('네트워크 문제로 표시하지 못했습니다'); });
+      return true; }
     case 'report': go('#/report/'+v); return true;
     case 'report-type': S.form.reportType=v; render(); return true;
     case 'do-report': { const p=S.props.find(x=>x.id===v); p.status='hidden'; S.form={};

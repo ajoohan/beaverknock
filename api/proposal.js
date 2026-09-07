@@ -188,7 +188,8 @@ async function patch(req, res, user, b) {
     if (!p) return res.status(404).json({ error: '없는 제안입니다' });
 
     const dq = new URLSearchParams({
-      select: 'id,name,phone,dongs', id: 'eq.' + p.demand_id, user_id: 'eq.' + user.id, limit: '1',
+      select: 'id,name,phone,dongs,slots,slots_left,returned',
+      id: 'eq.' + p.demand_id, user_id: 'eq.' + user.id, limit: '1',
     });
     const dr = await fetch(sbUrl('bk_demand', dq.toString()), { headers: sbHeaders() });
     if (!dr.ok) return res.status(502).json({ error: '조건을 확인하지 못했습니다' });
@@ -208,6 +209,13 @@ async function patch(req, res, user, b) {
     const first = status === 'accepted' && !p.connected_at;
     if (first) body.connected_at = new Date().toISOString();
 
+    /* 거절이면 슬롯을 돌려준다.
+       조건당 2회까지다 - 무제한이면 마음에 안 드는 제안을 계속 물리면서
+       중개사만 끝없이 불러들이게 된다.
+       이미 거절한 것을 또 눌러도 두 번 돌려주지 않는다. */
+    let refund = null;
+    if (status === 'rejected' && p.status !== 'rejected') refund = await giveSlotBack(d);
+
     let agent = null;
     if (status === 'accepted') {
       const aq = new URLSearchParams({
@@ -224,7 +232,12 @@ async function patch(req, res, user, b) {
     });
     if (!ur.ok) return res.status(502).json({ error: '상태를 바꾸지 못했습니다' });
 
-    if (status !== 'accepted') return res.status(200).json({ ok: true, status });
+    if (status !== 'accepted') {
+      return res.status(200).json({ ok: true, status,
+        returned: refund ? refund.returned : null,
+        slots_left: refund ? refund.slots_left : null,
+        refunded: refund ? !!refund.ok : false });
+    }
 
     /* 중개사에게 손님 연락처를 보낸다.
        메일에 실번호를 담는 유일한 자리다. 손님이 방금 이 사람에게 주겠다고
@@ -266,4 +279,40 @@ async function patch(req, res, user, b) {
     console.error('[proposal:patch]', e && e.message);
     return res.status(502).json({ error: 'DB에 닿지 못했습니다' });
   }
+}
+
+/* 슬롯 하나를 조건에 돌려놓는다.
+   읽은 값 그대로일 때만 쓰도록 걸어(compare-and-swap) 두 제안을 연달아
+   거절해도 반환이 한 번으로 뭉개지거나 두 번 세지지 않게 한다. */
+async function giveSlotBack(d) {
+  const MAX = 2;
+  let cur = { returned: d.returned || 0, slots_left: d.slots_left, slots: d.slots };
+  for (let i = 0; i < 4; i++) {
+    if (cur.returned >= MAX) return { ok: false, why: 'max', returned: cur.returned, slots_left: cur.slots_left };
+    /* 준 적 없는 자리를 돌려줄 수는 없다 */
+    if (!(cur.slots_left < cur.slots)) return { ok: false, why: 'full', returned: cur.returned, slots_left: cur.slots_left };
+
+    const q = `id=eq.${d.id}&returned=eq.${cur.returned}&slots_left=eq.${cur.slots_left}`;
+    const r = await fetch(sbUrl('bk_demand', q), {
+      method: 'PATCH', headers: { ...sbHeaders(), Prefer: 'return=representation' },
+      body: JSON.stringify({ returned: cur.returned + 1, slots_left: cur.slots_left + 1 }),
+    });
+    if (!r.ok) {
+      const t = await r.text().catch(() => '');
+      /* 칸이 아직 없으면 거절 자체는 살린다 - 슬롯만 못 돌려준다 */
+      if (/returned/.test(t)) return { ok: false, why: 'no column' };
+      console.error('[proposal] 슬롯 반환 실패', r.status, t.slice(0, 160));
+      return { ok: false, why: 'error' };
+    }
+    const got = await r.json().catch(() => []);
+    if (got.length) return { ok: true, returned: cur.returned + 1, slots_left: cur.slots_left + 1 };
+
+    /* 그 사이 값이 움직였다 - 다시 읽고 한 번 더 */
+    const again = await fetch(sbUrl('bk_demand', `select=slots,slots_left,returned&id=eq.${d.id}&limit=1`), { headers: sbHeaders() });
+    if (!again.ok) return { ok: false, why: 'error' };
+    const row = (await again.json())[0];
+    if (!row) return { ok: false, why: 'error' };
+    cur = { returned: row.returned || 0, slots_left: row.slots_left, slots: row.slots };
+  }
+  return { ok: false, why: 'busy' };
 }

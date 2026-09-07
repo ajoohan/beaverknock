@@ -64,10 +64,12 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: '접근 암호가 맞지 않습니다' });
   }
 
-  /* 열람 기록도 여기서 읽는다.
+  /* 운영 화면이 보는 것은 여기로 모은다.
      따로 함수를 두는 편이 깔끔하지만 Vercel 함수 상한(12개)에 걸린다.
      문(계정 + 암호)이 어차피 같으니 한 지붕 아래 둔다. */
-  if (payload.what === 'log') return readLog(req, res, payload, opsUser);
+  if (payload.what === 'log')         return readLog(req, res, payload, opsUser);
+  if (payload.what === 'reports')     return readReports(req, res, payload, opsUser);
+  if (payload.what === 'report-mark') return markReport(req, res, payload, opsUser);
 
   const limit  = Math.min(parseInt(payload.limit, 10) || 200, 1000);
   const kind   = payload.kind;                 // home | shop | office | storage
@@ -141,5 +143,99 @@ async function readLog(req, res, p, opsUser) {
     return res.status(200).json({ rows: await r.json(), at: new Date().toISOString() });
   } catch (e) {
     return res.status(500).json({ error: '기록을 불러오지 못했습니다' });
+  }
+}
+
+/* ── 신고 ──
+   손님이 신고한 제안을 모아 본다. 메일로도 가지만, 무엇을 이미 처리했는지는
+   목록에서 봐야 안다. 메일만 있으면 같은 건을 두 번 보거나 묻힌다. */
+async function readReports(req, res, p, opsUser) {
+  const limit = Math.min(parseInt(p.limit, 10) || 200, 500);
+  try {
+    const q = new URLSearchParams({
+      select: 'id,created_at,reported_at,report_type,report_detail,report_status,report_note,'
+            + 'addr,bname,dep,rent,demand_id,agent_id,status',
+      order: 'reported_at.desc', limit: String(limit),
+    });
+    q.set('reported_at', 'not.is.null');
+    /* 아직 손 안 댄 것만 보고 싶을 때가 대부분이다 */
+    if (p.only === 'todo') q.set('report_status', 'is.null');
+
+    const r = await fetch(sbUrl('bk_proposal', q.toString()), { headers: sbHeaders() });
+    if (!r.ok) {
+      const t = await r.text();
+      if (/report_status|reported_at|does not exist|PGRST205/i.test(t)) {
+        return res.status(200).json({ rows: [], at: new Date().toISOString(),
+          note: '신고 칸이 아직 없습니다 (0013·0014 마이그레이션 필요)' });
+      }
+      return res.status(500).json({ error: '신고를 불러오지 못했습니다' });
+    }
+    const rows = await r.json();
+
+    /* 어느 지역 조건이었는지, 어느 사무소가 보낸 것인지 붙여준다.
+       신고 한 건만 봐서는 무엇을 봐야 할지 알 수 없다. */
+    const dIds = [...new Set(rows.map(x => x.demand_id).filter(Boolean))];
+    const aIds = [...new Set(rows.map(x => x.agent_id).filter(Boolean))];
+    const where = {}, who = {};
+    if (dIds.length) {
+      const dr = await fetch(sbUrl('bk_demand', `select=id,dongs,kind&id=in.(${dIds.join(',')})`), { headers: sbHeaders() });
+      if (dr.ok) for (const d of await dr.json()) where[d.id] = (d.dongs || []).join(' · ');
+    }
+    if (aIds.length) {
+      const ar = await fetch(sbUrl('bk_agent', `select=id,role,office,name,phone,status&id=in.(${aIds.join(',')})`), { headers: sbHeaders() });
+      if (ar.ok) for (const a of await ar.json()) who[a.id] = a;
+    }
+
+    await logOps(req, opsUser, { action: 'reports', count: rows.length,
+      detail: p.only === 'todo' ? '미확인만' : null });
+
+    return res.status(200).json({
+      at: new Date().toISOString(),
+      rows: rows.map(x => ({
+        ...x,
+        dongs: where[x.demand_id] || '',
+        agent: who[x.agent_id]
+          ? { office: who[x.agent_id].office || who[x.agent_id].name || '-',
+              role: who[x.agent_id].role, phone: who[x.agent_id].phone || null,
+              status: who[x.agent_id].status }
+          : null,
+      })),
+    });
+  } catch (e) {
+    return res.status(500).json({ error: '신고를 불러오지 못했습니다' });
+  }
+}
+
+const REPORT_MARK = ['checking', 'done', 'dismissed'];
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+async function markReport(req, res, p, opsUser) {
+  const id = String(p.id || '');
+  if (!UUID.test(id)) return res.status(400).json({ error: '어느 신고인지 알 수 없습니다' });
+  const mark = p.mark === null || p.mark === '' ? null : String(p.mark || '');
+  if (mark !== null && !REPORT_MARK.includes(mark)) {
+    return res.status(400).json({ error: '알 수 없는 처리 상태입니다' });
+  }
+  const note = p.note ? String(p.note).slice(0, 500) : null;
+
+  try {
+    const r = await fetch(sbUrl('bk_proposal', `id=eq.${id}&reported_at=not.is.null`), {
+      method: 'PATCH',
+      headers: { ...sbHeaders(), Prefer: 'return=representation' },
+      body: JSON.stringify(note === null ? { report_status: mark } : { report_status: mark, report_note: note }),
+    });
+    if (!r.ok) {
+      const t = await r.text();
+      if (/report_status/.test(t)) return res.status(503).json({ error: '아직 준비 중입니다 (0014 마이그레이션 필요)' });
+      return res.status(500).json({ error: '처리 상태를 바꾸지 못했습니다' });
+    }
+    /* 몇 건이 실제로 바뀌었는지 본다 - minimal 로 두면 한 건도 안 바뀌어도 200 이 온다 */
+    const changed = (await r.json().catch(() => [])).length;
+    if (!changed) return res.status(404).json({ error: '바뀐 건이 없습니다 - 목록을 새로고침해 주세요' });
+
+    await logOps(req, opsUser, { action: 'report-mark', count: changed, detail: mark || '미확인으로' });
+    return res.status(200).json({ ok: true, mark, count: changed });
+  } catch (e) {
+    return res.status(500).json({ error: '처리 상태를 바꾸지 못했습니다' });
   }
 }

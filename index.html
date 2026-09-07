@@ -1554,6 +1554,10 @@ function condFromRow(d){
 }
 
 /* 서버 제안 → 손님 제안함 카드 */
+/* 서버는 sent·read·accepted·rejected·withdrawn 로 적고,
+   화면은 sent·viewed·selected·rejected·withdrawn 로 읽는다.
+   옮기지 않으면 새로고침한 순간 '연결됨' 이 사라진다. */
+const P_STATUS = { read:'viewed', accepted:'selected' };
 function propFromRow(p){
   return {
     id:p.id, cond:p.demand_id, isNew:p.status==='sent', read:p.status!=='sent',
@@ -1566,7 +1570,7 @@ function propFromRow(p){
     by:p.by||'공인중개사', contact:p.contact||null,
     agency:{name:p.by||'공인중개사', rep:'', reg:'', addr:''},
     at:agoText(p.created_at), approved:p.approved||'', floors:0, violation:false,
-    loan:0, lease:false, risk:'', status:p.status,
+    loan:0, lease:false, risk:'', status:P_STATUS[p.status] || p.status,
   };
 }
 
@@ -3008,7 +3012,7 @@ V['#/done'] = () => `
           지금 등록된 곳 중에는 조건에 딱 맞는 자리가 없습니다.<br>
           <b style="color:var(--n900);font-weight:700">해당 지역 중개사분들께 조건을 전달했으니</b>, 맞는 곳이 나오면 바로 알려드리겠습니다.</p>
         <div style="display:flex;flex-direction:column;gap:10px;padding-top:14px;border-top:1px solid var(--hair)">
-          ${[['새 물건이 등록되면 <b style="color:var(--n900)">자동으로 대조</b>하여 카톡으로 알려드립니다']].map(([t])=>`
+          ${[['맞는 물건을 가진 중개사가 제안을 보내면 <b style="color:var(--n900)">가입하신 메일로</b> 알려드립니다']].map(([t])=>`
             <div style="display:flex;gap:10px;font-size:14px;line-height:1.6;color:var(--n700)">
               <span style="flex:none;width:5px;height:5px;border-radius:var(--r-full);background:var(--ind);margin-top:10px"></span><span>${t}</span></div>`).join('')}
         </div>
@@ -3121,6 +3125,10 @@ V['#/inbox'] = () => {
           ${p.diff.map(t=>`<div style="display:flex;gap:8px"><span class="badge b-warn" style="flex:none;font-size:11px;padding:2px 8px">다름</span><span style="font-size:12.5px;line-height:1.45;color:var(--n700)">${esc(t)}</span></div>`).join('')}
           <div style="display:flex;gap:8px"><span class="badge b-ok" style="flex:none;font-size:11px;padding:2px 8px">일치</span><span style="font-size:12.5px;line-height:1.45;color:var(--n700)">${p.match.map(esc).join(' · ')}</span></div>
         </div>
+        ${p.status==='selected'&&p.contact&&p.contact.phone? `<div style="background:var(--okbg);padding:10px 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <span style="font-size:11px;font-weight:800;color:var(--ok)">연결됨</span>
+          <span class="num" style="font-size:14px;font-weight:800;color:var(--ok)">${esc(p.contact.phone)}</span>
+          <span style="font-size:12px;color:var(--n700)">${esc(p.contact.office||p.contact.role||'')}</span></div>`:''}
         <div style="display:flex;justify-content:space-between;align-items:center">
           <span style="font-size:11px;color:var(--n500)">${esc(p.agency.name)} · ${p.at}</span>
           <span style="font-size:13.5px;font-weight:800;color:var(--ind)">자세히 →</span></div>
@@ -3132,7 +3140,7 @@ V['#/inbox'] = () => {
       <span style="display:flex;justify-content:center;margin-bottom:8px">${beaverly(126)}</span>
       <p style="margin:0 0 8px;font-size:15px;font-weight:800">${over?'아직 도착한 제안이 없습니다':'조건이 중개사에게 전달됐습니다'}</p>
       <p style="margin:0 auto 18px;max-width:420px;font-size:13.5px;line-height:1.6;color:var(--n500)">
-        ${over?'지금 조건에 맞는 물건이 시장에 없을 수 있습니다. 실제 거래 데이터로 확인해 보세요.':'제안이 오면 카톡으로 알려드립니다. 들어와서 기다리실 필요 없습니다.'}</p>
+        ${over?'지금 조건에 맞는 물건이 시장에 없을 수 있습니다. 실제 거래 데이터로 확인해 보세요.':'제안이 오면 가입하신 메일로 알려드립니다. 들어와서 기다리실 필요 없습니다.'}</p>
       ${over? `<button class="btn pri md" data-go="#/relax">어떻게 하면 제안이 올까요?</button>`
             : `<button class="btn sec md" data-go="#/detail">조건 더 채우기</button>`}
     </div>`;};
@@ -3151,7 +3159,7 @@ V['#/inbox'] = () => {
           <b style="display:block;font-size:14px;font-weight:800;letter-spacing:-.02em;margin-bottom:4px">${esc(c.title)} ${demoTag(c,'vertical-align:middle')}</b>
           <span style="font-size:12.5px;line-height:1.6;color:var(--n700)">${c.lines[0]?esc(c.lines[0]):''}</span></div>`;}).join('')}
       <div class="beaverbox" style="margin-top:auto;margin-bottom:24px">${beaverlyMini(56)}
-        <p>새 제안이 오면 <b style="color:var(--n900)">카톡으로 바로</b> 알려드려요. 들어와서 기다리실 필요 없습니다.</p></div>
+        <p>새 제안이 오면 <b style="color:var(--n900)">메일로 바로</b> 알려드려요. 들어와서 기다리실 필요 없습니다.</p></div>
     </div>`}
     <div style="flex:1;display:flex;flex-direction:column;gap:14px;min-width:0;padding-bottom:24px">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
@@ -3233,7 +3241,7 @@ V['#/connect'] = (id) => { const p=S.props.find(x=>x.id===id); if(!p) return V['
     office:p.seed?((p.agency&&p.agency.name)||null):null, name:(p.agency&&p.agency.rep)||null,
     phone:(p.agency&&p.agency.phone)||null, reg_no:(p.agency&&p.agency.reg)||null,
     addr:(p.agency&&p.agency.addr)||null };
-  if(S.form.connected){
+  if(S.form.connected || p.status==='selected'){
     return `
 <div class="scr fade">
   <div class="nav solid pad"><a data-go="#/" style="flex:none">${logoLockup({h:25,tag:!isMo()})}</a><div class="right"><a data-go="#/inbox" style="font-weight:600">제안함</a></div></div>

@@ -1189,11 +1189,13 @@ const S = {
   listings:JSON.parse(JSON.stringify(SEED_LISTINGS)),
   scope:JSON.parse(JSON.stringify(SCOPE_DEFAULT)),
   myprops:JSON.parse(JSON.stringify(SEED_MYPROP)),
-  inboxCond:'c1', modal:null, form:{}, timer:null, timeLeft:900, connecting:false, rejecting:false, sentAddr:{}, matched:0,
+  inboxCond:'c1', modal:null, form:{}, timer:null, timeLeft:900, connecting:false, rejecting:false,
+  withdrawing:false, sentAddr:{}, matched:0,
   vtimer:null, vsec:180, geo:null, geoState:'idle', geoTried:false, saved:false, lastRoute:null, enterT:null,
   user:null, afterLogin:null, email:'', pw:'', pw2:'', signup:false,
   idvCfg:null, idvBusy:false, idvToken:null,
   mineLoading:false, mineAt:0, mineErr:'',
+  mpLoading:false, mpAt:0, mpErr:'',
   feedLoading:false, feedAt:0, feedErr:'', feedNeed:'', feedHidden:{region:0,slot:0}, agent:null,
   findName:'', findPhone:'', findErr:'', foundEmail:'', resetEmail:'', resetErr:'', resetSent:'',
 };
@@ -1560,6 +1562,44 @@ function condFromRow(d){
    화면은 sent·viewed·selected·rejected·withdrawn 로 읽는다.
    옮기지 않으면 새로고침한 순간 '연결됨' 이 사라진다. */
 const P_STATUS = { read:'viewed', accepted:'selected', rejected:'hidden', reported:'hidden' };
+/* 중개사가 보낸 제안 - 서버에서 가져온다.
+   지금까지 이 목록은 그 브라우저 메모리에만 있어서, 새로고침하면 방금 보낸
+   제안이 사라지고 예시만 남았다. */
+const MP_STATUS = { read:'viewed', accepted:'selected', reported:'rejected' };
+
+function myPropFromRow(x){
+  const won = v => (+v||0).toLocaleString();
+  const want = x.want ? `보증금 ${won(x.want.dep)}${x.want.rent?` / 월 ${x.want.rent}`:''}` : '';
+  return {
+    id: x.id,
+    title: x.bname || x.addr || '물건',
+    price: `보증금 ${won(x.dep)}${x.rent?` / 월 ${x.rent}`:''}${x.fee?` · 관리비 ${x.fee}`:''}`,
+    line: [x.dongs, want].filter(Boolean).join(' · '),
+    status: MP_STATUS[x.status] || x.status,
+    at: agoText(x.created_at),
+    cust: x.cust || undefined, cphone: x.cphone || undefined,
+    reason: x.status==='reported' ? `손님이 신고했습니다${x.report_type?` · ${x.report_type}`:''}`
+          : x.status==='rejected' ? '손님이 ‘관심 없음’을 선택했습니다'
+          : x.status==='withdrawn' ? '회수하셨습니다 · 슬롯이 반환됐습니다' : '',
+  };
+}
+
+function loadMyProps(force){
+  if(S.mpLoading || (S.mpAt && !force && Date.now()-S.mpAt < 20000)) return;
+  S.mpLoading = true;
+  apiFetch('/api/feed', {method:'POST', body: JSON.stringify({what:'mine'})})
+    .then(r => r.json().catch(()=>({})).then(j => {
+      S.mpLoading = false; S.mpAt = Date.now();
+      if(!(r.ok && j.ok)){
+        /* 승인 전이거나 가입 전이면 목록이 없는 게 맞다 - 조용히 둔다 */
+        if(r.status !== 403) S.mpErr = j.error || '보낸 제안을 불러오지 못했습니다';
+        return render();
+      }
+      S.mpErr = ''; S.myprops = (j.rows||[]).map(myPropFromRow); render();
+    }))
+    .catch(() => { S.mpLoading=false; S.mpErr='네트워크 문제로 보낸 제안을 불러오지 못했습니다'; render(); });
+}
+
 function propFromRow(p){
   return {
     id:p.id, cond:p.demand_id, isNew:p.status==='sent', read:p.status!=='sent',
@@ -3650,7 +3690,7 @@ V['#/partner/proposals'] = () => {
           <span style="font-size:12.5px;color:var(--n500)">발송 ${esc(p.at)}${p.expires!=null?` · 만료까지 ${p.expires}일`:''}</span>
           <div style="display:flex;gap:8px">
             <button class="btn sec sm">보낸 내용 보기</button>
-            ${p.status==='sent'? `<button class="btn sec sm" data-act="withdraw" data-v="${p.id}" style="color:var(--danger)">회수</button>`:''}
+            ${p.status==='sent'? `<button class="btn sec sm" data-act="withdraw" data-v="${p.id}" ${S.withdrawing?'disabled':''} style="color:var(--danger)">${S.withdrawing?'회수 중…':'회수'}</button>`:''}
           </div>
         </div>
       </div>`;}).join('')
@@ -5271,6 +5311,7 @@ function render(){
   /* 화면에 들어갈 때 서버에서 받아온다. 20초 안에 다시 들어오면 그대로 쓴다. */
   if(h==='#/my' || h==='#/inbox' || h.startsWith('#/proposal/')) loadMine(false);
   if(h==='#/partner/demands' || h.startsWith('#/partner/demand/')) loadFeed(false);
+  if(h==='#/partner/proposals' || h==='#/partner/stats' || h==='#/partner') loadMyProps(false);
   /* 위치는 먼저 묻지 않는다. 사이트에 들어오자마자 권한창이 뜨면 대부분 거절하고,
      거절당한 권한은 되돌리기 어렵다. 지도에서 '📍 현재 위치로' 를 누른 사람에게만 묻는다. */
   if(!(h==='#/contact' && S.draft.vstep==='code')) stopVTimer();
@@ -6053,7 +6094,7 @@ function handle(a,v,el){
             title:`${f.bname||f.addr}${(f.pkind||'home')==='home' && f.rooms ? ` · ${f.rooms}룸` : ''}`,
             price:`보증금 ${(+f.dep||0).toLocaleString()} / 월 ${f.rent||0} · 관리비 ${f.fee||0}`,
             line:`${d2.region} · ${d2.lines[0]||''}`, status:'sent', at:'방금', expires:7});
-          stopTimer(); S.form={ptab:'sent'}; S.feedAt=0;
+          stopTimer(); S.form={ptab:'sent'}; S.feedAt=0; S.mpAt=0;
           toast('제안을 보냈습니다 - 손님 제안함으로 전달됐습니다');
           go('#/partner/proposals');
         }))
@@ -6147,8 +6188,23 @@ function handle(a,v,el){
           : `요청하신 조건에 모두 맞는 물건입니다. ${L.name}, ${priceOf(L)}. 바로 보여드릴 수 있습니다.` };
       S.timeLeft=900; go('#/partner/propose/'+d.id);
       toast('물건 정보를 불러왔습니다 - 확인 후 보내세요'); return true; }
-    case 'withdraw': { const p=S.myprops.find(x=>x.id===v); p.status='withdrawn'; p.reason='회수하셨습니다 · 슬롯 반환됨';
-      toast('회수했습니다 · 슬롯이 반환됐습니다'); render(); return true; }
+    case 'withdraw': {
+      const p=S.myprops.find(x=>x.id===v); if(!p) return true;
+      /* 예시 카드는 서버에 없다 - 화면에서만 치운다 */
+      if(p.seed){ p.status='withdrawn'; p.reason='회수하셨습니다 · 슬롯이 반환됐습니다';
+        toast('회수했습니다'); render(); return true; }
+      if(S.withdrawing) return true;
+      S.withdrawing = true; render();
+      apiFetch('/api/proposal', {method:'PATCH', body: JSON.stringify({id:v, status:'withdrawn'})})
+        .then(r => r.json().catch(()=>({})).then(j => {
+          S.withdrawing = false;
+          if(!(r.ok && j.ok)){ render(); return toast(j.error || '회수하지 못했습니다'); }
+          p.status='withdrawn'; p.reason='회수하셨습니다 · 슬롯이 반환됐습니다';
+          S.mpAt=0; S.feedAt=0; render();
+          toast('회수했습니다 · 슬롯이 반환됐습니다');
+        }))
+        .catch(()=>{ S.withdrawing=false; render(); toast('네트워크 문제로 회수하지 못했습니다'); });
+      return true; }
   }
   return false;
 }

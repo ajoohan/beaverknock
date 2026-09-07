@@ -31,6 +31,8 @@ export default async function handler(req, res) {
   if (typeof b === 'string') { try { b = JSON.parse(b); } catch { b = {}; } }
   b = b || {};
 
+  /* 회수는 보낸 사람이 하는 일이다 - 손님 경로와 문이 다르다 */
+  if (req.method === 'PATCH' && b.status === 'withdrawn') return withdraw(req, res, user, b);
   if (req.method === 'PATCH') return patch(req, res, user, b);
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST 또는 PATCH 만 받습니다' });
 
@@ -349,4 +351,63 @@ async function giveSlotBack(d) {
     cur = { returned: row.returned || 0, slots_left: row.slots_left, slots: row.slots };
   }
   return { ok: false, why: 'busy' };
+}
+
+/* ── 중개사가 제안을 회수한다 ──
+   화면에는 "회수했습니다 · 슬롯이 반환됐습니다" 라고 떴지만 아무 일도
+   일어나지 않았다. 손님 제안함에는 그대로 남아 있었고 자리도 물려 있었다. */
+async function withdraw(req, res, user, b) {
+  const id = str(b.id, 40);
+  if (!id || !UUID.test(id)) return res.status(400).json({ error: '어느 제안인지 알 수 없습니다' });
+
+  try {
+    const pq = new URLSearchParams({
+      select: 'id,demand_id,status,agent_user', id: 'eq.' + id, limit: '1',
+    });
+    const pr = await fetch(sbUrl('bk_proposal', pq.toString()), { headers: sbHeaders() });
+    if (!pr.ok) return res.status(502).json({ error: '제안을 확인하지 못했습니다' });
+    const p = (await pr.json())[0];
+    if (!p) return res.status(404).json({ error: '없는 제안입니다' });
+    if (p.agent_user !== user.id) return res.status(403).json({ error: '내가 보낸 제안이 아닙니다' });
+
+    if (p.status === 'withdrawn') return res.status(200).json({ ok: true, status: 'withdrawn' });
+    /* 손님이 이미 연결을 눌렀으면 못 되돌린다 - 연락처가 이미 오갔다 */
+    if (p.status === 'accepted') {
+      return res.status(409).json({ error: '손님이 이미 연결하셨습니다 - 회수할 수 없습니다' });
+    }
+
+    const ur = await fetch(sbUrl('bk_proposal', 'id=eq.' + id), {
+      method: 'PATCH', headers: { ...sbHeaders(), Prefer: 'return=minimal' },
+      body: JSON.stringify({ status: 'withdrawn' }),
+    });
+    if (!ur.ok) return res.status(502).json({ error: '회수하지 못했습니다' });
+
+    /* 자리를 돌려준다. 손님이 물린 것이 아니라 보낸 쪽이 거두는 것이므로
+       손님 몫의 반환 상한(2회)은 건드리지 않는다. */
+    let left = null;
+    const dr = await fetch(sbUrl('bk_demand', `select=id,slots,slots_left&id=eq.${p.demand_id}&limit=1`), { headers: sbHeaders() });
+    if (dr.ok) {
+      const d = (await dr.json())[0];
+      if (d) {
+        for (let i = 0; i < 4; i++) {
+          if (!(d.slots_left < d.slots)) { left = d.slots_left; break; }
+          const rr = await fetch(sbUrl('bk_demand', `id=eq.${d.id}&slots_left=eq.${d.slots_left}`), {
+            method: 'PATCH', headers: { ...sbHeaders(), Prefer: 'return=representation' },
+            body: JSON.stringify({ slots_left: d.slots_left + 1 }),
+          });
+          if (!rr.ok) break;
+          if ((await rr.json().catch(() => [])).length) { left = d.slots_left + 1; break; }
+          const again = await fetch(sbUrl('bk_demand', `select=slots,slots_left&id=eq.${d.id}&limit=1`), { headers: sbHeaders() });
+          if (!again.ok) break;
+          const row = (await again.json())[0]; if (!row) break;
+          d.slots_left = row.slots_left; d.slots = row.slots;
+        }
+      }
+    }
+
+    return res.status(200).json({ ok: true, status: 'withdrawn', slots_left: left });
+  } catch (e) {
+    console.error('[proposal:withdraw]', e && e.message);
+    return res.status(502).json({ error: 'DB에 닿지 못했습니다' });
+  }
 }

@@ -47,6 +47,11 @@ export default async function handler(req, res) {
   let b = req.body;
   if (typeof b === 'string') { try { b = JSON.parse(b); } catch { b = {}; } }
   b = b || {};
+
+  /* 내가 보낸 제안 목록. 지금까지 이 목록은 그 브라우저 메모리에만 있어서
+     새로고침하면 자기가 보낸 것이 사라졌다.
+     함수 상한(12개) 때문에 수요 목록과 한 지붕 아래 둔다. */
+  if (b.what === 'mine') return readMine(req, res, chk.agent);
   /* 빈 배열은 '가리지 않는다' 가 아니라 '아무것도 안 받겠다' 는 뜻이다.
      지역은 그렇게 막아뒀는데 유형만 반대로 열려 있었다. */
   const kinds = Array.isArray(b.kinds) ? b.kinds.filter(k => KIND_KO[k]) : Object.keys(KIND_KO);
@@ -102,6 +107,65 @@ export default async function handler(req, res) {
     });
   } catch (e) {
     console.error('[feed]', e && e.message);
+    return res.status(502).json({ error: 'DB에 닿지 못했습니다' });
+  }
+}
+
+/* ── 내가 보낸 제안 ── */
+const P_STATUS_KO = {
+  sent: '보냄', read: '열람', accepted: '연결', rejected: '관심 없음',
+  reported: '신고', withdrawn: '회수',
+};
+
+async function readMine(req, res, agent) {
+  try {
+    const q = new URLSearchParams({
+      select: 'id,created_at,status,addr,bname,dep,rent,fee,demand_id,connected_at,'
+            + 'report_type,read_at',
+      agent_id: 'eq.' + agent.id, order: 'created_at.desc', limit: '200',
+    });
+    const r = await fetch(sbUrl('bk_proposal', q.toString()), { headers: sbHeaders() });
+    if (!r.ok) {
+      const t = await r.text();
+      if (/does not exist|PGRST205/i.test(t)) {
+        return res.status(200).json({ ok: true, rows: [], at: new Date().toISOString() });
+      }
+      return res.status(502).json({ error: '보낸 제안을 불러오지 못했습니다' });
+    }
+    const rows = await r.json();
+    if (!rows.length) return res.status(200).json({ ok: true, rows: [], at: new Date().toISOString() });
+
+    /* 어느 조건에 보낸 것인지 붙여준다.
+       손님 이름과 연락처는 '연결' 된 건에만 싣는다 - 손님이 연결을 누른 그
+       순간에만 오간다는 약속이 여기서도 지켜져야 한다. */
+    const dIds = [...new Set(rows.map(x => x.demand_id).filter(Boolean))];
+    const dm = {};
+    if (dIds.length) {
+      const dr = await fetch(sbUrl('bk_demand',
+        `select=id,dongs,kind,deal,dep,rent,name,phone&id=in.(${dIds.join(',')})`), { headers: sbHeaders() });
+      if (dr.ok) for (const d of await dr.json()) dm[d.id] = d;
+    }
+
+    return res.status(200).json({
+      ok: true, at: new Date().toISOString(),
+      rows: rows.map(x => {
+        const d = dm[x.demand_id] || {};
+        const connected = x.status === 'accepted';
+        return {
+          id: x.id, status: x.status, status_ko: P_STATUS_KO[x.status] || x.status,
+          created_at: x.created_at, connected_at: x.connected_at || null,
+          bname: x.bname, addr: x.addr, dep: x.dep, rent: x.rent, fee: x.fee,
+          dongs: (d.dongs || []).join(' · '),
+          kind: d.kind || null, deal: d.deal || null,
+          want: d.dep != null ? { dep: d.dep, rent: d.rent } : null,
+          report_type: x.status === 'reported' ? (x.report_type || null) : null,
+          cust:   connected ? (d.name || null)  : null,
+          cphone: connected ? (d.phone || null) : null,
+        };
+      }),
+    });
+  } catch (e) {
+    console.error('[feed:mine]', e && e.message);
     return res.status(502).json({ error: 'DB에 닿지 못했습니다' });
   }
 }

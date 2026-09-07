@@ -1196,6 +1196,7 @@ const S = {
   idvCfg:null, idvBusy:false, idvToken:null,
   mineLoading:false, mineAt:0, mineErr:'',
   mpLoading:false, mpAt:0, mpErr:'',
+  lsLoading:false, lsAt:0, lsSaved:false, lsBusy:false,
   feedLoading:false, feedAt:0, feedErr:'', feedNeed:'', feedHidden:{region:0,slot:0}, agent:null,
   findName:'', findPhone:'', findErr:'', foundEmail:'', resetEmail:'', resetErr:'', resetSent:'',
 };
@@ -1566,6 +1567,35 @@ const P_STATUS = { read:'viewed', accepted:'selected', rejected:'hidden', report
    지금까지 이 목록은 그 브라우저 메모리에만 있어서, 새로고침하면 방금 보낸
    제안이 사라지고 예시만 남았다. */
 const MP_STATUS = { read:'viewed', accepted:'selected', reported:'rejected' };
+
+/* 올려둔 물건 - 서버에서 가져온다.
+   지금까지 이 목록은 그 브라우저 메모리에만 있어서, 매물 열 건을 정성껏
+   입력하고 창을 닫으면 전부 사라졌다. */
+function listingFromRow(x){
+  return {
+    id:x.id, kind:x.kind, name:x.name, dong:x.dong||'',
+    deal:x.deal||undefined, biz:x.biz||undefined,
+    dep:x.dep||0, rent:x.rent||0, fee:x.fee||0, py:+x.py||0,
+    rooms:x.rooms||0, baths:x.baths||0, band:x.band||'', floors:x.floors||0,
+    musts:x.musts||[], fac:x.fac||[], moveIn:x.move_in||'협의',
+    photos:x.photos||0, at:agoText(x.created_at), status:x.status||'active',
+  };
+}
+
+function loadListings(force){
+  if(S.lsLoading || (S.lsAt && !force && Date.now()-S.lsAt < 20000)) return;
+  S.lsLoading = true;
+  apiFetch('/api/feed', {method:'POST', body: JSON.stringify({what:'listings'})})
+    .then(r => r.json().catch(()=>({})).then(j => {
+      S.lsLoading = false; S.lsAt = Date.now();
+      /* 승인 전이거나 가입 전이면 목록이 없는 게 맞다 - 예시를 그대로 둔다 */
+      if(!(r.ok && j.ok)) return;
+      S.lsSaved = !j.note;          /* 표가 없으면 아직 저장되지 않는다 */
+      S.listings = (j.rows||[]).map(listingFromRow);
+      render();
+    }))
+    .catch(() => { S.lsLoading = false; });
+}
 
 function myPropFromRow(x){
   const won = v => (+v||0).toLocaleString();
@@ -4099,9 +4129,8 @@ V["#/partner/listings"] = () => {
          <button class="btn pri md" data-go="#/partner/listing/new">첫 매물 등록하기</button></div>`}
     <p style="margin:2px 0 ${isMo()?'12px':'0'};font-size:12.5px;line-height:1.75;color:var(--n500)">
       올리신 물건은 <b style="color:var(--n900)">손님에게 목록으로 공개되지 않습니다.</b> 조건이 맞을 때 보내시는 제안 안에서만 보입니다.</p>
-    <p style="margin:0;background:var(--warnbg);padding:12px 16px;font-size:12.5px;line-height:1.7;color:var(--n700)">
-      올려두신 물건은 <b style="color:var(--n900)">아직 저장되지 않습니다.</b> 이 브라우저에서 창을 닫거나 새로고침하시면 사라집니다 -
-      대조에 쓰시고, 실제 제안은 &lsquo;제안 보내기&rsquo;로 보내주세요.</p>
+    ${S.lsSaved?'':`<p style="margin:0;background:var(--warnbg);padding:12px 16px;font-size:12.5px;line-height:1.7;color:var(--n700)">
+      지금 보이는 것은 <b style="color:var(--n900)">예시</b>입니다. 가입 확인이 끝나면 올려두신 물건이 저장됩니다.</p>`}
   </div>
   ${tabbar('l','p')}
 </div>`;};
@@ -4155,7 +4184,7 @@ V["#/partner/listing/new"] = () => {
 
     <div style="display:flex;justify-content:space-between;align-items:center;gap:12px">
       <span data-lhint style="font-size:12.5px;color:var(--n500)">${req?'등록 즉시 대기 손님과 대조합니다':'* 표시 항목을 채워주세요'}</span>
-      <button class="btn pri" style="padding:16px 40px" data-act="save-listing" ${req?'':'disabled'}>등록하고 매칭 보기</button>
+      <button class="btn pri" style="padding:16px 40px" data-act="save-listing" ${req&&!S.lsBusy?'':'disabled'}>${S.lsBusy?'등록하는 중…':'등록하고 매칭 보기'}</button>
     </div>
   </div>
 </div>`;};
@@ -5315,6 +5344,7 @@ function render(){
   if(h==='#/my' || h==='#/inbox' || h.startsWith('#/proposal/')) loadMine(false);
   if(h==='#/partner/demands' || h.startsWith('#/partner/demand/')) loadFeed(false);
   if(h==='#/partner/proposals' || h==='#/partner/stats' || h==='#/partner') loadMyProps(false);
+  if(h.startsWith('#/partner/listing') || h==='#/partner') loadListings(false);
   /* 위치는 먼저 묻지 않는다. 사이트에 들어오자마자 권한창이 뜨면 대부분 거절하고,
      거절당한 권한은 되돌리기 어렵다. 지도에서 '📍 현재 위치로' 를 누른 사람에게만 묻는다. */
   if(!(h==='#/contact' && S.draft.vstep==='code')) stopVTimer();
@@ -6171,13 +6201,37 @@ function handle(a,v,el){
         dep:+f.ldep||0, rent:+f.lrent||0, fee:+f.lfee||0, py:+f.lpy||0,
         rooms:+f.lrooms||0, baths:0, band:f.lband||(shop?'1층만':'중층'), floors:0,
         musts:f.lmusts||[], fac:f.lfac||[], moveIn:'협의', photos:0, at:'방금', status:'active' };
-      S.listings.unshift(L);
-      const n=matchesFor(L).length;
-      S.form={};
-      go('#/partner/listing/'+L.id);
-      toast(n? `등록 완료 - 맞는 손님 ${n}명을 찾았습니다` : '등록 완료 - 지금은 맞는 손님이 없습니다');
+      if(S.lsBusy) return true;
+      S.lsBusy = true; render();
+      apiFetch('/api/feed', {method:'POST', body: JSON.stringify({what:'listing-add', listing:L})})
+        .then(r => r.json().catch(()=>({})).then(j => {
+          S.lsBusy = false;
+          if(!(r.ok && j.ok)){ render(); return toast(j.error || '물건을 저장하지 못했습니다'); }
+          const saved = j.row ? listingFromRow(j.row) : L;
+          S.listings.unshift(saved); S.lsSaved = true; S.lsAt = Date.now();
+          const n = matchesFor(saved).length;
+          S.form={};
+          go('#/partner/listing/'+saved.id);
+          toast(n? `등록했습니다 - 맞는 손님 ${n}명을 찾았습니다` : '등록했습니다 - 지금은 맞는 손님이 없습니다');
+        }))
+        .catch(()=>{ S.lsBusy=false; render(); toast('네트워크 문제로 물건을 저장하지 못했습니다'); });
       return true; }
-    case 'del-listing': { S.listings=S.listings.filter(x=>x.id!==v); toast('물건을 내렸습니다'); go('#/partner/listings'); return true; }
+    case 'del-listing': {
+      const L=S.listings.find(x=>x.id===v);
+      /* 예시 카드는 서버에 없다 - 화면에서만 치운다 */
+      if(!L || L.seed || !S.lsSaved){ S.listings=S.listings.filter(x=>x.id!==v);
+        toast('물건을 내렸습니다'); go('#/partner/listings'); return true; }
+      if(S.lsBusy) return true;
+      S.lsBusy = true; render();
+      apiFetch('/api/feed', {method:'POST', body: JSON.stringify({what:'listing-del', id:v})})
+        .then(r => r.json().catch(()=>({})).then(j => {
+          S.lsBusy = false;
+          if(!(r.ok && j.ok)){ render(); return toast(j.error || '물건을 내리지 못했습니다'); }
+          S.listings = S.listings.filter(x=>x.id!==v);
+          toast('물건을 내렸습니다'); go('#/partner/listings');
+        }))
+        .catch(()=>{ S.lsBusy=false; render(); toast('네트워크 문제로 내리지 못했습니다'); });
+      return true; }
     case 'propose-with': { const [lid,did]=v.split('|'); const L=S.listings.find(x=>x.id===lid); const d=S.demands.find(x=>x.id===did);
       if(!L||!d) return true;
       const st=matchStages(L,d);

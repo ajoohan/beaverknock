@@ -52,6 +52,12 @@ export default async function handler(req, res) {
      새로고침하면 자기가 보낸 것이 사라졌다.
      함수 상한(12개) 때문에 수요 목록과 한 지붕 아래 둔다. */
   if (b.what === 'mine') return readMine(req, res, chk.agent);
+
+  /* 올려둔 물건. 지금까지 이 목록도 그 브라우저에만 있어서 창을 닫으면
+     사라졌다. 함수 상한(12개) 때문에 여기 함께 둔다. */
+  if (b.what === 'listings')    return readListings(req, res, chk.agent);
+  if (b.what === 'listing-add') return addListing(req, res, chk.agent, user, b);
+  if (b.what === 'listing-del') return delListing(req, res, chk.agent, b);
   /* 빈 배열은 '가리지 않는다' 가 아니라 '아무것도 안 받겠다' 는 뜻이다.
      지역은 그렇게 막아뒀는데 유형만 반대로 열려 있었다. */
   const kinds = Array.isArray(b.kinds) ? b.kinds.filter(k => KIND_KO[k]) : Object.keys(KIND_KO);
@@ -166,6 +172,94 @@ async function readMine(req, res, agent) {
     });
   } catch (e) {
     console.error('[feed:mine]', e && e.message);
+    return res.status(502).json({ error: 'DB에 닿지 못했습니다' });
+  }
+}
+
+/* ── 올려둔 물건 ── */
+const KINDS = ['home', 'shop', 'office', 'storage'];
+const LUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+const txt = (v, max = 200) => { const x = String(v ?? '').trim(); return x ? x.slice(0, max) : null; };
+const int0 = v => { const n = parseInt(v, 10); return Number.isFinite(n) ? n : null; };
+const num0 = v => { const n = parseFloat(v); return Number.isFinite(n) ? n : null; };
+const arr = (v, max = 20) => Array.isArray(v)
+  ? v.map(x => String(x ?? '').trim()).filter(Boolean).slice(0, max) : null;
+
+/* 표가 아직 없을 때는 빈 목록으로 돌려준다 - 화면이 예시로 버틴다 */
+const noTable = t => /does not exist|PGRST205|bk_listing/i.test(t);
+
+async function readListings(req, res, agent) {
+  try {
+    const q = new URLSearchParams({
+      select: '*', agent_id: 'eq.' + agent.id, status: 'neq.closed',
+      order: 'created_at.desc', limit: '200',
+    });
+    const r = await fetch(sbUrl('bk_listing', q.toString()), { headers: sbHeaders() });
+    if (!r.ok) {
+      const t = await r.text();
+      if (noTable(t)) return res.status(200).json({ ok: true, rows: [], note: '0015 마이그레이션 필요' });
+      return res.status(502).json({ error: '물건을 불러오지 못했습니다' });
+    }
+    return res.status(200).json({ ok: true, rows: await r.json(), at: new Date().toISOString() });
+  } catch (e) {
+    return res.status(502).json({ error: 'DB에 닿지 못했습니다' });
+  }
+}
+
+async function addListing(req, res, agent, user, b) {
+  const L = b.listing || {};
+  const kind = KINDS.includes(L.kind) ? L.kind : null;
+  const name = txt(L.name, 80);
+  if (!kind) return res.status(400).json({ error: '어떤 물건인지 알 수 없습니다' });
+  if (!name) return res.status(400).json({ error: '물건 이름을 적어주세요' });
+
+  const row = {
+    agent_id: agent.id, agent_user: user.id,
+    kind, name, dong: txt(L.dong, 60), deal: txt(L.deal, 20), biz: txt(L.biz, 60),
+    dep: int0(L.dep), rent: int0(L.rent), fee: int0(L.fee),
+    py: num0(L.py), rooms: int0(L.rooms), baths: int0(L.baths),
+    band: txt(L.band, 20), floors: int0(L.floors),
+    musts: arr(L.musts), fac: arr(L.fac),
+    move_in: txt(L.moveIn, 40), photos: int0(L.photos) || 0,
+  };
+
+  try {
+    const r = await fetch(sbUrl('bk_listing'), {
+      method: 'POST', headers: { ...sbHeaders(), Prefer: 'return=representation' },
+      body: JSON.stringify(row),
+    });
+    if (!r.ok) {
+      const t = await r.text();
+      if (noTable(t)) return res.status(503).json({ error: '아직 준비 중입니다 (0015 마이그레이션 필요)' });
+      console.error('[feed:listing-add]', r.status, t.slice(0, 160));
+      return res.status(502).json({ error: '물건을 저장하지 못했습니다' });
+    }
+    return res.status(201).json({ ok: true, row: (await r.json())[0] || null });
+  } catch (e) {
+    return res.status(502).json({ error: 'DB에 닿지 못했습니다' });
+  }
+}
+
+async function delListing(req, res, agent, b) {
+  const id = String(b.id || '');
+  if (!LUUID.test(id)) return res.status(400).json({ error: '어느 물건인지 알 수 없습니다' });
+  try {
+    /* 내 물건만 내린다. 지우지 않고 닫는다 - 이미 보낸 제안에서 참조가 남는다. */
+    const r = await fetch(sbUrl('bk_listing', `id=eq.${id}&agent_id=eq.${agent.id}`), {
+      method: 'PATCH', headers: { ...sbHeaders(), Prefer: 'return=representation' },
+      body: JSON.stringify({ status: 'closed' }),
+    });
+    if (!r.ok) {
+      const t = await r.text();
+      if (noTable(t)) return res.status(503).json({ error: '아직 준비 중입니다 (0015 마이그레이션 필요)' });
+      return res.status(502).json({ error: '물건을 내리지 못했습니다' });
+    }
+    if (!(await r.json().catch(() => [])).length) {
+      return res.status(404).json({ error: '내 물건이 아니거나 이미 내려간 물건입니다' });
+    }
+    return res.status(200).json({ ok: true });
+  } catch (e) {
     return res.status(502).json({ error: 'DB에 닿지 못했습니다' });
   }
 }

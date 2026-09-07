@@ -121,9 +121,12 @@ export default async function handler(req, res) {
       if (/relation .* does not exist|PGRST205/i.test(t)) {
         return res.status(503).json({ error: '신청 표가 아직 준비되지 않았습니다 (bk_agent)' });
       }
-      /* 같은 번호로 이미 신청한 경우는 실패가 아니다 */
+      /* 이미 신청한 경우는 실패가 아니다.
+         다만 어느 쪽에 걸렸는지는 알려야 한다 - 계정당 한 번(bk_agent_user_idx)인데
+         "같은 번호로 접수됐다"고만 하면 번호를 바꿔가며 다시 시도하게 된다. */
       if (/duplicate key|23505/i.test(t)) {
-        return res.status(200).json({ ok: true, already: true });
+        const why = /bk_agent_user_idx/.test(t) ? 'account' : 'phone';
+        return res.status(200).json({ ok: true, already: true, why });
       }
       /* 컬럼 하나가 없더라도 신청 자체는 살린다 */
       const m = t.match(/'([a-z_]+)' column/i);

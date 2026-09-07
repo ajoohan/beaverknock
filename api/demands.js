@@ -9,7 +9,7 @@
  *   BK_OPS_PASS    운영자 접근 암호
  */
 
-import { opsAccount } from './_auth.js';
+import { opsAccount, sbHeaders, sbUrl } from './_auth.js';
 import { logOps } from './_opslog.js';
 
 const TABLE = 'bk_demand';
@@ -64,6 +64,11 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: '접근 암호가 맞지 않습니다' });
   }
 
+  /* 열람 기록도 여기서 읽는다.
+     따로 함수를 두는 편이 깔끔하지만 Vercel 함수 상한(12개)에 걸린다.
+     문(계정 + 암호)이 어차피 같으니 한 지붕 아래 둔다. */
+  if (payload.what === 'log') return readLog(req, res, payload, opsUser);
+
   const limit  = Math.min(parseInt(payload.limit, 10) || 200, 1000);
   const kind   = payload.kind;                 // home | shop | office | storage
   const days   = parseInt(payload.days, 10) || 0;
@@ -113,4 +118,28 @@ export default async function handler(req, res) {
     fetchedAt: new Date().toISOString(),
     rows: out,
   });
+}
+
+/* ── 운영 화면 열람 기록 ──
+   남기기만 하고 아무도 안 보면 기록이 아니라 저장 공간이다. */
+async function readLog(req, res, p, opsUser) {
+  const limit = Math.min(parseInt(p.limit, 10) || 200, 1000);
+  try {
+    const q = new URLSearchParams({ select: '*', order: 'at.desc', limit: String(limit) });
+    /* 연락처를 드러낸 조회만 따로 볼 수 있어야 한다 - 그게 이 표를 보는 이유다 */
+    if (p.only === 'reveal') q.set('reveal', 'is.true');
+    const r = await fetch(sbUrl('bk_ops_log', q.toString()), { headers: sbHeaders() });
+    if (!r.ok) {
+      const t = await r.text();
+      if (/does not exist|PGRST205/i.test(t)) {
+        return res.status(200).json({ rows: [], at: new Date().toISOString(),
+          note: '기록 표가 아직 없습니다 (0011 마이그레이션 필요)' });
+      }
+      return res.status(500).json({ error: '기록을 불러오지 못했습니다' });
+    }
+    /* 이 조회 자체는 기록하지 않는다. 기록을 보는 일이 기록을 밀어내면 안 된다. */
+    return res.status(200).json({ rows: await r.json(), at: new Date().toISOString() });
+  } catch (e) {
+    return res.status(500).json({ error: '기록을 불러오지 못했습니다' });
+  }
 }

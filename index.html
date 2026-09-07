@@ -4614,8 +4614,9 @@ const LG = { rows:null, loading:false, err:'', at:'', note:'', only:'' };
 function lgFetch(){
   if(LG.loading || !OPS.pass) return;
   LG.loading = true; LG.err = ''; render();
-  apiFetch('/api/ops-log', {method:'POST',
-    body: JSON.stringify({pass: OPS.pass, limit: 300, only: LG.only || undefined})})
+  /* 열람 기록도 /api/demands 가 읽는다 - 문이 같고, 함수 수에 상한이 있다 */
+  apiFetch('/api/demands', {method:'POST',
+    body: JSON.stringify({what:'log', pass: OPS.pass, limit: 300, only: LG.only || undefined})})
     .then(r => r.json().catch(()=>({})).then(j => {
       if(r.ok){ LG.rows = j.rows || []; LG.at = j.at || ''; LG.note = j.note || ''; }
       else LG.err = j.error || '조회에 실패했습니다';

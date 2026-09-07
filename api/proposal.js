@@ -175,27 +175,95 @@ async function patch(req, res, user, b) {
 
   try {
     /* 내 조건에 온 제안이 맞는지 본다 - 남의 제안을 건드리지 못하게 한다 */
-    const pq = new URLSearchParams({ select: 'id,demand_id,status', id: 'eq.' + id, limit: '1' });
+    const pq = new URLSearchParams({
+      select: 'id,demand_id,status,agent_id,connected_at,addr,bname', id: 'eq.' + id, limit: '1',
+    });
     const pr = await fetch(sbUrl('bk_proposal', pq.toString()), { headers: sbHeaders() });
-    if (!pr.ok) return res.status(502).json({ error: '제안을 확인하지 못했습니다' });
+    if (!pr.ok) {
+      const t = await pr.text();
+      if (/connected_at/.test(t)) return res.status(503).json({ error: '아직 준비 중입니다 (0010 마이그레이션 필요)' });
+      return res.status(502).json({ error: '제안을 확인하지 못했습니다' });
+    }
     const p = (await pr.json())[0];
     if (!p) return res.status(404).json({ error: '없는 제안입니다' });
 
-    const dq = new URLSearchParams({ select: 'id', id: 'eq.' + p.demand_id, user_id: 'eq.' + user.id, limit: '1' });
+    const dq = new URLSearchParams({
+      select: 'id,name,phone,dongs', id: 'eq.' + p.demand_id, user_id: 'eq.' + user.id, limit: '1',
+    });
     const dr = await fetch(sbUrl('bk_demand', dq.toString()), { headers: sbHeaders() });
-    if (!dr.ok || !(await dr.json()).length) return res.status(403).json({ error: '내 조건에 온 제안이 아닙니다' });
+    if (!dr.ok) return res.status(502).json({ error: '조건을 확인하지 못했습니다' });
+    const d = (await dr.json())[0];
+    if (!d) return res.status(403).json({ error: '내 조건에 온 제안이 아닙니다' });
 
     /* 한 번 읽은 것을 다시 '안 읽음' 으로 돌리지 않는다 */
     if (status === 'read' && p.status !== 'sent') return res.status(200).json({ ok: true, status: p.status });
 
     const body = { status };
     if (status === 'read') body.read_at = new Date().toISOString();
+
+    /* 연결은 실번호가 오가는 순간이다.
+       손님에게는 중개사 연락처를 응답으로 돌려주고, 중개사에게는 손님 연락처를
+       메일로 보낸다. 언제 동의하고 연결했는지는 connected_at 에 남긴다 -
+       개인정보 제공은 시점이 곧 근거다. */
+    const first = status === 'accepted' && !p.connected_at;
+    if (first) body.connected_at = new Date().toISOString();
+
+    let agent = null;
+    if (status === 'accepted') {
+      const aq = new URLSearchParams({
+        select: 'id,role,name,phone,email,office,reg_no,addr', id: 'eq.' + p.agent_id, limit: '1',
+      });
+      const ar = await fetch(sbUrl('bk_agent', aq.toString()), { headers: sbHeaders() });
+      if (!ar.ok) return res.status(502).json({ error: '연결할 곳을 확인하지 못했습니다' });
+      agent = (await ar.json())[0];
+      if (!agent) return res.status(404).json({ error: '연결할 곳을 찾지 못했습니다' });
+    }
+
     const ur = await fetch(sbUrl('bk_proposal', 'id=eq.' + id), {
       method: 'PATCH', headers: { ...sbHeaders(), Prefer: 'return=minimal' }, body: JSON.stringify(body),
     });
     if (!ur.ok) return res.status(502).json({ error: '상태를 바꾸지 못했습니다' });
-    return res.status(200).json({ ok: true, status });
+
+    if (status !== 'accepted') return res.status(200).json({ ok: true, status });
+
+    /* 중개사에게 손님 연락처를 보낸다.
+       메일에 실번호를 담는 유일한 자리다. 손님이 방금 이 사람에게 주겠다고
+       고른 번호이고, 이걸 가리면 연결이 연결이 아니게 된다.
+       두 번 눌러도 메일은 한 번만 나간다. */
+    if (first) {
+      const where = (d.dongs || []).join(' · ') || '서울·경기';
+      await notify(req, {
+        to: agent.email || undefined,
+        subject: `손님이 연결을 눌렀습니다 · ${where}`,
+        rows: [
+          ['손님', d.name || '-'],
+          ['연락처', d.phone || '-'],
+          ['물건', p.bname || p.addr || '-'],
+          ['지역', where],
+          /* 메일 주소를 안 남긴 파트너면 이 메일은 운영자에게 간다.
+             누구에게 넘겨야 하는지가 메일 안에 있어야 한다. */
+          ['받는 곳', agent.office || agent.name || '-'],
+        ],
+        link: '/#/partner',
+        cta: '파트너 화면 열기',
+        note: '손님이 연락처 제공에 동의하고 연결을 눌렀습니다. 이 번호는 이 제안 상담에만 사용해 주세요. '
+            + '비버노크는 상담과 계약에 관여하지 않습니다.',
+      });
+    }
+
+    return res.status(200).json({
+      ok: true, status,
+      contact: {
+        role: ROLE_KO[agent.role] || '공인중개사',
+        office: agent.office || null,
+        name: agent.name || null,
+        phone: agent.phone || null,
+        reg_no: agent.reg_no || null,
+        addr: agent.addr || null,
+      },
+    });
   } catch (e) {
+    console.error('[proposal:patch]', e && e.message);
     return res.status(502).json({ error: 'DB에 닿지 못했습니다' });
   }
 }

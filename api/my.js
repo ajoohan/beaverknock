@@ -48,11 +48,22 @@ export default async function handler(req, res) {
        사무소를 밝히는 것은 손님이 연결을 고른 그 순간이다. */
     const ROLE_KO = { agent: '공인중개사', owner: '소유자', developer: '시행사' };
     const agentIds = [...new Set(proposals.map(p => p.agent_id).filter(Boolean))];
-    let by = {};
+    let by = {}, contact = {};
     if (agentIds.length) {
-      const aq = new URLSearchParams({ select: 'id,role', id: `in.(${agentIds.join(',')})` });
+      const aq = new URLSearchParams({
+        select: 'id,role,name,phone,office,reg_no,addr', id: `in.(${agentIds.join(',')})`,
+      });
       const ar = await fetch(sbUrl('bk_agent', aq.toString()), { headers: sbHeaders() });
-      if (ar.ok) for (const a of await ar.json()) by[a.id] = ROLE_KO[a.role] || '공인중개사';
+      if (ar.ok) for (const a of await ar.json()) {
+        by[a.id] = ROLE_KO[a.role] || '공인중개사';
+        /* 연결한 제안에만 붙여 내보낸다 - 아래 map 에서 status 를 보고 고른다.
+           여기서 다 만들어 두되, 연결하지 않은 제안에는 절대 싣지 않는다. */
+        contact[a.id] = {
+          role: ROLE_KO[a.role] || '공인중개사',
+          office: a.office || null, name: a.name || null, phone: a.phone || null,
+          reg_no: a.reg_no || null, addr: a.addr || null,
+        };
+      }
     }
 
     return res.status(200).json({
@@ -74,6 +85,9 @@ export default async function handler(req, res) {
         floor: p.floor_mode === '비공개' ? '비공개' : (p.floor_no ? p.floor_no + '층' : p.band || ''),
         move_in: p.move_in, park: p.park, approved: p.approved, photos: p.photos,
         msg: p.msg, created_at: p.created_at,
+        /* 연결한 뒤에야 상대가 누구인지 나간다. 새로고침해도 번호가 남아 있어야
+           손님이 나중에 다시 걸 수 있다. */
+        contact: p.status === 'accepted' ? (contact[p.agent_id] || null) : null,
       })),
     });
   } catch (e) {

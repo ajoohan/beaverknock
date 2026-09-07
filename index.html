@@ -4608,6 +4608,57 @@ function fallbackCopy(txt, ok){
 /* 가입 신청 — 조건과 같은 암호를 쓴다 */
 const AG = { rows:null, loading:false, err:'', at:'', reveal:false, role:'', q:'', note:'', pick:{}, busy:false };
 
+/* 열람 기록. 남기기만 하고 아무도 안 보면 기록이 아니라 저장 공간이다. */
+const LG = { rows:null, loading:false, err:'', at:'', note:'', only:'' };
+
+function lgFetch(){
+  if(LG.loading || !OPS.pass) return;
+  LG.loading = true; LG.err = ''; render();
+  apiFetch('/api/ops-log', {method:'POST',
+    body: JSON.stringify({pass: OPS.pass, limit: 300, only: LG.only || undefined})})
+    .then(r => r.json().catch(()=>({})).then(j => {
+      if(r.ok){ LG.rows = j.rows || []; LG.at = j.at || ''; LG.note = j.note || ''; }
+      else LG.err = j.error || '조회에 실패했습니다';
+      LG.loading = false; render();
+    }))
+    .catch(() => { LG.err = '네트워크 문제로 불러오지 못했습니다'; LG.loading = false; render(); });
+}
+
+const LG_ACT = { demands:'조건 조회', agents:'가입 신청 조회', 'agent-status':'상태 변경' };
+
+function logPanel(){
+  const rows = LG.rows;
+  if(LG.loading && !rows) return `<div class="card pad"><span style="font-size:13.5px;color:var(--n500)">불러오는 중…</span></div>`;
+  if(LG.err) return `<div class="card pad"><p style="margin:0;font-size:13.5px;color:var(--danger);font-weight:700">${esc(LG.err)}</p></div>`;
+  if(!rows) return `<div class="card pad"><button class="btn pri md" data-act="lg-load">기록 불러오기</button></div>`;
+  const chip = (label,on,v) => `<button class="chip ${on?'on':''}" data-act="lg-only" data-v="${v}" style="padding:8px 14px;font-size:12.5px">${label}</button>`;
+  const when = t => { const d=new Date(t); return isNaN(d)?'-':
+    `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; };
+  return `
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px">
+      <div class="chips" style="gap:6px">${chip('전체', !LG.only, '')}${chip('연락처 열어본 것만', LG.only==='reveal', 'reveal')}</div>
+      <span style="margin-left:auto;font-size:12.5px;color:var(--n500)">${rows.length}건${LG.at?` · ${when(LG.at)} 기준`:''}</span>
+      <button class="btn sec sm" data-act="lg-load">새로고침</button>
+    </div>
+    ${LG.note?`<p style="margin:0 0 12px;background:var(--warnbg);padding:12px 16px;font-size:12.5px;color:var(--n700)">${esc(LG.note)}</p>`:''}
+    ${!rows.length ? `<div class="empty"><p style="margin:0;font-size:13.5px;color:var(--n500)">남은 기록이 없습니다.</p></div>` : `
+    <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12.5px;min-width:620px">
+      <thead><tr style="text-align:left;color:var(--n500)">
+        <th style="padding:8px 10px;font-weight:800">시각</th><th style="padding:8px 10px;font-weight:800">누가</th>
+        <th style="padding:8px 10px;font-weight:800">무엇을</th><th style="padding:8px 10px;font-weight:800">연락처</th>
+        <th style="padding:8px 10px;font-weight:800">건수</th><th style="padding:8px 10px;font-weight:800">비고</th></tr></thead>
+      <tbody>${rows.map(r=>`
+        <tr style="border-top:1px solid var(--n100)${r.reveal?';background:var(--warnbg)':''}">
+          <td class="num" style="padding:8px 10px;white-space:nowrap">${when(r.at)}</td>
+          <td style="padding:8px 10px">${esc(r.email||'(로그인 없음)')}</td>
+          <td style="padding:8px 10px">${esc(LG_ACT[r.action]||r.action)}</td>
+          <td style="padding:8px 10px;font-weight:800;color:${r.reveal?'var(--warn)':'var(--n500)'}">${r.reveal?'열어봄':'가림'}</td>
+          <td class="num" style="padding:8px 10px">${r.count==null?'-':r.count}</td>
+          <td style="padding:8px 10px;color:var(--n500)">${esc(r.detail||'')}</td>
+        </tr>`).join('')}</tbody>
+    </table></div>`}`;
+}
+
 /* 고른 건들. 화면에서 사라진 행(필터가 바뀌어 안 보이는 것)까지 처리하면
    본인이 못 본 것을 바꾸게 된다 - 보이는 것 중에서만 센다. */
 const agPicked = rows => (rows||[]).filter(r => AG.pick[r.id]).map(r => r.id);
@@ -4727,8 +4778,9 @@ V['#/ops/live'] = () => {
     <div class="chips" style="gap:6px;margin-bottom:14px">
       ${chip(`걸린 조건${all?` ${all.length}`:''}`, OPS.tab!=='agent', 'ops-tab','demand')}
       ${chip(`가입 신청${AG.rows?` ${AG.rows.length}`:''}`, OPS.tab==='agent', 'ops-tab','agent')}
+      ${chip(`열람 기록${LG.rows?` ${LG.rows.length}`:''}`, OPS.tab==='log', 'ops-tab','log')}
     </div>
-    ${OPS.tab==='agent' ? agentPanel() : `
+    ${OPS.tab==='log' ? logPanel() : OPS.tab==='agent' ? agentPanel() : `
     ${opsSummary(all, AG.rows)}
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px">
       <div class="chips" style="gap:6px">
@@ -5594,7 +5646,12 @@ function handle(a,v,el){
 
     /* ── 운영 조회 ── */
     case 'ops-load':   opsFetch(); return true;
-    case 'ops-tab':    OPS.tab = v; if(v==='agent' && !AG.rows && OPS.pass) agFetch(); render(); return true;
+    case 'ops-tab':    OPS.tab = v;
+      if(v==='agent' && !AG.rows && OPS.pass) agFetch();
+      if(v==='log'   && !LG.rows && OPS.pass) lgFetch();
+      render(); return true;
+    case 'lg-load':    LG.rows=null; lgFetch(); return true;
+    case 'lg-only':    LG.only = v; LG.rows=null; lgFetch(); return true;
     case 'ag-load':    agFetch(); return true;
     case 'ag-role':    AG.role = AG.role===v ? '' : v; render(); settle('tbody'); return true;
     case 'ag-reveal':  AG.reveal = !AG.reveal; agFetch(); return true;

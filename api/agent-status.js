@@ -10,6 +10,7 @@
 import crypto from 'node:crypto';
 
 import { opsAccount } from './_auth.js';
+import { logOps } from './_opslog.js';
 
 const TABLE = 'bk_agent';
 const STATUS = ['new', 'contacted', 'approved', 'rejected'];
@@ -41,14 +42,16 @@ export default async function handler(req, res) {
   if (typeof p === 'string') { try { p = JSON.parse(p); } catch { p = {}; } }
   p = p || {};
 
+  /* 계정을 먼저 본다. 로그인도 안 한 요청에 암호를 시험할 기회를 주지 않는다.
+     암호는 사람 사이를 돌아다니고, 새면 누가 열었는지도 남지 않는다.
+     BK_OPS_USERS 가 비어 있으면 명단은 안 보고 누구인지만 알아둔다. */
+  const gate = await opsAccount(req);
+  if (gate.error) return res.status(gate.code).json({ error: gate.error });
+  const opsUser = gate.user;
+
   if (!sameSecret(p.pass, BK_OPS_PASS)) {
     return res.status(401).json({ error: '접근 암호가 맞지 않습니다' });
   }
-
-  /* 암호를 통과해도 계정을 한 번 더 본다. 암호는 돌아다니고, 새면
-     누가 열었는지도 남지 않는다. BK_OPS_USERS 가 비어 있으면 예전 동작. */
-  const denied = await opsAccount(req);
-  if (denied) return res.status(denied.code).json({ error: denied.error });
   /* 한 건이든 여럿이든 같은 길로 처리한다 - 목록에서 골라 한 번에 바꾸는 일이 잦다 */
   const ids = Array.isArray(p.ids) ? p.ids : (p.id ? [p.id] : []);
   if (!ids.length)          return res.status(400).json({ error: '대상이 없습니다' });
@@ -75,6 +78,8 @@ export default async function handler(req, res) {
     if (!r.ok) return res.status(500).json({ error: '상태를 바꾸지 못했습니다' });
     const changed = (await r.json().catch(() => [])).length;
     if (!changed) return res.status(404).json({ error: '바뀐 건이 없습니다 - 목록을 새로고침해 주세요', count: 0 });
+    await logOps(req, opsUser, { action: 'agent-status', count: changed,
+      detail: `${p.status} · 요청 ${ids.length}건` });
     return res.status(200).json({ ok: true, status: p.status, count: changed, asked: ids.length });
   } catch (e) {
     return res.status(500).json({ error: '상태 변경 중 문제가 생겼습니다' });

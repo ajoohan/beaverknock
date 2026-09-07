@@ -10,6 +10,7 @@
  */
 
 import { opsAccount } from './_auth.js';
+import { logOps } from './_opslog.js';
 
 const TABLE = 'bk_demand';
 
@@ -50,16 +51,18 @@ export default async function handler(req, res) {
   let payload = typeof req.body === 'object' && req.body ? req.body : {};
   if (typeof req.body === 'string') { try { payload = JSON.parse(req.body); } catch { payload = {}; } }
   const pass = payload.pass;
+  /* 계정을 먼저 본다. 로그인도 안 한 요청에 암호를 시험할 기회를 주지 않는다.
+     암호는 사람 사이를 돌아다니고, 새면 누가 열었는지도 남지 않는다.
+     BK_OPS_USERS 가 비어 있으면 명단은 안 보고 누구인지만 알아둔다. */
+  const gate = await opsAccount(req);
+  if (gate.error) return res.status(gate.code).json({ error: gate.error });
+  const opsUser = gate.user;
+
   if (!sameSecret(pass, BK_OPS_PASS)) {
     /* 무차별 대입을 조금이라도 늦춘다 */
     await new Promise(r => setTimeout(r, 400));
     return res.status(401).json({ error: '접근 암호가 맞지 않습니다' });
   }
-
-  /* 암호를 통과해도 계정을 한 번 더 본다. 암호는 돌아다니고, 새면
-     누가 열었는지도 남지 않는다. BK_OPS_USERS 가 비어 있으면 예전 동작. */
-  const denied = await opsAccount(req);
-  if (denied) return res.status(denied.code).json({ error: denied.error });
 
   const limit  = Math.min(parseInt(payload.limit, 10) || 200, 1000);
   const kind   = payload.kind;                 // home | shop | office | storage
@@ -98,6 +101,11 @@ export default async function handler(req, res) {
     phone: reveal ? x.phone : maskPhone(x.phone),
     birth: reveal ? x.birth : (x.birth ? String(x.birth).slice(0, 4) + '****' : null),
   }));
+
+  /* 누가 언제 무엇을 봤는지 남긴다. 특히 연락처를 드러낸 조회는 반드시.
+     기다렸다 보낸다 - 서버리스는 응답과 함께 접혀서, 띄워만 두면 사라진다. */
+  await logOps(req, opsUser, { action: 'demands', reveal, count: out.length,
+    detail: [kind || '', days ? days + '일' : ''].filter(Boolean).join(' · ') || null });
 
   res.status(200).json({
     count: out.length,

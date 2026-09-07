@@ -90,14 +90,17 @@ export function opsAllowlist() {
     .split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
 }
 
-/** 암호를 통과한 뒤 계정을 본다. 통과면 null, 아니면 { code, error }. */
+/** 운영 화면을 열 수 있는 계정인지 본다.
+ *  통과면 { user } (명단이 없으면 user 는 null 일 수 있다), 아니면 { code, error }.
+ *  암호보다 먼저 부른다 - 로그인도 안 한 요청에 암호를 시험할 기회를 주지 않는다. */
 export async function opsAccount(req) {
   const allow = opsAllowlist();
-  if (!allow.length) return null;
+  /* 명단이 없어도 누구인지는 알아둔다 - 열람 기록에 적어야 한다 */
   const user = await userFrom(req);
+  if (!allow.length) return { user };
   if (!user) return { code: 401, error: '운영자 계정으로 로그인한 뒤 다시 시도해 주세요' };
   const id = String(user.id || '').toLowerCase();
   const email = String(user.email || '').toLowerCase();
-  if (allow.includes(id) || allow.includes(email)) return null;
+  if (allow.includes(id) || allow.includes(email)) return { user };
   return { code: 403, error: '이 계정에는 운영 권한이 없습니다' };
 }

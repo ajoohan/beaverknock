@@ -193,7 +193,9 @@ export default async function handler(req, res) {
     memo: str(b.memo, 1000),
 
     name, phone,
-    birth: idv ? str(idv.birth, 8) : str(b.birth, 8),
+    /* 본인확인이 안 붙어 있으면 생년월일은 받지 않는다.
+       대조하지도 않을 것을 저장하는 것은 그냥 쌓아두는 것이다. */
+    birth: idv ? str(idv.birth, 8) : null,
     /* 확인 수단과 시각도 표에서 가져온다 - 브라우저가 적어 보낸 값을 믿지 않는다 */
     verify_method: idv ? 'portone'
       : b.verify_method === 'pass' ? 'pass' : b.verify_method === 'sms' ? 'sms' : null,

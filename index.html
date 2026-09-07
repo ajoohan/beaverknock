@@ -2014,7 +2014,7 @@ V['#/login'] = () => {
 
       <p style="margin:0;text-align:center;font-size:12.5px;line-height:1.75;color:var(--n500)">
         로그인하시면 <a href="/terms" target="_blank" rel="noopener" style="color:var(--ind);font-weight:700;text-decoration:underline;text-underline-offset:2px">이용약관</a>과 <a href="/privacy" target="_blank" rel="noopener" style="color:var(--ind);font-weight:700;text-decoration:underline;text-underline-offset:2px">개인정보 처리방침</a>에 동의하신 것으로 봅니다.<br>
-        조건을 걸으실 때 <b style="color:var(--n700)">본인확인</b>을 한 번 더 받습니다.</p>
+        조건을 걸으실 때 <b style="color:var(--n700)">연락받으실 번호</b>를 한 번 더 확인합니다.</p>
     </div>
   </div>
 </div>`;};
@@ -2845,7 +2845,6 @@ const VMETHODS = [
   {k:'sms',  t:'본인확인 문자', d:'통신사에 등록된 명의로 확인합니다', s:'문자로 받은 번호 6자리를 넣으시면 됩니다'},
   {k:'pass', t:'PASS 인증',     d:'PASS 앱에서 지문·비밀번호로 확인합니다', s:'앱에서 한 번만 누르면 끝납니다'},
 ];
-const CARRIERS = ['SKT','KT','LG U+','알뜰폰'];
 const phoneOk = p => /^01[016789][0-9]{7,8}$/.test(String(p).replace(/-/g,''));
 /* 받침이 있으면 '을', 없으면 '를'. 한글 음절은 '가'(0xAC00)부터 28개씩 끊어지고
    그 안의 자리값이 0 이면 받침이 없다. '6가지을(를)' 같은 말을 없앤다. */
@@ -2912,87 +2911,47 @@ function verifyCard(d){
     </div>`;
   }
 
-  const m = d.vmethod;
-  const idFields = `
-    <div class="grid2 mo1" style="gap:12px">
-      <div><span class="lab" style="font-size:12.5px">이름 <span class="req">*</span> <span class="opt">실명</span></span>
-        <input class="inp" data-in="name" value="${esc(d.name)}" placeholder="예) 김민수" style="padding:12px 14px;font-size:14px"></div>
-      <div><span class="lab" style="font-size:12.5px">생년월일 <span class="req">*</span> <span class="opt">8자리</span></span>
-        <input class="inp num" data-in="birth" inputmode="numeric" value="${esc(d.birth)}" placeholder="19900101" style="padding:12px 14px;font-size:14px"></div>
-    </div>`;
-  const phoneField = `
-    <div style="margin-top:12px"><span class="lab" style="font-size:12.5px">휴대폰 번호 <span class="req">*</span> <span class="opt">본인 명의</span></span>
-      <input class="inp num" data-in="phone" inputmode="numeric" value="${esc(d.phone)}" placeholder="010-1234-5678" maxlength="13" style="padding:12px 14px;font-size:14px">
-      ${d.phone && !phoneOk(d.phone)?'<span style="display:block;margin-top:6px;font-size:11px;font-weight:700;color:var(--danger)">번호 형식을 확인해 주세요</span>':''}</div>`;
-
-  let body = '';
-  if(m==='sms'){
-    body = d.vstep==='code' ? `
-      <div style="margin-top:14px">
-        <span class="lab" style="font-size:12.5px">인증번호 <span class="req">*</span> <span class="opt">${maskPhone(d.phone)} 로 보냈습니다</span></span>
-        <div style="display:flex;gap:8px;align-items:center">
-          <div class="unit" style="flex:1"><input class="inp num" data-in="vcode" inputmode="numeric" maxlength="6" value="${esc(d.vcode)}" placeholder="6자리">
-            <span data-vtimer style="font-weight:800;color:${S.vsec<60?'var(--danger)':'var(--ind)'}">${String(Math.floor(S.vsec/60)).padStart(2,'0')}:${String(S.vsec%60).padStart(2,'0')}</span></div>
-          <button class="btn sec sm" data-act="v-send" style="flex:none;padding:0 16px">재발송</button>
-        </div>
-        <p style="margin:10px 0 0;font-size:12.5px;color:var(--n500)">문자가 오지 않으면 스팸함을 확인하시거나 재발송을 눌러주세요.</p>
-        <button class="btn pri" data-act="v-confirm" style="width:100%;margin-top:14px;padding:14px 0;font-size:15px" ${d.vcode.length===6?'':'disabled'}>인증번호 확인</button>
-      </div>`
-    : `${idFields}
-      <div style="margin-top:12px"><span class="lab" style="font-size:12.5px">통신사 <span class="req">*</span></span>${chipsHTML(CARRIERS, d.carrier, 'carrier', false)}</div>
-      ${phoneField}
-      <button class="btn pri" data-act="v-send" style="width:100%;margin-top:14px;padding:14px 0;font-size:15px">인증번호 받기</button>`;
-  }
-  else if(m==='pass'){
-    body = d.vstep==='wait' ? `
-      <div style="margin-top:14px;display:flex;flex-direction:column;align-items:center;gap:12px;padding:20px 0">
-        <span style="font-size:14px;font-weight:800">PASS 앱에서 인증을 완료해 주세요</span>
-        <span style="font-size:12.5px;line-height:1.75;color:var(--n500);text-align:center">${maskPhone(d.phone)} 로 인증 요청을 보냈습니다<br>앱에서 승인하시면 이름과 연락처가 확인됩니다</span>
-        <div style="display:flex;gap:8px;margin-top:4px">
-          <button class="btn sec sm" data-act="v-back">방법 다시 고르기</button>
-          <button class="btn pri sm" data-act="v-approve">앱에서 승인했습니다</button>
-        </div>
-      </div>`
-    : `${idFields}${phoneField}
-      <button class="btn pri" data-act="v-request" style="width:100%;margin-top:14px;padding:14px 0;font-size:15px">PASS 앱으로 인증 요청</button>`;
-  }
-
+  /* 본인확인이 아직 안 붙었다.
+     예전에는 여기서 생년월일·통신사를 받고 인증번호 6자리까지 물었는데,
+     아무것도 대조하지 않았다. 검증하지 않는 인증을 위해 생년월일을 받아
+     저장하고 있었다 - 받을 이유가 없는 것은 받지 않는다.
+     연락처만 받고, 확인은 아직이라고 밝힌다. 키가 들어오면 위 화면으로 바뀐다. */
   return `
   <div class="card pad" style="border:1.5px solid var(--ind200);background:var(--ind50)">
-    <span class="sect" style="margin-bottom:6px">본인확인 <span class="req">*</span></span>
+    <span class="sect" style="margin-bottom:6px">연락받으실 곳 <span class="req">*</span></span>
     <p style="margin:0 0 14px;font-size:12.5px;line-height:1.75;color:var(--n700)">
-      확인된 <b style="color:var(--n900)">이름과 연락처만</b> 중개사에게 전달됩니다. 장난 문의와 허위 조건을 막기 위한 절차이며,
-      <b style="color:var(--n900)">주민등록번호는 저장하지 않습니다.</b></p>
+      적어주신 <b style="color:var(--n900)">이름과 연락처</b>가 중개사에게 전달됩니다.
+      연결을 누르신 뒤에요 - 조건만 걸어두신 동안에는 전달되지 않습니다.</p>
     <p style="margin:-6px 0 14px;padding:10px 14px;background:var(--warnbg);font-size:12.5px;line-height:1.7;color:var(--n700)">
-      본인확인 모듈을 붙이는 중입니다. 지금은 시험 화면이라 실제 확인이 이뤄지지 않습니다.</p>
-    <div class="grid2 mo1" style="gap:10px">${VMETHODS.map(x=>{ const on = m===x.k; return `
-      <button data-act="vmethod" data-v="${x.k}" style="display:flex;gap:12px;align-items:flex-start;text-align:left;
-        padding:14px 16px;border-radius:12px;cursor:pointer;transition:border-color .14s ease,box-shadow .14s ease;
-        border:1.5px solid ${on?'var(--ind)':'var(--n300)'};background:var(--white);
-        box-shadow:${on?'0 4px 14px rgba(61,63,143,.15)':'none'}">
-        <span style="flex:none;margin-top:2px;width:18px;height:18px;border-radius:var(--r-full);
-          border:2px solid ${on?'var(--ind)':'var(--n300)'};display:flex;align-items:center;justify-content:center">
-          ${on?'<i style="display:block;width:8px;height:8px;border-radius:var(--r-full);background:var(--ind)"></i>':''}</span>
-        <span style="flex:1;min-width:0">
-          <b style="display:block;font-size:14px;font-weight:800;color:${on?'var(--ind)':'var(--n900)'}">${x.t}</b>
-          <span style="display:block;margin-top:4px;font-size:11px;line-height:1.6;color:var(--n500)">${x.d}</span>
-        </span>
-      </button>`;}).join('')}</div>
-    ${m? `<p style="margin:12px 0 0;font-size:12.5px;color:var(--n500)">${esc(VMETHODS.find(x=>x.k===m).s)}</p>` : ''}
-    ${body}
+      휴대폰 본인확인은 <b style="color:var(--n900)">아직 붙지 않았습니다.</b>
+      지금은 적어주신 대로 전달되니, 연락받으실 번호를 정확히 적어주세요.</p>
+    <div><span class="lab" style="font-size:12.5px">이름 <span class="req">*</span></span>
+      <input class="inp" data-in="name" value="${esc(d.name)}" placeholder="예) 김민수" style="padding:12px 14px;font-size:14px"></div>
+    <div style="margin-top:12px"><span class="lab" style="font-size:12.5px">휴대폰 번호 <span class="req">*</span></span>
+      <input class="inp num" data-in="phone" inputmode="numeric" value="${esc(d.phone)}" placeholder="010-1234-5678" maxlength="13" style="padding:12px 14px;font-size:14px">
+      ${d.phone && !phoneOk(d.phone)?'<span style="display:block;margin-top:6px;font-size:11px;font-weight:700;color:var(--danger)">번호 형식을 확인해 주세요</span>':''}</div>
   </div>`;
 }
 
 /* ---------- D-04 연락 · 동의 ---------- */
-V['#/contact'] = () => { const d=S.draft; const ok = d.verified && phoneOk(d.phone) && d.a1 && d.a2;
+/* 접수해도 되는가.
+   본인확인이 붙어 있으면 확인을 통과해야 하고, 아직이면 이름과 연락처면 된다.
+   두 곳(화면과 버튼 잠금)이 서로 다른 기준을 쓰면 버튼만 열리거나 닫힌다. */
+function contactOk(d){
+  const base = phoneOk(d.phone) && d.a1 && d.a2;
+  const idvOn = !!(S.idvCfg && S.idvCfg.enabled);
+  return idvOn ? (base && d.verified) : (base && String(d.name||'').trim().length >= 2);
+}
+
+V['#/contact'] = () => { const d=S.draft; const ok = contactOk(d);
   return `
 <div class="scr fade">
   ${mprog(75)}
   ${isMo()? `<div class="nav pad">${mobileBack('뒤로','#/register')}<span style="margin:0 auto">${logoLockup({h:21})}</span><span class="muted" style="font-size:12.5px">4/4</span></div>`:''}
   <div class="split">
-    ${rail(3,'거의 다 왔습니다.<br>본인확인만 하면 끝이에요')}
+    ${rail(3,'거의 다 왔습니다.<br>연락처만 남기면 끝이에요')}
     <div class="formcol"><div class="in">
-      <div><h1 class="t" style="font-size:${isMo()?21:25}px">본인확인만 하면 끝입니다</h1>
+      <div><h1 class="t" style="font-size:${isMo()?21:25}px">${S.idvCfg&&S.idvCfg.enabled?'본인확인만 하면 끝입니다':'연락처만 남기면 끝입니다'}</h1>
       <p class="sub">확인된 이름과 연락처로, <b style="color:var(--n900)">조건이 맞을 때만</b> 연락이 갑니다.</p></div>
 
       ${verifyCard(d)}
@@ -3030,7 +2989,7 @@ V['#/contact'] = () => { const d=S.draft; const ok = d.verified && phoneOk(d.pho
           ${draftSummary(d).map(([k,v])=>`<div class="rc-row"><span class="rc-k">${esc(k)}</span><span class="rc-v">${esc(v)}</span></div>`).join('')}
         </div>
         ${d.memo?`<div class="rc-memo">${esc(d.memo)}</div>`:''}
-        <div class="rc-note">본인확인된 <b style="color:var(--n700);font-weight:800">이름·연락처</b>가 함께 전달됩니다 ·
+        <div class="rc-note"><b style="color:var(--n700);font-weight:800">이름·연락처</b>는 연결하실 때 전달됩니다 ·
           조건당 최대 <b style="color:var(--n700);font-weight:800">5곳</b>의 공인중개사사무소 · 3개월 후 자동 파기</div>
       </div>
     </div></div>
@@ -5181,9 +5140,9 @@ const STEPS = [
   ['조건을 걸어둡니다',
    '동네·예산·시기만 있으면 됩니다. 1분이면 끝납니다.',
    '집을 보러 다니지 않아도 됩니다. 원하는 조건만 남기면 됩니다. 자세히 적을수록 맞는 제안이 옵니다.'],
-  ['본인확인을 한 번 합니다',
-   '문자 또는 PASS로 확인합니다.',
-   '장난 문의와 허위 조건을 막기 위한 절차입니다. 확인된 이름과 연락처만 중개사에게 전달되고, 주민등록번호는 저장하지 않습니다.'],
+  ['연락받으실 곳을 남깁니다',
+   '이름과 휴대폰 번호를 적습니다.',
+   '연결을 누르신 제안에만 전달됩니다. 휴대폰 본인확인은 준비 중이며, 붙으면 이 단계가 자동 확인으로 바뀝니다.'],
   ['맞을 때만 연락이 옵니다',
    '조건 1건당 최대 5곳의 중개사에게 전달됩니다.',
    '맞는 물건이 없으면 아무 연락도 가지 않습니다. 광고 전화가 쏟아지지 않습니다.'],
@@ -5223,8 +5182,8 @@ const FAQ = [
    '조건 1건당 <b style="color:var(--n900)">최대 5곳</b>까지만 전달됩니다. 그마저도 맞는 물건이 있는 중개사만 제안을 보냅니다. 맞는 곳이 없으면 아무 연락도 가지 않습니다.'],
   ['내 번호가 중개사에게 바로 넘어가나요',
    '아닙니다. 조건을 걸어두신 동안에는 지역과 조건만 전달되고 이름·연락처는 가려져 있습니다. <b style="color:var(--n900)">연결 버튼을 누르실 때</b> 비로소 양쪽 연락처가 서로에게 갑니다. 누르지 않으시면 넘어가지 않고, 어느 제안에 누를지도 직접 고르십니다.'],
-  ['왜 본인확인을 하나요',
-   '장난 문의와 허위 조건을 막기 위해서입니다. 중개사가 헛걸음하지 않아야 좋은 제안이 옵니다. 확인된 이름과 연락처만 전달되고 주민등록번호는 받지도 저장하지도 않습니다.'],
+  ['본인확인을 하나요',
+   '<b style="color:var(--n900)">아직 하지 않습니다.</b> 휴대폰 본인확인을 붙이는 중이고, 지금은 적어주신 이름과 연락처를 그대로 씁니다. 주민등록번호는 붙은 뒤에도 받지도 저장하지도 않습니다.'],
   ['조건은 얼마나 보관되나요',
    '<b style="color:var(--n900)">3개월</b>이 지나면 자동으로 지워집니다. 그 전에도 삭제를 요청하시면 바로 지워 드립니다. 자세한 내용은 개인정보 처리방침에 있습니다.'],
   ['매물을 직접 보고 고르고 싶은데요',
@@ -5351,7 +5310,6 @@ function render(){
   if(h.startsWith('#/partner/listing') || h==='#/partner') loadListings(false);
   /* 위치는 먼저 묻지 않는다. 사이트에 들어오자마자 권한창이 뜨면 대부분 거절하고,
      거절당한 권한은 되돌리기 어렵다. 지도에서 '📍 현재 위치로' 를 누른 사람에게만 묻는다. */
-  if(!(h==='#/contact' && S.draft.vstep==='code')) stopVTimer();
 }
 function startTimer(){ if(S.timer) return;
   S.timer=setInterval(()=>{ S.timeLeft=Math.max(0,S.timeLeft-1);
@@ -5361,16 +5319,6 @@ function startTimer(){ if(S.timer) return;
   },1000);}
 function stopTimer(){ if(S.timer){clearInterval(S.timer); S.timer=null;} }
 
-/* 본인확인 문자 유효시간 - 화면을 통째로 다시 그리면 입력 포커스가 날아가므로
-   타이머 표시만 직접 갈아끼운다 */
-function startVTimer(){ if(S.vtimer) return;
-  S.vtimer=setInterval(()=>{ S.vsec=Math.max(0,S.vsec-1);
-    const el=$('#app [data-vtimer]');
-    if(el){ el.textContent=`${String(Math.floor(S.vsec/60)).padStart(2,'0')}:${String(S.vsec%60).padStart(2,'0')}`;
-      if(S.vsec<60) el.style.color='var(--danger)'; }
-    if(S.vsec===0){ stopVTimer(); toast('인증 시간이 지났습니다 · 재발송을 눌러주세요'); }
-  },1000);}
-function stopVTimer(){ if(S.vtimer){clearInterval(S.vtimer); S.vtimer=null;} }
 /* ══════════ 본인확인 (포트원 V2 · KG이니시스 통합본인인증) ══════════
    브라우저가 "확인했습니다" 라고 말하는 것은 믿지 않는다.
    포트원 창이 끝나면 건 번호만 받아 서버로 넘기고, 서버가 포트원에 직접 물어본다.
@@ -5456,15 +5404,6 @@ function readIdvRedirect(){
   return true;
 }
 
-function verifyDone(d){
-  d.verified=true; d.vstep='done'; d.vcode='';
-  const t=new Date();
-  d.vat=`${t.getFullYear()}.${String(t.getMonth()+1).padStart(2,'0')}.${String(t.getDate()).padStart(2,'0')}`;
-  /* 확인 결과는 사람에게 남긴다 - 조건을 새로 걸 때마다 다시 받지 않는다 */
-  S.idv = {name:d.name, phone:d.phone, vmethod:d.vmethod, vat:d.vat};
-  stopVTimer(); render();
-  toast('본인 확인이 완료되었습니다');
-}
 
 
 /* ══════════ 계정 ══════════
@@ -5749,9 +5688,8 @@ function refreshJoin(){
   const b = $('#app [data-act="j-pass"]');
   if(b){ const ok = nameOk && phoneOk; b.classList.toggle('pri', ok); b.classList.toggle('sec', !ok); }
 }
-function toggleSubmit(){ const d=S.draft;
-  const ok = d.verified && phoneOk(d.phone) && d.a1 && d.a2;
-  const b=$('#app [data-act="submit"]'); if(b) b.disabled=!ok; }
+function toggleSubmit(){
+  const b=$('#app [data-act="submit"]'); if(b) b.disabled=!contactOk(S.draft); }
 function refreshListingBtn(){
   const f=S.form, g=k=>f[k]||'', shop=f.lkind==='shop';
   const ok = !!String(g('lname')).trim() && !!g('ldong') && +g('ldep')>0 && (shop? !!g('lbiz') : +g('lrooms')>0);
@@ -5914,31 +5852,10 @@ function handle(a,v,el){
 
     /* ── 본인확인 ── */
     case 'idv': idvStart(); return true;
-    case 'vmethod': d.vmethod = d.vmethod===v ? '' : v; d.vstep='idle'; d.vcode=''; stopVTimer(); render(); return true;
-    case 'carrier': d.carrier = d.carrier===v ? '' : v; render(); return true;
-    case 'v-back': d.vstep='idle'; d.vcode=''; stopVTimer(); render(); return true;
-    case 'v-send': {
-      if(!d.name.trim()) return toast('이름을 적어주세요'), true;
-      if(!/^[0-9]{8}$/.test(d.birth)) return toast('생년월일 8자리를 적어주세요'), true;
-      if(!d.carrier) return toast('통신사를 골라주세요'), true;
-      if(!phoneOk(d.phone)) return toast('휴대폰 번호를 확인해 주세요'), true;
-      d.vstep='code'; d.vcode=''; S.vsec=180; render(); startVTimer();
-      toast('인증번호를 보냈습니다 · 3분 안에 입력해 주세요'); return true; }
-    case 'v-confirm': {
-      if(d.vcode.length!==6) return toast('인증번호 6자리를 입력해 주세요'), true;
-      if(S.vsec<=0) return toast('시간이 지났습니다 · 재발송을 눌러주세요'), true;
-      verifyDone(d); return true; }
-    case 'v-request': {
-      if(!d.name.trim()) return toast('이름을 적어주세요'), true;
-      if(!/^[0-9]{8}$/.test(d.birth)) return toast('생년월일 8자리를 적어주세요'), true;
-      if(!phoneOk(d.phone)) return toast('휴대폰 번호를 확인해 주세요'), true;
-      d.vstep='wait'; render();
-      toast('PASS 앱으로 인증을 요청했습니다'); return true; }
-    case 'v-approve': verifyDone(d); return true;
     case 'v-reset': {
       /* 다른 명의로 다시 받겠다는 뜻이다 - 남겨둔 확인 결과도 함께 지운다 */
-      d.verified=false; d.vstep='idle'; d.vcode=''; d.vat=''; S.idv=null; S.idvToken=null;
-      stopVTimer(); render(); return true; }
+      d.verified=false; d.vstep='idle'; d.vat=''; S.idv=null; S.idvToken=null;
+      render(); return true; }
 
     case 'next-register': {
       const shop=NONHOME(d.kind), w=words(d.kind);

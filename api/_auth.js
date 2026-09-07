@@ -74,3 +74,30 @@ export async function emailOf(userId) {
     return null;
   }
 }
+
+/* 운영 화면은 암호 하나로 열려 있었다.
+   주소만 알면 화면을 거치지 않고 POST 한 번으로 조건에 담긴 이름과
+   연락처를 통째로 받아갈 수 있었다. 암호는 사람 사이를 돌아다니고,
+   한 번 새면 누가 열었는지도 남지 않는다.
+
+   계정을 함께 본다 - 암호를 알아도 명단에 없는 계정이면 열리지 않는다.
+
+   BK_OPS_USERS  쉼표로 구분한 운영자 메일 또는 user id
+                 비어 있으면 예전대로 암호만 본다. 환경변수를 넣기 전에
+                 배포되어 운영자가 잠기는 일은 없어야 한다. */
+export function opsAllowlist() {
+  return String(process.env.BK_OPS_USERS || '')
+    .split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+}
+
+/** 암호를 통과한 뒤 계정을 본다. 통과면 null, 아니면 { code, error }. */
+export async function opsAccount(req) {
+  const allow = opsAllowlist();
+  if (!allow.length) return null;
+  const user = await userFrom(req);
+  if (!user) return { code: 401, error: '운영자 계정으로 로그인한 뒤 다시 시도해 주세요' };
+  const id = String(user.id || '').toLowerCase();
+  const email = String(user.email || '').toLowerCase();
+  if (allow.includes(id) || allow.includes(email)) return null;
+  return { code: 403, error: '이 계정에는 운영 권한이 없습니다' };
+}

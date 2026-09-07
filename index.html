@@ -4528,7 +4528,8 @@ function saveDemand(d, slotN){
 
 
 /* ══════════ A-05 운영 조회 (실데이터) ══════════
-   조회는 /api/demands 가 서비스 키로 대신 한다. 이 화면은 암호만 들고 있는다.
+   조회는 /api/demands 가 서비스 키로 대신 한다. 이 화면은 암호만 들고 있고,
+   계정은 로그인 토큰으로 서버가 직접 확인한다 - 화면이 스스로 판단하지 않는다.
    암호는 메모리에만 둔다 - 새로고침하면 다시 물어본다. */
 const OPS = { pass:'', rows:null, loading:false, err:'', reveal:false, kind:'', days:0, at:'', tab:'demand',
   q:'', open:'', sent:{}, seen:0, only:'' };
@@ -4618,7 +4619,7 @@ function agSetMany(ids, status){
   const before = rows.map(r => [r.id, r.status || 'new']);
   rows.forEach(r => r.status = status);
   AG.busy = true; render();
-  fetch('/api/agent-status', {method:'POST', headers:{'Content-Type':'application/json'},
+  apiFetch('/api/agent-status', {method:'POST',
     body: JSON.stringify({pass: OPS.pass, ids, status})})
     .then(r => r.json().catch(()=>({})).then(j => {
       AG.busy = false;
@@ -4638,7 +4639,7 @@ function agSetMany(ids, status){
 function agFetch(){
   if(AG.loading || !OPS.pass) return;
   AG.loading = true; AG.err = ''; render();
-  fetch('/api/agents', {method:'POST', headers:{'Content-Type':'application/json'},
+  apiFetch('/api/agents', {method:'POST',
     body: JSON.stringify({pass: OPS.pass, reveal: AG.reveal})})
     .then(r => r.json().catch(()=>({})).then(j => {
       if(r.ok){ AG.rows = j.rows || []; AG.at = j.at || ''; AG.note = j.note || ''; }
@@ -4652,9 +4653,8 @@ function opsFetch(){
   if(OPS.loading) return;
   OPS.loading = true; OPS.err = ''; render();
   /* 암호는 본문에 담는다 - 헤더는 latin-1 만 가능해 한글 암호를 못 싣는다 */
-  fetch('/api/demands', {
+  apiFetch('/api/demands', {
     method:'POST',
-    headers:{'Content-Type':'application/json'},
     body: JSON.stringify({pass:OPS.pass, limit:300, kind:OPS.kind||undefined,
                           days:OPS.days||undefined, reveal:OPS.reveal}),
   })
@@ -4720,6 +4720,9 @@ V['#/ops/live'] = () => {
       ${OPS.err?`<p style="margin:12px 0 0;font-size:12.5px;line-height:1.6;color:var(--danger);font-weight:700">${esc(OPS.err)}</p>`:''}
       <p style="margin:12px 0 0;font-size:12.5px;line-height:1.6;color:var(--n500)">
         암호는 이 화면에만 잠시 남고 저장되지 않습니다. 새로고침하면 다시 물어봅니다.</p>
+      <p style="margin:8px 0 0;font-size:12.5px;line-height:1.6;color:${S.user?'var(--n500)':'var(--warn)'}">
+        ${S.user ? `허용된 운영자 계정인지 서버가 함께 확인합니다 - 지금 <b style="color:var(--n700)">${esc(S.user.email||S.user.name||'로그인됨')}</b>` 
+                 : '<b>로그인되어 있지 않습니다.</b> 암호가 맞아도 열리지 않습니다 - 운영자 계정으로 먼저 로그인해 주세요.'}</p>
     </div>` : `
     <div class="chips" style="gap:6px;margin-bottom:14px">
       ${chip(`걸린 조건${all?` ${all.length}`:''}`, OPS.tab!=='agent', 'ops-tab','demand')}

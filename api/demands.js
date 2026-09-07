@@ -9,6 +9,8 @@
  *   BK_OPS_PASS    운영자 접근 암호
  */
 
+import { opsAccount } from './_auth.js';
+
 const TABLE = 'bk_demand';
 
 /* 길이를 흘리지 않는 상수 시간 비교 */
@@ -53,6 +55,11 @@ export default async function handler(req, res) {
     await new Promise(r => setTimeout(r, 400));
     return res.status(401).json({ error: '접근 암호가 맞지 않습니다' });
   }
+
+  /* 암호를 통과해도 계정을 한 번 더 본다. 암호는 돌아다니고, 새면
+     누가 열었는지도 남지 않는다. BK_OPS_USERS 가 비어 있으면 예전 동작. */
+  const denied = await opsAccount(req);
+  if (denied) return res.status(denied.code).json({ error: denied.error });
 
   const limit  = Math.min(parseInt(payload.limit, 10) || 200, 1000);
   const kind   = payload.kind;                 // home | shop | office | storage

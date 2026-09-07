@@ -9,6 +9,8 @@
 
 import crypto from 'node:crypto';
 
+import { opsAccount } from './_auth.js';
+
 const TABLE = 'bk_agent';
 const STATUS = ['new', 'contacted', 'approved', 'rejected'];
 
@@ -42,6 +44,11 @@ export default async function handler(req, res) {
   if (!sameSecret(p.pass, BK_OPS_PASS)) {
     return res.status(401).json({ error: '접근 암호가 맞지 않습니다' });
   }
+
+  /* 암호를 통과해도 계정을 한 번 더 본다. 암호는 돌아다니고, 새면
+     누가 열었는지도 남지 않는다. BK_OPS_USERS 가 비어 있으면 예전 동작. */
+  const denied = await opsAccount(req);
+  if (denied) return res.status(denied.code).json({ error: denied.error });
   /* 한 건이든 여럿이든 같은 길로 처리한다 - 목록에서 골라 한 번에 바꾸는 일이 잦다 */
   const ids = Array.isArray(p.ids) ? p.ids : (p.id ? [p.id] : []);
   if (!ids.length)          return res.status(400).json({ error: '대상이 없습니다' });

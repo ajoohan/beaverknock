@@ -9,6 +9,8 @@
 
 import crypto from 'node:crypto';
 
+import { opsAccount } from './_auth.js';
+
 const TABLE = 'bk_agent';
 
 /* 길이가 달라도 같은 시간이 걸리게 비교한다 */
@@ -45,6 +47,11 @@ export default async function handler(req, res) {
   if (!sameSecret(p.pass, BK_OPS_PASS)) {
     return res.status(401).json({ error: '접근 암호가 맞지 않습니다' });
   }
+
+  /* 암호를 통과해도 계정을 한 번 더 본다. 암호는 돌아다니고, 새면
+     누가 열었는지도 남지 않는다. BK_OPS_USERS 가 비어 있으면 예전 동작. */
+  const denied = await opsAccount(req);
+  if (denied) return res.status(denied.code).json({ error: denied.error });
 
   const limit = Math.min(parseInt(p.limit, 10) || 300, 1000);
   const q = new URLSearchParams();

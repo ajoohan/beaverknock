@@ -16,7 +16,7 @@ const int = v => { const n = parseInt(v, 10); return Number.isFinite(n) ? n : nu
 const num = v => { const n = parseFloat(v); return Number.isFinite(n) ? n : null; };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const MINE = ['read', 'accepted', 'rejected'];       /* 손님이 바꿀 수 있는 상태 */
+const MINE = ['read', 'accepted', 'rejected', 'reported'];   /* 손님이 바꿀 수 있는 상태 */
 const ROLE_KO = { agent: '공인중개사', owner: '소유자', developer: '시행사' };
 
 export default async function handler(req, res) {
@@ -209,12 +209,19 @@ async function patch(req, res, user, b) {
     const first = status === 'accepted' && !p.connected_at;
     if (first) body.connected_at = new Date().toISOString();
 
-    /* 거절이면 슬롯을 돌려준다.
-       조건당 2회까지다 - 무제한이면 마음에 안 드는 제안을 계속 물리면서
-       중개사만 끝없이 불러들이게 된다.
-       이미 거절한 것을 또 눌러도 두 번 돌려주지 않는다. */
+    /* 신고면 무엇이 문제였는지 함께 남긴다. 사유 없는 신고는 운영자가
+       확인할 수가 없다 - 화면에서도 유형을 고르기 전에는 못 누르게 해뒀다. */
+    if (status === 'reported') {
+      body.reported_at   = new Date().toISOString();
+      body.report_type   = str(b.report_type, 80);
+      body.report_detail = str(b.report_detail, 1000);
+    }
+
+    /* 슬롯을 돌려줄 자리인지만 먼저 정해둔다. 실제로 돌려주는 것은
+       저장이 끝난 뒤다 - 저장이 실패했는데 자리만 돌아가 있으면 안 된다. */
+    const backable = (status === 'rejected' || status === 'reported')
+      && p.status !== 'rejected' && p.status !== 'reported';
     let refund = null;
-    if (status === 'rejected' && p.status !== 'rejected') refund = await giveSlotBack(d);
 
     let agent = null;
     if (status === 'accepted') {
@@ -230,7 +237,34 @@ async function patch(req, res, user, b) {
     const ur = await fetch(sbUrl('bk_proposal', 'id=eq.' + id), {
       method: 'PATCH', headers: { ...sbHeaders(), Prefer: 'return=minimal' }, body: JSON.stringify(body),
     });
-    if (!ur.ok) return res.status(502).json({ error: '상태를 바꾸지 못했습니다' });
+    if (!ur.ok) {
+      const t = await ur.text().catch(() => '');
+      if (/report_|reported_at|bk_proposal_status_check/.test(t)) {
+        return res.status(503).json({ error: '아직 준비 중입니다 (0013 마이그레이션 필요)' });
+      }
+      console.error('[proposal:patch]', ur.status, t.slice(0, 160));
+      return res.status(502).json({ error: '상태를 바꾸지 못했습니다' });
+    }
+
+    /* 거절·신고는 슬롯을 돌려준다.
+       조건당 2회까지다 - 무제한이면 마음에 안 드는 제안을 계속 물리면서
+       중개사만 끝없이 불러들이게 된다. 신고도 손님 잘못으로 버린 자리가
+       아니니 같은 규칙으로 돌려주되, 상한은 같다. */
+    if (backable) refund = await giveSlotBack(d);
+
+    if (status === 'reported') {
+      /* 표에만 남기면 아무도 안 본다. 운영자에게 바로 보낸다. */
+      await notify(req, {
+        subject: `제안 신고 · ${(d.dongs || []).join(' · ') || '서울·경기'}`,
+        rows: [
+          ['유형', body.report_type || '-'],
+          ['내용', body.report_detail || '-'],
+          ['물건', p.bname || p.addr || '-'],
+          ['슬롯 반환', refund && refund.ok ? `했음 (${refund.returned}/2)` : '안 함'],
+        ],
+        link: '/#/ops/live',
+      });
+    }
 
     if (status !== 'accepted') {
       return res.status(200).json({ ok: true, status,

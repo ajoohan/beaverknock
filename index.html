@@ -1559,7 +1559,7 @@ function condFromRow(d){
 /* 서버는 sent·read·accepted·rejected·withdrawn 로 적고,
    화면은 sent·viewed·selected·rejected·withdrawn 로 읽는다.
    옮기지 않으면 새로고침한 순간 '연결됨' 이 사라진다. */
-const P_STATUS = { read:'viewed', accepted:'selected', rejected:'hidden' };
+const P_STATUS = { read:'viewed', accepted:'selected', rejected:'hidden', reported:'hidden' };
 function propFromRow(p){
   return {
     id:p.id, cond:p.demand_id, isNew:p.status==='sent', read:p.status!=='sent',
@@ -5872,8 +5872,29 @@ function handle(a,v,el){
       return true; }
     case 'report': go('#/report/'+v); return true;
     case 'report-type': S.form.reportType=v; render(); return true;
-    case 'do-report': { const p=S.props.find(x=>x.id===v); p.status='hidden'; S.form={};
-      toast('신고가 접수되었습니다 · 이 제안은 숨김 처리됩니다'); go('#/inbox'); return true; }
+    case 'do-report': {
+      const p=S.props.find(x=>x.id===v); if(!p) return true;
+      const type=S.form.reportType, detail=S.form.reportDetail||'';
+      if(!type) return toast('어떤 문제인지 골라주세요'), true;
+      /* 예시 카드는 서버에 없다 - 화면에서만 치운다 */
+      if(p.seed){ p.status='hidden'; S.form={};
+        toast('신고가 접수되었습니다 · 이 제안은 숨김 처리됩니다'); go('#/inbox'); return true; }
+      if(S.rejecting) return true;
+      S.rejecting=true; render();
+      apiFetch('/api/proposal', {method:'PATCH', body: JSON.stringify({
+        id:v, status:'reported', report_type:type, report_detail:detail })})
+        .then(r => r.json().catch(()=>({})).then(j => {
+          S.rejecting=false;
+          if(!(r.ok && j.ok)){ render(); return toast(j.error || '신고를 접수하지 못했습니다'); }
+          p.status='hidden'; S.form={};
+          const c=S.conds.find(x=>x.id===p.cond);
+          if(c && j.slots_left!=null) c.slotsLeft = j.slots_left;
+          toast(j.refunded ? `신고가 접수되었습니다 · 슬롯을 반환했습니다 (${j.returned}/2)`
+                           : '신고가 접수되었습니다 · 이 제안은 숨김 처리됩니다');
+          S.mineAt = 0; go('#/inbox');
+        }))
+        .catch(()=>{ S.rejecting=false; render(); toast('네트워크 문제로 신고를 접수하지 못했습니다'); });
+      return true; }
     case 'connect-agree': S.form.connectAgree=!S.form.connectAgree; render(); return true;
     case 'do-connect': {
       const p=S.props.find(x=>x.id===v); if(!p) return true;

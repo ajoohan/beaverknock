@@ -4087,7 +4087,7 @@ V["#/partner/listings"] = () => {
     <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap">
       <div><span class="eyebrow">INVENTORY</span>
         <h1 class="t" style="font-size:${isMo()?21:25}px;margin-top:8px">내 물건 <span style="color:var(--ind)">${S.listings.length}건</span></h1>
-        <p class="sub" style="font-size:13.5px">미리 올려두면 새 손님이 들어올 때 <b style="color:var(--n900)">자동으로 대조</b>해 알려드립니다.</p></div>
+        <p class="sub" style="font-size:13.5px">올려두시면 지금 들어와 있는 조건과 <b style="color:var(--n900)">바로 대조</b>해 맞는 손님을 찾아드립니다.</p></div>
       <button class="btn pri sm" data-go="#/partner/listing/new" style="padding:12px 20px">+ 매물 등록</button>
     </div>
     ${total? `<div class="card pad" style="border-color:rgba(27,122,70,.35);background:var(--okbg);box-shadow:none;display:flex;align-items:center;gap:12px">
@@ -4095,10 +4095,13 @@ V["#/partner/listings"] = () => {
       <span style="font-size:12.5px;color:var(--n700)">물건을 눌러 확인하세요</span></div>`:''}
     ${S.listings.length? `<div style="display:grid;grid-template-columns:repeat(${isMo()?1:2},minmax(0,1fr));gap:16px">${rows}</div>`
       : `<div class="empty">${beaverlyMini(110)}<p style="margin:8px 0 6px;font-size:15px;font-weight:800">아직 올려둔 물건이 없습니다</p>
-         <p style="margin:0 auto 18px;max-width:400px;font-size:13.5px;line-height:1.6;color:var(--n500)">보유하신 물건을 미리 올려두시면, 조건이 맞는 손님이 들어올 때 바로 알려드립니다.</p>
+         <p style="margin:0 auto 18px;max-width:400px;font-size:13.5px;line-height:1.6;color:var(--n500)">보유하신 물건을 올려두시면, 조건이 맞는 손님을 이 화면에서 바로 찾아드립니다.</p>
          <button class="btn pri md" data-go="#/partner/listing/new">첫 매물 등록하기</button></div>`}
     <p style="margin:2px 0 ${isMo()?'12px':'0'};font-size:12.5px;line-height:1.75;color:var(--n500)">
       올리신 물건은 <b style="color:var(--n900)">손님에게 목록으로 공개되지 않습니다.</b> 조건이 맞을 때 보내시는 제안 안에서만 보입니다.</p>
+    <p style="margin:0;background:var(--warnbg);padding:12px 16px;font-size:12.5px;line-height:1.7;color:var(--n700)">
+      올려두신 물건은 <b style="color:var(--n900)">아직 저장되지 않습니다.</b> 이 브라우저에서 창을 닫거나 새로고침하시면 사라집니다 -
+      대조에 쓰시고, 실제 제안은 &lsquo;제안 보내기&rsquo;로 보내주세요.</p>
   </div>
   ${tabbar('l','p')}
 </div>`;};
@@ -4203,7 +4206,7 @@ V["#/partner/listing"] = (id) => {
     </div>
     ${ms.length? `<div style="display:grid;grid-template-columns:repeat(${isMo()?1:2},minmax(0,1fr));gap:16px">${ms.map(card).join('')}</div>`
       : `<div class="empty"><p style="margin:0 0 6px;font-size:15px;font-weight:800">아직 맞는 손님이 없습니다</p>
-         <p style="margin:0 auto;max-width:400px;font-size:13.5px;line-height:1.6;color:var(--n500)">새 손님이 들어오면 이 물건과 자동으로 대조해 카톡으로 알려드립니다. 그대로 두셔도 됩니다.</p></div>`}
+         <p style="margin:0 auto;max-width:400px;font-size:13.5px;line-height:1.6;color:var(--n500)">수요 목록에 새 조건이 들어온 뒤 이 화면을 다시 열면 그때 다시 대조합니다.</p></div>`}
   </div>
   ${tabbar('l','p')}
 </div>`;};
@@ -6172,7 +6175,7 @@ function handle(a,v,el){
       const n=matchesFor(L).length;
       S.form={};
       go('#/partner/listing/'+L.id);
-      toast(n? `등록 완료 - 맞는 손님 ${n}명을 찾았습니다` : '등록 완료 - 맞는 손님이 오면 알려드립니다');
+      toast(n? `등록 완료 - 맞는 손님 ${n}명을 찾았습니다` : '등록 완료 - 지금은 맞는 손님이 없습니다');
       return true; }
     case 'del-listing': { S.listings=S.listings.filter(x=>x.id!==v); toast('물건을 내렸습니다'); go('#/partner/listings'); return true; }
     case 'propose-with': { const [lid,did]=v.split('|'); const L=S.listings.find(x=>x.id===lid); const d=S.demands.find(x=>x.id===did);

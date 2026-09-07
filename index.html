@@ -4722,7 +4722,7 @@ V['#/ops/live'] = () => {
         암호는 이 화면에만 잠시 남고 저장되지 않습니다. 새로고침하면 다시 물어봅니다.</p>
       <p style="margin:8px 0 0;font-size:12.5px;line-height:1.6;color:${S.user?'var(--n500)':'var(--warn)'}">
         ${S.user ? `허용된 운영자 계정인지 서버가 함께 확인합니다 - 지금 <b style="color:var(--n700)">${esc(S.user.email||S.user.name||'로그인됨')}</b>` 
-                 : '<b>로그인되어 있지 않습니다.</b> 암호가 맞아도 열리지 않습니다 - 운영자 계정으로 먼저 로그인해 주세요.'}</p>
+                 : '<b>로그인되어 있지 않습니다.</b> 운영자 계정으로 먼저 로그인해 주세요.'}</p>
     </div>` : `
     <div class="chips" style="gap:6px;margin-bottom:14px">
       ${chip(`걸린 조건${all?` ${all.length}`:''}`, OPS.tab!=='agent', 'ops-tab','demand')}

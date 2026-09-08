@@ -2590,9 +2590,14 @@ function fitLabel(name, room, base, min){
 function shrinkPoly(poly, gap){
   const n = poly.length;
   const cx = poly.reduce((t,q)=>t+q[0],0)/n, cy = poly.reduce((t,q)=>t+q[1],0)/n;
+  /* 같은 값으로 깎으면 과천처럼 작은 셀은 거의 사라진다 -
+     제 크기의 일부까지만 깎는다. 큰 셀은 넉넉히, 작은 셀은 조금. */
+  const rs = poly.map(q => Math.hypot(q[0]-cx, q[1]-cy));
+  const mean = rs.reduce((t,v)=>t+v,0)/n || 1;
+  const g = Math.min(gap, mean * 0.17);
   return poly.map(q=>{
     const dx = q[0]-cx, dy = q[1]-cy, L = Math.hypot(dx,dy) || 1;
-    const k = Math.max(0, (L - gap)) / L;         /* 중심으로 gap 만큼 */
+    const k = Math.max(0.35, (L - g)) / L;
     return [cx + dx*k, cy + dy*k];
   });
 }
@@ -2607,7 +2612,7 @@ function roundPath(poly, r){
     const prev = poly[(i-1+n)%n], cur = poly[i], next = poly[(i+1)%n];
     const v1 = [prev[0]-cur[0], prev[1]-cur[1]], v2 = [next[0]-cur[0], next[1]-cur[1]];
     const l1 = Math.hypot(v1[0],v1[1]) || 1, l2 = Math.hypot(v2[0],v2[1]) || 1;
-    const rr = Math.min(r, l1/2.2, l2/2.2);
+    const rr = Math.min(r, l1/2.05, l2/2.05);
     const a = [cur[0] + v1[0]/l1*rr, cur[1] + v1[1]/l1*rr];
     const b = [cur[0] + v2[0]/l2*rr, cur[1] + v2[1]/l2*rr];
     out += `${i ? 'L' : 'M'}${a[0].toFixed(1)} ${a[1].toFixed(1)}`;
@@ -2654,8 +2659,8 @@ function mapScene(level, sel, shop){
     const fill = on ? 'var(--ind)' : seoulBlock ? '#EAE7F5' : (topLevel && x.t==='하남시') ? 'var(--clay100)' : cellTint(x.t);
     const stroke = on ? 'var(--ind700)' : seoulBlock ? '#D6D2E8' : 'var(--n200)';
     /* 서울 구는 하나의 덩어리로 읽혀야 하므로 사이를 벌리지 않는다 */
-    const gap = seoulBlock ? 0.4 : (topLevel ? 1.6 : 2.4);
-    const rad = seoulBlock ? 2 : (topLevel ? 4.5 : 8);
+    const gap = seoulBlock ? 0.9 : (topLevel ? 3 : 4.4);
+    const rad = seoulBlock ? 3.5 : (topLevel ? 9 : 16);
     const shape = roundPath(shrinkPoly(cells[i], gap), rad);
     return `<path class="mapcell${on?' on':''}" ${act} d="${shape}" fill="${fill}" stroke="${stroke}"
       stroke-width="${seoulBlock?0.7:1.3}" stroke-linejoin="round"/>`;

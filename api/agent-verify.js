@@ -18,8 +18,18 @@
  * 그대로 돌려준다. 어느 쪽이든 신청 자체는 막지 않는다 -
  * 최근 개설한 사무소는 공공데이터에 아직 없을 수 있다.
  *
+ * ── 주소도 여기서 찾는다 ──
+ * 함수 열두 개가 상한이라 새 파일을 못 만든다. 하는 일이 같으니 -
+ * 공공데이터에 물어보고 있는 그대로 돌려주는 일 - 한 지붕 아래 둔다.
+ *
+ *   what:'addr'  도로명주소 검색 (행정안전부 주소기반산업지원서비스)
+ *   what:'bld'   건축물대장 표제부 (국토교통부 · 면적·용도·사용승인일)
+ *
  * 선택 환경변수
- *   GG_API_KEY   경기데이터드림 인증키 (없으면 형식만 본다)
+ *   GG_API_KEY    경기데이터드림 인증키 (없으면 형식만 본다)
+ *   JUSO_KEY      도로명주소 검색 승인키 (business.juso.go.kr · 무료·즉시)
+ *   DATA_GO_KEY   공공데이터포털 서비스키 (data.go.kr · 무료·승인 1~2일)
+ *   BLD_API       건축물대장 엔드포인트 (신청하신 문서의 주소가 다르면 여기에)
  */
 
 import { findByKey, findByName, STATE_NM, STD_DATE } from './_brokers.js';
@@ -109,6 +119,113 @@ async function fetchSigun(sigun, key) {
 
 const STATE_OK = new Set(['영업중', '정상']);
 
+/* ══════════ 도로명주소 검색 ══════════
+   행정안전부 주소기반산업지원서비스. 승인키는 무료이고 신청하면 바로 나온다.
+
+   키가 없으면 '없다' 고 말한다. 지금까지는 주소에 '미사' 가 들어 있으면
+   미사강변 아파트라고 지어내 채워 넣고 "건축물대장에서 자동으로 채웠습니다"
+   라고 적었다. 확인한 적 없는 것을 확인했다고 말하면, 그 말을 믿고 넘어간
+   사람이 나중에 다친다. 지어내느니 비워 두는 편이 낫다. */
+const JUSO_API = 'https://business.juso.go.kr/addrlink/addrLinkApi.do';
+
+async function searchAddr(req, res, b) {
+  const key = process.env.JUSO_KEY;
+  const q = String(b.keyword || '').trim();
+  if (!q || q.length < 2) return res.status(400).json({ error: '두 글자 이상 넣어주세요' });
+  if (!key) {
+    return res.status(200).json({ ok: true, off: true, rows: [],
+      note: '주소 검색이 아직 연결되지 않았습니다 - 주소를 직접 적어주세요' });
+  }
+  try {
+    const u = new URL(JUSO_API);
+    u.searchParams.set('confmKey', key);
+    u.searchParams.set('currentPage', String(Math.max(1, parseInt(b.page, 10) || 1)));
+    u.searchParams.set('countPerPage', '10');
+    u.searchParams.set('keyword', q);
+    u.searchParams.set('resultType', 'json');
+    const r = await fetch(u, { signal: AbortSignal.timeout(6000) });
+    if (!r.ok) return res.status(502).json({ error: '주소를 찾지 못했습니다' });
+    const j = await r.json();
+    const c = (j.results && j.results.common) || {};
+    /* 0 이 정상이다. 그 밖의 코드는 그쪽이 남긴 말을 그대로 옮긴다 -
+       '승인키가 잘못되었습니다' 같은 말은 우리가 바꿔 쓸 이유가 없다. */
+    if (c.errorCode && c.errorCode !== '0') {
+      return res.status(200).json({ ok: true, rows: [], note: c.errorMessage || '주소를 찾지 못했습니다' });
+    }
+    const rows = (j.results.juso || []).map(x => ({
+      road:   x.roadAddrPart1 || x.roadAddr || '',
+      detail: x.roadAddrPart2 || '',
+      jibun:  x.jibunAddr || '',
+      zip:    x.zipNo || '',
+      bdNm:   x.bdNm || '',
+      si:     x.siNm || '', sgg: x.sggNm || '', emd: x.emdNm || '',
+      /* 건축물대장을 물어보려면 이 셋이 필요하다 */
+      admCd:  x.admCd || '',            // 법정동코드 10자리 (앞 5 시군구 + 뒤 5 법정동)
+      bun:    x.lnbrMnnm || '',         // 지번 본번
+      ji:     x.lnbrSlno || '',         // 지번 부번
+      mount:  x.mtYn === '1',           // 산 여부
+    }));
+    return res.status(200).json({ ok: true, rows, total: +c.totalCount || rows.length });
+  } catch (e) {
+    return res.status(502).json({ error: '주소 조회가 지연되고 있습니다 - 직접 적으셔도 됩니다' });
+  }
+}
+
+/* ══════════ 건축물대장 표제부 ══════════
+   면적·주용도·사용승인일을 채운다. 사람이 옮겨 적다 틀리는 것을 줄이는 일이지,
+   확인의 근거는 아니다 - 채운 값은 고칠 수 있게 둔다.
+
+   엔드포인트는 신청한 문서에 적힌 것을 쓴다. 문서가 바뀌는 일이 있어
+   환경변수로 바꿀 수 있게 두었다. */
+const BLD_DEFAULT = 'https://apis.data.go.kr/1613000/BldRgstHubService/getBrTitleInfo';
+
+async function readBuilding(req, res, b) {
+  const key = process.env.DATA_GO_KEY;
+  const admCd = String(b.admCd || '').replace(/[^0-9]/g, '');
+  if (admCd.length !== 10) return res.status(400).json({ error: '어느 필지인지 알 수 없습니다' });
+  if (!key) {
+    return res.status(200).json({ ok: true, off: true,
+      note: '건축물대장이 아직 연결되지 않았습니다 - 면적·용도는 직접 적어주세요' });
+  }
+  try {
+    const u = new URL(process.env.BLD_API || BLD_DEFAULT);
+    u.searchParams.set('serviceKey', key);
+    u.searchParams.set('sigunguCd', admCd.slice(0, 5));
+    u.searchParams.set('bjdongCd', admCd.slice(5));
+    u.searchParams.set('platGbCd', b.mount ? '1' : '0');   // 0 대지 · 1 산
+    u.searchParams.set('bun', String(b.bun || '0').padStart(4, '0'));
+    u.searchParams.set('ji', String(b.ji || '0').padStart(4, '0'));
+    u.searchParams.set('numOfRows', '5');
+    u.searchParams.set('pageNo', '1');
+    u.searchParams.set('_type', 'json');
+    const r = await fetch(u, { signal: AbortSignal.timeout(7000) });
+    if (!r.ok) return res.status(200).json({ ok: true, note: '건축물대장을 불러오지 못했습니다' });
+    const j = await r.json().catch(() => null);
+    const body = j && j.response && j.response.body;
+    const raw = body && body.items && body.items.item;
+    const it = Array.isArray(raw) ? raw[0] : raw;
+    if (!it) {
+      return res.status(200).json({ ok: true, none: true,
+        note: '건축물대장에 없는 필지입니다 - 직접 적어주세요' });
+    }
+    const num = v => { const n = Number(v); return Number.isFinite(n) && n > 0 ? n : null; };
+    const m2 = num(it.totArea);
+    return res.status(200).json({ ok: true,
+      bldNm:   it.bldNm || '',
+      purpose: it.mainPurpsCdNm || '',
+      totArea: m2,
+      py:      m2 ? Math.round(m2 / 3.3058 * 10) / 10 : null,
+      archArea: num(it.archArea),
+      floors:  num(it.grndFlrCnt),
+      hhld:    num(it.hhldCnt),
+      approved: String(it.useAprDay || '').replace(/^(\d{4})(\d{2})(\d{2})$/, '$1.$2.$3'),
+      addr:    it.newPlatPlc || it.platPlc || '',
+    });
+  } catch (e) {
+    return res.status(200).json({ ok: true, note: '건축물대장 조회가 지연되고 있습니다 - 직접 적으셔도 됩니다' });
+  }
+}
+
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST 만 받습니다' });
@@ -116,6 +233,11 @@ export default async function handler(req, res) {
   let b = req.body;
   if (typeof b === 'string') { try { b = JSON.parse(b); } catch { b = {}; } }
   b = b || {};
+
+  /* 주소는 로그인 전에도 찾을 수 있어야 한다 - 가입하면서 쓰는 것이라
+     여기에 문을 두면 가입 자체가 막힌다. 등록번호 조회와 같은 자리다. */
+  if (b.what === 'addr') return searchAddr(req, res, b);
+  if (b.what === 'bld')  return readBuilding(req, res, b);
 
   const shape = checkShape(b.reg_no);
   if (!shape.ok) return res.status(400).json({ error: shape.reason });

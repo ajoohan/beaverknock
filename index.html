@@ -4564,8 +4564,12 @@ V["#/partner/join"] = () => {
     body = `
     <h1 class="t" style="font-size:${isMo()?21:25}px">물건 주소를 알려주세요</h1>
     <p class="sub measure">등록은 무료입니다. 소유 형태에 따라 확인하는 것이 다릅니다.</p>
-    <div style="display:flex;gap:8px;margin-top:6px">
-      <input class="inp" data-in="j-addr" value="${esc(f['j-addr']||'')}" placeholder="도로명 주소">
+    <div style="margin-top:6px">
+      ${addrBox('j-addr','도로명·지번·건물명')}
+      ${f['j-addr']? `<div style="margin-top:8px;padding:11px 14px;background:var(--n50);border-radius:var(--r-sm);
+        display:flex;align-items:center;gap:10px">
+        <b style="flex:1;min-width:0;font-size:13.5px;font-weight:700;color:var(--n900);line-height:1.5">${esc(f['j-addr'])}</b>
+        <button class="chip" data-act="addr-clear" data-v="j-addr" style="flex:none;padding:6px 12px;font-size:12px">지우기</button></div>`:''}
     </div>
 
     <div style="margin-top:18px"><span class="lab">소유 형태 <span class="req">*</span></span>
@@ -4875,6 +4879,93 @@ V["#/partner/listings"] = () => {
   ${tabbar('l','p')}
 </div>`;};
 
+/* ══════════ 도로명주소 찾기 ══════════
+   여기저기서 쓰이므로 한 벌만 둔다 - 매물 등록에도, 소유자 가입에도.
+
+   키가 없으면 '없다' 고 말하고 직접 적게 둔다. 지금까지는 주소에 '미사' 가
+   들어 있으면 미사강변 아파트라고 지어내 채우고 "건축물대장에서 자동으로
+   채웠습니다" 라고 적었다. 확인한 적 없는 것을 확인했다고 말하면,
+   그 말을 믿은 사람이 나중에 다친다. */
+const ADDR = { for:'', q:'', rows:null, loading:false, note:'', off:false, bld:null, bldLoading:false };
+
+function addrFind(target){
+  const q = (ADDR.q||'').trim();
+  if(q.length < 2) return toast('두 글자 이상 넣어주세요'), true;
+  ADDR.for = target; ADDR.loading = true; ADDR.note = ''; ADDR.bld = null; render();
+  apiFetch('/api/agent-verify', {method:'POST', body: JSON.stringify({what:'addr', keyword:q})})
+    .then(r => r.json().catch(()=>({})).then(j => {
+      ADDR.loading = false;
+      if(!(r.ok && j.ok)){ ADDR.rows = []; ADDR.note = j.error || '주소를 찾지 못했습니다'; }
+      else { ADDR.rows = j.rows || []; ADDR.note = j.note || ''; ADDR.off = !!j.off; }
+      render();
+    }))
+    .catch(()=>{ ADDR.loading=false; ADDR.rows=[]; ADDR.note='네트워크 문제로 찾지 못했습니다'; render(); });
+  return true;
+}
+
+/* 고른 주소로 건축물대장을 한 번 물어본다. 못 받아와도 그냥 넘어간다 -
+   면적을 못 채우는 것이 주소를 못 넣는 것보다 훨씬 가벼운 일이다. */
+function addrPick(i){
+  const a = (ADDR.rows||[])[i]; if(!a) return true;
+  const full = [a.road, a.detail].filter(Boolean).join(' ');
+  if(ADDR.for === 'laddr'){
+    S.form.laddr = full;
+    S.form.lname = S.form.lname || a.bdNm || '';
+    /* 손님이 고른 동과 맞춰야 해서, 알아낸 법정동이 목록에 있을 때만 넣는다 */
+    if(!S.form.ldong && a.emd) S.form.ldong = a.emd;
+  } else {
+    S.form['j-addr'] = full;
+  }
+  ADDR.rows = null; ADDR.q = ''; ADDR.note = '';
+  if(a.admCd){
+    ADDR.bldLoading = true;
+    apiFetch('/api/agent-verify', {method:'POST', body: JSON.stringify({
+      what:'bld', admCd:a.admCd, bun:a.bun, ji:a.ji, mount:a.mount })})
+      .then(r => r.json().catch(()=>({})).then(j => {
+        ADDR.bldLoading = false;
+        if(r.ok && j.ok && !j.off && !j.none){
+          ADDR.bld = j;
+          if(ADDR.for === 'laddr'){
+            if(!S.form.lname && j.bldNm) S.form.lname = j.bldNm;
+            if(!S.form.lpy && j.py) S.form.lpy = String(j.py);
+          }
+        } else if(j && j.note) ADDR.bld = {note:j.note};
+        render();
+      }))
+      .catch(()=>{ ADDR.bldLoading=false; render(); });
+  }
+  render(); return true;
+}
+
+function addrBox(target, ph){
+  const mine = ADDR.for === target;
+  return `
+    <div style="display:flex;gap:8px">
+      <input class="inp" data-in="addrq" value="${esc(ADDR.q)}" placeholder="${esc(ph)}" autocomplete="off">
+      <button class="btn pri sm" data-act="addr-find" data-v="${target}" style="flex:none;padding:0 20px"
+        ${ADDR.loading&&mine?'disabled':''}>${ADDR.loading&&mine?'찾는 중…':'검색'}</button>
+    </div>
+    ${mine && ADDR.rows ? (ADDR.rows.length ? `
+    <div style="margin-top:8px;border:1px solid var(--n200);border-radius:var(--r-sm);overflow:hidden;
+      display:flex;flex-direction:column;gap:1px;background:var(--n100);max-height:260px;overflow-y:auto">
+      ${ADDR.rows.map((a,i)=>`<button type="button" data-act="addr-pick" data-v="${i}"
+        style="background:var(--white);border:none;padding:12px 14px;text-align:left;cursor:pointer;width:100%">
+        <b style="display:block;font-size:13.5px;font-weight:700;color:var(--n900);line-height:1.5">${esc([a.road,a.detail].filter(Boolean).join(' '))}</b>
+        <span style="display:block;margin-top:3px;font-size:12px;color:var(--n500)">${esc(a.jibun||'')}${a.zip?` · ${esc(a.zip)}`:''}${a.bdNm?` · ${esc(a.bdNm)}`:''}</span>
+      </button>`).join('')}
+    </div>` : `<p style="margin:8px 0 0;font-size:12.5px;color:var(--n500)">${esc(ADDR.note||'찾으시는 주소가 없습니다 - 직접 적으셔도 됩니다')}</p>`) : ''}
+    ${mine && !ADDR.rows && ADDR.note ? `<p style="margin:8px 0 0;font-size:12.5px;color:var(--n500)">${esc(ADDR.note)}</p>` : ''}
+    ${mine && ADDR.bldLoading ? `<p style="margin:8px 0 0;font-size:12.5px;color:var(--n500)">건축물대장을 확인하는 중입니다…</p>` : ''}
+    ${mine && ADDR.bld && !ADDR.bldLoading ? (ADDR.bld.note
+      ? `<p style="margin:8px 0 0;font-size:12.5px;color:var(--n500)">${esc(ADDR.bld.note)}</p>`
+      : `<p style="margin:8px 0 0;padding:10px 13px;background:var(--okbg);border-radius:var(--r-sm);
+          font-size:12.5px;line-height:1.7;color:var(--ok);font-weight:700">건축물대장에서 확인했습니다 ·
+        ${[ADDR.bld.purpose, ADDR.bld.totArea?`연면적 ${ADDR.bld.totArea}㎡`:'',
+           ADDR.bld.floors?`지상 ${ADDR.bld.floors}층`:'', ADDR.bld.approved?`사용승인 ${ADDR.bld.approved}`:'']
+          .filter(Boolean).map(esc).join(' · ')}
+        <span style="display:block;font-weight:600;margin-top:3px">채워진 값은 고치실 수 있습니다.</span></p>`) : ''}`;
+}
+
 /* 매물 등록 */
 V["#/partner/listing/new"] = () => {
   const f = S.form, g = k => f[k]||'';
@@ -4892,11 +4983,12 @@ V["#/partner/listing/new"] = () => {
     <div class="card pad" style="display:flex;flex-direction:column;gap:16px">
       <div><span class="lab">유형 <span class="req">*</span></span>
         ${chipsHTML(['주거','상가'], shop?'상가':'주거','lkindpick',false)}</div>
-      <div><span class="lab">주소 <span class="req">*</span> <span class="opt">검색하면 건축물대장에서 채워집니다</span></span>
-        <div style="display:flex;gap:8px">
-          <input class="inp" data-in="laddr" value="${esc(g('laddr'))}" placeholder="예) 미사강변대로 220">
-          <button class="btn pri sm" data-act="llookup" style="flex:none;padding:0 20px">검색</button></div>
-        ${f.lfilled? `<p style="margin:8px 0 0;font-size:12.5px;color:var(--ok);font-weight:600">✓ 자동으로 채웠습니다 - 수정할 수 있습니다</p>`:''}
+      <div><span class="lab">주소 <span class="req">*</span> <span class="opt">도로명·지번·건물명으로 찾으실 수 있습니다</span></span>
+        ${addrBox('laddr','예) 미사강변대로 220')}
+        ${g('laddr')? `<div style="margin-top:8px;padding:11px 14px;background:var(--n50);border-radius:var(--r-sm);
+          display:flex;align-items:center;gap:10px">
+          <b style="flex:1;min-width:0;font-size:13.5px;font-weight:700;color:var(--n900);line-height:1.5">${esc(g('laddr'))}</b>
+          <button class="chip" data-act="addr-clear" data-v="laddr" style="flex:none;padding:6px 12px;font-size:12px">지우기</button></div>`:''}
       </div>
       <div class="grid2 mo1">
         <div><span class="lab">건물·단지명 <span class="req">*</span></span>
@@ -6745,6 +6837,7 @@ function render(){
 
   /* 화면이 실제로 바뀐 경우에만 진입 애니메이션을 켠다.
      칩 하나 고를 때마다 다시 재생되면 오히려 산만하다. */
+  if(S.lastRoute !== h && ADDR.q){ ADDR.q=''; ADDR.rows=null; ADDR.note=''; ADDR.bld=null; }
   const entered = S.lastRoute !== h;
   if(entered){
     app.setAttribute('data-enter','');
@@ -7134,6 +7227,7 @@ document.addEventListener('input', e=>{
   }
   if(k==='reportDetail'){ S.form.reportDetail=v; return; }
   if(k==='email'||k==='pw'||k==='pw2'){ S[k]=v; refreshLoginBtn(); return; }
+  if(k==='addrq'){ ADDR.q = v; return; }        /* 타이핑 중에는 다시 그리지 않는다 */
   if(k==='opsPass'){ OPS.pass=v; OPS.err=''; const b=$('#app [data-act="ops-load"]'); if(b) b.disabled=!v; return; }
   if(k==='opsQ'){ OPS.q=v; OPS.open=''; render(); settle('tbody'); const el=$('#app [data-in="opsQ"]');
     if(el){ el.focus(); el.setSelectionRange(el.value.length, el.value.length); } return; }
@@ -7711,12 +7805,11 @@ function handle(a,v,el){
       if(!dealWords(S.form.ldeal||'월세').rent) S.form.lrent = '';
       render(); return true;
     case 'lfac': case 'lmusts': { S.form[a]=S.form[a]||[]; toggleIn(S.form[a], v); render(); return true; }
-    case 'llookup': { if(!(S.form.laddr||'').trim()) return toast('주소를 입력해 주세요'), true;
-      S.form.lfilled=true;
-      S.form.lname = S.form.lname || (S.form.laddr.includes('미사')?'미사강변 ○○아파트':'○○빌라');
-      S.form.lpy = S.form.lpy || '24.2';
-      if(!S.form.ldong) S.form.ldong = S.form.laddr.includes('미사')?'미사1동':'덕풍2동';
-      toast('건축물대장에서 자동으로 채웠습니다'); render(); return true; }
+    case 'addr-find':  return addrFind(v);
+    case 'addr-pick':  return addrPick(+v);
+    case 'addr-clear':
+      if(v === 'laddr') S.form.laddr = ''; else S.form['j-addr'] = '';
+      ADDR.rows = null; ADDR.bld = null; ADDR.note = ''; render(); return true;
     case 'save-listing': {
       const f=S.form, shop=f.lkind==='shop';
       const L={ id:'L'+Date.now(), kind: shop?'shop':'home', name:(f.lname||'').trim(), dong:f.ldong,
@@ -7796,6 +7889,17 @@ document.addEventListener('click', e=>{
 }, true);
 
 /* 주소 자동완성 - 손을 마우스로 옮기지 않고도 고를 수 있어야 한다 */
+/* 주소 칸에서 엔터를 치면 찾는다. 검색 칸에서 엔터를 눌러 아무 일도 안 일어나면
+   대개는 고장 난 것으로 읽힌다. */
+document.addEventListener('keydown', e=>{
+  if(e.key !== 'Enter') return;
+  const el = e.target.closest && e.target.closest('[data-in="addrq"]');
+  if(!el) return;
+  e.preventDefault();
+  const btn = $('#app [data-act="addr-find"]');
+  if(btn && !btn.disabled) btn.click();
+});
+
 document.addEventListener('keydown', e=>{
   if(!e.target.closest('[data-in="dongFree"]')) return;
   const box=$('#app [data-aclist]'); if(!box) return;

@@ -14,9 +14,91 @@ const KIND_KO = { home: '주거', shop: '상가', office: '오피스', storage: 
 /* '미사역 상권' 과 '미사역' 을 같은 곳으로 본다 */
 const norm = x => String(x || '').replace(/\s*(상권|전체|어디든)\s*/g, '').trim();
 
+/* ── 소유자가 볼 수 있는 수요 ──
+   소유자와 시행사는 목록을 훑지 못한다. 올려둔 물건에 실제로 맞는 수요만 본다.
+
+   중개사는 여러 물건을 다루니 목록을 보는 것이 일이지만, 소유자는 가진 물건이
+   정해져 있다. 목록을 열어주면 맞지 않는 곳까지 일단 다 뿌리게 되고 -
+   그러면 손님의 다섯 자리가 홍보로 차서, 정작 맞는 곳이 못 들어온다.
+   이 서비스가 파는 것이 그 다섯 자리라서, 여기서 새면 파는 물건이 상한다.
+
+   화면에서 감추는 것으로는 부족하다. 목록도 제안도 서버에서 막는다.
+
+   맞는다는 것은 넷이 모두 맞는다는 뜻이다 - 지역 · 유형 · 거래방식 · 예산.
+   손님이 적은 예산은 상한이므로, 물건 값이 그 안에 들어와야 한다. */
+const normDeal = x => String(x || '').trim();
+
+/* 손님이 고른 곳이 어느 시·군에 속하는지.
+   지금 동 단위로 고를 수 있는 곳은 하남시뿐이라 표가 짧다. 서울은 구,
+   경기는 시가 이미 시군구 단위여서 따로 옮길 것이 없다. */
+const HANAM = ['미사1동','미사2동','미사3동','신장1동','신장2동','신장동','덕풍1동','덕풍2동','덕풍3동',
+  '덕풍동','천현동','감일동','감북동','초이동','위례동','춘궁동','미사역','하남시청역','스타필드 인근'];
+const DONG_TO_SI = {};
+HANAM.forEach(d => { DONG_TO_SI[d] = '하남시'; });
+
+/* '하남 어디든' · '서울 전체' 처럼 넓게 적은 것 */
+const WIDE = /(어디든|전체)/;
+const siOf = n => DONG_TO_SI[n] || (/(시|군|구)$/.test(n) ? n : (/^하남/.test(n) ? '하남시' : ''));
+
+/* '미사역 상권' 과 '미사역', '하남 어디든' 과 '미사1동' 을 견줄 수 있게.
+
+   넓게 적은 쪽이 있을 때만 시·군으로 견준다. '미사1동' 을 적은 손님에게
+   덕풍2동 물건이 가면 안 된다 - 같은 하남시라도 그 손님이 고른 곳이 아니다. */
+function regionHit(listingDong, demandDongs) {
+  const raw = String(listingDong || '').trim();
+  const one = norm(raw);
+  if (!one) return false;
+  const mySi = siOf(one);
+  return (demandDongs || []).some(x => {
+    const d = norm(x);
+    if (!d) return false;
+    if (d === one || d.includes(one) || one.includes(d)) return true;
+    /* 한쪽이 '어디든/전체' 이거나 시·군 이름이면 그 안에 드는지 본다 */
+    const wide = WIDE.test(String(x)) || /(시|군|구)$/.test(d);
+    return wide && !!mySi && siOf(d) === mySi;
+  });
+}
+
+/* 손님이 안 적은 값으로는 막지 않는다 - 안 적은 것은 '아무거나' 라는 뜻이지
+   '0원까지' 라는 뜻이 아니다. 없는 조건을 만들어 막으면 정상 거래가 사라진다. */
+const withinCap = (mine, cap) => !(cap > 0) || !(mine > 0) || mine <= cap;
+
+export function listingFits(L, d) {
+  if (!L || !d) return false;
+  if (L.kind !== d.kind) return false;
+  if (!regionHit(L.dong, d.dongs)) return false;
+  /* 거래방식은 주거에만 있다. 상가·오피스·창고는 이 칸이 비어 있다. */
+  const a = normDeal(L.deal), b = normDeal(d.deal);
+  if (a && b && a !== b) return false;
+  if (!withinCap(L.dep, d.dep)) return false;
+  if (!withinCap(L.rent, d.rent)) return false;
+  return true;
+}
+
+/* 어느 물건 하나라도 맞으면 보여준다 - 그 물건으로 제안하면 되기 때문이다 */
+export const anyFits = (list, d) => (list || []).some(L => listingFits(L, d));
+
+/* 목록을 훑을 수 있는 사람인가. 중개사만이다. */
+export const canBrowse = agent => (agent && agent.role) === 'agent';
+
+export async function myListings(agentId) {
+  const q = new URLSearchParams({
+    select: 'id,kind,dong,deal,dep,rent,name,status',
+    agent_id: 'eq.' + agentId, status: 'eq.active', limit: '200',
+  });
+  const r = await fetch(sbUrl('bk_listing', q.toString()), { headers: sbHeaders() });
+  if (!r.ok) {
+    const t = await r.text();
+    /* 표가 아직 없으면 물건이 없는 것과 같다 - 없는 것으로 보고 막는다 */
+    if (/does not exist|PGRST205/i.test(t)) return [];
+    return null;
+  }
+  return await r.json();
+}
+
 export async function approvedAgent(user) {
   const q = new URLSearchParams({
-    select: 'id,role,status,office,name', user_id: 'eq.' + user.id, limit: '1',
+    select: 'id,role,status,office,name,owner_type', user_id: 'eq.' + user.id, limit: '1',
   });
   const r = await fetch(sbUrl('bk_agent', q.toString()), { headers: sbHeaders() });
   if (!r.ok) return { error: await r.text() };
@@ -58,11 +140,16 @@ export default async function handler(req, res) {
   if (b.what === 'listings')    return readListings(req, res, chk.agent);
   if (b.what === 'listing-add') return addListing(req, res, chk.agent, user, b);
   if (b.what === 'listing-del') return delListing(req, res, chk.agent, b);
+  /* 소유자·시행사는 목록을 훑지 못한다. 올려둔 물건에 맞는 것만 본다.
+     화면에서 감추는 것으로는 부족해 여기서 막는다 - 화면은 고쳐 쓸 수 있다. */
+  if (!canBrowse(chk.agent)) return readFitting(res, chk.agent);
+
   /* 빈 배열은 '가리지 않는다' 가 아니라 '아무것도 안 받겠다' 는 뜻이다.
      지역은 그렇게 막아뒀는데 유형만 반대로 열려 있었다. */
   const kinds = Array.isArray(b.kinds) ? b.kinds.filter(k => KIND_KO[k]) : Object.keys(KIND_KO);
   if (!kinds.length) {
-    return res.status(200).json({ ok: true, agent: { id: chk.agent.id, office: chk.agent.office || null },
+    return res.status(200).json({ ok: true, agent: { id: chk.agent.id, office: chk.agent.office || null,
+        role: chk.agent.role || null, owner_type: chk.agent.owner_type || null },
       hidden: { region: 0, slot: 0, kind: 1 }, at: new Date().toISOString(), rows: [] });
   }
   const regions = (Array.isArray(b.regions) ? b.regions : []).map(norm).filter(Boolean);
@@ -106,13 +193,72 @@ export default async function handler(req, res) {
 
     return res.status(200).json({
       ok: true,
-      agent: { id: chk.agent.id, office: chk.agent.office || null },
+      agent: { id: chk.agent.id, office: chk.agent.office || null,
+        role: chk.agent.role || null, owner_type: chk.agent.owner_type || null },
       hidden,
       at: new Date().toISOString(),
       rows: rows.map(d => ({ ...d, kind_ko: KIND_KO[d.kind] || '주거', mine: mine.has(d.id) })),
     });
   } catch (e) {
     console.error('[feed]', e && e.message);
+    return res.status(502).json({ error: 'DB에 닿지 못했습니다' });
+  }
+}
+
+/* ── 소유자: 내 물건에 맞는 수요만 ──
+   활동 지역·유형을 따로 설정하지 않는다. 올려둔 물건이 곧 조건이다. */
+async function readFitting(res, agent) {
+  try {
+    const list = await myListings(agent.id);
+    if (list === null) return res.status(502).json({ error: '올려두신 물건을 확인하지 못했습니다' });
+    if (!list.length) {
+      return res.status(200).json({
+        ok: true, agent: { id: agent.id, office: agent.office || null,
+        role: agent.role || null, owner_type: agent.owner_type || null },
+        byListing: true, listings: 0, hidden: { region: 0, slot: 0, fit: 0 },
+        at: new Date().toISOString(), rows: [],
+        note: '물건을 올리시면 그 물건에 맞는 손님만 보여드립니다.',
+      });
+    }
+
+    const kinds = [...new Set(list.map(L => L.kind).filter(k => KIND_KO[k]))];
+    const q = new URLSearchParams({
+      select: 'id,created_at,kind,dongs,deal,dep,rent,biz,area_min,area_max,htype,rooms,musts,must_free,'
+            + 'floor_avoid,household,elevator,loan_plan,open_when,shop_floor_free,facilities_free,'
+            + 'key_ok,sign_need,park_need,shop_note,spec,memo,slots,slots_left',
+      order: 'created_at.desc', limit: '200',
+    });
+    q.set('kind', `in.(${kinds.join(',')})`);
+    const r = await fetch(sbUrl('bk_demand', q.toString()), { headers: sbHeaders() });
+    if (!r.ok) return res.status(502).json({ error: '조건을 불러오지 못했습니다' });
+
+    const hidden = { region: 0, slot: 0, fit: 0 };
+    const rows = [];
+    for (const d of await r.json()) {
+      if (!(d.slots_left > 0)) { hidden.slot++; continue; }
+      const fit = list.filter(L => listingFits(L, d));
+      if (!fit.length) { hidden.fit++; continue; }
+      /* 어느 물건으로 제안할 수 있는지 함께 보낸다 - 고르는 수고를 덜어준다 */
+      rows.push({ ...d, fitIds: fit.map(L => L.id), fitNames: fit.map(L => L.name) });
+    }
+
+    let mine = new Set();
+    if (rows.length) {
+      const pq = new URLSearchParams({
+        select: 'demand_id', agent_id: 'eq.' + agent.id, order: 'created_at.desc', limit: '1000',
+      });
+      const pr = await fetch(sbUrl('bk_proposal', pq.toString()), { headers: sbHeaders() });
+      if (pr.ok) for (const p of await pr.json()) mine.add(p.demand_id);
+    }
+
+    return res.status(200).json({
+      ok: true, agent: { id: agent.id, office: agent.office || null,
+        role: agent.role || null, owner_type: agent.owner_type || null },
+      byListing: true, listings: list.length, hidden, at: new Date().toISOString(),
+      rows: rows.map(d => ({ ...d, kind_ko: KIND_KO[d.kind] || '주거', mine: mine.has(d.id) })),
+    });
+  } catch (e) {
+    console.error('[feed:fit]', e && e.message);
     return res.status(502).json({ error: 'DB에 닿지 못했습니다' });
   }
 }

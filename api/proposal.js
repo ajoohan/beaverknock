@@ -8,7 +8,7 @@
  */
 
 import { userFrom, sbHeaders, sbUrl, emailOf } from './_auth.js';
-import { approvedAgent } from './feed.js';
+import { approvedAgent, anyFits, canBrowse, myListings } from './feed.js';
 import { notify } from './_notify.js';
 
 const str = (v, max = 200) => { const s = String(v ?? '').trim(); return s ? s.slice(0, max) : null; };
@@ -49,12 +49,28 @@ export default async function handler(req, res) {
 
   try {
     /* 슬롯이 남았는지 본다. 조건 하나에 다섯 곳까지가 이 서비스의 약속이다. */
-    const dq = new URLSearchParams({ select: 'id,slots_left,user_id,kind,dongs', id: 'eq.' + demandId, limit: '1' });
+    const dq = new URLSearchParams({
+      select: 'id,slots_left,user_id,kind,dongs,deal,dep,rent', id: 'eq.' + demandId, limit: '1' });
     const dr = await fetch(sbUrl('bk_demand', dq.toString()), { headers: sbHeaders() });
     if (!dr.ok) return res.status(502).json({ error: '조건을 확인하지 못했습니다' });
     const d = (await dr.json())[0];
     if (!d) return res.status(404).json({ error: '없는 조건입니다' });
     if (!(d.slots_left > 0)) return res.status(409).json({ error: '이 조건은 제안이 마감됐습니다' });
+
+    /* 소유자·시행사는 올려둔 물건에 맞는 조건에만 보낼 수 있다.
+       목록을 막아둔 것과 같은 규칙을 여기서 한 번 더 본다 - 목록을 안 거치고
+       조건 번호만 알아내 바로 찔러 넣는 길이 있기 때문이다.
+       막는 곳이 화면 하나뿐이면 막은 것이 아니다. */
+    if (!canBrowse(chk.agent)) {
+      const list = await myListings(chk.agent.id);
+      if (list === null) return res.status(502).json({ error: '올려두신 물건을 확인하지 못했습니다' });
+      if (!list.length) {
+        return res.status(403).json({ error: '물건을 먼저 올려주세요 - 올리신 물건에 맞는 손님에게만 보낼 수 있습니다', need: 'listing' });
+      }
+      if (!anyFits(list, d)) {
+        return res.status(403).json({ error: '올려두신 물건과 맞지 않는 조건입니다 - 지역·유형·거래방식·예산이 모두 맞아야 보낼 수 있습니다', need: 'fit' });
+      }
+    }
 
     /* 자리를 먼저 잡고 넣는다.
        읽은 값 그대로일 때만 줄이도록 걸어(compare-and-swap) 두 사람이 동시에

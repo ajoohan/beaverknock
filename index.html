@@ -2376,6 +2376,102 @@ function voronoi(sites, bb){
   });
 }
 
+
+/* ── 지도 확대 ──
+   수도권 전체를 한 화면에 넣으면 과천·군포·의왕 같은 셀이 손끝보다 작아진다.
+   viewBox 만 바꾼다 - 다시 그리지 않으므로 고르던 것이 흐트러지지 않고,
+   글자도 함께 커져서 확대할수록 읽기 쉬워진다. */
+const MAPZ = { k:1, x:0, y:0, drag:null, moved:false, pts:new Map(), base:0, baseK:1 };
+const MAP_KMAX = 6;
+
+function mapViewBox(){
+  const w = MAP_W/MAPZ.k, h = MAP_H/MAPZ.k;
+  MAPZ.x = Math.max(0, Math.min(MAP_W - w, MAPZ.x));
+  MAPZ.y = Math.max(0, Math.min(MAP_H - h, MAPZ.y));
+  return `${MAPZ.x.toFixed(1)} ${MAPZ.y.toFixed(1)} ${w.toFixed(1)} ${h.toFixed(1)}`;
+}
+function mapEl(){ return $('#app svg.map'); }
+function mapApply(){
+  const el = mapEl(); if(!el) return;
+  el.setAttribute('viewBox', mapViewBox());
+  /* 확대하지 않았을 때는 세로 스크롤을 페이지에 양보한다.
+     확대한 뒤에야 지도가 손짓을 가져간다 - 나가는 길은 '원래대로' 가 있다. */
+  el.style.touchAction = MAPZ.k > 1 ? 'none' : 'pan-y';
+  el.style.cursor = MAPZ.k > 1 ? 'grab' : '';
+  const r = $('#app [data-act="map-zoom"][data-v="reset"]');
+  if(r) r.hidden = MAPZ.k <= 1;
+}
+function mapReset(){ MAPZ.k=1; MAPZ.x=0; MAPZ.y=0; mapApply(); }
+
+/* 화면의 한 점을 붙잡은 채로 확대한다 - 손가락 아래 있던 동네가 그대로 있어야 한다 */
+function mapZoomAt(k2, cx, cy){
+  const el = mapEl(); if(!el) return;
+  const r = el.getBoundingClientRect(); if(!r.width) return;
+  const k = Math.max(1, Math.min(MAP_KMAX, k2));
+  const fx = (cx - r.left)/r.width, fy = (cy - r.top)/r.height;
+  const ux = MAPZ.x + fx*(MAP_W/MAPZ.k), uy = MAPZ.y + fy*(MAP_H/MAPZ.k);
+  MAPZ.k = k;
+  MAPZ.x = ux - fx*(MAP_W/k);
+  MAPZ.y = uy - fy*(MAP_H/k);
+  mapApply();
+}
+function mapZoomStep(dir){
+  const el = mapEl(); if(!el) return;
+  const r = el.getBoundingClientRect();
+  mapZoomAt(MAPZ.k * (dir>0 ? 1.6 : 1/1.6), r.left + r.width/2, r.top + r.height/2);
+}
+
+const mapPinch = () => { const a=[...MAPZ.pts.values()];
+  return Math.hypot(a[0].x-a[1].x, a[0].y-a[1].y); };
+const inMap = e => e.target && e.target.closest && e.target.closest('svg.map');
+
+document.addEventListener('wheel', e=>{
+  if(!inMap(e)) return;
+  e.preventDefault();
+  mapZoomAt(MAPZ.k * (e.deltaY < 0 ? 1.2 : 1/1.2), e.clientX, e.clientY);
+}, {passive:false});
+
+document.addEventListener('pointerdown', e=>{
+  if(!inMap(e)) return;
+  MAPZ.pts.set(e.pointerId, {x:e.clientX, y:e.clientY});
+  if(MAPZ.pts.size === 1){ MAPZ.drag = {x:e.clientX, y:e.clientY}; MAPZ.moved = false; }
+  else if(MAPZ.pts.size === 2){ MAPZ.drag = null; MAPZ.base = mapPinch(); MAPZ.baseK = MAPZ.k; }
+});
+
+document.addEventListener('pointermove', e=>{
+  if(!MAPZ.pts.has(e.pointerId)) return;
+  MAPZ.pts.set(e.pointerId, {x:e.clientX, y:e.clientY});
+  const el = mapEl(); if(!el) return;
+
+  if(MAPZ.pts.size >= 2 && MAPZ.base){
+    const a = [...MAPZ.pts.values()];
+    mapZoomAt(MAPZ.baseK * (mapPinch()/MAPZ.base),
+      (a[0].x+a[1].x)/2, (a[0].y+a[1].y)/2);
+    MAPZ.moved = true; return;
+  }
+  if(!MAPZ.drag || MAPZ.k <= 1) return;
+  const dx = e.clientX - MAPZ.drag.x, dy = e.clientY - MAPZ.drag.y;
+  /* 손이 조금 흔들린 것은 끌기가 아니다 - 그걸 끌기로 보면 고를 수가 없다 */
+  if(!MAPZ.moved && Math.hypot(dx,dy) < 6) return;
+  MAPZ.moved = true;
+  const r = el.getBoundingClientRect();
+  MAPZ.x -= dx/r.width  * (MAP_W/MAPZ.k);
+  MAPZ.y -= dy/r.height * (MAP_H/MAPZ.k);
+  MAPZ.drag = {x:e.clientX, y:e.clientY};
+  mapApply();
+});
+
+const mapEnd = e => { MAPZ.pts.delete(e.pointerId);
+  if(MAPZ.pts.size < 2) MAPZ.base = 0;
+  if(!MAPZ.pts.size) MAPZ.drag = null; };
+document.addEventListener('pointerup', mapEnd);
+document.addEventListener('pointercancel', mapEnd);
+
+/* 끌고 나서 손을 떼면 click 이 따라온다 - 그것까지 '고른 것' 으로 세면 안 된다 */
+document.addEventListener('click', e=>{
+  if(MAPZ.moved && inMap(e)){ MAPZ.moved = false; e.stopPropagation(); e.preventDefault(); }
+}, true);
+
 /* ── 장면 하나를 통째로 그린다 ── */
 const MAP_W = 720, MAP_H = 600;
 function mapScene(level, sel, shop){
@@ -2451,7 +2547,8 @@ function mapScene(level, sel, shop){
 
   const clipId = 'clip-'+level;
   return `
-  <svg class="map" viewBox="0 0 ${MAP_W} ${MAP_H}" role="group" aria-label="지역 선택 지도">
+  <svg class="map" viewBox="${mapViewBox()}" role="group" aria-label="지역 선택 지도"
+    style="touch-action:${MAPZ.k>1?'none':'pan-y'}">
     <defs><clipPath id="${clipId}"><path d="${d(op.map(p=>T(p)))}"/></clipPath></defs>
     <rect x="0" y="0" width="${MAP_W}" height="${MAP_H}" fill="#F2F5F7"/>
     <g clip-path="url(#${clipId})">${body}</g>
@@ -2550,13 +2647,23 @@ function regionPicker(d, shop){
       ${lv!=='top'?`<button class="btn ghost sm" data-act="map-drill" data-v="top" style="padding:8px 12px">← 수도권 전체</button>`:''}
       ${lv!=='hanam'?`<button class="btn ghost sm" data-act="map-drill" data-v="hanam" style="padding:8px 12px">하남시 동 단위</button>`:''}
       <button class="btn ghost sm" data-act="geo" style="padding:8px 12px">${S.geoState==='asking'?'확인 중…':'📍 현재 위치로'}</button>
+      <span style="flex:1"></span>
+      <div class="chips" style="gap:6px;flex:none">
+        <button class="chip" data-act="map-zoom" data-v="out" aria-label="지도 축소"
+          style="padding:8px 14px;font-size:15px;font-weight:800;line-height:1">−</button>
+        <button class="chip" data-act="map-zoom" data-v="in" aria-label="지도 확대"
+          style="padding:8px 14px;font-size:15px;font-weight:800;line-height:1">+</button>
+        <button class="chip" data-act="map-zoom" data-v="reset" ${MAPZ.k>1?'':'hidden'}
+          style="padding:8px 14px;font-size:12.5px">원래대로</button>
+      </div>
     </div>
     ${mapScene(lv, d.dongs, shop)}
     ${wide?`<div class="chips" style="margin-top:10px">
       <button class="chip ${d.dongs.includes(wide)?'on':''}" data-act="dong" data-v="${wide}" style="padding:8px 16px;font-size:12.5px">${wide}</button>
     </div>`:''}
     <p style="margin:10px 0 0;font-size:12.5px;line-height:1.6;color:var(--n500)">
-      ${geoLine?`${esc(geoLine)}<br>`:''}실제 행정경계에 가깝게 그린 개념도입니다 - 위치 정보는 지도를 맞추는 데만 쓰고 저장하지 않습니다.</p>
+      ${geoLine?`${esc(geoLine)}<br>`:''}작은 지역은 <b style="color:var(--n700)">+</b> 로 키워서 고르세요 ·
+      손가락 두 개로 벌리거나 휠로도 됩니다.<br>실제 행정경계에 가깝게 그린 개념도입니다 - 위치 정보는 지도를 맞추는 데만 쓰고 저장하지 않습니다.</p>
     ` : zonesHTML(LIST_GROUPS(shop), d.dongs)}`;
 }
 
@@ -5736,7 +5843,10 @@ function handle(a,v,el){
 
     case 'dong': toggleIn(d.dongs,v); render(); return true;
     case 'region-view': d.mapView=v; render(); return true;
-    case 'map-drill': d.mapLevel=v; render(); return true;
+    case 'map-drill': d.mapLevel=v; mapReset(); render(); return true;
+    case 'map-zoom':
+      if(v==='reset') mapReset(); else mapZoomStep(v==='in'?1:-1);
+      return true;
     case 'map-na': toast('인천은 아직 서비스하지 않습니다'); return true;
     case 'geo': detectRegion(true); return true;
 

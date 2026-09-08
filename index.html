@@ -134,10 +134,29 @@ body.mo .scr .pad.opsPad{padding-left:16px;padding-right:16px}
 .opsNav button.on .cnt{background:var(--ind100);color:var(--ind)}
 .opsHead{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;
   flex-wrap:wrap;margin-bottom:14px}
-body.mo .opsWrap{grid-template-columns:minmax(0,1fr)}
-body.mo .opsNav{position:static;flex-direction:row;overflow-x:auto;padding:8px;gap:6px}
-body.mo .opsNav .grp{display:none}
-body.mo .opsNav button{width:auto;flex:none;white-space:nowrap;padding:10px 14px}
+/* 펼쳐진 자리 - 들여쓰기와 세로선으로 '이 아래' 임을 말한다 */
+.opsNav .car{flex:none;width:0;height:0;border-left:4px solid currentColor;
+  border-top:3.5px solid transparent;border-bottom:3.5px solid transparent;
+  opacity:.5;transition:transform var(--t-fast) ease}
+.opsNav .car.open{transform:rotate(90deg);opacity:.9}
+.opsSub{display:flex;flex-direction:column;gap:1px;margin:2px 0 6px 20px;
+  padding-left:10px;border-left:1.5px solid var(--ind100)}
+.opsSub button{padding:8px 10px;border-radius:8px;font-size:12.5px;font-weight:700;color:var(--n500)}
+.opsSub button:hover{background:var(--n50);color:var(--n700)}
+.opsSub button.on{background:var(--ind50);color:var(--ind);font-weight:800}
+/* 세로 목록은 넉넉할 때만 값어치가 있다. 1024px 아래에서는 가로로 눕힌다 -
+   기기 구분(767px)만 보면 768~1023 에서 목록이 눌려 글자가 잘린다. */
+@media (max-width:1023px){
+  .opsWrap{grid-template-columns:minmax(0,1fr)}
+  .opsNav{position:static;flex-direction:row;overflow-x:auto;padding:8px;gap:6px;
+    -webkit-overflow-scrolling:touch}
+  .opsNav .grp{display:none}
+  .opsNav button{width:auto;flex:none;white-space:nowrap;padding:10px 14px}
+  /* 가로로 누우면 세로선은 자리를 잡지 못한다 - 옆에 나란히 붙인다 */
+  .opsSub{flex-direction:row;margin:0;padding-left:0;border-left:none;gap:4px}
+  .opsSub button{padding:10px 12px}
+  .opsNav .car{display:none}
+}
 
 .map{width:100%;height:auto;display:block;border-radius:20px;background:#F2F5F7;
   border:1px solid var(--hair);box-shadow:0 1px 2px rgba(35,37,92,.04), 0 8px 24px rgba(35,37,92,.06)}
@@ -5169,8 +5188,14 @@ function saveDemand(d, slotN){
 /* ══════════ A-05 운영 조회 (실데이터) ══════════
    조회는 /api/demands 가 서비스 키로 대신 한다. 이 화면은 암호만 들고 있고,
    계정은 로그인 토큰으로 서버가 직접 확인한다 - 화면이 스스로 판단하지 않는다.
-   암호는 메모리에만 둔다 - 새로고침하면 다시 물어본다. */
-const OPS = { pass:'', rows:null, loading:false, err:'', reveal:false, kind:'', days:0, at:'', tab:'home', msub:'agent',
+   암호는 이 탭에만 둔다 - 새로고침해도 남지만, 탭을 닫으면 사라진다.
+   디스크(localStorage)에 적지 않는 이유는, 남의 컴퓨터에 두고 온 암호가
+   다음 사람에게까지 남지 않게 하기 위해서다. */
+const opsPassKeep = {
+  get(){ try{ return sessionStorage.getItem('bk.ops.pass') || ''; }catch(e){ return ''; } },
+  set(v){ try{ v ? sessionStorage.setItem('bk.ops.pass', v) : sessionStorage.removeItem('bk.ops.pass'); }catch(e){} },
+};
+const OPS = { pass:opsPassKeep.get(), rows:null, loading:false, err:'', reveal:false, kind:'', days:0, at:'', tab:'home', msub:'agent',
   q:'', open:'', sent:{}, seen:0, only:'' };
 
 /* 전달 여부는 브라우저에 남긴다. DB 컬럼을 만들려면 SQL 을 한 번 돌려야 하는데,
@@ -5561,8 +5586,11 @@ function opsFetch(){
     .then(async r=>{
       const j = await r.json().catch(()=>({error:'응답을 읽지 못했습니다'}));
       if(!r.ok){ OPS.err = j.error || ('오류 '+r.status); OPS.rows = null;
+        /* 막힌 암호를 계속 들고 있으면 열 때마다 같은 곳에서 걸린다 */
+        if(r.status===401 || r.status===403) opsPassKeep.set('');
         if(j.need) OPS.err += ' - 미설정: '+j.need.join(', '); return; }
       OPS.rows = j.rows; OPS.at = j.fetchedAt;
+      opsPassKeep.set(OPS.pass);
     })
     .catch(e=>{ OPS.err = '서버에 닿지 못했습니다 - ' + String(e).slice(0,80); OPS.rows = null; })
     .finally(()=>{ OPS.loading = false; render(); });
@@ -5696,18 +5724,29 @@ function demandPanel(){
 /* ── 운영 화면 ──
    왼쪽에 할 일 목록, 오른쪽에 그 일. 어디에 있는지와 무엇이 더 있는지가
    한눈에 보여야 하루에도 여러 번 오갈 수 있다. */
+/* 하위 항목은 곧 그 화면의 거르개다. 목록에서 바로 고르면 화면을 연 뒤
+   다시 거르는 두 번 일이 한 번이 된다. */
 const OPS_MENU = [
   { g:'현황' },
   { k:'home',    t:'대시보드' },
   { g:'관리' },
-  { k:'member',  t:'회원관리',  n:()=>AG.rows && AG.rows.length },
-  { k:'demand',  t:'조건관리',  n:()=>OPS.rows && OPS.rows.length },
-  { k:'listing', t:'매물관리',  n:()=>LS2.rows && LS2.rows.length },
-  { k:'report',  t:'신고',      n:()=>RP.rows && RP.rows.length },
+  { k:'member',  t:'회원관리',  n:()=>AG.rows && AG.rows.length,
+    subs:[ {v:'agent', t:'공급자 신청'}, {v:'user', t:'손님 계정'} ] },
+  { k:'demand',  t:'조건관리',  n:()=>OPS.rows && OPS.rows.length,
+    subs:[ {v:'', t:'전체'}, {v:'todo', t:'안 보낸 것'}, {v:'new', t:'새로 온 것'} ] },
+  { k:'listing', t:'매물관리',  n:()=>LS2.rows && LS2.rows.length,
+    subs:[ {v:'active', t:'올려둔 것'}, {v:'', t:'내린 것까지'} ] },
+  { k:'report',  t:'신고',      n:()=>RP.rows && RP.rows.length,
+    subs:[ {v:'todo', t:'미확인만'}, {v:'', t:'전체'} ] },
   { g:'기록' },
-  { k:'log',     t:'열람 기록', n:()=>LG.rows && LG.rows.length },
+  { k:'log',     t:'열람 기록', n:()=>LG.rows && LG.rows.length,
+    subs:[ {v:'', t:'전체'}, {v:'reveal', t:'연락처 열어본 것'} ] },
   { k:'setting', t:'설정' },
 ];
+/* 지금 어느 하위 항목에 있는지는 각 화면이 이미 들고 있다 - 두 벌로 두지 않는다 */
+const opsSubNow = k => k==='member' ? (OPS.msub||'agent')
+  : k==='demand' ? (OPS.only||'') : k==='listing' ? (LS2.only||'')
+  : k==='report' ? (RP.only||'')  : k==='log' ? (LG.only||'') : '';
 const OPS_TITLE = { home:'대시보드', member:'회원관리', demand:'조건관리',
   listing:'매물관리', report:'신고', log:'열람 기록', setting:'설정' };
 
@@ -5758,7 +5797,7 @@ V['#/ops/live'] = () => {
   /* 암호를 통과하기 전에는 아무 목록도 보여주지 않는다 */
   if(!OPS.rows) return `
 <div class="scr fade" style="background:var(--n50)">
-  <div class="nav solid pad"><a data-go="#/" style="flex:none">${logoLockup({h:24})}</a>
+  <div class="nav solid pad opsPad"><a data-go="#/" style="flex:none">${logoLockup({h:24})}</a>
     <div class="items"><a class="on">운영</a></div>
     <div class="right"><a data-go="#/" style="font-size:13.5px;font-weight:600;color:var(--n700)">사이트로</a></div></div>
   <div class="pad opsPad" style="flex:1;padding-top:${isMo()?18:28}px;padding-bottom:24px;width:100%">
@@ -5774,7 +5813,7 @@ V['#/ops/live'] = () => {
         ${OPS.loading?'불러오는 중…':'운영 화면 열기'}</button>
       ${OPS.err?`<p style="margin:12px 0 0;font-size:12.5px;line-height:1.6;color:var(--danger);font-weight:700">${esc(OPS.err)}</p>`:''}
       <p style="margin:12px 0 0;font-size:12.5px;line-height:1.6;color:var(--n500)">
-        암호는 이 화면에만 잠시 남고 저장되지 않습니다. 새로고침하면 다시 물어봅니다.</p>
+        암호는 이 탭에만 남습니다 - 새로고침해도 이어지고, 탭을 닫으면 사라집니다.</p>
       <p style="margin:8px 0 0;font-size:12.5px;line-height:1.6;color:${S.user?'var(--n500)':'var(--warn)'}">
         ${S.user ? `허용된 운영자 계정인지 서버가 함께 확인합니다 - 지금 <b style="color:var(--n700)">${esc(S.user.email||S.user.name||'로그인됨')}</b>`
                  : '<b>로그인되어 있지 않습니다.</b> 운영자 계정으로 먼저 로그인해 주세요.'}</p>
@@ -5785,7 +5824,7 @@ V['#/ops/live'] = () => {
   const tab = OPS.tab || 'home';
   return `
 <div class="scr fade" style="background:var(--n50)">
-  <div class="nav solid pad"><a data-go="#/" style="flex:none">${logoLockup({h:24})}</a>
+  <div class="nav solid pad opsPad"><a data-go="#/" style="flex:none">${logoLockup({h:24})}</a>
     <div class="items"><a class="on">운영</a></div>
     <div class="right"><a data-go="#/" style="font-size:13.5px;font-weight:600;color:var(--n700)">사이트로</a></div></div>
   <div class="pad opsPad" style="flex:1;padding-top:${isMo()?16:24}px;padding-bottom:28px;width:100%">
@@ -5793,9 +5832,14 @@ V['#/ops/live'] = () => {
       <aside class="opsNav">
         ${OPS_MENU.map(m => m.g
           ? `<span class="grp">${esc(m.g)}</span>`
-          : (()=>{ const c = m.n ? m.n() : null;
-              return `<button class="${tab===m.k?'on':''}" data-act="ops-tab" data-v="${m.k}">${esc(m.t)}
-                ${c!=null?`<span class="cnt">${c}</span>`:''}</button>`; })()).join('')}
+          : (()=>{ const c = m.n ? m.n() : null, here = tab===m.k;
+              const now = opsSubNow(m.k);
+              return `<button class="${here?'on':''}" data-act="ops-tab" data-v="${m.k}">
+                ${m.subs?`<i class="car ${here?'open':''}"></i>`:''}${esc(m.t)}
+                ${c!=null?`<span class="cnt">${c}</span>`:''}</button>
+              ${here && m.subs ? `<div class="opsSub">${m.subs.map(sb=>`
+                <button class="${now===sb.v?'on':''}" data-act="ops-sub" data-v="${m.k}|${sb.v}">${esc(sb.t)}</button>`).join('')}</div>` : ''}`;
+            })()).join('')}
       </aside>
       <main style="min-width:0">
         <div class="opsHead">
@@ -6445,7 +6489,7 @@ document.addEventListener('input', e=>{
   }
   if(k==='reportDetail'){ S.form.reportDetail=v; return; }
   if(k==='email'||k==='pw'||k==='pw2'){ S[k]=v; refreshLoginBtn(); return; }
-  if(k==='opsPass'){ OPS.pass=v; const b=$('#app [data-act="ops-load"]'); if(b) b.disabled=!v; return; }
+  if(k==='opsPass'){ OPS.pass=v; OPS.err=''; const b=$('#app [data-act="ops-load"]'); if(b) b.disabled=!v; return; }
   if(k==='opsQ'){ OPS.q=v; OPS.open=''; render(); settle('tbody'); const el=$('#app [data-in="opsQ"]');
     if(el){ el.focus(); el.setSelectionRange(el.value.length, el.value.length); } return; }
   if(k==='agQ'){ AG.q=v; render(); settle('tbody'); const el=$('#app [data-in="agQ"]');
@@ -6585,6 +6629,19 @@ function handle(a,v,el){
         if(v==='user'  && !US.rows) usFetch();
       }
       render(); return true;
+    case 'ops-sub': {
+      /* 목록에서 바로 고른다 - 화면을 연 뒤 다시 거르지 않아도 되게 */
+      const i = v.indexOf('|'), k = v.slice(0,i), val = v.slice(i+1);
+      OPS.tab = k;
+      if(!OPS.pass){ render(); return true; }
+      if(k==='member'){ OPS.msub = val;
+        if(val==='agent' && !AG.rows) agFetch();
+        if(val==='user'  && !US.rows) usFetch(); }
+      else if(k==='demand'){ OPS.only = val; OPS.open=''; }
+      else if(k==='listing'){ LS2.only = val; LS2.rows = null; lsFetch(); }
+      else if(k==='report'){ RP.only = val; RP.rows = null; rpFetch(); }
+      else if(k==='log'){ LG.only = val; LG.rows = null; lgFetch(); }
+      render(); return true; }
     case 'ls2-load': LS2.rows=null; lsFetch(); return true;
     case 'ls2-only': LS2.only = v; LS2.rows=null; lsFetch(); return true;
     case 'us-load':  US.rows=null; usFetch(); return true;
@@ -7121,7 +7178,7 @@ function bootDone(){
   setTimeout(()=>b.remove(), 320);
 }
 
-window.addEventListener('hashchange', render);
+window.addEventListener('hashchange', ()=>{ render(); opsAuto(); });
 
 /* 돌아온 주소에 토큰이 붙어 있으면 먼저 걷어낸다 - 해시 라우터와 자리가 겹친다.
    저장된 세션이 있으면 되살린 뒤에 그린다. 안 그러면 로그인한 사람을 로그인 화면으로 보낸다.
@@ -7139,13 +7196,20 @@ function clearSeeds(){
   S.conds = []; S.props = []; S.myprops = []; S.listings = []; S.demands = [];
 }
 
+/* 운영 화면에 들어왔는데 이 탭에 이미 통과한 암호가 있으면 그대로 연다.
+   새로고침 한 번마다 암호를 다시 넣는 것은, 하루에 열 번 여는 사람에게는 열 번의 일이다. */
+function opsAuto(){
+  if(!/^#\/ops/.test(location.hash || '')) return;
+  if(OPS.pass && !OPS.rows && !OPS.loading && !OPS.err) opsFetch();
+}
+
 (function boot(){
   clearSeeds();
   if(readAuthRedirect() || readIdvRedirect()) return;   /* 돌아오는 길은 그쪽이 알아서 그린다 */
   const wait = [idvConfig().catch(()=>null)];
   if(store.get()) wait.push(hydrate().catch(()=>null));
   const cap = new Promise(r => setTimeout(r, 1200));
-  Promise.race([Promise.all(wait), cap]).then(()=>{ render(); bootDone(); });
+  Promise.race([Promise.all(wait), cap]).then(()=>{ render(); bootDone(); opsAuto(); });
 })();
 </script>
 </body>

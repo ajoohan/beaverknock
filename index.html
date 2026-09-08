@@ -917,6 +917,23 @@ p,li,dd,.sub,.lines,.opt{line-break:strict;overflow-wrap:break-word}
 </head>
 <body class="pc">
 
+<!-- 먼저 오는 것을 먼저 그린다.
+     본문 script 가 1MB 라, 이 조각이 없으면 그것을 다 받을 때까지 흰 화면이다.
+     class 를 쓰지 않고 style 로만 쓴다 - 스타일시트를 기다리지 않게. -->
+<div id="boot" style="position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:18px;background:#F5EFE6;
+  font-family:-apple-system,'Malgun Gothic',sans-serif;transition:opacity .28s ease">
+  <svg viewBox="0 0 44 44" style="width:44px;height:44px" aria-hidden="true">
+    <circle cx="22" cy="22" r="19" fill="none" stroke="#E4DED2" stroke-width="4"/>
+    <circle cx="22" cy="22" r="19" fill="none" stroke="#3D3F8F" stroke-width="4"
+      stroke-linecap="round" stroke-dasharray="30 90">
+      <animateTransform attributeName="transform" type="rotate" from="0 22 22" to="360 22 22"
+        dur="1s" repeatCount="indefinite"/></circle>
+  </svg>
+  <div style="font-size:13px;font-weight:800;letter-spacing:.1em;color:#3D3F8F">BEAVER KNOCK</div>
+  <div style="font-size:12.5px;color:#8A8378">화면을 준비하고 있습니다</div>
+</div>
+
 <div id="stage"><div id="frame"><div id="app"></div></div></div>
 <div id="toast"></div>
 
@@ -5814,6 +5831,10 @@ function render(){
   if(h.startsWith('#/partner/listing') || h==='#/partner') loadListings(false);
   /* 위치는 먼저 묻지 않는다. 사이트에 들어오자마자 권한창이 뜨면 대부분 거절하고,
      거절당한 권한은 되돌리기 어렵다. 지도에서 '📍 현재 위치로' 를 누른 사람에게만 묻는다. */
+
+  /* 어느 길로 왔든 - 로그인 왕복이든 본인확인 왕복이든 - 여기까지 왔으면
+     화면은 채워졌다. 가림막을 남겨두면 영영 흰 화면이 된다. */
+  bootDone();
 }
 function startTimer(){ if(S.timer) return;
   S.timer=setInterval(()=>{ S.timeLeft=Math.max(0,S.timeLeft-1);
@@ -6769,15 +6790,33 @@ function syncDevice(first){
 MOQ.addEventListener('change', ()=>syncDevice(false));
 syncDevice(true);
 
+/* 화면이 실제로 채워진 뒤에 가림막을 걷는다.
+   그리는 도중에 걷으면 반쯤 그려진 화면이 보인다 - 그게 버벅임으로 읽힌다. */
+let BOOTED = false;
+function bootDone(){
+  if(BOOTED) return;
+  BOOTED = true;
+  const b = document.getElementById('boot'); if(!b) return;
+  requestAnimationFrame(()=>{ b.style.opacity = '0';
+    setTimeout(()=>b.remove(), 320); });
+}
+
 window.addEventListener('hashchange', render);
 
 /* 돌아온 주소에 토큰이 붙어 있으면 먼저 걷어낸다 - 해시 라우터와 자리가 겹친다.
-   저장된 세션이 있으면 되살린 뒤에 그린다. 안 그러면 로그인한 사람을 로그인 화면으로 보낸다. */
-if(!readAuthRedirect() && !readIdvRedirect()){
-  if(store.get()) hydrate().then(()=>render()); else render();
-}
-/* 본인확인이 붙어 있는지 먼저 알아둔다 - 화면이 준비 중을 보여줄지 정한다 */
-idvConfig().then(c=>{ if(c.enabled && S.route==='#/contact') render(); });
+   저장된 세션이 있으면 되살린 뒤에 그린다. 안 그러면 로그인한 사람을 로그인 화면으로 보낸다.
+
+   시작할 때 세 번 그리던 것을 한 번으로 모은다. 세션 확인과 본인확인 설정을
+   나란히 기다렸다가 그린다 - 따로 그리면 화면이 두세 번 갈아끼워지고,
+   그 사이 반쯤 그려진 화면이 보인다.
+   기다리는 데도 끝은 있어야 한다. 1.2초가 지나면 있는 것으로 그린다. */
+(function boot(){
+  if(readAuthRedirect() || readIdvRedirect()) return;   /* 돌아오는 길은 그쪽이 알아서 그린다 */
+  const wait = [idvConfig().catch(()=>null)];
+  if(store.get()) wait.push(hydrate().catch(()=>null));
+  const cap = new Promise(r => setTimeout(r, 1200));
+  Promise.race([Promise.all(wait), cap]).then(()=>{ render(); bootDone(); });
+})();
 </script>
 </body>
 </html>

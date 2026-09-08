@@ -112,6 +112,29 @@ body.mo .nav .items{display:none}
 .chip.on{background:var(--ind);border-color:var(--ind);color:#fff;font-weight:700}
 body.mo .chip{padding:10px 16px;font-size:13.5px}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
+/* ── 운영 화면 ──
+   할 일이 여럿이고 하루에도 여러 번 오가는 자리다. 칩 네 개로는 어디에 있는지,
+   무엇이 더 있는지 알 수 없다. 왼쪽에 목록을 세우고 오른쪽에서 일한다. */
+.opsWrap{display:grid;grid-template-columns:216px minmax(0,1fr);gap:20px;
+  max-width:1360px;margin:0 auto;width:100%;align-items:start}
+.opsNav{position:sticky;top:16px;display:flex;flex-direction:column;gap:2px;
+  background:var(--white);border:1px solid var(--hair);border-radius:16px;padding:10px}
+.opsNav .grp{padding:12px 12px 6px;font-size:11px;font-weight:800;letter-spacing:.06em;color:var(--n500)}
+.opsNav button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;
+  padding:11px 12px;border-radius:10px;font-size:13.5px;font-weight:700;color:var(--n700);
+  transition:background var(--t-fast) ease,color var(--t-fast) ease}
+.opsNav button:hover{background:var(--n50)}
+.opsNav button.on{background:var(--ind50);color:var(--ind);font-weight:800}
+.opsNav button .cnt{margin-left:auto;font-size:11px;font-weight:800;color:var(--n500);
+  background:var(--n100);border-radius:var(--r-full);padding:2px 8px}
+.opsNav button.on .cnt{background:var(--ind100);color:var(--ind)}
+.opsHead{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;
+  flex-wrap:wrap;margin-bottom:14px}
+body.mo .opsWrap{grid-template-columns:minmax(0,1fr)}
+body.mo .opsNav{position:static;flex-direction:row;overflow-x:auto;padding:8px;gap:6px}
+body.mo .opsNav .grp{display:none}
+body.mo .opsNav button{width:auto;flex:none;white-space:nowrap;padding:10px 14px}
+
 .map{width:100%;height:auto;display:block;border-radius:20px;background:#F2F5F7;
   border:1px solid var(--hair);box-shadow:0 1px 2px rgba(35,37,92,.04), 0 8px 24px rgba(35,37,92,.06)}
 .mapcell{cursor:pointer;transition:fill .16s var(--e-out), stroke .16s var(--e-out)}
@@ -5097,7 +5120,7 @@ function saveDemand(d, slotN){
    조회는 /api/demands 가 서비스 키로 대신 한다. 이 화면은 암호만 들고 있고,
    계정은 로그인 토큰으로 서버가 직접 확인한다 - 화면이 스스로 판단하지 않는다.
    암호는 메모리에만 둔다 - 새로고침하면 다시 물어본다. */
-const OPS = { pass:'', rows:null, loading:false, err:'', reveal:false, kind:'', days:0, at:'', tab:'demand',
+const OPS = { pass:'', rows:null, loading:false, err:'', reveal:false, kind:'', days:0, at:'', tab:'home', msub:'agent',
   q:'', open:'', sent:{}, seen:0, only:'' };
 
 /* 전달 여부는 브라우저에 남긴다. DB 컬럼을 만들려면 SQL 을 한 번 돌려야 하는데,
@@ -5231,6 +5254,137 @@ function rpMark(id, mark){
 }
 
 const RP_ROLE = { owner:'소유자', developer:'시행사' };
+
+/* 매물 - 어떤 물건이 쌓이고 있는지 */
+const LS2 = { rows:null, loading:false, err:'', at:'', note:'', only:'active' };
+/* 손님 계정 - 조건을 아직 안 건 사람은 bk_demand 에 없다 */
+const US = { rows:null, loading:false, err:'', at:'', page:1 };
+
+function opsFetch2(box, body, label){
+  if(box.loading || !OPS.pass) return;
+  box.loading = true; box.err = ''; render();
+  apiFetch('/api/demands', {method:'POST', body: JSON.stringify({pass: OPS.pass, ...body})})
+    .then(r => r.json().catch(()=>({})).then(j => {
+      box.loading = false;
+      if(r.ok){ box.rows = j.rows || []; box.at = j.at || ''; box.note = j.note || ''; }
+      else box.err = j.error || (label + '을(를) 불러오지 못했습니다');
+      render();
+    }))
+    .catch(() => { box.loading = false; box.err = '네트워크 문제로 불러오지 못했습니다'; render(); });
+}
+const lsFetch = () => opsFetch2(LS2, {what:'listings', only: LS2.only || undefined, limit:300}, '매물');
+const usFetch = () => opsFetch2(US,  {what:'users', page: US.page, per:50}, '계정');
+
+const opsWhen = t => { const d=new Date(t); return isNaN(d)?'-':
+  `${d.getFullYear()%100}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`; };
+
+function opsBox(box, label, loadAct, body){
+  if(box.loading && !box.rows) return `<div class="card pad"><span style="font-size:13.5px;color:var(--n500)">불러오는 중…</span></div>`;
+  if(box.err) return `<div class="card pad"><p style="margin:0 0 12px;font-size:13.5px;color:var(--danger);font-weight:700">${esc(box.err)}</p>
+    <button class="btn sec sm" data-act="${loadAct}">다시 불러오기</button></div>`;
+  if(!box.rows) return `<div class="card pad"><button class="btn pri md" data-act="${loadAct}">${esc(label)} 불러오기</button></div>`;
+  return (box.note?`<p style="margin:0 0 12px;background:var(--warnbg);padding:12px 16px;font-size:12.5px;color:var(--n700)">${esc(box.note)}</p>`:'') + body;
+}
+
+const ROLE_KO2 = { agent:'공인중개사', owner:'소유자', developer:'시행사' };
+/* 유형 이름은 이미 WHO 가 들고 있다 - 두 벌로 적어두면 한쪽만 고쳐진다 */
+const KIND_KO2 = Object.fromEntries(Object.values(WHO).map(w => [w.kind, w.tag]));
+
+function listingPanel(){
+  return opsBox(LS2, '매물', 'ls2-load', (()=>{
+    const rows = LS2.rows;
+    return `
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+      <div class="chips" style="gap:6px">
+        <button class="chip ${LS2.only==='active'?'on':''}" data-act="ls2-only" data-v="active" style="padding:8px 14px;font-size:12.5px">올려둔 것만</button>
+        <button class="chip ${!LS2.only?'on':''}" data-act="ls2-only" data-v="" style="padding:8px 14px;font-size:12.5px">내린 것까지</button>
+      </div>
+      <span style="margin-left:auto;font-size:12.5px;color:var(--n500)">${rows.length}건</span>
+      <button class="btn sec sm" data-act="ls2-load">새로고침</button>
+    </div>
+    ${!rows.length ? `<div class="empty"><p style="margin:0;font-size:13.5px;color:var(--n500)">올라온 매물이 없습니다.</p></div>` : `
+    <div class="card pad" style="padding:0;overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:12.5px;min-width:760px">
+        <thead><tr style="text-align:left;color:var(--n500)">
+          ${['올린 날','유형','물건','지역','가격','올린 곳','상태'].map(h=>
+            `<th style="padding:10px 12px;font-weight:800;white-space:nowrap">${h}</th>`).join('')}</tr></thead>
+        <tbody>${rows.map(r=>`
+          <tr style="border-top:1px solid var(--n100)${r.status!=='active'?';opacity:.55':''}">
+            <td class="num" style="padding:10px 12px;white-space:nowrap">${opsWhen(r.created_at)}</td>
+            <td style="padding:10px 12px">${esc(KIND_KO2[r.kind]||r.kind||'-')}</td>
+            <td style="padding:10px 12px"><b>${esc(r.name||'-')}</b></td>
+            <td style="padding:10px 12px">${esc(r.dong||'-')}</td>
+            <td class="num" style="padding:10px 12px;white-space:nowrap">보증금 ${(+r.dep||0).toLocaleString()}${r.rent?` / 월 ${r.rent}`:''}</td>
+            <td style="padding:10px 12px">${r.agent?`${esc(r.agent.office||r.agent.name||'-')}<br><span style="font-size:11px;color:var(--n500)">${esc(ROLE_KO2[r.agent.role]||'공인중개사')}${r.agent.status!=='approved'?` · ${esc(r.agent.status)}`:''}</span>`:'-'}</td>
+            <td style="padding:10px 12px">${r.status==='active'?'<span class="badge b-ok">올림</span>':'<span class="badge b-mute">내림</span>'}</td>
+          </tr>`).join('')}</tbody>
+      </table></div>`}`;
+  })());
+}
+
+const VIA_KO = { email:'이메일', google:'Google', naver:'네이버', kakao:'카카오', apple:'Apple' };
+
+function userPanel(){
+  return opsBox(US, '손님 계정', 'us-load', (()=>{
+    const rows = US.rows;
+    return `
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+      <span style="font-size:12.5px;color:var(--n500)">${US.page}쪽 · ${rows.length}명</span>
+      <span style="margin-left:auto"></span>
+      <button class="btn sec sm" data-act="us-page" data-v="prev" ${US.page<=1?'disabled':''}>← 이전</button>
+      <button class="btn sec sm" data-act="us-page" data-v="next" ${rows.length<50?'disabled':''}>다음 →</button>
+      <button class="btn sec sm" data-act="us-load">새로고침</button>
+    </div>
+    ${!rows.length ? `<div class="empty"><p style="margin:0;font-size:13.5px;color:var(--n500)">이 쪽에는 계정이 없습니다.</p></div>` : `
+    <div class="card pad" style="padding:0;overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:12.5px;min-width:600px">
+        <thead><tr style="text-align:left;color:var(--n500)">
+          ${['가입','메일','들어온 길','마지막 접속'].map(h=>
+            `<th style="padding:10px 12px;font-weight:800;white-space:nowrap">${h}</th>`).join('')}</tr></thead>
+        <tbody>${rows.map(u=>`
+          <tr style="border-top:1px solid var(--n100)">
+            <td class="num" style="padding:10px 12px;white-space:nowrap">${opsWhen(u.created_at)}</td>
+            <td style="padding:10px 12px">${esc(u.email||'(없음)')}</td>
+            <td style="padding:10px 12px">${esc(VIA_KO[u.via]||u.via||'-')}</td>
+            <td class="num" style="padding:10px 12px;white-space:nowrap">${u.last_sign_in_at?opsWhen(u.last_sign_in_at):'-'}</td>
+          </tr>`).join('')}</tbody>
+      </table></div>`}
+    <p style="margin:10px 0 0;font-size:12.5px;line-height:1.7;color:var(--n500)">
+      로그인 계정 목록입니다. 조건을 낸 사람만 보시려면 <b style="color:var(--n700)">조건관리</b>로 가세요.</p>`;
+  })());
+}
+
+/* 설정 - 지금 무엇이 켜져 있는지. 여기서 바꾸지는 않는다.
+   환경변수는 Vercel 에, 표는 Supabase 에 있다 - 그 사실을 숨기지 않는다. */
+function opsSettingPanel(){
+  const idvOn = !!(S.idvCfg && S.idvCfg.enabled);
+  const line = (t, on, note) => `<div class="kv"><dt>${esc(t)}</dt><dd>
+    <span class="badge ${on?'b-ok':'b-warn'}">${on?'켜짐':'꺼짐'}</span>
+    <span style="display:block;margin-top:4px;font-size:12.5px;line-height:1.7;color:var(--n700)">${note}</span></dd></div>`;
+  return `
+    <div class="card pad">
+      <b style="display:block;font-size:15px;font-weight:800;margin-bottom:12px">지금 켜져 있는 것</b>
+      ${line('휴대폰 본인확인', idvOn,
+        idvOn ? '포트원 채널이 붙어 있습니다. 접수는 본인확인을 통과해야 들어옵니다.<br>지금은 <b>테스트 채널</b>이라 실제 확인은 되지 않습니다 - 실계약 MID 로 바꿔야 합니다.'
+              : '꺼져 있으면 이름·연락처를 적은 그대로 받습니다. Vercel 에 PORTONE_* 세 개를 넣고 재배포하면 켜집니다.')}
+      ${line('운영자 계정 잠금', true,
+        '이 화면은 허용된 계정 + 접근 암호 둘 다 있어야 열립니다. 명단은 Vercel 의 <b>BK_OPS_USERS</b>.')}
+      ${line('열람 기록', !!(LG.rows||LG.at||true),
+        '조건·계정·매물·신고를 열어본 기록이 남습니다. <b>열람 기록</b>에서 봅니다.')}
+    </div>
+    <div class="card pad" style="margin-top:14px">
+      <b style="display:block;font-size:15px;font-weight:800;margin-bottom:8px">지금 로그인</b>
+      <p style="margin:0;font-size:13.5px;line-height:1.75;color:var(--n700)">
+        ${S.user?`<b style="color:var(--n900)">${esc(S.user.email||S.user.name||'')}</b> · ${esc(S.user.label||'')} 계정`:'로그인되어 있지 않습니다'}</p>
+    </div>
+    <div class="card pad" style="margin-top:14px">
+      <b style="display:block;font-size:15px;font-weight:800;margin-bottom:8px">여기서 바꾸지 않는 것</b>
+      <p style="margin:0;font-size:13.5px;line-height:1.8;color:var(--n700)">
+        환경변수(포트원 키·접근 암호·운영자 명단)는 <b>Vercel</b>에서 바꾸고 재배포해야 반영됩니다.<br>
+        표 구조를 바꾸는 일(마이그레이션)은 <b>Supabase</b>에서 합니다.<br>
+        이 화면에서 눌러 바꿀 수 있는 것은 <b>가입 승인</b>과 <b>신고 처리</b>뿐입니다.</p>
+    </div>`;
+}
 
 function reportPanel(){
   const rows = RP.rows;
@@ -5391,10 +5545,10 @@ function opsCsv(){
   return true;
 }
 
-V['#/ops/live'] = () => {
+function demandPanel(){
   const all = OPS.rows;
   const q = OPS.q.trim().toLowerCase();
-  const rows = !all ? all : all.filter(r=>{
+  const rows = !all ? [] : all.filter(r=>{
     if(OPS.only==='todo' && OPS.sent[r.id]) return false;
     if(OPS.only==='new' && !(new Date(r.created_at).getTime() > OPS.seen)) return false;
     if(!q) return true;
@@ -5403,30 +5557,7 @@ V['#/ops/live'] = () => {
   });
   const chip = (label, on, act, v) =>
     `<button class="chip ${on?'on':''}" data-act="${act}" data-v="${v}" style="padding:8px 14px;font-size:12.5px">${label}</button>`;
-
-  const body = !rows ? `
-    <div class="card pad" style="max-width:440px">
-      <b style="display:block;font-size:15px;font-weight:800;color:var(--n900);margin-bottom:10px">운영자 확인</b>
-      <p style="margin:0 0 14px;font-size:13.5px;line-height:1.75;color:var(--n700)">
-        접수된 조건에는 <b style="color:var(--n900)">이름과 연락처</b>가 들어 있습니다. 접근 암호를 넣어주세요.</p>
-      <input class="inp" data-in="opsPass" type="password" value="${esc(OPS.pass)}" placeholder="접근 암호"
-        style="margin-bottom:10px" autocomplete="off">
-      <button class="btn pri blk" data-act="ops-load" style="padding:14px 0;font-size:15px" ${OPS.pass?'':'disabled'}>
-        ${OPS.loading?'불러오는 중…':'조건 불러오기'}</button>
-      ${OPS.err?`<p style="margin:12px 0 0;font-size:12.5px;line-height:1.6;color:var(--danger);font-weight:700">${esc(OPS.err)}</p>`:''}
-      <p style="margin:12px 0 0;font-size:12.5px;line-height:1.6;color:var(--n500)">
-        암호는 이 화면에만 잠시 남고 저장되지 않습니다. 새로고침하면 다시 물어봅니다.</p>
-      <p style="margin:8px 0 0;font-size:12.5px;line-height:1.6;color:${S.user?'var(--n500)':'var(--warn)'}">
-        ${S.user ? `허용된 운영자 계정인지 서버가 함께 확인합니다 - 지금 <b style="color:var(--n700)">${esc(S.user.email||S.user.name||'로그인됨')}</b>` 
-                 : '<b>로그인되어 있지 않습니다.</b> 운영자 계정으로 먼저 로그인해 주세요.'}</p>
-    </div>` : `
-    <div class="chips" style="gap:6px;margin-bottom:14px">
-      ${chip(`걸린 조건${all?` ${all.length}`:''}`, OPS.tab!=='agent', 'ops-tab','demand')}
-      ${chip(`가입 신청${AG.rows?` ${AG.rows.length}`:''}`, OPS.tab==='agent', 'ops-tab','agent')}
-      ${chip(`신고${RP.rows?` ${RP.rows.length}`:''}`, OPS.tab==='report', 'ops-tab','report')}
-      ${chip(`열람 기록${LG.rows?` ${LG.rows.length}`:''}`, OPS.tab==='log', 'ops-tab','log')}
-    </div>
-    ${OPS.tab==='report' ? reportPanel() : OPS.tab==='log' ? logPanel() : OPS.tab==='agent' ? agentPanel() : `
+  return `
     ${opsSummary(all, AG.rows)}
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px">
       <div class="chips" style="gap:6px">
@@ -5509,49 +5640,127 @@ V['#/ops/live'] = () => {
           }).join('')}</tbody>
         </table>
       </div>`}
-    </div>
-    `}
-    <p style="margin:12px 0 0;font-size:12.5px;line-height:1.75;color:var(--n500)">
-      ${OPS.reveal?'<b style="color:var(--danger)">연락처 원문이 보이는 상태입니다.</b> ':''}개인정보는 제공일로부터 3개월 뒤 파기됩니다.
-      화면을 벗어나면 암호는 사라집니다.</p>`;
+    </div>`;
+}
 
+/* ── 운영 화면 ──
+   왼쪽에 할 일 목록, 오른쪽에 그 일. 어디에 있는지와 무엇이 더 있는지가
+   한눈에 보여야 하루에도 여러 번 오갈 수 있다. */
+const OPS_MENU = [
+  { g:'현황' },
+  { k:'home',    t:'대시보드' },
+  { g:'관리' },
+  { k:'member',  t:'회원관리',  n:()=>AG.rows && AG.rows.length },
+  { k:'demand',  t:'조건관리',  n:()=>OPS.rows && OPS.rows.length },
+  { k:'listing', t:'매물관리',  n:()=>LS2.rows && LS2.rows.length },
+  { k:'report',  t:'신고',      n:()=>RP.rows && RP.rows.length },
+  { g:'기록' },
+  { k:'log',     t:'열람 기록', n:()=>LG.rows && LG.rows.length },
+  { k:'setting', t:'설정' },
+];
+const OPS_TITLE = { home:'대시보드', member:'회원관리', demand:'조건관리',
+  listing:'매물관리', report:'신고', log:'열람 기록', setting:'설정' };
+
+function opsHomePanel(){
+  const n = (v) => v==null ? '—' : String(v);
+  const card = (t, v, sub, act) => `<button class="card pad" data-act="ops-tab" data-v="${act}"
+    style="text-align:left;cursor:pointer">
+    <span style="display:block;font-size:12.5px;font-weight:800;color:var(--n500)">${esc(t)}</span>
+    <b class="num" style="display:block;margin-top:6px;font-size:25px;font-weight:800;letter-spacing:-.03em;color:var(--n900)">${n(v)}</b>
+    <span style="display:block;margin-top:4px;font-size:12.5px;color:var(--n500)">${esc(sub)}</span></button>`;
+  const todo = RP.rows ? RP.rows.filter(r=>!r.report_status).length : null;
+  const wait = AG.rows ? AG.rows.filter(r=>(r.status||'new')==='new').length : null;
+  return `
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px">
+      ${card('걸린 조건', OPS.rows && OPS.rows.length, '전체 접수', 'demand')}
+      ${card('확인 안 한 가입', wait, wait==null?'회원관리에서 불러오세요':'승인 대기', 'member')}
+      ${card('처리 안 한 신고', todo, todo==null?'신고에서 불러오세요':'확인 필요', 'report')}
+      ${card('올라온 매물', LS2.rows && LS2.rows.length, LS2.rows?'중개사가 올린 물건':'매물관리에서 불러오세요', 'listing')}
+    </div>
+    <p style="margin:14px 0 0;font-size:12.5px;line-height:1.7;color:var(--n500)">
+      숫자는 이 화면에서 불러온 것만 셉니다 - 아직 안 연 곳은 —로 둡니다. 실제보다 적게 보이는 편이,
+      없는 것을 있다고 말하는 것보다 낫습니다.</p>`;
+}
+
+function memberPanel(){
+  const sub = OPS.msub || 'agent';
+  return `
+    <div class="chips" style="gap:6px;margin-bottom:14px">
+      <button class="chip ${sub==='agent'?'on':''}" data-act="ops-msub" data-v="agent" style="padding:8px 16px;font-size:12.5px">공급자 신청${AG.rows?` ${AG.rows.length}`:''}</button>
+      <button class="chip ${sub==='user'?'on':''}" data-act="ops-msub" data-v="user" style="padding:8px 16px;font-size:12.5px">손님 계정${US.rows?` ${US.rows.length}`:''}</button>
+    </div>
+    ${sub==='user' ? userPanel() : agentPanel()}`;
+}
+
+function opsPanel(){
+  switch(OPS.tab){
+    case 'member':  return memberPanel();
+    case 'listing': return listingPanel();
+    case 'report':  return reportPanel();
+    case 'log':     return logPanel();
+    case 'setting': return opsSettingPanel();
+    case 'demand':  return demandPanel();
+    default:        return opsHomePanel();
+  }
+}
+
+V['#/ops/live'] = () => {
+  /* 암호를 통과하기 전에는 아무 목록도 보여주지 않는다 */
+  if(!OPS.rows) return `
+<div class="scr fade" style="background:var(--n50)">
+  <div class="nav solid pad"><a data-go="#/" style="flex:none">${logoLockup({h:24})}</a>
+    <div class="items"><a class="on">운영</a></div>
+    <div class="right"><a data-go="#/" style="font-size:13.5px;font-weight:600;color:var(--n700)">사이트로</a></div></div>
+  <div class="pad" style="flex:1;padding-top:${isMo()?18:28}px;padding-bottom:24px;max-width:1360px;margin:0 auto;width:100%">
+    <span class="eyebrow">OPERATIONS</span>
+    <h1 class="t" style="font-size:${isMo()?21:25}px;margin:8px 0 16px">운영 화면</h1>
+    <div class="card pad" style="max-width:440px">
+      <b style="display:block;font-size:15px;font-weight:800;color:var(--n900);margin-bottom:10px">운영자 확인</b>
+      <p style="margin:0 0 14px;font-size:13.5px;line-height:1.75;color:var(--n700)">
+        접수된 조건에는 <b style="color:var(--n900)">이름과 연락처</b>가 들어 있습니다. 접근 암호를 넣어주세요.</p>
+      <input class="inp" data-in="opsPass" type="password" value="${esc(OPS.pass)}" placeholder="접근 암호"
+        style="margin-bottom:10px" autocomplete="off">
+      <button class="btn pri blk" data-act="ops-load" style="padding:14px 0;font-size:15px" ${OPS.pass?'':'disabled'}>
+        ${OPS.loading?'불러오는 중…':'운영 화면 열기'}</button>
+      ${OPS.err?`<p style="margin:12px 0 0;font-size:12.5px;line-height:1.6;color:var(--danger);font-weight:700">${esc(OPS.err)}</p>`:''}
+      <p style="margin:12px 0 0;font-size:12.5px;line-height:1.6;color:var(--n500)">
+        암호는 이 화면에만 잠시 남고 저장되지 않습니다. 새로고침하면 다시 물어봅니다.</p>
+      <p style="margin:8px 0 0;font-size:12.5px;line-height:1.6;color:${S.user?'var(--n500)':'var(--warn)'}">
+        ${S.user ? `허용된 운영자 계정인지 서버가 함께 확인합니다 - 지금 <b style="color:var(--n700)">${esc(S.user.email||S.user.name||'로그인됨')}</b>`
+                 : '<b>로그인되어 있지 않습니다.</b> 운영자 계정으로 먼저 로그인해 주세요.'}</p>
+    </div>
+  </div>
+</div>`;
+
+  const tab = OPS.tab || 'home';
   return `
 <div class="scr fade" style="background:var(--n50)">
   <div class="nav solid pad"><a data-go="#/" style="flex:none">${logoLockup({h:24})}</a>
-    <div class="items"><a data-go="#/ops">지표</a><a class="on">접수 조건</a></div>
-    <div class="right"><span>운영</span></div></div>
-  <div class="pad" style="flex:1;overflow:auto;padding-top:${isMo()?18:28}px;max-width:1180px;margin:0 auto;width:100%">
-    <div style="margin-bottom:16px">
-      <span class="eyebrow">LIVE DEMANDS</span>
-      <h1 class="t" style="font-size:${isMo()?21:25}px;margin-top:8px">접수된 조건</h1>
+    <div class="items"><a class="on">운영</a></div>
+    <div class="right"><a data-go="#/" style="font-size:13.5px;font-weight:600;color:var(--n700)">사이트로</a></div></div>
+  <div class="pad" style="flex:1;padding-top:${isMo()?16:24}px;padding-bottom:28px;width:100%">
+    <div class="opsWrap">
+      <aside class="opsNav">
+        ${OPS_MENU.map(m => m.g
+          ? `<span class="grp">${esc(m.g)}</span>`
+          : (()=>{ const c = m.n ? m.n() : null;
+              return `<button class="${tab===m.k?'on':''}" data-act="ops-tab" data-v="${m.k}">${esc(m.t)}
+                ${c!=null?`<span class="cnt">${c}</span>`:''}</button>`; })()).join('')}
+      </aside>
+      <main style="min-width:0">
+        <div class="opsHead">
+          <div><span class="eyebrow">OPERATIONS</span>
+            <h1 class="t" style="font-size:${isMo()?19:25}px;margin-top:6px">${esc(OPS_TITLE[tab]||'운영 화면')}</h1></div>
+          <span style="font-size:12.5px;color:var(--n500)">${OPS.at?`${esc(String(OPS.at).slice(0,16).replace('T',' '))} 기준`:''}</span>
+        </div>
+        ${opsPanel()}
+      </main>
     </div>
-    ${body}
   </div>
-</div>`;};
+</div>`;
+};
 
 
-/* 커서 위치를 카드에 넘겨준다 - CSS 가 빛을 그린다.
-   rAF 로 묶어 프레임당 한 번만 쓴다. */
-(function(){
-  let pending = false, lastEl = null, lx = 0, ly = 0;
-  document.addEventListener('mousemove', e => {
-    const c = e.target.closest && e.target.closest('.card');
-    if(!c) return;
-    lastEl = c; lx = e.clientX; ly = e.clientY;
-    if(pending) return;
-    pending = true;
-    requestAnimationFrame(()=>{
-      pending = false;
-      if(!lastEl || !lastEl.isConnected) return;
-      const r = lastEl.getBoundingClientRect();
-      lastEl.style.setProperty('--mx', ((lx - r.left) / r.width * 100).toFixed(1) + '%');
-      lastEl.style.setProperty('--my', ((ly - r.top) / r.height * 100).toFixed(1) + '%');
-    });
-  }, {passive:true});
-})();
-
-
-/* ══════════ 지표 모션 ══════════ */
 const REDUCED = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /* 세면 안 되는 숫자를 걸러낸다.
@@ -6309,11 +6518,30 @@ function handle(a,v,el){
 
     /* ── 운영 조회 ── */
     case 'ops-load':   opsFetch(); return true;
-    case 'ops-tab':    OPS.tab = v;
-      if(v==='agent' && !AG.rows && OPS.pass) agFetch();
-      if(v==='log'    && !LG.rows && OPS.pass) lgFetch();
-      if(v==='report' && !RP.rows && OPS.pass) rpFetch();
+    case 'ops-tab':
+      OPS.tab = v;
+      /* 들어가는 순간 한 번 불러온다 - 매번 '불러오기' 를 누르게 하지 않는다 */
+      if(OPS.pass){
+        if(v==='member'  && !AG.rows) agFetch();
+        if(v==='log'     && !LG.rows) lgFetch();
+        if(v==='report'  && !RP.rows) rpFetch();
+        if(v==='listing' && !LS2.rows) lsFetch();
+      }
       render(); return true;
+    case 'ops-msub':
+      OPS.msub = v;
+      if(OPS.pass){
+        if(v==='agent' && !AG.rows) agFetch();
+        if(v==='user'  && !US.rows) usFetch();
+      }
+      render(); return true;
+    case 'ls2-load': LS2.rows=null; lsFetch(); return true;
+    case 'ls2-only': LS2.only = v; LS2.rows=null; lsFetch(); return true;
+    case 'us-load':  US.rows=null; usFetch(); return true;
+    case 'us-page': {
+      const next = v==='next' ? US.page+1 : Math.max(1, US.page-1);
+      if(next === US.page) return true;
+      US.page = next; US.rows=null; usFetch(); return true; }
     case 'lg-load':    LG.rows=null; lgFetch(); return true;
     case 'lg-only':    LG.only = v; LG.rows=null; lgFetch(); return true;
     case 'rp-load':    RP.rows=null; rpFetch(); return true;

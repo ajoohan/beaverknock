@@ -70,6 +70,8 @@ export default async function handler(req, res) {
   if (payload.what === 'log')         return readLog(req, res, payload, opsUser);
   if (payload.what === 'reports')     return readReports(req, res, payload, opsUser);
   if (payload.what === 'report-mark') return markReport(req, res, payload, opsUser);
+  if (payload.what === 'listings')    return readListings(req, res, payload, opsUser);
+  if (payload.what === 'users')       return readUsers(req, res, payload, opsUser);
 
   const limit  = Math.min(parseInt(payload.limit, 10) || 200, 1000);
   const kind   = payload.kind;                 // home | shop | office | storage
@@ -237,5 +239,67 @@ async function markReport(req, res, p, opsUser) {
     return res.status(200).json({ ok: true, mark, count: changed });
   } catch (e) {
     return res.status(500).json({ error: '처리 상태를 바꾸지 못했습니다' });
+  }
+}
+
+/* ── 매물 ──
+   중개사가 올려둔 물건. 손님에게는 목록으로 공개하지 않지만,
+   운영자는 어떤 물건이 쌓이고 있는지 봐야 한다. */
+async function readListings(req, res, p, opsUser) {
+  const limit = Math.min(parseInt(p.limit, 10) || 300, 1000);
+  try {
+    const q = new URLSearchParams({ select: '*', order: 'created_at.desc', limit: String(limit) });
+    if (p.only === 'active') q.set('status', 'eq.active');
+    const r = await fetch(sbUrl('bk_listing', q.toString()), { headers: sbHeaders() });
+    if (!r.ok) {
+      const t = await r.text();
+      if (/does not exist|PGRST205|bk_listing/i.test(t)) {
+        return res.status(200).json({ rows: [], note: '매물 표가 아직 없습니다 (0015 마이그레이션 필요)' });
+      }
+      return res.status(500).json({ error: '매물을 불러오지 못했습니다' });
+    }
+    const rows = await r.json();
+
+    /* 누가 올린 것인지 붙여준다 - 물건만 보고는 연락할 곳을 알 수 없다 */
+    const ids = [...new Set(rows.map(x => x.agent_id).filter(Boolean))];
+    const who = {};
+    if (ids.length) {
+      const ar = await fetch(sbUrl('bk_agent',
+        `select=id,role,office,name,phone,status&id=in.(${ids.join(',')})`), { headers: sbHeaders() });
+      if (ar.ok) for (const a of await ar.json()) who[a.id] = a;
+    }
+    await logOps(req, opsUser, { action: 'listings', count: rows.length });
+    return res.status(200).json({
+      at: new Date().toISOString(),
+      rows: rows.map(x => ({ ...x, agent: who[x.agent_id] || null })),
+    });
+  } catch (e) {
+    return res.status(500).json({ error: '매물을 불러오지 못했습니다' });
+  }
+}
+
+/* ── 손님 계정 ──
+   조건을 낸 사람만 bk_demand 에 남는다. 가입만 하고 아직 조건을 안 건 사람은
+   거기에 없다 - 계정 자체는 Supabase 가 들고 있으므로 그쪽에 물어본다. */
+async function readUsers(req, res, p, opsUser) {
+  const page = Math.max(1, parseInt(p.page, 10) || 1);
+  const per = Math.min(parseInt(p.per, 10) || 50, 200);
+  try {
+    const r = await fetch(
+      `${process.env.BK_URL}/auth/v1/admin/users?page=${page}&per_page=${per}`,
+      { headers: { apikey: process.env.BK_SECRET_KEY,
+                   Authorization: 'Bearer ' + process.env.BK_SECRET_KEY } });
+    if (!r.ok) return res.status(502).json({ error: '계정을 불러오지 못했습니다' });
+    const j = await r.json();
+    const users = (j.users || j || []).map(u => ({
+      id: u.id, email: u.email || null,
+      /* 어떤 길로 들어온 계정인지 - 카카오를 켜기 전에 얼마나 쓰는지 봐야 한다 */
+      via: (u.app_metadata && (u.app_metadata.provider || (u.app_metadata.providers||[])[0])) || 'email',
+      created_at: u.created_at, last_sign_in_at: u.last_sign_in_at || null,
+    }));
+    await logOps(req, opsUser, { action: 'users', count: users.length, detail: `${page}쪽` });
+    return res.status(200).json({ rows: users, page, at: new Date().toISOString() });
+  } catch (e) {
+    return res.status(502).json({ error: '계정을 불러오지 못했습니다' });
   }
 }

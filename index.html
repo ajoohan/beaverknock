@@ -2516,12 +2516,36 @@ function moveMonths(){
   for(let i = 0; i < 12; i++){
     const dt = new Date(now.getFullYear(), now.getMonth() + i, 1);
     const y = dt.getFullYear(), m = dt.getMonth() + 1;
-    /* 해가 바뀌는 자리에서만 연도를 적는다 - 열두 칸에 '26년' 이 줄줄이 붙으면 읽기 어렵다 */
-    out.push({ v: `${y}-${String(m).padStart(2,'0')}`,
-               t: (i === 0 || m === 1) ? `${String(y).slice(2)}년 ${m}월` : `${m}월` });
+    out.push({ v: `${y}-${String(m).padStart(2,'0')}`, y, m });
   }
   return out;
 }
+
+/* 열두 칸을 한 줄에 늘어놓으면 '1월' 이 내년인지 올해인지 알 수 없다.
+   해마다 묶고 머리에 연도를 단다 - 넘어가는 자리가 눈에 보여야 한다. */
+function moveYears(){
+  const groups = [];
+  moveMonths().forEach(x => {
+    let g = groups[groups.length - 1];
+    if(!g || g.y !== x.y) groups.push(g = { y: x.y, items: [] });
+    g.items.push(x);
+  });
+  return groups;
+}
+
+/* 이미 지난 시기는 고를 수 없다. 9월 8일에 '9월 월초' 를 고를 수는 없다.
+   시작일이 오늘보다 앞이면 지난 것으로 본다 - 1일에는 월초가 아직 남아 있다. */
+const MOVE_FROM = { '월초':1, '월중':11, '월말':21 };
+const isThisMonth = v => {
+  if(!v) return false;
+  const n = new Date(), [y,m] = v.split('-').map(Number);
+  return y === n.getFullYear() && m === n.getMonth() + 1;
+};
+const movePartPast = (v, part) =>
+  isThisMonth(v) && MOVE_FROM[part] < new Date().getDate();
+/* 남은 시기가 하나도 없으면 그 달 자체를 고를 수 없다 */
+const moveMonthPast = x =>
+  isThisMonth(x.v) && MOVE_PART.every(pt => MOVE_FROM[pt] < new Date().getDate());
 
 /* 고른 것을 한 줄로 - 이 문장이 그대로 중개사에게 간다 */
 function moveText(d){
@@ -2538,14 +2562,30 @@ function movePicker(d){
       ${chipsHTML(MOVE_WHEN, d.moveWhen || '', 'move-when', false)}
       ${spec ? `
       <div style="margin-top:10px">
-        <span style="display:block;margin-bottom:6px;font-size:12.5px;font-weight:700;color:var(--n700)">어느 달인가요</span>
-        <div class="chips" style="gap:6px">${moveMonths().map(x=>`
-          <button class="chip ${d.moveMonth===x.v?'on':''}" data-act="move-month" data-v="${x.v}"
-            style="padding:8px 14px;font-size:12.5px">${x.t}</button>`).join('')}</div>
+        <span style="display:block;margin-bottom:8px;font-size:12.5px;font-weight:700;color:var(--n700)">어느 달인가요</span>
+        ${moveYears().map((g,gi)=>`
+        <div style="margin-top:${gi?14:0}px">
+          <span style="display:flex;align-items:center;gap:8px;margin-bottom:7px;
+            font-size:11.5px;font-weight:800;color:${gi?'var(--ind)':'var(--n500)'}">
+            <span class="num">${g.y}년</span>
+            ${gi?'<span style="font-weight:700;color:var(--ind300)">여기부터 해가 바뀝니다</span>':''}
+            <i style="flex:1;height:1px;background:${gi?'var(--ind100)':'var(--n100)'}"></i></span>
+          <div class="chips" style="gap:6px">${g.items.map(x=>{ const off = moveMonthPast(x);
+            return `<button class="chip ${d.moveMonth===x.v?'on':''}" data-act="move-month" data-v="${x.v}"
+              ${off?'disabled title="이번 달은 남은 시기가 없습니다"':''}
+              style="padding:8px 14px;font-size:12.5px${off?';opacity:.4;cursor:not-allowed':''}">${x.m}월</button>`;
+          }).join('')}</div>
+        </div>`).join('')}
       </div>
-      ${d.moveMonth ? `<div style="margin-top:10px">
+      ${d.moveMonth ? `<div style="margin-top:12px">
         <span style="display:block;margin-bottom:6px;font-size:12.5px;font-weight:700;color:var(--n700)">그 달 안에서는</span>
-        ${chipsHTML(MOVE_PART, d.movePart || '', 'move-part', false)}
+        <div class="chips" style="gap:6px">${MOVE_PART.map(pt=>{ const off = movePartPast(d.moveMonth, pt);
+          return `<button class="chip ${d.movePart===pt?'on':''}" data-act="move-part" data-v="${pt}"
+            ${off?'disabled title="이미 지난 시기입니다"':''}
+            style="padding:8px 16px${off?';opacity:.4;cursor:not-allowed':''}">${pt}</button>`;
+        }).join('')}</div>
+        ${MOVE_PART.some(pt=>movePartPast(d.moveMonth, pt))
+          ? '<span style="display:block;margin-top:7px;font-size:11.5px;color:var(--n500)">이미 지난 시기는 고를 수 없습니다.</span>' : ''}
       </div>` : ''}` : ''}
       ${moveText(d) ? `<p style="margin:10px 0 0;background:var(--n50);padding:10px 14px;font-size:12.5px;color:var(--n700)">
         중개사에게 <b style="color:var(--n900)">${esc(moveText(d))}</b> 로 전달됩니다.</p>`
@@ -6197,9 +6237,11 @@ function handle(a,v,el){
       d.openWhen = moveText(d); render(); return true;
     case 'move-month':
       d.moveMonth = d.moveMonth===v ? '' : v;
-      if(!d.moveMonth) d.movePart='';
+      /* 달을 바꿨는데 앞서 고른 시기가 그 달에서는 이미 지났을 수 있다 */
+      if(!d.moveMonth || movePartPast(d.moveMonth, d.movePart)) d.movePart='';
       d.openWhen = moveText(d); render(); return true;
     case 'move-part':
+      if(movePartPast(d.moveMonth, v)) return true;
       d.movePart = d.movePart===v ? '' : v;
       d.openWhen = moveText(d); render(); return true;
 

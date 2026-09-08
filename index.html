@@ -2612,7 +2612,7 @@ function roundPath(poly, r){
     const prev = poly[(i-1+n)%n], cur = poly[i], next = poly[(i+1)%n];
     const v1 = [prev[0]-cur[0], prev[1]-cur[1]], v2 = [next[0]-cur[0], next[1]-cur[1]];
     const l1 = Math.hypot(v1[0],v1[1]) || 1, l2 = Math.hypot(v2[0],v2[1]) || 1;
-    const rr = Math.min(r, l1/2.05, l2/2.05);
+    const rr = Math.min(r, l1/2.02, l2/2.02);
     const a = [cur[0] + v1[0]/l1*rr, cur[1] + v1[1]/l1*rr];
     const b = [cur[0] + v2[0]/l2*rr, cur[1] + v2[1]/l2*rr];
     out += `${i ? 'L' : 'M'}${a[0].toFixed(1)} ${a[1].toFixed(1)}`;
@@ -2660,7 +2660,7 @@ function mapScene(level, sel, shop){
     const stroke = on ? 'var(--ind700)' : seoulBlock ? '#D6D2E8' : 'var(--n200)';
     /* 서울 구는 하나의 덩어리로 읽혀야 하므로 사이를 벌리지 않는다 */
     const gap = seoulBlock ? 0.9 : (topLevel ? 3 : 4.4);
-    const rad = seoulBlock ? 3.5 : (topLevel ? 9 : 16);
+    const rad = seoulBlock ? 5 : (topLevel ? 14 : 24);
     const shape = roundPath(shrinkPoly(cells[i], gap), rad);
     return `<path class="mapcell${on?' on':''}" ${act} d="${shape}" fill="${fill}" stroke="${stroke}"
       stroke-width="${seoulBlock?0.7:1.3}" stroke-linejoin="round"/>`;

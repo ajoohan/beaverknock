@@ -3321,6 +3321,8 @@ function agentPanel(){
           <button class="chip" data-act="ag-bulk" data-v="${k}" style="padding:8px 14px;font-size:12.5px"
             ${AG.busy?'disabled':''}>${t}</button>`).join('')}
         <button class="chip" data-act="ag-pick-all" style="padding:8px 14px;font-size:12.5px">선택 해제</button>
+        <button class="chip" data-act="ag-del" style="padding:8px 14px;font-size:12.5px;color:var(--danger);border-color:#E8C4C4"
+          ${AG.busy?'disabled':''}>삭제</button>
       </div>
     </div>` : ''}
 
@@ -4990,6 +4992,35 @@ function modalHTML(){
         <button class="btn pri" style="padding:14px 0" data-act="do-close" ${S.modal.reason?'':'disabled'}>종료하기</button>
       </div></div></div>`;
   }
+  if(S.modal.type==='ag-del'){
+    const m = S.modal, rows = m.rows || [];
+    const prop = rows.reduce((t,r)=>t+(r.proposals||0), 0);
+    const list = rows.reduce((t,r)=>t+(r.listings||0), 0);
+    const heavy = prop + list > 0;
+    return `<div class="modal" data-act="modal-bg"><div class="box" data-stop>
+      <h3 style="margin:0 0 6px;font-size:17px;font-weight:800;letter-spacing:-.03em;color:var(--danger)">
+        ${m.loading ? '무엇이 지워지는지 확인하는 중입니다' : `${rows.length}건을 지울까요?`}</h3>
+      <p style="margin:0 0 14px;font-size:13.5px;line-height:1.7;color:var(--n500)">
+        ${m.loading ? '잠시만 기다려 주세요.'
+          : '지운 것은 되돌릴 수 없습니다. 승인을 되돌리실 것이라면 <b style="color:var(--n900)">보류</b>를 쓰세요.'}</p>
+      ${m.loading ? '' : `
+      ${heavy ? `<p style="margin:0 0 12px;padding:12px 16px;background:var(--dangerbg);color:var(--danger);
+        font-size:13.5px;font-weight:700;line-height:1.7">
+        이 신청에 딸린 <b>제안 ${prop}건</b>과 <b>매물 ${list}건</b>도 함께 사라집니다.<br>
+        손님 제안함에서도 없어집니다.</p>` : `<p style="margin:0 0 12px;font-size:12.5px;color:var(--n500)">
+        딸린 제안과 매물이 없어 이 신청만 사라집니다.</p>`}
+      <div style="max-height:180px;overflow:auto;background:var(--n50);padding:12px 14px;display:flex;flex-direction:column;gap:6px">
+        ${rows.map(r=>`<span style="font-size:12.5px;line-height:1.5">
+          <b style="font-weight:800">${esc(r.name||'-')}</b>
+          <span style="color:var(--n500)"> · ${esc(AG_ROLE[r.role]||r.role||'')} · ${esc(r.office||'')}
+          ${(r.proposals||r.listings)?` · 제안 ${r.proposals} · 매물 ${r.listings}`:''}</span></span>`).join('')}
+      </div>`}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px">
+        <button class="btn sec" style="padding:14px 0" data-act="modal-close">취소</button>
+        <button class="btn pri" style="padding:14px 0;background:var(--danger);border-color:var(--danger)"
+          data-act="ag-del-go" ${m.loading||!rows.length?'disabled':''}>지웁니다</button>
+      </div></div></div>`;
+  }
   if(S.modal.type==='ag-bulk'){
     const {ids, status} = S.modal;
     const label = (AG_STATUS[status]||[])[1] || status;
@@ -6564,6 +6595,34 @@ function handle(a,v,el){
       if(v==='approved' || v==='rejected'){ S.modal={type:'ag-bulk', ids, status:v}; render(); return true; }
       agSetMany(ids, v); return true; }
     case 'ag-bulk-go': { const m=S.modal; S.modal=null; agSetMany(m.ids, m.status); return true; }
+    case 'ag-del': {
+      const ids = agPicked(agVisible());
+      if(!ids.length) return toast('먼저 지울 건을 골라주세요'), true;
+      /* 무엇이 함께 사라지는지 먼저 세어 온다 - 세어보지 않고 묻는 확인은 확인이 아니다 */
+      S.modal = {type:'ag-del', ids, rows:[], loading:true}; render();
+      apiFetch('/api/agent-status', {method:'POST', body: JSON.stringify({pass:OPS.pass, ids, op:'preview'})})
+        .then(r => r.json().catch(()=>({})).then(j => {
+          if(!S.modal || S.modal.type!=='ag-del') return;
+          if(!(r.ok && j.ok)){ S.modal=null; render(); return toast(j.error || '확인하지 못했습니다'); }
+          S.modal.rows = j.rows || []; S.modal.loading = false; render();
+        }))
+        .catch(()=>{ S.modal=null; render(); toast('네트워크 문제로 확인하지 못했습니다'); });
+      return true; }
+    case 'ag-del-go': {
+      const m = S.modal; if(!m || m.loading) return true;
+      S.modal = null; AG.busy = true; render();
+      apiFetch('/api/agent-status', {method:'POST', body: JSON.stringify({pass:OPS.pass, ids:m.ids, op:'delete'})})
+        .then(r => r.json().catch(()=>({})).then(j => {
+          AG.busy = false;
+          if(!(r.ok && j.ok)){ render(); return toast(j.error || '지우지 못했습니다'); }
+          AG.rows = (AG.rows||[]).filter(x => !m.ids.includes(x.id));
+          AG.pick = {};
+          /* 딸린 것이 함께 사라졌으므로 매물·신고 목록도 다시 받아야 한다 */
+          LS2.rows = null; RP.rows = null;
+          render(); toast(`${j.count}건을 지웠습니다`);
+        }))
+        .catch(()=>{ AG.busy=false; render(); toast('네트워크 문제로 지우지 못했습니다'); });
+      return true; }
     case 'ag-csv':     return agCsv();
     case 'ops-only':   OPS.only = OPS.only===v ? '' : v; OPS.open=''; render(); settle('tbody'); return true;
     case 'ops-open':   OPS.open = OPS.open===v ? '' : v; render(); return true;

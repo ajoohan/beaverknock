@@ -9,7 +9,7 @@
 
 import crypto from 'node:crypto';
 
-import { opsAccount } from './_auth.js';
+import { opsAccount, sbHeaders, sbUrl } from './_auth.js';
 import { logOps } from './_opslog.js';
 
 const TABLE = 'bk_agent';
@@ -57,6 +57,11 @@ export default async function handler(req, res) {
   if (!ids.length)          return res.status(400).json({ error: '대상이 없습니다' });
   if (ids.length > 100)     return res.status(400).json({ error: '한 번에 100건까지만 바꿀 수 있습니다' });
   if (!ids.every(x => UUID.test(String(x || '')))) return res.status(400).json({ error: '대상이 올바르지 않습니다' });
+  /* 지우기 전에 무엇이 함께 사라지는지 세어 본다.
+     bk_proposal 과 bk_listing 이 on delete cascade 로 물려 있어서,
+     신청 한 줄을 지우면 그 사람이 보낸 제안과 올린 매물이 같이 없어진다. */
+  if (p.op === 'preview' || p.op === 'delete') return agentOp(req, res, ids, p.op, opsUser);
+
   if (!STATUS.includes(p.status)) return res.status(400).json({ error: '알 수 없는 상태입니다' });
 
   try {
@@ -83,5 +88,58 @@ export default async function handler(req, res) {
     return res.status(200).json({ ok: true, status: p.status, count: changed, asked: ids.length });
   } catch (e) {
     return res.status(500).json({ error: '상태 변경 중 문제가 생겼습니다' });
+  }
+}
+
+/* ── 신청 지우기 ── */
+async function agentOp(req, res, ids, op, opsUser) {
+  const inList = `in.(${ids.map(encodeURIComponent).join(',')})`;
+  const get = async (table, col) => {
+    const r = await fetch(sbUrl(table, `select=${col}&${col}=${inList}`), { headers: sbHeaders() });
+    if (!r.ok) return null;
+    const rows = await r.json();
+    const by = {};
+    for (const x of rows) by[x[col]] = (by[x[col]] || 0) + 1;
+    return by;
+  };
+
+  try {
+    const [who, props, lists] = await Promise.all([
+      (async () => {
+        const r = await fetch(sbUrl('bk_agent', `select=id,name,office,role,status&id=${inList}`), { headers: sbHeaders() });
+        return r.ok ? await r.json() : [];
+      })(),
+      get('bk_proposal', 'agent_id'),
+      get('bk_listing', 'agent_id'),
+    ]);
+
+    const rows = who.map(a => ({
+      id: a.id, name: a.name, office: a.office, role: a.role, status: a.status,
+      proposals: (props || {})[a.id] || 0,
+      listings: (lists || {})[a.id] || 0,
+    }));
+
+    if (op === 'preview') {
+      await logOps(req, opsUser, { action: 'agent-del-preview', count: rows.length });
+      return res.status(200).json({ ok: true, rows });
+    }
+
+    const r = await fetch(sbUrl('bk_agent', `id=${inList}`), {
+      method: 'DELETE', headers: { ...sbHeaders(), Prefer: 'return=representation' },
+    });
+    if (!r.ok) {
+      console.error('[agent-status] 삭제 실패', r.status, (await r.text()).slice(0, 200));
+      return res.status(502).json({ error: '지우지 못했습니다' });
+    }
+    const gone = (await r.json().catch(() => [])).length;
+    if (!gone) return res.status(404).json({ error: '지워진 건이 없습니다 - 목록을 새로고침해 주세요', count: 0 });
+
+    /* 지운 것은 되돌릴 수 없다. 무엇을 지웠는지는 남겨야 한다. */
+    await logOps(req, opsUser, { action: 'agent-delete', count: gone,
+      detail: rows.map(x => `${x.office || x.name}(제안 ${x.proposals}·매물 ${x.listings})`).join(' / ').slice(0, 200) });
+    return res.status(200).json({ ok: true, count: gone });
+  } catch (e) {
+    console.error('[agent-status:op]', e && e.message);
+    return res.status(502).json({ error: 'DB에 닿지 못했습니다' });
   }
 }

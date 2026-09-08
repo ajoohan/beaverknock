@@ -928,6 +928,16 @@ const BIZ = {
   '사무실 겸용':{fac:['화장실 내부'], lic:'별도 인허가 없음', note:'나중에 카페·음식점 전환을 생각하시면 <b>근린생활시설 건물</b>이 출구가 넓습니다.'},
   '기타':{fac:[], lic:'업종에 따라 다릅니다', note:''},
 };
+/* 거래 방식마다 묻는 것이 다르다.
+   전세와 매매에는 월세가 없다. 칸을 남겨두고 "비워두세요" 라고 적는 것은
+   묻지 않아도 될 것을 묻는 것이다 - 아예 치운다. */
+const DEAL_WORDS = {
+  '월세': {dep:'보증금',   hint:'월세 보증금',   ph:'보증금',  rent:true},
+  '전세': {dep:'전세 보증금', hint:'돌려받는 돈',  ph:'전세금',  rent:false},
+  '매매': {dep:'매매가',   hint:'매매 희망가',   ph:'매매가',  rent:false},
+};
+const dealWords = v => DEAL_WORDS[v] || DEAL_WORDS['월세'];
+
 const DEALS=['전세','월세','매매'], HTYPES=['아파트','오피스텔','빌라·연립','원룸·투룸','상관없음'];
 const ROOMS=['1~2룸','3룸','4룸+','무관'];
 const MUSTS=['주차 가능','엘리베이터','반려동물','역세권','초등학교 도보','즉시 입주'];
@@ -2196,14 +2206,16 @@ V['#/register'] = () => {
           <button class="chip on" data-act="dong" data-v="${esc(x)}">${esc(x)} ✕</button>`).join('')}</div>`:''}
         ${regionPicker(d, false)}
       </div>
-      <div class="grid2 mo1">
-        <div><span class="lab">${d.deal==='매매'?'매매가':'보증금'} <span class="req">*</span> <span class="opt">${d.deal==='매매'?'매매 희망가':d.deal==='월세'?'월세 보증금':'전세 보증금'}</span></span>
-          <div class="unit"><input class="inp" data-in="dep" inputmode="numeric" value="${esc(d.dep)}" placeholder="${d.deal==='매매'?'매매가':'보증금'}"><span>만원</span></div>
+      ${(()=>{ const w = dealWords(d.deal);
+        const depBox = `
+        <div><span class="lab">${w.dep} <span class="req">*</span> <span class="opt">${w.hint}</span></span>
+          <div class="unit"><input class="inp" data-in="dep" inputmode="numeric" value="${esc(d.dep)}" placeholder="${w.ph}"><span>만원</span></div>
           ${+d.dep?`<span style="display:block;margin-top:6px;font-size:11px;font-weight:700;color:var(--ind)">${won(+d.dep)}원</span>`:''}
-        </div>
-        <div><span class="lab">월세 ${d.deal==='월세'?'<span class="req">*</span>':''} <span class="opt">${d.deal==='월세'?'매월 내실 금액':'전세·매매는 비워두세요'}</span></span>
+        </div>`;
+        return w.rent ? `<div class="grid2 mo1">${depBox}
+        <div><span class="lab">월세 <span class="req">*</span> <span class="opt">매월 내실 금액</span></span>
           <div class="unit"><input class="inp" data-in="rent" inputmode="numeric" value="${esc(d.rent)}" placeholder="0"><span>만원</span></div></div>
-      </div>
+      </div>` : depBox; })()}
       <div><span class="lab">주택 유형 <span class="req">*</span></span>${chipsHTML(HTYPES, d.htype, 'htype', true)}</div>
       <div class="grid2 mo1">
         <div><span class="lab">방 수</span>${chipsHTML(ROOMS, d.rooms, 'rooms', false)}</div>
@@ -3697,8 +3709,8 @@ V['#/partner/propose'] = (id) => { const d=S.demands.find(x=>x.id===id); if(!d) 
           <div><span class="lab" style="font-size:12.5px">전용면적</span>
             <div class="unit"><input class="inp num" data-in="area" inputmode="decimal" value="${esc(g('area'))}" placeholder="0" style="padding:12px 14px;font-size:14px"><span>㎡</span></div>
             <span data-py="area" style="display:block;margin-top:4px;font-size:11px;font-weight:700;color:var(--n500)">${+g('area')>0?`${(+g('area')/3.305785).toFixed(1)}평`:''}</span></div>
-          <div><span class="lab" style="font-size:12.5px">보증금</span><div class="unit"><input class="inp num" data-in="dep" inputmode="numeric" value="${esc(g('dep'))}" placeholder="0" style="padding:12px 14px;font-size:14px"><span>만원</span></div></div>
-          <div><span class="lab" style="font-size:12.5px">월세</span><div class="unit"><input class="inp num" data-in="rent" inputmode="numeric" value="${esc(g('rent'))}" placeholder="0" style="padding:12px 14px;font-size:14px"><span>만원</span></div></div>
+          <div><span class="lab" style="font-size:12.5px">${home?dealWords(d.deal).dep:'보증금'}</span><div class="unit"><input class="inp num" data-in="dep" inputmode="numeric" value="${esc(g('dep'))}" placeholder="0" style="padding:12px 14px;font-size:14px"><span>만원</span></div></div>
+          ${!home||dealWords(d.deal).rent?`<div><span class="lab" style="font-size:12.5px">월세</span><div class="unit"><input class="inp num" data-in="rent" inputmode="numeric" value="${esc(g('rent'))}" placeholder="0" style="padding:12px 14px;font-size:14px"><span>만원</span></div></div>`:''}
           ${home ? `
           <div><span class="lab" style="font-size:12.5px">방/욕실</span><div style="display:flex;gap:6px">
             <input class="inp num" data-in="rooms" inputmode="numeric" value="${esc(g('rooms'))}" placeholder="방" style="padding:12px 14px;font-size:14px">
@@ -4237,8 +4249,8 @@ V["#/partner/listing/new"] = () => {
       ${shop? `<div><span class="lab">업종 <span class="req">*</span></span>${chipsHTML(Object.keys(BIZ), g('lbiz'),'lbiz',false)}</div>`
             : `<div><span class="lab">거래 방식</span>${chipsHTML(['전세','월세','매매'], g('ldeal')||'월세','ldeal',false)}</div>`}
       <div class="grid2 mo1">
-        <div><span class="lab">보증금 <span class="req">*</span></span><div class="unit"><input class="inp num" data-in="ldep" inputmode="numeric" value="${esc(g('ldep'))}" placeholder="0"><span>만원</span></div></div>
-        <div><span class="lab">월세 <span class="opt">전세는 0</span></span><div class="unit"><input class="inp num" data-in="lrent" inputmode="numeric" value="${esc(g('lrent'))}" placeholder="0"><span>만원</span></div></div>
+        <div><span class="lab">${shop?'보증금':dealWords(g('ldeal')||'월세').dep} <span class="req">*</span></span><div class="unit"><input class="inp num" data-in="ldep" inputmode="numeric" value="${esc(g('ldep'))}" placeholder="0"><span>만원</span></div></div>
+        ${shop||dealWords(g('ldeal')||'월세').rent?`<div><span class="lab">월세 <span class="req">*</span></span><div class="unit"><input class="inp num" data-in="lrent" inputmode="numeric" value="${esc(g('lrent'))}" placeholder="0"><span>만원</span></div></div>`:''}
       </div>
       <div class="grid2 mo1">
         <div><span class="lab">관리비</span><div class="unit"><input class="inp num" data-in="lfee" inputmode="numeric" value="${esc(g('lfee'))}" placeholder="0"><span>만원</span></div></div>
@@ -5839,7 +5851,12 @@ function handle(a,v,el){
   switch(a){
     case 'who': { d.who=v; d.kind=WHO[v].kind; go('#/register'); return true; }
     case 'kind': d.kind=v; go('#/register'); return true;
-    case 'deal': d.deal=v; render(); return true;
+    case 'deal':
+      d.deal = v;
+      /* 월세가 아닌데 앞서 적어둔 월세가 남아 있으면, 화면에 보이지도 않는 값이
+         중개사에게 조건으로 나간다. 바꾸는 순간 지운다. */
+      if(!dealWords(v).rent) d.rent = '';
+      render(); return true;
 
     case 'dong': toggleIn(d.dongs,v); render(); return true;
     case 'region-view': d.mapView=v; render(); return true;
@@ -6214,8 +6231,12 @@ function handle(a,v,el){
 
     /* ── S-08 내 물건 ── */
     case 'lkindpick': S.form.lkind = v==='상가'?'shop':'home'; S.form.ldong=''; S.form.lbiz=''; render(); return true;
-    case 'ldong': case 'lbiz': case 'ldeal': case 'lband':
+    case 'ldong': case 'lbiz': case 'lband':
       S.form[a] = S.form[a]===v ? '' : v; render(); return true;
+    case 'ldeal':
+      S.form.ldeal = S.form.ldeal===v ? '' : v;
+      if(!dealWords(S.form.ldeal||'월세').rent) S.form.lrent = '';
+      render(); return true;
     case 'lfac': case 'lmusts': { S.form[a]=S.form[a]||[]; toggleIn(S.form[a], v); render(); return true; }
     case 'llookup': { if(!(S.form.laddr||'').trim()) return toast('주소를 입력해 주세요'), true;
       S.form.lfilled=true;

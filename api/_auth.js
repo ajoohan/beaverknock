@@ -90,8 +90,35 @@ export function opsAllowlist() {
     .split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
 }
 
+/* ── 여럿이 함께 시험해 보는 기간 ──
+   명단에 넣으려면 그 사람이 먼저 가입해서 메일을 알려주고, 넣고, 다시 배포해야
+   한다. 며칠 시험하자고 사람마다 그 왕복을 하는 것은 무리다.
+
+   그래서 '언제까지' 를 하나 둔다. 그 기간에는 로그인한 계정이면 - 명단에
+   없어도 - 접근 암호를 아는 한 열 수 있다. 기간이 지나면 서버가 스스로 닫는다.
+   닫는 일을 사람에게 맡기지 않는다 - 임시로 열어둔 문은 잊혀서 계속 열려 있다.
+
+   BK_OPS_OPEN_UNTIL  예) 2026-09-15  또는 2026-09-15T18:00:00+09:00
+                      비어 있으면 이 기능은 없는 것과 같다.
+                      30일 넘게 앞을 적으면 무시한다 - 그런 값은 대개 오타이고,
+                      임시로 열어둔 문이 반년씩 열려 있는 쪽이 훨씬 나쁘다.
+
+   열어두어도 로그인은 여전히 필요하다. 누가 무엇을 열어봤는지가 열람 기록에
+   남아야 하기 때문이다 - 이름 없는 손님으로 들여보내지는 않는다. */
+const OPEN_MAX = 30 * 864e5;
+
+export function opsOpenUntil() {
+  const raw = String(process.env.BK_OPS_OPEN_UNTIL || '').trim();
+  if (!raw) return null;
+  /* 날짜만 적으면 그날이 다 가도록 둔다 - '15일까지' 는 15일 밤까지다 */
+  const t = Date.parse(/^\d{4}-\d{2}-\d{2}$/.test(raw) ? raw + 'T23:59:59+09:00' : raw);
+  if (!Number.isFinite(t)) return null;
+  if (t - Date.now() > OPEN_MAX) return null;
+  return t;
+}
+
 /** 운영 화면을 열 수 있는 계정인지 본다.
- *  통과면 { user } (명단이 없으면 user 는 null 일 수 있다), 아니면 { code, error }.
+ *  통과면 { user, guest } (명단이 없으면 user 는 null 일 수 있다), 아니면 { code, error }.
  *  암호보다 먼저 부른다 - 로그인도 안 한 요청에 암호를 시험할 기회를 주지 않는다. */
 export async function opsAccount(req) {
   const allow = opsAllowlist();
@@ -102,5 +129,10 @@ export async function opsAccount(req) {
   const id = String(user.id || '').toLowerCase();
   const email = String(user.email || '').toLowerCase();
   if (allow.includes(id) || allow.includes(email)) return { user };
+
+  /* 시험 기간이면 명단에 없어도 들인다. 기간이 지나면 자동으로 다시 막힌다. */
+  const until = opsOpenUntil();
+  if (until && Date.now() < until) return { user, guest: true, until };
+
   return { code: 403, error: '이 계정에는 운영 권한이 없습니다' };
 }

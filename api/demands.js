@@ -9,7 +9,7 @@
  *   BK_OPS_PASS    운영자 접근 암호
  */
 
-import { opsAccount, sbHeaders, sbUrl } from './_auth.js';
+import { opsAccount, opsOpenUntil, sbHeaders, sbUrl } from './_auth.js';
 import { logOps } from './_opslog.js';
 
 const TABLE = 'bk_demand';
@@ -120,6 +120,10 @@ export default async function handler(req, res) {
     count: out.length,
     revealed: reveal,
     fetchedAt: new Date().toISOString(),
+    /* 문이 열려 있다면 언제 닫히는지 화면이 말할 수 있어야 한다.
+       열어둔 것을 잊는 것이 이 기능의 유일한 위험이므로, 눈에 보이게 둔다. */
+    openUntil: opsOpenUntil() || null,
+    guest: !!gate.guest,
     rows: out,
   });
 }

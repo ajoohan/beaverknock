@@ -344,6 +344,11 @@ body::after{
                 background var(--t-mid) ease, border-color var(--t-mid) ease, color var(--t-mid) ease}
 .chip:active{transform:scale(.95)}
 .chip.on{animation:pop var(--t-mid) var(--e-spring)}
+/* 파란색만으로 '고름' 을 말하면, 색을 구분하기 어려운 사람에게는 아무 말도
+   하지 않는 것과 같다. 고른 칩에는 표를 단다. */
+.chip.on::before{content:'';display:inline-block;width:9px;height:5px;margin-right:7px;
+  border:2px solid currentColor;border-top:none;border-right:none;
+  transform:translateY(-2px) rotate(-45deg);vertical-align:middle}
 @keyframes pop{0%{transform:scale(.94)}60%{transform:scale(1.03)}100%{transform:scale(1)}}
 
 /* 지도 셀도 같은 언어로 - 누르는 순간 살짝 눌린다 */
@@ -1082,18 +1087,33 @@ function proposalFromListing(L, condId, d, n){
    매칭 1~3·5단계가 전부 이 값을 참조한다. 설정이 좁으면 알림이 마른다.
    그래서 이 화면의 원칙은 하나 - 바꿀 때마다 도달 수요 수를 즉시 보여준다. */
 const SCOPE_DEFAULT = {
-  assets:['주거 전월세','상가·점포','오피스','창고'], deals:['월세','전세'],
-  regions:['미사1동','미사2동','미사3동','덕풍1동','덕풍2동','미사역 상권'],
-  depFloor:'', rentFloor:'',
+  assets:['주거 전월세','상가·점포','오피스','창고'],
+  regions:['하남시'],
+  km:'10',
   biz:['카페·디저트','음식점(주류X)','미용실·네일','학원·교습소'],
   excluded:[], hourFrom:'09', hourTo:'19', cap:'10', paused:false,
   /* 기본값이 들어 있어 '비었는가' 로는 정했는지 알 수 없다. 손댄 적이 있는지를 따로 센다. */
   regionsSet:false,
 };
-const EXCLUDES = [
-  {g:'주거', items:['반려동물 가능 요구','1층 필수 요구']},
-  {g:'상가', items:['배기덕트 요구','가스 요구','전기승압 요구']},
-];
+/* 자신 없는 대분류만 고르면 된다. 세세한 요구 하나하나를 묻던 것은
+   중개사가 답하기도 어렵고, 답해도 걸러지는 것이 거의 없었다. */
+const EXCLUDE_KINDS = ['주거','상가','공장','창고','오피스텔','지식산업센터','토지'];
+/* 아직 서비스에 없는 유형은 걸러낼 것도 없다 - 그렇다고 말해준다 */
+const EXCLUDE_SOON = ['공장','토지'];
+/* 손님은 동 단위로도 고를 수 있지만 중개사는 시·구 단위로 움직인다.
+   손님이 고른 곳이 어느 시·군·구인지로 바꿔서 맞춰본다. */
+const normRegion = x => String(x||'').replace(/\s*(상권|전체)\s*/g,'').trim();
+function toSigungu(x){
+  if(RGN[x]) return x;
+  if(DONG_TO_SI[x]) return DONG_TO_SI[x];
+  const n = normRegion(x);
+  return RGN[n] ? n : (DONG_TO_SI[n] || n);
+}
+
+/* 두 지점 사이 거리(km). 위도 1도는 약 111km, 경도는 위도만큼 좁아진다. */
+const kmBetween = (a, b) =>
+  Math.hypot((a.lat-b.lat)*111, (a.lng-b.lng)*111*GEO_K);
+
 /* 이 수요가 내 활동 조건에 들어오는가 */
 function inScope(d, sc){
   sc = sc || S.scope; const m = d.m || {};
@@ -1101,16 +1121,18 @@ function inScope(d, sc){
   if(d.kind==='shop' && !sc.assets.includes('상가·점포'))  return false;
   if(d.kind==='office'  && !sc.assets.includes('오피스')) return false;
   if(d.kind==='storage' && !sc.assets.includes('창고'))  return false;
-  if(d.kind==='home' && m.deal && !sc.deals.includes(m.deal)) return false;
   if(d.kind==='shop' && m.biz && sc.biz.length && !sc.biz.includes(m.biz)) return false;
-  const norm = x => String(x).replace(/\s*(상권|전체)\s*/g,'');
-  if(!(m.dongs||[]).some(x => sc.regions.some(r => norm(r)===norm(x)))) return false;
-  if(+sc.depFloor && m.depMax != null && m.depMax < +sc.depFloor) return false;
-  if(+sc.rentFloor && m.rentMax != null && m.rentMax < +sc.rentFloor) return false;
-  const want = d.kind==='home' ? (m.musts||[]) : (m.fac||[]);
-  const map = {'반려동물 가능 요구':'반려동물','1층 필수 요구':'1층만',
-               '배기덕트 요구':'후드·덕트','가스 요구':'가스 인입','전기승압 요구':'전기 증설'};
-  if(sc.excluded.some(x => want.includes(map[x]||x))) return false;
+  /* 손님이 동 단위로 골랐어도 그 동이 속한 시·구로 맞춰본다 */
+  if(!(m.dongs||[]).some(x => sc.regions.includes(toSigungu(x)))) return false;
+
+  /* 취급하지 않는다고 한 대분류는 아예 보내지 않는다 */
+  const ex = sc.excluded || [];
+  if(ex.includes('주거') && d.kind==='home') return false;
+  if(ex.includes('상가') && d.kind==='shop') return false;
+  if(ex.includes('창고') && d.kind==='storage') return false;
+  if(ex.includes('오피스텔') && d.kind==='home' && (m.htype||[]).includes('오피스텔')) return false;
+  if(ex.includes('지식산업센터') && d.kind==='office'
+     && String(m.bldType||'').includes('지식산업센터')) return false;
   return true;
 }
 const reachCount = sc => S.demands.filter(d => inScope(d, sc)).length;
@@ -1534,7 +1556,7 @@ function rail(step, title){
       <span class="dot">${i+1<step?ICON_CHECK:i+1}</span><span>${st[0]}</span></${i+1<step?'a':'div'}>`).join('')}
     <div style="margin-top:auto">
       ${beaverly(150)}
-      <p style="margin:12px 0 0;font-size:12.5px;line-height:1.75;color:var(--n500)">적어주신 조건은 해당 지역 공인중개사에게만 전달됩니다.<br>전 과정 무료 · 3개월 후 자동 파기</p>
+      <p style="margin:12px 0 0;font-size:12.5px;line-height:1.75;color:var(--n500)">고객님의 조건은 해당 지역 공급자에게만 보여집니다.<br>모든 과정은 무료이며, 지정된 기간이 끝나면 자동으로 파기됩니다.</p>
     </div>
   </div>`;}
 function mprog(pct){ return `<div class="mprog"><i style="width:${pct}%"></i></div>`;}
@@ -2428,6 +2450,17 @@ const HANAM_ZONE = [
   {t:'미사역 상권',lat:37.5545,lng:127.1935},{t:'하남시청역',lat:37.5400,lng:127.2040},{t:'신장동',lat:37.5445,lng:127.2145},
   {t:'덕풍동',lat:37.5330,lng:127.1985},{t:'스타필드 인근',lat:37.5455,lng:127.2280},
   {t:'감일동',lat:37.5090,lng:127.1560},{t:'위례동',lat:37.4800,lng:127.1470},
+];
+
+/* 손님이 고른 동·상권이 어느 시·군에 속하는지 - 위 목록이 다 선언된 뒤에 만든다 */
+const DONG_TO_SI = {};
+[...HANAM_DONG, ...HANAM_ZONE].forEach(x => { DONG_TO_SI[x.t] = '하남시'; });
+DONG_TO_SI['하남 어디든'] = '하남시';
+
+/* 활동 지역 - 서울은 구, 경기는 시·군. 동 단위로 나눌 이유가 없다. */
+const SCOPE_ZONES = [
+  {t:'서울특별시', d: SEOUL_GU.map(x=>x.t)},
+  {t:'경기도',   d: GG_SI.map(x=>x.t)},
 ];
 
 /* 외곽선 - [경도, 위도] */
@@ -4401,26 +4434,31 @@ V["#/partner/settings"] = () => {
         ${sect('1','취급 유형','', chipsHTML(['주거 전월세','상가·점포','오피스','창고'], sc.assets,'sc-assets',true) +
           `<div class="chips" style="margin-top:8px">${['토지','공장','건물(통)'].map(x=>
             `<span class="chip" style="border-style:dashed;color:#C9C4BB;cursor:default">${x} · 준비 중</span>`).join('')}</div>`)}
-        ${sc.assets.includes('주거 전월세') ? sect('2','거래 방식','', chipsHTML(['월세','전세','매매'], sc.deals,'sc-deals',true)) : ''}
-        ${sect('3','활동 지역','생활권 이름을 눌러 한 번에 고를 수 있습니다',
-          `<div class="chips" style="margin-bottom:10px">${ZONES.slice(0,3).map(z=>
-            `<button class="chip" data-act="sc-zone" data-v="${esc(z.t)}" style="font-size:12.5px;padding:8px 14px;background:var(--ind50);border-color:#DCDDF3;color:var(--ind);font-weight:700">${esc(z.t)} 전체</button>`).join('')}</div>`
-          + zonesHTML(sc.assets.includes('상가·점포') && !sc.assets.includes('주거 전월세') ? SHOP_ZONES : ZONES, sc.regions).replace(/data-act="dong"/g,'data-act="sc-region"')
-          + (sc.assets.includes('상가·점포') && sc.assets.includes('주거 전월세')
-             ? `<div style="margin-top:12px"><span style="display:block;font-size:11px;font-weight:800;color:var(--n500);margin-bottom:8px">상가 상권</span>${chipsHTML(['미사역 상권','하남시청역','스타필드 인근'], sc.regions,'sc-region',true)}</div>` : ''))}
-        ${sect('4','예산 하한','이보다 낮은 예산의 손님은 알림에서 제외됩니다 · 비우면 제한 없음',
-          `<div class="grid2" style="max-width:420px">
-            <div class="unit"><input class="inp num" data-in="sc-depFloor" inputmode="numeric" value="${esc(sc.depFloor)}" placeholder="보증금 하한"><span>만원</span></div>
-            <div class="unit"><input class="inp num" data-in="sc-rentFloor" inputmode="numeric" value="${esc(sc.rentFloor)}" placeholder="월세 하한"><span>만원</span></div></div>`)}
-        ${sc.assets.includes('상가·점포') ? sect('5','상가 취급 업종','', chipsHTML(Object.keys(BIZ), sc.biz,'sc-biz',true)) : ''}
-        ${sect('6','취급 불가 항목','이 항목이 필요한 손님에게는 알림이 가지 않습니다. <b style="color:var(--n900)">확실히 취급하지 않는 것만</b> 체크하세요.',
-          EXCLUDES.map(g=>`<div style="margin-bottom:6px">
-            <span style="display:block;font-size:11px;font-weight:800;color:var(--n500);margin-bottom:2px">${g.g}</span>
-            ${g.items.map(it=>`<div class="chk ${sc.excluded.includes(it)?'on':''}" data-act="sc-exclude" data-v="${esc(it)}" style="padding:10px 0">
-              <span class="box">${ICON_CHECK}</span><span class="txt">${esc(it)}</span></div>`).join('')}</div>`).join('')
-          + (sc.excluded.length ? `<p style="margin:8px 0 0;padding:12px 16px;font-size:13.5px;font-weight:700;background:${drop?'var(--dangerbg)':'var(--warnbg)'};color:${drop?'var(--danger)':'var(--warn)'}">
+        ${sect('2','활동 지역','서울은 구, 경기는 시·군 단위입니다',
+          `<div style="margin-bottom:12px;padding:12px 16px;background:var(--ind50);border-radius:12px">
+            <span style="display:block;font-size:12.5px;font-weight:700;color:var(--n700);margin-bottom:8px">
+              사무소 근처를 한 번에 고르기</span>
+            <div class="chips" style="gap:6px">
+              ${['5','10','20','30'].map(k=>`<button class="chip" data-act="sc-km" data-v="${k}"
+                style="font-size:12.5px;padding:8px 14px">${k}km 이내</button>`).join('')}
+            </div>
+            <span style="display:block;margin-top:8px;font-size:11.5px;color:var(--n500)">
+              ${S.geo ? `${esc(S.geo.t)} 기준으로 고릅니다 · 고른 뒤 하나씩 더하거나 뺄 수 있습니다`
+                      : '누르면 현재 위치를 한 번 확인합니다'}</span>
+          </div>`
+          + zonesHTML(SCOPE_ZONES, sc.regions).replace(/data-act="dong"/g,'data-act="sc-region"')
+          + (sc.regions.length ? `<p style="margin:10px 0 0;font-size:12.5px;color:var(--n500)">
+              고른 지역 <b style="color:var(--n900)">${sc.regions.length}곳</b></p>` : ''))}
+        ${sc.assets.includes('상가·점포') ? sect('3','상가 취급 업종','', chipsHTML(Object.keys(BIZ), sc.biz,'sc-biz',true)) : ''}
+        ${sect('4','취급 불가 항목','자신 없는 대분류만 고르세요. 고른 유형의 손님에게는 알림이 가지 않습니다.',
+          `<div class="chips">${EXCLUDE_KINDS.map(k=>{
+            const soon = EXCLUDE_SOON.includes(k);
+            return `<button class="chip ${sc.excluded.includes(k)?'on':''}" data-act="sc-exclude" data-v="${esc(k)}"
+              style="padding:10px 16px;font-size:13.5px">${esc(k)}${soon?' <span style="opacity:.6;font-size:11px">· 준비 중</span>':''}</button>`;
+          }).join('')}</div>`
+          + (sc.excluded.length ? `<p style="margin:10px 0 0;padding:12px 16px;font-size:13.5px;font-weight:700;background:${drop?'var(--dangerbg)':'var(--warnbg)'};color:${drop?'var(--danger)':'var(--warn)'}">
               이 설정이면 대기 손님 ${base}건 → ${now}건이 됩니다${drop?' - 알림이 크게 줄어듭니다':''}</p>` : ''))}
-        ${sect('7','알림 설정','',
+        ${sect('5','알림 설정','',
           `<div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;font-size:14px">
             <span style="font-weight:700;color:var(--n700)">받는 시간</span>
             <select class="inp" data-in="sc-hourFrom" style="width:auto;padding:10px 10px">${['07','08','09','10','11'].map(h=>`<option ${h===sc.hourFrom?'selected':''}>${h}</option>`).join('')}</select>
@@ -6047,7 +6085,13 @@ document.addEventListener('input', e=>{
     }
     return; }
   if(k.startsWith('j-')){ S.form[k]=v; refreshJoin(); return; }
-  if(k.startsWith('sc-')){ S.scope[k.slice(3)] = v; render(); return; }
+  if(k.startsWith('sc-')){
+    S.scope[k.slice(3)] = v;
+    /* 글자를 칠 때마다 다시 그리면 입력 칸이 교체되면서 화면이 위로 튄다.
+       고르는 것(select)만 다시 그린다 - 적는 것은 값만 담아둔다. */
+    if(el.tagName === 'SELECT') render();
+    return;
+  }
   if(k.startsWith('l') && S.route.startsWith('#/partner/listing')){ S.form[k]=v; refreshListingBtn(); return; }
   if(['addr','bname','area','areaSup','dep','rent','fee','feeItems','approved','rooms','baths','floorNo','msg'].includes(k) && S.route.startsWith('#/partner/propose')){
     S.form[k]= k==='msg'? v.slice(0,200) : v;
@@ -6523,16 +6567,20 @@ function handle(a,v,el){
     case 'j-retry': S.form.jSent = 'sending'; render(); sendAgent(S.form); return true;
 
     /* ── S-03 활동 조건 ── */
-    case 'sc-assets': case 'sc-deals': case 'sc-biz':
+    case 'sc-assets': case 'sc-biz':
       toggleIn(S.scope[a.slice(3)], v); render(); return true;
     case 'sc-region': toggleIn(S.scope.regions, v); S.scope.regionsSet=true; render(); return true;
-    case 'sc-zone': { S.scope.regionsSet=true; const z = ZONES.find(x=>x.t===v); if(z){
-        const all = z.dongs.every(d=>S.scope.regions.includes(d));
-        z.dongs.forEach(d=>{ const i=S.scope.regions.indexOf(d);
-          if(all && i>=0) S.scope.regions.splice(i,1);
-          else if(!all && i<0) S.scope.regions.push(d); }); }
-      render(); return true; }
     case 'sc-exclude': toggleIn(S.scope.excluded, v); render(); return true;
+    case 'sc-km': {
+      /* 사무소 근처를 한 번에 고른다. 시·군 중심점까지의 거리로 센다 -
+         경계까지 재려면 훨씬 복잡한데, 고르는 출발점으로는 중심이면 충분하다. */
+      if(!S.geo){ toast('현재 위치를 먼저 확인합니다'); detectRegion(true); return true; }
+      const km = +v;
+      const near = [...SEOUL_GU, ...GG_SI].filter(x => kmBetween(x, S.geo) <= km).map(x => x.t);
+      if(!near.length){ toast(`${km}km 안에 드는 지역이 없습니다`); return true; }
+      S.scope.regions = near; S.scope.km = v;
+      toast(`${S.geo.t}에서 ${km}km 이내 ${near.length}곳을 골랐습니다`);
+      render(); return true; }
     case 'sc-pause': S.scope.paused = !S.scope.paused; render(); return true;
     case 'scope-save': toast(`저장됐습니다 · 새 조건부터 적용됩니다 (도달 ${reachCount(S.scope)}건)`);
       go('#/partner/demands'); return true;

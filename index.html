@@ -6262,15 +6262,8 @@ function opsGateScreen(){
         font-size:12.5px;line-height:1.7;font-weight:700;border-radius:var(--r-sm)">${esc(OPS_LINK.err)}
         ${OPS_LINK.until?`<br><span style="font-weight:600">${esc(opsLinkWhen(OPS_LINK.until))} 까지였습니다.</span>`:''}</p>` : '';
 
-  /* 아직 열어보는 중 */
-  if(OPS.loading || !OPS.tried) return wrap(`
-    <div style="display:flex;align-items:center;gap:12px">
-      <div class="spin" style="width:22px;height:22px;flex:none;border:2.5px solid var(--ind100);border-top-color:var(--ind);border-radius:50%"></div>
-      <div><b style="display:block;font-size:15px;font-weight:800;color:var(--n900)">운영 화면을 여는 중입니다</b>
-        <span style="display:block;margin-top:3px;font-size:13px;color:var(--n500)">계정을 확인하고 있습니다.</span></div>
-    </div>${linkNote}`);
-
-  /* 로그인부터 */
+  /* 로그인부터. 이 판단이 맨 앞이어야 한다 - 로그인하지 않으면 열어보지도 않으므로,
+     '여는 중' 을 먼저 두면 영영 도는 동그라미만 남는다. */
   if(!S.user) return wrap(`
     <b style="display:block;font-size:15px;font-weight:800;color:var(--n900);margin-bottom:8px">로그인이 필요합니다</b>
     <p style="margin:0 0 14px;font-size:13.5px;line-height:1.75;color:var(--n700)">
@@ -6278,6 +6271,14 @@ function opsGateScreen(){
       누가 무엇을 열어봤는지 남아야 해서, 로그인한 계정만 들어올 수 있습니다.</p>
     <button class="btn pri blk" data-act="ops-login" style="padding:14px 0;font-size:15px">로그인하러 가기</button>
     ${linkNote}`);
+
+  /* 로그인은 되어 있고, 아직 열어보는 중 */
+  if(OPS.loading || !OPS.tried) return wrap(`
+    <div style="display:flex;align-items:center;gap:12px">
+      <div class="spin" style="width:22px;height:22px;flex:none;border:2.5px solid var(--ind100);border-top-color:var(--ind);border-radius:50%"></div>
+      <div><b style="display:block;font-size:15px;font-weight:800;color:var(--n900)">운영 화면을 여는 중입니다</b>
+        <span style="display:block;margin-top:3px;font-size:13px;color:var(--n500)">계정을 확인하고 있습니다.</span></div>
+    </div>${linkNote}`);
 
   /* 로그인은 했는데 권한이 없다 */
   if(OPS.err && !OPS.needPass) return wrap(`

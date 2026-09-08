@@ -1281,9 +1281,9 @@ const S = {
   vtimer:null, vsec:180, geo:null, geoState:'idle', geoTried:false, saved:false, lastRoute:null, enterT:null,
   user:null, afterLogin:null, email:'', pw:'', pw2:'', signup:false,
   idvCfg:null, idvBusy:false, idvToken:null,
-  mineLoading:false, mineAt:0, mineErr:'',
-  mpLoading:false, mpAt:0, mpErr:'',
-  lsLoading:false, lsAt:0, lsSaved:false, lsBusy:false,
+  mineLoading:false, mineAt:0, mineErr:'', mineReady:false,
+  mpLoading:false, mpAt:0, mpErr:'', mpReady:false,
+  lsLoading:false, lsAt:0, lsSaved:false, lsBusy:false, lsReady:false,
   feedLoading:false, feedAt:0, feedErr:'', feedNeed:'', feedHidden:{region:0,slot:0}, agent:null,
   findName:'', findPhone:'', findErr:'', foundEmail:'', resetEmail:'', resetErr:'', resetSent:'',
 };
@@ -1628,6 +1628,13 @@ const agoText = iso => {
   return m<1?'방금': m<60?`${m}분 전`: m<1440?`${Math.floor(m/60)}시간 전`: `${Math.floor(m/1440)}일 전`;
 };
 
+/* 아직 서버에서 못 받았으면 '없음' 이 아니다. 빈 화면으로 단정하지 않는다. */
+const waitingFor = ready => !!store.get() && !ready;
+const loadingBox = (what) => `<div class="empty">
+  <div class="spin" style="width:24px;height:24px;margin:0 auto 12px;border:2.5px solid var(--ind100);
+    border-top-color:var(--ind);border-radius:50%"></div>
+  <p style="margin:0;font-size:13.5px;color:var(--n500)">${esc(what)}을(를) 불러오는 중입니다…</p></div>`;
+
 /* 서버 조건 → 손님 '내 조건' 카드 */
 function condFromRow(d){
   const shop = NONHOME(d.kind);
@@ -1678,14 +1685,14 @@ function loadListings(force){
   S.lsLoading = true;
   apiFetch('/api/feed', {method:'POST', body: JSON.stringify({what:'listings'})})
     .then(r => r.json().catch(()=>({})).then(j => {
-      S.lsLoading = false; S.lsAt = Date.now();
+      S.lsLoading = false; S.lsAt = Date.now(); S.lsReady = true;
       /* 승인 전이거나 가입 전이면 목록이 없는 게 맞다 - 예시를 그대로 둔다 */
       if(!(r.ok && j.ok)) return;
       S.lsSaved = !j.note;          /* 표가 없으면 아직 저장되지 않는다 */
       S.listings = (j.rows||[]).map(listingFromRow);
       render();
     }))
-    .catch(() => { S.lsLoading = false; });
+    .catch(() => { S.lsLoading = false; S.lsReady = true; });
 }
 
 function myPropFromRow(x){
@@ -1710,7 +1717,7 @@ function loadMyProps(force){
   S.mpLoading = true;
   apiFetch('/api/feed', {method:'POST', body: JSON.stringify({what:'mine'})})
     .then(r => r.json().catch(()=>({})).then(j => {
-      S.mpLoading = false; S.mpAt = Date.now();
+      S.mpLoading = false; S.mpAt = Date.now(); S.mpReady = true;
       if(!(r.ok && j.ok)){
         /* 승인 전이거나 가입 전이면 목록이 없는 게 맞다 - 조용히 둔다 */
         if(r.status !== 403) S.mpErr = j.error || '보낸 제안을 불러오지 못했습니다';
@@ -1718,7 +1725,7 @@ function loadMyProps(force){
       }
       S.mpErr = ''; S.myprops = (j.rows||[]).map(myPropFromRow); render();
     }))
-    .catch(() => { S.mpLoading=false; S.mpErr='네트워크 문제로 보낸 제안을 불러오지 못했습니다'; render(); });
+    .catch(() => { S.mpLoading=false; S.mpReady=true; S.mpErr='네트워크 문제로 보낸 제안을 불러오지 못했습니다'; render(); });
 }
 
 function propFromRow(p){
@@ -1784,7 +1791,7 @@ function loadMine(force){
   S.mineLoading = true;
   apiFetch('/api/my')
     .then(r => r.json().catch(()=>({})).then(j => {
-      S.mineLoading = false; S.mineAt = Date.now();
+      S.mineLoading = false; S.mineAt = Date.now(); S.mineReady = true;
       if(!j.ok){
         /* 시드를 그대로 두면 남의 예시를 자기 조건인 줄 안다. 비우고 이유를 적는다. */
         S.mineErr = j.error || '조건을 불러오지 못했습니다';
@@ -1800,7 +1807,7 @@ function loadMine(force){
       if(S.conds.length && !S.conds.some(c=>c.id===S.inboxCond)) S.inboxCond = S.conds[0].id;
       render();
     }))
-    .catch(()=>{ S.mineLoading=false; render(); });
+    .catch(()=>{ S.mineLoading=false; S.mineReady=true; render(); });
 }
 
 /* 중개사: 내 활동 조건에 맞는 손님 조건을 서버에서 받는다. */
@@ -3645,7 +3652,7 @@ V['#/my'] = () => {
     <p style="margin:-6px 0 0;font-size:12.5px;line-height:1.7;color:var(--n500)">
       ${esc(S.user.label||'')} 계정에서 받은 <b style="color:var(--n700)">이름</b>은 중개사에게 전달되는 조건에 함께 쓰이고,
       <b style="color:var(--n700)">이메일</b>은 이 계정을 알아보고 걸어두신 조건을 다시 불러오는 데만 씁니다.</p>` : ''}
-    ${S.conds.length? rows : `<div class="empty"><p style="margin:0 0 6px;font-size:15px;font-weight:800">아직 등록한 조건이 없습니다</p>
+    ${S.conds.length? rows : waitingFor(S.mineReady) ? loadingBox('걸어두신 조건') : `<div class="empty"><p style="margin:0 0 6px;font-size:15px;font-weight:800">아직 등록한 조건이 없습니다</p>
       <p style="margin:0 0 18px;font-size:13.5px;color:var(--n500)">조건을 걸어두면 맞는 물건이 있을 때만 연락이 옵니다.</p>
       <button class="btn pri md" data-act="restart">조건 등록하기</button></div>`}
     <div class="beaverbox" style="margin-top:auto;margin-bottom:${isMo()?'14px':'26px'};max-width:${isMo()?'none':'560px'}">
@@ -6817,7 +6824,17 @@ window.addEventListener('hashchange', render);
    나란히 기다렸다가 그린다 - 따로 그리면 화면이 두세 번 갈아끼워지고,
    그 사이 반쯤 그려진 화면이 보인다.
    기다리는 데도 끝은 있어야 한다. 1.2초가 지나면 있는 것으로 그린다. */
+/* 로그인한 사람에게 예시를 보여주면 자기 것인 줄 안다. 그러다 서버 것으로
+   갈아끼워지면 "있던 게 사라졌다" 로 보인다 - 실제로 그렇게 보였다.
+   세션이 있으면 예시를 미리 비운다. 받아오기 전까지는 '없음' 이 아니라
+   '불러오는 중' 이다. */
+function clearSeeds(){
+  if(!store.get()) return;
+  S.conds = []; S.props = []; S.myprops = []; S.listings = []; S.demands = [];
+}
+
 (function boot(){
+  clearSeeds();
   if(readAuthRedirect() || readIdvRedirect()) return;   /* 돌아오는 길은 그쪽이 알아서 그린다 */
   const wait = [idvConfig().catch(()=>null)];
   if(store.get()) wait.push(hydrate().catch(()=>null));

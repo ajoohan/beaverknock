@@ -2510,6 +2510,9 @@ function voronoi(sites, bb){
    고르게 한다 - 이번 달부터 열두 달, 고른 달 안에서 초·중·말. */
 const MOVE_WHEN = ['최대한 빠르게', '아무때나', '날짜 지정'];
 const MOVE_PART = ['월초', '월중', '월말'];
+/* 월초·월중·월말이 며칠인지는 사람마다 다르게 잡는다. 우리가 정해서 보여준다 -
+   손님도 중개사도 같은 날을 떠올려야 헛걸음이 없다. */
+const MOVE_RANGE = { '월초':'1~9일', '월중':'10~19일', '월말':'20일~말일' };
 
 function moveMonths(){
   const now = new Date(), out = [];
@@ -2535,7 +2538,7 @@ function moveYears(){
 
 /* 이미 지난 시기는 고를 수 없다. 9월 8일에 '9월 월초' 를 고를 수는 없다.
    시작일이 오늘보다 앞이면 지난 것으로 본다 - 1일에는 월초가 아직 남아 있다. */
-const MOVE_FROM = { '월초':1, '월중':11, '월말':21 };
+const MOVE_FROM = { '월초':1, '월중':10, '월말':20 };
 const isThisMonth = v => {
   if(!v) return false;
   const n = new Date(), [y,m] = v.split('-').map(Number);
@@ -2582,7 +2585,8 @@ function movePicker(d){
         <div class="chips" style="gap:6px">${MOVE_PART.map(pt=>{ const off = movePartPast(d.moveMonth, pt);
           return `<button class="chip ${d.movePart===pt?'on':''}" data-act="move-part" data-v="${pt}"
             ${off?'disabled title="이미 지난 시기입니다"':''}
-            style="padding:8px 16px${off?';opacity:.4;cursor:not-allowed':''}">${pt}</button>`;
+            style="padding:8px 16px${off?';opacity:.4;cursor:not-allowed':''}">${pt}<span
+              style="margin-left:6px;font-size:11px;font-weight:600;opacity:.6">${MOVE_RANGE[pt]}</span></button>`;
         }).join('')}</div>
         ${MOVE_PART.some(pt=>movePartPast(d.moveMonth, pt))
           ? '<span style="display:block;margin-top:7px;font-size:11.5px;color:var(--n500)">이미 지난 시기는 고를 수 없습니다.</span>' : ''}

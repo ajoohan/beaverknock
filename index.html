@@ -5586,8 +5586,9 @@ function opsFetch(){
     .then(async r=>{
       const j = await r.json().catch(()=>({error:'응답을 읽지 못했습니다'}));
       if(!r.ok){ OPS.err = j.error || ('오류 '+r.status); OPS.rows = null;
-        /* 막힌 암호를 계속 들고 있으면 열 때마다 같은 곳에서 걸린다 */
-        if(r.status===401 || r.status===403) opsPassKeep.set('');
+        /* 틀린 암호만 지운다. 로그인이 풀린 것뿐이라면 암호는 그대로 두어야
+           - 다시 로그인하고 돌아왔을 때 또 묻지 않는다. */
+        if(/암호/.test(j.error || '')) opsPassKeep.set('');
         if(j.need) OPS.err += ' - 미설정: '+j.need.join(', '); return; }
       OPS.rows = j.rows; OPS.at = j.fetchedAt;
       opsPassKeep.set(OPS.pass);

@@ -6779,6 +6779,10 @@ document.addEventListener('change', e=>{
 
 /* 기기 구분은 창 너비가 정한다 - 사람이 버튼으로 고르던 자리다.
    768px 을 경계로 삼고, 창을 줄이거나 화면을 돌리면 바로 따라간다. */
+/* 마지막 그물. 아래 어디서 무엇이 터지든, 가림막이 화면을 영영 덮고 있으면
+   사이트를 아예 못 쓴다. 8초 뒤에는 무조건 걷는다. */
+setTimeout(()=>{ const b = document.getElementById('boot'); if(b) b.remove(); }, 8000);
+
 const MOQ = window.matchMedia('(max-width: 767px)');
 function syncDevice(first){
   const dev = MOQ.matches ? 'mo' : 'pc';
@@ -6797,8 +6801,10 @@ function bootDone(){
   if(BOOTED) return;
   BOOTED = true;
   const b = document.getElementById('boot'); if(!b) return;
-  requestAnimationFrame(()=>{ b.style.opacity = '0';
-    setTimeout(()=>b.remove(), 320); });
+  /* requestAnimationFrame 에 기대지 않는다. 배경 탭에서는 화면을 그리지 않으므로
+     그 콜백이 영영 안 온다 - 가림막이 그대로 남아 사이트를 못 쓰게 된다. */
+  b.style.opacity = '0';
+  setTimeout(()=>b.remove(), 320);
 }
 
 window.addEventListener('hashchange', render);

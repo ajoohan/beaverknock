@@ -2563,15 +2563,6 @@ document.addEventListener('click', e=>{
    과천·군포·의왕처럼 작은 시가 그랬다.
    무게중심 높이에서 셀을 가로로 잘라 폭을 재고, 그 폭에 맞춘다.
    그래도 안 되면 '시·군·구' 를 뗀다 - 과천, 군포, 의왕이면 알아본다. */
-function chordAt(poly, y){
-  const xs = [];
-  for(let i = 0; i < poly.length; i++){
-    const a = poly[i], b = poly[(i+1) % poly.length];
-    if((a[1] <= y && b[1] > y) || (b[1] <= y && a[1] > y))
-      xs.push(a[0] + (y - a[1]) / (b[1] - a[1]) * (b[0] - a[0]));
-  }
-  return xs.length < 2 ? 0 : Math.max(...xs) - Math.min(...xs);
-}
 
 /* 한글은 글자 하나가 대략 정사각형이다 - 폭 ≈ 글자수 × 크기 */
 function fitLabel(name, room, base, min){
@@ -2581,6 +2572,61 @@ function fitLabel(name, room, base, min){
   const shortN = name.replace(/(특별시|광역시|자치시|시|군|구)$/, '') || name;
   const fs2 = room / shortN.length;
   return {t:shortN, fs:Math.max(min, Math.min(base, fs2))};
+}
+
+/* ── 라벨 자리 ──
+   셀은 바깥선(clip-path)으로 잘려서 보인다. 잘리기 전 무게중심에 글자를 놓으면
+   은평·노원·중랑·송파처럼 바깥선에 걸친 구에서는 보이는 도형 밖으로 나간다.
+   보이는 영역 안에서 가장자리로부터 가장 먼 자리를 찾아 거기에 놓는다. */
+function inPoly(pt, poly){
+  let hit = false;
+  for(let i = 0, j = poly.length - 1; i < poly.length; j = i++){
+    const a = poly[i], b = poly[j];
+    if((a[1] > pt[1]) !== (b[1] > pt[1]) &&
+       pt[0] < (b[0]-a[0]) * (pt[1]-a[1]) / (b[1]-a[1]) + a[0]) hit = !hit;
+  }
+  return hit;
+}
+function edgeDist(pt, poly){
+  let m = Infinity;
+  for(let i = 0; i < poly.length; i++){
+    const a = poly[i], b = poly[(i+1) % poly.length];
+    const dx = b[0]-a[0], dy = b[1]-a[1], L2 = dx*dx + dy*dy || 1;
+    let t = ((pt[0]-a[0])*dx + (pt[1]-a[1])*dy) / L2;
+    t = t < 0 ? 0 : t > 1 ? 1 : t;
+    m = Math.min(m, Math.hypot(pt[0]-(a[0]+t*dx), pt[1]-(a[1]+t*dy)));
+  }
+  return m;
+}
+
+/* 무게중심이 보이는 영역 안에 있고 가장자리에서 충분히 떨어져 있으면 그대로 쓴다.
+   잘리지 않은 안쪽 셀이 대부분이므로, 값비싼 탐색은 걸친 셀에서만 한다. */
+function labelSpot(cell, out, cx, cy){
+  const inside = p => inPoly(p, cell) && inPoly(p, out);
+  let best = null, bd = -1;
+  if(inside([cx, cy])){ best = [cx, cy]; bd = Math.min(edgeDist([cx,cy], cell), edgeDist([cx,cy], out)); }
+  /* 무게중심이 나갔거나 가장자리에 바짝 붙었을 때만 훑는다 */
+  if(!best || bd < 6){
+    const xs = cell.map(p=>p[0]), ys = cell.map(p=>p[1]);
+    const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+    const N = 10;
+    for(let i = 0; i <= N; i++) for(let j = 0; j <= N; j++){
+      const q = [x0 + (x1-x0)*i/N, y0 + (y1-y0)*j/N];
+      if(!inside(q)) continue;
+      const dd = Math.min(edgeDist(q, cell), edgeDist(q, out));
+      if(dd > bd){ bd = dd; best = q; }
+    }
+  }
+  if(!best) return null;
+  /* 그 높이에서 좌우로 뻗어 실제로 쓸 수 있는 폭을 잰다 -
+     납작한 셀에서는 내접원 지름보다 훨씬 넓다. */
+  const xs = cell.map(p=>p[0]);
+  const x0 = Math.min(...xs), x1 = Math.max(...xs);
+  const step = Math.max(0.6, (x1-x0)/60);
+  let L = best[0], R = best[0];
+  while(L - step >= x0 && inside([L - step, best[1]])) L -= step;
+  while(R + step <= x1 && inside([R + step, best[1]])) R += step;
+  return { p: [(L+R)/2, best[1]], room: R - L };
 }
 
 /* ── 셀을 타일처럼 만든다 ──
@@ -2666,7 +2712,8 @@ function mapScene(level, sel, shop){
       stroke-width="${seoulBlock?0.7:1.3}" stroke-linejoin="round"/>`;
   }).join('');
 
-  /* 라벨 */
+  /* 라벨 - 바깥선까지 넘겨서 '보이는 영역' 기준으로 자리를 잡는다 */
+  const outT = op.map(q=>T(q));
   const labels = S2.map((x,i)=>{
     if(isSeoulSite(i)) return '';
     if(!cells[i] || cells[i].length<3) return '';
@@ -2674,13 +2721,15 @@ function mapScene(level, sel, shop){
     /* 보로노이 셀은 볼록하므로 무게중심이 항상 셀 안에 있다 - 라벨이 밖으로 새지 않는다 */
     const cx = cells[i].reduce((t,q)=>t+q[0],0)/cells[i].length;
     const cy = cells[i].reduce((t,q)=>t+q[1],0)/cells[i].length;
-    const p = [cx, cy];
+    const spot = labelSpot(cells[i], outT, cx, cy);
+    if(!spot) return '';           /* 보이는 자리가 없으면 글자도 없다 */
+    const p = spot.p;
     /* 작은 셀은 글자를 줄여 옆 라벨과 부딪히지 않게 한다 */
     const ar = Math.abs(cells[i].reduce((t,p,k)=>{const q=cells[i][(k+1)%cells[i].length]; return t+p[0]*q[1]-q[0]*p[1];},0))/2;
     const base = level==='top' ? (ar<1400 ? 8 : ar<3000 ? 9 : 10) : x.t.length>=6 ? 11 : 12.5;
     /* 셀을 무게중심 높이에서 가로로 잘라 쓸 수 있는 폭을 잰다.
        가장자리에 붙으면 선을 물으므로 조금 안쪽까지만 쓴다. */
-    const room = chordAt(cells[i], cy) * 0.84;
+    const room = spot.room * 0.84;
     const L = fitLabel(x.t, room, base, level==='top' ? 6.5 : 9);
     const fs = L.fs;
     return `<text x="${p[0].toFixed(1)}" y="${(p[1]+fs*0.35).toFixed(1)}" text-anchor="middle" font-size="${fs.toFixed(1)}"

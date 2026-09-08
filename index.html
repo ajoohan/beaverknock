@@ -115,8 +115,12 @@ body.mo .chip{padding:10px 16px;font-size:13.5px}
 /* ── 운영 화면 ──
    할 일이 여럿이고 하루에도 여러 번 오가는 자리다. 칩 네 개로는 어디에 있는지,
    무엇이 더 있는지 알 수 없다. 왼쪽에 목록을 세우고 오른쪽에서 일한다. */
-.opsWrap{display:grid;grid-template-columns:216px minmax(0,1fr);gap:20px;
-  max-width:1360px;margin:0 auto;width:100%;align-items:start}
+.opsWrap{display:grid;grid-template-columns:232px minmax(0,1fr);gap:20px;
+  width:100%;align-items:start}
+/* 운영 화면은 표를 보는 자리다. 읽기 좋은 폭으로 좁혀둘 이유가 없다 -
+   열이 많은 표일수록 넓을수록 낫다. */
+.scr .pad.opsPad{max-width:none;padding-left:20px;padding-right:20px}
+body.mo .scr .pad.opsPad{padding-left:16px;padding-right:16px}
 .opsNav{position:sticky;top:16px;display:flex;flex-direction:column;gap:2px;
   background:var(--white);border:1px solid var(--hair);border-radius:16px;padding:10px}
 .opsNav .grp{padding:12px 12px 6px;font-size:11px;font-weight:800;letter-spacing:.06em;color:var(--n500)}
@@ -1651,6 +1655,18 @@ const agoText = iso => {
   return m<1?'방금': m<60?`${m}분 전`: m<1440?`${Math.floor(m/60)}시간 전`: `${Math.floor(m/1440)}일 전`;
 };
 
+/* 화면에 들어갈 때마다 서버에 다시 물어본다(20초 지나면). 대개는 같은 답이
+   돌아오는데, 그때도 render() 를 부르면 #app 이 통째로 갈아끼워진다.
+   한 박자 뒤에 화면이 한 번 더 그려지는 것 - 그게 '중간중간 로딩' 으로 보인다.
+   받아온 것이 화면에 있는 것과 같으면 그리지 않는다.
+   처음에는 SIGS 가 비어 있으므로 언제나 한 번은 그린다. */
+const SIGS = {};
+function changed(key, rows){
+  const sig = (rows||[]).length + '|' + (rows||[]).map(r => r.id).join(',');
+  if(SIGS[key] === sig) return false;
+  SIGS[key] = sig; return true;
+}
+
 /* 아직 서버에서 못 받았으면 '없음' 이 아니다. 빈 화면으로 단정하지 않는다. */
 const waitingFor = ready => !!store.get() && !ready;
 const loadingBox = (what) => `<div class="empty">
@@ -1713,7 +1729,7 @@ function loadListings(force){
       if(!(r.ok && j.ok)) return;
       S.lsSaved = !j.note;          /* 표가 없으면 아직 저장되지 않는다 */
       S.listings = (j.rows||[]).map(listingFromRow);
-      render();
+      if(changed('listings', S.listings)) render();
     }))
     .catch(() => { S.lsLoading = false; S.lsReady = true; });
 }
@@ -1746,7 +1762,8 @@ function loadMyProps(force){
         if(r.status !== 403) S.mpErr = j.error || '보낸 제안을 불러오지 못했습니다';
         return render();
       }
-      S.mpErr = ''; S.myprops = (j.rows||[]).map(myPropFromRow); render();
+      S.mpErr = ''; S.myprops = (j.rows||[]).map(myPropFromRow);
+      if(changed('myprops', S.myprops.map(x=>({id:x.id+':'+x.status})))) render();
     }))
     .catch(() => { S.mpLoading=false; S.mpReady=true; S.mpErr='네트워크 문제로 보낸 제안을 불러오지 못했습니다'; render(); });
 }
@@ -1828,7 +1845,10 @@ function loadMine(force){
       S.conds = got.length || !local.length ? got : local;
       S.props = (j.proposals||[]).map(propFromRow);
       if(S.conds.length && !S.conds.some(c=>c.id===S.inboxCond)) S.inboxCond = S.conds[0].id;
-      render();
+      /* 제안의 상태(읽음·연결)까지 같아야 같은 것이다 */
+      const a = changed('mine.c', S.conds);
+      const b = changed('mine.p', S.props.map(x=>({id:x.id+':'+x.status})));
+      if(a || b) render();
     }))
     .catch(()=>{ S.mineLoading=false; S.mineReady=true; render(); });
 }
@@ -1855,7 +1875,7 @@ function loadFeed(force){
       S.feedErr=''; S.feedNeed=''; S.agent = j.agent || null;
       S.demands = (j.rows||[]).map(demandFromRow);
       S.feedHidden = j.hidden || {region:0, slot:0};
-      render();
+      if(changed('feed', S.demands.map(x=>({id:x.id+':'+x.slotsLeft})))) render();
     }))
     .catch(()=>{ S.feedLoading=false; S.feedErr='네트워크 문제로 불러오지 못했습니다'; render(); });
 }
@@ -5742,7 +5762,7 @@ V['#/ops/live'] = () => {
   <div class="nav solid pad"><a data-go="#/" style="flex:none">${logoLockup({h:24})}</a>
     <div class="items"><a class="on">운영</a></div>
     <div class="right"><a data-go="#/" style="font-size:13.5px;font-weight:600;color:var(--n700)">사이트로</a></div></div>
-  <div class="pad" style="flex:1;padding-top:${isMo()?18:28}px;padding-bottom:24px;max-width:1360px;margin:0 auto;width:100%">
+  <div class="pad opsPad" style="flex:1;padding-top:${isMo()?18:28}px;padding-bottom:24px;width:100%">
     <span class="eyebrow">OPERATIONS</span>
     <h1 class="t" style="font-size:${isMo()?21:25}px;margin:8px 0 16px">운영 화면</h1>
     <div class="card pad" style="max-width:440px">
@@ -5769,7 +5789,7 @@ V['#/ops/live'] = () => {
   <div class="nav solid pad"><a data-go="#/" style="flex:none">${logoLockup({h:24})}</a>
     <div class="items"><a class="on">운영</a></div>
     <div class="right"><a data-go="#/" style="font-size:13.5px;font-weight:600;color:var(--n700)">사이트로</a></div></div>
-  <div class="pad" style="flex:1;padding-top:${isMo()?16:24}px;padding-bottom:28px;width:100%">
+  <div class="pad opsPad" style="flex:1;padding-top:${isMo()?16:24}px;padding-bottom:28px;width:100%">
     <div class="opsWrap">
       <aside class="opsNav">
         ${OPS_MENU.map(m => m.g

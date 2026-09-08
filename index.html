@@ -2477,6 +2477,11 @@ function mapViewBox(){
   return `${MAPZ.x.toFixed(1)} ${MAPZ.y.toFixed(1)} ${w.toFixed(1)} ${h.toFixed(1)}`;
 }
 function mapEl(){ return $('#app svg.map'); }
+let MAP_RAF = 0;
+function mapApplySoon(){
+  if(MAP_RAF) return;
+  MAP_RAF = requestAnimationFrame(()=>{ MAP_RAF = 0; mapApply(); });
+}
 function mapApply(){
   const el = mapEl(); if(!el) return;
   el.setAttribute('viewBox', mapViewBox());
@@ -2544,7 +2549,7 @@ document.addEventListener('pointermove', e=>{
   MAPZ.x -= dx/r.width  * (MAP_W/MAPZ.k);
   MAPZ.y -= dy/r.height * (MAP_H/MAPZ.k);
   MAPZ.drag = {x:e.clientX, y:e.clientY};
-  mapApply();
+  mapApplySoon();
 });
 
 const mapEnd = e => { MAPZ.pts.delete(e.pointerId);
@@ -2774,12 +2779,9 @@ function mapScene(level, sel, shop){
       <linearGradient id="sky-${level}" x1="0" y1="0" x2="0" y2="1">
         <stop offset="0%" stop-color="#EFF5F9"/><stop offset="100%" stop-color="#F6F3EE"/>
       </linearGradient>
-      <filter id="soft-${level}" x="-20%" y="-20%" width="140%" height="140%">
-        <feDropShadow dx="0" dy="1.4" stdDeviation="1.6" flood-color="#8E9AA8" flood-opacity=".22"/>
-      </filter>
     </defs>
     <rect x="0" y="0" width="${MAP_W}" height="${MAP_H}" fill="url(#sky-${level})"/>
-    <g clip-path="url(#${clipId})" filter="url(#soft-${level})">${body}</g>
+    <g clip-path="url(#${clipId})">${body}</g>
     ${border}${river}${incheon}${labels}${seoulLabel}${here}
   </svg>`;
 }

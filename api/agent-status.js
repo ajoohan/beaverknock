@@ -9,7 +9,7 @@
 
 import crypto from 'node:crypto';
 
-import { opsAccount, sbHeaders, sbUrl } from './_auth.js';
+import { opsAccount, opsNeedsPass, sbHeaders, sbUrl } from './_auth.js';
 import { logOps } from './_opslog.js';
 
 const TABLE = 'bk_agent';
@@ -49,7 +49,9 @@ export default async function handler(req, res) {
   if (gate.error) return res.status(gate.code).json({ error: gate.error });
   const opsUser = gate.user;
 
-  if (!sameSecret(p.pass, BK_OPS_PASS)) {
+  /* 로그인으로 이미 확인이 끝났으면 암호는 묻지 않는다.
+     명단(BK_OPS_USERS)이 비어 있을 때만 암호가 유일한 문이라 그때는 그대로 받는다. */
+  if (opsNeedsPass(gate) && !sameSecret(p.pass, BK_OPS_PASS)) {
     return res.status(401).json({ error: '접근 암호가 맞지 않습니다' });
   }
   /* 한 건이든 여럿이든 같은 길로 처리한다 - 목록에서 골라 한 번에 바꾸는 일이 잦다 */

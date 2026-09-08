@@ -9,7 +9,7 @@
  *   BK_OPS_PASS    운영자 접근 암호
  */
 
-import { opsAccount, opsOpenUntil, sbHeaders, sbUrl } from './_auth.js';
+import { opsAccount, opsNeedsPass, opsOpenUntil, sbHeaders, sbUrl } from './_auth.js';
 import { logOps } from './_opslog.js';
 
 const TABLE = 'bk_demand';
@@ -58,7 +58,9 @@ export default async function handler(req, res) {
   if (gate.error) return res.status(gate.code).json({ error: gate.error });
   const opsUser = gate.user;
 
-  if (!sameSecret(pass, BK_OPS_PASS)) {
+  /* 로그인으로 이미 확인이 끝났으면 암호는 묻지 않는다.
+     명단(BK_OPS_USERS)이 비어 있을 때만 암호가 유일한 문이라 그때는 그대로 받는다. */
+  if (opsNeedsPass(gate) && !sameSecret(pass, BK_OPS_PASS)) {
     /* 무차별 대입을 조금이라도 늦춘다 */
     await new Promise(r => setTimeout(r, 400));
     return res.status(401).json({ error: '접근 암호가 맞지 않습니다' });

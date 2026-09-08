@@ -128,7 +128,10 @@ export async function opsAccount(req) {
   if (!user) return { code: 401, error: '운영자 계정으로 로그인한 뒤 다시 시도해 주세요' };
   const id = String(user.id || '').toLowerCase();
   const email = String(user.email || '').toLowerCase();
-  if (allow.includes(id) || allow.includes(email)) return { user };
+  /* member 는 '로그인만으로 이미 확인이 끝났다' 는 뜻이다. 이 표시가 있으면
+     각 화면은 접근 암호를 또 묻지 않는다 - 로그인이 훨씬 강한 문이기 때문이다.
+     암호는 사람 사이를 돌아다니고 누가 썼는지 남지 않지만, 계정은 그렇지 않다. */
+  if (allow.includes(id) || allow.includes(email)) return { user, member: true };
 
   /* 시험 기간이면 명단에 없어도 들인다. 기간이 지나면 자동으로 다시 막힌다. */
   const until = opsOpenUntil();
@@ -136,3 +139,13 @@ export async function opsAccount(req) {
 
   return { code: 403, error: '이 계정에는 운영 권한이 없습니다' };
 }
+
+/** 이 요청에 접근 암호를 더 물어야 하는가.
+ *
+ *  로그인한 계정으로 이미 확인이 끝났으면 묻지 않는다. 운영자에게도,
+ *  시험 기간에 링크를 받은 분에게도 한 번 더 묻는 일은 번거롭기만 하고
+ *  실제로 막아주는 것이 없다 - 명단을 통과한 사람만 여기까지 온다.
+ *
+ *  묻는 경우는 하나뿐이다. BK_OPS_USERS 가 비어 있으면 계정을 아예 안 보므로
+ *  그때는 암호가 유일한 문이다. 그 하나를 놓치면 운영 화면이 그냥 열린다. */
+export const opsNeedsPass = gate => !gate.member && !gate.guest;

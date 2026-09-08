@@ -2076,6 +2076,7 @@ V['#/'] = () => `
       ${isMo()?'':'<a data-go="#/guide" style="font-size:14px;font-weight:600;color:var(--n700)">이용 안내</a><a data-go="#/faq" style="font-size:14px;font-weight:600;color:var(--n700)">자주 묻는 질문</a>'}
       <a data-go="#/my" style="font-size:${isMo()?11.5:14}px;font-weight:600;color:var(--n700)">내 조건 확인</a>
       <a data-go="#/partner" style="font-size:${isMo()?11.5:14}px;font-weight:600;color:var(--n700)">중개사이신가요?</a>
+      ${navAuth()}
       ${isMo()?'':'<button class="btn pri sm" data-go="#/kind" style="padding:12px 24px;font-size:13.5px">조건 걸어두기</button>'}
     </div>
   </div>
@@ -5344,7 +5345,8 @@ const opsPassKeep = {
 /* 링크로 들어왔을 때 무슨 일이 있었는지 화면에 말해주기 위한 자리 */
 let OPS_LINK = null;
 const OPS = { pass:opsPassKeep.get(), rows:null, loading:false, err:'', reveal:false, kind:'', days:0, at:'', tab:'home', msub:'agent',
-  q:'', open:'', sent:{}, seen:0, only:'', linkDays:7, link:null, openUntil:null, guest:false };
+  q:'', open:'', sent:{}, seen:0, only:'', linkDays:7, link:null, openUntil:null, guest:false,
+  tried:false, needPass:false };
 
 /* 전달 여부는 브라우저에 남긴다. DB 컬럼을 만들려면 SQL 을 한 번 돌려야 하는데,
    그걸 기다리느니 오늘 돌아가는 게 낫다. 나중에 옮기기 쉬운 모양으로 둔다. */
@@ -5583,6 +5585,35 @@ function userPanel(){
 
 /* 설정 - 지금 무엇이 켜져 있는지. 여기서 바꾸지는 않는다.
    환경변수는 Vercel 에, 표는 Supabase 에 있다 - 그 사실을 숨기지 않는다. */
+/* 초대 안내문. 매번 손으로 쓰면 '로그인 먼저' 라는 한 줄이 빠지고,
+   그러면 받은 분은 권한 없다는 화면만 보고 되돌아온다. */
+function opsCopy(text, said){
+  const ok = () => toast(said);
+  const no = () => toast('복사하지 못했습니다 - 직접 선택해 주세요');
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(ok).catch(no); return;
+  }
+  /* 클립보드를 못 쓰는 자리도 있다 - 그때는 골라둔 채로 둔다 */
+  const el = document.createElement('textarea');
+  el.value = text; document.body.appendChild(el); el.select();
+  try{ document.execCommand('copy'); ok(); }catch(e){ no(); }
+  el.remove();
+}
+
+const opsUrl = () => location.origin + location.pathname + '#/ops/live';
+const opsDatePlus = d => new Date(Date.now() + d*864e5).toISOString().slice(0,10);
+const opsInviteText = () => [
+  '비버노크 운영 화면 시험 안내',
+  '',
+  '1. 먼저 로그인해 주세요 (네이버 또는 구글)',
+  '   ' + location.origin + location.pathname + '#/login',
+  '',
+  '2. 로그인하신 뒤 아래 주소로 들어오시면 됩니다',
+  '   ' + opsUrl(),
+  '',
+  '암호는 따로 없습니다. 로그인만 하시면 열립니다.',
+].join('\n');
+
 function opsSettingPanel(){
   const idvOn = !!(S.idvCfg && S.idvCfg.enabled);
   const line = (t, on, note) => `<div class="kv"><dt>${esc(t)}</dt><dd>
@@ -5609,32 +5640,49 @@ function opsSettingPanel(){
         ${S.user?`<b style="color:var(--n900)">${esc(S.user.email||S.user.name||'')}</b> · ${esc(S.user.label||'')} 계정`:'로그인되어 있지 않습니다'}</p>
     </div>
     <div class="card pad" style="margin-top:14px">
-      <b style="display:block;font-size:15px;font-weight:800;margin-bottom:8px">임시 접속 링크</b>
+      <b style="display:block;font-size:15px;font-weight:800;margin-bottom:8px">시험할 분 초대하기</b>
       <p style="margin:0 0 12px;font-size:13.5px;line-height:1.8;color:var(--n700)">
-        암호를 매번 치지 않고 들어오는 짧은 기간짜리 링크입니다.
-        받는 분도 <b style="color:var(--n900)">로그인은 해야</b> 합니다 - 누가 무엇을 열어봤는지가 남아야 하니까요.<br>
+        암호는 이제 묻지 않습니다. <b style="color:var(--n900)">로그인만 하면</b> 이 주소로 바로 들어옵니다.<br>
         ${OPS.openUntil
-          ? `지금은 시험 기간이라 <b style="color:var(--n900)">로그인한 분이면 이 링크로 들어옵니다.</b>`
+          ? `지금은 시험 기간이라 <b style="color:var(--n900)">로그인한 분이면 누구나</b> 들어옵니다 -
+             ${esc(opsLinkWhen(OPS.openUntil))} 까지입니다.`
           : `지금은 <b style="color:var(--n900)">운영자 명단(BK_OPS_USERS)에 있는 계정</b>만 들어옵니다.
-             여러 명이 시험하실 거라면 Vercel 에 <b>BK_OPS_OPEN_UNTIL</b> 을 넣어 기간을 여세요.`}</p>
-      <div class="chips" style="gap:6px;margin-bottom:12px">
-        ${[1,3,7,14].map(d=>`<button class="chip ${OPS.linkDays===d?'on':''}" data-act="ops-link-days" data-v="${d}"
-          style="padding:8px 16px;font-size:12.5px">${d}일</button>`).join('')}
+             여러 명이 시험하실 거라면 Vercel 에 <b>BK_OPS_OPEN_UNTIL</b> 을 (예: ${esc(opsDatePlus(7))}) 넣어 기간을 여세요.`}</p>
+      <div style="padding:13px 15px;background:var(--n50);border-radius:var(--r-sm);border:1px solid var(--n100)">
+        <span style="display:block;font-size:11.5px;font-weight:800;color:var(--n500);margin-bottom:7px">그대로 보내시면 됩니다</span>
+        <code style="display:block;font-size:12px;line-height:1.85;word-break:break-all;
+          color:var(--n900);white-space:pre-wrap">${esc(opsInviteText())}</code>
       </div>
-      <button class="btn pri md" data-act="ops-link-make" style="padding:12px 20px">${OPS.linkDays}일짜리 링크 만들기</button>
-      ${OPS.link ? `
-      <div style="margin-top:12px;padding:13px 15px;background:var(--n50);border-radius:var(--r-sm);border:1px solid var(--n100)">
-        <code style="display:block;font-size:11.5px;line-height:1.6;word-break:break-all;color:var(--n900)">${esc(OPS.link.url)}</code>
-        <div style="display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap">
-          <button class="chip" data-act="ops-link-copy" style="padding:7px 14px;font-size:12.5px">링크 복사</button>
-          <span style="font-size:12px;font-weight:700;color:var(--n500)">${esc(opsLinkWhen(OPS.link.until))} 까지</span>
+      <div style="display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap">
+        <button class="chip" data-act="ops-invite-copy" style="padding:8px 16px;font-size:12.5px">안내문 복사</button>
+        <button class="chip" data-act="ops-url-copy" style="padding:8px 16px;font-size:12.5px">주소만 복사</button>
+      </div>
+      ${OPS.needPass ? `
+      <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--n100)">
+        <b style="display:block;font-size:13px;font-weight:800;color:var(--n900);margin-bottom:6px">암호를 담은 임시 링크</b>
+        <p style="margin:0 0 10px;font-size:12.5px;line-height:1.75;color:var(--n700)">
+          지금은 운영자 명단이 비어 있어 암호가 유일한 문입니다. 그동안 쓰실 링크입니다.</p>
+        <div class="chips" style="gap:6px;margin-bottom:10px">
+          ${[1,3,7,14].map(d=>`<button class="chip ${OPS.linkDays===d?'on':''}" data-act="ops-link-days" data-v="${d}"
+            style="padding:8px 16px;font-size:12.5px">${d}일</button>`).join('')}
         </div>
+        <button class="btn sec md" data-act="ops-link-make" style="padding:11px 18px">${OPS.linkDays}일짜리 링크 만들기</button>
+        ${OPS.link ? `
+        <div style="margin-top:10px;padding:12px 14px;background:var(--n50);border-radius:var(--r-sm);border:1px solid var(--n100)">
+          <code style="display:block;font-size:11.5px;line-height:1.6;word-break:break-all;color:var(--n900)">${esc(OPS.link.url)}</code>
+          <div style="display:flex;gap:8px;align-items:center;margin-top:9px;flex-wrap:wrap">
+            <button class="chip" data-act="ops-link-copy" style="padding:7px 14px;font-size:12.5px">링크 복사</button>
+            <span style="font-size:12px;font-weight:700;color:var(--n500)">${esc(opsLinkWhen(OPS.link.until))} 까지</span>
+          </div>
+        </div>` : ''}
+        <p style="margin:10px 0 0;font-size:12px;line-height:1.7;color:var(--warn);font-weight:700">
+          링크를 뜯어보면 암호는 그대로 나옵니다. 다 쓰신 뒤에는 <b>BK_OPS_PASS</b> 를 바꿔주세요.</p>
       </div>` : ''}
+      ${OPS.openUntil ? `
       <p style="margin:12px 0 0;padding:11px 14px;background:var(--warnbg);border-radius:var(--r-sm);
         font-size:12.5px;line-height:1.75;color:var(--warn);font-weight:700">
-        다 쓰신 뒤에는 Vercel 에서 <b>BK_OPS_PASS</b> 를 바꿔주세요.<br>
-        <span style="font-weight:600">기한은 브라우저가 지키는 것이라, 링크를 뜯어보면 암호는 그대로 나옵니다.
-        암호를 바꿔야 진짜로 닫힙니다.</span></p>
+        시험이 끝나면 Vercel 에서 <b>BK_OPS_OPEN_UNTIL</b> 을 지워주세요.<br>
+        <span style="font-weight:600">안 지우셔도 ${esc(opsLinkWhen(OPS.openUntil))} 에 서버가 스스로 닫습니다.</span></p>` : ''}
     </div>
     <div class="card pad" style="margin-top:14px">
       <b style="display:block;font-size:15px;font-weight:800;margin-bottom:8px">여기서 바꾸지 않는 것</b>
@@ -5760,7 +5808,7 @@ function agFetch(){
 
 function opsFetch(){
   if(OPS.loading) return;
-  OPS.loading = true; OPS.err = ''; render();
+  OPS.loading = true; OPS.err = ''; OPS.tried = true; render();
   /* 암호는 본문에 담는다 - 헤더는 latin-1 만 가능해 한글 암호를 못 싣는다 */
   apiFetch('/api/demands', {
     method:'POST',
@@ -5769,11 +5817,13 @@ function opsFetch(){
   })
     .then(async r=>{
       const j = await r.json().catch(()=>({error:'응답을 읽지 못했습니다'}));
-      if(!r.ok){ OPS.err = j.error || ('오류 '+r.status); OPS.rows = null;
-        /* 틀린 암호만 지운다. 로그인이 풀린 것뿐이라면 암호는 그대로 두어야
-           - 다시 로그인하고 돌아왔을 때 또 묻지 않는다. */
-        if(/암호/.test(j.error || '')) opsPassKeep.set('');
+      if(!r.ok){
+        OPS.err = j.error || ('오류 '+r.status); OPS.rows = null;
+        /* 서버가 암호를 달라고 했을 때만 칸을 낸다 - 그 외에는 물을 이유가 없다 */
+        OPS.needPass = /암호/.test(j.error || '');
+        if(OPS.needPass && OPS.pass) opsPassKeep.set('');   /* 틀린 암호는 지운다 */
         if(j.need) OPS.err += ' - 미설정: '+j.need.join(', '); return; }
+      OPS.needPass = false;
       OPS.rows = j.rows; OPS.at = j.fetchedAt;
       /* 시험 기간이 열려 있는지 - 열어둔 것을 잊는 것이 유일한 위험이라 화면에 띄운다 */
       OPS.openUntil = j.openUntil || null;
@@ -6188,37 +6238,75 @@ function opsPanel(){
   }
 }
 
-V['#/ops/live'] = () => {
-  /* 암호를 통과하기 전에는 아무 목록도 보여주지 않는다 */
-  if(!OPS.rows) return `
-<div class="scr fade" style="background:var(--n50)">
+/* 문 앞 화면.
+   묻는 화면이 아니라 알려주는 화면이다. 로그인만으로 확인이 끝나는 계정이면
+   아무것도 묻지 않고 그냥 들어간다 - 암호를 한 번 더 묻는 일은 번거롭기만 하고
+   실제로 막아주는 것이 없다. 서버가 '그래도 암호가 필요하다' 고 답한
+   경우에만 - 운영자 명단이 비어 있어 암호가 유일한 문일 때다 - 칸을 낸다. */
+function opsGateScreen(){
+  const head = `
   <div class="nav solid pad opsPad"><a data-go="#/" style="flex:none">${logoLockup({h:24})}</a>
     <div class="items"><a class="on">운영</a></div>
-    <div class="right"><a data-go="#/" style="font-size:13.5px;font-weight:600;color:var(--n700)">사이트로</a></div></div>
+    <div class="right"><a data-go="#/" style="font-size:13.5px;font-weight:600;color:var(--n700)">사이트로</a></div></div>`;
+  const wrap = body => `
+<div class="scr fade" style="background:var(--n50)">
+  ${head}
   <div class="pad opsPad" style="flex:1;padding-top:${isMo()?18:28}px;padding-bottom:24px;width:100%">
     <span class="eyebrow">OPERATIONS</span>
     <h1 class="t" style="font-size:${isMo()?21:25}px;margin:8px 0 16px">운영 화면</h1>
-    <div class="card pad" style="max-width:440px">
-      <b style="display:block;font-size:15px;font-weight:800;color:var(--n900);margin-bottom:10px">운영자 확인</b>
-      <p style="margin:0 0 14px;font-size:13.5px;line-height:1.75;color:var(--n700)">
-        접수된 조건에는 <b style="color:var(--n900)">이름과 연락처</b>가 들어 있습니다. 접근 암호를 넣어주세요.</p>
-      <input class="inp" data-in="opsPass" type="password" value="${esc(OPS.pass)}" placeholder="접근 암호"
-        style="margin-bottom:10px" autocomplete="off">
-      <button class="btn pri blk" data-act="ops-load" style="padding:14px 0;font-size:15px" ${OPS.pass?'':'disabled'}>
-        ${OPS.loading?'불러오는 중…':'운영 화면 열기'}</button>
-      ${OPS.err?`<p style="margin:12px 0 0;font-size:12.5px;line-height:1.6;color:var(--danger);font-weight:700">${esc(OPS.err)}</p>`:''}
-      ${OPS_LINK && OPS_LINK.err ? `<p style="margin:12px 0 0;padding:11px 14px;background:var(--warnbg);color:var(--warn);
-        font-size:12.5px;line-height:1.7;font-weight:700;border-radius:var(--r-sm)">${esc(OPS_LINK.err)}
-        ${OPS_LINK.until?`<br><span style="font-weight:600">${esc(opsLinkWhen(OPS_LINK.until))} 까지였습니다.</span>`:''}
-        <br><span style="font-weight:600">암호를 직접 넣어 여시면 됩니다.</span></p>` : ''}
-      <p style="margin:12px 0 0;font-size:12.5px;line-height:1.6;color:var(--n500)">
-        암호는 이 탭에만 남습니다 - 새로고침해도 이어지고, 탭을 닫으면 사라집니다.</p>
-      <p style="margin:8px 0 0;font-size:12.5px;line-height:1.6;color:${S.user?'var(--n500)':'var(--warn)'}">
-        ${S.user ? `허용된 운영자 계정인지 서버가 함께 확인합니다 - 지금 <b style="color:var(--n700)">${esc(S.user.email||S.user.name||'로그인됨')}</b>`
-                 : '<b>로그인되어 있지 않습니다.</b> 운영자 계정으로 먼저 로그인해 주세요.'}</p>
-    </div>
+    <div class="card pad" style="max-width:460px">${body}</div>
   </div>
 </div>`;
+  const linkNote = OPS_LINK && OPS_LINK.err
+    ? `<p style="margin:12px 0 0;padding:11px 14px;background:var(--warnbg);color:var(--warn);
+        font-size:12.5px;line-height:1.7;font-weight:700;border-radius:var(--r-sm)">${esc(OPS_LINK.err)}
+        ${OPS_LINK.until?`<br><span style="font-weight:600">${esc(opsLinkWhen(OPS_LINK.until))} 까지였습니다.</span>`:''}</p>` : '';
+
+  /* 아직 열어보는 중 */
+  if(OPS.loading || !OPS.tried) return wrap(`
+    <div style="display:flex;align-items:center;gap:12px">
+      <div class="spin" style="width:22px;height:22px;flex:none;border:2.5px solid var(--ind100);border-top-color:var(--ind);border-radius:50%"></div>
+      <div><b style="display:block;font-size:15px;font-weight:800;color:var(--n900)">운영 화면을 여는 중입니다</b>
+        <span style="display:block;margin-top:3px;font-size:13px;color:var(--n500)">계정을 확인하고 있습니다.</span></div>
+    </div>${linkNote}`);
+
+  /* 로그인부터 */
+  if(!S.user) return wrap(`
+    <b style="display:block;font-size:15px;font-weight:800;color:var(--n900);margin-bottom:8px">로그인이 필요합니다</b>
+    <p style="margin:0 0 14px;font-size:13.5px;line-height:1.75;color:var(--n700)">
+      접수된 조건에는 <b style="color:var(--n900)">이름과 연락처</b>가 들어 있습니다.
+      누가 무엇을 열어봤는지 남아야 해서, 로그인한 계정만 들어올 수 있습니다.</p>
+    <button class="btn pri blk" data-act="ops-login" style="padding:14px 0;font-size:15px">로그인하러 가기</button>
+    ${linkNote}`);
+
+  /* 로그인은 했는데 권한이 없다 */
+  if(OPS.err && !OPS.needPass) return wrap(`
+    <b style="display:block;font-size:15px;font-weight:800;color:var(--danger);margin-bottom:8px">${esc(OPS.err)}</b>
+    <p style="margin:0 0 14px;font-size:13.5px;line-height:1.75;color:var(--n700)">
+      지금 <b style="color:var(--n900)">${esc(S.user.email||S.user.name||'로그인됨')}</b> 으로 로그인해 계십니다.
+      운영자 명단(<b>BK_OPS_USERS</b>)에 이 계정을 넣거나, 시험 기간(<b>BK_OPS_OPEN_UNTIL</b>)을 여시면 열립니다.</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn sec md" data-act="ops-retry" style="padding:12px 20px">다시 시도</button>
+      <button class="btn ghost md" data-act="logout" style="padding:12px 20px">다른 계정으로</button>
+    </div>${linkNote}`);
+
+  /* 여기까지 오면 서버가 암호를 달라고 한 것이다 - 명단이 비어 있는 경우다 */
+  return wrap(`
+    <b style="display:block;font-size:15px;font-weight:800;color:var(--n900);margin-bottom:10px">접근 암호</b>
+    <p style="margin:0 0 14px;font-size:13.5px;line-height:1.75;color:var(--n700)">
+      운영자 명단이 비어 있어 암호가 유일한 문입니다.
+      Vercel 에 <b>BK_OPS_USERS</b> 로 계정을 넣어두시면 다음부터는 묻지 않습니다.</p>
+    <input class="inp" data-in="opsPass" type="password" value="${esc(OPS.pass)}" placeholder="접근 암호"
+      style="margin-bottom:10px" autocomplete="off">
+    <button class="btn pri blk" data-act="ops-load" style="padding:14px 0;font-size:15px" ${OPS.pass?'':'disabled'}>운영 화면 열기</button>
+    ${OPS.err?`<p style="margin:12px 0 0;font-size:12.5px;line-height:1.6;color:var(--danger);font-weight:700">${esc(OPS.err)}</p>`:''}
+    ${linkNote}
+    <p style="margin:12px 0 0;font-size:12.5px;line-height:1.6;color:var(--n500)">
+      지금 <b style="color:var(--n700)">${esc(S.user.email||S.user.name||'로그인됨')}</b> 으로 로그인해 계십니다.</p>`);
+}
+
+V['#/ops/live'] = () => {
+  if(!OPS.rows) return opsGateScreen();
 
   const tab = OPS.tab || 'home';
   return `
@@ -6349,6 +6437,21 @@ function animateData(root){
    내용은 실제 동작과 어긋나면 안 된다 - 매물 목록은 없고, 제안은 1:1 이며,
    비용은 받지 않고, 조건은 3개월 뒤 지운다. */
 
+/* 상단바의 로그인 자리.
+   들어온 사람에게는 누구로 있는지와 나가는 길을, 안 들어온 사람에게는 들어오는
+   길을 낸다. 이름이 길면 상단바를 밀어내므로 앞부분만 보여준다. */
+function navAuth(){
+  if(!S.user) return `<button class="btn ghost sm" data-act="nav-login"
+    style="padding:${isMo()?'9px 14px':'10px 18px'};font-size:${isMo()?12:13.5}px;font-weight:700">로그인</button>`;
+  const who = String(S.user.name || S.user.email || '').split('@')[0];
+  return `<span style="display:inline-flex;align-items:center;gap:${isMo()?8:10}px">
+    ${isMo()?'':`<span style="font-size:13px;font-weight:700;color:var(--n700);max-width:150px;
+      overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(who)} 님</span>`}
+    <button class="btn ghost sm" data-act="logout"
+      style="padding:${isMo()?'9px 12px':'10px 16px'};font-size:${isMo()?12:13.5}px;font-weight:700">로그아웃</button>
+  </span>`;
+}
+
 function docShell(eyebrow, title, lead, body){
   return `
 <div class="scr fade" style="background:var(--n50)">
@@ -6358,7 +6461,7 @@ function docShell(eyebrow, title, lead, body){
       <a data-go="#/guide" class="${S.route==='#/guide'?'on':''}">이용 안내</a>
       <a data-go="#/faq" class="${S.route==='#/faq'?'on':''}">자주 묻는 질문</a>
     </div>
-    <div class="right"><button class="btn pri sm" data-go="#/kind">조건 걸어두기</button></div>
+    <div class="right" style="gap:12px">${navAuth()}<button class="btn pri sm" data-go="#/kind">조건 걸어두기</button></div>
   </div>
   <div class="pad" style="flex:1;overflow:auto;padding-top:${isMo()?20:32}px;padding-bottom:44px;max-width:760px;margin:0 auto;width:100%">
     <span class="eyebrow">${eyebrow}</span>
@@ -6558,6 +6661,8 @@ function render(){
     OPS_LINK.ok = false;              /* 한 번만 연다 - 실패해도 다시 두드리지 않는다 */
     opsFetch();
   }
+  /* 운영 화면에 들어왔으면 묻지 않고 한 번 열어본다 */
+  if(h === '#/ops/live' && !OPS.rows && !OPS.loading && !OPS.tried && S.user) opsFetch();
 
   const dash = $('#opsDash');
   const dsig = dash ? (dash.dataset.sig || '') : '';
@@ -7047,25 +7152,19 @@ function handle(a,v,el){
 
     /* ── 운영 조회 ── */
     case 'ops-load':   opsFetch(); return true;
+    case 'nav-login':  S.afterLogin = location.hash || '#/'; go('#/login'); return true;
+    case 'ops-login':  S.afterLogin = '#/ops/live'; go('#/login'); return true;
+    case 'ops-retry':  OPS.tried = false; OPS.err = ''; opsFetch(); return true;
+    case 'ops-invite-copy': opsCopy(opsInviteText(), '안내문을 복사했습니다'); return true;
+    case 'ops-url-copy':    opsCopy(opsUrl(), '주소를 복사했습니다'); return true;
     case 'ops-link-days': OPS.linkDays = +v || 7; OPS.link = null; render(); return true;
     case 'ops-link-make':
       if(!OPS.pass) return toast('먼저 접근 암호로 여신 뒤에 만들 수 있습니다'), true;
       OPS.link = makeOpsLink(OPS.pass, OPS.linkDays);
       render(); toast(`${OPS.linkDays}일짜리 링크를 만들었습니다`); return true;
-    case 'ops-link-copy': {
-      if(!OPS.link) return true;
-      const url = OPS.link.url;
-      const said = () => toast('링크를 복사했습니다 - 아무에게나 보내지 마세요');
-      if(navigator.clipboard && navigator.clipboard.writeText){
-        navigator.clipboard.writeText(url).then(said).catch(()=>toast('복사하지 못했습니다 - 직접 선택해 주세요'));
-      }else{
-        /* 클립보드를 못 쓰는 자리도 있다 - 그때는 골라둔 채로 둔다 */
-        const el = document.createElement('textarea');
-        el.value = url; document.body.appendChild(el); el.select();
-        try{ document.execCommand('copy'); said(); }catch(e){ toast('복사하지 못했습니다 - 직접 선택해 주세요'); }
-        el.remove();
-      }
-      return true; }
+    case 'ops-link-copy':
+      if(OPS.link) opsCopy(OPS.link.url, '링크를 복사했습니다 - 아무에게나 보내지 마세요');
+      return true;
     case 'ops-reload':
       /* 대시보드는 여러 곳을 한 번에 본다 - 한 곳씩 새로고침하게 두지 않는다 */
       AG.rows = US.rows = LS2.rows = RP.rows = LG.rows = null;
@@ -7234,6 +7333,10 @@ function handle(a,v,el){
     case 'logout': {
       signOutRemote();
       S.user=null; S.idv=null; S.email=''; S.pw=''; S.pw2=''; S.signup=false;
+      /* 운영 화면에서 보던 것도 함께 내린다 - 다음 사람이 앞사람의 목록을 보면 안 된다 */
+      OPS.rows=null; OPS.tried=false; OPS.err=''; OPS.needPass=false; OPS.link=null;
+      OPS.openUntil=null; OPS.guest=false;
+      AG.rows=US.rows=LS2.rows=RP.rows=LG.rows=null;
       toast('로그아웃했습니다'); go('#/'); return true; }
 
     /* ── 본인확인 ── */
@@ -7660,6 +7763,8 @@ function opsAuto(){
   if(!/^#\/ops/.test(location.hash || '')) return;
   if(OPS_LINK && OPS_LINK.ok && OPS.pass && !OPS.rows && !OPS.loading){
     OPS_LINK.ok = false; opsFetch(); return; }
+  /* 묻지 않고 그냥 열어본다. 들어올 수 있는 계정이면 이 한 번으로 끝난다. */
+  if(!OPS.rows && !OPS.loading && !OPS.tried && S.user) opsFetch();
   if(OPS.pass && !OPS.rows && !OPS.loading && !OPS.err) opsFetch();
 }
 

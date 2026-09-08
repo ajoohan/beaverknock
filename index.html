@@ -1121,7 +1121,7 @@ const BLD_TYPES = ['지식산업센터','오피스빌딩','상가 내 사무실'
 const DOCKS     = ['도크 필요','1층 접안','지게차 진입','상관없음'];
 const TEMPS     = ['상온','냉장','냉동','상관없음'];
 const blankDraft = () => ({who:'',kind:'',deal:'',dongs:[],dep:'',rent:'',htype:[],rooms:'',musts:[],
-  openWhen:'',
+  openWhen:'', moveWhen:'', moveMonth:'', movePart:'',
   dongFree:'',mustFree:'',elev:'',
   keyOk:'',signNeed:'',parkNeed:'',shopNote:'',shopFloorFree:'',facFree:'',mapView:'map',mapLevel:'hanam',
   headcount:'',bldType:'',ceilH:'',dock:'',temp:'',
@@ -2177,10 +2177,7 @@ V['#/register'] = () => {
         <div><span class="lab">보증금 <span class="req">*</span></span><div class="unit"><input class="inp" data-in="dep" inputmode="numeric" value="${esc(d.dep)}" placeholder="0"><span>만원</span></div></div>
         <div><span class="lab">월세 <span class="req">*</span></span><div class="unit"><input class="inp" data-in="rent" inputmode="numeric" value="${esc(d.rent)}" placeholder="0"><span>만원</span></div></div>
       </div>
-      <div><span class="lab">입주 희망일 <span class="opt">정해진 날이 있으면 그대로 적어주세요</span></span>
-        <input class="inp" data-in="openWhen" value="${esc(d.openWhen||'')}"
-          placeholder="예) 26년 10월 중 / 계약 후 2개월 이내 / 협의 가능">
-        <p style="margin:8px 0 0;font-size:12.5px;color:var(--n500)">날짜가 구체적일수록 중개사가 헛걸음을 줄입니다.</p></div>
+      ${movePicker(d)}
       <div><span class="lab">층 조건 <span class="opt">원하시는 층을 그대로 적어주세요</span></span>
         <input class="inp" data-in="shopFloorFree" value="${esc(d.shopFloorFree||'')}" placeholder="예) 1층만 / 2층 이상도 괜찮음 / 지하는 제외"></div>
       <div><span class="lab">꼭 필요한 설비 <span class="opt">없으면 비워두셔도 됩니다</span></span>
@@ -2216,6 +2213,7 @@ V['#/register'] = () => {
         <div><span class="lab">월세 <span class="req">*</span> <span class="opt">매월 내실 금액</span></span>
           <div class="unit"><input class="inp" data-in="rent" inputmode="numeric" value="${esc(d.rent)}" placeholder="0"><span>만원</span></div></div>
       </div>` : depBox; })()}
+      ${movePicker(d)}
       <div><span class="lab">주택 유형 <span class="req">*</span></span>${chipsHTML(HTYPES, d.htype, 'htype', true)}</div>
       <div class="grid2 mo1">
         <div><span class="lab">방 수</span>${chipsHTML(ROOMS, d.rooms, 'rooms', false)}</div>
@@ -2389,6 +2387,55 @@ function voronoi(sites, bb){
 }
 
 
+/* ── 입주시기 ──
+   "예) 26년 10월 중 / 계약 후 2개월 이내" 라고 적어달라고 하면 사람마다
+   다른 말로 적는다. 중개사는 그걸 다시 읽어 해석해야 하고, 맞춰볼 수도 없다.
+   고르게 한다 - 이번 달부터 열두 달, 고른 달 안에서 초·중·말. */
+const MOVE_WHEN = ['최대한 빠르게', '아무때나', '날짜 지정'];
+const MOVE_PART = ['월초', '월중', '월말'];
+
+function moveMonths(){
+  const now = new Date(), out = [];
+  for(let i = 0; i < 12; i++){
+    const dt = new Date(now.getFullYear(), now.getMonth() + i, 1);
+    const y = dt.getFullYear(), m = dt.getMonth() + 1;
+    /* 해가 바뀌는 자리에서만 연도를 적는다 - 열두 칸에 '26년' 이 줄줄이 붙으면 읽기 어렵다 */
+    out.push({ v: `${y}-${String(m).padStart(2,'0')}`,
+               t: (i === 0 || m === 1) ? `${String(y).slice(2)}년 ${m}월` : `${m}월` });
+  }
+  return out;
+}
+
+/* 고른 것을 한 줄로 - 이 문장이 그대로 중개사에게 간다 */
+function moveText(d){
+  if(d.moveWhen === '최대한 빠르게' || d.moveWhen === '아무때나') return d.moveWhen;
+  if(!d.moveMonth) return '';
+  const [y, m] = d.moveMonth.split('-');
+  return `${y}년 ${+m}월${d.movePart ? ' ' + d.movePart.replace('월','') : ''}`;
+}
+
+function movePicker(d){
+  const spec = d.moveWhen === '날짜 지정';
+  return `
+    <div><span class="lab">입주시기 <span class="opt">언제쯤 들어가실 계획인가요</span></span>
+      ${chipsHTML(MOVE_WHEN, d.moveWhen || '', 'move-when', false)}
+      ${spec ? `
+      <div style="margin-top:10px">
+        <span style="display:block;margin-bottom:6px;font-size:12.5px;font-weight:700;color:var(--n700)">어느 달인가요</span>
+        <div class="chips" style="gap:6px">${moveMonths().map(x=>`
+          <button class="chip ${d.moveMonth===x.v?'on':''}" data-act="move-month" data-v="${x.v}"
+            style="padding:8px 14px;font-size:12.5px">${x.t}</button>`).join('')}</div>
+      </div>
+      ${d.moveMonth ? `<div style="margin-top:10px">
+        <span style="display:block;margin-bottom:6px;font-size:12.5px;font-weight:700;color:var(--n700)">그 달 안에서는</span>
+        ${chipsHTML(MOVE_PART, d.movePart || '', 'move-part', false)}
+      </div>` : ''}` : ''}
+      ${moveText(d) ? `<p style="margin:10px 0 0;background:var(--n50);padding:10px 14px;font-size:12.5px;color:var(--n700)">
+        중개사에게 <b style="color:var(--n900)">${esc(moveText(d))}</b> 로 전달됩니다.</p>`
+      : `<p style="margin:8px 0 0;font-size:12.5px;color:var(--n500)">시기가 구체적일수록 중개사가 헛걸음을 줄입니다.</p>`}
+    </div>`;
+}
+
 /* ── 지도 확대 ──
    수도권 전체를 한 화면에 넣으면 과천·군포·의왕 같은 셀이 손끝보다 작아진다.
    viewBox 만 바꾼다 - 다시 그리지 않으므로 고르던 것이 흐트러지지 않고,
@@ -2484,6 +2531,31 @@ document.addEventListener('click', e=>{
   if(MAPZ.moved && inMap(e)){ MAPZ.moved = false; e.stopPropagation(); e.preventDefault(); }
 }, true);
 
+/* ── 라벨을 셀 안에 앉힌다 ──
+   무게중심에 글자를 그냥 놓으면 좁은 셀에서는 옆 셀로 넘어간다.
+   과천·군포·의왕처럼 작은 시가 그랬다.
+   무게중심 높이에서 셀을 가로로 잘라 폭을 재고, 그 폭에 맞춘다.
+   그래도 안 되면 '시·군·구' 를 뗀다 - 과천, 군포, 의왕이면 알아본다. */
+function chordAt(poly, y){
+  const xs = [];
+  for(let i = 0; i < poly.length; i++){
+    const a = poly[i], b = poly[(i+1) % poly.length];
+    if((a[1] <= y && b[1] > y) || (b[1] <= y && a[1] > y))
+      xs.push(a[0] + (y - a[1]) / (b[1] - a[1]) * (b[0] - a[0]));
+  }
+  return xs.length < 2 ? 0 : Math.max(...xs) - Math.min(...xs);
+}
+
+/* 한글은 글자 하나가 대략 정사각형이다 - 폭 ≈ 글자수 × 크기 */
+function fitLabel(name, room, base, min){
+  if(name.length * base <= room) return {t:name, fs:base};
+  const fs1 = room / name.length;
+  if(fs1 >= min) return {t:name, fs:Math.max(min, Math.min(base, fs1))};
+  const shortN = name.replace(/(특별시|광역시|자치시|시|군|구)$/, '') || name;
+  const fs2 = room / shortN.length;
+  return {t:shortN, fs:Math.max(min, Math.min(base, fs2))};
+}
+
 /* ── 장면 하나를 통째로 그린다 ── */
 const MAP_W = 720, MAP_H = 600;
 function mapScene(level, sel, shop){
@@ -2530,10 +2602,15 @@ function mapScene(level, sel, shop){
     const p = [cx, cy];
     /* 작은 셀은 글자를 줄여 옆 라벨과 부딪히지 않게 한다 */
     const ar = Math.abs(cells[i].reduce((t,p,k)=>{const q=cells[i][(k+1)%cells[i].length]; return t+p[0]*q[1]-q[0]*p[1];},0))/2;
-    const fs = level==='top' ? (ar<1400 ? 8 : ar<3000 ? 9 : 10) : x.t.length>=6 ? 11 : 12.5;
-    return `<text x="${p[0].toFixed(1)}" y="${(p[1]+fs*0.35).toFixed(1)}" text-anchor="middle" font-size="${fs}"
+    const base = level==='top' ? (ar<1400 ? 8 : ar<3000 ? 9 : 10) : x.t.length>=6 ? 11 : 12.5;
+    /* 셀을 무게중심 높이에서 가로로 잘라 쓸 수 있는 폭을 잰다.
+       가장자리에 붙으면 선을 물으므로 조금 안쪽까지만 쓴다. */
+    const room = chordAt(cells[i], cy) * 0.84;
+    const L = fitLabel(x.t, room, base, level==='top' ? 6.5 : 9);
+    const fs = L.fs;
+    return `<text x="${p[0].toFixed(1)}" y="${(p[1]+fs*0.35).toFixed(1)}" text-anchor="middle" font-size="${fs.toFixed(1)}"
       font-weight="${on?800:600}" fill="${on?'#fff':'var(--n700)'}" paint-order="stroke"
-      stroke="${on?'transparent':'rgba(255,255,255,.92)'}" stroke-width="3">${esc(x.t)}</text>`;
+      stroke="${on?'transparent':'rgba(255,255,255,.92)'}" stroke-width="${Math.min(3, fs*0.34).toFixed(1)}">${esc(L.t)}</text>`;
   }).join('');
 
   const seoulLabel = topLevel ? (()=>{ const p=G(126.985,37.540);
@@ -4624,7 +4701,8 @@ function demandPayload(d, slotN){
     sign_need: d.kind === 'shop' ? t(d.signNeed) : null,
     park_need: shop ? i(d.parkNeed) : null,
     shop_note: shop ? t(d.shopNote) : null,
-    open_when: shop ? t(d.openWhen) : null,
+    /* 살 집도 언제 들어가는지가 조건이다 - 상가만 보낼 이유가 없었다 */
+    open_when: t(d.openWhen),
 
     memo: t(d.memo),
 
@@ -5851,6 +5929,20 @@ function handle(a,v,el){
   switch(a){
     case 'who': { d.who=v; d.kind=WHO[v].kind; go('#/register'); return true; }
     case 'kind': d.kind=v; go('#/register'); return true;
+    case 'move-when':
+      d.moveWhen = d.moveWhen===v ? '' : v;
+      /* 날짜를 지정하지 않기로 했으면 골라둔 달도 함께 치운다 -
+         화면에 없는 값이 조건으로 나가면 안 된다. */
+      if(d.moveWhen !== '날짜 지정'){ d.moveMonth=''; d.movePart=''; }
+      d.openWhen = moveText(d); render(); return true;
+    case 'move-month':
+      d.moveMonth = d.moveMonth===v ? '' : v;
+      if(!d.moveMonth) d.movePart='';
+      d.openWhen = moveText(d); render(); return true;
+    case 'move-part':
+      d.movePart = d.movePart===v ? '' : v;
+      d.openWhen = moveText(d); render(); return true;
+
     case 'deal':
       d.deal = v;
       /* 월세가 아닌데 앞서 적어둔 월세가 남아 있으면, 화면에 보이지도 않는 값이

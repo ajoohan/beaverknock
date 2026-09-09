@@ -222,8 +222,24 @@ async function readBuilding(req, res, b) {
     u.searchParams.set('numOfRows', '5');
     u.searchParams.set('pageNo', '1');
     u.searchParams.set('_type', 'json');
-    const r = await fetch(u, { signal: AbortSignal.timeout(7000) });
-    const text = await r.text();
+    /* 국토부 쪽이 잠깐 느려 코드 05(SERVICETIMEOUT)로 되돌려보내는 일이 잦다.
+       한 번만 더 물어본다 - 사람이 '검색' 을 다시 누르게 하느니 여기서 끝내는
+       편이 낫다. 두 번을 합쳐도 서버리스 시간 예산 안에 들도록 짧게 잡는다. */
+    const ask = () => fetch(u, { signal: AbortSignal.timeout(4500) })
+      .then(async x => ({ ok: x.ok, status: x.status, text: await x.text() }))
+      .catch(() => null);
+    const RETRY = /<returnReasonCode>0[15]<|"returnReasonCode"\s*:\s*"?0[15]\b|SERVICETIMEOUT|APPLICATION_ERROR/;
+
+    let got = await ask();
+    if (!got || !got.ok || RETRY.test(got.text)) {
+      const again = await ask();
+      if (again && (again.ok && !RETRY.test(again.text))) got = again;
+      else got = got || again;
+    }
+    if (!got) return res.status(200).json({ ok: true,
+      note: '건축물대장 조회가 지연되고 있습니다 - 면적·용도는 직접 적으셔도 됩니다' });
+    const r = { ok: got.ok, status: got.status };
+    const text = got.text;
 
     /* 공공데이터포털은 오류를 200 으로도, 400/500 으로도, XML 로도 보낸다.
        어느 쪽이든 그쪽이 남긴 코드와 말을 그대로 옮긴다 - '불러오지 못했습니다'

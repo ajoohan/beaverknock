@@ -4939,7 +4939,9 @@ function addrFind(target){
    면적을 못 채우는 것이 주소를 못 넣는 것보다 훨씬 가벼운 일이다. */
 function addrPick(i){
   const a = (ADDR.rows||[])[i]; if(!a) return true;
-  const full = [a.road, a.detail].filter(Boolean).join(' ');
+  /* detail 이 ' (망월동)' 처럼 앞 공백을 달고 오는 일이 있다 - 그대로 이으면
+     '220  (망월동)' 이 된다. 사람이 손으로 지워야 하는 흔적을 남기지 않는다. */
+  const full = [a.road, a.detail].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
   if(ADDR.for === 'laddr'){
     S.form.laddr = full;
     S.form.lname = S.form.lname || a.bdNm || '';

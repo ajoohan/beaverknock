@@ -199,9 +199,39 @@ async function readBuilding(req, res, b) {
     u.searchParams.set('pageNo', '1');
     u.searchParams.set('_type', 'json');
     const r = await fetch(u, { signal: AbortSignal.timeout(7000) });
-    if (!r.ok) return res.status(200).json({ ok: true, note: '건축물대장을 불러오지 못했습니다' });
-    const j = await r.json().catch(() => null);
-    const body = j && j.response && j.response.body;
+    const text = await r.text();
+
+    /* 공공데이터포털은 오류를 200 으로도, 400/500 으로도, XML 로도 보낸다.
+       어느 쪽이든 그쪽이 남긴 코드와 말을 그대로 옮긴다 - '불러오지 못했습니다'
+       한 줄로는 키가 틀린 건지, 그 필지가 없는 건지, 저쪽이 잠깐 죽은 건지
+       알 수 없다. 고칠 수 없는 오류 메시지는 오류가 아니다.
+       인증키는 어떤 경우에도 밖으로 내보내지 않는다. */
+    const upstream = () => {
+      const code = (text.match(/<returnReasonCode>([^<]+)</) || text.match(/"returnReasonCode"\s*:\s*"?([^",<]+)/) || [])[1];
+      const msg  = (text.match(/<returnAuthMsg>([^<]+)</) || text.match(/<errMsg>([^<]+)</)
+                 || text.match(/"resultMsg"\s*:\s*"([^"]+)/) || [])[1];
+      return [msg, code && `코드 ${code}`].filter(Boolean).join(' · ');
+    };
+    const BAD_KEY = /SERVICE_KEY_IS_NOT_REGISTERED|SERVICE_ACCESS_DENIED|30\b|20\b/;
+
+    let j = null;
+    try { j = JSON.parse(text); } catch (e) { /* XML 이면 아래에서 걸린다 */ }
+    const head = j && j.response && j.response.header;
+    const okCode = !head || head.resultCode === '00' || head.resultCode === '0';
+
+    if (!r.ok || !j || !okCode) {
+      const why = upstream();
+      /* 키 문제는 사람이 고쳐야 하는 것이라 따로 말해준다 */
+      const keyBad = BAD_KEY.test(why) || /인증키|SERVICE_KEY/i.test(why);
+      return res.status(200).json({ ok: true,
+        note: keyBad
+          ? `건축물대장 인증키가 받아들여지지 않았습니다 (${why || 'HTTP ' + r.status}) - `
+            + 'DATA_GO_KEY 에 Decoding 키를 넣으셨는지 확인해 주세요'
+          : `건축물대장을 불러오지 못했습니다${why ? ` (${why})` : ` (HTTP ${r.status})`}`,
+        why: why || null, status: r.status });
+    }
+
+    const body = j.response.body;
     const raw = body && body.items && body.items.item;
     const it = Array.isArray(raw) ? raw[0] : raw;
     if (!it) {

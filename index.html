@@ -2175,16 +2175,41 @@ V['#/'] = () => `
     </div>
   </div>
 
-  <div style="flex:none;position:relative;z-index:3;background:var(--white);border-top:1px solid var(--hair);padding:10px 76px 12px;display:flex;align-items:center;justify-content:space-between;gap:20px">
-    ${logoLockup({h:18,en:true,tag:true,stack:true})}
-    <div style="display:flex;gap:16px">
-      <a data-go="#/guide" style="font-size:12.5px;color:var(--n500);text-decoration:underline;text-underline-offset:3px">이용 안내</a>
-      <a data-go="#/faq" style="font-size:12.5px;color:var(--n500);text-decoration:underline;text-underline-offset:3px">자주 묻는 질문</a>
-      <a href="/privacy" target="_blank" rel="noopener" style="font-size:12.5px;color:var(--n500);text-decoration:underline;text-underline-offset:3px">개인정보 처리방침</a>
-      <a data-go="#/brand" style="font-size:12.5px;color:var(--n500);text-decoration:underline;text-underline-offset:3px">브랜드</a>
+  <div style="flex:none;position:relative;z-index:3;background:var(--white);border-top:1px solid var(--hair);
+    padding:14px 76px 18px;display:flex;flex-direction:column;gap:10px">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap">
+      ${logoLockup({h:18,en:true,tag:true,stack:true})}
+      <div style="display:flex;gap:16px;flex-wrap:wrap">
+        <a data-go="#/guide" style="font-size:12.5px;color:var(--n500);text-decoration:underline;text-underline-offset:3px">이용 안내</a>
+        <a data-go="#/faq" style="font-size:12.5px;color:var(--n500);text-decoration:underline;text-underline-offset:3px">자주 묻는 질문</a>
+        <a href="/terms" target="_blank" rel="noopener" style="font-size:12.5px;color:var(--n500);text-decoration:underline;text-underline-offset:3px">이용약관</a>
+        <a href="/privacy" target="_blank" rel="noopener" style="font-size:12.5px;color:var(--n500);text-decoration:underline;text-underline-offset:3px">개인정보 처리방침</a>
+        <a data-go="#/brand" style="font-size:12.5px;color:var(--n500);text-decoration:underline;text-underline-offset:3px">브랜드</a>
+      </div>
     </div>
+    ${bizFooter()}
   </div>`}
 </div>`;
+
+/* ── 사업자 정보 ──
+   전자상거래법이 요구하는 표시이고, PG 계약 심사도 이것을 본다.
+   약관 안에만 두면 사람도 심사기도 못 찾는다 - 화면 아래에 그대로 적는다. */
+const CORP = {
+  corp: '주식회사 플러스토닉', ceo: '한상혁', no: '206-86-86686',
+  tsp: '제2024-경기하남-2207호', addr: '경기도 하남시 미사대로 550, A동 3층 77호 (덕풍동, 현대지식산업센터 한강미사 1차)', mail: 'support@plustonic.com',
+};
+
+function bizFooter(){
+  return `<div style="font-size:11.5px;line-height:1.8;color:var(--n500)">
+    <span style="display:block">${esc(CORP.corp)} · 대표 ${esc(CORP.ceo)} ·
+      사업자등록번호 ${esc(CORP.no)} · 통신판매업 신고 ${esc(CORP.tsp)}</span>
+    <span style="display:block">${esc(CORP.addr)}</span>
+    <span style="display:block">문의 <a href="mailto:${esc(CORP.mail)}"
+      style="color:var(--n500);text-decoration:underline;text-underline-offset:3px">${esc(CORP.mail)}</a>
+      · 비버노크는 조건을 전달하는 서비스이며 공인중개사가 아닙니다.
+      중개와 계약은 공인중개사사무소와 직접 하시게 됩니다.</span>
+  </div>`;
+}
 
 /* 발밑 지면 - 캐릭터가 떠 보이지 않게 */
 function groundSvg(){
@@ -6702,6 +6727,7 @@ function docShell(eyebrow, title, lead, body){
     <h1 class="t" style="font-size:${isMo()?21:25}px;margin:10px 0 10px">${title}</h1>
     <p style="margin:0 0 24px;font-size:14px;line-height:1.75;color:var(--n700)">${lead}</p>
     ${body}
+    ${bizFooter ? `<div style="margin-top:28px;padding-top:18px;border-top:1px solid var(--n100)">${bizFooter()}</div>` : ''}
     <div class="card pad" style="margin-top:24px;background:var(--ind50);border-color:#D9DAF0">
       <b style="display:block;font-size:15px;font-weight:800;color:var(--n900);margin-bottom:6px">아직 궁금한 게 남으셨나요?</b>
       <p style="margin:0 0 14px;font-size:13.5px;line-height:1.75;color:var(--n700)">

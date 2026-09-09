@@ -128,10 +128,33 @@ const STATE_OK = new Set(['영업중', '정상']);
    사람이 나중에 다친다. 지어내느니 비워 두는 편이 낫다. */
 const JUSO_API = 'https://business.juso.go.kr/addrlink/addrLinkApi.do';
 
+/* ── 남의 돈으로 도는 문에는 빗장을 건다 ──
+   주소와 건축물대장은 우리 인증키로 나간다. 건축물대장은 하루 10,000건,
+   주소는 5초에 10건이 상한이다. 이 문은 가입 화면에서도 쓰이므로 로그인을
+   요구할 수 없는데, 그러면 아무나 두드려 하루치를 태울 수 있다.
+   그날 진짜 손님이 주소를 못 찾는 일이 생기지 않게 IP 로 센다.
+
+   서버리스라 이 표는 인스턴스마다 따로 있고 언젠가 접히면서 사라진다.
+   정교한 방벽은 아니지만, 한 곳에서 몰아치는 것을 늦추는 데는 충분하다. */
+const hits = new Map();
+const LOOK_WINDOW = 60_000, LOOK_MAX = 40;
+
+function tooMany(req) {
+  const ip = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim() || 'unknown';
+  const now = Date.now();
+  const seen = (hits.get(ip) || []).filter(t => now - t < LOOK_WINDOW);
+  /* 표가 끝없이 자라지 않게 - 서버리스라도 한 인스턴스는 꽤 오래 산다 */
+  if (hits.size > 500) for (const [k, v] of hits) if (!v.some(t => now - t < LOOK_WINDOW)) hits.delete(k);
+  if (seen.length >= LOOK_MAX) return true;
+  seen.push(now); hits.set(ip, seen);
+  return false;
+}
+
 async function searchAddr(req, res, b) {
   const key = process.env.JUSO_KEY;
   const q = String(b.keyword || '').trim();
   if (!q || q.length < 2) return res.status(400).json({ error: '두 글자 이상 넣어주세요' });
+  if (tooMany(req)) return res.status(429).json({ error: '잠시 후 다시 찾아주세요 - 주소를 직접 적으셔도 됩니다' });
   if (!key) {
     return res.status(200).json({ ok: true, off: true, rows: [],
       note: '주소 검색이 아직 연결되지 않았습니다 - 주소를 직접 적어주세요' });
@@ -183,6 +206,7 @@ async function readBuilding(req, res, b) {
   const key = process.env.DATA_GO_KEY;
   const admCd = String(b.admCd || '').replace(/[^0-9]/g, '');
   if (admCd.length !== 10) return res.status(400).json({ error: '어느 필지인지 알 수 없습니다' });
+  if (tooMany(req)) return res.status(429).json({ error: '잠시 후 다시 시도해 주세요 - 면적·용도는 직접 적으셔도 됩니다' });
   if (!key) {
     return res.status(200).json({ ok: true, off: true,
       note: '건축물대장이 아직 연결되지 않았습니다 - 면적·용도는 직접 적어주세요' });

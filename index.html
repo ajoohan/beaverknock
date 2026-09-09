@@ -1982,8 +1982,13 @@ function scopeFromServer(j){
   const sv = j.scope;
   S.scopeStored = !!sv.stored;
   if(!sv.stored) return;              /* 0017 전이면 예전처럼 화면 기본값으로 둔다 */
-  S.scope.assets   = (sv.kinds||[]).map(k=>KIND_TO_ASSET[k]).filter(Boolean);
-  S.scope.regions  = sv.regions || [];
+  /* 아직 한 번도 정하지 않았으면 저장된 빈 값을 씌우지 않는다. 0017 의 기본값은
+     빈 배열이라, 그대로 씌우면 취급 유형이 전부 해제된 것처럼 보인다 -
+     사용자는 자기가 푼 적이 없는데 다 풀려 있는 화면을 보게 된다. */
+  if(sv.set){
+    S.scope.assets  = (sv.kinds||[]).map(k=>KIND_TO_ASSET[k]).filter(Boolean);
+    S.scope.regions = sv.regions || [];
+  }
   S.scope.excluded = sv.excluded || [];
   S.scope.paused   = !!sv.paused;
   S.scope.regionsSet = !!sv.set;
@@ -4140,12 +4145,18 @@ V['#/partner'] = () => `
 /* ---------- S-04 수요 목록 ---------- */
 V['#/partner/demands'] = () => {
   const f = S.form.dfilter||'전체';
-  const scoped = S.demands.filter(d => inScope(d))
+  /* 거르는 일은 서버가 이미 했다. 여기서 한 번 더 거르면 두 규칙이 어긋나면서
+     서버가 '맞다' 고 보낸 것이 화면에서 사라진다 - 강남구에 물건을 올린
+     소유자가 맞는 손님을 한 명도 못 보던 것이 그것이었다.
+     화면은 순서만 정한다 - 내 물건과 겹치는 것이 먼저 보이게. */
+  const scoped = S.demands
     .map(d => ({d, fit: listingsFor(d).length}))
     .sort((a,b) => (b.fit - a.fit) || (b.d.pct - a.d.pct))
     .map(x => x.d);
   const list = scoped.filter(d=> f==='전체' || d.kind === (Object.entries(WHO).find(([,w])=>w.tag===f)||[])[0]);
-  const hidden = S.demands.length - scoped.length;
+  /* 몇 건이 가려졌는지도 서버가 센 것을 쓴다 - 화면이 다시 세면 두 수가 어긋난다 */
+  const H = S.feedHidden || {};
+  const hidden = S.feedByListing ? (H.fit || 0) : (H.region || 0);
   return `
 <div class="scr fade" style="background:var(--n50)">
   ${navPartner('d')}

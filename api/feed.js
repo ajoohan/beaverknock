@@ -302,6 +302,7 @@ async function readFitting(res, agent) {
       return res.status(200).json({
         ok: true, agent: { id: agent.id, office: agent.office || null,
         role: agent.role || null, owner_type: agent.owner_type || null },
+        scope: scopeOf(agent),
         byListing: true, listings: 0, hidden: { region: 0, slot: 0, fit: 0 },
         at: new Date().toISOString(), rows: [],
         note: '물건을 올리시면 그 물건에 맞는 손님만 보여드립니다.',
@@ -309,6 +310,19 @@ async function readFitting(res, agent) {
     }
 
     const kinds = [...new Set(list.map(L => L.kind).filter(k => KIND_KO[k]))];
+    /* 빈 배열을 그대로 넣으면 kind=in.() 이 되어 PostgREST 가 문법 오류를 낸다.
+       물건은 있는데 유형을 하나도 못 읽는 상황이라, 맞는 것이 없다고 답하는 편이
+       '조건을 불러오지 못했습니다' 보다 사실에 가깝다. */
+    if (!kinds.length) {
+      return res.status(200).json({
+        ok: true, agent: { id: agent.id, office: agent.office || null,
+          role: agent.role || null, owner_type: agent.owner_type || null },
+        scope: scopeOf(agent),
+        byListing: true, listings: list.length, hidden: { region: 0, slot: 0, fit: 0 },
+        at: new Date().toISOString(), rows: [],
+        note: '올려두신 물건의 유형을 읽지 못했습니다 - 물건을 다시 등록해 주세요.',
+      });
+    }
     const q = new URLSearchParams({
       select: 'id,created_at,kind,dongs,deal,dep,rent,biz,area_min,area_max,htype,rooms,musts,must_free,'
             + 'floor_avoid,household,elevator,loan_plan,open_when,shop_floor_free,facilities_free,'
@@ -341,6 +355,7 @@ async function readFitting(res, agent) {
     return res.status(200).json({
       ok: true, agent: { id: agent.id, office: agent.office || null,
         role: agent.role || null, owner_type: agent.owner_type || null },
+      scope: scopeOf(agent),
       byListing: true, listings: list.length, hidden, at: new Date().toISOString(),
       rows: rows.map(d => ({ ...d, kind_ko: KIND_KO[d.kind] || '주거', mine: mine.has(d.id) })),
     });

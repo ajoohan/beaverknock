@@ -2196,6 +2196,7 @@ V['#/'] = () => `
    약관 안에만 두면 사람도 심사기도 못 찾는다 - 화면 아래에 그대로 적는다. */
 const CORP = {
   corp: '주식회사 플러스토닉', ceo: '한상혁', no: '206-86-86686',
+  tel: '070-4105-0678',
   tsp: '제2024-경기하남-2207호', addr: '경기도 하남시 미사대로 550, A동 3층 77호 (덕풍동, 현대지식산업센터 한강미사 1차)', mail: 'support@plustonic.com',
 };
 
@@ -2204,7 +2205,9 @@ function bizFooter(){
     <span style="display:block">${esc(CORP.corp)} · 대표 ${esc(CORP.ceo)} ·
       사업자등록번호 ${esc(CORP.no)} · 통신판매업 신고 ${esc(CORP.tsp)}</span>
     <span style="display:block">${esc(CORP.addr)}</span>
-    <span style="display:block">문의 <a href="mailto:${esc(CORP.mail)}"
+    <span style="display:block">문의 <a href="tel:${esc(CORP.tel.replace(/-/g,''))}"
+      style="color:var(--n500);text-decoration:underline;text-underline-offset:3px">${esc(CORP.tel)}</a>
+      · <a href="mailto:${esc(CORP.mail)}"
       style="color:var(--n500);text-decoration:underline;text-underline-offset:3px">${esc(CORP.mail)}</a>
       · 비버노크는 조건을 전달하는 서비스이며 공인중개사가 아닙니다.
       중개와 계약은 공인중개사사무소와 직접 하시게 됩니다.</span>

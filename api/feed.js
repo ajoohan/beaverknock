@@ -40,22 +40,31 @@ HANAM.forEach(d => { DONG_TO_SI[d] = '하남시'; });
 const WIDE = /(어디든|전체)/;
 const siOf = n => DONG_TO_SI[n] || (/(시|군|구)$/.test(n) ? n : (/^하남/.test(n) ? '하남시' : ''));
 
-/* '미사역 상권' 과 '미사역', '하남 어디든' 과 '미사1동' 을 견줄 수 있게.
+/* 두 지역이 같은 곳을 가리키는가.
 
-   넓게 적은 쪽이 있을 때만 시·군으로 견준다. '미사1동' 을 적은 손님에게
-   덕풍2동 물건이 가면 안 된다 - 같은 하남시라도 그 손님이 고른 곳이 아니다. */
-function regionHit(listingDong, demandDongs) {
-  const raw = String(listingDong || '').trim();
-  const one = norm(raw);
+   넓게 잡은 쪽이 있으면 시·군으로 견준다 - '하남시' 를 맡은 중개사에게
+   '미사1동' 손님이 가야 하고, '하남 어디든' 손님에게 미사1동 물건이 가야 한다.
+   어느 쪽이 넓은지는 미리 정해져 있지 않다. 활동 지역은 시·군이 넓은 쪽이고,
+   손님이 '어디든' 을 고르면 손님 쪽이 넓은 쪽이다 - 그래서 양쪽 다 본다.
+
+   둘 다 콕 집었으면 이름이 같아야 한다. '미사1동' 을 적은 손님에게 덕풍2동
+   물건이 가면 안 된다 - 같은 하남시라도 그 손님이 고른 곳이 아니다. */
+const isWide = raw => {
+  const n = norm(raw);
+  return WIDE.test(String(raw)) || /(시|군|구)$/.test(n);
+};
+
+function regionHit(mine, theirs) {
+  const one = norm(mine);
   if (!one) return false;
-  const mySi = siOf(one);
-  return (demandDongs || []).some(x => {
+  const myWide = isWide(mine), mySi = siOf(one);
+  return (theirs || []).some(x => {
     const d = norm(x);
     if (!d) return false;
     if (d === one || d.includes(one) || one.includes(d)) return true;
-    /* 한쪽이 '어디든/전체' 이거나 시·군 이름이면 그 안에 드는지 본다 */
-    const wide = WIDE.test(String(x)) || /(시|군|구)$/.test(d);
-    return wide && !!mySi && siOf(d) === mySi;
+    if (!myWide && !isWide(x)) return false;
+    const si = siOf(d);
+    return !!mySi && !!si && mySi === si;
   });
 }
 
@@ -98,7 +107,9 @@ export async function myListings(agentId) {
 
 export async function approvedAgent(user) {
   const q = new URLSearchParams({
-    select: 'id,role,status,office,name,owner_type', user_id: 'eq.' + user.id, limit: '1',
+    select: 'id,role,status,office,name,owner_type,'
+          + 'scope_regions,scope_kinds,scope_excluded,scope_set,notify_paused',
+    user_id: 'eq.' + user.id, limit: '1',
   });
   const r = await fetch(sbUrl('bk_agent', q.toString()), { headers: sbHeaders() });
   if (!r.ok) return { error: await r.text() };
@@ -140,19 +151,30 @@ export default async function handler(req, res) {
   if (b.what === 'listings')    return readListings(req, res, chk.agent);
   if (b.what === 'listing-add') return addListing(req, res, chk.agent, user, b);
   if (b.what === 'listing-del') return delListing(req, res, chk.agent, b);
+
+  /* 활동 조건을 저장한다.
+     지금까지 이 화면은 "저장됐습니다" 라고 말하고 아무 데도 넣지 않았다.
+     브라우저 메모리에만 있어서 새로고침하면 하남시로 돌아갔고, 서울에서
+     활동하겠다고 정해둔 분이 다음 날 들어오면 하남 손님만 보였다. */
+  if (b.what === 'scope-save') return saveScope(res, chk.agent, b);
+  if (b.what === 'scope')      return res.status(200).json({ ok: true, scope: scopeOf(chk.agent) });
   /* 소유자·시행사는 목록을 훑지 못한다. 올려둔 물건에 맞는 것만 본다.
      화면에서 감추는 것으로는 부족해 여기서 막는다 - 화면은 고쳐 쓸 수 있다. */
   if (!canBrowse(chk.agent)) return readFitting(res, chk.agent);
 
+  /* 거르는 값은 저장된 것을 쓴다. 브라우저가 보내는 것을 그대로 믿으면,
+     새 조건이 들어왔을 때 '이것이 누구에게 맞는가' 를 서버가 알 수 없다 -
+     알림을 보낼 방법이 아예 없어진다. */
+  const sc = scopeOf(chk.agent);
   /* 빈 배열은 '가리지 않는다' 가 아니라 '아무것도 안 받겠다' 는 뜻이다.
      지역은 그렇게 막아뒀는데 유형만 반대로 열려 있었다. */
-  const kinds = Array.isArray(b.kinds) ? b.kinds.filter(k => KIND_KO[k]) : Object.keys(KIND_KO);
+  const kinds = sc.kinds.filter(k => KIND_KO[k]);
   if (!kinds.length) {
     return res.status(200).json({ ok: true, agent: { id: chk.agent.id, office: chk.agent.office || null,
         role: chk.agent.role || null, owner_type: chk.agent.owner_type || null },
-      hidden: { region: 0, slot: 0, kind: 1 }, at: new Date().toISOString(), rows: [] });
+      scope: sc, hidden: { region: 0, slot: 0, kind: 1 }, at: new Date().toISOString(), rows: [] });
   }
-  const regions = (Array.isArray(b.regions) ? b.regions : []).map(norm).filter(Boolean);
+  const regions = sc.set ? sc.regions.map(norm).filter(Boolean) : [];
 
   try {
     const q = new URLSearchParams({
@@ -168,12 +190,15 @@ export default async function handler(req, res) {
 
     /* 지역은 배열이라 DB 에서 거르기 번거롭다 - 여기서 맞춰본다.
        고른 지역이 없으면 아무것도 보여주지 않는다. 활동 지역을 정하는 것이 먼저다. */
+    /* 알림과 같은 규칙으로 거른다. 여기만 따로 두면 목록에는 보이는데 알림은
+       안 오는 일이 생기고, 그때는 어느 쪽이 맞는지 알 수 없게 된다.
+       예전에는 이름이 겹치는지만 봐서, 활동 지역을 '하남시' 로 둔 분에게
+       미사1동 손님이 한 건도 보이지 않았다 - 기본값이 하남시였다. */
     const hidden = { region: 0, slot: 0 };
     rows = rows.filter(d => {
       if (!(d.slots_left > 0)) { hidden.slot++; return false; }
       if (!regions.length) { hidden.region++; return false; }
-      const ds = (d.dongs || []).map(norm);
-      const hit = ds.some(x => regions.some(rg => x === rg || x.includes(rg) || rg.includes(x)));
+      const hit = regions.some(rg => regionHit(rg, d.dongs));
       if (!hit) hidden.region++;
       return hit;
     });
@@ -195,12 +220,74 @@ export default async function handler(req, res) {
       ok: true,
       agent: { id: chk.agent.id, office: chk.agent.office || null,
         role: chk.agent.role || null, owner_type: chk.agent.owner_type || null },
+      scope: sc,
       hidden,
       at: new Date().toISOString(),
       rows: rows.map(d => ({ ...d, kind_ko: KIND_KO[d.kind] || '주거', mine: mine.has(d.id) })),
     });
   } catch (e) {
     console.error('[feed]', e && e.message);
+    return res.status(502).json({ error: 'DB에 닿지 못했습니다' });
+  }
+}
+
+/* 이 조건이 이 활동 조건에 드는가.
+   목록을 거를 때 쓰는 규칙과 같은 것을 쓴다 - 목록에는 보이는데 알림은 안 오거나
+   그 반대이면, 어느 쪽이 맞는지 알 수 없게 된다. */
+export function scopeHits(sc, d) {
+  if (!sc || !d) return false;
+  if (!sc.set || !sc.regions.length) return false;      /* 정하기 전에는 아무것도 안 간다 */
+  if (!sc.kinds.includes(d.kind)) return false;
+  return sc.regions.some(rg => regionHit(rg, d.dongs));
+}
+
+/* ── 활동 조건 ──
+   0017 전이면 칸이 없다. 그때는 예전처럼 기본값으로 돈다 - 마이그레이션을
+   안 돌렸다고 목록이 안 보이면, 고장 난 것으로 읽힌다. */
+const SCOPE_KINDS = ['home', 'shop', 'office', 'storage'];
+
+export function scopeOf(a) {
+  const has = a && a.scope_kinds !== undefined;
+  return {
+    regions: (a && a.scope_regions) || [],
+    kinds:   has ? ((a.scope_kinds || []).filter(k => SCOPE_KINDS.includes(k))) : SCOPE_KINDS,
+    excluded: (a && a.scope_excluded) || [],
+    set:     has ? !!a.scope_set : false,
+    paused:  !!(a && a.notify_paused),
+    stored:  !!has,
+  };
+}
+
+const cleanList = (v, max) => (Array.isArray(v) ? v : [])
+  .map(x => String(x || '').trim()).filter(Boolean).slice(0, max);
+
+async function saveScope(res, agent, b) {
+  const patch = {
+    scope_regions:  cleanList(b.regions, 60),
+    scope_kinds:    cleanList(b.kinds, 8).filter(k => SCOPE_KINDS.includes(k)),
+    scope_excluded: cleanList(b.excluded, 20),
+    scope_set:      true,
+    notify_paused:  b.paused === true,
+    scope_at:       new Date().toISOString(),
+  };
+  try {
+    const r = await fetch(sbUrl('bk_agent', 'id=eq.' + agent.id), {
+      method: 'PATCH',
+      headers: { ...sbHeaders(), Prefer: 'return=representation' },
+      body: JSON.stringify(patch),
+    });
+    if (!r.ok) {
+      const t = await r.text();
+      if (/scope_regions|scope_kinds|scope_set|notify_paused|scope_at|PGRST204/i.test(t)) {
+        return res.status(503).json({ error: '아직 준비 중입니다 (0017 마이그레이션 필요)', need: 'sql' });
+      }
+      return res.status(500).json({ error: '활동 조건을 저장하지 못했습니다' });
+    }
+    /* 몇 건이 실제로 바뀌었는지 본다 - minimal 로 두면 한 건도 안 바뀌어도 200 이 온다 */
+    const got = (await r.json().catch(() => []))[0];
+    if (!got) return res.status(404).json({ error: '저장할 곳을 찾지 못했습니다' });
+    return res.status(200).json({ ok: true, scope: scopeOf(got) });
+  } catch (e) {
     return res.status(502).json({ error: 'DB에 닿지 못했습니다' });
   }
 }

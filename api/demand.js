@@ -12,7 +12,8 @@
 import crypto from 'node:crypto';
 import { notify, mask } from './_notify.js';
 import { readIdv } from './_idv.js';
-import { userFrom } from './_auth.js';
+import { userFrom, sbHeaders, sbUrl } from './_auth.js';
+import { scopeHits, scopeOf, anyFits } from './feed.js';
 
 const TABLE = 'bk_demand';
 
@@ -77,6 +78,82 @@ const int = v => { const n = parseInt(v, 10); return Number.isFinite(n) ? n : nu
 const num = v => { const n = parseFloat(v); return Number.isFinite(n) ? n : null; };
 const arr = (v, max = 30) =>
   Array.isArray(v) ? v.filter(x => typeof x === 'string' && x.trim()).slice(0, max).map(x => x.trim().slice(0, 80)) : [];
+
+/* ── 맞는 공급자에게 알린다 ──
+   중개사는 정해둔 활동 조건으로, 소유자는 올려둔 물건으로 맞춘다.
+   목록을 거르는 규칙과 같은 것을 쓴다 - 목록에는 보이는데 알림은 안 오면
+   어느 쪽이 맞는지 알 수 없게 된다.
+
+   한 번에 보내는 수를 막아둔다. 서버리스는 응답과 함께 접히므로 오래 끌면
+   뒤쪽이 통째로 잘린다. 조건 하나에 다섯 곳이 상한인 서비스에서 서른 통이면
+   충분하고, 그보다 많아지는 날이 오면 그때는 큐를 두는 것이 맞다. */
+const TELL_MAX = 30;
+
+async function tellPartners(req, d) {
+  if (!process.env.RESEND_API_KEY) return;
+  try {
+    const q = new URLSearchParams({
+      select: 'id,role,email,office,name,scope_regions,scope_kinds,scope_set,notify_paused',
+      status: 'eq.approved', limit: '400',
+    });
+    const r = await fetch(sbUrl('bk_agent', q.toString()), { headers: sbHeaders() });
+    if (!r.ok) return;                       /* 0017 전이면 칸이 없다 - 조용히 넘어간다 */
+    const all = await r.json();
+
+    const agents = [], owners = [];
+    for (const a of all) {
+      if (a.notify_paused || !a.email) continue;
+      (a.role === 'agent' ? agents : owners).push(a);
+    }
+
+    const hit = agents.filter(a => scopeHits(scopeOf(a), d));
+
+    /* 소유자는 올려둔 물건으로 맞춘다. 물건을 한 번에 받아와 여기서 견준다 -
+       사람마다 물어보면 요청이 사람 수만큼 늘어난다. */
+    if (owners.length) {
+      const ids = owners.map(o => o.id);
+      const lq = new URLSearchParams({
+        select: 'agent_id,kind,dong,deal,dep,rent', status: 'eq.active',
+        agent_id: `in.(${ids.join(',')})`, limit: '1000',
+      });
+      const lr = await fetch(sbUrl('bk_listing', lq.toString()), { headers: sbHeaders() });
+      if (lr.ok) {
+        const byOwner = new Map();
+        for (const L of await lr.json()) {
+          if (!byOwner.has(L.agent_id)) byOwner.set(L.agent_id, []);
+          byOwner.get(L.agent_id).push(L);
+        }
+        for (const o of owners) if (anyFits(byOwner.get(o.id), d)) hit.push(o);
+      }
+    }
+    if (!hit.length) return;
+
+    const money = NONHOME(d.kind)
+      ? `보증금 ${d.dep ?? 0}만 / 월 ${d.rent ?? 0}만`
+      : `${d.deal || ''} ${d.dep ?? 0}만${d.rent ? ` / 월 ${d.rent}만` : ''}`.trim();
+    const rows = [
+      ['유형', KIND_KO[d.kind] || '주거'],
+      ['지역', (d.dongs || []).join(' · ') || '-'],
+      ['예산', money],
+      ['남은 자리', `${d.slots_left ?? 5} / ${d.slots ?? 5}`],
+    ];
+
+    /* 이름도 연락처도 담지 않는다. 메일은 가장 허술한 통로다 -
+       누가 무엇을 찾는지까지만 알리고, 나머지는 로그인해서 본다. */
+    await Promise.all(hit.slice(0, TELL_MAX).map(a => notify(req, {
+      to: a.email,
+      subject: `맞는 손님이 왔습니다 · ${KIND_KO[d.kind] || '주거'} · ${(d.dongs || []).join(' · ') || '하남'}`,
+      rows,
+      link: '/#/partner/demands',
+      cta: '조건 보러 가기',
+      note: '정해두신 활동 조건(소유자는 올려두신 물건)에 맞아서 보내드립니다. '
+          + '손님 성함과 연락처는 손님이 연결을 누르신 뒤에 오갑니다. '
+          + '알림을 멈추시려면 활동 조건 설정에서 바꾸실 수 있습니다.',
+    })));
+  } catch (e) {
+    /* 알림이 접수를 무너뜨리지 않는다 */
+  }
+}
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
@@ -244,6 +321,12 @@ export default async function handler(req, res) {
     console.error('접수 저장 오류', e);
     return res.status(502).json({ error: 'DB에 닿지 못했습니다' });
   }
+
+  /* 맞는 공급자에게도 알린다.
+     지금까지 '맞는 손님 카톡 알림' 이라고 적어두고 실제로 가는 것은 없었다.
+     알림톡은 템플릿 심사가 있어 아직인데, 메일은 이미 붙어 있다.
+     안 가도 접수는 성공이다 - 알림 때문에 조건이 사라지면 안 된다. */
+  await tellPartners(req, row).catch(() => {});
 
   /* 알림이 안 가도 접수는 성공이다. 붙잡아 두지 않는다. */
   const sent = await notify(req, {

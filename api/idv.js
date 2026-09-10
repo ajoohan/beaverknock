@@ -19,11 +19,47 @@
  *   PORTONE_API_SECRET    서버 전용 (V2 API Secret)
  *   PORTONE_STORE_ID      브라우저에 내려보낸다 (공개 식별자)
  *   PORTONE_CHANNEL_KEY   브라우저에 내려보낸다 (공개 식별자)
- *   BK_SECRET_KEY         표에 서명할 때 쓴다
+ *   BK_SECRET_KEY         표에 서명할 때 쓴다 · bk_idv_use 에 적을 때도 쓴다
+ *   BK_URL                bk_idv_use 를 읽고 쓴다
  */
 
-import crypto from 'node:crypto';
+/* 같은 거래번호로 두 번 표를 끊어주지 않는다.
+   휴대폰에서 돌아올 때 주소창에 ?identityVerificationId=... 가 그대로 붙는다.
+   기록에도 남고 링크를 복사해 보낸 곳에도 남는다. 그 번호만 알면 남의
+   이름·생년월일·연락처가 담긴 표를 받아갈 수 있었다.
+
+   기본키라서 두 번째 insert 는 409 로 튕긴다 - 먼저 읽고 나중에 쓰면
+   그 사이에 둘이 동시에 들어올 수 있으니, 읽지 않고 넣어보고 판단한다.
+   true 면 이번이 처음이다. */
+async function claimOnce(vid) {
+  const { BK_URL, BK_SECRET_KEY } = process.env;
+  if (!BK_URL || !BK_SECRET_KEY) return { ok: false, why: 'no db' };
+  try {
+    const r = await fetch(sbUrl('bk_idv_use'), {
+      method: 'POST',
+      headers: { ...sbHeaders(), Prefer: 'return=minimal' },
+      body: JSON.stringify({ vid }),
+    });
+    if (r.status === 409) return { ok: false, why: 'used' };
+    if (!r.ok) {
+      const t = await r.text().catch(() => '');
+      /* 0018 전이면 표가 없다. 그때는 본인확인을 막지 않는다 - 다만 로그로 남긴다. */
+      if (/does not exist|PGRST205/i.test(t)) {
+        console.error('[idv] bk_idv_use 없음 - 0018 을 실행해야 한다');
+        return { ok: true, skipped: true };
+      }
+      console.error('[idv] 사용 기록 실패', r.status, t.slice(0, 160));
+      return { ok: false, why: 'db' };
+    }
+    return { ok: true };
+  } catch (e) {
+    console.error('[idv] 사용 기록 오류', e && e.message);
+    return { ok: false, why: 'db' };
+  }
+}
+
 import { signIdv } from './_idv.js';
+import { sbHeaders, sbUrl } from './_auth.js';
 
 const API = 'https://api.portone.io/identity-verifications';
 
@@ -66,6 +102,15 @@ export default async function handler(req, res) {
     const j = await r.json();
     if (j.status !== 'VERIFIED') {
       return res.status(400).json({ error: '본인확인이 완료되지 않았습니다', status: j.status });
+    }
+
+    /* 통과한 것을 확인한 다음에 번호를 잡는다. 실패한 시도까지 태워버리면
+       다시 시도할 때 막힌다. */
+    const once = await claimOnce(id);
+    if (!once.ok) {
+      return once.why === 'used'
+        ? res.status(409).json({ error: '이미 사용된 본인확인입니다 - 다시 받아주세요', again: true })
+        : res.status(502).json({ error: '본인확인 결과를 확인하지 못했습니다' });
     }
 
     const c = j.verifiedCustomer || {};

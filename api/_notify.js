@@ -37,10 +37,8 @@ export async function notify(req, opts) {
   try { return await send(req, opts); } catch (e) { return { skipped: 'error', detail: e && e.message }; }
 }
 
-async function send(req, { subject, rows, link, to: toArg, cta, note }) {
-  const key = process.env.RESEND_API_KEY;
-  if (!key) return { skipped: 'no key' };
-
+/* 한 통의 모양을 만든다. 한 통을 보낼 때도, 여러 통을 묶어 보낼 때도 이걸 쓴다. */
+function build(req, { subject, rows, link, to: toArg, cta, note }) {
   const to   = toArg || process.env.ALERT_TO || 'beaverknock@gmail.com';
   const from = process.env.ALERT_FROM || '비버노크 <noreply@rawpick.co.kr>';
   const host = process.env.ALERT_SITE
@@ -60,11 +58,18 @@ async function send(req, { subject, rows, link, to: toArg, cta, note }) {
       ${esc(note || '연락처는 가려서 보냅니다. 전체 내용은 운영 화면에서 암호를 넣고 확인하세요.')}</p>
   </div>`;
 
+  return { from, to: [to], subject: `[비버노크] ${subject}`, html };
+}
+
+async function send(req, opts) {
+  const key = process.env.RESEND_API_KEY;
+  if (!key) return { skipped: 'no key' };
+
   try {
     const r = await withTimeout(fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { Authorization: 'Bearer ' + key, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from, to: [to], subject: `[비버노크] ${subject}`, html }),
+      body: JSON.stringify(build(req, opts)),
     }), 2500);
     if (r && r.skipped) return r;
     if (r.ok) return { ok: true };
@@ -73,6 +78,39 @@ async function send(req, { subject, rows, link, to: toArg, cta, note }) {
     return { skipped: `send failed ${r.status}`, detail: t.slice(0, 160) };
   } catch (e) {
     return { skipped: 'error' };
+  }
+}
+
+/* 여러 사람에게 같은 알림을 보낼 때.
+ *
+ * 전에는 사람마다 fetch 를 하나씩 띄워 Promise.all 로 한꺼번에 던졌다.
+ * Resend 는 초당 2건이 기본 한도라 서른 통을 동시에 던지면 대부분 429 로
+ * 거절당한다. 그런데 실패를 조용히 삼키고 있어서, 알림이 안 갔다는 사실을
+ * 아무도 몰랐다.
+ *
+ * 배치 주소는 한 요청에 100통까지 받는다. 요청이 하나면 한도에 걸릴 일이 없다.
+ * 돌려주는 값으로 몇 통이 나갔는지 부르는 쪽에서 알 수 있게 한다.
+ */
+export async function notifyMany(req, list) {
+  const key = process.env.RESEND_API_KEY;
+  if (!key) return { skipped: 'no key', sent: 0 };
+  const mails = (list || []).slice(0, 100).map(o => build(req, o));
+  if (!mails.length) return { ok: true, sent: 0 };
+
+  try {
+    const r = await withTimeout(fetch('https://api.resend.com/emails/batch', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + key, 'Content-Type': 'application/json' },
+      body: JSON.stringify(mails),
+    }), 4000);
+    if (r && r.skipped) return { ...r, sent: 0 };
+    if (r.ok) return { ok: true, sent: mails.length };
+    const t = await r.text().catch(() => '');
+    console.error('[notify] 묶음 발송 실패', r.status, t.slice(0, 200));
+    return { skipped: `batch failed ${r.status}`, sent: 0 };
+  } catch (e) {
+    console.error('[notify] 묶음 발송 오류', e && e.message);
+    return { skipped: 'error', sent: 0 };
   }
 }
 

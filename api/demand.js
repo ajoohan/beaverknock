@@ -10,7 +10,7 @@
  */
 
 import crypto from 'node:crypto';
-import { notify, mask } from './_notify.js';
+import { notify, notifyMany, mask } from './_notify.js';
 import { readIdv } from './_idv.js';
 import { userFrom, sbHeaders, sbUrl } from './_auth.js';
 import { scopeHits, scopeOf, anyFits } from './feed.js';
@@ -139,8 +139,11 @@ async function tellPartners(req, d) {
     ];
 
     /* 이름도 연락처도 담지 않는다. 메일은 가장 허술한 통로다 -
-       누가 무엇을 찾는지까지만 알리고, 나머지는 로그인해서 본다. */
-    await Promise.all(hit.slice(0, TELL_MAX).map(a => notify(req, {
+       누가 무엇을 찾는지까지만 알리고, 나머지는 로그인해서 본다.
+
+       한 통씩 따로 던지지 않는다. Resend 는 초당 2건이 기본 한도라
+       서른 통을 동시에 던지면 대부분 429 로 조용히 버려졌다. */
+    const out = await notifyMany(req, hit.slice(0, TELL_MAX).map(a => ({
       to: a.email,
       subject: `맞는 손님이 왔습니다 · ${KIND_KO[d.kind] || '주거'} · ${(d.dongs || []).join(' · ') || '하남'}`,
       rows,
@@ -150,6 +153,7 @@ async function tellPartners(req, d) {
           + '손님 성함과 연락처는 손님이 연결을 누르신 뒤에 오갑니다. '
           + '알림을 멈추시려면 활동 조건 설정에서 바꾸실 수 있습니다.',
     })));
+    if (!out.ok) console.error('[demand] 공급자 알림 못 보냄', out.skipped, hit.length, '명');
   } catch (e) {
     /* 알림이 접수를 무너뜨리지 않는다 */
   }

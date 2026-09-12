@@ -692,6 +692,15 @@ body.mo .btn{min-height:44px}
 body.mo .btn.sm{min-height:40px}
 body.mo .chip{min-height:38px}
 
+/* 칩은 38px 이라 권장(44px)보다 6px 모자란다. 그렇다고 칩을 키우면
+   필터가 촘촘한 화면(조건 등록에만 27개)의 밀도가 달라진다.
+   보이지 않는 판을 위아래로 덮어 '누를 자리' 만 넓힌다 - 모양은 그대로다.
+   줄 간격이 46px 라 3px 씩 넓혀도 위아래 줄과 겹치지 않는다.
+   가로로는 넓히지 않는다. 칩 사이가 6~8px 뿐이라 옆 칩을 빼앗는다. */
+body.mo .chip{position:relative}
+body.mo .chip::after{content:'';position:absolute;left:0;right:0;
+  top:50%;transform:translateY(-50%);height:44px}
+
 /* href 없는 <a> 는 커서가 기본값이라 눌리는 줄 모른다.
    클릭을 받는 것은 전부 손가락 커서를 준다. */
 [data-go],[data-act]{cursor:pointer}

@@ -4563,66 +4563,11 @@ V['#/partner/proposals'] = () => {
   </div>
   ${tabbar('p','p')}
 </div>`;};
-
-/* ---------- A-04 운영 지표 ---------- */
-V['#/ops'] = () => {
-  const tiles=[['활성 조건',S.conds.filter(c=>c.status!=='closed').length+'건','주간 +12','status=active 조건 수'],
-    ['제안 도착률','62%','목표 50% 이상','72시간 내 제안 1건 이상 ÷ 알림 발송 조건',true],
-    ['선택률','18%','','연결(selected) ÷ 제안 1건 이상 받은 조건'],
-    ['7일 유지율','71%','','등록 7일 후 active 또는 성사 비율']];
-  const funnel=[['조건 등록',60],['알림 발송',55],['제안 1건+',34],['열람',29],['연결',11],['성사',4]];
-  const daily=[['8/21',6,9,1],['8/22',9,12,2],['8/23',7,8,1],['8/24',11,15,2],['8/25',8,11,2],['8/26',10,17,2],['8/27',9,13,1]];
-  const reasons=[['R-01','맞는 물건 없음',48,false],['R-02','손이 안 감',22,false],['R-03','돈이 안 됨',12,true],['R-04','조건이 비현실적',10,false],['R-05','사무실로 오라',8,true]];
-  const maxD=Math.max(...daily.map(d=>d[2]));
-  return `
-<div class="scr fade" style="background:var(--n50)">
-  <div class="nav solid pad"><a data-go="#/" style="flex:none">${logoLockup({h:25})}<span style="margin-left:10px;font-size:11px;font-weight:700;color:var(--n500)">운영</span>
-      <span class="badge" style="margin-left:8px;background:var(--clay100);border:1px solid var(--clay200);color:var(--clay700);padding:4px 10px;font-size:11px;font-weight:800">아래 숫자는 예시입니다</span></a>
-    <div class="items"><a data-go="#/my">수요자 화면</a><a data-go="#/partner/demands">공급자 화면</a></div>
-    <div class="right" style="gap:14px"><a data-go="#/ops/live" style="font-weight:700;color:var(--ind);cursor:pointer">접수 조건 →</a><span>5분 배치 갱신 · A-04</span></div></div>
-  <div class="pad" style="flex:1;padding-top:24px;padding-bottom:24px;max-width:${isMo()?'none':'1100px'};margin:0 auto;width:100%;display:flex;flex-direction:column;gap:16px">
-    <div class="card pad" style="background:var(--warnbg);border-color:#E3C98A;box-shadow:none">
-      <span style="font-size:13.5px;font-weight:700;color:var(--n700)">⚠ 활성 공급자 14명 - 15명 미만: 회전 없이 전원 알림 중 (콜드스타트 상태)</span></div>
-    <div style="display:grid;grid-template-columns:repeat(${isMo()?2:4},minmax(0,1fr));gap:12px">
-      ${tiles.map(([k,v,s,def,main])=>`<div class="card" style="padding:16px;${main?'border:1.5px solid rgba(61,63,143,.4);background:rgba(245,245,252,.6)':''}">
-        <span style="display:block;font-size:12.5px;font-weight:800;color:var(--n500)">${k}${main?' <span style="color:var(--ind)">주지표</span>':''}</span>
-        <span class="num" style="font-size:25px;font-weight:800;letter-spacing:-.02em;${main?'color:var(--ind)':''}">${v}</span>
-        ${s?`<span style="display:block;font-size:11px;font-weight:700;color:var(--ok)">${s}</span>`:''}
-        <p style="margin:6px 0 0;font-size:12.5px;line-height:1.45;color:#A8A29A">${def}</p></div>`).join('')}
-    </div>
-    <div style="display:grid;grid-template-columns:repeat(${isMo()?1:2},minmax(0,1fr));gap:16px">
-      <div class="card pad">
-        <span class="sect">깔때기 (기간 내)</span>
-        ${funnel.map(([k,v])=>`<div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
-          <span style="width:72px;flex:none;font-size:12.5px;font-weight:700;color:var(--n500)">${k}</span>
-          <div style="flex:1;height:22px;background:var(--n100);border-radius:6px;overflow:hidden"><i style="display:block;height:100%;width:${v/60*100}%;background:rgba(61,63,143,.8);border-radius:6px"></i></div>
-          <span class="num" style="width:26px;text-align:right;font-size:13.5px;font-weight:800">${v}</span></div>`).join('')}
-        <p style="margin:6px 0 0;font-size:12.5px;color:var(--n500)">성사는 7일 후 확인 카톡 자발 응답 기반 · 응답률 41%</p>
-      </div>
-      <div class="card pad">
-        <span class="sect">미제안 사유 분포 <span style="font-weight:600;color:var(--n500)">숫자보다 사유가 우선</span></span>
-        ${reasons.map(([c,l,p,w])=>`<div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
-          <span style="width:${isMo()?100:124}px;flex:none;font-size:12.5px;font-weight:700;color:${w?'var(--danger)':'var(--n700)'}">${c} ${l}${w?' !':''}</span>
-          <div style="flex:1;height:15px;background:var(--n100);border-radius:5px;overflow:hidden"><i style="display:block;height:100%;width:${p}%;background:${w?'rgba(178,43,49,.7)':'rgba(61,63,143,.6)'};border-radius:5px"></i></div>
-          <span class="num" style="width:32px;text-align:right;font-size:12.5px;font-weight:800">${p}%</span></div>`).join('')}
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--n100);display:flex;gap:8px;flex-wrap:wrap">
-          ${[['여기서 구함',31],['다른 데서 구함',44],['포기',25]].map(([l,p])=>`<span style="background:var(--n50);border-radius:var(--r-sm);padding:8px 12px;font-size:11px;font-weight:700;color:var(--n700)">${l} <b class="num" style="color:var(--ind)">${p}%</b></span>`).join('')}
-        </div>
-      </div>
-    </div>
-    <div class="card pad">
-      <span class="sect">일별 추이 <span style="font-weight:600;color:var(--n500)">조건 · 제안 · 연결</span></span>
-      <div style="display:flex;align-items:flex-end;gap:10px;height:130px">
-        ${daily.map(([d,c,p,s])=>`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px">
-          <div style="display:flex;align-items:flex-end;justify-content:center;gap:4px;height:104px;width:100%">
-            <i style="width:9px;height:${c/maxD*100}%;background:var(--n300);border-radius:3px 3px 0 0"></i>
-            <i style="width:9px;height:${p/maxD*100}%;background:rgba(61,63,143,.8);border-radius:3px 3px 0 0"></i>
-            <i style="width:9px;height:${s/maxD*100}%;background:rgba(27,122,70,.7);border-radius:3px 3px 0 0"></i>
-          </div><span class="num" style="font-size:11px;color:var(--n500)">${d}</span></div>`).join('')}
-      </div>
-    </div>
-  </div>
-</div>`;};
+/* A-04 운영 지표 화면은 지웠다 (2026-09-12).
+   깔때기도 미제안 사유도 '응답률 41%' 도 전부 지어낸 숫자였고,
+   어디에서도 링크되지 않아 주소를 직접 쳐야 들어갈 수 있었다.
+   실제로 잴 수 있는 것은 운영 화면의 '지표' 로 옮겼다 -
+   재는 것만 재고, 못 재는 것은 못 잰다고 밝힌다. */
 
 
 
@@ -5898,6 +5843,20 @@ function opsFetch2(box, body, label){
     .catch(() => { box.loading = false; box.err = '네트워크 문제로 불러오지 못했습니다'; render(); });
 }
 const lsFetch = () => opsFetch2(LS2, {what:'listings', only: LS2.only || undefined, limit:300}, '매물');
+
+/* 지표는 rows 가 아니라 계산된 덩어리로 온다 - opsFetch2 를 쓰지 않는다 */
+const ST = { data:null, loading:false, err:'', days:30 };
+function stFetch(){
+  if(ST.loading || !OPS.pass) return;
+  ST.loading = true; ST.err = ''; render();
+  apiFetch('/api/demands', {method:'POST', body: JSON.stringify({pass:OPS.pass, what:'stats', days:ST.days})})
+    .then(r => r.json().catch(()=>({})).then(j => {
+      ST.loading = false;
+      if(r.ok) ST.data = j; else ST.err = j.error || '지표를 불러오지 못했습니다';
+      render();
+    }))
+    .catch(() => { ST.loading = false; ST.err = '네트워크 문제로 불러오지 못했습니다'; render(); });
+}
 const usFetch = () => opsFetch2(US,  {what:'users', page: US.page, per:50}, '계정');
 
 const opsLinkWhen = t => { const d = new Date(t); return isNaN(d) ? '-' :
@@ -6367,6 +6326,7 @@ function demandPanel(){
 const OPS_MENU = [
   { g:'현황' },
   { k:'home',    t:'대시보드' },
+  { k:'stats',   t:'지표' },
   { g:'관리' },
   { k:'member',  t:'회원관리',  n:()=>AG.rows && AG.rows.length,
     subs:[ {v:'agent', t:'공급자 신청'}, {v:'user', t:'손님 계정'} ] },
@@ -6385,7 +6345,7 @@ const OPS_MENU = [
 const opsSubNow = k => k==='member' ? (OPS.msub||'agent')
   : k==='demand' ? (OPS.only||'') : k==='listing' ? (LS2.only||'')
   : k==='report' ? (RP.only||'')  : k==='log' ? (LG.only||'') : '';
-const OPS_TITLE = { home:'대시보드', member:'회원관리', demand:'조건관리',
+const OPS_TITLE = { home:'대시보드', stats:'지표', member:'회원관리', demand:'조건관리',
   listing:'매물관리', report:'신고', log:'열람 기록', setting:'설정' };
 
 /* ── 대시보드 ──
@@ -6626,8 +6586,79 @@ function memberPanel(){
     ${sub==='user' ? userPanel() : agentPanel()}`;
 }
 
+/* 지표.
+   전에 있던 A-04 화면은 깔때기도 사유 분포도 전부 지어낸 숫자였다.
+   여기서는 표에 실제로 들어 있는 것만 세고, 못 재는 것은 못 잰다고 적는다.
+   그리고 숫자만 보여주고 끝내지 않는다 - 막힌 곳은 눌러서 그 목록으로 간다. */
+function statsPanel(){
+  const d = ST.data;
+  const chip = n => `<button class="chip ${ST.days===n?'on':''}" data-act="st-days" data-v="${n}">${n}일</button>`;
+  const head = `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+    ${[7,30,90].map(chip).join('')}
+    <span style="margin-left:auto;font-size:12.5px;color:var(--n500)">${ST.loading?'세는 중…':'최근 '+ST.days+'일'}</span>
+  </div>`;
+
+  if(ST.err) return head + `<div class="card pad"><b style="color:var(--danger)">${esc(ST.err)}</b>
+    <button class="btn sec sm" data-act="st-load" style="margin-top:10px">다시 시도</button></div>`;
+  if(!d) return head + `<div class="empty" style="display:flex;flex-direction:column;align-items:center;gap:12px">
+    ${bkLoader(28)}<span style="font-size:13.5px;color:var(--n500)">지표를 세고 있습니다…</span></div>`;
+  if(d.note) return head + `<div class="card pad"><span style="font-size:13.5px;color:var(--n500)">${esc(d.note)}</span></div>`;
+
+  const top = d.funnel[0].v || 1;
+  const pct = v => Math.round(v / top * 100);
+  const step = (i) => { if(!i) return ''; const a=d.funnel[i-1].v, b=d.funnel[i].v;
+    return a ? `<span style="font-size:11.5px;font-weight:700;color:${b/a>=.5?'var(--ok)':'var(--n500)'}">${Math.round(b/a*100)}%</span>` : ''; };
+
+  const stuck = [
+    ['제안을 못 받은 조건', d.stuck.noProp, '이틀이 지나도 제안이 0건', 'demand', 'todo'],
+    ['승인 대기 공급자',   d.stuck.waitAgent, '사흘 넘게 기다리는 신청', 'member', 'agent'],
+    ['안 열린 제안',       d.stuck.unread, '보낸 지 사흘이 지나도 미열람', null, null],
+  ];
+
+  return head + `
+  <div class="card pad" style="margin-bottom:14px">
+    <span class="sect">깔때기</span>
+    ${d.funnel.map((f,i)=>`<div style="display:flex;align-items:center;gap:12px;margin-bottom:9px">
+      <span style="width:${isMo()?72:86}px;flex:none;font-size:12.5px;font-weight:700;color:var(--n500)">${f.k}</span>
+      <div style="flex:1;height:22px;background:var(--n100);border-radius:6px;overflow:hidden">
+        <i style="display:block;height:100%;width:${pct(f.v)}%;background:var(--ind);opacity:${1-i*.16};border-radius:6px"></i></div>
+      <span class="num" style="width:38px;text-align:right;font-size:14px;font-weight:800">${f.v}</span>
+      <span style="width:40px;text-align:right">${step(i)}</span>
+    </div>`).join('')}
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(${isMo()?2:4},minmax(0,1fr));gap:12px;margin-bottom:14px">
+    ${[['보낸 제안', d.props.all], ['열람된 제안', d.props.read], ['연결된 제안', d.props.accepted],
+       ['제안을 보낸 공급자', d.agents ? d.agents.sent + ' / ' + d.agents.approved : '-']]
+      .map(([k,v])=>`<div class="card" style="padding:16px">
+        <span style="display:block;font-size:12.5px;font-weight:800;color:var(--n500)">${k}</span>
+        <span class="num" style="font-size:24px;font-weight:800;letter-spacing:-.02em">${v}</span></div>`).join('')}
+  </div>
+
+  <div class="card pad" style="margin-bottom:14px">
+    <span class="sect">막힌 곳</span>
+    <div style="display:flex;flex-direction:column;gap:2px">
+      ${stuck.map(([t,v,why,tab,sub])=>`
+        <div style="display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--n100)">
+          <span class="num" style="width:44px;flex:none;font-size:20px;font-weight:800;color:${v?'var(--danger)':'var(--n300)'}">${v}</span>
+          <span style="flex:1;font-size:13.5px;line-height:1.5"><b style="font-weight:800;color:var(--n900)">${t}</b>
+            <span style="display:block;font-size:12px;color:var(--n500)">${why}</span></span>
+          ${v && tab ? `<button class="btn sec sm" data-act="st-go" data-v="${tab}:${sub||''}" style="flex:none">보기</button>` : ''}
+        </div>`).join('')}
+    </div>
+  </div>
+
+  <div class="card pad" style="background:var(--n50);border-color:var(--hair)">
+    <span class="sect" style="margin-bottom:6px">아직 못 재는 것</span>
+    <p style="margin:0 0 8px;font-size:12.5px;line-height:1.6;color:var(--n500)">
+      없는 숫자를 지어내지 않습니다. 재려면 먼저 기록을 남겨야 합니다.</p>
+    ${d.missing.map(m=>`<span style="display:block;font-size:12.5px;line-height:1.9;color:var(--n700)">· ${esc(m)}</span>`).join('')}
+  </div>`;
+}
+
 function opsPanel(){
   switch(OPS.tab){
+    case 'stats':   return statsPanel();
     case 'member':  return memberPanel();
     case 'listing': return listingPanel();
     case 'report':  return reportPanel();
@@ -7002,7 +7033,8 @@ function render(){
   if((h==='#/register'||h==='#/detail'||h==='#/contact') && !S.draft.kind){ location.replace('#/kind'); return; }
   /* 내 정보 영역은 로그인이 필요하다 */
   /* 지표 대시보드는 아직 예시 숫자다. 실데이터 화면의 암호를 통과하기 전에는 열지 않는다. */
-  if(h==='#/ops' && !OPS.rows){ location.replace('#/ops/live'); return; }
+  /* A-04 화면을 지웠다. 이 주소로 들어오면 운영 화면으로 보낸다 */
+  if(h==='#/ops'){ location.replace('#/ops/live'); return; }
   /* 소유자에게 활동 지역·유형을 물을 이유가 없다 - 올려둔 물건이 곧 조건이다 */
   if(h==='#/partner/settings' && ownerSide()){ location.replace('#/partner/listings'); return; }
   /* 임시 링크로 들어왔다. 암호를 채워 넣고 주소는 곧바로 지운다 -
@@ -7627,6 +7659,7 @@ function handle(a,v,el){
       opsFetch(); dashDoLoad(); toast('다시 불러오고 있습니다'); return true;
     case 'ops-tab':
       OPS.tab = v;
+      if(v==='stats' && !ST.data) stFetch();
       /* 들어가는 순간 한 번 불러온다 - 매번 '불러오기' 를 누르게 하지 않는다 */
       if(OPS.pass){
         if(v==='member'  && !AG.rows) agFetch();
@@ -7642,6 +7675,17 @@ function handle(a,v,el){
         if(v==='user'  && !US.rows) usFetch();
       }
       render(); return true;
+    /* 지표 */
+    case 'st-days': ST.days = +v || 30; ST.data = null; stFetch(); return true;
+    case 'st-load': ST.data = null; stFetch(); return true;
+    case 'st-go': {
+      /* 숫자만 보여주고 끝내지 않는다 - 막힌 것은 눌러서 그 목록으로 간다 */
+      const i = v.indexOf(':'), k = v.slice(0,i), sub = v.slice(i+1);
+      OPS.tab = k;
+      if(k==='demand'){ OPS.only = sub || ''; if(!OPS.rows) opsFetch(); }
+      if(k==='member'){ OPS.msub = sub || 'agent'; if(!AG.rows) agFetch(); }
+      render(); return true; }
+
     case 'ops-sub': {
       /* 목록에서 바로 고른다 - 화면을 연 뒤 다시 거르지 않아도 되게 */
       const i = v.indexOf('|'), k = v.slice(0,i), val = v.slice(i+1);

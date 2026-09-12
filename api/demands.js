@@ -74,6 +74,7 @@ export default async function handler(req, res) {
   if (payload.what === 'report-mark') return markReport(req, res, payload, opsUser);
   if (payload.what === 'listings')    return readListings(req, res, payload, opsUser);
   if (payload.what === 'users')       return readUsers(req, res, payload, opsUser);
+  if (payload.what === 'stats')       return readStats(req, res, payload, opsUser);
 
   const limit  = Math.min(parseInt(payload.limit, 10) || 200, 1000);
   const kind   = payload.kind;                 // home | shop | office | storage
@@ -251,6 +252,85 @@ async function markReport(req, res, p, opsUser) {
 /* ── 매물 ──
    중개사가 올려둔 물건. 손님에게는 목록으로 공개하지 않지만,
    운영자는 어떤 물건이 쌓이고 있는지 봐야 한다. */
+/* 운영 지표.
+ *
+ * 재는 것만 잰다. 전에 있던 A-04 화면은 깔때기도 미제안 사유도 응답률도
+ * 전부 지어낸 숫자였다 - 그래서 지웠다.
+ *
+ * 여기서 세는 넷은 표에 실제로 들어 있는 값이다.
+ *   조건 등록   bk_demand 행
+ *   제안 1건+   bk_proposal 이 붙은 demand_id 의 가짓수
+ *   열람        read_at 이 찍혔거나 그 뒤 상태로 간 제안
+ *   연결        status='accepted'
+ *
+ * 못 재는 것은 만들지 않는다.
+ *   알림 발송   tellPartners 가 기록을 남기지 않는다
+ *   성사        7일 뒤 확인하는 절차가 없다
+ *   미제안 사유 중개사에게 물어본 적이 없다
+ * 화면에서 '아직 못 재는 것' 으로 밝힌다.
+ */
+async function readStats(req, res, p, opsUser) {
+  const days = Math.min(Math.max(parseInt(p.days, 10) || 30, 1), 365);
+  const from = new Date(Date.now() - days * 864e5).toISOString();
+  const get = async (table, q) => {
+    const r = await fetch(sbUrl(table, q), { headers: sbHeaders() });
+    if (!r.ok) {
+      const t = await r.text().catch(() => '');
+      if (/does not exist|PGRST205/i.test(t)) return null;   /* 표가 아직 없다 */
+      throw new Error(table + ' ' + r.status);
+    }
+    return r.json();
+  };
+
+  try {
+    const [dem, pro, ag] = await Promise.all([
+      get('bk_demand',   new URLSearchParams({ select: 'id,at,status,slots,slots_left', at: 'gte.' + from, limit: '2000' }).toString()),
+      get('bk_proposal', new URLSearchParams({ select: 'id,demand_id,agent_id,status,read_at,created_at', created_at: 'gte.' + from, limit: '4000' }).toString()),
+      get('bk_agent',    new URLSearchParams({ select: 'id,status,role,created_at', limit: '2000' }).toString()),
+    ]);
+    if (dem === null) return res.status(200).json({ note: '조건 표가 아직 없습니다' });
+
+    const props = pro || [];
+    const gotOne  = new Set(props.map(x => x.demand_id));
+    const readSet = new Set(props.filter(x => x.read_at || ['read', 'accepted', 'rejected'].includes(x.status)).map(x => x.demand_id));
+    const doneSet = new Set(props.filter(x => x.status === 'accepted').map(x => x.demand_id));
+
+    /* 막힌 곳 - 숫자만 보여주고 끝내지 않는다. 눌러서 그 목록으로 간다. */
+    const DAY = 864e5, now = Date.now();
+    const stuckNoProp = dem.filter(d => d.status !== 'closed' && !gotOne.has(d.id)
+      && now - Date.parse(d.at) > 2 * DAY).length;
+    const waitAgent = (ag || []).filter(a => a.status === 'pending'
+      && now - Date.parse(a.created_at) > 3 * DAY).length;
+    const unread = props.filter(x => x.status === 'sent' && !x.read_at
+      && now - Date.parse(x.created_at) > 3 * DAY).length;
+
+    return res.status(200).json({
+      days,
+      funnel: [
+        { k: '조건 등록', v: dem.length },
+        { k: '제안 1건+', v: gotOne.size },
+        { k: '열람',      v: readSet.size },
+        { k: '연결',      v: doneSet.size },
+      ],
+      props: { all: props.length, read: props.filter(x => x.read_at || ['read','accepted','rejected'].includes(x.status)).length,
+               accepted: props.filter(x => x.status === 'accepted').length },
+      agents: (ag || []).length ? {
+        all: ag.length,
+        approved: ag.filter(a => a.status === 'approved').length,
+        pending:  ag.filter(a => a.status === 'pending').length,
+        sent:     new Set(props.map(x => x.agent_id)).size,
+      } : null,
+      stuck: { noProp: stuckNoProp, waitAgent, unread },
+      missing: ['알림 발송 수 - 보낸 기록을 남기지 않습니다',
+                '성사 - 거래가 끝났는지 확인하는 절차가 없습니다',
+                '미제안 사유 - 공급자에게 물어보지 않습니다'],
+    });
+  } catch (e) {
+    console.error('[ops] 지표', e && e.message);
+    return res.status(500).json({ error: '지표를 계산하지 못했습니다' });
+  }
+}
+
 async function readListings(req, res, p, opsUser) {
   const limit = Math.min(parseInt(p.limit, 10) || 300, 1000);
   try {

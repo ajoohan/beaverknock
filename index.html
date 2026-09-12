@@ -2140,7 +2140,7 @@ const V = {};
 
 /* ---------- D-01 랜딩 ---------- */
 V['#/'] = () => `
-<div class="scr fade" style="position:relative;overflow:hidden">
+<div class="scr fade" style="position:relative;overflow:${isMo()?'visible':'hidden'}">
   <!-- 바탕 빛 - 평면을 깨는 최소한의 깊이 -->
   <div aria-hidden="true" style="position:absolute;inset:0;pointer-events:none;z-index:0;
     background:
@@ -2175,6 +2175,17 @@ V['#/'] = () => `
     </div>
     <button class="btn pri blk" data-go="#/kind" style="padding:16px 0;font-size:17px">내 조건 걸어두기</button>
     <span style="text-align:center;font-size:11px;line-height:1.6;color:var(--n500)"><b style="color:var(--n700);font-weight:700">30초 간편가입</b><br>무료서비스</span>
+  </div>
+
+  <div style="flex:none;position:relative;z-index:3;background:var(--white);border-top:1px solid var(--n100);
+    padding:18px 24px calc(22px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:12px">
+    <div style="display:flex;flex-wrap:wrap;gap:10px 16px">
+      ${[['#/guide','이용 안내'],['#/faq','자주 묻는 질문'],['#/partner','파트너 안내'],['#/brand','브랜드']]
+        .map(([h,t])=>`<a data-go="${h}" style="font-size:12.5px;color:var(--n500);text-decoration:underline;text-underline-offset:3px">${t}</a>`).join('')}
+      <a href="/terms" target="_blank" rel="noopener" style="font-size:12.5px;color:var(--n500);text-decoration:underline;text-underline-offset:3px">이용약관</a>
+      <a href="/privacy" target="_blank" rel="noopener" style="font-size:12.5px;color:var(--n500);text-decoration:underline;text-underline-offset:3px">개인정보 처리방침</a>
+    </div>
+    ${bizFooter()}
   </div>`
   : `
   <!-- PC: 왼쪽 문구 / 오른쪽 캐릭터. 가운데 정렬을 버리고 축을 왼쪽에 둔다 -->

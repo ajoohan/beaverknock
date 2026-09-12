@@ -685,7 +685,33 @@ body.mo .chip{min-height:38px}
 .warn:empty{display:none}
 .warn.ok{color:var(--ok)}
 
-/* 로그인 확인 중 표시 - 움직임을 줄이신 분께는 돌지 않는다 */
+/* 기다리는 동안 보이는 표시 - 심볼의 브래킷 두 획을 그대로 쓴다.
+   두 획이 모여 맞물리는 순간이 '노크' 고, 그 상태로 반전됐다가 다시 펼쳐진다.
+   한 바퀴에 두 번 두드리고 360도를 채운다 - 그래야 끝과 처음이 이어져
+   되감기는 순간이 보이지 않는다.
+   돌기만 하는 원보다 이쪽이 이 서비스의 것이다. */
+.bkld{position:relative;display:inline-block;flex:none;
+  animation:bkTurn 2.6s cubic-bezier(.66,0,.34,1) infinite}
+.bkld i{position:absolute;display:block}
+.bkld-a{left:0;top:0;animation:bkArmA 2.6s cubic-bezier(.66,0,.34,1) infinite}
+.bkld-b{right:0;bottom:0;animation:bkArmB 2.6s cubic-bezier(.66,0,.34,1) infinite}
+@keyframes bkArmA{
+  0%,10%{transform:translate(0,0)}      24%,36%{transform:translate(43%,43%)}
+  50%,60%{transform:translate(0,0)}     74%,86%{transform:translate(43%,43%)}
+  100%{transform:translate(0,0)}}
+@keyframes bkArmB{
+  0%,10%{transform:translate(0,0)}      24%,36%{transform:translate(-43%,-43%)}
+  50%,60%{transform:translate(0,0)}     74%,86%{transform:translate(-43%,-43%)}
+  100%{transform:translate(0,0)}}
+/* 반전은 모여 있는 동안에만 일어난다 - 펼친 채로 돌면 그냥 회전이 된다 */
+@keyframes bkTurn{
+  0%,24%{transform:rotate(0deg)}  36%,74%{transform:rotate(180deg)}
+  86%,100%{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){
+  .bkld,.bkld i{animation:none}
+  .bkld{opacity:.55}}
+
+/* 예전 원형 표시 - 아직 남은 자리가 있으면 여기를 본다 */
 @keyframes bkspin{to{transform:rotate(360deg)}}
 .spin{animation:bkspin .8s linear infinite}
 @media (prefers-reduced-motion:reduce){.spin{animation:none;opacity:.5}}
@@ -1611,6 +1637,20 @@ function wmCore(h, m, noEn){
     </span>
   </span>`;}
 
+/* 기다리는 동안 보이는 표시. 심볼에서 글자를 빼고 브래킷만 남긴 것이다.
+   size 는 한 변, mode 는 로고와 같은 light·dark·mono. */
+function bkLoader(size, mode){
+  const s = size || 28, m = mode || 'light';
+  const bw = Math.max(1.6, s * .105), bl = s * .52;
+  const a = WM_LITE(m), b = WM_DEEP(m);
+  return `<span class="bkld" style="width:${s}px;height:${s}px" role="status" aria-label="불러오는 중">
+    <i class="bkld-a" style="width:${bl.toFixed(1)}px;height:${bl.toFixed(1)}px;
+      border-left:${bw.toFixed(1)}px solid ${a};border-top:${bw.toFixed(1)}px solid ${a}"></i>
+    <i class="bkld-b" style="width:${bl.toFixed(1)}px;height:${bl.toFixed(1)}px;
+      border-right:${bw.toFixed(1)}px solid ${b};border-bottom:${bw.toFixed(1)}px solid ${b}"></i>
+  </span>`;
+}
+
 /* 가로 락업 - 확정안 D5 · 브래킷만 (2026-08-28)
    opt: {h, mode, partner, en(영문 병기), tag(태그라인), stack(세로)} */
 function logoLockup(opt){
@@ -1787,8 +1827,7 @@ function changed(key, rows){
 /* 아직 서버에서 못 받았으면 '없음' 이 아니다. 빈 화면으로 단정하지 않는다. */
 const waitingFor = ready => !!store.get() && !ready;
 const loadingBox = (what) => `<div class="empty">
-  <div class="spin" style="width:24px;height:24px;margin:0 auto 12px;border:2.5px solid var(--ind100);
-    border-top-color:var(--ind);border-radius:50%"></div>
+  <div style="margin:0 auto 12px;width:28px;height:28px">${bkLoader(28)}</div>
   <p style="margin:0;font-size:13.5px;color:var(--n500)">${esc(what)}을(를) 불러오는 중입니다…</p></div>`;
 
 /* 서버 조건 → 손님 '내 조건' 카드 */
@@ -6571,7 +6610,7 @@ function opsGateScreen(){
   /* 로그인은 되어 있고, 아직 열어보는 중 */
   if(OPS.loading || !OPS.tried) return wrap(`
     <div style="display:flex;align-items:center;gap:12px">
-      <div class="spin" style="width:22px;height:22px;flex:none;border:2.5px solid var(--ind100);border-top-color:var(--ind);border-radius:50%"></div>
+      ${bkLoader(24)}
       <div><b style="display:block;font-size:15px;font-weight:800;color:var(--n900)">운영 화면을 여는 중입니다</b>
         <span style="display:block;margin-top:3px;font-size:13px;color:var(--n500)">계정을 확인하고 있습니다.</span></div>
     </div>${linkNote}`);
@@ -6872,7 +6911,7 @@ function render(){
   if(S.authBusy){
     $('#app').innerHTML = `
       <div class="scr" style="align-items:center;justify-content:center;gap:14px;text-align:center;padding:40px 24px">
-        <div class="spin" style="width:26px;height:26px;border:2.5px solid var(--ind100);border-top-color:var(--ind);border-radius:50%"></div>
+        ${bkLoader(28)}
         <b style="font-size:15px;font-weight:800;color:var(--n900)">로그인하고 있습니다</b>
         <span style="font-size:13.5px;color:var(--n500)">계정을 확인하는 중입니다. 곧 이어집니다.</span>
       </div>`;

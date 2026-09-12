@@ -261,7 +261,11 @@ async function markReport(req, res, p, opsUser) {
  */
 async function markSent(req, res, p, opsUser) {
   const id = String(p.id || '').trim();
-  if (!/^[0-9a-f-]{36}$/i.test(id)) return res.status(400).json({ error: '조건을 찾지 못했습니다' });
+  /* 하이픈 자리까지 본다. [0-9a-f-]{36} 은 하이픈 서른여섯 개도 통과시켜
+     PostgREST 까지 갔다가 500 으로 돌아왔다 - 잘못된 입력은 여기서 끊는다. */
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+    return res.status(400).json({ error: '조건을 찾지 못했습니다' });
+  }
   const on = p.on !== false;
   try {
     const r = await fetch(sbUrl('bk_demand', 'id=eq.' + id), {
@@ -328,9 +332,23 @@ async function readStats(req, res, p, opsUser) {
     if (dem === null) return res.status(200).json({ note: '조건 표가 아직 없습니다' });
 
     const props = pro || [];
-    const gotOne  = new Set(props.map(x => x.demand_id));
-    const readSet = new Set(props.filter(x => x.read_at || ['read', 'accepted', 'rejected'].includes(x.status)).map(x => x.demand_id));
-    const doneSet = new Set(props.filter(x => x.status === 'accepted').map(x => x.demand_id));
+
+    /* 깔때기는 '이 기간에 들어온 조건' 한 무리를 따라간다.
+       제안 전체를 그냥 세면, 기간 밖에 등록된 옛 조건에 이번에 제안이 온 것까지
+       섞여 분자가 분모를 넘는다(전환율 160% 같은 것이 나왔다).
+       조건보다 제안이 먼저 있을 수는 없으므로, 이 기간 조건에 달린 제안은
+       모두 이 기간 안에 있다 - 교집합을 취해도 잃는 것이 없다. */
+    const demIds = new Set(dem.map(d => d.id));
+    const mine = props.filter(x => demIds.has(x.demand_id));
+    const wasRead = x => !!x.read_at || ['read', 'accepted', 'rejected'].includes(x.status);
+    const gotOne  = new Set(mine.map(x => x.demand_id));
+    const readSet = new Set(mine.filter(wasRead).map(x => x.demand_id));
+    const doneSet = new Set(mine.filter(x => x.status === 'accepted').map(x => x.demand_id));
+
+    /* 한도에 닿았으면 숫자가 실제보다 작다. 조용히 작은 것이 가장 나쁘다. */
+    const capped = [];
+    if (dem.length >= 2000) capped.push('조건 2000건');
+    if (props.length >= 4000) capped.push('제안 4000건');
 
     /* 막힌 곳 - 숫자만 보여주고 끝내지 않는다. 눌러서 그 목록으로 간다. */
     const DAY = 864e5, now = Date.now();
@@ -349,8 +367,10 @@ async function readStats(req, res, p, opsUser) {
         { k: '열람',      v: readSet.size },
         { k: '연결',      v: doneSet.size },
       ],
-      props: { all: props.length, read: props.filter(x => x.read_at || ['read','accepted','rejected'].includes(x.status)).length,
+      props: { all: props.length, read: props.filter(wasRead).length,
                accepted: props.filter(x => x.status === 'accepted').length },
+      /* sent 는 이 기간에 제안을 보낸 사람, approved 는 기간과 무관한 누적이다.
+         분모와 분자의 기간이 달라 화면에서 그렇게 밝힌다. */
       agents: (ag || []).length ? {
         all: ag.length,
         approved: ag.filter(a => a.status === 'approved').length,
@@ -358,6 +378,7 @@ async function readStats(req, res, p, opsUser) {
         sent:     new Set(props.map(x => x.agent_id)).size,
       } : null,
       stuck: { noProp: stuckNoProp, waitAgent, unread },
+      capped: capped.length ? capped : null,
       missing: ['알림 발송 수 - 보낸 기록을 남기지 않습니다',
                 '성사 - 거래가 끝났는지 확인하는 절차가 없습니다',
                 '미제안 사유 - 공급자에게 물어보지 않습니다'],

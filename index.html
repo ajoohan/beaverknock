@@ -5691,7 +5691,12 @@ const opsPassKeep = {
 let OPS_LINK = null;
 const OPS = { pass:opsPassKeep.get(), rows:null, loading:false, err:'', reveal:false, kind:'', days:0, at:'', tab:'home', msub:'agent',
   q:'', open:'', sent:{}, seen:0, only:'', linkDays:7, link:null, openUntil:null, guest:false,
-  tried:false, needPass:false };
+  tried:false, needPass:false,
+  /* 문이 열렸는가. 암호가 있는지로 판단하면 안 된다 - 명단(BK_OPS_USERS)에 든
+     운영자와 개방창 게스트는 암호를 묻지 않으므로 OPS.pass 가 빈 채로 남는다.
+     그걸 조건으로 걸어두면 회원관리·매물·신고·열람기록·지표가 통째로 빈 화면이
+     되고 오류도 안 뜬다. 한 번이라도 통과한 적이 있는지를 따로 들고 있는다. */
+  ok:false };
 
 /* 전달 여부는 브라우저에 남긴다. DB 컬럼을 만들려면 SQL 을 한 번 돌려야 하는데,
    그걸 기다리느니 오늘 돌아가는 게 낫다. 나중에 옮기기 쉬운 모양으로 둔다. */
@@ -5771,7 +5776,7 @@ const AG = { rows:null, loading:false, err:'', at:'', reveal:false, role:'', q:'
 const LG = { rows:null, loading:false, err:'', at:'', note:'', only:'' };
 
 function lgFetch(){
-  if(LG.loading || !OPS.pass) return;
+  if(LG.loading || !OPS.ok) return;
   LG.loading = true; LG.err = ''; render();
   /* 열람 기록도 /api/demands 가 읽는다 - 문이 같고, 함수 수에 상한이 있다 */
   apiFetch('/api/demands', {method:'POST',
@@ -5793,7 +5798,7 @@ const RP_MARK = { 'null':['b-warn','미확인'], checking:['b-ind','확인 중']
   done:['b-ok','조치함'], dismissed:['b-mute','문제 없음'] };
 
 function rpFetch(){
-  if(RP.loading || !OPS.pass) return;
+  if(RP.loading || !OPS.ok) return;
   RP.loading = true; RP.err = ''; render();
   apiFetch('/api/demands', {method:'POST',
     body: JSON.stringify({what:'reports', pass: OPS.pass, limit: 200, only: RP.only || undefined})})
@@ -5831,7 +5836,7 @@ const LS2 = { rows:null, loading:false, err:'', at:'', note:'', only:'active' };
 const US = { rows:null, loading:false, err:'', at:'', page:1 };
 
 function opsFetch2(box, body, label){
-  if(box.loading || !OPS.pass) return;
+  if(box.loading || !OPS.ok) return;
   box.loading = true; box.err = ''; render();
   apiFetch('/api/demands', {method:'POST', body: JSON.stringify({pass: OPS.pass, ...body})})
     .then(r => r.json().catch(()=>({})).then(j => {
@@ -5845,17 +5850,23 @@ function opsFetch2(box, body, label){
 const lsFetch = () => opsFetch2(LS2, {what:'listings', only: LS2.only || undefined, limit:300}, '매물');
 
 /* 지표는 rows 가 아니라 계산된 덩어리로 온다 - opsFetch2 를 쓰지 않는다 */
-const ST = { data:null, loading:false, err:'', days:30 };
+const ST = { data:null, loading:false, err:'', days:30, seq:0 };
 function stFetch(){
-  if(ST.loading || !OPS.pass) return;
+  if(!OPS.ok) return;
+  /* 앞 요청이 도는 중이어도 새로 부른다 - 기간 칩을 연달아 누르면 뒤엣것이
+     버려지고 로더가 영영 안 풀렸다. 번호를 달아 마지막 것만 받는다. */
+  const my = ++ST.seq;
   ST.loading = true; ST.err = ''; render();
-  apiFetch('/api/demands', {method:'POST', body: JSON.stringify({pass:OPS.pass, what:'stats', days:ST.days})})
+  const days = ST.days;
+  apiFetch('/api/demands', {method:'POST', body: JSON.stringify({pass:OPS.pass, what:'stats', days})})
     .then(r => r.json().catch(()=>({})).then(j => {
+      if(my !== ST.seq) return;              /* 지나간 응답은 버린다 */
       ST.loading = false;
       if(r.ok) ST.data = j; else ST.err = j.error || '지표를 불러오지 못했습니다';
       render();
     }))
-    .catch(() => { ST.loading = false; ST.err = '네트워크 문제로 불러오지 못했습니다'; render(); });
+    .catch(() => { if(my !== ST.seq) return;
+      ST.loading = false; ST.err = '네트워크 문제로 불러오지 못했습니다'; render(); });
 }
 const usFetch = () => opsFetch2(US,  {what:'users', page: US.page, per:50}, '계정');
 
@@ -6153,7 +6164,7 @@ function agSetMany(ids, status){
 }
 
 function agFetch(){
-  if(AG.loading || !OPS.pass) return;
+  if(AG.loading || !OPS.ok) return;
   AG.loading = true; AG.err = ''; render();
   apiFetch('/api/agents', {method:'POST',
     body: JSON.stringify({pass: OPS.pass, reveal: AG.reveal})})
@@ -6183,6 +6194,7 @@ function opsFetch(){
         if(OPS.needPass && OPS.pass) opsPassKeep.set('');   /* 틀린 암호는 지운다 */
         if(j.need) OPS.err += ' - 미설정: '+j.need.join(', '); return; }
       OPS.needPass = false;
+      OPS.ok = true;                 /* 문이 열렸다 - 이제 나머지도 부를 수 있다 */
       OPS.rows = j.rows; OPS.at = j.fetchedAt;
       /* 서버에 남은 전달 표시를 들여온다. 다른 운영자가 표시한 것도 그대로 보인다.
          0019 전에는 sent_at 이 아예 없으므로 브라우저 기억이 그대로 산다. */
@@ -6364,7 +6376,7 @@ const OPS_TITLE = { home:'대시보드', stats:'지표', member:'회원관리', 
 const DASH_DAYS = 14;
 
 function dashDoLoad(){
-  if(!OPS.pass) return;
+  if(!OPS.ok) return;
   if(!AG.rows)  agFetch();
   if(!US.rows)  usFetch();
   if(!LS2.rows) lsFetch();
@@ -6636,11 +6648,13 @@ function statsPanel(){
   </div>
 
   <div style="display:grid;grid-template-columns:repeat(${isMo()?2:4},minmax(0,1fr));gap:12px;margin-bottom:14px">
-    ${[['보낸 제안', d.props.all], ['열람된 제안', d.props.read], ['연결된 제안', d.props.accepted],
-       ['제안을 보낸 공급자', d.agents ? d.agents.sent + ' / ' + d.agents.approved : '-']]
-      .map(([k,v])=>`<div class="card" style="padding:16px">
+    ${[['보낸 제안', d.props.all, ''], ['열람된 제안', d.props.read, ''], ['연결된 제안', d.props.accepted, ''],
+       ['제안을 보낸 공급자', d.agents ? d.agents.sent : '-',
+        d.agents ? `이 기간 기준 · 승인된 공급자는 누적 ${d.agents.approved}명` : '']]
+      .map(([k,v,sub])=>`<div class="card" style="padding:16px">
         <span style="display:block;font-size:12.5px;font-weight:800;color:var(--n500)">${k}</span>
-        <span class="num" style="font-size:24px;font-weight:800;letter-spacing:-.02em">${v}</span></div>`).join('')}
+        <span class="num" style="font-size:24px;font-weight:800;letter-spacing:-.02em">${v}</span>
+        ${sub?`<span style="display:block;margin-top:2px;font-size:11px;line-height:1.4;color:var(--n500)">${sub}</span>`:''}</div>`).join('')}
   </div>
 
   <div class="card pad" style="margin-bottom:14px">
@@ -6655,6 +6669,11 @@ function statsPanel(){
         </div>`).join('')}
     </div>
   </div>
+
+  ${d.capped ? `<div class="card pad" style="background:var(--warnbg);border-color:#E3C98A;margin-bottom:14px">
+    <b style="display:block;font-size:13.5px;font-weight:800;color:var(--n900);margin-bottom:3px">한도에 닿아 실제보다 작게 나옵니다</b>
+    <span style="font-size:12.5px;line-height:1.6;color:var(--n700)">한 번에 ${esc(d.capped.join(' · '))}까지만 세었습니다.
+      기간을 줄여서 보시거나, 한도를 올려야 합니다.</span></div>` : ''}
 
   <div class="card pad" style="background:var(--n50);border-color:var(--hair)">
     <span class="sect" style="margin-bottom:6px">아직 못 재는 것</span>
@@ -7161,6 +7180,9 @@ function stopTimer(){ if(S.timer){clearInterval(S.timer); S.timer=null;} }
    확인된 이름·번호는 서명된 표로 돌아오고, 조건을 낼 때 그 표를 함께 낸다. */
 const IDV_SDK  = 'https://cdn.portone.io/v2/browser-sdk.js';
 const IDV_KEEP = 'bk.idv.draft';
+/* 파트너 가입은 S.form 에 담긴다. 휴대폰은 포트원으로 페이지가 통째로 넘어갔다
+   오므로, 이것을 안 남기면 돌아왔을 때 역할(jRole)이 없어 3단계가 빈 화면이 된다. */
+const IDV_FORM = 'bk.idv.form';
 
 function idvSdk(){
   if(window.PortOne) return Promise.resolve(window.PortOne);
@@ -7198,7 +7220,10 @@ async function idvStart(target){
   catch(e){ return toast('본인확인 창을 열지 못했습니다 - 잠시 후 다시 시도해 주세요'); }
 
   /* 휴대폰에서는 페이지가 통째로 넘어갔다 온다. 쓰던 조건을 잃지 않게 담아둔다. */
-  try{ sessionStorage.setItem(IDV_KEEP, JSON.stringify(S.draft)); }catch(e){}
+  try{
+    if(target === 'partner') sessionStorage.setItem(IDV_FORM, JSON.stringify(S.form));
+    else sessionStorage.setItem(IDV_KEEP, JSON.stringify(S.draft));
+  }catch(e){}
 
   const id = 'bk-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2,10);
   S.idvBusy = true; render();
@@ -7231,9 +7256,12 @@ async function idvFinish(id){
 
     if(idvFor.get() === 'partner'){
       /* 공급자 가입. 확인된 값을 그대로 넣고 다음 단계로 넘긴다 -
-         손으로 고칠 수 없게 읽기 전용으로 보여준다. */
+         손으로 고칠 수 없게 읽기 전용으로 보여준다.
+         역할이 없으면(담아둔 것이 사라진 드문 경우) 3단계는 그릴 것이 없다.
+         빈 화면을 보여주느니 자격 선택으로 되돌린다. */
       Object.assign(S.form, {'j-name':j.name, 'j-phone':fmtPhone(j.phone),
-        jVerified:{name:j.name, phone:j.phone, vat}, jStep:3});
+        jVerified:{name:j.name, phone:j.phone, vat}, jStep: S.form.jRole ? 3 : 1});
+      if(!S.form.jRole) toast('어떤 자격으로 시작하실지 먼저 골라주세요');
       render();
       toast('본인 확인이 완료되었습니다 · 이어서 진행해 주세요');
       return;
@@ -7254,7 +7282,13 @@ function readIdvRedirect(){
   const id = new URLSearchParams(location.search).get('identityVerificationId');
   if(!id) return false;
   history.replaceState(null, '', location.pathname);
-  if(idvFor.get() !== 'partner'){
+  if(idvFor.get() === 'partner'){
+    try{
+      const kept = sessionStorage.getItem(IDV_FORM);
+      if(kept) S.form = Object.assign(S.form || {}, JSON.parse(kept));
+      sessionStorage.removeItem(IDV_FORM);
+    }catch(e){}
+  } else {
     try{
       const kept = sessionStorage.getItem(IDV_KEEP);
       if(kept) S.draft = Object.assign(blankDraft(), JSON.parse(kept));
@@ -7412,6 +7446,12 @@ function sendAgent(f){
   apiFetch('/api/agent', {method:'POST', body: JSON.stringify(body)})
     .then(r => r.json().catch(()=>({})).then(j => {
       if(r.ok){ S.form.jSent = j.already ? 'already' : 'ok'; S.form.jWhy = j.why || ''; }
+      else if(j.need_idv){
+        /* 표가 30분에 끊긴다. 증빙을 채우다 시간이 지나면 여기로 온다.
+           '확인되었습니다' 카드를 치워야 다시 받을 수 있다. 적어둔 것은 남긴다. */
+        S.form.jSent = ''; S.form.jVerified = null; S.idvToken = null; S.form.jStep = 2;
+        toast('본인확인이 만료되었습니다 - 한 번만 다시 받아주세요');
+      }
       else { S.form.jSent = 'fail'; toast(j.error || '신청 저장에 실패했습니다'); }
       render();
     }))

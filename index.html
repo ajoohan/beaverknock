@@ -37,9 +37,6 @@
 }
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
-/* 스크롤이 생기는 화면과 안 생기는 화면을 오갈 때 폭이 달라져 내용이 좌우로
-   밀렸다. 자리를 늘 비워두면 어디로 옮겨도 제자리에 있다. */
-html{scrollbar-gutter:stable}
 body{font-family:var(--font);background:#E7E4DF;color:var(--n900);-webkit-font-smoothing:antialiased;
   -moz-osx-font-smoothing:grayscale;min-height:100vh;display:flex;flex-direction:column;align-items:center}
 /* 바닥 여백을 두지 않는다. #stage 가 이미 100dvh 라 화면을 꽉 채우는데,
@@ -62,7 +59,11 @@ input,textarea,select{font-family:inherit;font-size:inherit}
 /* 프레임은 더 이상 기기를 흉내 내지 않는다 - 창이 곧 화면이다. */
 #stage{width:100%;height:100dvh;display:flex}
 #frame{background:var(--white);overflow:hidden;flex:1;min-width:0;position:relative}
-#app{width:100%;height:100%;overflow-y:auto;overflow-x:hidden;position:relative;scroll-behavior:smooth}
+/* scrollbar-gutter 는 실제로 스크롤하는 상자에 걸어야 한다. 여기가 그곳이다.
+   이것이 없으면 스크롤이 생기는 화면(안내·자주 묻는 질문)과 안 생기는 화면
+   (첫 화면·로그인)을 오갈 때 폭이 9px 씩 달라져 내용이 좌우로 밀렸다. */
+#app{width:100%;height:100%;overflow-y:auto;overflow-x:hidden;position:relative;
+  scroll-behavior:smooth;scrollbar-gutter:stable}
 #app::-webkit-scrollbar{width:9px}
 #app::-webkit-scrollbar-thumb{background:#DCD8D0;border-radius:9px;border:3px solid transparent;background-clip:content-box}
 

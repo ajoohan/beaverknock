@@ -13,6 +13,7 @@ import crypto from 'node:crypto';
 import { notify, mask } from './_notify.js';
 import { checkShape } from './agent-verify.js';
 import { userFrom } from './_auth.js';
+import { readIdv } from './_idv.js';
 
 const TABLE = 'bk_agent';
 
@@ -73,8 +74,16 @@ export default async function handler(req, res) {
   const role  = ROLES.includes(b.role) ? b.role : null;
   const ownerType = role === 'owner'
     ? (OWNER_TYPES.includes(b.owner_type) ? b.owner_type : 'individual') : null;
-  const name  = str(b.name, 40);
-  const phone = String(b.phone ?? '').replace(/-/g, '');
+  /* 실계약 채널이 붙어 있으면 손으로 적은 이름·연락처를 쓰지 않는다.
+     화면에서 무엇을 적었든 서명된 표에 적힌 값만 저장한다 - demand.js 와 같다.
+     테스트 MID 일 때는 예전처럼 받는다. 테스트 값으로 공급자를 만들면 안 된다. */
+  const idvLive = process.env.PORTONE_LIVE === '1';
+  const idv = idvLive ? readIdv(b.idv_token) : null;
+  if (idvLive && !idv) {
+    return res.status(401).json({ error: '본인확인을 먼저 받아주세요', need_idv: true });
+  }
+  const name  = idv ? str(idv.name, 40) : str(b.name, 40);
+  const phone = idv ? idv.phone : String(b.phone ?? '').replace(/-/g, '');
 
   const bad =
     !role                                        ? '역할이 없습니다' :

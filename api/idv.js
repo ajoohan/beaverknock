@@ -21,7 +21,14 @@
  *   PORTONE_CHANNEL_KEY   브라우저에 내려보낸다 (공개 식별자)
  *   BK_SECRET_KEY         표에 서명할 때 쓴다 · bk_idv_use 에 적을 때도 쓴다
  *   BK_URL                bk_idv_use 를 읽고 쓴다
+ *   PORTONE_LIVE          실계약 채널이면 '1'. 공용 테스트 MID 면 비워 둔다
  */
+
+/* 테스트 MID 도 창은 뜨고 결과도 돌아온다. 그래서 '붙었는가(enabled)' 만으로는
+   '진짜인가' 를 알 수 없다. 공급자 가입처럼 테스트 값으로 통과시키면 곤란한
+   자리가 있어서, 실계약 여부를 따로 들고 다닌다.
+   MID 가 오는 날 PORTONE_CHANNEL_KEY 와 이 값을 같이 바꾸면 된다. */
+const isLive = () => process.env.PORTONE_LIVE === '1';
 
 /* 같은 거래번호로 두 번 표를 끊어주지 않는다.
    휴대폰에서 돌아올 때 주소창에 ?identityVerificationId=... 가 그대로 붙는다.
@@ -74,9 +81,9 @@ export default async function handler(req, res) {
      store_id·channel_key 는 브라우저에 드러나도 되는 값이다. */
   if (req.method === 'GET') {
     return res.status(200).json(ready()
-      ? { enabled: true, store_id: process.env.PORTONE_STORE_ID,
+      ? { enabled: true, live: isLive(), store_id: process.env.PORTONE_STORE_ID,
           channel_key: process.env.PORTONE_CHANNEL_KEY }
-      : { enabled: false });
+      : { enabled: false, live: false });
   }
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST 만 받습니다' });
   if (!ready()) return res.status(503).json({ error: '본인확인이 아직 연결되지 않았습니다' });

@@ -107,12 +107,15 @@ body.mo .nav .items{display:none}
 /* 상단바의 들어오는 문 두 짝.
    전에는 하나가 중립 회색(ghost), 하나가 짙은 남색에 30px 그림자(pri)라
    나란히 두면 남남처럼 보였다. 같은 인디고 가족으로 묶고 농도만 달리한다 -
-   짝으로 읽히면서 어느 쪽이 기본인지도 그대로 보인다. */
-.btn.gate{background:var(--ind50);border-color:var(--ind200);color:var(--ind);font-weight:700}
-.btn.gate:hover{background:var(--ind100);border-color:var(--ind300)}
-.btn.gate.fill{background:var(--ind);border-color:var(--ind);color:#fff;
+   짝으로 읽히면서 어느 쪽이 기본인지도 그대로 보인다.
+   이름을 .gate 로 지었다가 한 번 데였다. 아래쪽에 이미 .gate 가 있고
+   .gate:not(.open) 이 pointer-events:none 을 걸어서 버튼이 눌리지 않았다.
+   클래스 이름을 새로 만들 때는 먼저 찾아보고 짓는다. */
+.btn.door{background:var(--ind50);border-color:var(--ind200);color:var(--ind);font-weight:700}
+.btn.door:hover{background:var(--ind100);border-color:var(--ind300)}
+.btn.door.solid{background:var(--ind);border-color:var(--ind);color:#fff;
   box-shadow:0 3px 10px rgba(61,63,143,.16)}
-.btn.gate.fill:hover{background:var(--ind700);border-color:var(--ind700);
+.btn.door.solid:hover{background:var(--ind700);border-color:var(--ind700);
   box-shadow:0 5px 14px rgba(61,63,143,.22)}
 .btn.lg{padding:16px 44px;font-size:17px}
 .btn.md{padding:14px 28px;font-size:14px}
@@ -6833,9 +6836,9 @@ function navAuth(which){
   const w = which || 'both';
   if(!S.user){
     const pad = isMo()?'9px 13px':'10px 17px', fs = isMo()?12:13.5;
-    const partner = `<button class="btn gate sm" data-act="nav-login" data-v="partner"
+    const partner = `<button class="btn door sm" data-act="nav-login" data-v="partner"
       style="padding:${pad};font-size:${fs}px">파트너 로그인</button>`;
-    const guest = `<button class="btn gate fill sm" data-act="nav-login" data-v="guest"
+    const guest = `<button class="btn door solid sm" data-act="nav-login" data-v="guest"
       style="padding:${pad};font-size:${fs}px">손님 로그인</button>`;
     return w==='partner' ? partner : w==='guest' ? guest : partner + guest;
   }

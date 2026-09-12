@@ -75,6 +75,7 @@ export default async function handler(req, res) {
   if (payload.what === 'listings')    return readListings(req, res, payload, opsUser);
   if (payload.what === 'users')       return readUsers(req, res, payload, opsUser);
   if (payload.what === 'stats')       return readStats(req, res, payload, opsUser);
+  if (payload.what === 'mark-sent')   return markSent(req, res, payload, opsUser);
 
   const limit  = Math.min(parseInt(payload.limit, 10) || 200, 1000);
   const kind   = payload.kind;                 // home | shop | office | storage
@@ -252,6 +253,42 @@ async function markReport(req, res, p, opsUser) {
 /* ── 매물 ──
    중개사가 올려둔 물건. 손님에게는 목록으로 공개하지 않지만,
    운영자는 어떤 물건이 쌓이고 있는지 봐야 한다. */
+/* '중개사에게 전달했다' 표시.
+ *
+ * 전에는 브라우저(localStorage)에만 있었다. 혼자 시험할 때는 괜찮았지만
+ * 운영자가 둘이면 서로 다른 목록을 보고, 기기를 바꾸면 전부 사라진다.
+ * 서버에 두고 누가 언제 했는지도 남긴다.
+ */
+async function markSent(req, res, p, opsUser) {
+  const id = String(p.id || '').trim();
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return res.status(400).json({ error: '조건을 찾지 못했습니다' });
+  const on = p.on !== false;
+  try {
+    const r = await fetch(sbUrl('bk_demand', 'id=eq.' + id), {
+      method: 'PATCH',
+      headers: { ...sbHeaders(), Prefer: 'return=representation' },
+      body: JSON.stringify(on
+        ? { sent_at: new Date().toISOString(), sent_by: (opsUser && opsUser.email) || null }
+        : { sent_at: null, sent_by: null }),
+    });
+    if (!r.ok) {
+      const t = await r.text().catch(() => '');
+      /* 0019 전에는 칸이 없다. 화면이 브라우저 기억으로 버티도록 알려준다. */
+      if (/sent_at|PGRST204|column/i.test(t)) {
+        return res.status(200).json({ ok: true, local: true,
+          note: '서버에 표시 칸이 아직 없습니다 (0019 마이그레이션 필요) - 이 브라우저에만 남습니다' });
+      }
+      return res.status(500).json({ error: '표시하지 못했습니다' });
+    }
+    const rows = await r.json();
+    if (!rows.length) return res.status(404).json({ error: '조건을 찾지 못했습니다' });
+    return res.status(200).json({ ok: true, sent_at: rows[0].sent_at, sent_by: rows[0].sent_by });
+  } catch (e) {
+    console.error('[ops] 전달 표시', e && e.message);
+    return res.status(500).json({ error: '표시하지 못했습니다' });
+  }
+}
+
 /* 운영 지표.
  *
  * 재는 것만 잰다. 전에 있던 A-04 화면은 깔때기도 미제안 사유도 응답률도

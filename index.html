@@ -6184,6 +6184,14 @@ function opsFetch(){
         if(j.need) OPS.err += ' - 미설정: '+j.need.join(', '); return; }
       OPS.needPass = false;
       OPS.rows = j.rows; OPS.at = j.fetchedAt;
+      /* 서버에 남은 전달 표시를 들여온다. 다른 운영자가 표시한 것도 그대로 보인다.
+         0019 전에는 sent_at 이 아예 없으므로 브라우저 기억이 그대로 산다. */
+      let got = 0;
+      for(const r of (j.rows || [])){
+        if(r.sent_at){ OPS.sent[r.id] = Date.parse(r.sent_at) || Date.now(); got++; }
+        else if(Object.prototype.hasOwnProperty.call(r, 'sent_at')) delete OPS.sent[r.id];
+      }
+      if(got || (j.rows||[]).some(r=>Object.prototype.hasOwnProperty.call(r,'sent_at'))) opsSave();
       /* 시험 기간이 열려 있는지 - 열어둔 것을 잊는 것이 유일한 위험이라 화면에 띄운다 */
       OPS.openUntil = j.openUntil || null;
       OPS.guest = !!j.guest;
@@ -7760,8 +7768,30 @@ function handle(a,v,el){
     case 'ops-only':   OPS.only = OPS.only===v ? '' : v; OPS.open=''; render(); settle('tbody'); return true;
     case 'ops-open':   OPS.open = OPS.open===v ? '' : v; render(); return true;
     case 'ops-sent': {
-      if(OPS.sent[v]) delete OPS.sent[v]; else OPS.sent[v] = Date.now();
-      opsSave(); render(); return true; }
+      /* 표시는 서버에 남긴다 - 운영자가 둘이면 브라우저 기억은 서로 어긋난다.
+         눌린 느낌은 먼저 주고, 서버가 아니라고 하면 되돌린다. */
+      const was = !!OPS.sent[v];
+      if(was) delete OPS.sent[v]; else OPS.sent[v] = Date.now();
+      opsSave(); render();
+      const row = (OPS.rows||[]).find(r=>r.id===v);
+      if(row) row.sent_at = was ? null : new Date().toISOString();
+      apiFetch('/api/demands', {method:'POST', body: JSON.stringify(
+        {pass:OPS.pass, what:'mark-sent', id:v, on:!was})})
+        .then(r => r.json().catch(()=>({})).then(j => {
+          if(r.ok){ if(j.local && !OPS.localWarned){ OPS.localWarned = true;
+              toast('서버에 표시 칸이 아직 없습니다 - 이 브라우저에만 남습니다'); }
+            return; }
+          /* 되돌린다. 표시해 둔 줄 알았는데 아니면 그게 더 나쁘다 */
+          if(was) OPS.sent[v] = Date.now(); else delete OPS.sent[v];
+          if(row) row.sent_at = was ? new Date().toISOString() : null;
+          opsSave(); render(); toast(j.error || '표시하지 못했습니다');
+        }))
+        .catch(() => {
+          if(was) OPS.sent[v] = Date.now(); else delete OPS.sent[v];
+          if(row) row.sent_at = was ? new Date().toISOString() : null;
+          opsSave(); render(); toast('네트워크 문제로 표시하지 못했습니다');
+        });
+      return true; }
     case 'ops-seen': {
       /* 여기까지 봤다고 표시해 두면, 다음에 들어온 것만 NEW 로 뜬다 */
       OPS.seen = Date.now(); opsSave(); render();

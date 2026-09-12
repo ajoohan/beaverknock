@@ -2399,14 +2399,14 @@ V['#/login'] = () => {
       <div style="display:flex;flex-direction:column;gap:8px">${SNS.filter(x=>!x.hide).map(snsButton).join('')}</div>
 
       ${S.signup ? '' : `
-      <div class="card pad" style="background:var(--n50);border-color:var(--hair);display:flex;
-        align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap">
-        <span style="font-size:13.5px;line-height:1.6;color:var(--n700)">
-          <b style="display:block;font-weight:800;color:var(--n900);margin-bottom:2px">아직 계정이 없으신가요?</b>
+      <div class="card pad" style="background:var(--ind50);border-color:#D9DAF0;
+        display:flex;flex-direction:column;gap:14px;text-align:center">
+        <span style="font-size:13.5px;line-height:1.7;color:var(--n700)">
+          <b style="display:block;font-size:15px;font-weight:800;color:var(--n900);margin-bottom:3px">아직 계정이 없으신가요?</b>
           ${asPartner ? '공인중개사 · 소유자 모두 가입하실 수 있습니다' : '30초면 끝납니다 · 무료'}</span>
         ${asPartner
-          ? `<button class="btn sec sm" data-go="#/partner/join" style="padding:11px 20px;font-size:13.5px;flex:none">파트너 가입</button>`
-          : `<button class="btn sec sm" data-act="signup-toggle" style="padding:11px 20px;font-size:13.5px;flex:none">회원가입</button>`}
+          ? `<button class="btn pri blk" data-go="#/partner/join" style="padding:15px 0;font-size:15px">파트너 가입하기</button>`
+          : `<button class="btn pri blk" data-act="signup-toggle" style="padding:15px 0;font-size:15px">회원가입</button>`}
       </div>
       ${asPartner ? '' : `
       <div style="text-align:center;font-size:13px;color:var(--n500)">

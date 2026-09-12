@@ -321,7 +321,7 @@ async function readStats(req, res, p, opsUser) {
 
   try {
     const [dem, pro, ag] = await Promise.all([
-      get('bk_demand',   new URLSearchParams({ select: 'id,at,status,slots,slots_left', at: 'gte.' + from, limit: '2000' }).toString()),
+      get('bk_demand',   new URLSearchParams({ select: 'id,created_at,status,slots,slots_left', created_at: 'gte.' + from, limit: '2000' }).toString()),
       get('bk_proposal', new URLSearchParams({ select: 'id,demand_id,agent_id,status,read_at,created_at', created_at: 'gte.' + from, limit: '4000' }).toString()),
       get('bk_agent',    new URLSearchParams({ select: 'id,status,role,created_at', limit: '2000' }).toString()),
     ]);
@@ -335,7 +335,7 @@ async function readStats(req, res, p, opsUser) {
     /* 막힌 곳 - 숫자만 보여주고 끝내지 않는다. 눌러서 그 목록으로 간다. */
     const DAY = 864e5, now = Date.now();
     const stuckNoProp = dem.filter(d => d.status !== 'closed' && !gotOne.has(d.id)
-      && now - Date.parse(d.at) > 2 * DAY).length;
+      && now - Date.parse(d.created_at) > 2 * DAY).length;
     const waitAgent = (ag || []).filter(a => a.status === 'pending'
       && now - Date.parse(a.created_at) > 3 * DAY).length;
     const unread = props.filter(x => x.status === 'sent' && !x.read_at

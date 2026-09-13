@@ -6706,13 +6706,20 @@ function opsGateScreen(){
   <div class="nav solid pad opsPad"><a data-go="#/" style="flex:none">${logoLockup({h:25})}</a>
     <div class="items"><a class="on">운영</a></div>
     <div class="right"><a data-go="#/" style="font-size:13.5px;font-weight:600;color:var(--n700)">사이트로</a></div></div>`;
-  const wrap = body => `
+  /* 들어가기 전 화면은 가운데에 세운다. 안에 들어가면 목록이 왼쪽부터 차지만,
+     문 앞에서는 볼 것이 이 상자 하나뿐이라 왼쪽에 붙여둘 이유가 없다. */
+  const wrap = (body, wide) => `
 <div class="scr fade" style="background:var(--n50)">
   ${head}
-  <div class="pad opsPad" style="flex:1;padding-top:${isMo()?18:28}px;padding-bottom:24px;width:100%">
-    <span class="eyebrow">OPERATIONS</span>
-    <h1 class="t" style="font-size:${isMo()?21:25}px;margin:8px 0 16px">운영 화면</h1>
-    <div class="card pad" style="max-width:460px">${body}</div>
+  <div class="pad opsPad" style="flex:1;display:flex;align-items:${isMo()?'flex-start':'center'};justify-content:center;
+    padding-top:${isMo()?24:20}px;padding-bottom:40px;width:100%">
+    <div style="width:100%;max-width:${wide||400}px;display:flex;flex-direction:column;align-items:center;gap:16px">
+      <div style="text-align:center">
+        <span class="eyebrow">OPERATIONS</span>
+        <h1 class="t" style="font-size:${isMo()?21:25}px;margin-top:8px">운영 화면</h1>
+      </div>
+      <div class="card pad" style="width:100%">${body}</div>
+    </div>
   </div>
 </div>`;
   const linkNote = OPS_LINK && OPS_LINK.err
@@ -6722,13 +6729,30 @@ function opsGateScreen(){
 
   /* 로그인부터. 이 판단이 맨 앞이어야 한다 - 로그인하지 않으면 열어보지도 않으므로,
      '여는 중' 을 먼저 두면 영영 도는 동그라미만 남는다. */
-  if(!S.user) return wrap(`
-    <b style="display:block;font-size:15px;font-weight:800;color:var(--n900);margin-bottom:8px">로그인이 필요합니다</b>
-    <p style="margin:0 0 14px;font-size:13.5px;line-height:1.75;color:var(--n700)">
-      접수된 조건에는 <b style="color:var(--n900)">이름과 연락처</b>가 들어 있습니다.
-      누가 무엇을 열어봤는지 남아야 해서, 로그인한 계정만 들어올 수 있습니다.</p>
-    <button class="btn pri blk" data-act="ops-login" style="padding:14px 0;font-size:15px">로그인하러 가기</button>
+  /* 운영자는 여기로 곧장 들어온다. 손님 로그인 화면으로 한 번 보냈다가
+     돌아오게 하면 회원가입·네이버·아이디 찾기까지 같이 보게 된다 - 운영자에게는
+     쓸 데가 없는 것들이다. 이메일과 구글, 둘만 둔다. */
+  if(!S.user){
+    const google = SNS.find(x => x.k === 'google');
+    return wrap(`
+    <b style="display:block;text-align:center;font-size:16px;font-weight:800;color:var(--n900);margin-bottom:6px">관리자 로그인</b>
+    <p style="margin:0 0 16px;text-align:center;font-size:12.5px;line-height:1.7;color:var(--n500)">
+      접수된 조건에는 이름과 연락처가 들어 있습니다.<br>누가 무엇을 열어봤는지 남습니다.</p>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <input class="inp" data-in="email" type="email" value="${esc(S.email)}"
+        placeholder="이메일" autocomplete="username" aria-label="이메일">
+      <input class="inp" data-in="pw" type="password" value="${esc(S.pw)}"
+        placeholder="비밀번호" autocomplete="current-password" aria-label="비밀번호">
+      <button class="btn pri blk" data-act="ops-email" style="padding:14px 0;font-size:15px">로그인</button>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;margin:14px 0">
+      <i style="flex:1;height:1px;background:var(--hair)"></i>
+      <span style="font-size:11px;color:var(--n500)">또는</span>
+      <i style="flex:1;height:1px;background:var(--hair)"></i>
+    </div>
+    ${google ? snsButton(google).replace('data-act="sns"', 'data-act="ops-sns"') : ''}
     ${linkNote}`);
+  }
 
   /* 로그인은 되어 있고, 아직 열어보는 중 */
   if(OPS.loading || !OPS.tried) return wrap(`
@@ -7690,6 +7714,13 @@ function handle(a,v,el){
         : (location.hash && location.hash !== '#/partner' ? location.hash : '#/');
       go('#/login'); return true; }
     case 'ops-login':  S.afterLogin = '#/ops/live'; go('#/login'); return true;
+    /* 운영 화면 안에서 바로 들어온다. 끝나면 손님 화면이 아니라 여기로 돌아온다. */
+    case 'ops-email':
+      S.afterLogin = '#/ops/live'; S.signup = false;
+      return handle('login-email', v);
+    case 'ops-sns':
+      S.afterLogin = '#/ops/live';
+      return handle('sns', v);
     case 'ops-retry':  OPS.tried = false; OPS.err = ''; opsFetch(); return true;
     case 'ops-invite-copy': opsCopy(opsInviteText(), '안내문을 복사했습니다'); return true;
     case 'ops-url-copy':    opsCopy(opsUrl(), '주소를 복사했습니다'); return true;

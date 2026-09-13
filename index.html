@@ -1852,9 +1852,11 @@ function changed(key, rows){
 
 /* 아직 서버에서 못 받았으면 '없음' 이 아니다. 빈 화면으로 단정하지 않는다. */
 const waitingFor = ready => !!store.get() && !ready;
-const loadingBox = (what) => `<div class="empty">
-  <div style="margin:0 auto 12px;width:28px;height:28px">${bkLoader(28)}</div>
-  <p style="margin:0;font-size:13.5px;color:var(--n500)">${esc(what)}을(를) 불러오는 중입니다…</p></div>`;
+/* 기다리는 동안에는 표시 하나만 둔다. 무엇을 불러오는지는 잠시 뒤 화면이
+   스스로 말한다 - 읽히기도 전에 사라지는 글자를 굳이 띄우지 않는다.
+   못 보는 분을 위한 안내는 bkLoader 의 aria-label 이 맡는다. */
+const loadingBox = () => `<div class="empty" style="display:flex;justify-content:center;padding:38px 0">
+  ${bkLoader(30)}</div>`;
 
 /* 서버 조건 → 손님 '내 조건' 카드 */
 function condFromRow(d){
@@ -3978,7 +3980,7 @@ V['#/my'] = () => {
     <p style="margin:-6px 0 0;font-size:12.5px;line-height:1.7;color:var(--n500)">
       ${esc(S.user.label||'')} 계정에서 받은 <b style="color:var(--n700)">이름</b>은 중개사에게 전달되는 조건에 함께 쓰이고,
       <b style="color:var(--n700)">이메일</b>은 이 계정을 알아보고 걸어두신 조건을 다시 불러오는 데만 씁니다.</p>` : ''}
-    ${S.conds.length? rows : waitingFor(S.mineReady) ? loadingBox('걸어두신 조건') : `<div class="empty"><p style="margin:0 0 6px;font-size:15px;font-weight:800">아직 등록한 조건이 없습니다</p>
+    ${S.conds.length? rows : waitingFor(S.mineReady) ? loadingBox() : `<div class="empty"><p style="margin:0 0 6px;font-size:15px;font-weight:800">아직 등록한 조건이 없습니다</p>
       <p style="margin:0 0 18px;font-size:13.5px;color:var(--n500)">조건을 걸어두면 맞는 물건이 있을 때만 연락이 옵니다.</p>
       <button class="btn pri md" data-act="restart">조건 등록하기</button></div>`}
     <div class="beaverbox" style="margin-top:auto;margin-bottom:${isMo()?'14px':'26px'};max-width:${isMo()?'none':'560px'}">
@@ -5878,7 +5880,7 @@ const opsWhen = t => { const d=new Date(t); return isNaN(d)?'-':
   `${d.getFullYear()%100}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`; };
 
 function opsBox(box, label, loadAct, body){
-  if(box.loading && !box.rows) return `<div class="card pad"><span style="font-size:13.5px;color:var(--n500)">불러오는 중…</span></div>`;
+  if(box.loading && !box.rows) return `<div class="card pad" style="display:flex;justify-content:center;padding:30px 0">${bkLoader(28)}</div>`;
   if(box.err) return `<div class="card pad"><p style="margin:0 0 12px;font-size:13.5px;color:var(--danger);font-weight:700">${esc(box.err)}</p>
     <button class="btn sec sm" data-act="${loadAct}">다시 불러오기</button></div>`;
   if(!box.rows) return `<div class="card pad"><button class="btn pri md" data-act="${loadAct}">${esc(label)} 불러오기</button></div>`;
@@ -6065,7 +6067,7 @@ function opsSettingPanel(){
 
 function reportPanel(){
   const rows = RP.rows;
-  if(RP.loading && !rows) return `<div class="card pad"><span style="font-size:13.5px;color:var(--n500)">불러오는 중…</span></div>`;
+  if(RP.loading && !rows) return `<div class="card pad" style="display:flex;justify-content:center;padding:30px 0">${bkLoader(28)}</div>`;
   if(RP.err) return `<div class="card pad"><p style="margin:0;font-size:13.5px;color:var(--danger);font-weight:700">${esc(RP.err)}</p></div>`;
   if(!rows) return `<div class="card pad"><button class="btn pri md" data-act="rp-load">신고 불러오기</button></div>`;
   const chip = (label,on,v) => `<button class="chip ${on?'on':''}" data-act="rp-only" data-v="${v}" style="padding:8px 14px;font-size:12.5px">${label}</button>`;
@@ -6104,7 +6106,7 @@ function reportPanel(){
 
 function logPanel(){
   const rows = LG.rows;
-  if(LG.loading && !rows) return `<div class="card pad"><span style="font-size:13.5px;color:var(--n500)">불러오는 중…</span></div>`;
+  if(LG.loading && !rows) return `<div class="card pad" style="display:flex;justify-content:center;padding:30px 0">${bkLoader(28)}</div>`;
   if(LG.err) return `<div class="card pad"><p style="margin:0;font-size:13.5px;color:var(--danger);font-weight:700">${esc(LG.err)}</p></div>`;
   if(!rows) return `<div class="card pad"><button class="btn pri md" data-act="lg-load">기록 불러오기</button></div>`;
   const chip = (label,on,v) => `<button class="chip ${on?'on':''}" data-act="lg-only" data-v="${v}" style="padding:8px 14px;font-size:12.5px">${label}</button>`;
@@ -6620,8 +6622,8 @@ function statsPanel(){
 
   if(ST.err) return head + `<div class="card pad"><b style="color:var(--danger)">${esc(ST.err)}</b>
     <button class="btn sec sm" data-act="st-load" style="margin-top:10px">다시 시도</button></div>`;
-  if(!d) return head + `<div class="empty" style="display:flex;flex-direction:column;align-items:center;gap:12px">
-    ${bkLoader(28)}<span style="font-size:13.5px;color:var(--n500)">지표를 세고 있습니다…</span></div>`;
+  if(!d) return head + `<div class="empty" style="display:flex;justify-content:center;padding:38px 0">
+    ${bkLoader(30)}</div>`;
   if(d.note) return head + `<div class="card pad"><span style="font-size:13.5px;color:var(--n500)">${esc(d.note)}</span></div>`;
 
   const top = d.funnel[0].v || 1;
@@ -6756,11 +6758,7 @@ function opsGateScreen(){
 
   /* 로그인은 되어 있고, 아직 열어보는 중 */
   if(OPS.loading || !OPS.tried) return wrap(`
-    <div style="display:flex;align-items:center;gap:12px">
-      ${bkLoader(24)}
-      <div><b style="display:block;font-size:15px;font-weight:800;color:var(--n900)">운영 화면을 여는 중입니다</b>
-        <span style="display:block;margin-top:3px;font-size:13px;color:var(--n500)">계정을 확인하고 있습니다.</span></div>
-    </div>${linkNote}`);
+    <div style="display:flex;justify-content:center;padding:26px 0">${bkLoader(30)}</div>${linkNote}`);
 
   /* 로그인은 했는데 권한이 없다 */
   if(OPS.err && !OPS.needPass) return wrap(`
@@ -7072,10 +7070,8 @@ function render(){
   /* 계정을 확인하는 몇백 밀리초 - 어떤 가드도 타지 않고 그냥 기다린다 */
   if(S.authBusy){
     $('#app').innerHTML = `
-      <div class="scr" style="align-items:center;justify-content:center;gap:14px;text-align:center;padding:40px 24px">
-        ${bkLoader(28)}
-        <b style="font-size:15px;font-weight:800;color:var(--n900)">로그인하고 있습니다</b>
-        <span style="font-size:13.5px;color:var(--n500)">계정을 확인하는 중입니다. 곧 이어집니다.</span>
+      <div class="scr" style="align-items:center;justify-content:center;padding:40px 24px">
+        ${bkLoader(34)}
       </div>`;
     S.lastRoute = null;
     return;

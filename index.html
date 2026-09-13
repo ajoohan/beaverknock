@@ -3587,6 +3587,7 @@ function agentPanel(){
   const chip = (label, on, act, v) =>
     `<button class="chip ${on?'on':''}" data-act="${act}" data-v="${v}" style="padding:8px 14px;font-size:12.5px">${label}</button>`;
 
+  if(!all && AG.loading) return `<div class="card pad" style="display:flex;justify-content:center;padding:30px 0">${bkLoader(28)}</div>`;
   if(!all) return `
     <div class="card pad" style="max-width:440px">
       <b style="display:block;font-size:15px;font-weight:800;margin-bottom:10px">가입 신청 보기</b>
@@ -6617,7 +6618,7 @@ function statsPanel(){
   const chip = n => `<button class="chip ${ST.days===n?'on':''}" data-act="st-days" data-v="${n}">${n}일</button>`;
   const head = `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px">
     ${[7,30,90].map(chip).join('')}
-    <span style="margin-left:auto;font-size:12.5px;color:var(--n500)">${ST.loading?'세는 중…':'최근 '+ST.days+'일'}</span>
+    <span style="margin-left:auto;font-size:12.5px;color:var(--n500)">최근 ${ST.days}일</span>
   </div>`;
 
   if(ST.err) return head + `<div class="card pad"><b style="color:var(--danger)">${esc(ST.err)}</b>

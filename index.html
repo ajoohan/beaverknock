@@ -6575,8 +6575,8 @@ function opsHomePanel(){
 
   return `<div class="dash" id="opsDash" data-sig="${esc(sig)}">
     <div class="needBar ${need.length?'hot':''}">
-      <span class="dot"></span>
-      <b>${loading ? '지금 상황을 불러오고 있습니다' : need.length ? '지금 손이 필요한 일' : '지금 손댈 일은 없습니다'}</b>
+      ${loading ? '' : `<span class="dot"></span>`}
+      ${loading ? bkLoader(22) : `<b>${need.length ? '지금 손이 필요한 일' : '지금 손댈 일은 없습니다'}</b>`}
       ${need.map(x=>`<button class="go" data-act="ops-tab" data-v="${x.go}">
         ${esc(x.t)} <span class="n">${x.n}</span></button>`).join('')}
       ${!loading && !need.length ? `<span class="calm">가입 승인 · 신고 · 조건 전달이 모두 끝나 있습니다.</span>` : ''}

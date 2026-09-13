@@ -5880,12 +5880,17 @@ const opsLinkWhen = t => { const d = new Date(t); return isNaN(d) ? '-' :
 const opsWhen = t => { const d=new Date(t); return isNaN(d)?'-':
   `${d.getFullYear()%100}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`; };
 
+/* body 는 반드시 함수로 준다.
+   값으로 받으면 부르는 쪽에서 이미 계산된 뒤에 들어와, 아래 가드가 소용없다.
+   rows 가 null 인 동안(탭을 처음 열 때, 불러오는 중) 본문이 rows.length 를
+   읽다가 통째로 터졌다 - 매물관리와 손님 계정 둘 다 그랬다. */
 function opsBox(box, label, loadAct, body){
   if(box.loading && !box.rows) return `<div class="card pad" style="display:flex;justify-content:center;padding:30px 0">${bkLoader(28)}</div>`;
   if(box.err) return `<div class="card pad"><p style="margin:0 0 12px;font-size:13.5px;color:var(--danger);font-weight:700">${esc(box.err)}</p>
     <button class="btn sec sm" data-act="${loadAct}">다시 불러오기</button></div>`;
   if(!box.rows) return `<div class="card pad"><button class="btn pri md" data-act="${loadAct}">${esc(label)} 불러오기</button></div>`;
-  return (box.note?`<p style="margin:0 0 12px;background:var(--warnbg);padding:12px 16px;font-size:12.5px;color:var(--n700)">${esc(box.note)}</p>`:'') + body;
+  return (box.note?`<p style="margin:0 0 12px;background:var(--warnbg);padding:12px 16px;font-size:12.5px;color:var(--n700)">${esc(box.note)}</p>`:'')
+    + (typeof body === 'function' ? body() : body);
 }
 
 const ROLE_KO2 = { agent:'공인중개사', owner:'소유자', developer:'시행사' };
@@ -5893,7 +5898,7 @@ const ROLE_KO2 = { agent:'공인중개사', owner:'소유자', developer:'시행
 const KIND_KO2 = Object.fromEntries(Object.values(WHO).map(w => [w.kind, w.tag]));
 
 function listingPanel(){
-  return opsBox(LS2, '매물', 'ls2-load', (()=>{
+  return opsBox(LS2, '매물', 'ls2-load', () => {
     const rows = LS2.rows;
     return `
     <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
@@ -5921,13 +5926,13 @@ function listingPanel(){
             <td style="padding:10px 12px">${r.status==='active'?'<span class="badge b-ok">올림</span>':'<span class="badge b-mute">내림</span>'}</td>
           </tr>`).join('')}</tbody>
       </table></div>`}`;
-  })());
+  });
 }
 
 const VIA_KO = { email:'이메일', google:'Google', naver:'네이버', kakao:'카카오', apple:'Apple' };
 
 function userPanel(){
-  return opsBox(US, '손님 계정', 'us-load', (()=>{
+  return opsBox(US, '손님 계정', 'us-load', () => {
     const rows = US.rows;
     return `
     <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
@@ -5953,7 +5958,7 @@ function userPanel(){
       </table></div>`}
     <p style="margin:10px 0 0;font-size:12.5px;line-height:1.7;color:var(--n500)">
       로그인 계정 목록입니다. 조건을 낸 사람만 보시려면 <b style="color:var(--n700)">조건관리</b>로 가세요.</p>`;
-  })());
+  });
 }
 
 /* 설정 - 지금 무엇이 켜져 있는지. 여기서 바꾸지는 않는다.

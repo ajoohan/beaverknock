@@ -98,7 +98,7 @@ body.mo .logo{font-size:15px}
 }
 .nav .items a{font-size:14px;font-weight:600;color:var(--n500);padding:8px 14px;border-radius:var(--r-sm)}
 .nav .items a:hover{background:var(--n50);color:var(--n700)}
-.nav .items a.on{font-weight:800;color:var(--ind);background:var(--ind50)}
+.nav .items a.on{font-weight:800;color:var(--ind)}
 .nav .right{margin-left:auto;display:flex;align-items:center;gap:16px;font-size:13.5px;color:var(--n500)}
 body.mo .nav .items{display:none}
 .back{font-size:14px;color:var(--n500);font-weight:600;padding:6px 10px;border-radius:var(--r-sm)}
@@ -713,10 +713,12 @@ h1.t + .sub, .sub{font-size:15px;line-height:1.75;color:var(--n500)}
   border-bottom:1px solid var(--hair);
   box-shadow:0 1px 0 rgba(31,29,26,.03), 0 8px 24px -18px rgba(35,37,92,.35);
 }
-/* 현재 위치는 배경이 아니라 채운 알약으로 - 한눈에 잡힌다 */
-.nav .items a{padding:10px 16px;border-radius:9px;transition:background var(--t-fast) ease,color var(--t-fast) ease}
-.nav .items a.on{background:var(--ind);color:#fff;font-weight:800}
-.nav .items a.on:hover{background:var(--ind700)}
+/* 지금 어디인지는 글자 색과 밑줄로만 말한다.
+   채운 알약까지 얹으니 세 가지로 같은 말을 하고 있었고, 무엇보다 알약은 버튼으로
+   읽힌다 - 메뉴는 버튼이 아니다. 밑줄은 아래에서 미끄러지며 따라온다. */
+.nav .items a{padding:10px 16px;border-radius:9px;transition:color var(--t-fast) ease,background var(--t-fast) ease}
+.nav .items a.on{color:var(--ind);font-weight:800;background:transparent}
+.nav .items a.on:hover{background:var(--ind50)}
 
 /* ── 입력: 존재감 ── */
 .inp{padding:14px 16px;font-size:15px}
@@ -1930,7 +1932,7 @@ function tabbar(active, role){
 function navUser(active){ return `
 <div class="nav solid pad">
   <a data-go="#/" style="flex:none">${logoLockup({h:25,tag:!isMo()})}</a>
-  <div class="items">
+  <div class="items mid">
     <a data-go="#/my" class="${active==='my'?'on':''}">내 조건</a>
     <a data-go="#/inbox" class="${active==='inbox'?'on':''}">제안함</a>
   </div>
@@ -1970,7 +1972,7 @@ function navPartner(active){
   return `
 <div class="nav solid pad">
   <a data-go="#/partner" style="flex:none">${logoLockup({h:25,partner:true,tag:!isMo()})}</a>
-  <div class="items">
+  <div class="items mid">
     <a data-go="#/partner/demands" class="${active==='d'?'on':''}">${own?'맞는 손님':'수요 목록'}</a>
     <a data-go="#/partner/listings" class="${active==='l'?'on':''}">내 물건</a>
     ${own?'':`<a data-go="#/partner/settings" class="${active==='s'?'on':''}">활동 설정</a>`}
@@ -7382,7 +7384,7 @@ function docShell(eyebrow, title, lead, body){
 <div class="scr fade" style="background:var(--n50)">
   <div class="nav solid pad">
     <a data-go="#/" style="flex:none">${logoLockup({h:25})}</a>
-    <div class="items">
+    <div class="items mid">
       <a data-go="#/guide" class="${S.route==='#/guide'?'on':''}">이용 안내</a>
       <a data-go="#/faq" class="${S.route==='#/faq'?'on':''}">자주 묻는 질문</a>
       <a data-go="#/partner" class="${S.route==='#/partner'?'on':''}">파트너 안내</a>

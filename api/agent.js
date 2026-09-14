@@ -117,8 +117,17 @@ export default async function handler(req, res) {
   /* 계정과 이어둬야 나중에 '내가 승인된 파트너인가' 를 물을 수 있다 */
   const owner = await userFrom(req);
 
+  /* 가입은 바로 승인된다 (2026-09-14).
+     사람이 하나씩 열어주던 것을 없앴다 - 기다리는 동안 파트너는 아무것도 못 하고,
+     그 사이에 들어온 손님 조건은 아무에게도 안 간다.
+     등록번호는 여기서 이미 공공데이터로 대조한다(reg_verified). 대조를 통과하지
+     못한 신청도 함께 열리므로, 운영자는 알림 메일과 회원관리에서 눈으로 본다.
+     되돌리려면 환경변수 BK_AUTO_APPROVE 를 '0' 으로 둔다. */
+  const autoApprove = process.env.BK_AUTO_APPROVE !== '0';
+
   const row = {
     role, name, phone,
+    status: autoApprove ? 'approved' : 'new',
     user_id: owner ? owner.id : null,
     email:    str(b.email, 120),
     office:   str(b.office, 80),
@@ -187,8 +196,12 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: '저장에 실패했습니다' });
     }
     const sent = await notify(req, {
-      subject: `새 가입 신청 · ${ROLE_KO[row.role] || row.role}`,
+      subject: `새 파트너 ${autoApprove ? '가입' : '신청'} · ${ROLE_KO[row.role] || row.role}`,
       rows: [
+        ['처리', autoApprove
+          ? (row.reg_verified ? '자동 승인됨 · 등록번호 공공데이터 확인됨'
+                              : '자동 승인됨 · 등록번호는 형식만 확인 - 눈으로 봐주세요')
+          : '승인 대기'],
         ['역할', ROLE_KO[row.role] || row.role],
         ['성함', row.name || '-'],
         ['연락처', mask(row.phone)],
@@ -201,7 +214,8 @@ export default async function handler(req, res) {
       ],
       link: '/#/ops/live',
     });
-    return res.status(200).json({ ok: true, notified: sent && sent.ok ? 'ok' : (sent && sent.skipped) || 'unknown' });
+    return res.status(200).json({ ok: true, approved: autoApprove,
+      notified: sent && sent.ok ? 'ok' : (sent && sent.skipped) || 'unknown' });
   } catch (e) {
     return res.status(500).json({ error: '저장 중 문제가 생겼습니다' });
   }

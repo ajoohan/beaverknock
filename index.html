@@ -4461,7 +4461,7 @@ V['#/partner/demands'] = () => {
       <span style="min-width:0"><b style="display:block;font-size:13.5px">${esc(S.feedErr)}</b>
       <span style="display:block;margin-top:4px;font-size:12.5px;line-height:1.6;color:var(--n700)">${
         S.feedNeed==='join'     ? '파트너로 가입하시면 확인 뒤 손님 조건을 보내드립니다.'
-      : S.feedNeed==='approval' ? '등록번호와 사무소를 확인하는 중입니다. 1~2영업일 안에 연락드립니다.'
+      : S.feedNeed==='approval' ? '담당자가 확인하고 있습니다. 확인이 끝나면 연락드립니다.'
       : S.feedNeed==='login'    ? '로그인하시면 내 활동 조건에 맞는 손님만 보여드립니다.'
       : '잠시 후 다시 시도해 주세요.'}</span></span>
       ${S.feedNeed==='join' ? `<a class="btn pri sm" data-go="#/partner/join" style="flex:none">파트너 가입</a>`
@@ -4949,14 +4949,14 @@ V["#/partner/join"] = () => {
         f.jSent==='fail' ? '신청이 저장되지 않았습니다'
         : f.jSent==='sending' ? '신청을 접수하는 중입니다'
         : f.jSent==='already' ? (f.jWhy==='account' ? '이 계정으로 이미 신청하셨습니다' : '이미 신청하셨습니다')
-        : '신청이 접수되었습니다'}</h1>
+        : '가입이 끝났습니다'}</h1>
       <p style="margin:0;font-size:14px;line-height:1.75;color:var(--n700)">${
         f.jSent==='fail' ? '잠시 뒤 다시 시도해 주세요.<br class="mbr">  계속 안 되면 support@plustonic.com 으로 알려주시면 직접 등록해 드립니다.'
         : f.jSent==='sending' ? '잠시만 기다려 주세요.'
         : f.jSent==='already' ? (f.jWhy==='account'
             ? '한 계정에 하나만 신청하실 수 있습니다. 앞서 넣으신 신청이 그대로 살아 있고,<br class="mbr">  방금 적어주신 내용으로 바뀌지는 않았습니다. 고치실 것이 있으면 support@plustonic.com 으로 알려주세요.'
             : '같은 번호로 접수된 신청이 있습니다.<br class="mbr">  확인 뒤 연락드리겠습니다.')
-        : '적어주신 번호로 <b style="color:var(--n900)">1~2영업일 안에</b> 연락드립니다.<br class="mbr">  확인이 끝나면 해당 지역 손님의 조건을 보내드립니다.'}</p>
+        : '<b style="color:var(--n900)">바로 시작하실 수 있습니다.</b><br class="mbr">  활동 지역과 유형을 정해두시면 맞는 손님 조건만 골라 보내드립니다.'}</p>
       ${f.jSent==='fail'?`<button class="btn sec md" data-act="j-retry" style="margin-top:14px">다시 보내기</button>`:''}
       <div style="display:flex;gap:10px;margin-top:16px;${isMo()?'flex-direction:column;width:100%':''}">
         <a class="btn pri md ${isMo()?'blk':''}" data-go="#/partner/settings">활동 조건 설정하기</a>
@@ -5078,7 +5078,7 @@ function meCard(){
       확인 뒤 손님 조건을 보내드립니다.</p>`
     : a.status !== 'approved' ? `<p style="margin:10px 0 0;padding:10px 14px;background:var(--warnbg);border-radius:var(--r-sm);
       font-size:12.5px;line-height:1.7;color:var(--n700)">
-      등록번호와 사무소를 확인하는 중입니다 · 1~2영업일 안에 연락드립니다.</p>`
+      담당자가 확인하고 있습니다 · 확인이 끝나면 연락드립니다.</p>`
     : ''}
     <p style="margin:10px 0 0;font-size:12.5px;line-height:1.7;color:var(--n500)">
       고칠 것이 있으시면 <b style="color:var(--n700)">support@plustonic.com</b> 으로 알려주세요.</p>

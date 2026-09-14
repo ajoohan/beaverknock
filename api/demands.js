@@ -76,6 +76,7 @@ export default async function handler(req, res) {
   if (payload.what === 'users')       return readUsers(req, res, payload, opsUser);
   if (payload.what === 'stats')       return readStats(req, res, payload, opsUser);
   if (payload.what === 'mark-sent')   return markSent(req, res, payload, opsUser);
+  if (payload.what === 'agents')      return readAgents(req, res, payload, opsUser);
 
   const limit  = Math.min(parseInt(payload.limit, 10) || 200, 1000);
   const kind   = payload.kind;                 // home | shop | office | storage
@@ -250,9 +251,6 @@ async function markReport(req, res, p, opsUser) {
   }
 }
 
-/* ── 매물 ──
-   중개사가 올려둔 물건. 손님에게는 목록으로 공개하지 않지만,
-   운영자는 어떤 물건이 쌓이고 있는지 봐야 한다. */
 /* '중개사에게 전달했다' 표시.
  *
  * 전에는 브라우저(localStorage)에만 있었다. 혼자 시험할 때는 괜찮았지만
@@ -389,6 +387,9 @@ async function readStats(req, res, p, opsUser) {
   }
 }
 
+/* ── 매물 ──
+   중개사가 올려둔 물건. 손님에게는 목록으로 공개하지 않지만,
+   운영자는 어떤 물건이 쌓이고 있는지 봐야 한다. */
 async function readListings(req, res, p, opsUser) {
   const limit = Math.min(parseInt(p.limit, 10) || 300, 1000);
   try {
@@ -419,6 +420,35 @@ async function readListings(req, res, p, opsUser) {
     });
   } catch (e) {
     return res.status(500).json({ error: '매물을 불러오지 못했습니다' });
+  }
+}
+
+/* 가입 신청 목록.
+ *
+ * 따로 api/agents.js 로 두고 있었는데, 문(계정 + 암호)이 이 파일과 완전히 같고
+ * 하는 일도 '운영 화면이 보는 것' 이라 여기로 옮겼다. 함수 상한(12개)이 꽉 차
+ * 카카오 연결 해제 웹훅을 놓을 자리가 없어서이기도 하다.
+ */
+async function readAgents(req, res, p, opsUser) {
+  const limit = Math.min(parseInt(p.limit, 10) || 300, 1000);
+  try {
+    const q = new URLSearchParams({ select: '*', order: 'created_at.desc', limit: String(limit) });
+    const r = await fetch(sbUrl('bk_agent', q.toString()), { headers: sbHeaders() });
+    if (!r.ok) {
+      const t = await r.text().catch(() => '');
+      if (/does not exist|PGRST205/i.test(t)) {
+        return res.status(200).json({ rows: [], at: new Date().toISOString(), note: '신청 표가 아직 없습니다' });
+      }
+      return res.status(500).json({ error: '조회에 실패했습니다' });
+    }
+    const rows = await r.json();
+    /* 화면에서는 연락처를 기본으로 가린다 - 원문은 따로 요청해야 나온다 */
+    const out = p.reveal ? rows : rows.map(x => ({ ...x, phone: maskPhone(x.phone) }));
+    await logOps(req, opsUser, { action: 'agents', reveal: !!p.reveal, count: out.length });
+    return res.status(200).json({ rows: out, at: new Date().toISOString() });
+  } catch (e) {
+    console.error('[ops] 가입 신청', e && e.message);
+    return res.status(500).json({ error: '조회 중 문제가 생겼습니다' });
   }
 }
 

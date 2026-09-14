@@ -6174,8 +6174,10 @@ function agSetMany(ids, status){
 function agFetch(){
   if(AG.loading || !OPS.ok) return;
   AG.loading = true; AG.err = ''; render();
-  apiFetch('/api/agents', {method:'POST',
-    body: JSON.stringify({pass: OPS.pass, reveal: AG.reveal})})
+  /* 함수 상한(12개)이 꽉 차서 api/agents.js 를 demands.js 로 합쳤다.
+     문도 하는 일도 같았다 - 비운 자리에 카카오 연결 해제 웹훅을 놓는다. */
+  apiFetch('/api/demands', {method:'POST',
+    body: JSON.stringify({pass: OPS.pass, what:'agents', reveal: AG.reveal})})
     .then(r => r.json().catch(()=>({})).then(j => {
       if(r.ok){ AG.rows = j.rows || []; AG.at = j.at || ''; AG.note = j.note || ''; }
       else AG.err = j.error || '조회에 실패했습니다';

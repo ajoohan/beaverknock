@@ -92,6 +92,16 @@ body.mo .nav .items{display:none}
 .back{font-size:14px;color:var(--n500);font-weight:600;padding:6px 10px;border-radius:var(--r-sm)}
 .back:hover{background:var(--n50)}
 
+/* 글자로만 된 링크는 줄 높이(15~16px)만큼만 눌린다. 마우스로는 맞지만
+   손가락으로는 자주 빗나간다 - 권장은 44px 이다.
+   보이는 크기는 그대로 두고 누를 수 있는 자리만 위아래로 넓힌다.
+   ::after 는 자리를 차지하지 않으므로 배치는 한 픽셀도 움직이지 않는다.
+   가로는 거의 안 넓힌다 - 한 줄에 나란히 선 링크끼리 서로를 먹으면 안 된다. */
+body.mo .tapx{position:relative}
+body.mo .tapx::after{content:"";position:absolute;left:-3px;right:-3px;top:-14px;bottom:-14px}
+body.mo .back{position:relative}
+body.mo .back::after{content:"";position:absolute;left:0;right:0;top:-9px;bottom:-9px}
+
 /* 모든 변형이 같은 크기로 그려지도록 테두리를 항상 1.5px 잡아둔다 -
    활성/비활성은 두께가 아니라 색으로만 구분한다 */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:10px;
@@ -2240,7 +2250,7 @@ V['#/'] = () => `
     <span style="flex:none">${logoLockup({h:25,tag:!isMo()})}</span>
     <div class="right" style="gap:${isMo()?16:26}px">
       ${isMo()?'':'<a data-go="#/guide" style="font-size:14px;font-weight:600;color:var(--n700)">이용 안내</a><a data-go="#/faq" style="font-size:14px;font-weight:600;color:var(--n700)">자주 묻는 질문</a>'}
-      ${S.user?`<a data-go="#/my" style="font-size:${isMo()?11.5:14}px;font-weight:600;color:var(--n700)">내 조건 확인</a>`:''}
+      ${S.user?`<a class="tapx" data-go="#/my" style="font-size:${isMo()?11.5:14}px;font-weight:600;color:var(--n700)">내 조건 확인</a>`:''}
       ${isMo()?'':'<a data-go="#/partner" style="font-size:14px;font-weight:600;color:var(--n700)">파트너 안내</a>'}
       ${navAuth('both')}
     </div>
@@ -2269,9 +2279,9 @@ V['#/'] = () => `
     padding:18px 24px calc(22px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:12px">
     <div style="display:flex;flex-wrap:wrap;gap:10px 16px">
       ${[['#/guide','이용 안내'],['#/faq','자주 묻는 질문'],['#/partner','파트너 안내'],['#/brand','브랜드']]
-        .map(([h,t])=>`<a data-go="${h}" style="font-size:12.5px;color:var(--n500);text-decoration:underline;text-underline-offset:3px">${t}</a>`).join('')}
-      <a href="/terms" target="_blank" rel="noopener" style="font-size:12.5px;color:var(--n500);text-decoration:underline;text-underline-offset:3px">이용약관</a>
-      <a href="/privacy" target="_blank" rel="noopener" style="font-size:12.5px;color:var(--n500);text-decoration:underline;text-underline-offset:3px">개인정보 처리방침</a>
+        .map(([h,t])=>`<a class="tapx" data-go="${h}" style="font-size:12.5px;color:var(--n500);text-decoration:underline;text-underline-offset:3px">${t}</a>`).join('')}
+      <a class="tapx" href="/terms" target="_blank" rel="noopener" style="font-size:12.5px;color:var(--n500);text-decoration:underline;text-underline-offset:3px">이용약관</a>
+      <a class="tapx" href="/privacy" target="_blank" rel="noopener" style="font-size:12.5px;color:var(--n500);text-decoration:underline;text-underline-offset:3px">개인정보 처리방침</a>
     </div>
     ${bizFooter()}
   </div>`
@@ -2317,12 +2327,12 @@ V['#/'] = () => `
     <div style="display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap">
       ${logoLockup({h:18,en:true,tag:true,stack:true})}
       <div style="display:flex;gap:16px;flex-wrap:wrap">
-        <a data-go="#/guide" style="font-size:12.5px;color:var(--n500);text-decoration:underline;text-underline-offset:3px">이용 안내</a>
-        <a data-go="#/faq" style="font-size:12.5px;color:var(--n500);text-decoration:underline;text-underline-offset:3px">자주 묻는 질문</a>
-        <a data-go="#/partner" style="font-size:12.5px;color:var(--n500);text-decoration:underline;text-underline-offset:3px">파트너 안내</a>
-        <a href="/terms" target="_blank" rel="noopener" style="font-size:12.5px;color:var(--n500);text-decoration:underline;text-underline-offset:3px">이용약관</a>
-        <a href="/privacy" target="_blank" rel="noopener" style="font-size:12.5px;color:var(--n500);text-decoration:underline;text-underline-offset:3px">개인정보 처리방침</a>
-        <a data-go="#/brand" style="font-size:12.5px;color:var(--n500);text-decoration:underline;text-underline-offset:3px">브랜드</a>
+        <a class="tapx" data-go="#/guide" style="font-size:12.5px;color:var(--n500);text-decoration:underline;text-underline-offset:3px">이용 안내</a>
+        <a class="tapx" data-go="#/faq" style="font-size:12.5px;color:var(--n500);text-decoration:underline;text-underline-offset:3px">자주 묻는 질문</a>
+        <a class="tapx" data-go="#/partner" style="font-size:12.5px;color:var(--n500);text-decoration:underline;text-underline-offset:3px">파트너 안내</a>
+        <a class="tapx" href="/terms" target="_blank" rel="noopener" style="font-size:12.5px;color:var(--n500);text-decoration:underline;text-underline-offset:3px">이용약관</a>
+        <a class="tapx" href="/privacy" target="_blank" rel="noopener" style="font-size:12.5px;color:var(--n500);text-decoration:underline;text-underline-offset:3px">개인정보 처리방침</a>
+        <a class="tapx" data-go="#/brand" style="font-size:12.5px;color:var(--n500);text-decoration:underline;text-underline-offset:3px">브랜드</a>
       </div>
     </div>
     ${bizFooter()}
@@ -2497,7 +2507,7 @@ function findShell(title, lead, body){
   return `
 <div class="scr fade">
   <div class="nav pad"><a data-go="#/" style="flex:none">${logoLockup({h:25,tag:!isMo()})}</a>
-    <div class="right"><a data-go="#/login" style="font-size:13.5px;font-weight:600;color:var(--n700)">← 로그인으로</a></div></div>
+    <div class="right"><a class="tapx" data-go="#/login" style="font-size:13.5px;font-weight:600;color:var(--n700)">← 로그인으로</a></div></div>
   <div style="flex:1;min-height:0;overflow:auto;display:flex;align-items:flex-start;justify-content:center;padding:${isMo()?'18px 22px 30px':'26px 40px 34px'}">
     <div style="width:100%;max-width:${isMo()?'none':'400px'};display:flex;flex-direction:column;gap:16px">
       <div style="display:flex;flex-direction:column;gap:8px">
@@ -2555,7 +2565,7 @@ V['#/reset-pw'] = () => findShell('비밀번호 찾기',
       <span data-warn="reset" class="warn">${S.resetErr||''}</span>
       <button class="btn pri" data-act="do-reset" style="width:100%;padding:14px 0;font-size:15px">재설정 링크 보내기</button>
     </div>
-    <a data-go="#/find-id" style="text-align:center;font-size:13.5px;color:var(--n700)">아이디가 기억나지 않으세요?</a>`);
+    <a class="tapx" data-go="#/find-id" style="text-align:center;font-size:13.5px;color:var(--n700)">아이디가 기억나지 않으세요?</a>`);
 
 /* ---------- D-02 유형 선택 ---------- */
 V['#/kind'] = () => `
@@ -3912,7 +3922,7 @@ V['#/contact'] = () => { const d=S.draft; const ok = contactOk(d);
 /* ---------- D-05 완료 ---------- */
 V['#/done'] = () => `
 <div class="scr fade">
-  <div class="nav pad"><a data-go="#/" style="flex:none">${logoLockup({h:25,tag:!isMo()})}</a><div class="right"><a data-go="#/my" style="font-weight:600">내 조건 확인</a></div></div>
+  <div class="nav pad"><a data-go="#/" style="flex:none">${logoLockup({h:25,tag:!isMo()})}</a><div class="right"><a class="tapx" data-go="#/my" style="font-weight:600">내 조건 확인</a></div></div>
   <div style="flex:1;display:flex;${isMo()?'flex-direction:column;':''}align-items:center;justify-content:center;gap:${isMo()?24:80}px;padding:${isMo()?'10px 26px 26px':'0 76px'}">
     <div style="position:relative;display:flex;align-items:center;justify-content:center;flex:none">
       <div style="position:absolute;width:${isMo()?240:400}px;height:${isMo()?240:400}px;border-radius:var(--r-full);background:rgba(245,237,226,.92)"></div>
@@ -4322,7 +4332,7 @@ V['#/partner'] = () => `
   <div class="nav pad" style="border-bottom:1px solid var(--navy700)">
     <span style="flex:none">${logoLockup({h:25,mode:"dark",partner:true,tag:!isMo()})}</span>
     <div class="right" style="color:#9AA3BF">
-      <a data-go="#/" style="font-size:${isMo()?12.5:13.5}px;font-weight:600">${isMo()?'손님 화면':'손님 화면 보기'}</a>
+      <a class="tapx" data-go="#/" style="font-size:${isMo()?12.5:13.5}px;font-weight:600">${isMo()?'손님 화면':'손님 화면 보기'}</a>
       ${S.user
         ? `<button class="btn sm" data-go="#/partner/demands" style="background:var(--ind300);color:#fff;padding:${isMo()?'9px 15px':'10px 20px'};font-size:${isMo()?13:14}px">내 파트너 화면</button>`
         : `<button class="btn sm" data-act="nav-login" data-v="partner" style="background:var(--ind300);color:#fff;padding:${isMo()?'9px 15px':'10px 20px'};font-size:${isMo()?13:14}px">파트너 로그인</button>`}
@@ -4335,7 +4345,7 @@ V['#/partner'] = () => `
     <p style="margin:0;font-size:${isMo()?14:17}px;line-height:1.75;color:#9AA3BF"><b style="color:#F0EDE7">제안을 보내는 데 드는 비용은 없습니다. 매물을 올리실 필요도 없습니다.</b><br class="mbr"> 네이버·직방에 올리는 광고비와 다릅니다 - 이미 원하는 게 정해진 손님입니다.</p>
     <div style="display:flex;align-items:center;gap:18px;${isMo()?'flex-direction:column;align-items:stretch':''}">
       <button class="btn ${isMo()?'blk':''}" data-go="#/partner/join" style="background:var(--ind300);color:#fff;padding:16px 40px;font-size:17px">파트너로 가입하기</button>
-      <a data-go="#/partner/demands" style="font-size:14px;font-weight:700;color:var(--ind300);text-decoration:underline;text-underline-offset:3px;padding:6px 2px">먼저 둘러보기</a>
+      <a class="tapx" data-go="#/partner/demands" style="font-size:14px;font-weight:700;color:var(--ind300);text-decoration:underline;text-underline-offset:3px;padding:6px 2px">먼저 둘러보기</a>
       <span style="font-size:12.5px;line-height:1.6;color:var(--navy400)">공인중개사 · 소유자(개인 · 법인 · 신탁 위탁자) 모두 가입하실 수 있습니다 ·<br class="mbr"> 손님에게 제안을 보내는 데는 과금하지 않습니다</span>
     </div>
    </div>
@@ -4531,7 +4541,7 @@ V['#/partner/propose'] = (id) => { const d=S.demands.find(x=>x.id===id); if(!d) 
         <p style="margin:0;font-size:12.5px;line-height:1.7;color:var(--n500)">
           <b style="color:var(--n900)">동·호수는 적지 않으셔도 됩니다</b> - 손님에게 보내는 것은 여기까지이고,
           연결된 뒤에 직접 알려주시면 됩니다.
-          ${S.listings.length?`<a data-go="#/partner/listings" style="display:inline-block;padding:4px 2px;font-weight:700;color:var(--ind);text-decoration:underline">내 물건에서 불러오기</a>`:``}</p>
+          ${S.listings.length?`<a class="tapx" data-go="#/partner/listings" style="display:inline-block;padding:4px 2px;font-weight:700;color:var(--ind);text-decoration:underline">내 물건에서 불러오기</a>`:``}</p>
         ${f.fromListing?`<p style="margin:10px 0 0;font-size:12.5px;font-weight:700;color:var(--ok)">✓ 내 물건에서 불러왔습니다 - 필요한 곳만 고치세요</p>`:``}
       </div>
       <div class="card pad">
@@ -4973,7 +4983,7 @@ V["#/partner/stats"] = () => {
       </div>
     </div>
     <p style="margin:2px 0 ${isMo()?'12px':'0'};font-size:12.5px;line-height:1.75;color:var(--n500)">
-      건별 이력은 <a data-go="#/partner/proposals" style="font-weight:800;color:var(--ind);text-decoration:underline">내 제안</a>에서 봅니다 - 이 화면은 집계와 순위만 다룹니다.</p>
+      건별 이력은 <a class="tapx" data-go="#/partner/proposals" style="font-weight:800;color:var(--ind);text-decoration:underline">내 제안</a>에서 봅니다 - 이 화면은 집계와 순위만 다룹니다.</p>
   </div>
   ${tabbar('st','p')}
 </div>`;};
@@ -5325,7 +5335,7 @@ V["#/partner/listing"] = (id) => {
           : `<span class="badge b-ok" style="font-size:11px">✓ 요청 항목 모두 충족</span>`}
       </div>
       <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:2px">
-        <a data-go="#/partner/demand/${d.id}" style="font-size:13.5px;font-weight:700;color:var(--n500);text-decoration:underline">조건 전문 보기</a>
+        <a class="tapx" data-go="#/partner/demand/${d.id}" style="font-size:13.5px;font-weight:700;color:var(--n500);text-decoration:underline">조건 전문 보기</a>
         <button class="btn pri sm" data-act="propose-with" data-v="${L.id}|${d.id}" style="padding:10px 20px">이 물건으로 제안</button>
       </div></div>`;
   return `
@@ -6849,7 +6859,7 @@ function opsGateScreen(){
   const head = `
   <div class="nav solid pad opsPad"><a data-go="#/" style="flex:none">${logoLockup({h:25})}</a>
     <div class="items"><a class="on">운영</a></div>
-    <div class="right"><a data-go="#/" style="font-size:13.5px;font-weight:600;color:var(--n700)">사이트로</a></div></div>`;
+    <div class="right"><a class="tapx" data-go="#/" style="font-size:13.5px;font-weight:600;color:var(--n700)">사이트로</a></div></div>`;
   /* 들어가기 전 화면은 가운데에 세운다. 안에 들어가면 목록이 왼쪽부터 차지만,
      문 앞에서는 볼 것이 이 상자 하나뿐이라 왼쪽에 붙여둘 이유가 없다. */
   const wrap = (body, wide) => `
@@ -6936,7 +6946,7 @@ V['#/ops/live'] = () => {
 <div class="scr fade" style="background:var(--n50)">
   <div class="nav solid pad opsPad"><a data-go="#/" style="flex:none">${logoLockup({h:25})}</a>
     <div class="items"><a class="on">운영</a></div>
-    <div class="right"><a data-go="#/" style="font-size:13.5px;font-weight:600;color:var(--n700)">사이트로</a></div></div>
+    <div class="right"><a class="tapx" data-go="#/" style="font-size:13.5px;font-weight:600;color:var(--n700)">사이트로</a></div></div>
   <div class="pad opsPad" style="flex:1;padding-top:${isMo()?16:24}px;padding-bottom:28px;width:100%">
     <div class="opsWrap">
       <aside class="opsNav">

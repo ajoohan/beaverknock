@@ -5230,8 +5230,11 @@ V["#/partner/listings"] = () => {
          <button class="btn pri md" data-go="#/partner/listing/new">첫 매물 등록하기</button></div>`)}
     <p style="margin:2px 0 ${isMo()?'12px':'0'};font-size:12.5px;line-height:1.75;color:var(--n500)">
       올리신 물건은 <b style="color:var(--n900)">손님에게 목록으로 공개되지 않습니다.</b> 조건이 맞을 때 보내시는 제안 안에서만 보입니다.</p>
-    ${S.lsSaved?'':`<p style="margin:0;background:var(--warnbg);padding:12px 16px;font-size:12.5px;line-height:1.7;color:var(--n700)">
-      지금 보이는 것은 <b style="color:var(--n900)">예시</b>입니다. 가입 확인이 끝나면 올려두신 물건이 저장됩니다.</p>`}
+    <!-- 예시가 실제로 보일 때만 예시라고 말한다. 전에는 '이번에 저장한 적이 있는가'
+         만 보고 있어서, 올려둔 물건이 하나도 없는 파트너에게도 아무것도 안 보이는
+         화면에 '지금 보이는 것은 예시입니다' 라고 적혀 있었다. -->
+    ${S.listings.some(x=>x.seed)?`<p style="margin:0;background:var(--warnbg);padding:12px 16px;font-size:12.5px;line-height:1.7;color:var(--n700)">
+      지금 보이는 것은 <b style="color:var(--n900)">예시</b>입니다. 가입 확인이 끝나면 올려두신 물건이 저장됩니다.</p>`:''}
   </div>
   ${tabbar('l','p')}
 </div>`;};

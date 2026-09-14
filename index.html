@@ -7380,9 +7380,15 @@ const VIA_LABEL = { naver:'네이버', kakao:'카카오', google:'Google', apple
 function meFrom(u, tok){
   const m = u.user_metadata || {}, a = u.app_metadata || {};
   const via = m.provider || a.provider || (a.providers || [])[0] || 'email';
+  /* 이름과 사진을 어느 칸에 담아 주는지는 길마다 다르다. 구글은 avatar_url,
+     카카오는 picture 로 오는 식이다. 하나만 보고 있으면 조용히 비어 보인다. */
+  const pick = (...k) => { for(const x of k) if(typeof x === 'string' && x) return x; return ''; };
   return {method:via, label: VIA_LABEL[via] || via, id:u.id, email:u.email||'',
-          name: m.name || m.full_name || (u.email||'').split('@')[0] || '',
-          avatar: m.avatar_url || '', token: tok};
+          name: pick(m.name, m.full_name, m.nickname, m.preferred_username, m.user_name,
+                     (u.email||'').split('@')[0]),
+          avatar: pick(m.avatar_url, m.picture, m.profile_image_url, m.profile_image,
+                       m.thumbnail_image_url),
+          token: tok};
 }
 
 /* 돌아온 주소에 토큰이 붙어 있다. 해시 라우터와 자리가 겹치므로 먼저 걷어낸다. */

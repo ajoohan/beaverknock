@@ -89,7 +89,13 @@ body.mo .scr.dark .nav{background:transparent;border-bottom-color:var(--navy700)
 .nav.solid{background:var(--white);border-bottom:1px solid var(--n100)}
 .logo{font-size:17px;font-weight:800;letter-spacing:-.03em;color:var(--ind);flex:none}
 body.mo .logo{font-size:15px}
+/* 넓은 화면에서는 메뉴를 가운데에 세운다. 로고와 오른쪽 덩어리의 폭이 서로 달라
+   자동 여백으로는 가운데가 맞지 않는다 - 절대 위치로 정확히 가운데에 둔다.
+   좁아지면 오른쪽 덩어리와 겹치므로 그때는 흐름대로 돌려놓는다. */
 .nav .items{display:flex;gap:4px}
+@media (min-width:1180px){
+  .nav .items.mid{position:absolute;left:50%;transform:translateX(-50%);z-index:1}
+}
 .nav .items a{font-size:14px;font-weight:600;color:var(--n500);padding:8px 14px;border-radius:var(--r-sm)}
 .nav .items a:hover{background:var(--n50);color:var(--n700)}
 .nav .items a.on{font-weight:800;color:var(--ind);background:var(--ind50)}
@@ -125,6 +131,11 @@ body.mo .back::after{content:"";position:absolute;left:0;right:0;top:-9px;bottom
 .btn.sec:hover{border-color:var(--ind)}
 .btn.ghost{color:var(--n700);font-weight:700;border-color:var(--n100);background:var(--n50)}
 .btn.ghost:hover{background:var(--n100);border-color:var(--n300)}
+/* 어두운 바탕에 얹는 보조 버튼. ghost 를 그대로 쓰면 밝은 바탕에 밝은 글씨가 되어
+   글자가 사라진다 - 실제로 파트너 카드에서 '먼저 둘러보기' 가 안 보였다.
+   바탕을 비우고 테두리와 글씨로만 세운다. */
+.btn.onDark{background:transparent;color:#F0EDE7;border-color:rgba(240,237,231,.38);font-weight:700}
+.btn.onDark:hover{background:rgba(240,237,231,.10);border-color:rgba(240,237,231,.62)}
 /* 상단바의 들어오는 문 두 짝.
    전에는 하나가 중립 회색(ghost), 하나가 짙은 남색에 30px 그림자(pri)라
    나란히 두면 남남처럼 보였다. 같은 인디고 가족으로 묶고 농도만 달리한다 -
@@ -840,29 +851,44 @@ body.mo .vcard .vbtn{width:100%;margin-top:10px}
   background:var(--n200);border-radius:2px;overflow:hidden}
 /* 폭을 늘리지 않고 눕혀 둔 것을 편다 - 폭은 매 프레임 배치를 다시 계산하게 만들고,
    높이 2px 짜리 띠에서는 퍼센트 폭이 제대로 잡히지도 않았다. */
+/* 4.6초에 걸쳐 천천히 펴진다. 가운데는 고른 속도로 가고 끝에서만 살짝 놓는다 -
+   처음부터 빠르면 '채워진다' 가 아니라 '켜진다' 로 보인다. */
 .steps .track i{display:block;height:100%;width:100%;border-radius:2px;
   background:linear-gradient(90deg,var(--ind) 0%,var(--ind300) 58%,var(--clay) 100%);
   transform-origin:left center;transform:scaleX(0);
-  transition:transform 2.4s cubic-bezier(.22,.62,.24,1)}
+  transition:transform 4.6s cubic-bezier(.16,.42,.28,1)}
 .steps.run .track i{transform:scaleX(1)}
 .steps .no{position:relative;z-index:2;width:38px;height:38px;border-radius:var(--r-full);
   background:var(--white);border:2px solid var(--n300);color:var(--n500);
   display:flex;align-items:center;justify-content:center;
   font-size:14px;font-weight:800;letter-spacing:-.01em;
-  transition:background .5s var(--e-out),border-color .5s var(--e-out),
-             color .5s var(--e-out),box-shadow .5s var(--e-out),transform .5s var(--e-spring)}
+  transition:background .7s var(--e-out),border-color .7s var(--e-out),
+             color .7s var(--e-out),box-shadow .7s var(--e-out)}
 .steps.run .no{background:var(--ind);border-color:var(--ind);color:#fff;
-  box-shadow:0 3px 10px rgba(61,63,143,.22)}
+  box-shadow:0 3px 12px rgba(61,63,143,.26);
+  animation:noFill .85s var(--e-spring) both}
+/* 선이 지나가는 그 순간 한 번 '톡' 하고 자리를 잡는다 */
+@keyframes noFill{0%{transform:scale(1)}42%{transform:scale(1.16)}100%{transform:scale(1)}}
+/* 번호가 켜지면 그 자리에서 물결이 한 번 퍼진다 */
+.steps .no::after{content:'';position:absolute;inset:-2px;border-radius:inherit;
+  border:2px solid var(--ind);opacity:0}
+.steps.run .no::after{animation:noRing 1.1s var(--e-out) both}
+@keyframes noRing{0%{opacity:.55;transform:scale(1)}100%{opacity:0;transform:scale(2.1)}}
 .steps .stt{display:block;font-size:15px;font-weight:800;letter-spacing:-.03em;
-  margin-bottom:4px;color:var(--n500);transition:color .5s var(--e-out)}
+  margin-bottom:4px;color:var(--n300);transition:color .7s var(--e-out)}
 .steps.run .stt{color:var(--n900)}
+.steps .sd{display:block;font-size:12.5px;line-height:1.6;color:var(--n300);max-width:32ch;
+  transition:color .7s var(--e-out)}
+.steps.run .sd{color:var(--n500)}
 
 @media (prefers-reduced-motion:reduce){
   .knock .ring{display:none}
   .knock img{animation:none}
   /* 움직임을 줄여달라고 한 사람에게는 처음부터 완성된 모습을 보여준다 */
   .steps .track i{transition:none;transform:scaleX(1)}
-  .steps .no,.steps .stt{transition:none}
+  .steps .no,.steps .stt,.steps .sd{transition:none}
+  .steps.run .no,.steps.run .no::after{animation:none}
+  .steps .no::after{display:none}
 }
 
 /* ══════════ 모션 레이어 ══════════
@@ -2348,10 +2374,14 @@ V['#/'] = () => `
 
   <div class="nav pad" style="position:relative;z-index:3">
     <span style="flex:none">${logoLockup({h:25,tag:!isMo()})}</span>
-    <div class="right" style="gap:${isMo()?16:26}px">
-      ${isMo()?'':'<a data-go="#/guide" style="font-size:14px;font-weight:600;color:var(--n700)">이용 안내</a><a data-go="#/faq" style="font-size:14px;font-weight:600;color:var(--n700)">자주 묻는 질문</a>'}
-      ${S.user?`<a class="tapx" data-go="#/my" style="font-size:${isMo()?11.5:14}px;font-weight:600;color:var(--n700)">내 조건 확인</a>`:''}
-      ${isMo()?'':'<a data-go="#/partner" style="font-size:14px;font-weight:600;color:var(--n700)">파트너 안내</a>'}
+    ${isMo()?'':`<div class="items mid">
+      <a data-go="#/guide">이용 안내</a>
+      <a data-go="#/faq">자주 묻는 질문</a>
+      ${S.user?`<a data-go="#/my">내 조건 확인</a>`:''}
+      <a data-go="#/partner">파트너 안내</a>
+    </div>`}
+    <div class="right" style="gap:${isMo()?16:20}px">
+      ${isMo()&&S.user?`<a class="tapx" data-go="#/my" style="font-size:11.5px;font-weight:600;color:var(--n700)">내 조건</a>`:''}
       ${navAuth(isMo()?'both':'partner-first')}
     </div>
   </div>
@@ -2416,7 +2446,7 @@ V['#/'] = () => `
         전단도, 광고비도 없습니다. <b style="color:#fff;font-weight:700">제안은 무료입니다.</b></p>
       <div class="row">
         <button class="btn pri" data-go="#/partner/join" style="padding:14px 26px;font-size:15px">파트너로 시작하기</button>
-        <button class="btn ghost" data-go="#/partner" style="padding:14px 22px;font-size:15px;color:#F0EDE7;border:1.5px solid var(--navy600)">먼저 둘러보기</button>
+        <button class="btn onDark" data-go="#/partner" style="padding:14px 22px;font-size:15px">먼저 둘러보기</button>
       </div>
     </div>
   </div>
@@ -2426,30 +2456,41 @@ V['#/'] = () => `
     <div class="heroBand">
       <div class="steps" style="display:grid;grid-template-columns:repeat(4,1fr);gap:0">
         <span class="track" aria-hidden="true"><i></i></span>
-        ${HOME_STEPS.map(([t,d],i)=>`
+        ${HOME_STEPS.map(([t,d],i)=>{
+          /* 번호가 켜지는 때를 선이 그 자리를 지나는 때에 맞춘다.
+             띠는 4.6초에 걸쳐 왼쪽 끝에서 오른쪽 끝까지 간다. 동그라미는 각 칸의
+             맨 앞에 있으므로 대략 0 · 0.23 · 0.52 · 0.80 지점을 지난다.
+             숫자를 고정 간격으로 켜면 선과 어긋나 따로 노는 것처럼 보인다. */
+          const at = [0.10, 1.15, 2.45, 3.75][i];
+          return `
           <div class="st" style="position:relative;padding:0 24px 0 0">
-            <span class="no" style="margin-bottom:12px;transition-delay:${(i*0.5+0.12).toFixed(2)}s">${i+1}</span>
-            <span class="stt" style="transition-delay:${(i*0.5+0.12).toFixed(2)}s">${t}</span>
-            <span style="display:block;font-size:12.5px;line-height:1.6;color:var(--n500);max-width:32ch">${d}</span>
-          </div>`).join('')}
+            <span class="no" style="margin-bottom:12px;transition-delay:${at}s;animation-delay:${at}s">${i+1}</span>
+            <span class="stt" style="transition-delay:${(at+0.08).toFixed(2)}s">${t}</span>
+            <span class="sd" style="transition-delay:${(at+0.16).toFixed(2)}s">${d}</span>
+          </div>`;}).join('')}
       </div>
     </div>
   </div>
 
-  <div class="heroBand" style="flex:none;position:relative;z-index:3;background:var(--white);border-top:1px solid var(--hair);
-    padding-top:14px;padding-bottom:18px;display:flex;flex-direction:column;gap:10px">
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap">
-      ${logoLockup({h:18,en:true,tag:true,stack:true})}
-      <div class="footlinks" style="display:flex;gap:16px;flex-wrap:wrap">
-        <a class="tapx" data-go="#/guide" style="font-size:12.5px;color:var(--n500);text-decoration:underline;text-underline-offset:3px">이용 안내</a>
-        <a class="tapx" data-go="#/faq" style="font-size:12.5px;color:var(--n500);text-decoration:underline;text-underline-offset:3px">자주 묻는 질문</a>
-        <a class="tapx" data-go="#/partner" style="font-size:12.5px;color:var(--n500);text-decoration:underline;text-underline-offset:3px">파트너 안내</a>
-        <a class="tapx" href="/terms" target="_blank" rel="noopener" style="font-size:12.5px;color:var(--n500);text-decoration:underline;text-underline-offset:3px">이용약관</a>
-        <a class="tapx" href="/privacy" target="_blank" rel="noopener" style="font-size:12.5px;color:var(--n500);text-decoration:underline;text-underline-offset:3px">개인정보 처리방침</a>
-        <a class="tapx" data-go="#/brand" style="font-size:12.5px;color:var(--n500);text-decoration:underline;text-underline-offset:3px">브랜드</a>
+  <!-- 바닥글은 어두운 띠로 선다. 화면이 여기서 끝난다는 것이 한눈에 보이고,
+       바탕색을 화면 끝까지 칠하므로 폭이 어긋날 자리가 없다.
+       (전에는 가운데 띠에 흰 바탕을 함께 걸어 두어, 화면이 넓으면 양옆으로
+        바탕색이 비쳐 나왔다 - 폭이 이상해 보이던 것이 그것이다.) -->
+  <div style="flex:none;position:relative;z-index:3;background:var(--navy900);color:#E4E0D9;--fc:#B5B1AA">
+    <div class="heroBand" style="padding-top:22px;padding-bottom:24px;display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap">
+        ${logoLockup({h:18,en:true,tag:true,stack:true,mode:'dark'})}
+        <div class="footlinks" style="display:flex;gap:18px;flex-wrap:wrap">
+          ${[['#/guide','이용 안내'],['#/faq','자주 묻는 질문'],['#/partner','파트너 안내']]
+            .map(([h,t])=>`<a class="tapx" data-go="${h}" style="font-size:12.5px;color:#CFCBC2">${t}</a>`).join('')}
+          <a class="tapx" href="/terms" target="_blank" rel="noopener" style="font-size:12.5px;color:#CFCBC2">이용약관</a>
+          <a class="tapx" href="/privacy" target="_blank" rel="noopener" style="font-size:12.5px;color:#CFCBC2">개인정보 처리방침</a>
+          <a class="tapx" data-go="#/brand" style="font-size:12.5px;color:#CFCBC2">브랜드</a>
+        </div>
       </div>
+      <div style="height:1px;background:rgba(240,237,231,.14)"></div>
+      ${bizFooter()}
     </div>
-    ${bizFooter()}
   </div>`}
 </div>`;
 
@@ -2462,15 +2503,17 @@ const CORP = {
   tsp: '제2024-경기하남-2207호', addr: '경기도 하남시 미사대로 550, A동 3층 77호 (덕풍동, 현대지식산업센터 한강미사 1차)', mail: 'support@plustonic.com',
 };
 
+/* 색을 --fc 로 받는다. 어두운 바닥글에서만 그 값을 정의하고, 나머지 자리는
+   정의하지 않으므로 예전 색(n500)이 그대로 쓰인다 - 부르는 쪽을 고치지 않는다. */
 function bizFooter(){
-  return `<div style="font-size:11.5px;line-height:1.8;color:var(--n500)">
+  return `<div style="font-size:11.5px;line-height:1.8;color:var(--fc,var(--n500))">
     <span style="display:block">${esc(CORP.corp)} · 대표 ${esc(CORP.ceo)} ·
       사업자등록번호 ${esc(CORP.no)} · 통신판매업 신고 ${esc(CORP.tsp)}</span>
     <span style="display:block">${esc(CORP.addr)}</span>
     <span style="display:block">문의 <a class="tapx" href="tel:${esc(CORP.tel.replace(/-/g,''))}"
-      style="color:var(--n500);text-decoration:underline;text-underline-offset:3px">${esc(CORP.tel)}</a>
+      style="color:var(--fc,var(--n500));text-decoration:underline;text-underline-offset:3px">${esc(CORP.tel)}</a>
       · <a class="tapx" href="mailto:${esc(CORP.mail)}"
-      style="color:var(--n500);text-decoration:underline;text-underline-offset:3px">${esc(CORP.mail)}</a>
+      style="color:var(--fc,var(--n500));text-decoration:underline;text-underline-offset:3px">${esc(CORP.mail)}</a>
       · 비버노크는 조건을 전달하는 서비스이며 공인중개사가 아닙니다.
       중개와 계약은 공인중개사사무소와 직접 하시게 됩니다.</span>
   </div>`;

@@ -6086,7 +6086,7 @@ function listingPanel(){
     <div class="card pad" style="padding:0;overflow-x:auto">
       <table style="width:100%;border-collapse:collapse;font-size:12.5px;min-width:760px">
         <thead><tr style="text-align:left;color:var(--n500)">
-          ${['올린 날','유형','물건','지역','가격','올린 곳','상태'].map(h=>
+          ${['올린 날','유형','물건','지역','면적','가격','올린 곳','상태'].map(h=>
             `<th style="padding:10px 12px;font-weight:800;white-space:nowrap">${h}</th>`).join('')}</tr></thead>
         <tbody>${rows.map(r=>`
           <tr style="border-top:1px solid var(--n100)${r.status!=='active'?';opacity:.55':''}">
@@ -6094,6 +6094,11 @@ function listingPanel(){
             <td style="padding:10px 12px">${esc(KIND_KO2[r.kind]||r.kind||'-')}</td>
             <td style="padding:10px 12px"><b>${esc(r.name||'-')}</b></td>
             <td style="padding:10px 12px">${esc(r.dong||'-')}</td>
+            <!-- 0020 이 실제로 먹었는지는 여기서 바로 보인다. ㎡ 가 비어 있고 평만
+                 보이면 새 칸 없이 저장된 것이다(서버가 그렇게 물러서게 해 두었다). -->
+            <td class="num" style="padding:10px 12px;white-space:nowrap">${
+              +r.area ? `전용 ${r.area}㎡` : +r.py ? `${r.py}평` : '-'}${
+              +r.area_sup ? ` / ${r.area_sup}㎡` : ''}</td>
             <td class="num" style="padding:10px 12px;white-space:nowrap">보증금 ${(+r.dep||0).toLocaleString()}${r.rent?` / 월 ${r.rent}`:''}</td>
             <td style="padding:10px 12px">${r.agent?`${esc(r.agent.office||r.agent.name||'-')}<br><span style="font-size:11px;color:var(--n500)">${esc(ROLE_KO2[r.agent.role]||'공인중개사')}${r.agent.status!=='approved'?` · ${esc(r.agent.status)}`:''}</span>`:'-'}</td>
             <td style="padding:10px 12px">${r.status==='active'?'<span class="badge b-ok">올림</span>':'<span class="badge b-mute">내림</span>'}</td>

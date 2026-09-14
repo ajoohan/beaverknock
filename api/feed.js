@@ -466,17 +466,36 @@ async function addListing(req, res, agent, user, b) {
     agent_id: agent.id, agent_user: user.id,
     kind, name, dong: txt(L.dong, 60), deal: txt(L.deal, 20), biz: txt(L.biz, 60),
     dep: int0(L.dep), rent: int0(L.rent), fee: int0(L.fee),
-    py: num0(L.py), rooms: int0(L.rooms), baths: int0(L.baths),
+    /* 면적은 ㎡ 로 담는다. py 는 대조와 옛 행이 아직 쓰므로 함께 남긴다 */
+    area: num0(L.area), area_sup: num0(L.areaSup), py: num0(L.py),
+    rooms: int0(L.rooms), baths: int0(L.baths),
     band: txt(L.band, 20), floors: int0(L.floors),
+    floor_no: txt(L.floorNo, 10), duplex: L.duplex === true,
     musts: arr(L.musts), fac: arr(L.fac),
+    musts_free: txt(L.mustsFree, 120), fac_free: txt(L.facFree, 120),
     move_in: txt(L.moveIn, 40), photos: int0(L.photos) || 0,
   };
 
   try {
-    const r = await fetch(sbUrl('bk_listing'), {
+    const put = body => fetch(sbUrl('bk_listing'), {
       method: 'POST', headers: { ...sbHeaders(), Prefer: 'return=representation' },
-      body: JSON.stringify(row),
+      body: JSON.stringify(body),
     });
+    let r = await put(row);
+    /* 코드가 먼저 올라가고 0020 이 아직 안 돌았을 수 있다. 그때 새 칸 때문에
+       등록 자체가 막히면 안 된다 - 새 칸만 빼고 한 번 더 넣는다. 면적이 평으로만
+       남지만, 물건을 못 올리는 것보다는 낫다. */
+    if (!r.ok) {
+      const t0 = await r.text();
+      if (/does not exist|PGRST204/i.test(t0) && /area|duplex|floor_no|musts_free|fac_free/.test(t0)) {
+        const { area, area_sup, floor_no, duplex, musts_free, fac_free, ...old } = row;
+        r = await put(old);
+      } else {
+        if (noTable(t0)) return res.status(503).json({ error: '아직 준비 중입니다 (0015 마이그레이션 필요)' });
+        console.error('[feed:listing-add]', r.status, t0.slice(0, 160));
+        return res.status(502).json({ error: '물건을 저장하지 못했습니다' });
+      }
+    }
     if (!r.ok) {
       const t = await r.text();
       if (noTable(t)) return res.status(503).json({ error: '아직 준비 중입니다 (0015 마이그레이션 필요)' });

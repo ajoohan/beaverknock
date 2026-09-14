@@ -23,13 +23,10 @@
  * 공공데이터에 물어보고 있는 그대로 돌려주는 일 - 한 지붕 아래 둔다.
  *
  *   what:'addr'  도로명주소 검색 (행정안전부 주소기반산업지원서비스)
- *   what:'bld'   건축물대장 표제부 (국토교통부 · 면적·용도·사용승인일)
  *
  * 선택 환경변수
  *   GG_API_KEY    경기데이터드림 인증키 (없으면 형식만 본다)
  *   JUSO_KEY      도로명주소 검색 승인키 (business.juso.go.kr · 무료·즉시)
- *   DATA_GO_KEY   공공데이터포털 서비스키 (data.go.kr · 무료·승인 1~2일)
- *   BLD_API       건축물대장 엔드포인트 (신청하신 문서의 주소가 다르면 여기에)
  */
 
 import { findByKey, findByName, STATE_NM, STD_DATE } from './_brokers.js';
@@ -194,108 +191,6 @@ async function searchAddr(req, res, b) {
   }
 }
 
-/* ══════════ 건축물대장 표제부 ══════════
-   면적·주용도·사용승인일을 채운다. 사람이 옮겨 적다 틀리는 것을 줄이는 일이지,
-   확인의 근거는 아니다 - 채운 값은 고칠 수 있게 둔다.
-
-   엔드포인트는 신청한 문서에 적힌 것을 쓴다. 문서가 바뀌는 일이 있어
-   환경변수로 바꿀 수 있게 두었다. */
-const BLD_DEFAULT = 'https://apis.data.go.kr/1613000/BldRgstHubService/getBrTitleInfo';
-
-async function readBuilding(req, res, b) {
-  const key = process.env.DATA_GO_KEY;
-  const admCd = String(b.admCd || '').replace(/[^0-9]/g, '');
-  if (admCd.length !== 10) return res.status(400).json({ error: '어느 필지인지 알 수 없습니다' });
-  if (tooMany(req)) return res.status(429).json({ error: '잠시 후 다시 시도해 주세요 - 면적·용도는 직접 적으셔도 됩니다' });
-  if (!key) {
-    return res.status(200).json({ ok: true, off: true,
-      note: '건축물대장이 아직 연결되지 않았습니다 - 면적·용도는 직접 적어주세요' });
-  }
-  try {
-    const u = new URL(process.env.BLD_API || BLD_DEFAULT);
-    u.searchParams.set('serviceKey', key);
-    u.searchParams.set('sigunguCd', admCd.slice(0, 5));
-    u.searchParams.set('bjdongCd', admCd.slice(5));
-    u.searchParams.set('platGbCd', b.mount ? '1' : '0');   // 0 대지 · 1 산
-    u.searchParams.set('bun', String(b.bun || '0').padStart(4, '0'));
-    u.searchParams.set('ji', String(b.ji || '0').padStart(4, '0'));
-    u.searchParams.set('numOfRows', '5');
-    u.searchParams.set('pageNo', '1');
-    u.searchParams.set('_type', 'json');
-    /* 국토부 쪽이 잠깐 느려 코드 05(SERVICETIMEOUT)로 되돌려보내는 일이 잦다.
-       한 번만 더 물어본다 - 사람이 '검색' 을 다시 누르게 하느니 여기서 끝내는
-       편이 낫다. 두 번을 합쳐도 서버리스 시간 예산 안에 들도록 짧게 잡는다. */
-    const ask = () => fetch(u, { signal: AbortSignal.timeout(4500) })
-      .then(async x => ({ ok: x.ok, status: x.status, text: await x.text() }))
-      .catch(() => null);
-    const RETRY = /<returnReasonCode>0[15]<|"returnReasonCode"\s*:\s*"?0[15]\b|SERVICETIMEOUT|APPLICATION_ERROR/;
-
-    let got = await ask();
-    if (!got || !got.ok || RETRY.test(got.text)) {
-      const again = await ask();
-      if (again && (again.ok && !RETRY.test(again.text))) got = again;
-      else got = got || again;
-    }
-    if (!got) return res.status(200).json({ ok: true,
-      note: '건축물대장 조회가 지연되고 있습니다 - 면적·용도는 직접 적으셔도 됩니다' });
-    const r = { ok: got.ok, status: got.status };
-    const text = got.text;
-
-    /* 공공데이터포털은 오류를 200 으로도, 400/500 으로도, XML 로도 보낸다.
-       어느 쪽이든 그쪽이 남긴 코드와 말을 그대로 옮긴다 - '불러오지 못했습니다'
-       한 줄로는 키가 틀린 건지, 그 필지가 없는 건지, 저쪽이 잠깐 죽은 건지
-       알 수 없다. 고칠 수 없는 오류 메시지는 오류가 아니다.
-       인증키는 어떤 경우에도 밖으로 내보내지 않는다. */
-    const upstream = () => {
-      const code = (text.match(/<returnReasonCode>([^<]+)</) || text.match(/"returnReasonCode"\s*:\s*"?([^",<]+)/) || [])[1];
-      const msg  = (text.match(/<returnAuthMsg>([^<]+)</) || text.match(/<errMsg>([^<]+)</)
-                 || text.match(/"resultMsg"\s*:\s*"([^"]+)/) || [])[1];
-      return [msg, code && `코드 ${code}`].filter(Boolean).join(' · ');
-    };
-    const BAD_KEY = /SERVICE_KEY_IS_NOT_REGISTERED|SERVICE_ACCESS_DENIED|30\b|20\b/;
-
-    let j = null;
-    try { j = JSON.parse(text); } catch (e) { /* XML 이면 아래에서 걸린다 */ }
-    const head = j && j.response && j.response.header;
-    const okCode = !head || head.resultCode === '00' || head.resultCode === '0';
-
-    if (!r.ok || !j || !okCode) {
-      const why = upstream();
-      /* 키 문제는 사람이 고쳐야 하는 것이라 따로 말해준다 */
-      const keyBad = BAD_KEY.test(why) || /인증키|SERVICE_KEY/i.test(why);
-      return res.status(200).json({ ok: true,
-        note: keyBad
-          ? `건축물대장 인증키가 받아들여지지 않았습니다 (${why || 'HTTP ' + r.status}) - `
-            + 'DATA_GO_KEY 에 Decoding 키를 넣으셨는지 확인해 주세요'
-          : `건축물대장을 불러오지 못했습니다${why ? ` (${why})` : ` (HTTP ${r.status})`}`,
-        why: why || null, status: r.status });
-    }
-
-    const body = j.response.body;
-    const raw = body && body.items && body.items.item;
-    const it = Array.isArray(raw) ? raw[0] : raw;
-    if (!it) {
-      return res.status(200).json({ ok: true, none: true,
-        note: '건축물대장에 없는 필지입니다 - 직접 적어주세요' });
-    }
-    const num = v => { const n = Number(v); return Number.isFinite(n) && n > 0 ? n : null; };
-    const m2 = num(it.totArea);
-    return res.status(200).json({ ok: true,
-      bldNm:   it.bldNm || '',
-      purpose: it.mainPurpsCdNm || '',
-      totArea: m2,
-      py:      m2 ? Math.round(m2 / 3.3058 * 10) / 10 : null,
-      archArea: num(it.archArea),
-      floors:  num(it.grndFlrCnt),
-      hhld:    num(it.hhldCnt),
-      approved: String(it.useAprDay || '').replace(/^(\d{4})(\d{2})(\d{2})$/, '$1.$2.$3'),
-      addr:    it.newPlatPlc || it.platPlc || '',
-    });
-  } catch (e) {
-    return res.status(200).json({ ok: true, note: '건축물대장 조회가 지연되고 있습니다 - 직접 적으셔도 됩니다' });
-  }
-}
-
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST 만 받습니다' });
@@ -307,7 +202,6 @@ export default async function handler(req, res) {
   /* 주소는 로그인 전에도 찾을 수 있어야 한다 - 가입하면서 쓰는 것이라
      여기에 문을 두면 가입 자체가 막힌다. 등록번호 조회와 같은 자리다. */
   if (b.what === 'addr') return searchAddr(req, res, b);
-  if (b.what === 'bld')  return readBuilding(req, res, b);
 
   const shape = checkShape(b.reg_no);
   if (!shape.ok) return res.status(400).json({ error: shape.reason });

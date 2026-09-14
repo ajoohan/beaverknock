@@ -78,11 +78,17 @@ export default async function handler(req, res) {
       })),
       proposals: proposals.map(p => ({
         id: p.id, demand_id: p.demand_id, status: p.status,
+        /* 주거면 '공급면적', 상가·오피스·창고면 '계약면적' 이라 부른다.
+           그 이름은 조건의 종류에서 갈리므로 여기서 함께 실어 보낸다. */
+        kind: (demands.find(d => d.id === p.demand_id) || {}).kind || 'home',
         by: by[p.agent_id] || '공인중개사',
         bname: p.bname, addr_area: String(p.addr || '').split(' ').slice(0, 2).join(' '),
         dep: p.dep, rent: p.rent, fee: p.fee, fee_type: p.fee_type, fee_items: p.fee_items,
         area_sup: p.area_sup, area: p.area, rooms: p.rooms, baths: p.baths, dir: p.dir,
-        floor: p.floor_mode === '비공개' ? '비공개' : (p.floor_no ? p.floor_no + '층' : p.band || ''),
+        /* 'B1' 처럼 숫자가 아닌 표기에 '층' 을 붙이면 'B1층' 이 된다 */
+        floor: p.floor_mode === '비공개' ? '비공개'
+             : (p.floor_no ? (/^[0-9]+$/.test(p.floor_no) ? p.floor_no + '층' : p.floor_no) : p.band || ''),
+        duplex: p.duplex === true,
         move_in: p.move_in, park: p.park, approved: p.approved, photos: p.photos,
         msg: p.msg, created_at: p.created_at,
         /* 연결한 뒤에야 상대가 누구인지 나간다. 새로고침해도 번호가 남아 있어야

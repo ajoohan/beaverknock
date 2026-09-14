@@ -116,14 +116,25 @@ export default async function handler(req, res) {
       area_sup: num(b.area_sup), area: num(b.area),
       rooms: str(b.rooms, 10), baths: str(b.baths, 10), dir: str(b.dir, 10),
       floor_mode: str(b.floor_mode, 20), floor_no: str(b.floor_no, 10), band: str(b.band, 10),
+      duplex: b.duplex === true,
       move_in: str(b.move_in, 40), park: str(b.park, 40), approved: str(b.approved, 20),
       photos: int(b.photos) || 0, msg: str(b.msg, 500),
     };
 
-    const ir = await fetch(sbUrl('bk_proposal'), {
+    const put = body => fetch(sbUrl('bk_proposal'), {
       method: 'POST', headers: { ...sbHeaders(), Prefer: 'return=representation' },
-      body: JSON.stringify(row),
+      body: JSON.stringify(body),
     });
+    let ir = await put(row);
+    /* 코드가 먼저 올라가고 0020 이 아직 안 돌았을 수 있다. 복층 한 칸 때문에
+       제안이 통째로 막히면 안 된다 - 그 칸만 빼고 한 번 더 넣는다. */
+    if (!ir.ok) {
+      const t0 = await ir.clone().text();
+      if (/does not exist|PGRST204/i.test(t0) && /duplex/.test(t0)) {
+        const { duplex, ...old } = row;
+        ir = await put(old);
+      }
+    }
     if (!ir.ok) {
       const t = await ir.text();
       await giveBack();

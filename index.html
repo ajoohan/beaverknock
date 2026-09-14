@@ -1130,6 +1130,11 @@ p,li,dd,.sub,.lines,.opt{line-break:strict;overflow-wrap:break-word}
 const $ = (s,r=document)=>r.querySelector(s);
 const $$ = (s,r=document)=>[...r.querySelectorAll(s)];
 const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+/* 1평 = 3.305785㎡. 면적은 ㎡ 로 받아 두고 평은 보여줄 때 환산한다 -
+   중개사가 ㎡ 로만 올려도 손님은 평으로 볼 수 있어야 한다. */
+const M2_PY = 3.305785;
+const pyOf  = m2 => +m2 > 0 ? +(+m2 / M2_PY).toFixed(1) : 0;
+const pyTag = m2 => +m2 > 0 ? `${pyOf(m2)}평` : '';
 const won = m => { if(!m) return '0'; const e=Math.floor(m/10000), r=m%10000;
   return e&&r ? `${e}억 ${r.toLocaleString()}만` : e ? `${e}억` : `${m.toLocaleString()}만`; };
 
@@ -1175,6 +1180,14 @@ const dealWords = v => DEAL_WORDS[v] || DEAL_WORDS['월세'];
 const DEALS=['전세','월세','매매'], HTYPES=['아파트','오피스텔','빌라·연립','원룸·투룸','상관없음'];
 const ROOMS=['1~2룸','3룸','4룸+','무관'];
 const MUSTS=['주차 가능','엘리베이터','반려동물','역세권','초등학교 도보','즉시 입주'];
+/* 매물에만 쓰는 목록. 손님이 거는 '필수 조건'(MUSTS)과 섞지 않는다 -
+   한강 조망은 중개사가 내세우는 강점이지 손님이 걸어둔 조건이 아니다.
+   중개사 회신(2026-09-14): 쇼핑몰·한강조망·산책로·등산로처럼 어필하고 싶은 것을
+   여러 개 고를 수 있어야 하고, 목록에 없는 것은 직접 적을 수 있어야 한다. */
+const LMUSTS = [...MUSTS, '신축', '올수리', '풀옵션', '한강 조망', '쇼핑몰 인접',
+  '산책로', '등산로', '숲세권', '대단지', '남향'];
+const LFAC = ['주방·급배수','가스 인입','전기 증설','후드·덕트','화장실 내부','정화조 여유','주차 가능',
+  '코너 자리','유동인구 많음','간판 자리 좋음','전용 화장실','엘리베이터'];
 const FLOORS=['반지하 제외','1층 제외','탑층 제외','무관'], HOUSE=['1인','2인','3인','3인 이상'];
 const LOANS=['있음','없음'];
 const PREFS=['문자·카톡','전화','아무거나'], TIMES=['평일 낮','평일 저녁','주말','아무때나'];
@@ -1896,9 +1909,15 @@ function listingFromRow(x){
   return {
     id:x.id, kind:x.kind, name:x.name, dong:x.dong||'',
     deal:x.deal||undefined, biz:x.biz||undefined,
-    dep:x.dep||0, rent:x.rent||0, fee:x.fee||0, py:+x.py||0,
+    dep:x.dep||0, rent:x.rent||0, fee:x.fee||0,
+    area:+x.area||0, areaSup:+x.area_sup||0,
+    /* 0020 이전에 올린 물건은 평만 있다 - 있는 쪽을 쓴다 */
+    py:+x.area ? pyOf(x.area) : (+x.py||0),
     rooms:x.rooms||0, baths:x.baths||0, band:x.band||'', floors:x.floors||0,
-    musts:x.musts||[], fac:x.fac||[], moveIn:x.move_in||'협의',
+    floorNo:x.floor_no||'', duplex:!!x.duplex,
+    musts:x.musts||[], fac:x.fac||[],
+    mustsFree:x.musts_free||'', facFree:x.fac_free||'',
+    moveIn:x.move_in||'협의',
     photos:x.photos||0, at:agoText(x.created_at), status:x.status||'active',
   };
 }
@@ -1956,7 +1975,11 @@ function propFromRow(p){
   return {
     id:p.id, cond:p.demand_id, isNew:p.status==='sent', read:p.status!=='sent',
     photos:p.photos||0, title:p.bname || p.addr_area || '물건', dong:p.addr_area||'',
-    dep:p.dep, rent:p.rent, fee:p.fee, feeType:p.fee_type||'', py:p.area_sup?+(p.area_sup/3.305785).toFixed(1):0,
+    dep:p.dep, rent:p.rent, fee:p.fee, feeType:p.fee_type||'',
+    /* 전에는 공급면적 하나만 받아 '전용' 이라고 적어 보여줬다. 둘은 다른 숫자다 */
+    area:+p.area||0, areaSup:+p.area_sup||0, py:pyOf(p.area||p.area_sup),
+    kind:p.kind||'home', rooms:p.rooms||'', baths:p.baths||'', duplex:!!p.duplex,
+    dir:p.dir||'', feeItems:p.fee_items||'',
     floor:p.floor||'', parking:p.park||'문의', moveIn:p.move_in||'협의',
     diff:[], match:[], msg:p.msg||'',
     /* 연결 전에는 누구인지 특정할 수 있는 것을 담지 않는다 - 자격만 담는다.
@@ -4067,6 +4090,17 @@ V['#/inbox'] = () => {
 /* ---------- D-09 제안 상세 ---------- */
 V['#/proposal'] = (id) => { const p=S.props.find(x=>x.id===id); if(!p) return V['#/inbox']();
   p.read=true; p.isNew=false;
+  /* 적어 보낸 것만 보여준다. 전에는 '총 층수 0층 · 위반건축물 해당 없음 · 융자금 없음'
+     을 늘 띄웠다 - 아무도 확인한 적 없는 문장이고, 손님은 그것을 확인된 사실로 읽는다.
+     위반건축물·융자는 예시 카드에만 있다. 실제 제안에는 그 칸이 아예 없다. */
+  const kv = (k, v) => v ? `<div class="kv"><dt>${k}</dt><dd>${esc(String(v))}</dd></div>` : '';
+  const bldRows = [
+    kv('사용승인', p.approved), p.floors ? kv('총 층수', `${p.floors}층`) : '',
+    kv('주차', p.parking), p.dir ? kv('방향', `${p.dir} (거실 기준)`) : '',
+    kv('관리비 포함', p.feeItems),
+    p.seed ? `<div class="kv"><dt>위반건축물</dt><dd style="color:${p.violation?'var(--danger)':'var(--ok)'};font-weight:700">${p.violation?'있음':'해당 없음'}</dd></div>` : '',
+    p.seed ? `<div class="kv"><dt>융자금</dt><dd class="num">${p.loan?p.loan.toLocaleString()+'만원':'없음'}</dd></div>` : '',
+  ].filter(Boolean).join('');
   const info = `
     <div class="card pad">
       <span class="sect">내 조건과 비교</span>
@@ -4076,16 +4110,11 @@ V['#/proposal'] = (id) => { const p=S.props.find(x=>x.id===id); if(!p) return V[
     <div class="card pad" style="background:var(--ind50);border:1.5px solid #DCDDF3">
       <span class="sect">중개사님의 한마디</span>
       <p style="margin:0;font-size:${isMo()?14:15}px;line-height:1.75">${esc(p.msg)}</p></div>
-    <div class="card pad">
-      <span class="sect">건물 정보 · 건축물대장 기준</span>
-      <div style="display:grid;grid-template-columns:repeat(${isMo()?1:2},minmax(0,1fr));gap:4px 24px">
-        <div class="kv"><dt>사용승인</dt><dd class="num">${p.approved}</dd></div>
-        <div class="kv"><dt>총 층수</dt><dd>${p.floors}층</dd></div>
-        <div class="kv"><dt>위반건축물</dt><dd style="color:${p.violation?'var(--danger)':'var(--ok)'};font-weight:700">${p.violation?'있음':'해당 없음'}</dd></div>
-        <div class="kv"><dt>융자금</dt><dd class="num">${p.loan?p.loan.toLocaleString()+'만원':'없음'}</dd></div>
-      </div>
+    ${bldRows ? `<div class="card pad">
+      <span class="sect">건물 정보</span>
+      <div style="display:grid;grid-template-columns:repeat(${isMo()?1:2},minmax(0,1fr));gap:4px 24px">${bldRows}</div>
       <p style="margin:8px 0 0;padding-top:10px;border-top:1px solid var(--n100);font-size:12.5px;line-height:1.6;color:var(--n500)">
-        ${esc(p.risk)}<br class="mbr"> 참고 지표이며 실제와 다를 수 있습니다 - 계약 전 등기사항증명서와 건축물대장을 직접 확인하세요.</p></div>
+        ${p.risk?`${esc(p.risk)}<br class="mbr">`:''}중개사가 적어 보낸 내용입니다 - 계약 전 등기사항증명서와 건축물대장을 직접 확인하세요.</p></div>` : ''}
     <div class="card pad" style="display:flex;justify-content:space-between;align-items:center;gap:12px">
       <div><b style="display:block;font-size:14px;font-weight:800">${esc(p.agency.name)}가 보낸 제안입니다</b>
       <span style="font-size:12.5px;line-height:1.6;color:var(--n500)">${p.agency.reg
@@ -4111,7 +4140,16 @@ V['#/proposal'] = (id) => { const p=S.props.find(x=>x.id===id); if(!p) return V[
         <h1 class="t" style="font-size:${isMo()?21:25}px">${esc(p.title)} ${demoTag(p,'vertical-align:middle')}</h1>
         <p class="num" style="margin:8px 0 0;font-size:${isMo()?17:21}px;font-weight:800;color:var(--ind)">${p.rent? `보증금 ${p.dep.toLocaleString()} / 월 ${p.rent}` : `전세 ${won(p.dep)}`}
           <span style="font-size:13.5px;font-weight:600;color:var(--n500)">관리비 ${p.fee} (${esc(p.feeType)})</span></p>
-        <p style="margin:6px 0 0;font-size:13.5px;color:var(--n500)">${p.dong} · 전용 ${p.py}평 (${(p.py*3.305785).toFixed(1)}㎡) · ${p.floor} · 입주 ${esc(p.moveIn)}</p>
+        <p style="margin:6px 0 0;font-size:13.5px;color:var(--n500)">${[
+          p.dong,
+          p.area    ? `전용 ${p.area}㎡(${pyOf(p.area)}평)` : '',
+          p.areaSup ? `${p.kind==='home'?'공급':'계약'} ${p.areaSup}㎡(${pyOf(p.areaSup)}평)` : '',
+          p.rooms   ? `방 ${esc(p.rooms)}` : '',
+          p.baths   ? `욕실 ${esc(p.baths)}` : '',
+          p.duplex  ? '복층' : '',
+          p.floor ? esc(p.floor) : '',
+          `입주 ${esc(p.moveIn)}`,
+        ].filter(Boolean).join(' · ')}</p>
       </div>
       ${info}
       <div style="margin-top:auto;padding:16px 0 24px;display:grid;grid-template-columns:1fr 2.2fr;gap:10px">
@@ -4459,7 +4497,7 @@ V['#/partner/propose'] = (id) => { const d=S.demands.find(x=>x.id===id); if(!d) 
         <span class="sect"><span style="color:var(--ind)">2.</span> 필수 정보</span>
         <div style="display:grid;grid-template-columns:repeat(${isMo()?2:3},minmax(0,1fr));gap:12px 14px">
           <div><span class="lab" style="font-size:12.5px">건물명</span><input class="inp" data-in="bname" value="${esc(g('bname'))}" placeholder="미사강변 ○○아파트" style="padding:12px 14px;font-size:14px"></div>
-          <div><span class="lab" style="font-size:12.5px">공급면적 <span style="color:var(--danger)">*</span></span>
+          <div><span class="lab" style="font-size:12.5px">${home?'공급면적':'계약면적'} <span style="color:var(--danger)">*</span></span>
             <div class="unit"><input class="inp num" data-in="areaSup" inputmode="decimal" value="${esc(g('areaSup'))}" placeholder="0" style="padding:12px 14px;font-size:14px"><span>㎡</span></div>
             <span data-py="areaSup" style="display:block;margin-top:4px;font-size:11px;font-weight:700;color:var(--ind)">${+g('areaSup')>0?`${(+g('areaSup')/3.305785).toFixed(1)}평`:''}</span></div>
           <div><span class="lab" style="font-size:12.5px">전용면적</span>
@@ -4485,6 +4523,7 @@ V['#/partner/propose'] = (id) => { const d=S.demands.find(x=>x.id===id); if(!d) 
           ${f.floorMode==='정확한 층'? `<div class="unit" style="max-width:150px;margin-top:10px"><input class="inp num" data-in="floorNo" inputmode="numeric" value="${esc(g('floorNo'))}" placeholder="0"><span>층</span></div>`:''}
           ${f.floorMode==='고·중·저'? `<div style="margin-top:10px">${chipsHTML(['고층','중층','저층'], f.band,'band',false)}</div>`:''}
         </div>
+        <div style="margin-top:14px"><span class="lab" style="font-size:12.5px">복층</span>${chipsHTML(['단층','복층'], g('duplex')||'단층','duplex',false)}</div>
         <div style="margin-top:14px"><span class="lab" style="font-size:12.5px">입주 가능일</span>${chipsHTML(['즉시','협의','날짜 지정'], g('moveIn'),'moveIn',false)}</div>
         ${home ? `<div style="margin-top:14px"><span class="lab" style="font-size:12.5px">방향 (거실 기준)</span>${chipsHTML(['동','서','남','북','남동','남서','북동','북서'], g('dir'),'dir',false)}</div>` : ''}
         <div class="grid2 mo1" style="margin-top:14px;gap:12px">
@@ -4986,9 +5025,18 @@ V["#/partner/settings"] = () => {
 const priceOf = L => L.kind==='shop' || L.rent
   ? `보증금 ${L.dep.toLocaleString()} / 월 ${L.rent}${L.fee?` · 관리비 ${L.fee}`:''}`
   : `전세 ${won(L.dep)}${L.fee?` · 관리비 ${L.fee}`:''}`;
-const specOf = L => L.kind==='home'
-  ? `${L.dong} · 전용 ${L.py}평 · ${L.rooms}룸 · ${L.band}`
-  : `${L.dong} · ${L.biz} · ${L.py}평 · ${L.band}`;
+/* 고른 것과 직접 적은 것을 한 줄로 잇는다. 제안 한마디에도 이 문장이 그대로 들어간다 */
+const appealOf = L => [...(L.kind==='home' ? (L.musts||[]) : (L.fac||[])),
+                       (L.kind==='home' ? L.mustsFree : L.facFree) || ''].filter(Boolean).join(' · ');
+/* 면적은 ㎡ 를 앞에 두고 평을 괄호로 붙인다 - 중개사는 ㎡ 로, 손님은 평으로 본다 */
+const areaTag = L => L.area ? `${L.area}㎡(${pyOf(L.area)}평)` : L.py ? `${L.py}평` : '';
+/* 정확한 층을 적어두었으면 그것을 쓴다. 'B1' 처럼 숫자가 아니면 '층' 을 붙이지 않는다 */
+const floorTag = L => L.floorNo ? (/^[0-9]+$/.test(L.floorNo) ? `${L.floorNo}층` : L.floorNo) : (L.band||'');
+const specOf = L => (L.kind==='home'
+  ? [L.dong, areaTag(L) && `전용 ${areaTag(L)}`, L.rooms && `${L.rooms}룸`,
+     L.baths && `욕실 ${L.baths}`, L.duplex && '복층', floorTag(L)]
+  : [L.dong, L.biz, areaTag(L), L.duplex && '복층', floorTag(L)]
+  ).filter(Boolean).join(' · ');
 
 V["#/partner/listings"] = () => {
   const rows = S.listings.map(L=>{
@@ -5036,13 +5084,19 @@ V["#/partner/listings"] = () => {
    키가 없으면 '없다' 고 말하고 직접 적게 둔다. 지금까지는 주소에 '미사' 가
    들어 있으면 미사강변 아파트라고 지어내 채우고 "건축물대장에서 자동으로
    채웠습니다" 라고 적었다. 확인한 적 없는 것을 확인했다고 말하면,
-   그 말을 믿은 사람이 나중에 다친다. */
-const ADDR = { for:'', q:'', rows:null, loading:false, note:'', off:false, bld:null, bldLoading:false };
+   그 말을 믿은 사람이 나중에 다친다.
+
+   건축물대장 자동 채움은 걷어냈다(2026-09-14). 표제부가 주는 것은 건물 전체의
+   '연면적' 인데, 그것을 호실의 전용면적·공급면적 칸에 넣고 있었다. 한 동 전체
+   면적이 한 집 면적으로 들어가니 늘 틀린 숫자였다. 호실의 전용면적은 전유부를
+   동·호까지 넣어야 나오고, 우리는 동·호를 받지 않는다. 채워주지 못할 바에는
+   틀린 값을 채우지 않는 편이 낫다 - 중개사가 못 보고 그대로 보내면 손님이 받는다. */
+const ADDR = { for:'', q:'', rows:null, loading:false, note:'', off:false };
 
 function addrFind(target){
   const q = (ADDR.q||'').trim();
   if(q.length < 2) return toast('두 글자 이상 넣어주세요'), true;
-  ADDR.for = target; ADDR.loading = true; ADDR.note = ''; ADDR.bld = null; render();
+  ADDR.for = target; ADDR.loading = true; ADDR.note = ''; render();
   apiFetch('/api/agent-verify', {method:'POST', body: JSON.stringify({what:'addr', keyword:q})})
     .then(r => r.json().catch(()=>({})).then(j => {
       ADDR.loading = false;
@@ -5054,8 +5108,7 @@ function addrFind(target){
   return true;
 }
 
-/* 고른 주소로 건축물대장을 한 번 물어본다. 못 받아와도 그냥 넘어간다 -
-   면적을 못 채우는 것이 주소를 못 넣는 것보다 훨씬 가벼운 일이다. */
+/* 고른 주소를 칸에 옮겨 적는다. 면적·사용승인일은 직접 적는다. */
 function addrPick(i){
   const a = (ADDR.rows||[])[i]; if(!a) return true;
   /* detail 이 ' (망월동)' 처럼 앞 공백을 달고 오는 일이 있다 - 그대로 이으면
@@ -5073,29 +5126,6 @@ function addrPick(i){
     S.form['j-addr'] = full;
   }
   ADDR.rows = null; ADDR.q = ''; ADDR.note = '';
-  if(a.admCd){
-    ADDR.bldLoading = true;
-    apiFetch('/api/agent-verify', {method:'POST', body: JSON.stringify({
-      what:'bld', admCd:a.admCd, bun:a.bun, ji:a.ji, mount:a.mount })})
-      .then(r => r.json().catch(()=>({})).then(j => {
-        ADDR.bldLoading = false;
-        if(r.ok && j.ok && !j.off && !j.none){
-          ADDR.bld = j;
-          if(ADDR.for === 'laddr'){
-            if(!S.form.lname && j.bldNm) S.form.lname = j.bldNm;
-            if(!S.form.lpy && j.py) S.form.lpy = String(j.py);
-          } else if(ADDR.for === 'addr'){
-            if(!S.form.bname && j.bldNm) S.form.bname = j.bldNm;
-            /* 표제부는 건물 전체다. 전용면적은 호실마다 달라 여기서 알 수 없다 -
-               공급면적 칸에만 넣고 전용은 직접 적게 둔다. */
-            if(!S.form.areaSup && j.totArea) S.form.areaSup = String(j.totArea);
-            if(j.approved) S.form.approved = j.approved;
-          }
-        } else if(j && j.note) ADDR.bld = {note:j.note};
-        render();
-      }))
-      .catch(()=>{ ADDR.bldLoading=false; render(); });
-  }
   render(); return true;
 }
 
@@ -5116,23 +5146,15 @@ function addrBox(target, ph){
         <span style="display:block;margin-top:3px;font-size:12px;color:var(--n500)">${esc(a.jibun||'')}${a.zip?` · ${esc(a.zip)}`:''}${a.bdNm?` · ${esc(a.bdNm)}`:''}</span>
       </button>`).join('')}
     </div>` : `<p style="margin:8px 0 0;font-size:12.5px;color:var(--n500)">${esc(ADDR.note||'찾으시는 주소가 없습니다 - 직접 적으셔도 됩니다')}</p>`) : ''}
-    ${mine && !ADDR.rows && ADDR.note ? `<p style="margin:8px 0 0;font-size:12.5px;color:var(--n500)">${esc(ADDR.note)}</p>` : ''}
-    ${mine && ADDR.bldLoading ? `<p style="margin:8px 0 0;font-size:12.5px;color:var(--n500)">건축물대장을 확인하는 중입니다…</p>` : ''}
-    ${mine && ADDR.bld && !ADDR.bldLoading ? (ADDR.bld.note
-      ? `<p style="margin:8px 0 0;font-size:12.5px;color:var(--n500)">${esc(ADDR.bld.note)}</p>`
-      : `<p style="margin:8px 0 0;padding:10px 13px;background:var(--okbg);border-radius:var(--r-sm);
-          font-size:12.5px;line-height:1.7;color:var(--ok);font-weight:700">건축물대장에서 확인했습니다 ·
-        ${[ADDR.bld.purpose, ADDR.bld.totArea?`연면적 ${ADDR.bld.totArea}㎡`:'',
-           ADDR.bld.floors?`지상 ${ADDR.bld.floors}층`:'', ADDR.bld.approved?`사용승인 ${ADDR.bld.approved}`:'']
-          .filter(Boolean).map(esc).join(' · ')}
-        <span style="display:block;font-weight:600;margin-top:3px">채워진 값은 고치실 수 있습니다.</span></p>`) : ''}`;
+    ${mine && !ADDR.rows && ADDR.note ? `<p style="margin:8px 0 0;font-size:12.5px;color:var(--n500)">${esc(ADDR.note)}</p>` : ''}`;
 }
 
 /* 매물 등록 */
 V["#/partner/listing/new"] = () => {
   const f = S.form, g = k => f[k]||'';
   const shop = f.lkind==='shop';
-  const req = [!!String(g('lname')).trim(), !!g('ldong'), +g('ldep')>0, shop? !!g('lbiz') : +g('lrooms')>0].every(Boolean);
+  const req = [!!String(g('lname')).trim(), !!g('ldong'), +g('ldep')>0, +g('larea')>0,
+               shop? !!g('lbiz') : +g('lrooms')>0].every(Boolean);
   return `
 <div class="scr fade" style="background:var(--n50)">
   ${navPartner('l')}
@@ -5166,14 +5188,35 @@ V["#/partner/listing/new"] = () => {
       </div>
       <div class="grid2 mo1">
         <div><span class="lab">관리비</span><div class="unit"><input class="inp num" data-in="lfee" inputmode="numeric" value="${esc(g('lfee'))}" placeholder="0"><span>만원</span></div></div>
-        <div><span class="lab">전용면적</span><div class="unit"><input class="inp num" data-in="lpy" inputmode="decimal" value="${esc(g('lpy'))}" placeholder="0"><span>평</span></div></div>
       </div>
-      ${shop? `<div><span class="lab">층</span>${chipsHTML(['1층만','2층 이상 가능','지하 가능'], g('lband')||'1층만','lband',false)}</div>
-        <div><span class="lab">갖춰진 설비</span>${chipsHTML(['주방·급배수','가스 인입','전기 증설','후드·덕트','화장실 내부','정화조 여유','주차 가능'], f.lfac||[],'lfac',true)}</div>`
+      <!-- 면적은 ㎡ 가 기준이다. 평은 옆에 환산해 둔다 - 적는 쪽은 한 번만 적는다. -->
+      <div class="grid2 mo1">
+        <div><span class="lab">전용면적 <span class="req">*</span></span>
+          <div class="unit"><input class="inp num" data-in="larea" inputmode="decimal" value="${esc(g('larea'))}" placeholder="0"><span>㎡</span></div>
+          <span data-py="larea" style="display:block;margin-top:4px;font-size:11.5px;font-weight:700;color:var(--ind)">${pyTag(g('larea'))}</span></div>
+        <div><span class="lab">${shop?'계약면적':'공급면적'}</span>
+          <div class="unit"><input class="inp num" data-in="lareaSup" inputmode="decimal" value="${esc(g('lareaSup'))}" placeholder="0"><span>㎡</span></div>
+          <span data-py="lareaSup" style="display:block;margin-top:4px;font-size:11.5px;font-weight:700;color:var(--n500)">${pyTag(g('lareaSup'))}</span></div>
+      </div>
+      ${shop? `<div><span class="lab">층</span>${chipsHTML(['1층만','2층 이상 가능','지하 가능'], g('lband')||'1층만','lband',false)}</div>`
       : `<div class="grid2 mo1">
           <div><span class="lab">방 수 <span class="req">*</span></span><div class="unit"><input class="inp num" data-in="lrooms" inputmode="numeric" value="${esc(g('lrooms'))}" placeholder="0"><span>개</span></div></div>
-          <div><span class="lab">층</span>${chipsHTML(['고층','중층','저층'], g('lband')||'중층','lband',false)}</div></div>
-        <div><span class="lab">갖춰진 조건</span>${chipsHTML(MUSTS, f.lmusts||[],'lmusts',true)}</div>`}
+          <div><span class="lab">화장실 수</span><div class="unit"><input class="inp num" data-in="lbaths" inputmode="numeric" value="${esc(g('lbaths'))}" placeholder="0"><span>개</span></div></div></div>
+        <div><span class="lab">층</span>${chipsHTML(['고층','중층','저층'], g('lband')||'중층','lband',false)}</div>`}
+      <!-- 소유자가 정확한 층 표기를 요청하면 그대로 적어야 한다. 고·중·저는
+           대조에 쓰고, 여기 적은 층은 제안서에 그대로 실려 나간다. -->
+      <div class="grid2 mo1">
+        <div><span class="lab">정확한 층 <span class="opt">소유자가 정확한 표기를 원하면 적어주세요</span></span>
+          <input class="inp" data-in="lfloorNo" value="${esc(g('lfloorNo'))}" placeholder="예) 12 · B1"></div>
+        <div><span class="lab">복층</span>${chipsHTML(['단층','복층'], g('lduplex')||'단층','lduplex',false)}</div>
+      </div>
+      ${shop
+      ? `<div><span class="lab">갖춰진 설비 <span class="opt">해당하는 것을 모두 골라주세요</span></span>
+          ${chipsHTML(LFAC, f.lfac||[],'lfac',true)}
+          <input class="inp" data-in="lfacFree" value="${esc(g('lfacFree'))}" placeholder="그 밖에 내세울 점 - 예) 대로변 · 주차 2대 · 야간 영업 가능" style="margin-top:10px"></div>`
+      : `<div><span class="lab">갖춰진 조건 <span class="opt">해당하는 것을 모두 골라주세요</span></span>
+          ${chipsHTML(LMUSTS, f.lmusts||[],'lmusts',true)}
+          <input class="inp" data-in="lmustsFree" value="${esc(g('lmustsFree'))}" placeholder="그 밖에 내세울 점 - 예) 바로 앞 대형마트 · 초등학교 3분" style="margin-top:10px"></div>`}
     </div>
 
     <div style="display:flex;justify-content:space-between;align-items:center;gap:12px">
@@ -5218,6 +5261,8 @@ V["#/partner/listing"] = (id) => {
         <h1 class="t" style="font-size:${isMo()?21:25}px;margin-top:6px">${esc(L.name)} ${demoTag(L,'vertical-align:middle')}</h1>
         <p class="num" style="margin:6px 0 0;font-size:15px;font-weight:800;color:var(--ind)">${priceOf(L)}</p>
         <p style="margin:4px 0 0;font-size:13.5px;color:var(--n500)">${esc(specOf(L))} · 입주 ${esc(L.moveIn)} · 사진 ${L.photos}장</p>
+        ${appealOf(L) ? `<p style="margin:8px 0 0;font-size:13px;line-height:1.7;color:var(--ind700)">
+          <b style="color:var(--ind)">강점</b> ${esc(appealOf(L))}</p>` : ''}
       </div>
       <button class="btn sec sm" data-act="del-listing" data-v="${L.id}" style="color:var(--danger)">내리기</button>
     </div>
@@ -7160,7 +7205,7 @@ function render(){
 
   /* 화면이 실제로 바뀐 경우에만 진입 애니메이션을 켠다.
      칩 하나 고를 때마다 다시 재생되면 오히려 산만하다. */
-  if(S.lastRoute !== h && ADDR.q){ ADDR.q=''; ADDR.rows=null; ADDR.note=''; ADDR.bld=null; }
+  if(S.lastRoute !== h && ADDR.q){ ADDR.q=''; ADDR.rows=null; ADDR.note=''; }
   const entered = S.lastRoute !== h;
   if(entered){
     app.setAttribute('data-enter','');
@@ -7654,9 +7699,11 @@ function toggleSubmit(){
   const b=$('#app [data-act="submit"]'); if(b) b.disabled=!contactOk(S.draft); }
 function refreshListingBtn(){
   const f=S.form, g=k=>f[k]||'', shop=f.lkind==='shop';
-  const ok = !!String(g('lname')).trim() && !!g('ldong') && +g('ldep')>0 && (shop? !!g('lbiz') : +g('lrooms')>0);
+  const ok = !!String(g('lname')).trim() && !!g('ldong') && +g('ldep')>0 && +g('larea')>0
+          && (shop? !!g('lbiz') : +g('lrooms')>0);
   const b=$('#app [data-act="save-listing"]'); if(b) b.disabled=!ok;
   const hint=$('#app [data-lhint]'); if(hint) hint.textContent = ok?'등록 즉시 대기 손님과 대조합니다':'* 표시 항목을 채워주세요';
+  ['larea','lareaSup'].forEach(k=>{ const el=$(`#app [data-py="${k}"]`); if(el) el.textContent = pyTag(g(k)); });
 }
 /* 검사 목록은 한 곳에서만 만든다.
    화면과 새로고침이 각자 만들면 언젠가 어긋나고, 그때 버튼만 안 눌린다. */
@@ -8124,6 +8171,7 @@ function handle(a,v,el){
       S.timeLeft=900; go('#/partner/propose/'+v); return true; }
 
     case 'feeType': case 'floorMode': case 'band': case 'moveIn': case 'dir': case 'park': case 'elev6':
+    case 'duplex':
       S.form[a]= S.form[a]===v? '' : v; render(); return true;
     case 'photo': { const n=+v; S.form.photos = n < (S.form.photos||0) ? n : n+1; render(); return true; }
     case 'send-proposal': { const d2=S.demands.find(x=>x.id===v);
@@ -8148,6 +8196,7 @@ function handle(a,v,el){
         demand_id: d2.id, addr: f.addr, bname: f.bname,
         dep: f.dep, rent: f.rent, fee: f.fee, fee_type: f.feeType, fee_items: f.feeItems,
         area_sup: f.areaSup, area: f.area, rooms: f.rooms, baths: f.baths, dir: f.dir,
+        duplex: f.duplex === '복층',
         floor_mode: f.floorMode, floor_no: f.floorNo, band: f.band,
         move_in: f.moveIn, park: f.park, approved: f.approved,
         photos: f.photos||0, msg: f.msg,
@@ -8247,7 +8296,7 @@ function handle(a,v,el){
 
     /* ── S-08 내 물건 ── */
     case 'lkindpick': S.form.lkind = v==='상가'?'shop':'home'; S.form.ldong=''; S.form.lbiz=''; render(); return true;
-    case 'ldong': case 'lbiz': case 'lband':
+    case 'ldong': case 'lbiz': case 'lband': case 'lduplex':
       S.form[a] = S.form[a]===v ? '' : v; render(); return true;
     case 'ldeal':
       S.form.ldeal = S.form.ldeal===v ? '' : v;
@@ -8258,14 +8307,20 @@ function handle(a,v,el){
     case 'addr-pick':  return addrPick(+v);
     case 'addr-clear':
       if(v === 'j-addr') S.form['j-addr'] = ''; else S.form[v] = '';
-      ADDR.rows = null; ADDR.bld = null; ADDR.note = ''; render(); return true;
+      ADDR.rows = null; ADDR.note = ''; render(); return true;
     case 'save-listing': {
       const f=S.form, shop=f.lkind==='shop';
+      const area = +f.larea||0;
       const L={ id:'L'+Date.now(), kind: shop?'shop':'home', name:(f.lname||'').trim(), dong:f.ldong,
         deal: shop?undefined:(f.ldeal||'월세'), biz: shop?f.lbiz:undefined,
-        dep:+f.ldep||0, rent:+f.lrent||0, fee:+f.lfee||0, py:+f.lpy||0,
-        rooms:+f.lrooms||0, baths:0, band:f.lband||(shop?'1층만':'중층'), floors:0,
-        musts:f.lmusts||[], fac:f.lfac||[], moveIn:'협의', photos:0, at:'방금', status:'active' };
+        dep:+f.ldep||0, rent:+f.lrent||0, fee:+f.lfee||0,
+        /* 면적은 ㎡ 로 담는다. py 는 대조와 옛 화면이 아직 보므로 환산해 함께 둔다 */
+        area, areaSup:+f.lareaSup||0, py:pyOf(area),
+        rooms:+f.lrooms||0, baths:+f.lbaths||0, band:f.lband||(shop?'1층만':'중층'), floors:0,
+        floorNo:(f.lfloorNo||'').trim(), duplex:f.lduplex==='복층',
+        musts:f.lmusts||[], fac:f.lfac||[],
+        mustsFree:(f.lmustsFree||'').trim(), facFree:(f.lfacFree||'').trim(),
+        moveIn:'협의', photos:0, at:'방금', status:'active' };
       if(S.lsBusy) return true;
       S.lsBusy = true; render();
       apiFetch('/api/feed', {method:'POST', body: JSON.stringify({what:'listing-add', listing:L})})
@@ -8300,14 +8355,23 @@ function handle(a,v,el){
     case 'propose-with': { const [lid,did]=v.split('|'); const L=S.listings.find(x=>x.id===lid); const d=S.demands.find(x=>x.id===did);
       if(!L||!d) return true;
       const st=matchStages(L,d);
+      /* 물건에 적어둔 것만 옮긴다. 관리비 부과방식·방향·욕실 수는 물건에 없는 값이라
+         예전에는 '정액관리비 · 남동 · 욕실 1' 로 지어내 채웠다. 중개사가 못 보고
+         그대로 보내면 손님은 그것을 확인된 사실로 읽는다 - 빈칸으로 둔다. */
       S.form={ ptab:S.form.ptab, photos:L.photos, filled:true, addr:L.name, bname:L.name,
-        area:(L.py*3.305785).toFixed(1), dep:String(L.dep), rent:String(L.rent), fee:String(L.fee),
-        feeType:'정액관리비', rooms:String(L.rooms||''), baths:String(L.baths||1),
-        floorMode:'고·중·저', band:L.band==='1층만'?'저층':L.band, moveIn:'협의', dir:'남동',
+        area:String(L.area||''), areaSup:String(L.areaSup||''),
+        dep:String(L.dep), rent:String(L.rent), fee:String(L.fee),
+        rooms:String(L.rooms||''), baths:String(L.baths||''),
+        duplex:L.duplex?'복층':'단층',
+        floorMode: L.floorNo ? '정확한 층' : '고·중·저',
+        floorNo: L.floorNo||'', band: L.band==='1층만'?'저층':L.band, moveIn:'협의',
         fromListing:L.id,
-        msg: st[4].miss.length
+        /* 물건에 적어둔 강점은 여기 말고는 손님에게 닿을 길이 없다.
+           한마디에 붙여 두고, 중개사가 보내기 전에 고칠 수 있게 한다. */
+        msg: ((st[4].miss.length
           ? `요청하신 조건 중 지역·예산·${L.kind==='home'?'방수':'면적'}는 맞습니다. ${st[4].miss.join('·')}은(는) 확인이 필요합니다 - 솔직히 말씀드립니다.`
-          : `요청하신 조건에 모두 맞는 물건입니다. ${L.name}, ${priceOf(L)}. 바로 보여드릴 수 있습니다.` };
+          : `요청하신 조건에 모두 맞는 물건입니다. ${L.name}, ${priceOf(L)}. 바로 보여드릴 수 있습니다.`)
+          + (appealOf(L) ? ` 강점은 ${appealOf(L)} 입니다.` : '')).slice(0, 200) };
       S.timeLeft=900; go('#/partner/propose/'+d.id);
       toast('물건 정보를 불러왔습니다 - 확인 후 보내세요'); return true; }
     case 'withdraw': {

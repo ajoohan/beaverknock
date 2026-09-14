@@ -7158,11 +7158,24 @@ const REDUCED = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 function runSteps(){
   const el = $('#app .steps');
   if(!el || el.classList.contains('run')) return;
-  if(REDUCED() || typeof IntersectionObserver !== 'function'){ el.classList.add('run'); return; }
+  const go = () => el.classList.add('run');
+  if(REDUCED() || typeof IntersectionObserver !== 'function') return go();
+
   const io = new IntersectionObserver(es => {
-    for(const e of es) if(e.isIntersecting){ e.target.classList.add('run'); io.disconnect(); return; }
+    for(const e of es) if(e.isIntersecting){ io.disconnect(); go(); return; }
   }, { root: $('#app'), threshold: .3 });
-  io.observe(el);
+
+  /* 그리자마자 재면 아직 배치가 끝나지 않아 크기가 없다 - 두 프레임 뒤에 본다 */
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    if(!document.contains(el)) return;
+    io.observe(el);
+    /* 이미 화면 안에 있는데 관찰이 알려주지 않는 경우가 있다(창이 숨겨져 있을 때 등).
+       그때는 직접 재서 켠다 - 기다리다 영영 회색으로 남는 것보다 낫다.
+       화면 밖이면 아무것도 하지 않는다. 스크롤해서 왔을 때 채워져야 하기 때문이다. */
+    const a = $('#app'); if(!a) return;
+    const r = el.getBoundingClientRect(), ar = a.getBoundingClientRect();
+    if(r.top < ar.bottom - r.height * .3 && r.bottom > ar.top){ io.disconnect(); go(); }
+  }));
 }
 
 /* 세면 안 되는 숫자를 걸러낸다.

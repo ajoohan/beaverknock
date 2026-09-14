@@ -7676,6 +7676,7 @@ async function hydrate(sess){
     const r = await fetch(`${SB_URL}/auth/v1/user`, {headers: authHeaders(sess.access_token)});
     if(!r.ok){ store.set(null); return false; }
     S.user = meFrom(await r.json(), sess.access_token);
+    clearSeeds(true);          /* 들어온 뒤에는 예시를 지운다 - 위 주석 참고 */
     return true;
   }catch(e){ return false; }
 }
@@ -8200,6 +8201,7 @@ function handle(a,v,el){
       if(S.pw.length<8) return toast('비밀번호는 8자 이상입니다'), true;
       if(S.signup && S.pw2!==S.pw) return toast('비밀번호가 서로 다릅니다'), true;
       S.user = {method:'email', label:'이메일', name:S.draft.name||'', email:S.email};
+      clearSeeds(true);
       S.pw=''; S.pw2='';
       toast(S.signup?'가입이 끝났습니다':'로그인했습니다'); S.signup=false;
       go(S.afterLogin || '#/my'); S.afterLogin=null; return true; }
@@ -8719,9 +8721,15 @@ window.addEventListener('hashchange', ()=>{ render(); opsAuto(); });
    갈아끼워지면 "있던 게 사라졌다" 로 보인다 - 실제로 그렇게 보였다.
    세션이 있으면 예시를 미리 비운다. 받아오기 전까지는 '없음' 이 아니라
    '불러오는 중' 이다. */
-function clearSeeds(){
-  if(!store.get()) return;
+/* 로그인한 사람에게는 예시를 보여주지 않는다.
+   처음 열 때는 boot() 이 부른다. 그런데 로그인은 그다음에 일어난다 -
+   예시를 띄워둔 채로 들어오면 그대로 남아, 서버 목록이 오기 전까지 남의 물건처럼
+   보이는 것이 잠깐 뜬다. 그래서 로그인이 끝나는 자리에서도 한 번 더 부른다. */
+function clearSeeds(force){
+  if(!force && !store.get()) return;
   S.conds = []; S.props = []; S.myprops = []; S.listings = []; S.demands = [];
+  S.mineReady = S.mpReady = S.lsReady = false;
+  S.mineAt = S.mpAt = S.lsAt = S.feedAt = 0;
 }
 
 /* 운영 화면에 들어왔는데 이 탭에 이미 통과한 암호가 있으면 그대로 연다.

@@ -7360,10 +7360,15 @@ function oauthStart(provider){
 
 const authHeaders = tok => ({apikey: SB_KEY, Authorization: 'Bearer ' + tok});
 
+/* 어느 길로 들어왔는지.
+   네이버는 우리 함수가 돌므로 user_metadata 에 직접 적어두고(callback.js),
+   Supabase 가 맡는 것들은 app_metadata.provider 에 들어온다.
+   전에는 '네이버가 아니면 구글' 이라 카카오로 들어와도 Google 이라고 적혔다. */
+const VIA_LABEL = { naver:'네이버', kakao:'카카오', google:'Google', apple:'Apple', email:'이메일' };
 function meFrom(u, tok){
-  const m = u.user_metadata || {};
-  const via = m.provider === 'naver' ? 'naver' : 'google';
-  return {method:via, label: via==='naver' ? '네이버' : 'Google', id:u.id, email:u.email||'',
+  const m = u.user_metadata || {}, a = u.app_metadata || {};
+  const via = m.provider || a.provider || (a.providers || [])[0] || 'email';
+  return {method:via, label: VIA_LABEL[via] || via, id:u.id, email:u.email||'',
           name: m.name || m.full_name || (u.email||'').split('@')[0] || '',
           avatar: m.avatar_url || '', token: tok};
 }

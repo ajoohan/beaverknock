@@ -2308,10 +2308,10 @@ function groundSvg(){
 const SNS = [
   /* hide 는 '아직 안 붙었으니 아예 내보이지 않는다' 는 뜻이다.
      '검수 중' 이라 적어두고 눌러도 안 들어가면 손님 눈에는 고장으로 보인다.
-     카카오는 본인확인 한도가 풀리면 hide 만 지우고 LIVE_OAUTH 에 'kakao' 를 넣으면 된다.
+     카카오는 2026-09-14 에 붙였다 - 이메일이 필수 동의로 넘어오는 것을 확인하고 열었다.
      애플은 앱스토어 심사 규정(4.8)이 앱에만 적용되고 이 서비스는 웹이라 지금은 필요 없다 -
      iOS 앱을 내는 날 붙인다. */
-  {k:'kakao',  t:'카카오로 계속하기', bg:'#FEE500', fg:'#191600', bd:'#FEE500', soon:'검수 중', hide:true,
+  {k:'kakao',  t:'카카오로 계속하기', bg:'#FEE500', fg:'#191600', bd:'#FEE500',
    ic:`<svg viewBox="0 0 24 24" style="width:17px;height:17px"><path fill="#191600" d="M12 3.6c-4.7 0-8.5 2.96-8.5 6.61 0 2.35 1.57 4.41 3.93 5.58l-.9 3.3c-.08.29.24.52.49.35l3.95-2.6c.34.03.68.05 1.03.05 4.7 0 8.5-2.96 8.5-6.68S16.7 3.6 12 3.6z"/></svg>`},
   {k:'naver',  t:'네이버 로그인', bg:'#03C75A', fg:'#fff', bd:'#03C75A',
    ic:`<svg viewBox="0 0 24 24" style="width:15px;height:15px"><path fill="#fff" d="M4.5 4.5h5.02l4.9 7.06V4.5h5.08v15h-5.02l-4.9-7.07V19.5H4.5z"/></svg>`},
@@ -7349,7 +7349,7 @@ function readIdvRedirect(){
 const SB_URL = 'https://gmbtsucasfwqskfvugzo.supabase.co';
 const SB_KEY = 'sb_publishable__KgU33wE75bnKWvp-Yj4Uw_UDLltUxE';
 const SESS = 'bk.session';
-const LIVE_OAUTH = ['google', 'naver'];   /* 실제로 연결된 것만 여기 둔다 */
+const LIVE_OAUTH = ['google', 'naver', 'kakao'];   /* 실제로 연결된 것만 여기 둔다 */
 
 const store = {
   get(){ try{ return JSON.parse(localStorage.getItem(SESS)||'null'); }catch(e){ return null; } },

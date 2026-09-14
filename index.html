@@ -2353,9 +2353,9 @@ function bizFooter(){
     <span style="display:block">${esc(CORP.corp)} · 대표 ${esc(CORP.ceo)} ·
       사업자등록번호 ${esc(CORP.no)} · 통신판매업 신고 ${esc(CORP.tsp)}</span>
     <span style="display:block">${esc(CORP.addr)}</span>
-    <span style="display:block">문의 <a href="tel:${esc(CORP.tel.replace(/-/g,''))}"
+    <span style="display:block">문의 <a class="tapx" href="tel:${esc(CORP.tel.replace(/-/g,''))}"
       style="color:var(--n500);text-decoration:underline;text-underline-offset:3px">${esc(CORP.tel)}</a>
-      · <a href="mailto:${esc(CORP.mail)}"
+      · <a class="tapx" href="mailto:${esc(CORP.mail)}"
       style="color:var(--n500);text-decoration:underline;text-underline-offset:3px">${esc(CORP.mail)}</a>
       · 비버노크는 조건을 전달하는 서비스이며 공인중개사가 아닙니다.
       중개와 계약은 공인중개사사무소와 직접 하시게 됩니다.</span>
@@ -2417,7 +2417,7 @@ V['#/login'] = () => {
   <div class="nav pad"><a data-go="#/" style="flex:none">${logoLockup({h:25,tag:!isMo()})}</a>
     <div class="right" style="gap:${isMo()?14:22}px">
       ${isMo()?'':'<a data-go="#/guide" style="font-size:14px;font-weight:600;color:var(--n700)">이용 안내</a><a data-go="#/faq" style="font-size:14px;font-weight:600;color:var(--n700)">자주 묻는 질문</a>'}
-      <a data-go="#/partner" style="font-size:${isMo()?12.5:14}px;font-weight:600;color:var(--n700)">파트너 안내</a></div></div>
+      <a class="tapx" data-go="#/partner" style="font-size:${isMo()?12.5:14}px;font-weight:600;color:var(--n700)">파트너 안내</a></div></div>
 
   <div style="flex:1;min-height:0;overflow:auto;display:flex;align-items:flex-start;justify-content:center;padding:${isMo()?'16px 22px 30px':'22px 40px 34px'}">
     <div style="width:100%;max-width:${isMo()?'none':'400px'};display:flex;flex-direction:column;gap:16px">
@@ -2491,11 +2491,11 @@ V['#/login'] = () => {
       </div>
       ${asPartner ? '' : `
       <div style="text-align:center;font-size:13px;color:var(--n500)">
-        중개사 · 소유자이신가요? <a data-act="nav-login" data-v="partner"
+        중개사 · 소유자이신가요? <a class="tapx" data-act="nav-login" data-v="partner"
           style="font-weight:700;color:var(--ind);cursor:pointer">파트너 로그인</a></div>`}`}
 
       <p style="margin:0;text-align:center;font-size:12.5px;line-height:1.75;color:var(--n500)">
-        로그인하시면 <a href="/terms" target="_blank" rel="noopener" style="color:var(--ind);font-weight:700;text-decoration:underline;text-underline-offset:2px">이용약관</a>과 <a href="/privacy" target="_blank" rel="noopener" style="color:var(--ind);font-weight:700;text-decoration:underline;text-underline-offset:2px">개인정보 처리방침</a>에 동의하신 것으로 봅니다.<br>
+        로그인하시면 <a class="tapx" href="/terms" target="_blank" rel="noopener" style="color:var(--ind);font-weight:700;text-decoration:underline;text-underline-offset:2px">이용약관</a>과 <a class="tapx" href="/privacy" target="_blank" rel="noopener" style="color:var(--ind);font-weight:700;text-decoration:underline;text-underline-offset:2px">개인정보 처리방침</a>에 동의하신 것으로 봅니다.<br>
         조건을 걸으실 때 <b style="color:var(--n700)">본인확인</b>을 한 번 더 받습니다.</p>
     </div>
   </div>

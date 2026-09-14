@@ -4618,7 +4618,7 @@ V['#/partner/propose'] = (id) => { const d=S.demands.find(x=>x.id===id); if(!d) 
         <span class="sect"><span style="color:var(--ind)">3.</span> 사진 <span style="font-weight:600;color:var(--n500)">${f.photos||0}/5 · 3장 이상이면 열람률이 크게 올라갑니다</span></span>
         <div style="display:flex;gap:10px;margin-bottom:16px">
           ${[0,1,2,3,4].map(i=>`<button data-act="photo" data-v="${i}" style="width:64px;height:52px;
-            ${i<(f.photos||0)?'background:var(--ind100);border:1.5px solid var(--ind)':'border:1.5px dashed var(--n300);color:#C9C4BB'};
+            ${i<(f.photos||0)?'background:var(--ind100);border:1.5px solid var(--ind)':'border:1.5px dashed var(--n300);color:var(--n500)'};
             display:flex;align-items:center;justify-content:center;font-size:17px">${i<(f.photos||0)?'🏠':'+'}</button>`).join('')}
         </div>
         <span class="sect"><span style="color:var(--ind)">4.</span> 한마디 <span style="font-weight:600;color:var(--n500)">다른 점을 먼저, 솔직하게</span></span>

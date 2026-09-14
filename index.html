@@ -99,6 +99,11 @@ body.mo .nav .items{display:none}
    가로는 거의 안 넓힌다 - 한 줄에 나란히 선 링크끼리 서로를 먹으면 안 된다. */
 body.mo .tapx{position:relative}
 body.mo .tapx::after{content:"";position:absolute;left:-3px;right:-3px;top:-14px;bottom:-14px}
+/* 바닥글 링크는 좁은 화면에서 여러 줄로 접힌다. 줄 사이가 10px 뿐이라
+   위아래로 14px 씩 넓히면 윗줄 링크가 아랫줄 링크를 덮어버린다 -
+   '이용 안내' 를 눌렀는데 '개인정보 처리방침' 이 열린다.
+   그 줄에서는 줄 사이만큼만 넓힌다. 덜 넓히는 것이 잘못 열리는 것보다 낫다. */
+body.mo .footlinks .tapx::after{top:-5px;bottom:-5px}
 body.mo .back{position:relative}
 body.mo .back::after{content:"";position:absolute;left:0;right:0;top:-9px;bottom:-9px}
 
@@ -2277,7 +2282,7 @@ V['#/'] = () => `
 
   <div style="flex:none;position:relative;z-index:3;background:var(--white);border-top:1px solid var(--n100);
     padding:18px 24px calc(22px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:12px">
-    <div style="display:flex;flex-wrap:wrap;gap:10px 16px">
+    <div class="footlinks" style="display:flex;flex-wrap:wrap;gap:10px 16px">
       ${[['#/guide','이용 안내'],['#/faq','자주 묻는 질문'],['#/partner','파트너 안내'],['#/brand','브랜드']]
         .map(([h,t])=>`<a class="tapx" data-go="${h}" style="font-size:12.5px;color:var(--n500);text-decoration:underline;text-underline-offset:3px">${t}</a>`).join('')}
       <a class="tapx" href="/terms" target="_blank" rel="noopener" style="font-size:12.5px;color:var(--n500);text-decoration:underline;text-underline-offset:3px">이용약관</a>
@@ -2326,7 +2331,7 @@ V['#/'] = () => `
     padding:14px 76px 18px;display:flex;flex-direction:column;gap:10px">
     <div style="display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap">
       ${logoLockup({h:18,en:true,tag:true,stack:true})}
-      <div style="display:flex;gap:16px;flex-wrap:wrap">
+      <div class="footlinks" style="display:flex;gap:16px;flex-wrap:wrap">
         <a class="tapx" data-go="#/guide" style="font-size:12.5px;color:var(--n500);text-decoration:underline;text-underline-offset:3px">이용 안내</a>
         <a class="tapx" data-go="#/faq" style="font-size:12.5px;color:var(--n500);text-decoration:underline;text-underline-offset:3px">자주 묻는 질문</a>
         <a class="tapx" data-go="#/partner" style="font-size:12.5px;color:var(--n500);text-decoration:underline;text-underline-offset:3px">파트너 안내</a>

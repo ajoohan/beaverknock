@@ -33,7 +33,11 @@ function sameKey(a, b) {
 }
 
 const param = (req, name) => {
-  const b = req.body && typeof req.body === 'object' ? req.body : null;
+  /* Vercel 이 본문을 못 알아보는 content-type 으로 오면 req.body 가 문자열로 온다.
+     그때 400 을 돌려주면 카카오는 계속 다시 부르고, 그 사람의 자료는 영영 안 지워진다. */
+  let raw = req.body;
+  if (typeof raw === 'string') { try { raw = JSON.parse(raw); } catch (e) { raw = null; } }
+  const b = raw && typeof raw === 'object' ? raw : null;
   if (b && b[name] != null) return String(b[name]);
   try {
     const u = new URL(req.url, 'https://x');

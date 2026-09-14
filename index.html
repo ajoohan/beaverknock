@@ -1108,15 +1108,13 @@ p,li,dd,.sub,.lines,.opt{line-break:strict;overflow-wrap:break-word}
 <div id="boot" style="position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;
   align-items:center;justify-content:center;gap:18px;background:#F5EFE6;
   font-family:-apple-system,'Malgun Gothic',sans-serif;transition:opacity .28s ease">
-  <svg viewBox="0 0 44 44" style="width:44px;height:44px" aria-hidden="true">
-    <circle cx="22" cy="22" r="19" fill="none" stroke="#E4DED2" stroke-width="4"/>
-    <circle cx="22" cy="22" r="19" fill="none" stroke="#3D3F8F" stroke-width="4"
-      stroke-linecap="round" stroke-dasharray="30 90">
-      <animateTransform attributeName="transform" type="rotate" from="0 22 22" to="360 22 22"
-        dur="1s" repeatCount="indefinite"/></circle>
-  </svg>
-  <div style="font-size:13px;font-weight:800;letter-spacing:.1em;color:#3D3F8F">BEAVER KNOCK</div>
-  <div style="font-size:12.5px;color:#8A8378">화면을 준비하고 있습니다</div>
+  <!-- 첫 화면도 같은 표시를 쓴다. 자바스크립트가 아직 안 돌아 bkLoader() 를 못 부르므로
+       같은 모양을 손으로 적어 둔다 - 클래스와 키프레임은 위 <style> 에 이미 있다.
+       글자는 두지 않는다. 기다리는 동안 읽을 것이 있으면 더 길게 느껴진다. -->
+  <span class="bkld" style="width:40px;height:40px" role="status" aria-label="불러오는 중">
+    <i class="bkld-a" style="width:20.8px;height:20.8px;border-left:4.2px solid #9698CE;border-top:4.2px solid #9698CE"></i>
+    <i class="bkld-b" style="width:20.8px;height:20.8px;border-right:4.2px solid #31336F;border-bottom:4.2px solid #31336F"></i>
+  </span>
 </div>
 
 <div id="stage"><div id="frame"><div id="app"></div></div></div>

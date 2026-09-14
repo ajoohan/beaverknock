@@ -27,6 +27,12 @@
 :root{
   --ind900:#23255C; --ind700:#31336F; --ind:#3D3F8F; --ind300:#6E70BC; --ind-dark:#8C8ED0; --ind200:#CFD0EC; --ind100:#E9E9F7; --ind50:#F5F5FC;
   --navy900:#0C1129; --navy800:#121936; --navy700:#1C2547; --navy600:#2E3A62; --navy400:#4C5678;
+  /* navy400 은 선·면에 쓰라고 만든 값이다. 어두운 바탕에 글씨로 얹으면 2.58:1 로
+     기준(4.5:1)에 한참 못 미친다 - 글씨용으로 한 칸 밝은 것을 따로 둔다. */
+  --navy300:#8A94B8;
+  /* ind300 에 흰 글씨를 얹으면 4.46:1 로 기준에 아슬아슬하게 못 미친다.
+     버튼 바탕으로 쓸 때는 이것을 쓴다 - 흰 글씨와 5.49:1 이다. */
+  --ind400:#5F61B0;
   --clay900:#5E472B; --clay700:#7E5F3C; --clay:#C9A87C; --clay200:#E0CBAC; --clay100:#F5EDE2;
   --n900:#1F1D1A; --n700:#4A4640; --n500:#6E6859; --n300:#D6D1C8; --n200:#E4E0D9; --n100:#F0EDE7; --n50:#FAF8F5; --white:#fff;
   --ok:#1B7A46; --okbg:#EAF6EF; --danger:#B22B31; --dangerbg:#FBEFEF; --warn:#A85708; --warnbg:#FEF3E7;
@@ -1543,7 +1549,12 @@ const demoTag = (o, style='') => o && o.seed
 
 function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show');
   clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),2400); }
-function go(hash){ location.hash = hash; }
+/* 같은 자리로 보내면 hashchange 가 오지 않는다 - 그때는 직접 그린다.
+   첫 화면에서 로그아웃하면 토스트만 뜨고 화면은 그대로 남아 있었다. */
+function go(hash){
+  if(location.hash === hash) return render();
+  location.hash = hash;
+}
 function toggleIn(arr,v){ const i=arr.indexOf(v); i>=0?arr.splice(i,1):arr.push(v); }
 const isMo = () => S.device==='mo';
 
@@ -1819,8 +1830,12 @@ function navUser(active){ return `
     <a data-go="#/inbox" class="${active==='inbox'?'on':''}">제안함</a>
   </div>
   <div class="right" style="gap:14px">
-    <span>${esc((S.user&&S.user.name)||S.draft.name||'김민수')} 님</span>
-    ${S.user?`<a data-act="logout" style="font-size:12.5px;color:var(--n500);cursor:pointer">로그아웃</a>`:''}
+    ${S.user
+      ? `<span>${esc(S.user.name || String(S.user.email||'').split('@')[0] || '회원')} 님</span>
+         <a class="tapx" data-act="logout" style="font-size:12.5px;color:var(--n500);cursor:pointer">로그아웃</a>`
+      /* 로그인하지 않았으면 이름을 짓지 않는다. 예전에는 '김민수 님' 이라는
+         만들어낸 이름이 남아, 로그아웃한 뒤에도 누가 들어와 있는 것처럼 보였다. */
+      : navAuth('guest')}
   </div>
 </div>`;}
 /* 소유자·시행사인가.
@@ -4180,7 +4195,8 @@ V['#/proposal'] = (id) => { const p=S.props.find(x=>x.id===id); if(!p) return V[
   return `
 <div class="scr fade">
   <div class="nav solid pad"><a data-go="#/" style="flex:none">${logoLockup({h:25,tag:!isMo()})}</a>
-    <a class="back" data-go="#/inbox">← 제안함으로</a><div class="right">${S.draft.name||'김민수'} 님</div></div>
+    <a class="back" data-go="#/inbox">← 제안함으로</a>
+    <div class="right">${S.user ? esc(S.user.name || String(S.user.email||'').split('@')[0] || '회원') + ' 님' : navAuth('guest')}</div></div>
   <div class="pad" style="flex:1;padding-top:${isMo()?0:28}px;display:flex;gap:32px;max-width:${isMo()?'none':'1180px'};margin:0 auto;width:100%;${isMo()?'flex-direction:column;padding-left:0;padding-right:0':''}">
     <div style="flex:none;width:${isMo()?'100%':'520px'};display:flex;flex-direction:column;gap:12px">
       <div style="height:${isMo()?200:360}px;${isMo()?'':'border-radius:var(--r-lg);'}background:${p.photos?'var(--ind100)':'var(--n100)'};display:flex;align-items:center;justify-content:center;position:relative">
@@ -4339,8 +4355,8 @@ V['#/partner'] = () => `
     <div class="right" style="color:#9AA3BF">
       <a class="tapx" data-go="#/" style="font-size:${isMo()?12.5:13.5}px;font-weight:600">${isMo()?'손님 화면':'손님 화면 보기'}</a>
       ${S.user
-        ? `<button class="btn sm" data-go="#/partner/demands" style="background:var(--ind300);color:#fff;padding:${isMo()?'9px 15px':'10px 20px'};font-size:${isMo()?13:14}px">내 파트너 화면</button>`
-        : `<button class="btn sm" data-act="nav-login" data-v="partner" style="background:var(--ind300);color:#fff;padding:${isMo()?'9px 15px':'10px 20px'};font-size:${isMo()?13:14}px">파트너 로그인</button>`}
+        ? `<button class="btn sm" data-go="#/partner/demands" style="background:var(--ind400);color:#fff;padding:${isMo()?'9px 15px':'10px 20px'};font-size:${isMo()?13:14}px">내 파트너 화면</button>`
+        : `<button class="btn sm" data-act="nav-login" data-v="partner" style="background:var(--ind400);color:#fff;padding:${isMo()?'9px 15px':'10px 20px'};font-size:${isMo()?13:14}px">파트너 로그인</button>`}
     </div>
   </div>
   <div class="pad" style="flex:1;display:flex;align-items:center;gap:40px">
@@ -4349,9 +4365,9 @@ V['#/partner'] = () => `
     <h1 class="t" style="font-size:${isMo()?25:40}px;color:#fff;line-height:1.28;max-width:20ch">서울·경기에서 집·가게를 구하는 손님이<br><span style="color:var(--ind300)">조건을 걸어두고</span> 기다리고 있습니다</h1>
     <p style="margin:0;font-size:${isMo()?14:17}px;line-height:1.75;color:#9AA3BF"><b style="color:#F0EDE7">제안을 보내는 데 드는 비용은 없습니다. 매물을 올리실 필요도 없습니다.</b><br class="mbr"> 네이버·직방에 올리는 광고비와 다릅니다 - 이미 원하는 게 정해진 손님입니다.</p>
     <div style="display:flex;align-items:center;gap:18px;${isMo()?'flex-direction:column;align-items:stretch':''}">
-      <button class="btn ${isMo()?'blk':''}" data-go="#/partner/join" style="background:var(--ind300);color:#fff;padding:16px 40px;font-size:17px">파트너로 가입하기</button>
+      <button class="btn ${isMo()?'blk':''}" data-go="#/partner/join" style="background:var(--ind400);color:#fff;padding:16px 40px;font-size:17px">파트너로 가입하기</button>
       <a class="tapx" data-go="#/partner/demands" style="font-size:14px;font-weight:700;color:var(--ind300);text-decoration:underline;text-underline-offset:3px;padding:6px 2px">먼저 둘러보기</a>
-      <span style="font-size:12.5px;line-height:1.6;color:var(--navy400)">공인중개사 · 소유자(개인 · 법인 · 신탁 위탁자) 모두 가입하실 수 있습니다 ·<br class="mbr"> 손님에게 제안을 보내는 데는 과금하지 않습니다</span>
+      <span style="font-size:12.5px;line-height:1.7;color:var(--navy300)">공인중개사 · 소유자(개인 · 법인 · 신탁 위탁자) 모두 가입하실 수 있습니다 ·<br class="mbr"> 손님에게 제안을 보내는 데는 과금하지 않습니다</span>
     </div>
    </div>
    ${isMo()?'':`<div style="flex:none;position:relative;display:flex;align-items:center;justify-content:center">
@@ -4529,7 +4545,7 @@ V['#/partner/propose'] = (id) => { const d=S.demands.find(x=>x.id===id); if(!d) 
     <a data-go="#/partner" style="flex:none">${logoLockup({h:25,partner:true,tag:!isMo()})}</a>
     <a class="back" data-go="#/partner/demand/${d.id}">← 수요 상세</a>
     <div class="right">
-      ${isMo()?'':`<span style="font-size:13.5px">손님 조건: ${esc(d.region)} · ${esc(d.lines[0])}</span>`}
+      ${isMo()?'':`<span style="font-size:13.5px;line-height:1.7">손님 조건: ${esc(d.region)} · ${esc(d.lines[0])}</span>`}
       <span class="badge num" style="background:${S.timeLeft<180?'var(--dangerbg)':'var(--ind50)'};color:${S.timeLeft<180?'var(--danger)':'var(--ind)'};padding:8px 14px;font-size:13.5px">슬롯 예약 ${mm}:${ss}</span>
     </div>
   </div>
@@ -8108,10 +8124,24 @@ function handle(a,v,el){
       go(S.afterLogin || '#/my'); S.afterLogin=null; return true; }
     case 'logout': {
       signOutRemote();
-      S.user=null; S.idv=null; S.email=''; S.pw=''; S.pw2=''; S.signup=false;
+      S.user=null; S.idv=null; S.idvToken=null; S.agent=null; S.afterLogin=null;
+      S.email=''; S.pw=''; S.pw2=''; S.signup=false;
+      /* 이름과 연락처는 접수 초안에도 남는다. 서버에서 받아온 조건·제안·물건은
+         그 사람의 것이다. 로그아웃한 화면은 처음 온 사람이 보는 화면과 같아야 한다 -
+         예시로 되돌린다. 같은 브라우저를 다음 사람이 쓸 수 있다. */
+      S.draft   = blankDraft();
+      S.conds   = JSON.parse(JSON.stringify(SEED_CONDS));
+      S.props   = JSON.parse(JSON.stringify(SEED_PROPOSALS));
+      S.demands = JSON.parse(JSON.stringify(SEED_DEMANDS));
+      S.listings= JSON.parse(JSON.stringify(SEED_LISTINGS));
+      S.myprops = JSON.parse(JSON.stringify(SEED_MYPROP));
+      S.scope   = JSON.parse(JSON.stringify(SCOPE_DEFAULT));
+      S.mineAt=S.mpAt=S.lsAt=S.feedAt=0; S.lsSaved=false; S.scopeStored=false;
+      S.mineReady=S.mpReady=S.lsReady=false;
+      S.mineErr=S.mpErr=S.feedErr=''; S.feedNeed='';
       /* 운영 화면에서 보던 것도 함께 내린다 - 다음 사람이 앞사람의 목록을 보면 안 된다 */
       OPS.rows=null; OPS.tried=false; OPS.err=''; OPS.needPass=false; OPS.link=null;
-      OPS.openUntil=null; OPS.guest=false;
+      OPS.openUntil=null; OPS.guest=false; OPS.ok=false; OPS.pass='';
       AG.rows=US.rows=LS2.rows=RP.rows=LG.rows=null;
       toast('로그아웃했습니다'); go('#/'); return true; }
 

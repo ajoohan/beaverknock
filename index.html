@@ -370,6 +370,11 @@ h1.t{margin:0;font-weight:800;letter-spacing:-.052em;line-height:1.32;text-wrap:
 .kv dd{margin:0;color:var(--n900)}
 .sect{font-size:12.5px;font-weight:800;color:var(--ind);display:block;margin-bottom:10px}
 hr.hair{border:none;border-top:1px solid var(--n100);margin:0}
+/* 사업자 정보 끝의 '우리는 공인중개사가 아니다' 한 줄.
+   좁은 화면에서는 두세 줄로 접히는데 그때 오른쪽에 맞추면 왼쪽이 들쭉날쭉해
+   읽기 나쁘다 - 넓은 화면에서만 오른쪽에 세운다. */
+.bizNote{display:block;margin-top:2px}
+@media (min-width:768px){ .bizNote{text-align:right} }
 
 /* 좌측 스텝 레일 (PC) */
 .rail{flex:none;width:360px;background:var(--white);border-right:1px solid var(--n100);padding:38px 36px;display:flex;flex-direction:column}
@@ -2545,8 +2550,10 @@ function bizFooter(){
     <span style="display:block">문의 <a class="tapx" href="tel:${esc(CORP.tel.replace(/-/g,''))}"
       style="color:var(--fc,var(--n500));text-decoration:underline;text-underline-offset:3px">${esc(CORP.tel)}</a>
       · <a class="tapx" href="mailto:${esc(CORP.mail)}"
-      style="color:var(--fc,var(--n500));text-decoration:underline;text-underline-offset:3px">${esc(CORP.mail)}</a>
-      · 비버노크는 조건을 전달하는 서비스이며 공인중개사가 아닙니다.
+      style="color:var(--fc,var(--n500));text-decoration:underline;text-underline-offset:3px">${esc(CORP.mail)}</a></span>
+    <!-- 우리가 무엇이 아닌지 밝히는 문장이다. 연락처 뒤에 점 하나로 붙여두면
+         안내문에 딸린 말처럼 읽힌다 - 줄을 따로 세워 오른쪽에 둔다. -->
+    <span class="bizNote">비버노크는 조건을 전달하는 서비스이며 공인중개사가 아닙니다.
       중개와 계약은 공인중개사사무소와 직접 하시게 됩니다.</span>
   </div>`;
 }

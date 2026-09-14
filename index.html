@@ -5793,7 +5793,9 @@ function lgFetch(){
 }
 
 const LG_ACT = { demands:'조건 조회', agents:'가입 신청 조회', 'agent-status':'상태 변경',
-  reports:'신고 조회', 'report-mark':'신고 처리' };
+  reports:'신고 조회', 'report-mark':'신고 처리', listings:'매물 조회', users:'손님 계정 조회',
+  stats:'지표 조회', 'mark-sent':'전달 표시', 'agent-delete':'가입 삭제',
+  'agent-del-preview':'삭제 전 확인', 'kakao-unlink':'카카오 연결 해제' };
 
 /* 손님이 신고한 제안. 메일로도 가지만 무엇을 이미 처리했는지는 여기서 본다. */
 const RP = { rows:null, loading:false, err:'', at:'', note:'', only:'todo', busy:'' };
@@ -6134,7 +6136,7 @@ function logPanel(){
       <tbody>${rows.map(r=>`
         <tr style="border-top:1px solid var(--n100)${r.reveal?';background:var(--warnbg)':''}">
           <td class="num" style="padding:8px 10px;white-space:nowrap">${when(r.at)}</td>
-          <td style="padding:8px 10px">${esc(r.email||'(로그인 없음)')}</td>
+          <td style="padding:8px 10px">${esc(logWho(r)||'(로그인 없음)')}</td>
           <td style="padding:8px 10px">${esc(LG_ACT[r.action]||r.action)}</td>
           <td style="padding:8px 10px;font-weight:800;color:${r.reveal?'var(--warn)':'var(--n500)'}">${r.reveal?'열어봄':'가림'}</td>
           <td class="num" style="padding:8px 10px">${r.count==null?'-':r.count}</td>
@@ -6531,7 +6533,11 @@ function dashProg(){
 
 const LOG_KO = { demands:'조건 목록', agents:'가입 신청', listings:'매물', users:'손님 계정',
   reports:'신고', 'report-mark':'신고 처리', 'agent-status':'가입 상태 변경',
-  'agent-delete':'가입 삭제', 'agent-del-preview':'삭제 전 확인' };
+  'agent-delete':'가입 삭제', 'agent-del-preview':'삭제 전 확인',
+  stats:'지표', 'mark-sent':'전달 표시', 'kakao-unlink':'카카오 연결 해제' };
+
+/* 웹훅은 사람이 부른 것이 아니다. '운영자' 로 적으면 누가 지웠는지를 잘못 말한다. */
+const logWho = r => r.email || r.who || (r.action === 'kakao-unlink' ? '카카오' : '');
 
 function dashRecent(){
   if(LG.rows == null) return `<div class="card pad" style="padding-top:16px;padding-bottom:16px">
@@ -6551,7 +6557,7 @@ function dashRecent(){
         <b>${esc(LOG_KO[r.action] || r.action || '조회')}</b>
         ${r.count!=null?` ${r.count}건`:''}${r.detail?` · ${esc(r.detail)}`:''}
         ${r.reveal?` · <b style="color:var(--danger)">연락처 열람</b>`:''}
-        <span style="color:var(--n500)"> · ${esc(r.email || r.who || '운영자')}</span></span></div>`;
+        <span style="color:var(--n500)"> · ${esc(logWho(r) || '운영자')}</span></span></div>`;
     }).join('')}</div>`
     : `<p style="margin:0;font-size:12.5px;color:var(--n500)">${esc(LG.note || '아직 남은 기록이 없습니다.')}</p>`}
   </div>`;

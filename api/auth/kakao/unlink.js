@@ -22,7 +22,7 @@
 
 import crypto from 'node:crypto';
 import { logOps } from '../../_opslog.js';
-import { sbHeaders, sbUrl } from '../../_auth.js';
+import { sbHeaders, sbUrl, opsAllowlist } from '../../_auth.js';
 
 /* 어드민 키는 비밀이다. 길이가 다르면 그것만으로도 답이 갈리지 않게 한다. */
 function sameKey(a, b) {
@@ -111,6 +111,19 @@ export default async function handler(req, res) {
     if (!u) {
       await logOps(req, null, { action: 'kakao-unlink', count: 0, detail: `${why} · 해당 계정 없음` });
       return res.status(200).json({ ok: true });
+    }
+
+    /* ⓪ 운영자 계정은 이 길로 지우지 않는다.
+          Supabase 는 메일이 같으면 계정을 하나로 묶는다. 카카오 연결 하나만
+          끊어도 같은 계정에 묶인 구글 로그인까지 사라지고, 그러면 운영 화면이
+          통째로 닫힌다. 바깥에서 온 두드림 한 번으로 그런 일이 일어나면 안 된다.
+          지우지 않고 기록만 남긴다 - 사람이 보고 정하는 편이 낫다. */
+    const allow = opsAllowlist();
+    const mail = String(u.email || '').toLowerCase();
+    if (allow.length && (allow.includes(mail) || allow.includes(String(u.id).toLowerCase()))) {
+      await logOps(req, null, { action: 'kakao-unlink',
+        detail: `${why} · 운영자 계정이라 지우지 않았다 (${mail || u.id})` });
+      return res.status(200).json({ ok: true, skipped: 'ops' });
     }
 
     /* ① 파트너 신청이 걸려 있으면 계정만 떼어낸다.

@@ -4023,7 +4023,7 @@ V['#/my'] = () => {
     return `<div class="card ${c.status==='active'?'hi':''} pad fade" style="${c.status==='closed'?'opacity:.6':''}">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
         <span class="badge ${st[0]}">${st[1]}</span>
-        ${cnt? `<a data-go="#/inbox" data-cond="${c.id}" style="font-size:13.5px;font-weight:800;color:var(--ind)">제안 ${cnt}/${c.slots} 도착 →</a>`
+        ${cnt? `<a class="tapx" data-go="#/inbox" data-cond="${c.id}" style="font-size:13.5px;font-weight:800;color:var(--ind)">제안 ${cnt}/${c.slots} 도착 →</a>`
               : `<span style="font-size:13.5px;font-weight:800;color:var(--n500)">제안 0/${c.slots}</span>`}
       </div>
       <b style="display:block;font-size:${isMo()?15:17}px;font-weight:800;letter-spacing:-.02em;margin-bottom:6px">${esc(c.title)} ${demoTag(c,'vertical-align:middle')}</b>
@@ -4032,7 +4032,7 @@ V['#/my'] = () => {
         <div style="background:var(--n50);padding:12px 14px;margin-bottom:14px">
           <div style="display:flex;justify-content:space-between;margin-bottom:8px">
             <span style="font-size:11px;font-weight:800;color:var(--ind)">조건 입력 ${c.pct}%</span>
-            <a data-go="#/detail" style="font-size:12.5px;color:var(--n500);text-decoration:underline">더 채우면 맞는 제안이 옵니다</a>
+            <a class="tapx" data-go="#/detail" style="font-size:12.5px;color:var(--n500);text-decoration:underline">더 채우면 맞는 제안이 옵니다</a>
           </div><div class="gauge" style="height:5px"><i style="width:${c.pct}%"></i></div>
         </div>
         ${cnt===0 && (c.status==='expiring'||c.expires<10)? `

@@ -3930,7 +3930,9 @@ V['#/contact'] = () => { const d=S.draft; const ok = contactOk(d);
 
       ${open?'':`<div class="gate-hint"><i></i>${idvOn?'휴대폰 본인확인을 마치면 아래가 이어서 열립니다':'이름과 연락처를 적으시면 아래가 이어서 열립니다'}</div>`}
 
-      <div class="gate ${open?'open':''}" data-gate ${open?'':'aria-hidden="true"'}>
+      <!-- 어떤 기준으로 그렸는지 남긴다. 적는 동안에는 다시 그리지 않으므로,
+           문을 여는 쪽도 화면이 말하고 있는 그 기준을 그대로 써야 한다. -->
+      <div class="gate ${open?'open':''}" data-gate="${idvOn?'idv':'name'}" ${open?'':'aria-hidden="true"'}>
       <div class="grid2 mo1" style="margin-bottom:18px">
         <div><span class="lab">편한 연락 방법</span>${chipsHTML(PREFS, d.pref, 'pref', false)}</div>
         <div><span class="lab">연락 가능한 시간</span>${chipsHTML(TIMES, d.times, 'times', true)}</div>
@@ -7474,10 +7476,19 @@ function idvSdk(){
 }
 
 /* 설정은 서버가 쥐고 있다. 붙어 있지 않으면 화면도 그렇다고 말한다. */
+/* 본인확인이 붙어 있는지는 서버에 물어야 안다. 그 답이 늦으면 연락처 화면은
+   '아직 안 붙었다' 쪽으로 그려진다 - 그 뒤에 답이 와도 다시 그리지 않으면
+   화면은 이름·연락처를 달라고 하는데 판정은 본인확인을 요구하는 상태가 된다.
+   말과 기준이 어긋나면 아무리 적어도 문이 안 열린다. 답이 오면 다시 그린다. */
 function idvConfig(){
   if(S.idvCfg) return Promise.resolve(S.idvCfg);
-  return fetch('/api/idv').then(r=>r.json()).then(j=>{ S.idvCfg = j || {enabled:false}; return S.idvCfg; })
-    .catch(()=>{ S.idvCfg = {enabled:false}; return S.idvCfg; });
+  const done = j => {
+    const was = !!(S.idvCfg && S.idvCfg.enabled);
+    S.idvCfg = j || {enabled:false};
+    if(was !== !!S.idvCfg.enabled && String(S.route||'').startsWith('#/contact')) render();
+    return S.idvCfg;
+  };
+  return fetch('/api/idv').then(r=>r.json()).then(done).catch(()=>done({enabled:false}));
 }
 
 /* 본인확인을 부르는 자리가 둘이다 - 손님 조건 등록, 공급자 가입.
@@ -7901,10 +7912,13 @@ function toggleSubmit(){
 function refreshGate(){
   if(!String(S.route||'').startsWith('#/contact')) return;
   const d = S.draft;
-  const idvOn = !!(S.idvCfg && S.idvCfg.enabled);
+  const g = $('#app [data-gate]');
+  /* 화면이 그려질 때의 기준을 그대로 쓴다 - 그 사이에 설정이 바뀌었어도
+     지금 보이는 화면이 요구하는 것으로 판단해야 말과 행동이 맞는다. */
+  const idvOn = g ? g.getAttribute('data-gate') === 'idv'
+                  : !!(S.idvCfg && S.idvCfg.enabled);
   const open = idvOn ? !!d.verified
              : (String(d.name||'').trim().length >= 2 && phoneOk(d.phone));
-  const g = $('#app [data-gate]');
   if(g){
     g.classList.toggle('open', open);
     if(open) g.removeAttribute('aria-hidden'); else g.setAttribute('aria-hidden','true');

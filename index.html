@@ -838,10 +838,13 @@ body.mo .vcard .vbtn{width:100%;margin-top:10px}
 .steps{position:relative}
 .steps .track{position:absolute;left:6%;right:6%;top:19px;height:2px;
   background:var(--n200);border-radius:2px;overflow:hidden}
-.steps .track i{display:block;height:100%;width:0;border-radius:2px;
+/* 폭을 늘리지 않고 눕혀 둔 것을 편다 - 폭은 매 프레임 배치를 다시 계산하게 만들고,
+   높이 2px 짜리 띠에서는 퍼센트 폭이 제대로 잡히지도 않았다. */
+.steps .track i{display:block;height:100%;width:100%;border-radius:2px;
   background:linear-gradient(90deg,var(--ind) 0%,var(--ind300) 58%,var(--clay) 100%);
-  transition:width 2.4s cubic-bezier(.22,.62,.24,1)}
-.steps.run .track i{width:100%}
+  transform-origin:left center;transform:scaleX(0);
+  transition:transform 2.4s cubic-bezier(.22,.62,.24,1)}
+.steps.run .track i{transform:scaleX(1)}
 .steps .no{position:relative;z-index:2;width:38px;height:38px;border-radius:var(--r-full);
   background:var(--white);border:2px solid var(--n300);color:var(--n500);
   display:flex;align-items:center;justify-content:center;
@@ -858,7 +861,7 @@ body.mo .vcard .vbtn{width:100%;margin-top:10px}
   .knock .ring{display:none}
   .knock img{animation:none}
   /* 움직임을 줄여달라고 한 사람에게는 처음부터 완성된 모습을 보여준다 */
-  .steps .track i{transition:none;width:100%}
+  .steps .track i{transition:none;transform:scaleX(1)}
   .steps .no,.steps .stt{transition:none}
 }
 

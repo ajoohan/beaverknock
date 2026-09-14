@@ -7709,6 +7709,49 @@ async function refreshSession(sess){
   }catch(e){ return null; }
 }
 
+/* 이메일 가입·로그인.
+   지금까지 이 화면은 서버에 아무것도 보내지 않았다 - S.user 를 손으로 채워
+   로그인한 척만 했다. 그 계정으로는 조건을 걸 수도, 받은 제안을 볼 수도 없었다
+   (서버가 토큰을 보고 사람을 가리는데 토큰이 없다).
+
+   가입하면 바로 들어간다. Supabase 가 확인 메일을 요구하도록 설정돼 있으면
+   세션이 안 오는데, 그때는 그렇다고 말한다 - 들어간 척하지 않는다. */
+const AUTH_ERR = [
+  [/already registered|User already/i, '이미 가입된 이메일입니다 - 로그인해 주세요'],
+  [/Invalid login credentials/i,       '이메일 또는 비밀번호가 맞지 않습니다'],
+  [/Email not confirmed/i,             '가입 확인 메일의 링크를 먼저 눌러주세요'],
+  [/Password should be/i,              '비밀번호는 8자 이상으로 만들어 주세요'],
+  [/rate limit|too many/i,             '잠시 후 다시 시도해 주세요'],
+];
+async function emailAuth(mode){
+  const email = String(S.email || '').trim();
+  const password = S.pw;
+  const path = mode === 'signup' ? 'signup' : 'token?grant_type=password';
+  let j = {}, ok = false;
+  try{
+    const r = await fetch(`${SB_URL}/auth/v1/${path}`, {
+      method:'POST', headers:{apikey: SB_KEY, 'Content-Type':'application/json'},
+      body: JSON.stringify({email, password}),
+    });
+    ok = r.ok;
+    j = await r.json().catch(()=>({}));
+  }catch(e){ return {err:'네트워크 문제로 처리하지 못했습니다'}; }
+
+  if(!ok){
+    const raw = j.msg || j.error_description || j.message || j.error || '';
+    const hit = AUTH_ERR.find(([re]) => re.test(String(raw)));
+    return {err: hit ? hit[1] : '처리하지 못했습니다 - 잠시 후 다시 시도해 주세요'};
+  }
+  if(j.access_token){
+    store.set({access_token:j.access_token, refresh_token:j.refresh_token,
+               expires_at: Math.floor(Date.now()/1000) + (j.expires_in || 3600)});
+    await hydrate();
+    return {ok:true};
+  }
+  /* 가입은 됐는데 세션이 안 왔다 = Supabase 가 확인 메일을 요구하도록 켜져 있다 */
+  return {ok:true, confirm:true};
+}
+
 function signOutRemote(){
   const sess = store.get();
   store.set(null);
@@ -8237,11 +8280,20 @@ function handle(a,v,el){
       if(!/^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(S.email)) return toast('이메일을 확인해 주세요'), true;
       if(S.pw.length<8) return toast('비밀번호는 8자 이상입니다'), true;
       if(S.signup && S.pw2!==S.pw) return toast('비밀번호가 서로 다릅니다'), true;
-      S.user = {method:'email', label:'이메일', name:S.draft.name||'', email:S.email};
-      clearSeeds(true);
-      S.pw=''; S.pw2='';
-      toast(S.signup?'가입이 끝났습니다':'로그인했습니다'); S.signup=false;
-      go(S.afterLogin || '#/my'); S.afterLogin=null; return true; }
+      if(S.authBusy) return true;
+      const mode = S.signup ? 'signup' : 'login';
+      S.authBusy = true; render();
+      emailAuth(mode).then(r => {
+        S.authBusy = false;
+        if(r.err){ render(); return toast(r.err); }
+        S.pw=''; S.pw2=''; S.signup=false;
+        if(r.confirm){ render();
+          return toast('가입 확인 메일을 보냈습니다 - 메일의 링크를 눌러주세요'); }
+        clearSeeds(true);
+        toast(mode==='signup' ? '가입이 끝났습니다' : '로그인했습니다');
+        const to = S.afterLogin || '#/my'; S.afterLogin = null; go(to);
+      });
+      return true; }
     case 'logout': {
       signOutRemote();
       S.user=null; S.idv=null; S.idvToken=null; S.agent=null; S.afterLogin=null;

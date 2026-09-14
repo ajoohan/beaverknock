@@ -1,5 +1,17 @@
 {
   "cleanUrls": true,
+  "redirects": [
+    {
+      "source": "/admin",
+      "destination": "/#/ops/live",
+      "permanent": false
+    },
+    {
+      "source": "/ops",
+      "destination": "/#/ops/live",
+      "permanent": false
+    }
+  ],
   "headers": [
     {
       "source": "/fonts/(.*)",

@@ -105,9 +105,19 @@ export async function myListings(agentId) {
   return await r.json();
 }
 
+/* 파트너 화면이 '내 정보' 로 보여줄 것. 자기 것이라 가리지 않는다 -
+   가리면 잘못 적은 번호를 본인이 찾아낼 방법이 없다. */
+export const meAgent = a => a && {
+  id: a.id, office: a.office || null, role: a.role || null,
+  owner_type: a.owner_type || null, status: a.status || null,
+  name: a.name || null, phone: a.phone || null,
+  reg_no: a.reg_no || null, addr: a.addr || null,
+  created_at: a.created_at || null,
+};
+
 export async function approvedAgent(user) {
   const q = new URLSearchParams({
-    select: 'id,role,status,office,name,owner_type,'
+    select: 'id,role,status,office,name,phone,reg_no,addr,owner_type,created_at,'
           + 'scope_regions,scope_kinds,scope_excluded,scope_set,notify_paused',
     user_id: 'eq.' + user.id, limit: '1',
   });
@@ -135,7 +145,8 @@ export default async function handler(req, res) {
     return res.status(502).json({ error: '자격을 확인하지 못했습니다' });
   }
   if (chk.none)    return res.status(403).json({ error: '파트너 가입 후 이용하실 수 있습니다', need: 'join' });
-  if (chk.pending) return res.status(403).json({ error: '가입 확인이 끝나면 손님 조건을 보내드립니다', need: 'approval', status: chk.pending });
+  if (chk.pending) return res.status(403).json({ error: '가입 확인이 끝나면 손님 조건을 보내드립니다',
+    need: 'approval', status: chk.pending, agent: meAgent(chk.agent) });
 
   let b = req.body;
   if (typeof b === 'string') { try { b = JSON.parse(b); } catch { b = {}; } }
@@ -170,8 +181,7 @@ export default async function handler(req, res) {
      지역은 그렇게 막아뒀는데 유형만 반대로 열려 있었다. */
   const kinds = sc.kinds.filter(k => KIND_KO[k]);
   if (!kinds.length) {
-    return res.status(200).json({ ok: true, agent: { id: chk.agent.id, office: chk.agent.office || null,
-        role: chk.agent.role || null, owner_type: chk.agent.owner_type || null },
+    return res.status(200).json({ ok: true, agent: meAgent(chk.agent),
       scope: sc, hidden: { region: 0, slot: 0, kind: 1 }, at: new Date().toISOString(), rows: [] });
   }
   const regions = sc.set ? sc.regions.map(norm).filter(Boolean) : [];
@@ -218,8 +228,7 @@ export default async function handler(req, res) {
 
     return res.status(200).json({
       ok: true,
-      agent: { id: chk.agent.id, office: chk.agent.office || null,
-        role: chk.agent.role || null, owner_type: chk.agent.owner_type || null },
+      agent: meAgent(chk.agent),
       scope: sc,
       hidden,
       at: new Date().toISOString(),
@@ -300,8 +309,7 @@ async function readFitting(res, agent) {
     if (list === null) return res.status(502).json({ error: '올려두신 물건을 확인하지 못했습니다' });
     if (!list.length) {
       return res.status(200).json({
-        ok: true, agent: { id: agent.id, office: agent.office || null,
-        role: agent.role || null, owner_type: agent.owner_type || null },
+        ok: true, agent: meAgent(agent),
         scope: scopeOf(agent),
         byListing: true, listings: 0, hidden: { region: 0, slot: 0, fit: 0 },
         at: new Date().toISOString(), rows: [],
@@ -315,8 +323,7 @@ async function readFitting(res, agent) {
        '조건을 불러오지 못했습니다' 보다 사실에 가깝다. */
     if (!kinds.length) {
       return res.status(200).json({
-        ok: true, agent: { id: agent.id, office: agent.office || null,
-          role: agent.role || null, owner_type: agent.owner_type || null },
+        ok: true, agent: meAgent(agent),
         scope: scopeOf(agent),
         byListing: true, listings: list.length, hidden: { region: 0, slot: 0, fit: 0 },
         at: new Date().toISOString(), rows: [],
@@ -353,8 +360,7 @@ async function readFitting(res, agent) {
     }
 
     return res.status(200).json({
-      ok: true, agent: { id: agent.id, office: agent.office || null,
-        role: agent.role || null, owner_type: agent.owner_type || null },
+      ok: true, agent: meAgent(agent),
       scope: scopeOf(agent),
       byListing: true, listings: list.length, hidden, at: new Date().toISOString(),
       rows: rows.map(d => ({ ...d, kind_ko: KIND_KO[d.kind] || '주거', mine: mine.has(d.id) })),

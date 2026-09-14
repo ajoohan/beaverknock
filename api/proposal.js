@@ -113,8 +113,10 @@ export default async function handler(req, res) {
       addr, bname: str(b.bname, 80),
       dep: int(b.dep), rent: int(b.rent), fee: int(b.fee),
       fee_type: str(b.fee_type, 40), fee_items: str(b.fee_items, 200),
+      fee_basis: str(b.fee_basis, 20), note: str(b.note, 1000),
       area_sup: num(b.area_sup), area: num(b.area),
-      rooms: str(b.rooms, 10), baths: str(b.baths, 10), dir: str(b.dir, 10),
+      rooms: str(b.rooms, 10), baths: str(b.baths, 10),
+      dir: str(b.dir, 10), dir_base: str(b.dir_base, 20),
       floor_mode: str(b.floor_mode, 20), floor_no: str(b.floor_no, 10), band: str(b.band, 10),
       duplex: b.duplex === true,
       move_in: str(b.move_in, 40), park: str(b.park, 40), approved: str(b.approved, 20),
@@ -130,8 +132,8 @@ export default async function handler(req, res) {
        제안이 통째로 막히면 안 된다 - 그 칸만 빼고 한 번 더 넣는다. */
     if (!ir.ok) {
       const t0 = await ir.clone().text();
-      if (/does not exist|PGRST204/i.test(t0) && /duplex/.test(t0)) {
-        const { duplex, ...old } = row;
+      if (/does not exist|PGRST204/i.test(t0) && /duplex|dir_base|fee_basis|note/.test(t0)) {
+        const { duplex, dir_base, fee_basis, note, ...old } = row;
         ir = await put(old);
       }
     }

@@ -473,6 +473,10 @@ async function addListing(req, res, agent, user, b) {
     floor_no: txt(L.floorNo, 10), duplex: L.duplex === true,
     musts: arr(L.musts), fac: arr(L.fac),
     musts_free: txt(L.mustsFree, 120), fac_free: txt(L.facFree, 120),
+    /* 중개대상물 표시·광고 명시사항 - 방향은 기준까지, 관리비는 산정 기준과 포함 비목까지 */
+    dir: txt(L.dir, 10), dir_base: txt(L.dirBase, 20),
+    fee_basis: txt(L.feeBasis, 20), fee_type: txt(L.feeType, 40), fee_items: txt(L.feeItems, 200),
+    note: txt(L.note, 1000),
     move_in: txt(L.moveIn, 40), photos: int0(L.photos) || 0,
   };
 
@@ -487,8 +491,10 @@ async function addListing(req, res, agent, user, b) {
        남지만, 물건을 못 올리는 것보다는 낫다. */
     if (!r.ok) {
       const t0 = await r.text();
-      if (/does not exist|PGRST204/i.test(t0) && /area|duplex|floor_no|musts_free|fac_free/.test(t0)) {
-        const { area, area_sup, floor_no, duplex, musts_free, fac_free, ...old } = row;
+      if (/does not exist|PGRST204/i.test(t0)
+          && /area|duplex|floor_no|musts_free|fac_free|dir|fee_basis|fee_type|fee_items|note/.test(t0)) {
+        const { area, area_sup, floor_no, duplex, musts_free, fac_free,
+                dir, dir_base, fee_basis, fee_type, fee_items, note, ...old } = row;
         r = await put(old);
       } else {
         if (noTable(t0)) return res.status(503).json({ error: '아직 준비 중입니다 (0015 마이그레이션 필요)' });

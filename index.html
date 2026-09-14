@@ -1184,8 +1184,27 @@ const MUSTS=['주차 가능','엘리베이터','반려동물','역세권','초�
    여러 개 고를 수 있어야 하고, 목록에 없는 것은 직접 적을 수 있어야 한다. */
 const LMUSTS = [...MUSTS, '신축', '올수리', '풀옵션', '한강 조망', '쇼핑몰 인접',
   '산책로', '등산로', '숲세권', '대단지', '남향'];
-const LFAC = ['주방·급배수','가스 인입','전기 증설','후드·덕트','화장실 내부','정화조 여유','주차 가능',
-  '코너 자리','유동인구 많음','간판 자리 좋음','전용 화장실','엘리베이터'];
+
+/* 중개대상물 표시·광고 명시사항.
+   방향은 어디를 기준으로 잰 것인지까지 적어야 하고, 관리비는 얼마인지만이 아니라
+   어떤 기간으로 계산한 금액인지와 무엇이 포함되는지를 함께 적어야 한다. */
+const DIRS     = ['동','서','남','북','남동','남서','북동','북서'];
+const DIR_BASE = ['거실 기준','안방 기준','주된 출입구 기준'];
+const FEE_BASIS = ['최근 3개월 평균','직전 1년 평균','표시하지 않음'];
+const FEE_TYPE  = ['임대인이 직접부과','관리규약에 따라 부과','그 밖의 부과 방식','확인불가'];
+const MOVEIN    = ['즉시','협의','날짜 지정'];
+
+/* 상가는 층을 정확히 적게 하므로 고·중·저 칸이 없다. 그런데 손님은 여전히
+   '1층만 · 2층 이상 · 지하 가능' 으로 조건을 건다 - 적어둔 층에서 유도한다. */
+function shopBandOf(floorNo){
+  const t = String(floorNo || '').trim().toUpperCase();
+  if(!t) return '';
+  if(/^B|^-|지하/.test(t)) return '지하 가능';
+  const n = parseInt(t, 10);
+  if(n === 1) return '1층만';
+  if(n >= 2) return '2층 이상 가능';
+  return '';
+}
 const FLOORS=['반지하 제외','1층 제외','탑층 제외','무관'], HOUSE=['1인','2인','3인','3인 이상'];
 const LOANS=['있음','없음'];
 const PREFS=['문자·카톡','전화','아무거나'], TIMES=['평일 낮','평일 저녁','주말','아무때나'];
@@ -1211,7 +1230,9 @@ const SEED_LISTINGS = [
 function matchStages(L, d){
   const m = d.m || {}, st = [];
   /* 1. 유형 */
-  const kindOk = L.kind === d.kind && (L.kind==='shop' ? (!m.biz || m.biz===L.biz) : (!m.deal || m.deal===L.deal));
+  /* 업종은 물건에서 받지 않는다 - 중개사 회신(2026-09-14). 그래서 여기서 거르지
+     않고 아래 '확인' 단계로 넘긴다. 모르는 것을 맞다고도 틀리다고도 하지 않는다. */
+  const kindOk = L.kind === d.kind && (L.kind==='shop' ? true : (!m.deal || m.deal===L.deal));
   st.push({k:'유형', ok:kindOk, note: L.kind==='shop' ? (m.biz||'') : (m.deal||'')});
   /* 2. 지역 */
   const norm = x => String(x).replace(/\s*(상권|전체)\s*/g,'');
@@ -1245,6 +1266,8 @@ function matchStages(L, d){
   const want = (L.kind==='home' ? (m.musts||[]) : (m.fac||[]));
   const have = (L.kind==='home' ? (L.musts||[]) : (L.fac||[]));
   const miss = want.filter(x => !have.includes(x));
+  /* 상가는 업종·설비를 물건에 적지 않는다. 손님이 걸어둔 것은 중개사가 직접 봐야 한다. */
+  if(L.kind !== 'home' && m.biz) miss.unshift(`업종 ${m.biz}`);
   st.push({k:'확인', ok:true, note: miss.length ? `확인 필요: ${miss.join(' · ')}` : '요청 항목 모두 충족', miss});
   return st;
 }
@@ -1908,6 +1931,8 @@ function listingFromRow(x){
     id:x.id, kind:x.kind, name:x.name, dong:x.dong||'',
     deal:x.deal||undefined, biz:x.biz||undefined,
     dep:x.dep||0, rent:x.rent||0, fee:x.fee||0,
+    feeBasis:x.fee_basis||'', feeType:x.fee_type||'', feeItems:x.fee_items||'',
+    dir:x.dir||'', dirBase:x.dir_base||'', note:x.note||'',
     area:+x.area||0, areaSup:+x.area_sup||0,
     /* 0020 이전에 올린 물건은 평만 있다 - 있는 쪽을 쓴다 */
     py:+x.area ? pyOf(x.area) : (+x.py||0),
@@ -1977,7 +2002,8 @@ function propFromRow(p){
     /* 전에는 공급면적 하나만 받아 '전용' 이라고 적어 보여줬다. 둘은 다른 숫자다 */
     area:+p.area||0, areaSup:+p.area_sup||0, py:pyOf(p.area||p.area_sup),
     kind:p.kind||'home', rooms:p.rooms||'', baths:p.baths||'', duplex:!!p.duplex,
-    dir:p.dir||'', feeItems:p.fee_items||'',
+    dir:p.dir||'', dirBase:p.dir_base||'', feeBasis:p.fee_basis||'',
+    feeItems:p.fee_items||'', note:p.note||'',
     floor:p.floor||'', parking:p.park||'문의', moveIn:p.move_in||'협의',
     diff:[], match:[], msg:p.msg||'',
     /* 연결 전에는 누구인지 특정할 수 있는 것을 담지 않는다 - 자격만 담는다.
@@ -4094,8 +4120,9 @@ V['#/proposal'] = (id) => { const p=S.props.find(x=>x.id===id); if(!p) return V[
   const kv = (k, v) => v ? `<div class="kv"><dt>${k}</dt><dd>${esc(String(v))}</dd></div>` : '';
   const bldRows = [
     kv('사용승인', p.approved), p.floors ? kv('총 층수', `${p.floors}층`) : '',
-    kv('주차', p.parking), p.dir ? kv('방향', `${p.dir} (거실 기준)`) : '',
-    kv('관리비 포함', p.feeItems),
+    kv('주차', p.parking),
+    p.dir ? kv('방향', `${p.dir}${p.dirBase?` (${p.dirBase})`:''}`) : '',
+    kv('관리비 기준', p.feeBasis), kv('관리비 포함', p.feeItems),
     p.seed ? `<div class="kv"><dt>위반건축물</dt><dd style="color:${p.violation?'var(--danger)':'var(--ok)'};font-weight:700">${p.violation?'있음':'해당 없음'}</dd></div>` : '',
     p.seed ? `<div class="kv"><dt>융자금</dt><dd class="num">${p.loan?p.loan.toLocaleString()+'만원':'없음'}</dd></div>` : '',
   ].filter(Boolean).join('');
@@ -4105,6 +4132,9 @@ V['#/proposal'] = (id) => { const p=S.props.find(x=>x.id===id); if(!p) return V[
       ${p.diff.map(t=>`<div style="display:flex;gap:10px;margin-bottom:8px"><span class="badge b-warn" style="flex:none">다름</span><span style="font-size:14px;line-height:1.6;color:var(--n700)">${esc(t)}</span></div>`).join('')}
       <div style="display:flex;gap:10px"><span class="badge b-ok" style="flex:none">일치</span><span style="font-size:14px;line-height:1.6;color:var(--n700)">${p.match.map(esc).join(' · ')}</span></div>
     </div>
+    ${p.note ? `<div class="card pad">
+      <span class="sect">매물 특징</span>
+      <p style="margin:0;font-size:${isMo()?14:15}px;line-height:1.75;white-space:pre-line">${esc(p.note)}</p></div>` : ''}
     <div class="card pad" style="background:var(--ind50);border:1.5px solid #DCDDF3">
       <span class="sect">중개사님의 한마디</span>
       <p style="margin:0;font-size:${isMo()?14:15}px;line-height:1.75">${esc(p.msg)}</p></div>
@@ -4513,7 +4543,9 @@ V['#/partner/propose'] = (id) => { const d=S.demands.find(x=>x.id===id); if(!d) 
         <div style="margin-top:14px"><span class="lab" style="font-size:12.5px">관리비</span>
           <div class="unit" style="max-width:${isMo()?'none':'220px'}"><input class="inp num" data-in="fee" inputmode="numeric" value="${esc(g('fee'))}" placeholder="0" style="padding:12px 14px;font-size:14px"><span>만원</span></div></div>
         <div style="margin-top:14px"><span class="lab" style="font-size:12.5px">관리비 부과방식</span>
-          ${chipsHTML(['임대인이 직접부과','관리규약에 따라 부과','그 밖의 부과 방식','확인불가'], g('feeType'),'feeType',false)}</div>
+          ${chipsHTML(FEE_TYPE, g('feeType'),'feeType',false)}</div>
+        <div style="margin-top:14px"><span class="lab" style="font-size:12.5px">관리비 산정 기준 <span style="color:var(--danger)">*</span></span>
+          ${chipsHTML(FEE_BASIS, g('feeBasis'),'feeBasis',false)}</div>
         <div style="margin-top:14px"><span class="lab" style="font-size:12.5px">관리비 포함비목 <span class="opt">포함되는 항목을 그대로 적어주세요</span></span>
           <input class="inp" data-in="feeItems" value="${esc(g('feeItems'))}" placeholder="예) 수도료·청소비 포함 / 전기·가스 별도" style="padding:12px 14px;font-size:14px"></div>
         <div style="margin-top:14px"><span class="lab" style="font-size:12.5px">층 표기 <span class="opt">소유자가 공개를 원치 않으면 고·중·저 또는 비공개</span></span>
@@ -4522,8 +4554,14 @@ V['#/partner/propose'] = (id) => { const d=S.demands.find(x=>x.id===id); if(!d) 
           ${f.floorMode==='고·중·저'? `<div style="margin-top:10px">${chipsHTML(['고층','중층','저층'], f.band,'band',false)}</div>`:''}
         </div>
         <div style="margin-top:14px"><span class="lab" style="font-size:12.5px">복층</span>${chipsHTML(['단층','복층'], g('duplex')||'단층','duplex',false)}</div>
-        <div style="margin-top:14px"><span class="lab" style="font-size:12.5px">입주 가능일</span>${chipsHTML(['즉시','협의','날짜 지정'], g('moveIn'),'moveIn',false)}</div>
-        ${home ? `<div style="margin-top:14px"><span class="lab" style="font-size:12.5px">방향 (거실 기준)</span>${chipsHTML(['동','서','남','북','남동','남서','북동','북서'], g('dir'),'dir',false)}</div>` : ''}
+        <div style="margin-top:14px"><span class="lab" style="font-size:12.5px">입주 가능일</span>${chipsHTML(MOVEIN, g('moveIn'),'moveIn',false)}
+          ${g('moveIn')==='날짜 지정'? `<input class="inp" data-in="moveWhen" value="${esc(g('moveWhen'))}" placeholder="예) 2026년 11월 초" style="margin-top:10px;padding:12px 14px;font-size:14px">`:''}</div>
+        <div style="margin-top:14px"><span class="lab" style="font-size:12.5px">매물 특징 <span class="opt">손님에게 그대로 전해집니다</span></span>
+          <textarea class="inp" data-in="note" rows="3" placeholder="예) 남향 거실이라 오후까지 볕이 듭니다 · 올수리 마친 집"
+            style="padding:12px 14px;font-size:14px;resize:vertical;min-height:80px;line-height:1.7">${esc(g('note'))}</textarea></div>
+        <div style="margin-top:14px"><span class="lab" style="font-size:12.5px">방향 <span style="color:var(--danger)">*</span></span>${chipsHTML(DIRS, g('dir'),'dir',false)}</div>
+        <div style="margin-top:14px"><span class="lab" style="font-size:12.5px">방향 기준 <span style="color:var(--danger)">*</span> <span class="opt">어디를 기준으로 잰 방향인지 적어야 합니다</span></span>
+          ${chipsHTML(DIR_BASE, g('dirBase'),'dirBase',false)}</div>
         <div class="grid2 mo1" style="margin-top:14px;gap:12px">
           <div><span class="lab" style="font-size:12.5px">사용승인일</span>
             <input class="inp" data-in="approved" value="${esc(g('approved'))}" placeholder="예) 2016.06.24" style="padding:12px 14px;font-size:14px"></div>
@@ -5032,8 +5070,10 @@ const areaTag = L => L.area ? `${L.area}㎡(${pyOf(L.area)}평)` : L.py ? `${L.p
 const floorTag = L => L.floorNo ? (/^[0-9]+$/.test(L.floorNo) ? `${L.floorNo}층` : L.floorNo) : (L.band||'');
 const specOf = L => (L.kind==='home'
   ? [L.dong, areaTag(L) && `전용 ${areaTag(L)}`, L.rooms && `${L.rooms}룸`,
-     L.baths && `욕실 ${L.baths}`, L.duplex && '복층', floorTag(L)]
-  : [L.dong, L.biz, areaTag(L), L.duplex && '복층', floorTag(L)]
+     L.baths && `욕실 ${L.baths}`, L.duplex && '복층', floorTag(L),
+     L.dir && `${L.dir}${L.dirBase?`(${L.dirBase})`:''}`]
+  : [L.dong, areaTag(L), L.duplex && '복층', floorTag(L),
+     L.dir && `${L.dir}${L.dirBase?`(${L.dirBase})`:''}`]
   ).filter(Boolean).join(' · ');
 
 V["#/partner/listings"] = () => {
@@ -5041,7 +5081,7 @@ V["#/partner/listings"] = () => {
     const ms = matchesFor(L);
     return `<div class="card pad clickable fade" data-go="#/partner/listing/${L.id}" style="display:flex;flex-direction:column;gap:10px">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
-        <span style="font-size:13.5px;font-weight:800;color:var(--ind)">${L.kind==='home'?'주거':'상가'} · ${esc(L.kind==='home'?L.deal:L.biz)}</span>
+        <span style="font-size:13.5px;font-weight:800;color:var(--ind)">${L.kind==='home'?'주거':'상가'} · ${esc(L.deal||'')}</span>
         ${ms.length? `<span class="badge b-ok">맞는 손님 ${ms.length}명</span>` : `<span class="badge b-mute">대기 중</span>`}
       </div>
       <b style="font-size:${isMo()?15:17}px;font-weight:800;letter-spacing:-.02em">${esc(L.name)} ${demoTag(L,'vertical-align:middle')}</b>
@@ -5151,8 +5191,7 @@ function addrBox(target, ph){
 V["#/partner/listing/new"] = () => {
   const f = S.form, g = k => f[k]||'';
   const shop = f.lkind==='shop';
-  const req = [!!String(g('lname')).trim(), !!g('ldong'), +g('ldep')>0, +g('larea')>0,
-               shop? !!g('lbiz') : +g('lrooms')>0].every(Boolean);
+  const req = listingOk(f);
   return `
 <div class="scr fade" style="background:var(--n50)">
   ${navPartner('l')}
@@ -5172,23 +5211,35 @@ V["#/partner/listing/new"] = () => {
           <b style="flex:1;min-width:0;font-size:13.5px;font-weight:700;color:var(--n900);line-height:1.5">${esc(g('laddr'))}</b>
           <button class="chip" data-act="addr-clear" data-v="laddr" style="flex:none;padding:6px 12px;font-size:12px">지우기</button></div>`:''}
       </div>
+      <!-- 동을 칩으로 두면 하남 바깥 물건을 올릴 방법이 없다. 주소를 고르면
+           법정동이 자동으로 들어오고, 안 들어오면 직접 적는다. -->
       <div class="grid2 mo1">
         <div><span class="lab">건물·단지명 <span class="req">*</span></span>
           <input class="inp" data-in="lname" value="${esc(g('lname'))}" placeholder="미사강변 ○○아파트"></div>
-        <div><span class="lab">동 <span class="req">*</span></span>
-          ${chipsHTML(shop?['미사역 상권','미사1동','미사2동','미사3동','신장동','덕풍2동']:['미사1동','미사2동','미사3동','신장1동','덕풍1동','덕풍2동','위례동'], g('ldong'),'ldong',false)}</div>
+        <div><span class="lab">동 <span class="req">*</span> <span class="opt">주소를 고르면 자동으로 들어옵니다</span></span>
+          <input class="inp" data-in="ldong" value="${esc(g('ldong'))}" placeholder="예) 미사1동"></div>
       </div>
-      ${shop? `<div><span class="lab">업종 <span class="req">*</span></span>${chipsHTML(Object.keys(BIZ), g('lbiz'),'lbiz',false)}</div>`
-            : `<div><span class="lab">거래 방식</span>${chipsHTML(['전세','월세','매매'], g('ldeal')||'월세','ldeal',false)}</div>`}
+      <div><span class="lab">거래 방식</span>${chipsHTML(['전세','월세','매매'], g('ldeal')||'월세','ldeal',false)}</div>
       <div class="grid2 mo1">
-        <div><span class="lab">${shop?'보증금':dealWords(g('ldeal')||'월세').dep} <span class="req">*</span></span><div class="unit"><input class="inp num" data-in="ldep" inputmode="numeric" value="${esc(g('ldep'))}" placeholder="0"><span>만원</span></div></div>
-        ${shop||dealWords(g('ldeal')||'월세').rent?`<div><span class="lab">월세 <span class="req">*</span></span><div class="unit"><input class="inp num" data-in="lrent" inputmode="numeric" value="${esc(g('lrent'))}" placeholder="0"><span>만원</span></div></div>`:''}
+        <div><span class="lab">${dealWords(g('ldeal')||'월세').dep} <span class="req">*</span></span><div class="unit"><input class="inp num" data-in="ldep" inputmode="numeric" value="${esc(g('ldep'))}" placeholder="0"><span>만원</span></div></div>
+        ${dealWords(g('ldeal')||'월세').rent?`<div><span class="lab">월세 <span class="req">*</span></span><div class="unit"><input class="inp num" data-in="lrent" inputmode="numeric" value="${esc(g('lrent'))}" placeholder="0"><span>만원</span></div></div>`:''}
       </div>
-      <div class="grid2 mo1">
-        <div><span class="lab">관리비</span><div class="unit"><input class="inp num" data-in="lfee" inputmode="numeric" value="${esc(g('lfee'))}" placeholder="0"><span>만원</span></div></div>
+
+      <!-- 관리비는 금액만으로는 표시·광고 요건을 못 채운다. 어떤 기간으로 계산한
+           금액인지와 무엇이 포함되는지를 함께 적어야 한다. -->
+      <div style="border-top:1px solid var(--hair);padding-top:16px">
+        <span class="lab">관리비</span>
+        <div class="unit" style="max-width:${isMo()?'none':'220px'}"><input class="inp num" data-in="lfee" inputmode="numeric" value="${esc(g('lfee'))}" placeholder="0"><span>만원</span></div>
+        <div style="margin-top:12px"><span class="lab">산정 기준 <span class="req">*</span></span>
+          ${chipsHTML(FEE_BASIS, g('lfeeBasis'),'lfeeBasis',false)}</div>
+        <div style="margin-top:12px"><span class="lab">부과 방식</span>
+          ${chipsHTML(FEE_TYPE, g('lfeeType'),'lfeeType',false)}</div>
+        <div style="margin-top:12px"><span class="lab">포함 비목 <span class="opt">포함되는 항목을 그대로 적어주세요</span></span>
+          <input class="inp" data-in="lfeeItems" value="${esc(g('lfeeItems'))}" placeholder="예) 수도료·청소비 포함 / 전기·가스 별도"></div>
       </div>
+
       <!-- 면적은 ㎡ 가 기준이다. 평은 옆에 환산해 둔다 - 적는 쪽은 한 번만 적는다. -->
-      <div class="grid2 mo1">
+      <div class="grid2 mo1" style="border-top:1px solid var(--hair);padding-top:16px">
         <div><span class="lab">전용면적 <span class="req">*</span></span>
           <div class="unit"><input class="inp num" data-in="larea" inputmode="decimal" value="${esc(g('larea'))}" placeholder="0"><span>㎡</span></div>
           <span data-py="larea" style="display:block;margin-top:4px;font-size:11.5px;font-weight:700;color:var(--ind)">${pyTag(g('larea'))}</span></div>
@@ -5196,25 +5247,41 @@ V["#/partner/listing/new"] = () => {
           <div class="unit"><input class="inp num" data-in="lareaSup" inputmode="decimal" value="${esc(g('lareaSup'))}" placeholder="0"><span>㎡</span></div>
           <span data-py="lareaSup" style="display:block;margin-top:4px;font-size:11.5px;font-weight:700;color:var(--n500)">${pyTag(g('lareaSup'))}</span></div>
       </div>
-      ${shop? `<div><span class="lab">층</span>${chipsHTML(['1층만','2층 이상 가능','지하 가능'], g('lband')||'1층만','lband',false)}</div>`
-      : `<div class="grid2 mo1">
+      ${shop? '' : `<div class="grid2 mo1">
           <div><span class="lab">방 수 <span class="req">*</span></span><div class="unit"><input class="inp num" data-in="lrooms" inputmode="numeric" value="${esc(g('lrooms'))}" placeholder="0"><span>개</span></div></div>
-          <div><span class="lab">화장실 수</span><div class="unit"><input class="inp num" data-in="lbaths" inputmode="numeric" value="${esc(g('lbaths'))}" placeholder="0"><span>개</span></div></div></div>
-        <div><span class="lab">층</span>${chipsHTML(['고층','중층','저층'], g('lband')||'중층','lband',false)}</div>`}
-      <!-- 소유자가 정확한 층 표기를 요청하면 그대로 적어야 한다. 고·중·저는
-           대조에 쓰고, 여기 적은 층은 제안서에 그대로 실려 나간다. -->
+          <div><span class="lab">화장실 수</span><div class="unit"><input class="inp num" data-in="lbaths" inputmode="numeric" value="${esc(g('lbaths'))}" placeholder="0"><span>개</span></div></div></div>`}
+
+      <!-- 상가는 층을 반드시 정확히 적어야 한다 - 고·중·저로 갈음할 수 없다.
+           주거는 소유자가 원하면 고·중·저로 두고, 정확한 층을 적어두면 그대로 나간다. -->
       <div class="grid2 mo1">
-        <div><span class="lab">정확한 층 <span class="opt">소유자가 정확한 표기를 원하면 적어주세요</span></span>
-          <input class="inp" data-in="lfloorNo" value="${esc(g('lfloorNo'))}" placeholder="예) 12 · B1"></div>
+        ${shop ? `<div><span class="lab">층 <span class="req">*</span> <span class="opt">상가는 정확히 적어야 합니다</span></span>
+            <input class="inp" data-in="lfloorNo" value="${esc(g('lfloorNo'))}" placeholder="예) 1 · 2 · B1"></div>`
+        : `<div><span class="lab">층</span>${chipsHTML(['고층','중층','저층'], g('lband')||'중층','lband',false)}</div>
+           <div><span class="lab">정확한 층 <span class="opt">소유자가 정확한 표기를 원하면</span></span>
+            <input class="inp" data-in="lfloorNo" value="${esc(g('lfloorNo'))}" placeholder="예) 12 · B1"></div>`}
         <div><span class="lab">복층</span>${chipsHTML(['단층','복층'], g('lduplex')||'단층','lduplex',false)}</div>
       </div>
-      ${shop
-      ? `<div><span class="lab">갖춰진 설비 <span class="opt">해당하는 것을 모두 골라주세요</span></span>
-          ${chipsHTML(LFAC, f.lfac||[],'lfac',true)}
-          <input class="inp" data-in="lfacFree" value="${esc(g('lfacFree'))}" placeholder="그 밖에 내세울 점 - 예) 대로변 · 주차 2대 · 야간 영업 가능" style="margin-top:10px"></div>`
-      : `<div><span class="lab">갖춰진 조건 <span class="opt">해당하는 것을 모두 골라주세요</span></span>
+
+      <!-- 방향은 표시·광고 명시사항이다. 어디를 기준으로 잰 방향인지도 함께 적어야 한다. -->
+      <div style="border-top:1px solid var(--hair);padding-top:16px">
+        <span class="lab">방향 <span class="req">*</span></span>${chipsHTML(DIRS, g('ldir'),'ldir',false)}
+        <div style="margin-top:12px"><span class="lab">방향 기준 <span class="req">*</span></span>
+          ${chipsHTML(DIR_BASE, g('ldirBase'),'ldirBase',false)}</div>
+      </div>
+
+      <div><span class="lab">입주 가능시기 <span class="req">*</span></span>
+        ${chipsHTML(MOVEIN, g('lmoveIn'),'lmoveIn',false)}
+        ${g('lmoveIn')==='날짜 지정'? `<input class="inp" data-in="lmoveWhen" value="${esc(g('lmoveWhen'))}" placeholder="예) 2026년 11월 초" style="margin-top:10px">`:''}</div>
+
+      ${shop ? '' : `<div><span class="lab">갖춰진 조건 <span class="opt">해당하는 것을 모두 골라주세요 - 손님 조건과 대조합니다</span></span>
           ${chipsHTML(LMUSTS, f.lmusts||[],'lmusts',true)}
           <input class="inp" data-in="lmustsFree" value="${esc(g('lmustsFree'))}" placeholder="그 밖에 내세울 점 - 예) 바로 앞 대형마트 · 초등학교 3분" style="margin-top:10px"></div>`}
+
+      <div><span class="lab">매물 특징 <span class="opt">손님에게 그대로 전해집니다</span></span>
+        <textarea class="inp" data-in="lnote" rows="4" placeholder="${shop
+          ? '예) 대로변 코너 자리 · 주방 급배수와 가스 인입 완비 · 간판 자리 넓음 · 야간 영업 가능'
+          : '예) 남향 거실이라 오후까지 볕이 듭니다 · 올수리 마친 집 · 단지 바로 앞 초등학교'}"
+          style="resize:vertical;min-height:96px;line-height:1.7">${esc(g('lnote'))}</textarea></div>
     </div>
 
     <div style="display:flex;justify-content:space-between;align-items:center;gap:12px">
@@ -5255,12 +5322,13 @@ V["#/partner/listing"] = (id) => {
     <a class="back" data-go="#/partner/listings">← 내 물건</a>
     <div class="card pad" style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap">
       <div>
-        <span style="font-size:13.5px;font-weight:800;color:var(--ind)">${L.kind==='home'?'주거':'상가'} · ${esc(L.kind==='home'?L.deal:L.biz)}</span>
+        <span style="font-size:13.5px;font-weight:800;color:var(--ind)">${L.kind==='home'?'주거':'상가'} · ${esc(L.deal||'')}</span>
         <h1 class="t" style="font-size:${isMo()?21:25}px;margin-top:6px">${esc(L.name)} ${demoTag(L,'vertical-align:middle')}</h1>
         <p class="num" style="margin:6px 0 0;font-size:15px;font-weight:800;color:var(--ind)">${priceOf(L)}</p>
         <p style="margin:4px 0 0;font-size:13.5px;color:var(--n500)">${esc(specOf(L))} · 입주 ${esc(L.moveIn)} · 사진 ${L.photos}장</p>
         ${appealOf(L) ? `<p style="margin:8px 0 0;font-size:13px;line-height:1.7;color:var(--ind700)">
           <b style="color:var(--ind)">강점</b> ${esc(appealOf(L))}</p>` : ''}
+        ${L.note ? `<p style="margin:6px 0 0;font-size:13px;line-height:1.7;color:var(--n700);white-space:pre-line">${esc(L.note)}</p>` : ''}
       </div>
       <button class="btn sec sm" data-act="del-listing" data-v="${L.id}" style="color:var(--danger)">내리기</button>
     </div>
@@ -7642,7 +7710,7 @@ document.addEventListener('input', e=>{
     return;
   }
   if(k.startsWith('l') && S.route.startsWith('#/partner/listing')){ S.form[k]=v; refreshListingBtn(); return; }
-  if(['addr','bname','area','areaSup','dep','rent','fee','feeItems','approved','rooms','baths','floorNo','msg'].includes(k) && S.route.startsWith('#/partner/propose')){
+  if(['addr','bname','area','areaSup','dep','rent','fee','feeItems','approved','rooms','baths','floorNo','moveWhen','note','msg'].includes(k) && S.route.startsWith('#/partner/propose')){
     S.form[k]= k==='msg'? v.slice(0,200) : v;
     if(k==='msg'){ const c=$('#app [data-msgcount]'); if(c) c.textContent=`${S.form.msg.length}/200`; }
     refreshChecks(); return;
@@ -7695,10 +7763,17 @@ function refreshJoin(){
 }
 function toggleSubmit(){
   const b=$('#app [data-act="submit"]'); if(b) b.disabled=!contactOk(S.draft); }
+/* 화면과 새로고침이 각자 판단하면 언젠가 어긋나고, 그때 버튼만 안 눌린다 */
+function listingOk(f){
+  const g = k => f[k] || '', shop = f.lkind==='shop';
+  return !!String(g('lname')).trim() && !!String(g('ldong')).trim()
+      && +g('ldep')>0 && +g('larea')>0
+      && !!g('lfeeBasis') && !!g('ldir') && !!g('ldirBase') && !!g('lmoveIn')
+      && (shop ? !!String(g('lfloorNo')).trim() : +g('lrooms')>0);
+}
 function refreshListingBtn(){
   const f=S.form, g=k=>f[k]||'', shop=f.lkind==='shop';
-  const ok = !!String(g('lname')).trim() && !!g('ldong') && +g('ldep')>0 && +g('larea')>0
-          && (shop? !!g('lbiz') : +g('lrooms')>0);
+  const ok = listingOk(f);
   const b=$('#app [data-act="save-listing"]'); if(b) b.disabled=!ok;
   const hint=$('#app [data-lhint]'); if(hint) hint.textContent = ok?'등록 즉시 대기 손님과 대조합니다':'* 표시 항목을 채워주세요';
   ['larea','lareaSup'].forEach(k=>{ const el=$(`#app [data-py="${k}"]`); if(el) el.textContent = pyTag(g(k)); });
@@ -7713,8 +7788,10 @@ function proposeChecks(f){
     ['소재지', !!g('addr').trim()], ['건물명', !!g('bname').trim()],
     ['공급면적', +g('areaSup')>0], ['전용면적', +g('area')>0], ['가격', +g('dep')>0],
     /* 방 수와 방향은 살 집을 볼 때 쓰는 잣대다. 가게·사무실·창고에는 묻지 않는다. */
-    ...(home ? [['방/욕실', !!g('rooms') && !!g('baths')], ['방향', !!g('dir')]] : []),
-    ['관리비', g('fee')!=='' && !!g('feeType')],
+    ...(home ? [['방/욕실', !!g('rooms') && !!g('baths')]] : []),
+    /* 방향과 그 기준, 관리비 산정 기준은 중개대상물 표시·광고 명시사항이다 */
+    ['방향', !!g('dir')], ['방향 기준', !!g('dirBase')],
+    ['관리비', g('fee')!=='' && !!g('feeType')], ['관리비 기준', !!g('feeBasis')],
     ['층 표기', floorOk], ['입주가능일', !!g('moveIn')], ['주차장', !!g('park')],
   ];
 }
@@ -8169,7 +8246,7 @@ function handle(a,v,el){
       S.timeLeft=900; go('#/partner/propose/'+v); return true; }
 
     case 'feeType': case 'floorMode': case 'band': case 'moveIn': case 'dir': case 'park': case 'elev6':
-    case 'duplex':
+    case 'duplex': case 'dirBase': case 'feeBasis':
       S.form[a]= S.form[a]===v? '' : v; render(); return true;
     case 'photo': { const n=+v; S.form.photos = n < (S.form.photos||0) ? n : n+1; render(); return true; }
     case 'send-proposal': { const d2=S.demands.find(x=>x.id===v);
@@ -8193,10 +8270,13 @@ function handle(a,v,el){
       apiFetch('/api/proposal', {method:'POST', body: JSON.stringify({
         demand_id: d2.id, addr: f.addr, bname: f.bname,
         dep: f.dep, rent: f.rent, fee: f.fee, fee_type: f.feeType, fee_items: f.feeItems,
-        area_sup: f.areaSup, area: f.area, rooms: f.rooms, baths: f.baths, dir: f.dir,
+        fee_basis: f.feeBasis,
+        area_sup: f.areaSup, area: f.area, rooms: f.rooms, baths: f.baths,
+        dir: f.dir, dir_base: f.dirBase, note: f.note,
         duplex: f.duplex === '복층',
         floor_mode: f.floorMode, floor_no: f.floorNo, band: f.band,
-        move_in: f.moveIn, park: f.park, approved: f.approved,
+        move_in: f.moveIn === '날짜 지정' ? ((f.moveWhen||'').trim() || '날짜 지정') : f.moveIn,
+        park: f.park, approved: f.approved,
         photos: f.photos||0, msg: f.msg,
       })})
         .then(r => r.json().catch(()=>({})).then(j => {
@@ -8293,14 +8373,22 @@ function handle(a,v,el){
       return true; }
 
     /* ── S-08 내 물건 ── */
-    case 'lkindpick': S.form.lkind = v==='상가'?'shop':'home'; S.form.ldong=''; S.form.lbiz=''; render(); return true;
-    case 'ldong': case 'lbiz': case 'lband': case 'lduplex':
+    /* 유형을 바꿔도 주소·가격·면적은 그대로 둔다 - 같은 칸이다.
+       그 유형에 없는 칸만 비운다. 상가는 고·중·저를 쓰지 않는다. */
+    case 'lkindpick': {
+      const shop2 = v==='상가';
+      S.form.lkind = shop2?'shop':'home';
+      if(shop2){ S.form.lrooms=''; S.form.lbaths=''; S.form.lmusts=[]; S.form.lmustsFree=''; S.form.lband=''; }
+      else { S.form.lfloorNo=''; }
+      render(); return true; }
+    case 'lband': case 'lduplex': case 'lfeeBasis': case 'lfeeType':
+    case 'ldir': case 'ldirBase': case 'lmoveIn':
       S.form[a] = S.form[a]===v ? '' : v; render(); return true;
     case 'ldeal':
       S.form.ldeal = S.form.ldeal===v ? '' : v;
       if(!dealWords(S.form.ldeal||'월세').rent) S.form.lrent = '';
       render(); return true;
-    case 'lfac': case 'lmusts': { S.form[a]=S.form[a]||[]; toggleIn(S.form[a], v); render(); return true; }
+    case 'lmusts': { S.form[a]=S.form[a]||[]; toggleIn(S.form[a], v); render(); return true; }
     case 'addr-find':  return addrFind(v);
     case 'addr-pick':  return addrPick(+v);
     case 'addr-clear':
@@ -8309,16 +8397,22 @@ function handle(a,v,el){
     case 'save-listing': {
       const f=S.form, shop=f.lkind==='shop';
       const area = +f.larea||0;
-      const L={ id:'L'+Date.now(), kind: shop?'shop':'home', name:(f.lname||'').trim(), dong:f.ldong,
-        deal: shop?undefined:(f.ldeal||'월세'), biz: shop?f.lbiz:undefined,
+      const L={ id:'L'+Date.now(), kind: shop?'shop':'home', name:(f.lname||'').trim(),
+        dong:(f.ldong||'').trim(), deal: f.ldeal||'월세',
         dep:+f.ldep||0, rent:+f.lrent||0, fee:+f.lfee||0,
+        feeBasis:f.lfeeBasis||'', feeType:f.lfeeType||'', feeItems:(f.lfeeItems||'').trim(),
         /* 면적은 ㎡ 로 담는다. py 는 대조와 옛 화면이 아직 보므로 환산해 함께 둔다 */
         area, areaSup:+f.lareaSup||0, py:pyOf(area),
-        rooms:+f.lrooms||0, baths:+f.lbaths||0, band:f.lband||(shop?'1층만':'중층'), floors:0,
+        rooms:shop?0:(+f.lrooms||0), baths:shop?0:(+f.lbaths||0),
+        /* 상가는 고·중·저 칸이 없다 - 적어둔 층에서 유도해 대조에만 쓴다 */
+        band: shop ? shopBandOf(f.lfloorNo) : (f.lband||'중층'), floors:0,
         floorNo:(f.lfloorNo||'').trim(), duplex:f.lduplex==='복층',
-        musts:f.lmusts||[], fac:f.lfac||[],
-        mustsFree:(f.lmustsFree||'').trim(), facFree:(f.lfacFree||'').trim(),
-        moveIn:'협의', photos:0, at:'방금', status:'active' };
+        dir:f.ldir||'', dirBase:f.ldirBase||'',
+        moveIn: f.lmoveIn==='날짜 지정' ? ((f.lmoveWhen||'').trim() || '날짜 지정') : (f.lmoveIn||'협의'),
+        note:(f.lnote||'').trim(),
+        musts:shop?[]:(f.lmusts||[]), fac:[],
+        mustsFree:shop?'':(f.lmustsFree||'').trim(), facFree:'',
+        photos:0, at:'방금', status:'active' };
       if(S.lsBusy) return true;
       S.lsBusy = true; render();
       apiFetch('/api/feed', {method:'POST', body: JSON.stringify({what:'listing-add', listing:L})})
@@ -8353,16 +8447,20 @@ function handle(a,v,el){
     case 'propose-with': { const [lid,did]=v.split('|'); const L=S.listings.find(x=>x.id===lid); const d=S.demands.find(x=>x.id===did);
       if(!L||!d) return true;
       const st=matchStages(L,d);
-      /* 물건에 적어둔 것만 옮긴다. 관리비 부과방식·방향·욕실 수는 물건에 없는 값이라
-         예전에는 '정액관리비 · 남동 · 욕실 1' 로 지어내 채웠다. 중개사가 못 보고
-         그대로 보내면 손님은 그것을 확인된 사실로 읽는다 - 빈칸으로 둔다. */
+      /* 물건에 적어둔 것만 옮긴다. 없는 값은 지어내지 않는다 - 예전에는 관리비
+         부과방식·방향·욕실 수를 '정액관리비 · 남동 · 욕실 1' 로 채워 넣었다. */
       S.form={ ptab:S.form.ptab, photos:L.photos, filled:true, addr:L.name, bname:L.name,
         area:String(L.area||''), areaSup:String(L.areaSup||''),
         dep:String(L.dep), rent:String(L.rent), fee:String(L.fee),
+        feeBasis:L.feeBasis||'', feeType:L.feeType||'', feeItems:L.feeItems||'',
         rooms:String(L.rooms||''), baths:String(L.baths||''),
         duplex:L.duplex?'복층':'단층',
+        dir:L.dir||'', dirBase:L.dirBase||'',
         floorMode: L.floorNo ? '정확한 층' : '고·중·저',
-        floorNo: L.floorNo||'', band: L.band==='1층만'?'저층':L.band, moveIn:'협의',
+        floorNo: L.floorNo||'', band: L.band==='1층만'?'저층':L.band,
+        moveIn: MOVEIN.includes(L.moveIn) ? L.moveIn : '날짜 지정',
+        moveWhen: MOVEIN.includes(L.moveIn) ? '' : (L.moveIn||''),
+        note: L.note||'',
         fromListing:L.id,
         /* 물건에 적어둔 강점은 여기 말고는 손님에게 닿을 길이 없다.
            한마디에 붙여 두고, 중개사가 보내기 전에 고칠 수 있게 한다. */

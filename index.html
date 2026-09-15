@@ -5033,7 +5033,7 @@ V["#/partner/join"] = () => {
     <div style="margin-top:18px"><span class="lab">의뢰인과 소유자의 관계 <span class="req">*</span></span>
       ${chipsHTML(['본인','배우자·가족','대리인'], f.jRel||'', 'j-rel', false)}</div>
     ${f.jRel && f.jRel!=='본인' ? `<p style="margin:14px 0 0;background:var(--warnbg);padding:14px 16px;font-size:12.5px;line-height:1.6;color:var(--n700)">
-      매칭이 성사되면 <b style="color:var(--n900)">소유자 본인 확인</b>이 필요합니다. 위임 관계 증빙을 미리 준비해 주세요.</p>` : ''}` : ''}
+      매칭이 성사되면 <b style="color:var(--n900)">소유자 본인 확인</b>이 필요합니다. 위임 관계 인증 서류를 미리 준비해 주세요.</p>` : ''}` : ''}
 
     ${ot==='corp' ? `
     <div style="margin-top:18px"><span class="lab">법인명 <span class="req">*</span></span>
@@ -5063,7 +5063,7 @@ V["#/partner/join"] = () => {
   }
   if(step===3 && role==='developer') body = `
     <h1 class="t" style="font-size:${isMo()?21:25}px">사업 정보를 알려주세요</h1>
-    <p class="sub measure">증빙은 사업(현장) 단위입니다. 심사는 1~2영업일 걸립니다.</p>
+    <p class="sub measure">인증은 사업(현장) 단위입니다. 심사는 1~2영업일 걸립니다.</p>
     <div style="margin-top:6px"><span class="lab">사업 유형 <span class="req">*</span></span>
       ${chipsHTML(['지식산업센터','상가·근린생활','오피스','창고·물류'], f.jDev||'', 'j-dev', false)}
       <div class="card pad" style="margin-top:10px;background:var(--warnbg);border-color:#E3C98A;box-shadow:none">
@@ -5078,7 +5078,7 @@ V["#/partner/join"] = () => {
       ${chipsHTML(['준공 완료','준공 예정'], f.jDone||'', 'j-done', false)}
       ${f.jDone==='준공 예정'? `<p style="margin:10px 0 0;background:var(--dangerbg);padding:12px 16px;font-size:12.5px;line-height:1.6;color:var(--danger);font-weight:700">
         준공 전 물건은 등록할 수 없습니다. 준공 후 다시 신청해 주세요.</p>`:''}</div>
-    <div style="margin-top:16px"><span class="lab">증빙 서류</span>
+    <div style="margin-top:16px"><span class="lab">인증 서류</span>
       <button class="card clickable" style="width:100%;padding:24px;border-style:dashed;text-align:center;font-size:13.5px;font-weight:700;color:var(--n500)">
         + 분양신고 수리 통보서 또는 입주자모집공고 승인서<br><span style="font-weight:500;font-size:11px">PDF · 이미지 · 10MB 이하</span></button></div>
     <button class="btn pri blk" style="margin-top:18px;padding:16px 0" data-act="j-confirm" ${f.jDev && f.jDone==='준공 완료' ?'':'disabled'}>심사 요청하기</button>`;
@@ -5107,11 +5107,11 @@ V["#/partner/join"] = () => {
     </div>`;
   }
   /* 세 번째 걸음의 이름은 역할마다 다르다.
-     공인중개사는 등록번호를 공공데이터와 대조한다 - '증빙' 이 아니라 '인증' 이다.
-     시행사는 분양신고 수리 통보서를, 소유자는 물건 관계를 '증빙' 하는 것이 맞다.
-     역할 이름을 그대로 붙이면 '소유자 (집·상가 주인) 증빙' 처럼 길어지고,
+     하는 일은 역할마다 다르지만(등록번호 대조 · 서류 확인 · 물건 관계 확인)
+     사람에게는 모두 '인증' 한 말로 부른다 - 화면마다 다른 말을 쓰면 같은 절차인지
+     헷갈린다. 역할 이름을 그대로 붙이면 '소유자 (집·상가 주인) 인증' 처럼 길어지고,
      시행사는 JOIN_ROLES 에 없어 이름이 비어버린다 - 걸음 이름을 따로 둔다. */
-  const STEP3 = { agent:'공인중개사 인증', owner:'소유자 증빙', developer:'사업 증빙' };
+  const STEP3 = { agent:'공인중개사 인증', owner:'소유자 인증', developer:'사업 인증' };
   const steps = ['역할 선택','본인인증', STEP3[role] || '자격 확인', '완료'];
   return `
 <div class="scr fade" style="background:var(--warm)">
@@ -7970,7 +7970,7 @@ function sendAgent(f){
     .then(r => r.json().catch(()=>({})).then(j => {
       if(r.ok){ S.form.jSent = j.already ? 'already' : 'ok'; S.form.jWhy = j.why || ''; }
       else if(j.need_idv){
-        /* 표가 30분에 끊긴다. 증빙을 채우다 시간이 지나면 여기로 온다.
+        /* 표가 30분에 끊긴다. 인증을 채우다 시간이 지나면 여기로 온다.
            '확인되었습니다' 카드를 치워야 다시 받을 수 있다. 적어둔 것은 남긴다. */
         S.form.jSent = ''; S.form.jVerified = null; S.idvToken = null; S.form.jStep = 2;
         toast('본인확인이 만료되었습니다 - 한 번만 다시 받아주세요');

@@ -115,7 +115,10 @@ body.mo .tapx::after{content:"";position:absolute;left:-3px;right:-3px;top:-14px
    위아래로 14px 씩 넓히면 윗줄 링크가 아랫줄 링크를 덮어버린다 -
    '이용 안내' 를 눌렀는데 '개인정보 처리방침' 이 열린다.
    그 줄에서는 줄 사이만큼만 넓힌다. 덜 넓히는 것이 잘못 열리는 것보다 낫다. */
-body.mo .footlinks .tapx::after{top:-5px;bottom:-5px}
+/* 줄 사이를 26px 로 벌려두면 위아래로 13px 씩 넓혀도 서로를 먹지 않는다.
+   15px 짜리 줄이 41px 이 된다. */
+body.mo .footlinks{gap:26px 16px!important}
+body.mo .footlinks .tapx::after{top:-13px;bottom:-13px}
 body.mo .back{position:relative}
 body.mo .back::after{content:"";position:absolute;left:0;right:0;top:-9px;bottom:-9px}
 
@@ -172,7 +175,9 @@ body.mo .back::after{content:"";position:absolute;left:0;right:0;top:-9px;bottom
 .btn.md{padding:14px 28px;font-size:14px}
 .btn.sm{padding:10px 18px;font-size:13.5px;font-weight:700}
 .btn.blk{width:100%}
-.btn[disabled]{background:var(--n100)!important;color:#C9C4BB!important;box-shadow:none!important;cursor:not-allowed;border-color:var(--n100)!important}
+/* 꺼진 버튼도 '무엇이 켜질지' 는 읽혀야 한다. #C9C4BB 는 이 바탕에서 1.49:1 -
+   눌리지 않는 것이 아니라 아예 안 보였다. 3.3:1 로 올린다. */
+.btn[disabled]{background:var(--n100)!important;color:#8A8272!important;box-shadow:none!important;cursor:not-allowed;border-color:var(--n100)!important}
 
 .chip{border:1.5px solid var(--n300);background:var(--white);color:var(--n700);border-radius:10px;
   padding:10px 16px;font-size:14px;transition:all .12s}
@@ -565,7 +570,10 @@ body::after{
 .optbtn:focus-visible, .chk:focus-visible, a:focus-visible, [data-act]:focus-visible{
   outline:2.5px solid var(--ind300); outline-offset:2px; border-radius:10px;
 }
-.inp:focus{border-color:var(--ind);box-shadow:0 0 0 3px rgba(61,63,143,.12);outline:none}
+/* 마우스로 찍었을 때만 테두리를 지운다. 그냥 outline:none 을 두면
+   바로 위에서 준 초점 링까지 같이 지워져, 키보드로는 어디에 있는지 알 수 없다. */
+.inp:focus{border-color:var(--ind);box-shadow:0 0 0 3px rgba(61,63,143,.12)}
+.inp:focus:not(:focus-visible){outline:none}
 
 /* ── 움직임을 줄이도록 설정한 사람에게는 움직이지 않는다 ── */
 @media (prefers-reduced-motion: reduce){
@@ -909,12 +917,14 @@ body.mo .vcard .vbtn{width:100%;margin-top:10px}
   border:2px solid var(--ind);opacity:0}
 .steps.run .no::after{animation:noRing 1.2s var(--e-out) calc(var(--d,0s) + .45s) both}
 @keyframes noRing{0%{opacity:0;transform:scale(1)}25%{opacity:.5}100%{opacity:0;transform:scale(2.2)}}
+/* 채워지기 전 색으로 --n300 을 쓰면 흰 바탕에서 1.52:1 이다. 모션이 어떤 이유로든
+   시작되지 않으면(탭이 뒤에 있었다거나) 그 글씨는 끝까지 안 읽힌다 -
+   쉬는 색을 읽히는 값으로 올리고, 차오르는 느낌은 원과 선에 맡긴다. */
 .steps .stt{display:block;font-size:15px;font-weight:800;letter-spacing:-.03em;
-  margin-bottom:4px;color:var(--n300);transition:color .7s var(--e-out)}
+  margin-bottom:4px;color:var(--n500);transition:color .7s var(--e-out)}
 .steps.run .stt{color:var(--n900)}
-.steps .sd{display:block;font-size:12.5px;line-height:1.6;color:var(--n300);max-width:32ch;
+.steps .sd{display:block;font-size:12.5px;line-height:1.6;color:var(--n500);max-width:32ch;
   transition:color .7s var(--e-out)}
-.steps.run .sd{color:var(--n500)}
 
 @media (prefers-reduced-motion:reduce){
   .knock .ring{display:none}
@@ -2016,7 +2026,7 @@ function zonesHTML(zones, sel){
           <path d="M4 2.5 L8 6 L4 9.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         <span>${esc(z.t)}</span>
         ${picked?`<span class="badge b-ind" style="padding:2px 8px;font-size:11px">${picked}</span>`:
-                 `<span style="font-size:11px;color:var(--n300);font-weight:700">${z.d.length}</span>`}
+                 `<span style="font-size:11px;color:var(--n500);font-weight:700">${z.d.length}</span>`}
       </summary>
       <div style="padding-top:4px">${chipsHTML(z.d, sel, 'dong', true)}</div>
     </details>`;}).join('');}
@@ -3512,7 +3522,7 @@ function mapScene(level, sel, shop){
   const incheon = topLevel ? (()=>{ const p=OUT_INCHEON2.map(q=>G(q[0],q[1])); const c=G(126.638,37.468);
     return `<path d="${d(p)}" fill="#EDEAE4" stroke="#DDD8CE" stroke-width="1" data-act="map-na" data-v="인천광역시" style="cursor:not-allowed"/>
       <text x="${c[0].toFixed(1)}" y="${c[1].toFixed(1)}" text-anchor="middle" font-size="10" font-weight="700" fill="#A9A296">인천</text>
-      <text x="${c[0].toFixed(1)}" y="${(c[1]+12).toFixed(1)}" text-anchor="middle" font-size="8.5" fill="#B9B2A6">준비 중</text>`;})() : '';
+      <text x="${c[0].toFixed(1)}" y="${(c[1]+12).toFixed(1)}" text-anchor="middle" font-size="8.5" fill="#8A8272">준비 중</text>`;})() : '';
 
   const river = (()=>{ const dd = line(HANGANG.map(q=>G(q[0],q[1])));
     const w = level==='top' ? 5 : 8.5;
@@ -3803,7 +3813,7 @@ function opsSummary(rows, agents){
       <div style="display:flex;align-items:flex-end;gap:6px;height:74px">
         ${days.map((n,i)=>`
           <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px">
-            <span class="num" style="font-size:11px;font-weight:800;color:${n?'var(--ind)':'var(--n300)'}">${n}</span>
+            <span class="num" style="font-size:11px;font-weight:800;color:${n?'var(--ind)':'var(--n500)'}">${n}</span>
             <i class="growbar" style="display:block;width:100%;border-radius:4px 4px 0 0;
               background:${i===6?'var(--ind)':'var(--ind300)'};opacity:${n?1:.25};
               height:${Math.max(3, Math.round(n/peak*44))}px"></i>
@@ -4087,7 +4097,7 @@ V['#/contact'] = () => { const d=S.draft; const ok = contactOk(d);
           <small>필수 2개와 선택 1개를 한 번에 동의합니다 - 선택 항목은 따로 해제하실 수 있습니다</small></span></div>
         <div class="chk ${d.a1?'on':''}" data-act="agree" data-v="a1">
           <span class="box">${ICON_CHECK}</span><span class="txt"><b style="color:var(--ind)">(필수)</b> <b style="color:var(--n900)">개인정보 제3자 제공</b>에 동의합니다
-          <a href="/privacy" target="_blank" rel="noopener" style="margin-left:6px;font-size:12.5px;font-weight:700;color:var(--ind);text-decoration:underline;text-underline-offset:2px">전문 보기</a>
+          <a class="tapx" href="/privacy" target="_blank" rel="noopener" style="margin-left:6px;font-size:12.5px;font-weight:700;color:var(--ind);text-decoration:underline;text-underline-offset:2px">전문 보기</a>
           <small>제공받는 자: 해당 지역 공인중개사사무소(조건당 최대 5곳) · 항목: 조건 전체(지역·예산·희망사항). 이름과 연락처는 이때 전달되지 않으며, 직접 <b style="color:var(--n900);font-weight:700">연결</b>을 누르신 한 곳에만 그 시점에 전달됩니다 · 보유: 3개월 후 파기. 거부하실 수 있으나 거부 시 조건 전달이 불가능합니다.</small></span></div>
         <div class="chk ${d.a2?'on':''}" data-act="agree" data-v="a2">
           <span class="box">${ICON_CHECK}</span><span class="txt"><b style="color:var(--ind)">(필수)</b> <b style="color:var(--n900)">알림이 여러 차례 발송</b>되는 것에 동의합니다
@@ -4310,7 +4320,7 @@ V['#/inbox'] = () => {
   <div class="pad" style="flex:1;padding-top:${isMo()?18:30}px;display:flex;gap:24px;max-width:${isMo()?'none':'1180px'};margin:0 auto;width:100%;${isMo()?'flex-direction:column':''}">
     ${isMo()?'':`
     <div style="flex:none;width:320px;display:flex;flex-direction:column;gap:12px">
-      <span style="font-size:13.5px;font-weight:800;color:var(--n500)">내 조건</span>
+      <h2 style="margin:0;font-size:13.5px;font-weight:800;color:var(--n500)">내 조건</h2>
       ${S.conds.map(c=>{const n=S.props.filter(p=>p.cond===c.id&&p.status!=='hidden').length;
         return `<div class="card ${c.id===S.inboxCond?'hi':''} clickable" data-act="pick-cond" data-v="${c.id}" style="padding:16px 18px">
           <div style="display:flex;justify-content:space-between;margin-bottom:8px">
@@ -4323,8 +4333,8 @@ V['#/inbox'] = () => {
     </div>`}
     <div style="flex:1;display:flex;flex-direction:column;gap:14px;min-width:0;padding-bottom:24px">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
-        <span style="font-size:${isMo()?15:17}px;font-weight:800">제안 ${list.length}건</span>
-        ${isMo()? `<select class="inp" data-act="pick-cond-sel" style="width:auto;padding:8px 10px;font-weight:700">
+        <h1 style="margin:0;font-size:${isMo()?15:17}px;font-weight:800">제안 ${list.length}건</h1>
+        ${isMo()? `<select class="inp" data-act="pick-cond-sel" aria-label="조건 고르기" style="width:auto;min-height:44px;padding:8px 10px;font-weight:700">
           ${S.conds.map(c=>`<option value="${c.id}" ${c.id===S.inboxCond?'selected':''}>${esc(c.title)}</option>`).join('')}</select>`
         : `<span style="font-size:12.5px;color:var(--n500)">${esc(cond?cond.title:'')} · 다른 점을 먼저 보여드립니다</span>`}
       </div>
@@ -5206,7 +5216,7 @@ function meCard(){
   const row = (k, v) => v ? `<div class="kv"><dt>${k}</dt><dd>${esc(String(v))}</dd></div>` : '';
   const ST = { approved:'승인됨', new:'확인 중', contacted:'확인 중', rejected:'보류' };
   return `<div class="card pad">
-    <h3 style="margin:0 0 12px;font-size:15px;font-weight:800;letter-spacing:-.02em">내 정보</h3>
+    <h2 style="margin:0 0 12px;font-size:15px;font-weight:800;letter-spacing:-.02em">내 정보</h2>
     <div style="display:grid;grid-template-columns:repeat(${isMo()?1:2},minmax(0,1fr));gap:4px 24px">
       ${row('계정', u && u.email)}
       ${row('로그인', u && u.label ? `${u.label} 계정` : '')}
@@ -5242,7 +5252,7 @@ V["#/partner/settings"] = () => {
   const week = Math.max(0, Math.round(now * 0.6));
   const drop = base > 0 && now <= base/2;
   const sect = (no,title,hint,body) => `<div class="card pad">
-    <h3 style="margin:0 0 ${hint?4:12}px;font-size:15px;font-weight:800;letter-spacing:-.02em"><span style="color:var(--ind);margin-right:6px">${no}.</span>${title}</h3>
+    <h2 style="margin:0 0 ${hint?4:12}px;font-size:15px;font-weight:800;letter-spacing:-.02em"><span style="color:var(--ind);margin-right:6px">${no}.</span>${title}</h2>
     ${hint?`<p style="margin:0 0 12px;font-size:12.5px;line-height:1.6;color:var(--n500)">${hint}</p>`:''}
     ${body}</div>`;
   return `
@@ -5267,7 +5277,7 @@ V["#/partner/settings"] = () => {
               style="padding:10px 16px;font-size:13.5px">${esc(k)}${soon?' <span style="opacity:.6;font-size:11px">· 준비 중</span>':''}</button>`;
           }).join('')}</div>`
           + `<div class="chips" style="margin-top:8px">${['토지','공장'].map(x=>
-            `<span class="chip" style="border-style:dashed;color:#C9C4BB;cursor:default">${x} · 준비 중</span>`).join('')}</div>`)}
+            `<span class="chip" style="border-style:dashed;color:#8A8272;cursor:default">${x} · 준비 중</span>`).join('')}</div>`)}
         ${sect('2','활동 지역','서울은 구, 경기는 시·군 단위입니다',
           `<div style="margin-bottom:12px;padding:12px 16px;background:var(--ind50);border-radius:12px">
             <span style="display:block;font-size:12.5px;font-weight:700;color:var(--n700);margin-bottom:8px">
@@ -5847,8 +5857,8 @@ function modalHTML(){
   if(!S.modal) return '';
   if(S.modal.type==='close'){
     const REASONS=['여기서 구했어요','다른 데서 구했어요','당분간 안 구하기로 했어요'];
-    return `<div class="modal" data-act="modal-bg"><div class="box" data-stop>
-      <h3 style="margin:0 0 6px;font-size:17px;font-weight:800;letter-spacing:-.03em">조건을 종료할까요?</h3>
+    return `<div class="modal" data-act="modal-bg"><div class="box" data-stop role="dialog" aria-modal="true" aria-labelledby="mdT" tabindex="-1">
+      <h2 id="mdT" style="margin:0 0 6px;font-size:17px;font-weight:800;letter-spacing:-.03em">조건을 종료할까요?</h2>
       <p style="margin:0 0 18px;font-size:13.5px;line-height:1.6;color:var(--n500)">사유를 알려주시면 서비스를 고치는 데 큰 도움이 됩니다. <b style="color:var(--n700)">이 답이 저희의 유일한 성과 지표입니다.</b></p>
       ${REASONS.map(r=>`<button class="optbtn ${S.modal.reason===r?'on':''}" data-act="close-reason" data-v="${esc(r)}">${esc(r)}</button>`).join('')}
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px">
@@ -5861,9 +5871,9 @@ function modalHTML(){
     const prop = rows.reduce((t,r)=>t+(r.proposals||0), 0);
     const list = rows.reduce((t,r)=>t+(r.listings||0), 0);
     const heavy = prop + list > 0;
-    return `<div class="modal" data-act="modal-bg"><div class="box" data-stop>
-      <h3 style="margin:0 0 6px;font-size:17px;font-weight:800;letter-spacing:-.03em;color:var(--danger)">
-        ${m.loading ? '무엇이 지워지는지 확인하는 중입니다' : `${rows.length}건을 지울까요?`}</h3>
+    return `<div class="modal" data-act="modal-bg"><div class="box" data-stop role="dialog" aria-modal="true" aria-labelledby="mdT" tabindex="-1">
+      <h2 id="mdT" style="margin:0 0 6px;font-size:17px;font-weight:800;letter-spacing:-.03em;color:var(--danger)">
+        ${m.loading ? '무엇이 지워지는지 확인하는 중입니다' : `${rows.length}건을 지울까요?`}</h2>
       <p style="margin:0 0 14px;font-size:13.5px;line-height:1.7;color:var(--n500)">
         ${m.loading ? '잠시만 기다려 주세요.'
           : '지운 것은 되돌릴 수 없습니다. 승인을 되돌리실 것이라면 <b style="color:var(--n900)">보류</b>를 쓰세요.'}</p>
@@ -5894,8 +5904,8 @@ function modalHTML(){
       ? '승인하면 이분들이 <b style="color:var(--n900)">손님 조건을 열람</b>하고 제안을 보낼 수 있습니다.'
       : status==='rejected' ? '보류하면 손님 조건이 다시 보이지 않습니다. 되돌릴 수 있습니다.'
       : '표시만 바뀝니다. 열람 권한과는 무관합니다.';
-    return `<div class="modal" data-act="modal-bg"><div class="box" data-stop>
-      <h3 style="margin:0 0 6px;font-size:17px;font-weight:800;letter-spacing:-.03em">${ids.length}건을 ${esc(label)}${josa(label,'으로','로')} 바꿀까요?</h3>
+    return `<div class="modal" data-act="modal-bg"><div class="box" data-stop role="dialog" aria-modal="true" aria-labelledby="mdT" tabindex="-1">
+      <h2 id="mdT" style="margin:0 0 6px;font-size:17px;font-weight:800;letter-spacing:-.03em">${ids.length}건을 ${esc(label)}${josa(label,'으로','로')} 바꿀까요?</h2>
       <p style="margin:0 0 14px;font-size:13.5px;line-height:1.7;color:var(--n500)">${what}</p>
       <div style="max-height:180px;overflow:auto;background:var(--n50);padding:12px 14px;display:flex;flex-direction:column;gap:6px">
         ${rows.slice(0,12).map(r=>`<span style="font-size:12.5px;line-height:1.5">
@@ -7073,7 +7083,7 @@ function statsPanel(){
     <div style="display:flex;flex-direction:column;gap:2px">
       ${stuck.map(([t,v,why,tab,sub])=>`
         <div style="display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--n100)">
-          <span class="num" style="width:44px;flex:none;font-size:20px;font-weight:800;color:${v?'var(--danger)':'var(--n300)'}">${v}</span>
+          <span class="num" style="width:44px;flex:none;font-size:20px;font-weight:800;color:${v?'var(--danger)':'var(--n500)'}">${v}</span>
           <span style="flex:1;font-size:13.5px;line-height:1.5"><b style="font-weight:800;color:var(--n900)">${t}</b>
             <span style="display:block;font-size:12px;color:var(--n500)">${why}</span></span>
           ${v && tab ? `<button class="btn sec sm" data-act="st-go" data-v="${tab}:${sub||''}" style="flex:none">보기</button>` : ''}
@@ -7607,6 +7617,8 @@ function render(){
   if(dash && !entered && dsig !== S.dashSig) animateData(dash);
   S.dashSig = dsig;
   refreshAddr();   /* 목록은 DOM 에만 있다 - 재렌더마다 다시 채워준다 */
+  a11y(app);       /* 이름표·키보드 자리를 붙인다 - 화면마다 손으로 달면 빠뜨린다 */
+  modalFocus();    /* 모달이 떴으면 초점을 안으로 들인다 */
   slideUnderline();
   requestAnimationFrame(()=>armReveal(app));
   // 슬롯 타이머
@@ -8910,6 +8922,92 @@ document.addEventListener('click', e=>{
   if(e.target.closest('.ac')) return;
   const box=$('#app [data-aclist]'); if(box && box.innerHTML) box.innerHTML='';
 }, true);
+
+/* ══════════ 화면을 다시 그릴 때마다 붙이는 것들 ══════════
+   화면이 서른 개가 넘는다. 이름표를 화면마다 손으로 달면 언젠가는 빠뜨리고,
+   빠뜨린 자리는 눈으로 안 보이니 영영 모른다 - 그래서 한 자리에서 한다. */
+function a11y(root){
+  if(!root) return;
+
+  /* ① 입력칸의 이름표. 눈에는 바로 위의 .lab 이 이름표로 보이지만
+        화면낭독기에는 아무 관계도 없는 남남이다 - 묶어준다. */
+  const seen = new Map();
+  root.querySelectorAll('input,select,textarea').forEach(el=>{
+    if(el.type === 'hidden') return;
+    if(el.getAttribute('aria-label') || el.getAttribute('aria-labelledby')) return;
+    if(el.getAttribute('aria-hidden') === 'true' || el.closest('label')) return;
+    let par = el.parentElement, lab = null, hop = 0;
+    while(par && par !== root && hop++ < 4){
+      lab = [...par.children].find(c => c.classList && c.classList.contains('lab'));
+      if(lab) break;
+      par = par.parentElement;
+    }
+    if(!lab) return;
+    const c = lab.cloneNode(true);
+    c.querySelectorAll('.opt,.req').forEach(x => x.remove());   /* 도움말과 별표는 이름이 아니다 */
+    let t = (c.textContent || '').replace(/\s+/g,' ').trim();
+    if(!t) return;
+    const box = el.parentElement;                                /* 만원·㎡·개 - 단위도 이름의 일부다 */
+    if(box && box.classList.contains('unit')){
+      const u = box.querySelector('span'); if(u) t += ' ' + u.textContent.trim();
+    }
+    const n = (seen.get(t) || 0) + 1; seen.set(t, n);
+    if(n > 1){ const ph = el.getAttribute('placeholder'); t += (ph && ph !== '0') ? ' ' + ph : ' ' + n; }
+    el.setAttribute('aria-label', t);
+  });
+
+  /* ② 눌리는 카드. div 는 탭 순서에 없다 - 마우스가 없으면 제안을 열 수가 없었다. */
+  root.querySelectorAll('[data-go],[data-act]').forEach(el=>{
+    const t = el.tagName;
+    if(t==='BUTTON'||t==='A'||t==='INPUT'||t==='SELECT'||t==='TEXTAREA') return;
+    if(el.hasAttribute('tabindex')) return;
+    if(el.getAttribute('aria-hidden') === 'true') return;
+    if(el.dataset.act === 'modal-bg') return;                    /* 바깥 어둠은 누를 자리가 아니다 */
+    if(!(el.className || '').toString().includes('clickable')) return;
+    el.setAttribute('tabindex','0');
+    if(!el.getAttribute('role')) el.setAttribute('role','button');
+  });
+}
+
+/* 카드를 엔터·스페이스로도 연다. 붙여만 두고 열리지 않으면 더 나쁘다 -
+   탭으로 갈 수는 있는데 아무 일도 안 일어나는 자리가 생긴다. */
+document.addEventListener('keydown', e=>{
+  if(e.key !== 'Enter' && e.key !== ' ') return;
+  const el = e.target.closest && e.target.closest('[role="button"][tabindex="0"]');
+  if(!el || document.activeElement !== el) return;
+  e.preventDefault();
+  el.click();
+});
+
+/* 모달 - 열리면 초점을 안으로 들이고, Esc 로 닫고, 탭이 밖으로 새지 않게 한다.
+   지금까지는 탭을 누르면 뒤에 깔린 화면으로 초점이 빠져나갔다. */
+var MODAL_FROM = null;   /* render() 가 이 줄에 닿기 전에 돌 수 있어 var 로 둔다 */
+function modalFocus(){
+  const box = $('#app .modal .box');
+  if(!box){
+    if(MODAL_FROM && document.contains(MODAL_FROM)){ try{ MODAL_FROM.focus(); }catch(_){} }
+    MODAL_FROM = null;
+    return;
+  }
+  if(box.dataset.armed) return;
+  box.dataset.armed = '1';
+  if(!MODAL_FROM) MODAL_FROM = document.activeElement;
+  const first = box.querySelector('button:not([disabled]),a[href],input,select,textarea');
+  (first || box).focus();
+}
+const FOCUSABLE = 'button:not([disabled]),a[href],input:not([type=hidden]),select,textarea,[tabindex="0"]';
+document.addEventListener('keydown', e=>{
+  const box = $('#app .modal .box');
+  if(!box) return;
+  if(e.key === 'Escape'){ e.preventDefault(); handle('modal-close'); return; }
+  if(e.key !== 'Tab') return;
+  const all = [...box.querySelectorAll(FOCUSABLE)].filter(el=>el.offsetParent !== null);
+  if(!all.length) return;
+  const i = all.indexOf(document.activeElement);
+  if(e.shiftKey && (i <= 0)){ e.preventDefault(); all[all.length-1].focus(); }
+  else if(!e.shiftKey && i === all.length-1){ e.preventDefault(); all[0].focus(); }
+  else if(i < 0){ e.preventDefault(); all[0].focus(); }
+});
 
 /* 주소 자동완성 - 손을 마우스로 옮기지 않고도 고를 수 있어야 한다 */
 /* 주소 칸에서 엔터를 치면 찾는다. 검색 칸에서 엔터를 눌러 아무 일도 안 일어나면

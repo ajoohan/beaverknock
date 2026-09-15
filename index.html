@@ -5106,7 +5106,11 @@ V["#/partner/join"] = () => {
         <a class="btn sec md ${isMo()?'blk':''}" data-go="#/partner/demands">대기 중인 손님 먼저 보기</a></div>
     </div>`;
   }
-  const steps = ['역할 선택','본인인증', role?`${roleName} 증빙`:'증빙','완료'];
+  /* 공인중개사는 등록번호를 공공데이터와 대조한다 - 그건 '증빙' 이 아니라 '인증' 이다.
+     시행사는 분양신고 수리 통보서를, 소유자는 물건 관계를 '증빙' 하는 것이 맞으므로
+     그쪽 말은 그대로 둔다. 역할을 고르기 전에는 어느 쪽도 아니니 중립으로 적는다. */
+  const steps = ['역할 선택','본인인증',
+    role ? `${roleName} ${role==='agent'?'인증':'증빙'}` : '자격 확인', '완료'];
   return `
 <div class="scr fade" style="background:var(--warm)">
   ${bar}

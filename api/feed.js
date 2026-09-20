@@ -491,7 +491,9 @@ async function addListing(req, res, agent, user, b) {
     dep: int0(L.dep), rent: int0(L.rent), fee: int0(L.fee),
     /* 면적은 ㎡ 로 담는다. py 는 대조와 옛 행이 아직 쓰므로 함께 남긴다 */
     area: num0(L.area), area_sup: num0(L.areaSup), py: num0(L.py),
-    rooms: int0(L.rooms), baths: int0(L.baths),
+    /* 화장실은 주거에만 받는다 - 화면이 이미 안 보여주지만, 조건 번호만 알고
+       바로 찔러 넣는 길이 있으므로 여기서도 막는다(중개사 회신 2026-09-20). */
+    rooms: int0(L.rooms), baths: kind === 'home' ? int0(L.baths) : 0,
     band: txt(L.band, 20), floors: int0(L.floors),
     floor_no: txt(L.floorNo, 10), duplex: L.duplex === true,
     musts: arr(L.musts), fac: arr(L.fac),

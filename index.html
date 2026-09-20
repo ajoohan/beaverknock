@@ -4522,7 +4522,9 @@ V['#/proposal'] = (id) => { const p=S.props.find(x=>x.id===id); if(!p) return V[
           p.area    ? `전용 ${p.area}㎡(${pyOf(p.area)}평)` : p.py ? `전용 ${p.py}평` : '',
           p.areaSup ? `${p.kind==='home'?'공급':'계약'} ${p.areaSup}㎡(${pyOf(p.areaSup)}평)` : '',
           p.rooms   ? `방 ${esc(p.rooms)}` : '',
-          p.baths   ? `욕실 ${esc(p.baths)}` : '',
+          /* 화장실은 주거에만 있다(중개사 회신 2026-09-20). 옛 행이나 손으로
+             밀어 넣은 값이 상가 제안에 붙어 나오지 않게 종류로 한 번 더 막는다. */
+          (p.kind==='home' && p.baths) ? `욕실 ${esc(p.baths)}` : '',
           p.duplex  ? '복층' : '',
           p.floor ? esc(p.floor) : '',
           `입주 ${esc(p.moveIn)}`,

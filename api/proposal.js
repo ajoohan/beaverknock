@@ -115,7 +115,8 @@ export default async function handler(req, res) {
       fee_type: str(b.fee_type, 40), fee_items: str(b.fee_items, 200),
       fee_basis: str(b.fee_basis, 20), note: str(b.note, 1000),
       area_sup: num(b.area_sup), area: num(b.area),
-      rooms: str(b.rooms, 10), baths: str(b.baths, 10),
+      /* 조건이 주거일 때만 화장실을 받는다 (중개사 회신 2026-09-20) */
+      rooms: str(b.rooms, 10), baths: d.kind === 'home' ? str(b.baths, 10) : '',
       dir: str(b.dir, 10), dir_base: str(b.dir_base, 20),
       floor_mode: str(b.floor_mode, 20), floor_no: str(b.floor_no, 10), band: str(b.band, 10),
       duplex: b.duplex === true,

@@ -1297,16 +1297,55 @@ const BIZ = {
 /* 거래 방식마다 묻는 것이 다르다.
    전세와 매매에는 월세가 없다. 칸을 남겨두고 "비워두세요" 라고 적는 것은
    묻지 않아도 될 것을 묻는 것이다 - 아예 치운다. */
+/* hint 는 '최대' 라고 분명히 말한다. 대조는 예전부터 depMax·rentMax 로
+   '이 금액까지' 를 재고 있었는데(matchStages 3단계) 화면만 그 말을 안 했다 -
+   손님은 '희망가' 로 읽고 적었고, 중개사는 상한으로 읽었다.
+   중개사 회신(2026-09-16): 손님이 적는 가격이 가용한 최대 액수임을 표시해 달라. */
 const DEAL_WORDS = {
-  '월세': {dep:'보증금',   hint:'월세 보증금',   ph:'보증금',  rent:true},
-  '전세': {dep:'전세 보증금', hint:'돌려받는 돈',  ph:'전세금',  rent:false},
-  '매매': {dep:'매매가',   hint:'매매 희망가',   ph:'매매가',  rent:false},
+  '월세': {dep:'보증금',   hint:'감당 가능한 최대',       ph:'보증금',  rent:true},
+  '전세': {dep:'전세 보증금', hint:'감당 가능한 최대',       ph:'전세금',  rent:false},
+  '매매': {dep:'매매가',   hint:'감당 가능한 최대',       ph:'매매가',  rent:false},
 };
 const dealWords = v => DEAL_WORDS[v] || DEAL_WORDS['월세'];
 
 const DEALS=['전세','월세','매매'], HTYPES=['아파트','오피스텔','빌라·연립','원룸·투룸','상관없음'];
 const ROOMS=['1~2룸','3룸','4룸+','무관'];
-const MUSTS=['주차 가능','엘리베이터','반려동물','역세권','초등학교 도보','즉시 입주'];
+/* 중개사 3차 회신(2026-09-16): 시설은 주거에만 둔다. 상가·사무실의 '시설' 은
+   너무 넓은 데다 만나고 나서 맞춰도 되는 조건이라 조건으로 걸 것이 못 된다. */
+const MUSTS=['주차 가능','엘리베이터','반려동물','역세권','초등학교 도보','즉시 입주',
+  '보안시설','에어컨','복층','베란다','테라스'];
+
+/* ── 손님이 고르는 밴드 ──
+   중개사는 정확한 값을 적고 손님은 범위를 고른다. 맞춰보는 것은 우리 몫이다.
+   ※ 밴드로 걸러서 숨기지 않는다 - 3억~5억을 고른 손님에게 5.2억 물건은
+      '다름' 으로 보이면 되지 사라지면 안 된다. 그래서 전부 '확인' 단계로 간다. */
+const HAREA = [
+  {t:'~33㎡',    lo:0,   hi:33,    py:'~10평'},
+  {t:'33~66㎡',  lo:33,  hi:66,    py:'10~20평'},
+  {t:'66~99㎡',  lo:66,  hi:99,    py:'20~30평'},
+  {t:'99~132㎡', lo:99,  hi:132,   py:'30~40평'},
+  {t:'132㎡~',   lo:132, hi:1e9,   py:'40평~'},
+];
+const HBATH  = ['1개','2개','2개 이상'];
+/* 지금까지는 '반지하 제외' 처럼 빼는 것만 말할 수 있었다 -
+   "저층이 좋다" 를 말할 방법이 없었다(중개사 회신 2026-09-16). */
+const HFLOOR = ['1층','저층','중층','고층','탑층'];
+const HAGE = [
+  {t:'5년 이내', lo:0,  hi:5},
+  {t:'5~10년',  lo:5,  hi:10},
+  {t:'10~15년', lo:10, hi:15},
+  {t:'15~20년', lo:15, hi:20},
+  {t:'20년~',   lo:20, hi:9999},
+];
+const bandOf = (list, v) => { const x = +v; if(!isFinite(x)) return null;
+  return (list.find(b => x >= b.lo && x < b.hi) || null); };
+/* 매물의 사용승인일(예: '2016.06.24' · '2016-06') 에서 연식을 구한다 */
+function ageOf(approved){
+  const y = String(approved||'').match(/(19|20)\d{2}/);
+  if(!y) return null;
+  const n = new Date().getFullYear() - (+y[0]);
+  return n >= 0 ? n : null;
+}
 /* 매물에만 쓰는 목록. 손님이 거는 '필수 조건'(MUSTS)과 섞지 않는다 -
    한강 조망은 중개사가 내세우는 강점이지 손님이 걸어둔 조건이 아니다.
    중개사 회신(2026-09-14): 쇼핑몰·한강조망·산책로·등산로처럼 어필하고 싶은 것을
@@ -1325,6 +1364,21 @@ const MOVEIN    = ['즉시','협의','날짜 지정'];
 
 /* 상가는 층을 정확히 적게 하므로 고·중·저 칸이 없다. 그런데 손님은 여전히
    '1층만 · 2층 이상 · 지하 가능' 으로 조건을 건다 - 적어둔 층에서 유도한다. */
+/* 중개사가 층을 정확히 적었어도 손님은 저·중·고로 고른다 - 맞춰보려면 유도해야 한다.
+   탑층은 총 층수를 알아야 알 수 있다. 모르면 말하지 않는다. */
+function homeFloorBand(L){
+  const t = String(L.floorNo || '').trim().toUpperCase();
+  if(!t) return L.band || '';
+  if(/^B|^-|지하/.test(t)) return '';          /* 주거 밴드에 지하는 없다 - 말하지 않는다 */
+  const n = parseInt(t, 10);
+  if(!isFinite(n)) return L.band || '';
+  if(+L.floors > 0 && n >= +L.floors) return '탑층';
+  if(n === 1) return '1층';
+  if(n <= 3) return '저층';
+  if(n <= 8) return '중층';
+  return '고층';
+}
+
 function shopBandOf(floorNo){
   const t = String(floorNo || '').trim().toUpperCase();
   if(!t) return '';
@@ -1404,12 +1458,42 @@ function matchStages(L, d){
     keyNote = `${L.py}평 · ${L.band}`;
   }
   st.push({k:'필수', ok:keyOk, note:keyNote});
-  /* 5. 필터 - 제외가 아니라 확인 체크리스트 (데이터모델 확정 규칙) */
+  /* 5. 필터 - 제외가 아니라 확인 체크리스트 (데이터모델 확정 규칙)
+     중개사 회신(2026-09-16)으로 들어온 새 조건도 전부 이 단계로 온다.
+     1~4 단계는 통과해야만 제안이 만들어지므로(matchesFor·listingsFor),
+     새 조건을 그 위에 얹으면 경계에 걸린 좋은 물건이 통째로 사라진다.
+     '다름' 으로 보여주는 것이 우리 방식이다. */
   const want = (L.kind==='home' ? (m.musts||[]) : (m.fac||[]));
   const have = (L.kind==='home' ? (L.musts||[]) : (L.fac||[]));
   const miss = want.filter(x => !have.includes(x));
   /* 상가는 업종·설비를 물건에 적지 않는다. 손님이 걸어둔 것은 중개사가 직접 봐야 한다. */
   if(L.kind !== 'home' && m.biz) miss.unshift(`업종 ${m.biz}`);
+  /* 양쪽에 값이 다 있을 때만 말한다 - 비어 있는 것을 틀렸다고 하지 않는다 */
+  if(L.kind === 'home'){
+    const A = m.hArea || [];
+    if(A.length && +L.area > 0){
+      const b = bandOf(HAREA, L.area);
+      if(!b || !A.includes(b.t)) miss.push(`면적 전용 ${(+L.area).toFixed(1)}㎡ (요청 ${A.join('·')})`);
+    }
+    if(m.hBath && +L.baths > 0){
+      const n = +L.baths;
+      const okB = m.hBath === '2개 이상' ? n >= 2 : n === parseInt(m.hBath, 10);
+      if(!okB) miss.push(`화장실 ${n}개 (요청 ${m.hBath})`);
+    }
+    const F = m.hFloor || [];
+    if(F.length){
+      const fb = HFLOOR.includes(L.band) ? L.band : homeFloorBand(L);
+      if(fb && !F.includes(fb)) miss.push(`층 ${fb} (요청 ${F.join('·')})`);
+    }
+    const D = m.hDir || [];
+    if(D.length && L.dir && !D.includes(L.dir)) miss.push(`방향 ${L.dir} (요청 ${D.join('·')})`);
+    if(m.hAge){
+      const age = ageOf(L.approved);
+      const want2 = HAGE.find(b => b.t === m.hAge);
+      if(age != null && want2 && !(age >= want2.lo && age < want2.hi))
+        miss.push(`사용승인 ${age}년차 (요청 ${m.hAge})`);
+    }
+  }
   st.push({k:'확인', ok:true, note: miss.length ? `확인 필요: ${miss.join(' · ')}` : '요청 항목 모두 충족', miss});
   return st;
 }
@@ -1562,6 +1646,7 @@ const BLD_TYPES = ['지식산업센터','오피스빌딩','상가 내 사무실'
 const DOCKS     = ['도크 필요','1층 접안','지게차 진입','상관없음'];
 const TEMPS     = ['상온','냉장','냉동','상관없음'];
 const blankDraft = () => ({who:'',kind:'',deal:'',dongs:[],dep:'',rent:'',htype:[],rooms:'',musts:[],
+  hArea:[], hBath:'', hFloor:[], hDir:[], hAge:'',
   openWhen:'', moveWhen:'', moveMonth:'', movePart:'',
   dongFree:'',mustFree:'',elev:'',
   keyOk:'',signNeed:'',parkNeed:'',shopNote:'',shopFloorFree:'',facFree:'',mapView:'map',mapLevel:'hanam',
@@ -2215,7 +2300,8 @@ function demandFromRow(d){
   else { L.push([(d.htype||[]).join(' · '), d.rooms].filter(Boolean).join(' · ')||'유형 무관');
          if((d.musts||[]).length || d.must_free) L.push([...(d.musts||[]), d.must_free||''].filter(Boolean).join(' · ')); }
   const req = [['지역',(d.dongs||[]).join(' · ')||'-'],
-               ['예산',`보증금 ${won(d.dep)}${d.rent?` / 월 ${(+d.rent).toLocaleString()}만`:''}`]];
+               /* 손님이 적은 금액은 '희망가' 가 아니라 감당 가능한 상한이다 */
+               ['예산',`보증금 ${won(d.dep)}${d.rent?` / 월 ${(+d.rent).toLocaleString()}만`:''} 까지`]];
   if(shop){ if(d.biz) req.push([d.kind==='storage'?'품목':d.kind==='office'?'업무':'업종', d.biz]);
             if(d.area_min) req.push(['면적', areaText(d.area_min,d.area_max)]); }
   else { if((d.htype||[]).length) req.push(['유형',(d.htype||[]).join(' · ')]);
@@ -2223,7 +2309,14 @@ function demandFromRow(d){
   if(d.open_when) req.push(['입주',d.open_when]);
   const det=[];
   const put=(k,v)=>{ if(v && String(v).trim()) det.push([k,String(v)]); };
-  put('층', d.floor_avoid || d.shop_floor_free); put('엘리베이터', d.elevator);
+  /* 새 조건(2026-09-16). 손님이 고른 밴드를 그대로 보여준다 - 우리가 풀어 쓰면
+     중개사가 '무엇을 고른 건지' 를 되짚을 수 없다. */
+  put('면적', (d.area_bands||[]).join(' · '));
+  put('화장실', d.bath_want);
+  put('층', (d.floor_bands||[]).join(' · ') || d.floor_avoid || d.shop_floor_free);
+  put('방향', (d.dir_want||[]).join(' · '));
+  put('사용승인', d.age_band);
+  put('엘리베이터', d.elevator);
   put('거주', d.household); put('대출', d.loan_plan); put('주차', d.park_need?`${d.park_need}대`:'');
   put('권리금', d.key_ok); put('간판', d.sign_need); put('참고', d.shop_note);
   const sp = d.spec||{};
@@ -2237,7 +2330,9 @@ function demandFromRow(d){
     urgent:(d.slots_left||0)<=1, lines:L.filter(Boolean), memo:d.memo||'',
     mine:!!d.mine,
     m:{dongs:d.dongs||[], deal:d.deal, biz:d.biz,
-       depMax:d.dep, rentMax:d.rent, rooms:parseInt(d.rooms,10)||0, musts:d.musts||[]},
+       depMax:d.dep, rentMax:d.rent, rooms:parseInt(d.rooms,10)||0, musts:d.musts||[],
+       hArea:d.area_bands||[], hBath:d.bath_want||'', hFloor:d.floor_bands||[],
+       hDir:d.dir_want||[], hAge:d.age_band||''},
     req, det, check:[],
   };
 }
@@ -2859,8 +2954,8 @@ V['#/register'] = () => {
           <div class="unit"><input class="inp" data-in="ceilH" inputmode="decimal" value="${esc(d.ceilH)}" placeholder="0"><span>m 이상</span></div></div>` : ''}
       </div>
       <div class="grid2 mo1">
-        <div><span class="lab">보증금 <span class="req">*</span></span><div class="unit"><input class="inp" data-in="dep" inputmode="numeric" value="${esc(d.dep)}" placeholder="0"><span>만원</span></div></div>
-        <div><span class="lab">월세 <span class="req">*</span></span><div class="unit"><input class="inp" data-in="rent" inputmode="numeric" value="${esc(d.rent)}" placeholder="0"><span>만원</span></div></div>
+        <div><span class="lab">보증금 <span class="req">*</span> <span class="opt">감당 가능한 최대</span></span><div class="unit"><input class="inp" data-in="dep" inputmode="numeric" value="${esc(d.dep)}" placeholder="0"><span>만원</span></div></div>
+        <div><span class="lab">월세 <span class="req">*</span> <span class="opt">매월 낼 수 있는 최대</span></span><div class="unit"><input class="inp" data-in="rent" inputmode="numeric" value="${esc(d.rent)}" placeholder="0"><span>만원</span></div></div>
       </div>
       ${movePicker(d)}
       <div><span class="lab">층 조건 <span class="opt">원하시는 층을 그대로 적어주세요</span></span>
@@ -2892,17 +2987,22 @@ V['#/register'] = () => {
         const depBox = `
         <div><span class="lab">${w.dep} <span class="req">*</span> <span class="opt">${w.hint}</span></span>
           <div class="unit"><input class="inp" data-in="dep" inputmode="numeric" value="${esc(d.dep)}" placeholder="${w.ph}"><span>만원</span></div>
-          ${+d.dep?`<span style="display:block;margin-top:6px;font-size:11px;font-weight:700;color:var(--ind)">${won(+d.dep)}원</span>`:''}
+          ${+d.dep?`<span style="display:block;margin-top:6px;font-size:11px;font-weight:700;color:var(--ind)">${won(+d.dep)}원까지</span>`:''}
         </div>`;
         return w.rent ? `<div class="grid2 mo1">${depBox}
-        <div><span class="lab">월세 <span class="req">*</span> <span class="opt">매월 내실 금액</span></span>
+        <div><span class="lab">월세 <span class="req">*</span> <span class="opt">매월 낼 수 있는 최대</span></span>
           <div class="unit"><input class="inp" data-in="rent" inputmode="numeric" value="${esc(d.rent)}" placeholder="0"><span>만원</span></div></div>
       </div>` : depBox; })()}
       ${movePicker(d)}
       <div><span class="lab">주택 유형 <span class="req">*</span></span>${chipsHTML(HTYPES, d.htype, 'htype', true)}</div>
       <div class="grid2 mo1">
         <div><span class="lab">방 수</span>${chipsHTML(ROOMS, d.rooms, 'rooms', false)}</div>
+        <div><span class="lab">화장실 <span class="opt">없으면 비워두셔도 됩니다</span></span>${chipsHTML(HBATH, d.hBath||'', 'hbath', false)}</div>
       </div>
+      <!-- 지금까지 주거에는 면적 칸이 아예 없었다. 매물에는 전용·공급 ㎡ 가
+           들어 있으므로 손님 쪽만 채우면 그날로 맞춰볼 수 있다. -->
+      <div><span class="lab">희망 면적 <span class="opt">전용면적 기준 · 여러 개 고르셔도 됩니다</span></span>
+        <div class="chips">${HAREA.map(b=>`<button class="chip ${d.hArea.includes(b.t)?'on':''}" data-act="harea" data-v="${esc(b.t)}">${esc(b.t)}<span style="opacity:.62;font-weight:600;margin-left:5px">${esc(b.py)}</span></button>`).join('')}</div></div>
       <div><span class="lab">꼭 필요한 것</span>${chipsHTML(MUSTS.concat(['기타']), d.musts, 'musts', true)}
         ${d.musts.includes('기타')?`<input class="inp" data-in="mustFree" value="${esc(d.mustFree||'')}" placeholder="예) 붙박이장 필수, 남향, 관리비 10만원 이하" style="margin-top:10px">`:''}</div>
       `}
@@ -2958,14 +3058,22 @@ V['#/detail'] = () => { const d=S.draft, pct=detailPct(d); return `
         : d.kind==='storage'? '예) 5톤 트럭 진입 가능 / 야간에도 출입 가능'
         : '예) 초등학교 도보 5분 이내 / 같은 건물에 경쟁 업종 없을 것'}"></div>
       ` : `
+      <!-- 전에는 '피하고 싶은 층' 만 있어서 "저층이 좋다" 를 말할 방법이 없었다.
+           원하는 층을 고르게 하면 피하고 싶은 층은 안 고르면 그만이다
+           (중개사 회신 2026-09-16). -->
+      <div><span class="lab">원하는 층 <span class="opt">여러 개 고르셔도 됩니다 · 안 고르시면 무관</span></span>
+        ${chipsHTML(HFLOOR, d.hFloor, 'hfloor', true)}</div>
+      <!-- 기피하는 방향이 있어도 선호를 여러 개 고르면 같은 효과가 난다.
+           중개사는 방향을 어차피 적으므로(표시·광고 명시사항) 맞춰보기도 쉽다. -->
+      <div><span class="lab">선호하는 방향 <span class="opt">여러 개 고르셔도 됩니다 · 안 고르시면 무관</span></span>
+        ${chipsHTML(DIRS, d.hDir, 'hdir', true)}</div>
+      <div><span class="lab">사용승인일 <span class="opt">건물 나이 · 안 고르시면 무관</span></span>
+        ${chipsHTML(HAGE.map(b=>b.t), d.hAge||'', 'hage', false)}</div>
       <div class="grid2 mo1">
-        <div><span class="lab">피하고 싶은 층</span>${chipsHTML(FLOORS, d.floor, 'floor', false)}</div>
         <div><span class="lab">거주 인원</span>${chipsHTML(HOUSE, d.house, 'house', false)}</div>
-      </div>
-      <div class="grid2 mo1">
         <div><span class="lab">엘리베이터</span>${chipsHTML(['있음','없음','상관없음'], d.elev||'', 'elev', false)}</div>
-        <div><span class="lab">대출 계획 <span class="opt">미리 알면 헛걸음이 줍니다</span></span>${chipsHTML(LOANS, d.loan, 'loan', false)}</div>
       </div>
+      <div><span class="lab">대출 계획 <span class="opt">미리 알면 헛걸음이 줍니다</span></span>${chipsHTML(LOANS, d.loan, 'loan', false)}</div>
       `}
     </div></div>
   </div>
@@ -5953,6 +6061,13 @@ function demandPayload(d, slotN){
     musts: shop ? [] : (d.musts || []),
     must_free: shop ? null : t(d.mustFree),
     floor_avoid: shop ? null : t(d.floor),
+    /* 중개사 3차 회신(2026-09-16) - 주거에만 있다.
+       상가는 시설·화장실·방향을 조건으로 걸지 않는다(만나서 맞추면 되는 것들). */
+    area_bands:  shop ? [] : (d.hArea  || []),
+    bath_want:   shop ? null : t(d.hBath),
+    floor_bands: shop ? [] : (d.hFloor || []),
+    dir_want:    shop ? [] : (d.hDir   || []),
+    age_band:    shop ? null : t(d.hAge),
     household: shop ? null : t(d.house),
     elevator: shop ? null : t(d.elev),
     loan_plan: shop ? null : t(d.loan),
@@ -8444,6 +8559,12 @@ function handle(a,v,el){
     case 'signNeed': d.signNeed = d.signNeed===v ? '' : v; render(); return true;
     case 'htype': toggleIn(d.htype,v); render(); return true;
     case 'musts': toggleIn(d.musts,v); render(); return true;
+    /* 손님이 고르는 밴드 - 면적·층·방향은 여러 개, 화장실·연식은 하나 */
+    case 'harea': toggleIn(d.hArea,v); render(); return true;
+    case 'hfloor': toggleIn(d.hFloor,v); render(); return true;
+    case 'hdir':  toggleIn(d.hDir,v);  render(); return true;
+    case 'hbath': d.hBath = (d.hBath===v?'':v); render(); return true;
+    case 'hage':  d.hAge  = (d.hAge===v?'':v);  render(); return true;
     case 'times': toggleIn(d.times,v); render(); return true;
     case 'moveWhy':
     case 'bldType': case 'dock': case 'temp':
@@ -8558,7 +8679,9 @@ function handle(a,v,el){
              pyMin:+d.areaMin||null, pyMax:+d.areaMax||null, floors:[], fac:[],
              floorNote:d.shopFloorFree||'', facNote:d.facFree||''}
           : {dongs:d.dongs, deal:d.deal, depMax:+d.dep||null, rentMax:+d.rent||null,
-             feeIncluded:true, rooms:d.rooms==='3룸'?3:d.rooms==='4룸+'?4:d.rooms==='1~2룸'?1:null, musts:d.musts},
+             feeIncluded:true, rooms:d.rooms==='3룸'?3:d.rooms==='4룸+'?4:d.rooms==='1~2룸'?1:null, musts:d.musts,
+             /* 새 조건은 전부 '확인' 단계에서만 쓰인다 - 거르지 않는다 */
+             hArea:d.hArea||[], hBath:d.hBath||'', hFloor:d.hFloor||[], hDir:d.hDir||[], hAge:d.hAge||''},
         req:[['지역',d.dongs.join(' · ')],['예산',draftLines(d)[0]||''],['유형',(d.htype||[]).join(' · ')||d.biz||''],
              ].filter(r=>r[1]),
         det:(d.kind==='shop'

@@ -252,6 +252,14 @@ export default async function handler(req, res) {
     musts: NONHOME(kind) ? [] : arr(b.musts),
     must_free: NONHOME(kind) ? null : str(b.must_free, 300),
     floor_avoid: NONHOME(kind) ? null : str(b.floor_avoid, 20),
+    /* 중개사 3차 회신(2026-09-16) - 손님은 밴드로 고르고 중개사는 정확히 적는다.
+       주거에만 둔다: 상가·사무실은 시설·화장실·방향을 조건으로 걸지 않는다.
+       0022 가 아직 안 돌았으면 위 missingColumn 고리가 이 칸만 빼고 다시 넣는다. */
+    area_bands:  NONHOME(kind) ? [] : arr(b.area_bands),
+    bath_want:   NONHOME(kind) ? null : str(b.bath_want, 20),
+    floor_bands: NONHOME(kind) ? [] : arr(b.floor_bands),
+    dir_want:    NONHOME(kind) ? [] : arr(b.dir_want),
+    age_band:    NONHOME(kind) ? null : str(b.age_band, 20),
     household: NONHOME(kind) ? null : str(b.household, 20),
     elevator: NONHOME(kind) ? null : str(b.elevator, 20),
     loan_plan: NONHOME(kind) ? null : str(b.loan_plan, 20),

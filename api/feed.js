@@ -190,11 +190,12 @@ export default async function handler(req, res) {
     const q = new URLSearchParams({
       select: 'id,created_at,kind,dongs,deal,dep,rent,biz,area_min,area_max,htype,rooms,musts,must_free,'
             + 'floor_avoid,household,elevator,loan_plan,open_when,shop_floor_free,facilities_free,'
+            + 'area_bands,bath_want,floor_bands,dir_want,age_band,'
             + 'key_ok,sign_need,park_need,shop_note,spec,memo,slots,slots_left',
       order: 'created_at.desc', limit: '200',
     });
     q.set('kind', `in.(${kinds.join(',')})`);
-    const r = await fetch(sbUrl('bk_demand', q.toString()), { headers: sbHeaders() });
+    const r = await getDemands(q);
     if (!r.ok) return res.status(502).json({ error: '조건을 불러오지 못했습니다' });
     let rows = await r.json();
 
@@ -238,6 +239,21 @@ export default async function handler(req, res) {
     console.error('[feed]', e && e.message);
     return res.status(502).json({ error: 'DB에 닿지 못했습니다' });
   }
+}
+
+/* 새 칸을 select 에 적었는데 0022 가 아직 안 돌았으면 목록이 통째로 502 가 된다 -
+   물건 저장과 달리 조회는 조용히 물러설 자리가 없다. 한 번 더, 새 칸만 빼고 묻는다.
+   이때는 손님이 건 밴드 조건이 안 실려 오므로 중개사 화면에서 그 줄만 비어 보인다. */
+const BAND_COLS = 'area_bands,bath_want,floor_bands,dir_want,age_band,';
+async function getDemands(q) {
+  let r = await fetch(sbUrl('bk_demand', q.toString()), { headers: sbHeaders() });
+  if (r.ok) return r;
+  const t = await r.clone().text().catch(() => '');
+  if (!/does not exist|PGRST204|42703/i.test(t)) return r;
+  if (!/area_bands|bath_want|floor_bands|dir_want|age_band/.test(t)) return r;
+  const q2 = new URLSearchParams(q);
+  q2.set('select', String(q.get('select') || '').replace(BAND_COLS, ''));
+  return fetch(sbUrl('bk_demand', q2.toString()), { headers: sbHeaders() });
 }
 
 /* 이 조건이 이 활동 조건에 드는가.
@@ -333,11 +349,12 @@ async function readFitting(res, agent) {
     const q = new URLSearchParams({
       select: 'id,created_at,kind,dongs,deal,dep,rent,biz,area_min,area_max,htype,rooms,musts,must_free,'
             + 'floor_avoid,household,elevator,loan_plan,open_when,shop_floor_free,facilities_free,'
+            + 'area_bands,bath_want,floor_bands,dir_want,age_band,'
             + 'key_ok,sign_need,park_need,shop_note,spec,memo,slots,slots_left',
       order: 'created_at.desc', limit: '200',
     });
     q.set('kind', `in.(${kinds.join(',')})`);
-    const r = await fetch(sbUrl('bk_demand', q.toString()), { headers: sbHeaders() });
+    const r = await getDemands(q);
     if (!r.ok) return res.status(502).json({ error: '조건을 불러오지 못했습니다' });
 
     const hidden = { region: 0, slot: 0, fit: 0 };

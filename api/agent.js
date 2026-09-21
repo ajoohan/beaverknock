@@ -114,8 +114,15 @@ export default async function handler(req, res) {
   }
   hits.push(now); burst.set(ip, hits);
 
-  /* 계정과 이어둬야 나중에 '내가 승인된 파트너인가' 를 물을 수 있다 */
+  /* 계정과 이어둬야 나중에 '내가 승인된 파트너인가' 를 물을 수 있다.
+     계정 없이 받아주면 user_id 가 null 로 남는다 - 그분은 나중에 로그인해도
+     자기 신청과 이어지지 않고, bk_agent_user_idx 가 계정당 하나라 다시 신청할
+     수도 없다. 승인은 됐는데 아무것도 못 쓰는 자리가 만들어진다.
+     화면도 로그인을 먼저 받지만, 화면만 막으면 막은 것이 아니다. */
   const owner = await userFrom(req);
+  if (!owner) {
+    return res.status(401).json({ error: '먼저 로그인해 주세요', need_login: true });
+  }
 
   /* 가입은 바로 승인된다 (2026-09-14).
      사람이 하나씩 열어주던 것을 없앴다 - 기다리는 동안 파트너는 아무것도 못 하고,
@@ -128,7 +135,7 @@ export default async function handler(req, res) {
   const row = {
     role, name, phone,
     status: autoApprove ? 'approved' : 'new',
-    user_id: owner ? owner.id : null,
+    user_id: owner.id,
     email:    str(b.email, 120),
     office:   str(b.office, 80),
     reg_no:   str(b.reg_no, 40),

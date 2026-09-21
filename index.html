@@ -2718,6 +2718,7 @@ V['#/login'] = () => {
   const pwOk = S.pw.length >= 8;
   const asPartner = S.loginAs === 'partner';
   const toKind = S.afterLogin === '#/kind';
+  const toJoin = S.afterLogin === '#/partner/join';
   const toMine = S.afterLogin === '#/my' || S.afterLogin === '#/inbox';
   const bar = `<span aria-hidden="true" style="color:var(--n300)">/</span>`;
   return `
@@ -2735,12 +2736,14 @@ V['#/login'] = () => {
           background:var(--ind50);border:1px solid #D9DAF0;border-radius:var(--r-full);padding:6px 14px">파트너</span>`:''}
         <h1 class="t" style="font-size:${isMo()?21:25}px">${
           S.signup ? '비버노크 시작하기'
+          : (asPartner && toJoin) ? '먼저 계정을 만들어주세요'
           : asPartner ? '파트너 로그인'
           : toKind ? '3초면 시작합니다'
           : toMine ? '걸어두신 조건을 불러올게요'
           : '다시 오셨네요'}</h1>
         <p style="margin:0;font-size:13.5px;line-height:1.75;color:var(--n700);max-width:32ch">
-          ${asPartner ? '가입하실 때 쓰신 계정으로 들어오시면 맞는 손님 목록으로 이어집니다.'
+          ${(asPartner && toJoin) ? '카카오·네이버·구글로도 됩니다. 계정을 만드시면 바로 파트너 가입으로 이어집니다.'
+            : asPartner ? '가입하실 때 쓰신 계정으로 들어오시면 맞는 손님 목록으로 이어집니다.'
             : toKind ? '로그인하시면 바로 조건 등록으로 이어집니다.'
             : toMine ? '처음이시라면 아래에서 시작하시면 됩니다.'
             : S.signup ? '계정을 만들면 걸어둔 조건과 받은 제안이 그대로 남습니다.'
@@ -4048,7 +4051,9 @@ function agentPanel(){
               <td style="padding:12px 14px;color:var(--n500)">${esc(String(r.created_at||'').replace('T',' ').slice(5,16))}</td>
               <td style="padding:12px 14px"><span class="badge ${(AG_STATUS[r.status||'new']||AG_STATUS.new)[0]}">${(AG_STATUS[r.status||'new']||AG_STATUS.new)[1]}</span></td>
               <td style="padding:12px 14px"><span class="badge ${r.role==='agent'?'b-ok':r.role==='owner'?'b-ind':'b-warn'}">${AG_ROLE[r.role]||r.role}</span></td>
-              <td style="padding:12px 14px;font-weight:700">${esc(r.name||'')}</td>
+              <td style="padding:12px 14px;font-weight:700">${esc(r.name||'')}
+                ${r.user_id ? '' : `<span class="badge b-warn" style="margin-left:6px;font-size:11px;padding:2px 8px"
+                  title="계정에 이어지지 않은 신청입니다 - 승인돼도 수요 목록·제안을 쓸 수 없습니다">계정 없음</span>`}</td>
               <td style="padding:12px 14px" class="num">${esc(r.phone||'')}</td>
               <td style="padding:12px 14px">${esc(r.office||r.addr||'')}</td>
               <td style="padding:12px 14px">
@@ -6265,11 +6270,17 @@ function opsShare(r){
     put('참고   ', r.shop_note);
   }else{
     put('거래   ', r.deal);
-    L.push(`예산   ${r.deal==='매매'?'매매가':'보증금'} ${won(+r.dep||0)}${+r.rent?` / 월 ${(+r.rent).toLocaleString()}만`:''}`);
+    L.push(`예산   ${r.deal==='매매'?'매매가':'보증금'} ${won(+r.dep||0)}${+r.rent?` / 월 ${(+r.rent).toLocaleString()}만`:''} 까지`);
     put('유형   ', [(r.htype||[]).join(' · '), r.rooms && r.rooms!=='무관' ? r.rooms : ''].filter(Boolean).join(' · '));
     put('입주   ', r.when_text);
     put('필수   ', [...(r.musts||[]), r.must_free||''].filter(Boolean).join(' · '));
-    put('층     ', r.floor_avoid);
+    /* 손님이 고른 밴드를 그대로 옮긴다 - 우리가 풀어 쓰면 중개사가 '무엇을 고른 건지' 를
+       되짚을 수 없다. 안 고른 항목은 put 이 알아서 건너뛴다(= 무관). */
+    put('면적   ', (r.area_bands||[]).join(' · '));
+    put('화장실 ', r.bath_want);
+    put('층     ', (r.floor_bands||[]).join(' · ') || r.floor_avoid);
+    put('방향   ', (r.dir_want||[]).join(' · '));
+    put('사용승인 ', r.age_band);
     put('승강기 ', r.elevator);
     put('거주   ', r.household);
     put('대출   ', r.loan_plan);
@@ -6841,7 +6852,10 @@ function demandPanel(){
               : `${r.deal||''} ${won(+r.dep||0)}${+r.rent?` / 월 ${r.rent}`:''}`;
             const key = shop
               ? [r.biz, (r.area_min?`전용 ${r.area_min}~${r.area_max||''}평`:''), r.shop_floor_free, r.facilities_free].filter(Boolean).join(' · ')
-              : [(r.htype||[]).join('·'), r.rooms, r.when_text, (r.musts||[]).join('·'), r.must_free].filter(Boolean).join(' · ');
+              : [(r.htype||[]).join('·'), r.rooms,
+                 (r.area_bands||[]).join('·'), r.bath_want && `화장실 ${r.bath_want}`,
+                 (r.floor_bands||[]).join('·'), (r.dir_want||[]).join('·'), r.age_band,
+                 r.when_text, (r.musts||[]).join('·'), r.must_free].filter(Boolean).join(' · ');
             const sent = !!OPS.sent[r.id];
             const fresh = new Date(r.created_at).getTime() > OPS.seen;
             const open = OPS.open === r.id;
@@ -7680,6 +7694,15 @@ function render(){
   /* 조건을 걸려면 로그인이 필요하다. 계정이 있어야 받은 제안을 다시 볼 수 있고,
      기기를 바꿔도 남는다. 우회로를 두면 그 이유가 흐려진다. */
   if(h==='#/kind' && !S.user){ S.loginAs='guest'; S.afterLogin = '#/kind'; location.replace('#/login'); return; }
+  /* 파트너 가입도 계정이 먼저다.
+     전에는 로그인 없이도 신청이 끝났다 - 그러면 bk_agent.user_id 가 null 로 남고,
+     그분은 나중에 로그인해도 자기 신청과 이어지지 않는다. 승인은 됐는데 수요 목록도
+     제안도 쓸 수 없는 계정이 만들어진다(bk_agent_user_idx 는 계정당 하나라 다시
+     신청할 수도 없다). 계정을 먼저 만들게 하면 카카오·네이버·구글로도 가입된다 -
+     로그인 화면이 이미 그 넷을 다 들고 있다. */
+  if(h==='#/partner/join' && !S.user){
+    S.loginAs='partner'; S.afterLogin='#/partner/join'; location.replace('#/login'); return;
+  }
   if(h.startsWith('#/partner/propose/') && S.timeLeft<=0){ S.timeLeft = 900; }
   S.route = h;
   const parts = h.split('/');
@@ -8115,6 +8138,11 @@ function sendAgent(f){
            '확인되었습니다' 카드를 치워야 다시 받을 수 있다. 적어둔 것은 남긴다. */
         S.form.jSent = ''; S.form.jVerified = null; S.idvToken = null; S.form.jStep = 2;
         toast('본인확인이 만료되었습니다 - 한 번만 다시 받아주세요');
+      }
+      else if(j.need_login){
+        /* 화면 가드를 지나왔는데 여기로 왔다 = 적는 사이에 세션이 끊겼다 */
+        S.form.jSent = ''; S.loginAs='partner'; S.afterLogin='#/partner/join';
+        toast('로그인이 풀렸습니다 - 다시 들어와 주세요'); go('#/login'); return;
       }
       else { S.form.jSent = 'fail'; toast(j.error || '신청 저장에 실패했습니다'); }
       render();

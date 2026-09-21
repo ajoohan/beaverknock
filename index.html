@@ -1277,9 +1277,13 @@ const won = w => {
 };
 /* 적는 칸 아래에 붙이는 환산. 0 을 하나 더 쳤는지는 이것으로 알아챈다 -
    원 단위는 자릿수가 길어 눈으로 세기 어렵다. */
-const wonHint = v => +v > 0
-  ? `<span style="display:block;margin-top:6px;font-size:12px;font-weight:800;color:var(--ind)">${won(+v)} 원</span>`
-  : '';
+/* 숫자 옆에 한글로 적어준다 - 원 단위는 자릿수가 길어 0 을 하나 더 쳤는지
+   눈으로 셀 수 없다. 적는 동안 화면을 다시 그리지 않으므로 money() 가
+   이 자리만 손으로 바꾼다(data-wonhint 로 찾는다).
+   tail 은 '까지' 처럼 뒤에 붙는 말이다 - 상한이라는 뜻이 사라지면 안 된다. */
+const wonHint = (v, tail) => `<span data-wonhint${tail?` data-suffix="${tail}"`:''}
+  style="display:block;min-height:17px;margin-top:6px;font-size:12px;font-weight:800;color:var(--ind)"
+  >${+v > 0 ? won(+v) + '원' + (tail||'') : ''}</span>`;
 
 /* ---------- 도메인 데이터 ---------- */
 const ZONES = [
@@ -3023,7 +3027,7 @@ V['#/register'] = () => {
         </div>
         ${K==='shop' ? `
         <div><span class="lab">권리금 <span class="opt">감당 가능한 상한</span></span>
-          <div class="unit"><input class="inp" data-in="key" inputmode="numeric" value="${esc(d.key)}" placeholder="0"><span>원</span></div>${wonHint(d.key)}</div>` : ''}
+          <div class="unit"><input class="inp" data-in="key" inputmode="numeric" value="${esc(comma(d.key))}" placeholder="0"><span>원</span></div>${wonHint(d.key)}</div>` : ''}
         ${K==='office' ? `
         <div><span class="lab">상주 인원 <span class="opt">몇 분이 쓰실 자리인가요</span></span>
           <div class="unit"><input class="inp" data-in="headcount" inputmode="numeric" value="${esc(d.headcount)}" placeholder="0"><span>명</span></div></div>` : ''}
@@ -3032,8 +3036,8 @@ V['#/register'] = () => {
           <div class="unit"><input class="inp" data-in="ceilH" inputmode="decimal" value="${esc(d.ceilH)}" placeholder="0"><span>m 이상</span></div></div>` : ''}
       </div>
       <div class="grid2 mo1">
-        <div><span class="lab">보증금 <span class="req">*</span> <span class="opt">감당 가능한 최대</span></span><div class="unit"><input class="inp" data-in="dep" inputmode="numeric" value="${esc(d.dep)}" placeholder="0"><span>원</span></div>${wonHint(d.dep)}</div>
-        <div><span class="lab">월세 <span class="req">*</span> <span class="opt">매월 낼 수 있는 최대</span></span><div class="unit"><input class="inp" data-in="rent" inputmode="numeric" value="${esc(d.rent)}" placeholder="0"><span>원</span></div>${wonHint(d.rent)}</div>
+        <div><span class="lab">보증금 <span class="req">*</span> <span class="opt">감당 가능한 최대</span></span><div class="unit"><input class="inp" data-in="dep" inputmode="numeric" value="${esc(comma(d.dep))}" placeholder="0"><span>원</span></div>${wonHint(d.dep)}</div>
+        <div><span class="lab">월세 <span class="req">*</span> <span class="opt">매월 낼 수 있는 최대</span></span><div class="unit"><input class="inp" data-in="rent" inputmode="numeric" value="${esc(comma(d.rent))}" placeholder="0"><span>원</span></div>${wonHint(d.rent)}</div>
       </div>
       ${movePicker(d)}
       <div><span class="lab">층 조건 <span class="opt">원하시는 층을 그대로 적어주세요</span></span>
@@ -3064,12 +3068,12 @@ V['#/register'] = () => {
       ${(()=>{ const w = dealWords(d.deal);
         const depBox = `
         <div><span class="lab">${w.dep} <span class="req">*</span> <span class="opt">${w.hint}</span></span>
-          <div class="unit"><input class="inp" data-in="dep" inputmode="numeric" value="${esc(d.dep)}" placeholder="${w.ph}"><span>원</span></div>
-          ${+d.dep?`<span style="display:block;margin-top:6px;font-size:12px;font-weight:800;color:var(--ind)">${won(+d.dep)} 원까지</span>`:''}
+          <div class="unit"><input class="inp" data-in="dep" inputmode="numeric" value="${esc(comma(d.dep))}" placeholder="${w.ph}"><span>원</span></div>
+          ${wonHint(d.dep, '까지')}
         </div>`;
         return w.rent ? `<div class="grid2 mo1">${depBox}
         <div><span class="lab">월세 <span class="req">*</span> <span class="opt">매월 낼 수 있는 최대</span></span>
-          <div class="unit"><input class="inp" data-in="rent" inputmode="numeric" value="${esc(d.rent)}" placeholder="0"><span>원</span></div>${wonHint(d.rent)}</div>
+          <div class="unit"><input class="inp" data-in="rent" inputmode="numeric" value="${esc(comma(d.rent))}" placeholder="0"><span>원</span></div>${wonHint(d.rent)}</div>
       </div>` : depBox; })()}
       ${movePicker(d)}
       <div><span class="lab">주택 유형 <span class="req">*</span></span>${chipsHTML(HTYPES, d.htype, 'htype', true)}</div>
@@ -4963,8 +4967,8 @@ V['#/partner/propose'] = (id) => { const d=S.demands.find(x=>x.id===id); if(!d) 
           <div><span class="lab" style="font-size:12.5px">전용면적</span>
             <div class="unit"><input class="inp num" data-in="area" inputmode="decimal" value="${esc(g('area'))}" placeholder="0" style="padding:12px 14px;font-size:14px"><span>㎡</span></div>
             <span data-py="area" style="display:block;margin-top:4px;font-size:11px;font-weight:700;color:var(--n500)">${+g('area')>0?`${(+g('area')/3.305785).toFixed(1)}평`:''}</span></div>
-          <div><span class="lab" style="font-size:12.5px">${home?dealWords(d.deal).dep:'보증금'}</span><div class="unit"><input class="inp num" data-in="dep" inputmode="numeric" value="${esc(g('dep'))}" placeholder="0" style="padding:12px 14px;font-size:14px"><span>원</span></div>${wonHint(g('dep'))}</div>
-          ${!home||dealWords(d.deal).rent?`<div><span class="lab" style="font-size:12.5px">월세</span><div class="unit"><input class="inp num" data-in="rent" inputmode="numeric" value="${esc(g('rent'))}" placeholder="0" style="padding:12px 14px;font-size:14px"><span>원</span></div>${wonHint(g('rent'))}</div>`:''}
+          <div><span class="lab" style="font-size:12.5px">${home?dealWords(d.deal).dep:'보증금'}</span><div class="unit"><input class="inp num" data-in="dep" inputmode="numeric" value="${esc(comma(g('dep')))}" placeholder="0" style="padding:12px 14px;font-size:14px"><span>원</span></div>${wonHint(g('dep'))}</div>
+          ${!home||dealWords(d.deal).rent?`<div><span class="lab" style="font-size:12.5px">월세</span><div class="unit"><input class="inp num" data-in="rent" inputmode="numeric" value="${esc(comma(g('rent')))}" placeholder="0" style="padding:12px 14px;font-size:14px"><span>원</span></div>${wonHint(g('rent'))}</div>`:''}
           ${home ? `
           <div><span class="lab" style="font-size:12.5px">방/욕실</span><div style="display:flex;gap:6px">
             <input class="inp num" data-in="rooms" inputmode="numeric" value="${esc(g('rooms'))}" placeholder="방" style="padding:12px 14px;font-size:14px">
@@ -4973,7 +4977,7 @@ V['#/partner/propose'] = (id) => { const d=S.demands.find(x=>x.id===id); if(!d) 
         <!-- 관리비는 금액·부과방식·포함비목을 한 덩어리로 둔다. 금액이 격자 안에
              흩어져 있으면 부과방식을 고를 때 얼마인지가 눈에 안 들어온다. -->
         <div style="margin-top:14px"><span class="lab" style="font-size:12.5px">관리비</span>
-          <div class="unit" style="max-width:${isMo()?'none':'220px'}"><input class="inp num" data-in="fee" inputmode="numeric" value="${esc(g('fee'))}" placeholder="0" style="padding:12px 14px;font-size:14px"><span>원</span></div></div>
+          <div class="unit" style="max-width:${isMo()?'none':'220px'}"><input class="inp num" data-in="fee" inputmode="numeric" value="${esc(comma(g('fee')))}" placeholder="0" style="padding:12px 14px;font-size:14px"><span>원</span></div></div>
         <div style="margin-top:14px"><span class="lab" style="font-size:12.5px">관리비 부과방식</span>
           ${chipsHTML(FEE_TYPE, g('feeType'),'feeType',false)}</div>
         <div style="margin-top:14px"><span class="lab" style="font-size:12.5px">관리비 산정 기준 <span style="color:var(--danger)">*</span></span>
@@ -5720,15 +5724,15 @@ V["#/partner/listing/new"] = () => {
       </div>
       <div><span class="lab">거래 방식</span>${chipsHTML(['전세','월세','매매'], g('ldeal')||'월세','ldeal',false)}</div>
       <div class="grid2 mo1">
-        <div><span class="lab">${dealWords(g('ldeal')||'월세').dep} <span class="req">*</span></span><div class="unit"><input class="inp num" data-in="ldep" inputmode="numeric" value="${esc(g('ldep'))}" placeholder="0"><span>원</span></div>${wonHint(g('ldep'))}</div>
-        ${dealWords(g('ldeal')||'월세').rent?`<div><span class="lab">월세 <span class="req">*</span></span><div class="unit"><input class="inp num" data-in="lrent" inputmode="numeric" value="${esc(g('lrent'))}" placeholder="0"><span>원</span></div>${wonHint(g('lrent'))}</div>`:''}
+        <div><span class="lab">${dealWords(g('ldeal')||'월세').dep} <span class="req">*</span></span><div class="unit"><input class="inp num" data-in="ldep" inputmode="numeric" value="${esc(comma(g('ldep')))}" placeholder="0"><span>원</span></div>${wonHint(g('ldep'))}</div>
+        ${dealWords(g('ldeal')||'월세').rent?`<div><span class="lab">월세 <span class="req">*</span></span><div class="unit"><input class="inp num" data-in="lrent" inputmode="numeric" value="${esc(comma(g('lrent')))}" placeholder="0"><span>원</span></div>${wonHint(g('lrent'))}</div>`:''}
       </div>
 
       <!-- 관리비는 금액만으로는 표시·광고 요건을 못 채운다. 어떤 기간으로 계산한
            금액인지와 무엇이 포함되는지를 함께 적어야 한다. -->
       <div style="border-top:1px solid var(--hair);padding-top:16px">
         <span class="lab">관리비</span>
-        <div class="unit" style="max-width:${isMo()?'none':'220px'}"><input class="inp num" data-in="lfee" inputmode="numeric" value="${esc(g('lfee'))}" placeholder="0"><span>원</span></div>${wonHint(g('lfee'))}
+        <div class="unit" style="max-width:${isMo()?'none':'220px'}"><input class="inp num" data-in="lfee" inputmode="numeric" value="${esc(comma(g('lfee')))}" placeholder="0"><span>원</span></div>${wonHint(g('lfee'))}
         <div style="margin-top:12px"><span class="lab">산정 기준 <span class="req">*</span></span>
           ${chipsHTML(FEE_BASIS, g('lfeeBasis'),'lfeeBasis',false)}</div>
         <div style="margin-top:12px"><span class="lab">부과 방식</span>
@@ -8362,9 +8366,33 @@ document.addEventListener('click', e=>{
     if(goEl.dataset.cond) S.inboxCond=goEl.dataset.cond;
     go(goEl.dataset.go); }
 });
+/* 금액 칸. 상태에는 **숫자만** 담고 화면에만 콤마를 넣는다 -
+   `+d.dep` 같은 변환이 코드 곳곳에 있어 "3,000" 을 담으면 NaN 이 된다. */
+const MONEY_IN = ['dep','rent','fee','key','ldep','lrent','lfee'];
+const comma = d => String(d||'').replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+/* 콤마를 다시 넣으면 커서가 맨 뒤로 튄다. 커서 앞의 **숫자 개수**를 세어 두었다가
+   그 자리로 되돌린다 - 글자 수로 세면 콤마가 늘어난 만큼 어긋난다. */
+function money(el){
+  const caret = el.selectionStart;
+  const before = el.value.slice(0, caret).replace(/[^0-9]/g, '').length;
+  const digits = el.value.replace(/[^0-9]/g, '').slice(0, 15);   /* 천조 원이면 충분하다 */
+  el.value = comma(digits);
+  if(document.activeElement === el){
+    let i = 0, seen = 0;
+    while(i < el.value.length && seen < before){ if(/[0-9]/.test(el.value[i])) seen++; i++; }
+    try{ el.setSelectionRange(i, i); }catch(_){}
+  }
+  /* 적는 동안 다시 그리지 않으므로 환산 안내는 손으로 바꿔 준다 */
+  const box = el.closest('div');
+  const hint = box && box.parentElement && box.parentElement.querySelector('[data-wonhint]');
+  if(hint) hint.textContent = +digits > 0 ? won(+digits) + '원' + (hint.dataset.suffix || '') : '';
+  return digits;
+}
+
 document.addEventListener('input', e=>{
   const el=e.target.closest('[data-in]'); if(!el) return;
-  const k=el.dataset.in, v=el.value;
+  const k=el.dataset.in;
+  const v = MONEY_IN.includes(k) ? money(el) : el.value;
   if(k==='j-phone'){ S.form[k] = autoHyphen(el); refreshJoin(); return; }
   if(k==='j-reg'){ S.form[k]=v;
     /* 방금 바꾼 번호와 확인 결과는 더 이상 같은 것이 아니다 - 치운다.

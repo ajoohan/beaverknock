@@ -92,6 +92,8 @@ export default async function handler(req, res) {
         fee_type: p.fee_type, fee_items: p.fee_items, fee_basis: p.fee_basis,
         note: p.note,
         area_sup: p.area_sup, area: p.area, rooms: p.rooms, baths: p.baths,
+        /* 동까지만. 호는 제안 표에 아예 없다(0025) - 실을 것이 없다. */
+        bdong: p.bdong, htype: p.htype,
         dir: p.dir, dir_base: p.dir_base,
         /* 'B1' 처럼 숫자가 아닌 표기에 '층' 을 붙이면 'B1층' 이 된다 */
         floor: p.floor_mode === '비공개' ? '비공개'

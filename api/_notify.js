@@ -115,3 +115,16 @@ export async function notifyMany(req, list) {
 }
 
 export { mask };
+
+/* 금액은 2026-09-21 부터 원 단위다(SQL 0024). 화면의 won() 과 같은 규칙으로 적는다 -
+   메일과 화면이 다른 말을 하면 어느 쪽이 맞는지 알 수 없게 된다. */
+export function won(w) {
+  const n = Math.round(Number(w) || 0);
+  if (!n) return '0';
+  const eok = Math.floor(n / 1e8), man = Math.floor((n % 1e8) / 1e4), rest = n % 1e4;
+  const out = [];
+  if (eok) out.push(eok.toLocaleString() + '억');
+  if (man) out.push(man.toLocaleString() + '만');
+  if (rest) out.push(rest.toLocaleString());
+  return out.join(' ');
+}

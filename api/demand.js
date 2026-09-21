@@ -10,6 +10,7 @@
  */
 
 import crypto from 'node:crypto';
+import { won } from './_notify.js';
 import { notify, notifyMany, mask } from './_notify.js';
 import { readIdv } from './_idv.js';
 import { userFrom, sbHeaders, sbUrl } from './_auth.js';
@@ -129,8 +130,8 @@ async function tellPartners(req, d) {
     if (!hit.length) return;
 
     const money = NONHOME(d.kind)
-      ? `보증금 ${d.dep ?? 0}만 / 월 ${d.rent ?? 0}만`
-      : `${d.deal || ''} ${d.dep ?? 0}만${d.rent ? ` / 월 ${d.rent}만` : ''}`.trim();
+      ? `보증금 ${won(d.dep)} / 월 ${won(d.rent)}`
+      : `${d.deal || ''} ${won(d.dep)}${d.rent ? ` / 월 ${won(d.rent)}` : ''}`.trim();
     const rows = [
       ['유형', KIND_KO[d.kind] || '주거'],
       ['지역', (d.dongs || []).join(' · ') || '-'],
@@ -347,8 +348,8 @@ export default async function handler(req, res) {
       ['유형', KIND_KO[row.kind] || '주거'],
       ['지역', (row.dongs || []).join(' · ') || '-'],
       ['예산', NONHOME(row.kind)
-        ? `보증금 ${row.dep ?? 0}만 / 월 ${row.rent ?? 0}만`
-        : `${row.deal || ''} ${row.dep ?? 0}만${row.rent ? ` / 월 ${row.rent}만` : ''}`.trim()],
+        ? `보증금 ${won(row.dep)} / 월 ${won(row.rent)}`
+        : `${row.deal || ''} ${won(row.dep)}${row.rent ? ` / 월 ${won(row.rent)}` : ''}`.trim()],
       ['성함', row.name || '-'],
       ['연락처', mask(row.phone)],
     ],

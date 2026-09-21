@@ -495,6 +495,11 @@ async function addListing(req, res, agent, user, b) {
        바로 찔러 넣는 길이 있으므로 여기서도 막는다(중개사 회신 2026-09-20). */
     rooms: int0(L.rooms), baths: kind === 'home' ? int0(L.baths) : 0,
     band: txt(L.band, 20), floors: int0(L.floors),
+    /* 아파트 동·호 (2026-09-21). 동은 손님에게 보이고 호는 보내지 않는다 -
+       특정 세대를 지목하는 값이라 연결 전에 나갈 이유가 없다.
+       내보내지 않는 일은 제안을 만드는 api/proposal.js 가 맡는다. */
+    bdong: txt(L.bdong, 20), ho: txt(L.ho, 20),
+    htype: txt(L.htype, 30),
     floor_no: txt(L.floorNo, 10), duplex: L.duplex === true,
     musts: arr(L.musts), fac: arr(L.fac),
     musts_free: txt(L.mustsFree, 120), fac_free: txt(L.facFree, 120),
@@ -517,9 +522,10 @@ async function addListing(req, res, agent, user, b) {
     if (!r.ok) {
       const t0 = await r.text();
       if (/does not exist|PGRST204/i.test(t0)
-          && /area|duplex|floor_no|musts_free|fac_free|dir|fee_basis|fee_type|fee_items|note/.test(t0)) {
+          && /area|duplex|floor_no|musts_free|fac_free|dir|fee_basis|fee_type|fee_items|note|bdong|ho|htype/.test(t0)) {
         const { area, area_sup, floor_no, duplex, musts_free, fac_free,
-                dir, dir_base, fee_basis, fee_type, fee_items, note, ...old } = row;
+                dir, dir_base, fee_basis, fee_type, fee_items, note,
+                bdong, ho, htype, ...old } = row;
         r = await put(old);
       } else {
         if (noTable(t0)) return res.status(503).json({ error: '아직 준비 중입니다 (0015 마이그레이션 필요)' });

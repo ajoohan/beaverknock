@@ -8,6 +8,7 @@
  */
 
 import { userFrom, sbHeaders, sbUrl, emailOf } from './_auth.js';
+import { won } from './_notify.js';
 import { approvedAgent, anyFits, canBrowse, myListings } from './feed.js';
 import { notify } from './_notify.js';
 
@@ -119,6 +120,9 @@ export default async function handler(req, res) {
       rooms: str(b.rooms, 10), baths: d.kind === 'home' ? str(b.baths, 10) : '',
       dir: str(b.dir, 10), dir_base: str(b.dir_base, 20),
       floor_mode: str(b.floor_mode, 20), floor_no: str(b.floor_no, 10), band: str(b.band, 10),
+      /* 동은 손님에게 보인다. **호는 받지 않는다** - 화면이 안 보내더라도
+         여기서 한 번 더 막는다. 담을 칸도 만들지 않았다(0025). */
+      bdong: str(b.bdong, 20), htype: str(b.htype, 30),
       duplex: b.duplex === true,
       move_in: str(b.move_in, 40), park: str(b.park, 40), approved: str(b.approved, 20),
       photos: int(b.photos) || 0, msg: str(b.msg, 500),
@@ -153,7 +157,7 @@ export default async function handler(req, res) {
     const saved = (await ir.json())[0] || {};
 
     const where = (d.dongs || []).join(' · ') || '서울·경기';
-    const price = `보증금 ${row.dep ?? 0}만${row.rent ? ` / 월 ${row.rent}만` : ''}`;
+    const price = `보증금 ${won(row.dep)}${row.rent ? ` / 월 ${won(row.rent)}` : ''}`;
 
     /* 메일 둘을 나란히 보낸다.
        줄줄이 기다리면 제안을 보낸 중개사가 그만큼 더 서 있는다.

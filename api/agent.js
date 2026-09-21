@@ -71,6 +71,10 @@ export default async function handler(req, res) {
   /* 사람은 이 화면들을 3초 안에 통과하지 못한다 */
   if (Number(b.elapsed) < 3000) return res.status(429).json({ error: '너무 빠릅니다. 잠시 후 다시 시도해 주세요' });
 
+  /* 이미 가입한 분이 나중에 자격을 채우러 온다. 새 주소를 낼 자리가 없어
+     같은 함수에 갈래로 둔다(함수 상한 12개). */
+  if (b.what === 'verify') return verify(req, res, b);
+
   const role  = ROLES.includes(b.role) ? b.role : null;
   const ownerType = role === 'owner'
     ? (OWNER_TYPES.includes(b.owner_type) ? b.owner_type : 'individual') : null;
@@ -89,9 +93,11 @@ export default async function handler(req, res) {
     !role                                        ? '역할이 없습니다' :
     !name || name.length < 2                     ? '성함을 확인해 주세요' :
     !/^01[016789][0-9]{7,8}$/.test(phone)        ? '연락처 형식이 맞지 않습니다' :
-    role === 'agent' && !str(b.reg_no)           ? '개설등록번호가 없습니다' :
-    /* 화면을 우회해 들어와도 형식은 여기서 다시 본다 */
-    role === 'agent' && !checkShape(b.reg_no).ok ? checkShape(b.reg_no).reason :
+    /* 개설등록번호는 가입 자리에서 묻지 않는다(2026-09-21).
+       가입은 역할과 연락처까지다 - 자격은 '손님 조건을 열어보려 할 때' 나
+       '매물을 올리려 할 때' 따로 받는다(what:'verify').
+       적어 보내셨다면 형식만은 여기서 본다. */
+    role === 'agent' && str(b.reg_no) && !checkShape(b.reg_no).ok ? checkShape(b.reg_no).reason :
     /* 법인·위탁자라면 어느 법인인지는 있어야 한다. 사람이 확인할 실마리가
        하나도 없으면 승인할 수가 없다 - 그러면 받아둔 의미가 없다. */
     role === 'owner' && ownerType === 'corp' && !str(b.corp_name)
@@ -124,13 +130,17 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: '먼저 로그인해 주세요', need_login: true });
   }
 
-  /* 가입은 바로 승인된다 (2026-09-14).
-     사람이 하나씩 열어주던 것을 없앴다 - 기다리는 동안 파트너는 아무것도 못 하고,
-     그 사이에 들어온 손님 조건은 아무에게도 안 간다.
-     등록번호는 여기서 이미 공공데이터로 대조한다(reg_verified). 대조를 통과하지
-     못한 신청도 함께 열리므로, 운영자는 알림 메일과 회원관리에서 눈으로 본다.
+  /* 사람이 하나씩 열어주던 것은 2026-09-14 에 없앴다 - 기다리는 동안 파트너는
+     아무것도 못 하고, 그 사이 들어온 손님 조건은 아무에게도 안 간다.
+     다만 '확인 없이 연다' 는 뜻은 아니다(2026-09-21 에 고쳤다).
      되돌리려면 환경변수 BK_AUTO_APPROVE 를 '0' 으로 둔다. */
-  const autoApprove = process.env.BK_AUTO_APPROVE !== '0';
+  /* 자격이 확인된 신청만 바로 연다.
+     공인중개사는 등록번호가 공공데이터와 맞아떨어져야 하고, 소유자·시행사는
+     확인할 실마리(법인명·신탁사 등)가 이미 위에서 걸러졌다.
+     확인 전이면 'new' 로 두고 요약만 보여준다 - 손님 조건 전문은 자격이
+     확인된 뒤에 열린다. */
+  const verified = role === 'agent' ? (b.reg_verified === true) : true;
+  const autoApprove = process.env.BK_AUTO_APPROVE !== '0' && verified;
 
   const row = {
     role, name, phone,
@@ -206,9 +216,10 @@ export default async function handler(req, res) {
       subject: `새 파트너 ${autoApprove ? '가입' : '신청'} · ${ROLE_KO[row.role] || row.role}`,
       rows: [
         ['처리', autoApprove
-          ? (row.reg_verified ? '자동 승인됨 · 등록번호 공공데이터 확인됨'
-                              : '자동 승인됨 · 등록번호는 형식만 확인 - 눈으로 봐주세요')
-          : '승인 대기'],
+          ? '자동 승인됨 · 등록번호 공공데이터 확인됨'
+          : (row.role === 'agent'
+              ? '자격 확인 전 · 목록 요약만 보입니다 (등록번호를 확인하면 열립니다)'
+              : '승인 대기')],
         ['역할', ROLE_KO[row.role] || row.role],
         ['성함', row.name || '-'],
         ['연락처', mask(row.phone)],
@@ -226,4 +237,53 @@ export default async function handler(req, res) {
   } catch (e) {
     return res.status(500).json({ error: '저장 중 문제가 생겼습니다' });
   }
+}
+
+/* ── 자격 확인 ──
+   가입은 역할·연락처까지만 받는다. 손님 조건을 열어보려 하거나 매물을 올리려 할 때
+   이 자리로 온다. 통과하면 status 를 approved 로 올린다.
+
+   ⚠ 계정으로만 찾는다. 화면이 보내오는 id 는 믿지 않는다 -
+   남의 신청을 승격시키는 길이 열린다. */
+export async function verify(req, res, b) {
+  const { BK_URL, BK_SECRET_KEY } = process.env;
+  const user = await userFrom(req);
+  if (!user) return res.status(401).json({ error: '먼저 로그인해 주세요', need_login: true });
+
+  const q = new URLSearchParams({ select: '*', user_id: 'eq.' + user.id, limit: '1' });
+  const r0 = await fetch(`${BK_URL}/rest/v1/${TABLE}?${q}`, {
+    headers: { apikey: BK_SECRET_KEY, Authorization: 'Bearer ' + BK_SECRET_KEY } });
+  if (!r0.ok) return res.status(502).json({ error: '신청을 확인하지 못했습니다' });
+  const me = (await r0.json())[0];
+  if (!me) return res.status(404).json({ error: '먼저 파트너 가입을 해주세요', need_join: true });
+  if (me.status === 'approved') return res.status(200).json({ ok: true, already: true });
+
+  const patch = {};
+  if (me.role === 'agent') {
+    const shape = checkShape(b.reg_no);
+    if (!shape.ok) return res.status(400).json({ error: shape.reason });
+    /* 공공데이터와 맞아떨어져야 연다. 형식만 맞는 번호로는 열지 않는다 -
+       손님 조건 전문이 걸린 문이다. */
+    if (b.reg_verified !== true) {
+      return res.status(400).json({ error: '등록번호를 확인하지 못했습니다 - 사무소 상호와 번호를 다시 봐주세요' });
+    }
+    patch.reg_no = str(b.reg_no, 40);
+    patch.reg_verified = true;
+    if (str(b.office)) patch.office = str(b.office, 80);
+    if (str(b.addr))   patch.addr   = str(b.addr, 200);
+  }
+  patch.status = process.env.BK_AUTO_APPROVE === '0' ? 'new' : 'approved';
+
+  const r = await fetch(`${BK_URL}/rest/v1/${TABLE}?id=eq.${me.id}`, {
+    method: 'PATCH',
+    headers: { apikey: BK_SECRET_KEY, Authorization: 'Bearer ' + BK_SECRET_KEY,
+               'Content-Type': 'application/json', Prefer: 'return=minimal' },
+    body: JSON.stringify(patch),
+  });
+  if (!r.ok) {
+    const t = await r.text().catch(() => '');
+    console.error('[agent:verify]', r.status, t.slice(0, 160));
+    return res.status(502).json({ error: '자격을 저장하지 못했습니다' });
+  }
+  return res.status(200).json({ ok: true, status: patch.status });
 }

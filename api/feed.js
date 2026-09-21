@@ -144,9 +144,10 @@ export default async function handler(req, res) {
     if (/user_id/.test(chk.error)) return res.status(503).json({ error: '아직 준비 중입니다 (0009 마이그레이션 필요)' });
     return res.status(502).json({ error: '자격을 확인하지 못했습니다' });
   }
+  /* 가입은 했지만 자격(공인중개사 등록번호 등)을 아직 확인하지 않은 분도 목록은 본다.
+     다만 **요약만** 본다 - 아래 maskDemand 가 가린다. 전에는 403 으로 아예 막아서,
+     가입해도 무엇이 있는지 볼 수 없으니 인증할 이유가 생기지 않았다. */
   if (chk.none)    return res.status(403).json({ error: '파트너 가입 후 이용하실 수 있습니다', need: 'join' });
-  if (chk.pending) return res.status(403).json({ error: '가입 확인이 끝나면 손님 조건을 보내드립니다',
-    need: 'approval', status: chk.pending, agent: meAgent(chk.agent) });
 
   let b = req.body;
   if (typeof b === 'string') { try { b = JSON.parse(b); } catch { b = {}; } }
@@ -233,7 +234,12 @@ export default async function handler(req, res) {
       scope: sc,
       hidden,
       at: new Date().toISOString(),
-      rows: rows.map(d => ({ ...d, kind_ko: KIND_KO[d.kind] || '주거', mine: mine.has(d.id) })),
+      locked: !!chk.pending,
+      need: chk.pending ? 'verify' : '',
+      rows: rows.map(d => {
+        const base = chk.pending ? maskDemand(d) : d;
+        return { ...base, kind_ko: KIND_KO[d.kind] || '주거', mine: mine.has(d.id) };
+      }),
     });
   } catch (e) {
     console.error('[feed]', e && e.message);
@@ -254,6 +260,19 @@ async function getDemands(q) {
   const q2 = new URLSearchParams(q);
   q2.set('select', String(q.get('select') || '').replace(BAND_COLS, ''));
   return fetch(sbUrl('bk_demand', q2.toString()), { headers: sbHeaders() });
+}
+
+/* ── 자격을 확인하기 전에 보이는 것 ──
+   조건 전문에는 손님이 적은 사정과 메모가 들어 있어서 자격 없이 볼 것이 아니다.
+   그렇다고 빈 화면만 보여주면 '여기 손님이 있다' 는 것조차 알 수 없어 인증할
+   이유가 안 생긴다 - 있다는 것까지만 보여준다.
+   ※ 가리는 일은 반드시 서버가 한다. 화면에서 감추면 감춘 것이 아니다. */
+const SUMMARY_COLS = ['id','created_at','kind','dongs','deal','dep','rent',
+                      'htype','rooms','slots_left','open_when','area_bands'];
+function maskDemand(d) {
+  const o = { locked: true };
+  for (const k of SUMMARY_COLS) if (d[k] !== undefined) o[k] = d[k];
+  return o;
 }
 
 /* 이 조건이 이 활동 조건에 드는가.
@@ -380,7 +399,12 @@ async function readFitting(res, agent) {
       ok: true, agent: meAgent(agent),
       scope: scopeOf(agent),
       byListing: true, listings: list.length, hidden, at: new Date().toISOString(),
-      rows: rows.map(d => ({ ...d, kind_ko: KIND_KO[d.kind] || '주거', mine: mine.has(d.id) })),
+      locked: !!chk.pending,
+      need: chk.pending ? 'verify' : '',
+      rows: rows.map(d => {
+        const base = chk.pending ? maskDemand(d) : d;
+        return { ...base, kind_ko: KIND_KO[d.kind] || '주거', mine: mine.has(d.id) };
+      }),
     });
   } catch (e) {
     console.error('[feed:fit]', e && e.message);

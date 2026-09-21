@@ -7807,7 +7807,18 @@ function render(){
   if(MINE && !S.user){ S.loginAs='guest'; S.afterLogin = h; location.replace('#/login'); return; }
   /* 조건을 걸려면 로그인이 필요하다. 계정이 있어야 받은 제안을 다시 볼 수 있고,
      기기를 바꿔도 남는다. 우회로를 두면 그 이유가 흐려진다. */
-  if(h==='#/kind' && !S.user){ S.loginAs='guest'; S.afterLogin = '#/kind'; location.replace('#/login'); return; }
+  /* 무엇을 묻는지 보기도 전에 벽을 세우지 않는다.
+     유형 고르기·조건 적기·상세 보강까지는 로그인 없이 연다.
+     로그인은 **조건을 실제로 전달하는 자리**(#/contact)에서 받는다 -
+     그때는 계정이 꼭 필요하다. 받은 제안을 다시 보려면 계정이 있어야 하고
+     기기를 바꿔도 남아야 하기 때문이다.
+     전에는 #/kind 에서 막았다. 그러면 '무엇을 적어야 하나' 를 보기도 전에
+     가입부터 해야 해서, 서비스를 살펴볼 길이 없었다. */
+  if(h==='#/contact' && !S.user){
+    S.loginAs='guest'; S.afterLogin='#/contact';
+    keepDraft();                       /* 소셜 로그인은 페이지를 떠난다 - 적어둔 것을 담아둔다 */
+    location.replace('#/login'); return;
+  }
   /* 파트너 가입도 계정이 먼저다.
      전에는 로그인 없이도 신청이 끝났다 - 그러면 bk_agent.user_id 가 null 로 남고,
      그분은 나중에 로그인해도 자기 신청과 이어지지 않는다. 승인은 됐는데 수요 목록도
@@ -7917,6 +7928,24 @@ function stopTimer(){ if(S.timer){clearInterval(S.timer); S.timer=null;} }
    확인된 이름·번호는 서명된 표로 돌아오고, 조건을 낼 때 그 표를 함께 낸다. */
 const IDV_SDK  = 'https://cdn.portone.io/v2/browser-sdk.js';
 const IDV_KEEP = 'bk.idv.draft';
+/* 소셜 로그인은 페이지를 통째로 떠났다 온다. 적어둔 조건이 그대로 날아가면
+   처음부터 다시 적으라는 말이 된다 - 본인확인 왕복에 쓰던 것과 같은 방식으로 담아둔다. */
+const LOGIN_KEEP = 'bk.login.draft';
+function keepDraft(){
+  try{ sessionStorage.setItem(LOGIN_KEEP, JSON.stringify(S.draft)); }catch(e){}
+}
+function restoreDraft(){
+  try{
+    const kept = sessionStorage.getItem(LOGIN_KEEP);
+    sessionStorage.removeItem(LOGIN_KEEP);
+    if(!kept) return false;
+    const d = JSON.parse(kept);
+    /* 이름·연락처는 되살리지 않는다 - 다른 사람이 로그인했을 수도 있다.
+       본인확인은 그 계정으로 다시 받는 것이 맞다. */
+    Object.assign(S.draft, d, {name:'', phone:'', verified:false, vstep:'idle', birth:'', vat:'', vmethod:''});
+    return true;
+  }catch(e){ return false; }
+}
 /* 파트너 가입은 S.form 에 담긴다. 휴대폰은 포트원으로 페이지가 통째로 넘어갔다
    오므로, 이것을 안 남기면 돌아왔을 때 역할(jRole)이 없어 3단계가 빈 화면이 된다. */
 const IDV_FORM = 'bk.idv.form';
@@ -8078,6 +8107,7 @@ function oauthStart(provider){
   }
   /* 어디로 돌아와야 하는지 남겨둔다 - 돌아오면 주소가 갈아끼워져 있다 */
   try{ sessionStorage.setItem('bk.after', S.afterLogin || '#/my'); }catch(e){}
+  keepDraft();                         /* 적어둔 조건도 함께 - 돌아와서 이어 적는다 */
   /* 네이버는 Supabase 가 기본 제공하지 않는다 - 인증 왕복을 우리 서버 함수가 돈다.
      돌아오는 주소 모양은 같으므로 받는 쪽 코드는 하나로 둔다. */
   if(provider === 'naver'){ location.href = '/api/auth/naver/start'; return; }
@@ -8115,6 +8145,7 @@ function readAuthRedirect(){
   const err = q.get('error_description') || q.get('error');
   let back = '#/my';
   try{ back = sessionStorage.getItem('bk.after') || '#/my'; sessionStorage.removeItem('bk.after'); }catch(e){}
+  restoreDraft();          /* 나가기 전에 적어둔 조건을 그대로 이어 받는다 */
 
   if(err){
     history.replaceState(null, '', location.pathname + '#/login');
@@ -8846,6 +8877,7 @@ function handle(a,v,el){
         if(r.confirm){ render();
           return toast('가입 확인 메일을 보냈습니다 - 메일의 링크를 눌러주세요'); }
         clearSeeds(true);
+        restoreDraft();      /* 조건을 적다가 로그인하러 온 길이면 그대로 이어 적는다 */
         toast(mode==='signup' ? '가입이 끝났습니다' : '로그인했습니다');
         /* 가입 화면에서 이미 받았다. 바로 적어두면 동의 화면을 거치지 않는다.
            실패해도 막지 않는다 - 그때는 #/agree 가 한 번 더 받는다. */

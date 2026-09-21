@@ -1739,6 +1739,10 @@ const S = {
   withdrawing:false, sentAddr:{}, matched:0,
   vtimer:null, vsec:180, geo:null, geoState:'idle', geoTried:false, saved:false, lastRoute:null, enterT:null,
   user:null, afterLogin:null, loginAs:'guest', email:'', pw:'', pw2:'', signup:false,
+  /* 가입 동의. consent 는 서버가 알려준 기록 - null 이면 아직 안 물어봤다는 뜻이고,
+     false 는 '물어봤는데 없다'(= #/agree 로 보내야 한다) 이다. 둘을 섞으면
+     확인이 끝나기 전에 동의 화면이 한 번 번쩍인다. */
+  ag:{terms:false, privacy:false, mkt:false}, consent:null, agBusy:false,
   idvCfg:null, idvBusy:false, idvToken:null,
   mineLoading:false, mineAt:0, mineErr:'', mineReady:false,
   mpLoading:false, mpAt:0, mpErr:'', mpReady:false,
@@ -2713,6 +2717,53 @@ function snsButton(x){ return `
       background:${x.fg==='#fff'?'rgba(255,255,255,.18)':'rgba(0,0,0,.10)'};color:${x.fg}">${x.soon}</span>`:''}
   </button>`;}
 
+/* ── 가입 동의 ──
+   전에는 '로그인하시면 동의하신 것으로 봅니다' 한 줄이 전부였고 기록이 남지 않았다.
+   나중에 '동의받았는가' 를 물으면 댈 근거가 없고, 광고성 정보 수신 동의는
+   정보통신망법상 별도·선택이어야 하는데 그 자리 자체가 없었다.
+   화면 둘이 같은 블록을 쓴다 - 가입 화면(이메일)과 #/agree(소셜로 들어온 분). */
+const agreeOk = () => !!(S.ag.terms && S.ag.privacy);
+function agreeBox(){
+  const all = S.ag.terms && S.ag.privacy && S.ag.mkt;
+  const doc = (href, t) => `<a class="tapx" href="${href}" target="_blank" rel="noopener"
+    style="margin-left:6px;font-size:12.5px;font-weight:700;color:var(--ind);text-decoration:underline;text-underline-offset:2px">${t}</a>`;
+  return `
+  <div class="card agrees" style="padding:4px 20px">
+    <div class="chk all ${all?'on':''}" data-act="ag-all">
+      <span class="box">${ICON_CHECK}</span><span class="txt"><b style="font-weight:800;color:var(--n900)">전체 동의</b>
+      <small>필수 2개와 선택 1개를 한 번에 동의합니다 - 선택 항목은 따로 해제하실 수 있습니다</small></span></div>
+    <div class="chk ${S.ag.terms?'on':''}" data-act="ag" data-v="terms">
+      <span class="box">${ICON_CHECK}</span><span class="txt"><b style="color:var(--ind)">(필수)</b> <b style="color:var(--n900)">이용약관</b>에 동의합니다${doc('/terms','전문 보기')}</span></div>
+    <div class="chk ${S.ag.privacy?'on':''}" data-act="ag" data-v="privacy">
+      <span class="box">${ICON_CHECK}</span><span class="txt"><b style="color:var(--ind)">(필수)</b> <b style="color:var(--n900)">개인정보 처리방침</b>에 동의합니다${doc('/privacy','전문 보기')}
+      <small>계정에는 이메일만 담깁니다. 이름·연락처는 조건을 거실 때 따로 동의를 받고 받습니다.</small></span></div>
+    <div class="chk ${S.ag.mkt?'on':''}" data-act="ag" data-v="mkt">
+      <span class="box">${ICON_CHECK}</span><span class="txt">(선택) 서비스 소식 등 광고성 정보 수신에 동의합니다
+      <small>동의하지 않으셔도 가입하실 수 있습니다. 나중에 언제든 바꾸실 수 있습니다.</small></span></div>
+  </div>`;
+}
+
+/* 소셜로 들어오면 동의를 받을 자리가 없다 - 돌아온 다음에 한 번 받는다.
+   이미 쓰고 계시던 분도 여기를 한 번 지난다. 한 번 받으면 다시 묻지 않는다. */
+V['#/agree'] = () => `
+<div class="scr fade">
+  <div class="nav pad"><a data-go="#/" style="flex:none">${logoLockup({h:25,tag:!isMo()})}</a>
+    <div class="right"><a class="tapx" data-act="logout" style="font-size:13.5px;font-weight:600;color:var(--n700);cursor:pointer">로그아웃</a></div></div>
+  <div style="flex:1;min-height:0;overflow:auto;display:flex;align-items:flex-start;justify-content:center;padding:${isMo()?'18px 22px 30px':'26px 40px 34px'}">
+    <div style="width:100%;max-width:${isMo()?'none':'440px'};display:flex;flex-direction:column;gap:16px">
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <h1 class="t" style="font-size:${isMo()?21:25}px">한 가지만 확인할게요</h1>
+        <p style="margin:0;font-size:13.5px;line-height:1.75;color:var(--n700)">
+          ${esc(S.user&&S.user.email||'')} 로 들어오셨습니다.<br>
+          약관에 동의해 주시면 바로 이어집니다.</p>
+      </div>
+      ${agreeBox()}
+      <button class="btn ${agreeOk()?'pri':'sec'} blk" data-act="ag-save"
+        style="padding:16px 0;font-size:15px" ${S.agBusy?'disabled':''}>${S.agBusy?'저장 중…':'동의하고 계속'}</button>
+    </div>
+  </div>
+</div>`;
+
 V['#/login'] = () => {
   const emailOk = /^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(S.email);
   const pwOk = S.pw.length >= 8;
@@ -2750,7 +2801,18 @@ V['#/login'] = () => {
                        : '걸어둔 조건을 확인할 수 있어요.'}</p>
       </div>
 
-      <!-- 이메일이 먼저 -->
+      <!-- 소셜이 먼저다.
+           전에는 이메일·비밀번호가 맨 위, 소셜이 '간편 로그인' 으로 아래에 있었다 -
+           한국에서 가장 빠른 길을 가장 아래에 둔 셈이다. 특히 손님은 모바일에서
+           들어오고, 비밀번호를 새로 만드는 자리에서 가장 많이 돌아선다. -->
+      <div style="display:flex;flex-direction:column;gap:8px">${SNS.filter(x=>!x.hide).map(snsButton).join('')}</div>
+
+      <div style="display:flex;align-items:center;gap:12px;margin:2px 0">
+        <i style="flex:1;height:1px;background:var(--hair)"></i>
+        <span style="font-size:11px;color:var(--n500)">또는 이메일로</span>
+        <i style="flex:1;height:1px;background:var(--hair)"></i>
+      </div>
+
       <div style="display:flex;flex-direction:column;gap:12px">
         <div>
           <input class="inp" data-in="email" type="email" value="${esc(S.email)}"
@@ -2769,7 +2831,8 @@ V['#/login'] = () => {
           <span data-warn="pw2" class="warn ${S.pw2 && S.pw2===S.pw?'ok':''}">${
             S.pw2 ? (S.pw2===S.pw ? '비밀번호가 일치합니다' : '비밀번호가 서로 다릅니다') : ''}</span>
         </div>`:''}
-        <button class="btn pri" data-act="login-email"
+        ${S.signup ? agreeBox() : ''}
+        <button class="btn ${S.signup && !agreeOk() ? 'sec' : 'pri'}" data-act="login-email"
           style="width:100%;padding:14px 0;font-size:15px">
           ${S.signup?'가입하고 시작하기':'로그인'}</button>
       </div>
@@ -2777,37 +2840,20 @@ V['#/login'] = () => {
       <!-- 찾기 줄 - 가입은 아래 칸으로 옮겼다 -->
       <div class="sublinks" style="display:flex;justify-content:center;align-items:center;gap:4px;font-size:13.5px;color:var(--n500)">
         ${S.signup
-          ? `<span style="padding:0 2px">이미 계정이 있으신가요?</span><a data-act="signup-toggle" style="font-weight:700;color:var(--ind)">로그인</a>`
+          ? `<span style="padding:0 2px">이미 계정이 있으신가요?</span><a class="tapx" data-act="signup-toggle" style="font-weight:700;color:var(--ind);cursor:pointer">로그인</a>`
           : `<a data-go="#/find-id" style="color:var(--n700)">아이디 찾기</a>${bar}
-             <a data-go="#/reset-pw" style="color:var(--n700)">비밀번호 찾기</a>`}
+             <a data-go="#/reset-pw" style="color:var(--n700)">비밀번호 찾기</a>${bar}
+             <a class="tapx" data-act="signup-toggle" style="font-weight:700;color:var(--ind);cursor:pointer">회원가입</a>`}
       </div>
 
-      <div style="display:flex;align-items:center;gap:12px;margin:2px 0">
-        <i style="flex:1;height:1px;background:var(--hair)"></i>
-        <span style="font-size:11px;color:var(--n500)">간편 로그인</span>
-        <i style="flex:1;height:1px;background:var(--hair)"></i>
-      </div>
-
-      <div style="display:flex;flex-direction:column;gap:8px">${SNS.filter(x=>!x.hide).map(snsButton).join('')}</div>
-
-      ${S.signup ? '' : `
-      <div class="card pad" style="background:var(--ind50);border-color:#D9DAF0;
-        display:flex;flex-direction:column;gap:14px;text-align:center">
-        <span style="font-size:13.5px;line-height:1.7;color:var(--n700)">
-          <b style="display:block;font-size:15px;font-weight:800;color:var(--n900);margin-bottom:3px">아직 계정이 없으신가요?</b>
-          ${asPartner ? '공인중개사 · 소유자 모두 가입하실 수 있습니다' : '30초면 끝납니다 · 무료'}</span>
-        ${asPartner
-          ? `<button class="btn pri blk" data-go="#/partner/join" style="padding:15px 0;font-size:15px">파트너 가입하기</button>`
-          : `<button class="btn pri blk" data-act="signup-toggle" style="padding:15px 0;font-size:15px">회원가입</button>`}
-      </div>
-      ${asPartner ? '' : `
+      ${asPartner || S.signup ? '' : `
       <div style="text-align:center;font-size:13px;color:var(--n500)">
         중개사 · 소유자이신가요? <a class="tapx" data-act="nav-login" data-v="partner"
-          style="font-weight:700;color:var(--ind);cursor:pointer">파트너 로그인</a></div>`}`}
+          style="font-weight:700;color:var(--ind);cursor:pointer">파트너 로그인</a></div>`}
 
       <p style="margin:0;text-align:center;font-size:12.5px;line-height:1.75;color:var(--n500)">
-        로그인하시면 <a class="tapx" href="/terms" target="_blank" rel="noopener" style="color:var(--ind);font-weight:700;text-decoration:underline;text-underline-offset:2px">이용약관</a>과 <a class="tapx" href="/privacy" target="_blank" rel="noopener" style="color:var(--ind);font-weight:700;text-decoration:underline;text-underline-offset:2px">개인정보 처리방침</a>에 동의하신 것으로 봅니다.<br>
-        조건을 걸으실 때 <b style="color:var(--n700)">본인확인</b>을 한 번 더 받습니다.</p>
+        ${S.signup ? '가입하신 뒤 조건을 걸으실 때 <b style="color:var(--n700)">본인확인</b>을 한 번 더 받습니다.'
+                   : '조건을 걸으실 때 <b style="color:var(--n700)">본인확인</b>을 한 번 더 받습니다.'}</p>
     </div>
   </div>
 </div>`;};
@@ -7689,6 +7735,14 @@ function render(){
     Object.assign(S.draft, {verified:true, vstep:'done', vmethod:S.idv.vmethod, vat:S.idv.vat,
       name:S.draft.name||S.idv.name, phone:S.draft.phone||S.idv.phone});
   }
+  /* 동의를 안 받은 계정은 어디로도 못 간다 - 받고 나서 가던 길로 이어진다.
+     첫 화면·안내 문서는 열어둔다. 읽는 것까지 막을 이유는 없다. */
+  const OPEN = ['#/', '#/guide', '#/faq', '#/partner', '#/agree', '#/login'];
+  if(S.user && consentNeeded() && !OPEN.includes(h)){
+    if(!S.afterLogin) S.afterLogin = h;
+    location.replace('#/agree'); return;
+  }
+  if(h==='#/agree' && (!S.user || !consentNeeded())){ location.replace(S.user?'#/my':'#/login'); return; }
   const MINE = h==='#/my' || h==='#/inbox' || h.startsWith('#/proposal/') || h.startsWith('#/connect/') || h.startsWith('#/report/');
   if(MINE && !S.user){ S.loginAs='guest'; S.afterLogin = h; location.replace('#/login'); return; }
   /* 조건을 걸려면 로그인이 필요하다. 계정이 있어야 받은 제안을 다시 볼 수 있고,
@@ -8035,8 +8089,44 @@ async function hydrate(sess){
     if(!r.ok){ store.set(null); return false; }
     S.user = meFrom(await r.json(), sess.access_token);
     clearSeeds(true);          /* 들어온 뒤에는 예시를 지운다 - 위 주석 참고 */
+    await readConsent();       /* 동의를 받은 적이 있는지 - 없으면 #/agree 로 간다 */
     return true;
   }catch(e){ return false; }
+}
+
+/* 서버에 물어본다. 못 물어봤으면 막지 않는다 - 동의 화면에 갇혀 서비스를
+   못 쓰는 쪽이 더 나쁘다. 0023 전이면 서버가 ready:false 로 답한다. */
+async function readConsent(){
+  try{
+    const r = await apiFetch('/api/my', {method:'POST', body: JSON.stringify({what:'consent'})});
+    const j = await r.json().catch(()=>({}));
+    if(!r.ok || j.ready === false){ S.consent = 'skip'; return; }
+    S.consent = j.consent || false;
+    if(S.consent){ S.ag = {terms:!!S.consent.terms_at, privacy:!!S.consent.privacy_at, mkt:!!S.consent.marketing_at}; return; }
+    /* 소셜로 나가기 전에 체크하신 것을 들고 왔다면 그대로 적는다 - 또 묻지 않는다 */
+    let carried = null;
+    try{ carried = JSON.parse(sessionStorage.getItem('bk.ag')||'null'); }catch(e){}
+    try{ sessionStorage.removeItem('bk.ag'); }catch(e){}
+    if(carried && carried.terms && carried.privacy){
+      S.ag = carried;
+      const w = await apiFetch('/api/my', {method:'POST',
+        body: JSON.stringify({what:'consent', set:{terms:true, privacy:true, marketing:!!carried.mkt}})});
+      if(w.ok){ const wj = await w.json().catch(()=>({})); S.consent = wj.consent || true; }
+    }
+  }catch(e){ S.consent = 'skip'; }
+}
+const consentNeeded = () => S.consent === false;
+
+async function saveConsent(){
+  S.agBusy = true; render();
+  try{
+    const r = await apiFetch('/api/my', {method:'POST',
+      body: JSON.stringify({what:'consent', set:{terms:S.ag.terms, privacy:S.ag.privacy, marketing:S.ag.mkt}})});
+    const j = await r.json().catch(()=>({}));
+    if(!r.ok){ S.agBusy=false; render(); return toast(j.error || '저장하지 못했습니다'); }
+    S.consent = j.consent || true; S.agBusy = false;
+    go(S.afterLogin || '#/my'); S.afterLogin = null;
+  }catch(e){ S.agBusy=false; render(); toast('네트워크 문제로 저장하지 못했습니다'); }
 }
 
 async function refreshSession(sess){
@@ -8587,6 +8677,12 @@ function handle(a,v,el){
     case 'elev': d.elev = d.elev===v ? '' : v; render(); return true;
     case 'keyOk': d.keyOk = d.keyOk===v ? '' : v; render(); return true;
     case 'signNeed': d.signNeed = d.signNeed===v ? '' : v; render(); return true;
+    /* 가입 동의 */
+    case 'ag': S.ag[v] = !S.ag[v]; render(); return true;
+    case 'ag-all': { const on = !(S.ag.terms && S.ag.privacy && S.ag.mkt);
+      S.ag = {terms:on, privacy:on, mkt:on}; render(); return true; }
+    case 'ag-save': if(!agreeOk()) return toast('필수 항목에 동의해 주세요'), true;
+      saveConsent(); return true;
     case 'htype': toggleIn(d.htype,v); render(); return true;
     case 'musts': toggleIn(d.musts,v); render(); return true;
     /* 손님이 고르는 밴드 - 면적·층·방향은 여러 개, 화장실·연식은 하나 */
@@ -8622,6 +8718,11 @@ function handle(a,v,el){
       S.resetErr=''; S.resetSent=em; render(); return true; }
     case 'reset-again': S.resetSent=''; S.resetEmail=''; render(); return true;
     case 'sns': {
+      /* 가입 모드에서 소셜을 누르셨다면 여기서 이미 체크하신 것을 들고 간다 -
+         돌아와서 같은 것을 또 묻지 않기 위해서다. 체크가 없으면 돌아온 뒤
+         #/agree 가 받는다(로그인 모드로 누른 신규 계정이 그 경우다). */
+      if(S.signup && !agreeOk()) return toast('필수 항목에 동의해 주세요'), true;
+      if(S.signup){ try{ sessionStorage.setItem('bk.ag', JSON.stringify(S.ag)); }catch(e){} }
       /* 연결이 끝난 곳은 진짜로 보낸다. 나머지는 아직 흉내다 - 섞여 있는 동안은 그렇다고 말한다. */
       if(LIVE_OAUTH.includes(v)){ oauthStart(v); return true; }
       /* 아직이라고 적어놓고 눌리면 그게 더 이상하다. 들어가지 않는다. */
@@ -8634,6 +8735,7 @@ function handle(a,v,el){
       if(!/^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(S.email)) return toast('이메일을 확인해 주세요'), true;
       if(S.pw.length<8) return toast('비밀번호는 8자 이상입니다'), true;
       if(S.signup && S.pw2!==S.pw) return toast('비밀번호가 서로 다릅니다'), true;
+      if(S.signup && !agreeOk()) return toast('필수 항목에 동의해 주세요'), true;
       if(S.authBusy) return true;
       const mode = S.signup ? 'signup' : 'login';
       S.authBusy = true; render();
@@ -8645,13 +8747,18 @@ function handle(a,v,el){
           return toast('가입 확인 메일을 보냈습니다 - 메일의 링크를 눌러주세요'); }
         clearSeeds(true);
         toast(mode==='signup' ? '가입이 끝났습니다' : '로그인했습니다');
-        const to = S.afterLogin || '#/my'; S.afterLogin = null; go(to);
+        /* 가입 화면에서 이미 받았다. 바로 적어두면 동의 화면을 거치지 않는다.
+           실패해도 막지 않는다 - 그때는 #/agree 가 한 번 더 받는다. */
+        if(mode==='signup' && agreeOk()) saveConsent();
+        else { const to = S.afterLogin || '#/my'; S.afterLogin = null; go(to); }
       });
       return true; }
     case 'logout': {
       signOutRemote();
       S.user=null; S.idv=null; S.idvToken=null; S.agent=null; S.afterLogin=null;
       S.email=''; S.pw=''; S.pw2=''; S.signup=false;
+      S.ag={terms:false,privacy:false,mkt:false}; S.consent=null; S.agBusy=false;
+      try{ sessionStorage.removeItem('bk.ag'); }catch(e){}
       /* 이름과 연락처는 접수 초안에도 남는다. 서버에서 받아온 조건·제안·물건은
          그 사람의 것이다. 로그아웃한 화면은 처음 온 사람이 보는 화면과 같아야 한다 -
          예시로 되돌린다. 같은 브라우저를 다음 사람이 쓸 수 있다. */

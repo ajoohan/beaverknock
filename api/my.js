@@ -22,6 +22,11 @@ export default async function handler(req, res) {
   const user = await userFrom(req);
   if (!user) return res.status(401).json({ error: '로그인이 필요합니다' });
 
+  /* 가입 동의. 함수 상한(12개)이 꽉 차서 새 주소를 낼 수 없다 - 여기에 붙인다.
+     손님·파트너 공통이라 '내 것' 을 다루는 이 자리가 맞다. */
+  const body = req.method === 'POST' ? (req.body || {}) : {};
+  if (body.what === 'consent') return consent(req, res, user, body);
+
   try {
     const dq = new URLSearchParams({
       select: '*', user_id: 'eq.' + user.id, order: 'created_at.desc', limit: '50',
@@ -103,4 +108,67 @@ export default async function handler(req, res) {
     console.error('[my]', e && e.message);
     return res.status(502).json({ error: 'DB에 닿지 못했습니다' });
   }
+}
+
+/* ── 가입 동의 ──
+   읽기: {what:'consent'} · 쓰기: {what:'consent', set:{terms, privacy, marketing}}
+   항목마다 '언제' 를 담는다. true/false 로 두면 언제 동의했는지가 사라지고,
+   철회한 것인지 처음부터 안 한 것인지도 구분되지 않는다. */
+async function consent(req, res, user, body) {
+  const url = sbUrl('bk_consent', new URLSearchParams({
+    select: '*', user_id: 'eq.' + user.id, limit: '1' }).toString());
+
+  /* '행이 없다' 와 '못 읽었다' 는 다르다. 둘을 같은 null 로 돌려주면
+     아직 동의 안 한 분에게 502 를 주게 된다 - 가입 첫날이 바로 그 경우다.
+     겉을 씌워 셋을 구분한다: 표가 없다 · 못 읽었다 · 읽었다(행은 있거나 없다). */
+  const read = async () => {
+    const r = await fetch(url, { headers: sbHeaders() });
+    if (!r.ok) {
+      const t = await r.text().catch(() => '');
+      if (/does not exist|PGRST205/i.test(t)) return { missing: true };
+      return { err: true };
+    }
+    return { row: (await r.json())[0] || null };
+  };
+
+  if (!body.set) {
+    const got = await read();
+    if (got.missing) {
+      /* 0023 이 아직 안 돌았다. 아무도 못 지나가게 막는 것보다 통과시키는 편이 낫다 -
+         동의 화면에 갇혀 서비스를 못 쓰는 것이 더 나쁘다. 대신 그렇다고 답한다. */
+      return res.status(200).json({ ok: true, ready: false, consent: null });
+    }
+    if (got.err) return res.status(502).json({ error: '확인하지 못했습니다' });
+    return res.status(200).json({ ok: true, ready: true, consent: got.row });
+  }
+
+  const set = body.set || {};
+  if (!set.terms || !set.privacy) {
+    return res.status(400).json({ error: '필수 항목에 동의해 주세요' });
+  }
+  const now = new Date().toISOString();
+  const row = {
+    user_id: user.id,
+    terms_at: now,
+    privacy_at: now,
+    marketing_at: set.marketing ? now : null,
+    marketing_off_at: set.marketing ? null : now,
+    ua: String(req.headers['user-agent'] || '').slice(0, 200),
+    updated_at: now,
+  };
+  const r = await fetch(sbUrl('bk_consent', ''), {
+    method: 'POST',
+    headers: { ...sbHeaders(), 'Content-Type': 'application/json',
+               Prefer: 'resolution=merge-duplicates,return=minimal' },
+    body: JSON.stringify(row),
+  });
+  if (!r.ok) {
+    const t = await r.text().catch(() => '');
+    if (/does not exist|PGRST205/i.test(t)) {
+      return res.status(503).json({ error: '아직 준비 중입니다 (0023 마이그레이션 필요)' });
+    }
+    console.error('[my:consent]', r.status, t.slice(0, 160));
+    return res.status(502).json({ error: '동의를 저장하지 못했습니다' });
+  }
+  return res.status(200).json({ ok: true, consent: row });
 }

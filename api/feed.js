@@ -540,16 +540,32 @@ async function addListing(req, res, agent, user, b) {
       body: JSON.stringify(body),
     });
     let r = await put(row);
-    /* 코드가 먼저 올라가고 0020 이 아직 안 돌았을 수 있다. 그때 새 칸 때문에
+    let dropped = null;          /* 물러섰으면 무엇을 빼고 넣었는지 적어둔다 */
+    /* 코드가 먼저 올라가고 마이그레이션이 아직 안 돌았을 수 있다. 그때 새 칸 때문에
        등록 자체가 막히면 안 된다 - 새 칸만 빼고 한 번 더 넣는다. 면적이 평으로만
-       남지만, 물건을 못 올리는 것보다는 낫다. */
+       남지만, 물건을 못 올리는 것보다는 낫다.
+       ⚠ 다만 **조용히 물러서지는 않는다.** 예전에는 그냥 성공이라고 답해서,
+       반쪽만 저장됐는데도 등록한 사람은 다 된 줄 알았다 - 그러면 무엇이 안 들어갔는지
+       아무도 모른 채로 넘어간다. 무엇을 뺐는지 함께 돌려준다. */
     if (!r.ok) {
       const t0 = await r.text();
-      if (/does not exist|PGRST204/i.test(t0)
+      /* '그 칸이 없다' 는 두 가지 말로 온다.
+           PGRST204 : Could not find the 'area' column of ... in the schema cache
+           42703    : column "area" of relation ... does not exist
+         전에는 뒤의 것과 코드 이름만 보고 있었다 - 앞의 형태로 오면 못 알아채고
+         등록 자체를 실패로 돌려보냈다. demand.js 는 둘 다 보고 있었는데
+         여기만 빠져 있었다. */
+      const noColumn = /does not exist|PGRST204/i.test(t0)
+                    || /Could not find the '[a-z_]+' column/i.test(t0);
+      if (noColumn
           && /area|duplex|floor_no|musts_free|fac_free|dir|fee_basis|fee_type|fee_items|note|bdong|ho|htype/.test(t0)) {
         const { area, area_sup, floor_no, duplex, musts_free, fac_free,
                 dir, dir_base, fee_basis, fee_type, fee_items, note,
                 bdong, ho, htype, ...old } = row;
+        dropped = ['면적', '정확한 층', '복층', '갖춰진 조건', '방향', '관리비 기준',
+                   '매물 특징', '동·호', '주택 유형'];
+        console.error('[feed:listing-add] 새 칸을 빼고 저장했다 - 마이그레이션 확인 필요',
+                      t0.slice(0, 160));
         r = await put(old);
       } else {
         if (noTable(t0)) return res.status(503).json({ error: '아직 준비 중입니다 (0015 마이그레이션 필요)' });
@@ -563,7 +579,11 @@ async function addListing(req, res, agent, user, b) {
       console.error('[feed:listing-add]', r.status, t.slice(0, 160));
       return res.status(502).json({ error: '물건을 저장하지 못했습니다' });
     }
-    return res.status(201).json({ ok: true, row: (await r.json())[0] || null });
+    return res.status(201).json({
+      ok: true, row: (await r.json())[0] || null,
+      /* 화면이 이것을 보고 '다 저장되지 않았다' 고 말한다 */
+      degraded: dropped ? { dropped } : null,
+    });
   } catch (e) {
     return res.status(502).json({ error: 'DB에 닿지 못했습니다' });
   }

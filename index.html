@@ -5852,9 +5852,13 @@ V["#/partner/listing/new"] = () => {
 
       <div><span class="lab">매물 특징 <span class="opt">손님에게 그대로 전해집니다</span></span>
         <textarea class="inp" data-in="lnote" rows="4" placeholder="${shop
-          ? '예) 대로변 코너 자리 · 주방 급배수와 가스 인입 완비 · 간판 자리 넓음 · 야간 영업 가능'
+          ? '예) 음식점·카페 가능 · 대로변 코너 자리 · 주방 급배수와 가스 인입 완비 · 간판 자리 넓음'
           : '예) 남향 거실이라 오후까지 볕이 듭니다 · 올수리 마친 집 · 단지 바로 앞 초등학교'}"
-          style="resize:vertical;min-height:96px;line-height:1.7">${esc(g('lnote'))}</textarea></div>
+          style="resize:vertical;min-height:96px;line-height:1.7">${esc(g('lnote'))}</textarea>
+        ${shop?`<p style="margin:8px 0 0;background:var(--n50);padding:11px 14px;font-size:12.5px;line-height:1.7;color:var(--n500)">
+          <b style="color:var(--n700)">어떤 업종이 되는 자리인지 적어주시면 좋습니다.</b>
+          업종은 따로 받지 않아서, 손님이 걸어둔 업종은 <b style="color:var(--n700)">확인 필요</b>로만
+          표시됩니다 - 여기에 적어두시면 그 손님이 맞는 자리인지 한눈에 보입니다.</p>`:''}</div>
     </div>
 
     <div style="display:flex;justify-content:space-between;align-items:center;gap:12px">
@@ -9355,7 +9359,15 @@ function handle(a,v,el){
           const n = matchesFor(saved).length;
           S.form={};
           go('#/partner/listing/'+saved.id);
-          toast(n? `등록했습니다 - 맞는 손님 ${n}명을 찾았습니다` : '등록했습니다 - 지금은 맞는 손님이 없습니다');
+          /* 서버가 새 칸을 빼고 저장했으면 그렇다고 말한다.
+             '등록했습니다' 만 띄우면 반쪽만 들어간 것을 아무도 모른다 -
+             적어 넣은 사람은 다 된 줄 알고 화면을 닫는다. */
+          if(j.degraded){
+            toast('등록은 됐지만 일부 항목이 저장되지 않았습니다 - 운영자에게 알려주세요');
+            console.error('[매물 등록] 저장되지 않은 항목:', j.degraded.dropped);
+          } else {
+            toast(n? `등록했습니다 - 맞는 손님 ${n}명을 찾았습니다` : '등록했습니다 - 지금은 맞는 손님이 없습니다');
+          }
         }))
         .catch(()=>{ S.lsBusy=false; render(); toast('네트워크 문제로 물건을 저장하지 못했습니다'); });
       return true; }

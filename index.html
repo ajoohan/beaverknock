@@ -1409,6 +1409,15 @@ function ageOf(approved){
    여러 개 고를 수 있어야 하고, 목록에 없는 것은 직접 적을 수 있어야 한다. */
 const LMUSTS = [...MUSTS, '신축', '올수리', '풀옵션', '한강 조망', '쇼핑몰 인접',
   '산책로', '등산로', '숲세권', '대단지', '남향'];
+/* 상가·사무실의 주차. 주거는 LMUSTS 의 '주차 가능' 칩이 이미 하고 있어서 따로 두지 않는다.
+   '문의' 를 넣지 않았다 - 고르지 않으면 그것이 곧 문의다. 보기를 늘리면 고민만 늘어난다. */
+const LPARK = ['가능', '불가'];
+/* 건물·단지명이 없는 것이 정상인 유형.
+   단독·다가구와 상가주택은 '○○아파트' 같은 이름이 아예 없는 경우가 흔하고,
+   억지로 적게 하면 소유자 이름이나 지번이 그 칸에 들어간다.
+   중개사가 직접 찾아주는 지금 구조에서는 **동까지만 알아도 매칭이 된다** -
+   정확한 자리는 연결된 뒤에 오가면 된다(중개사 회신 2026-09-23). */
+const NO_BLDG_NAME = t => t === '단독·다가구' || t === '상가주택';
 
 /* 중개대상물 표시·광고 명시사항.
    방향은 어디를 기준으로 잰 것인지까지 적어야 하고, 관리비는 얼마인지만이 아니라
@@ -3335,10 +3344,18 @@ const DONG_TO_SI = {};
 [...HANAM_DONG, ...HANAM_ZONE].forEach(x => { DONG_TO_SI[x.t] = '하남시'; });
 DONG_TO_SI['하남 어디든'] = '하남시';
 
+/* 이름을 가나다로 세운다.
+   **원본 배열(SEOUL_GU·GG_SI)은 건드리지 않는다** - 지도는 그 순서에 맞춰
+   보로노이 셀을 만들고 `isSeoulSite` 도 그 길이로 서울·경기를 가른다.
+   고르는 사람이 보는 목록에서만 세운다. 찾을 때는 가나다가 맞고,
+   그릴 때는 좌표가 맞다 - 둘은 다른 일이다. */
+const ko = (a, b) => String(a).localeCompare(String(b), 'ko');
+const koNames = list => list.map(x => (typeof x === 'string' ? x : x.t)).sort(ko);
+
 /* 활동 지역 - 서울은 구, 경기는 시·군. 동 단위로 나눌 이유가 없다. */
 const SCOPE_ZONES = [
-  {t:'서울특별시', d: SEOUL_GU.map(x=>x.t)},
-  {t:'경기도',   d: GG_SI.map(x=>x.t)},
+  {t:'서울특별시', d: koNames(SEOUL_GU)},
+  {t:'경기도',   d: koNames(GG_SI)},
 ];
 
 /* 외곽선 - [경도, 위도] */
@@ -3879,9 +3896,10 @@ function detectRegion(manual){
 
 /* ── 목록(칩) 대체 데이터 ── */
 const LIST_GROUPS = shop => ([
-  {t:'하남시 - 서비스 시작 지역', d:(shop?HANAM_ZONE:HANAM_DONG).map(x=>x.t).concat(['하남 어디든'])},
-  {t:'서울특별시', d:SEOUL_GU.map(x=>x.t)},
-  {t:'경기도', d:GG_SI.filter(x=>x.t!=='하남시').map(x=>x.t)},
+  /* 하남은 '어디든' 을 맨 뒤에 둔다 - 동을 고르는 자리에서 전체가 가운데 끼면 눈에 걸린다 */
+  {t:'하남시 - 서비스 시작 지역', d:koNames(shop?HANAM_ZONE:HANAM_DONG).concat(['하남 어디든'])},
+  {t:'서울특별시', d:koNames(SEOUL_GU)},
+  {t:'경기도', d:koNames(GG_SI.filter(x=>x.t!=='하남시'))},
 ]);
 
 /* ── 주소록 ──
@@ -3889,11 +3907,11 @@ const LIST_GROUPS = shop => ([
    두 경로가 다른 이름을 넣기 시작하면 그게 다음 오류가 된다. */
 function addrBook(shop){
   const b = [];
-  (shop?HANAM_ZONE:HANAM_DONG).forEach(x=>b.push({t:x.t, p:'경기도 하남시'}));
+  koNames(shop?HANAM_ZONE:HANAM_DONG).forEach(t=>b.push({t, p:'경기도 하남시'}));
   b.push({t:'하남 어디든', p:'경기도 하남시 전체'});
-  SEOUL_GU.forEach(x=>b.push({t:x.t, p:'서울특별시'}));
+  koNames(SEOUL_GU).forEach(t=>b.push({t, p:'서울특별시'}));
   b.push({t:'서울 전체', p:'서울특별시 전체'});
-  GG_SI.filter(x=>x.t!=='하남시').forEach(x=>b.push({t:x.t, p:'경기도'}));
+  koNames(GG_SI.filter(x=>x.t!=='하남시')).forEach(t=>b.push({t, p:'경기도'}));
   return b;
 }
 /* 앞에서 걸린 것 · 가운데서 걸린 것 · 상위 주소에서 걸린 것 순서로 보여준다 */
@@ -5873,8 +5891,11 @@ V["#/partner/listing/new"] = () => {
       <!-- 동을 칩으로 두면 하남 바깥 물건을 올릴 방법이 없다. 주소를 고르면
            법정동이 자동으로 들어오고, 안 들어오면 직접 적는다. -->
       <div class="grid2 mo1">
-        <div><span class="lab">건물·단지명 <span class="req">*</span></span>
-          <input class="inp" data-in="lname" value="${esc(g('lname'))}" placeholder="미사강변 ○○아파트"></div>
+        <div><span class="lab">건물·단지명 ${NO_BLDG_NAME(g('lhtype'))
+            ? '<span class="opt">이름이 없으면 비워두셔도 됩니다</span>'
+            : '<span class="req">*</span>'}</span>
+          <input class="inp" data-in="lname" value="${esc(g('lname'))}" placeholder="${
+            NO_BLDG_NAME(g('lhtype')) ? '없으면 비워두세요' : '미사강변 ○○아파트'}"></div>
         <div><span class="lab">법정동 <span class="req">*</span> <span class="opt">주소를 고르면 자동으로 들어옵니다</span></span>
           <input class="inp" data-in="ldong" value="${esc(g('ldong'))}" placeholder="예) 미사1동"></div>
       </div>
@@ -5936,12 +5957,20 @@ V["#/partner/listing/new"] = () => {
         <div><span class="lab">복층</span>${chipsHTML(['단층','복층'], g('lduplex')||'단층','lduplex',false)}</div>
       </div>
 
+      ${shop ? `
+      <!-- 상가·사무실은 방향을 묻지 않는다(중개사 회신 2026-09-23).
+           해가 드는 쪽이 값을 가르는 것은 사는 집 이야기고, 여기서 실제로 갈리는 것은
+           주차다 - 그 자리를 방향 대신 준다. 새 칸을 파지 않고 musts 에 담는다. -->
+      <div style="border-top:1px solid var(--hair);padding-top:16px">
+        <span class="lab">주차</span>
+        ${chipsHTML(LPARK, g('lpark'),'lpark',false)}
+      </div>` : `
       <!-- 방향은 표시·광고 명시사항이다. 어디를 기준으로 잰 방향인지도 함께 적어야 한다. -->
       <div style="border-top:1px solid var(--hair);padding-top:16px">
         <span class="lab">방향 <span class="req">*</span></span>${chipsHTML(DIRS, g('ldir'),'ldir',false)}
         <div style="margin-top:12px"><span class="lab">방향 기준 <span class="req">*</span></span>
           ${chipsHTML(DIR_BASE, g('ldirBase'),'ldirBase',false)}</div>
-      </div>
+      </div>`}
 
       <!-- 여러 개 고를 수 있다 - '즉시도 되고 협의도 된다' 가 실제로 흔하다
            (중개사 회신 2026-09-21). -->
@@ -8718,9 +8747,13 @@ function refreshGate(){
 /* 화면과 새로고침이 각자 판단하면 언젠가 어긋나고, 그때 버튼만 안 눌린다 */
 function listingOk(f){
   const g = k => f[k] || '', shop = f.lkind==='shop';
-  return !!String(g('lname')).trim() && !!String(g('ldong')).trim()
+  /* 건물명은 있는 유형에서만 묻는다. 단독·다가구·상가주택은 동까지면 된다. */
+  const nameOk = NO_BLDG_NAME(g('lhtype')) || !!String(g('lname')).trim();
+  /* 방향은 주거에서만 묻는다 - 상가·사무실에서는 값을 가르지 않는다 */
+  const dirOk = shop || (!!g('ldir') && !!g('ldirBase'));
+  return nameOk && !!String(g('ldong')).trim()
       && +g('ldep')>0 && +g('larea')>0
-      && !!g('lfeeBasis') && !!g('ldir') && !!g('ldirBase') && lmoveArr().length > 0
+      && !!g('lfeeBasis') && dirOk && lmoveArr().length > 0
       && (shop ? !!String(g('lfloorNo')).trim() : +g('lrooms')>0);
 }
 function refreshListingBtn(){
@@ -9406,7 +9439,7 @@ function handle(a,v,el){
       else { S.form.lfloorNo=''; }
       render(); return true; }
     case 'lband': case 'lduplex': case 'lfeeBasis': case 'lfeeType':
-    case 'ldir': case 'ldirBase': case 'lhtype':
+    case 'ldir': case 'ldirBase': case 'lhtype': case 'lpark':
       S.form[a] = S.form[a]===v ? '' : v;
       /* 원룸은 방이 하나다 - 방 수 칸이 사라지므로 적어둔 값도 같이 치운다.
          남겨두면 화면에 없는 값이 조용히 저장된다. */
@@ -9448,7 +9481,10 @@ function handle(a,v,el){
         htype: f.lhtype||'',
         bdong: (f.lbdong||'').trim(), ho: (f.lho||'').trim(),
         note:(f.lnote||'').trim(),
-        musts:shop?[]:(f.lmusts||[]), fac:[],
+        /* 상가·사무실의 주차는 새 칸을 파지 않고 musts 에 담는다 - 손님 조건 쪽
+           '주차 가능' 과 같은 말이라 대조도 그대로 된다. '불가' 는 담지 않는다:
+           없다는 것을 굳이 적어 보내면 매물이 깎여 보일 뿐이다. */
+        musts: shop ? (f.lpark === '가능' ? ['주차 가능'] : []) : (f.lmusts||[]), fac:[],
         mustsFree:shop?'':(f.lmustsFree||'').trim(), facFree:'',
         photos:0, at:'방금', status:'active' };
       if(S.lsBusy) return true;

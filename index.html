@@ -1870,6 +1870,12 @@ const demoTag = (o, style='') => o && o.seed
   ? `<span class="badge" style="background:var(--clay100);border:1px solid var(--clay200);color:var(--clay700);font-size:11px;font-weight:800;padding:2px 8px;${style}">예시</span>`
   : '';
 
+/* 서버가 아직 모르는 조건. 화면에는 남겨두되 저장된 척은 하지 않는다.
+   이 표시가 보이면 새로고침 뒤에 사라진다 - 그게 곧 '저장 안 됨' 이다. */
+const unsavedTag = c => c && c.unsaved
+  ? `<span class="badge b-warn" style="font-size:11px;vertical-align:middle;margin-left:4px">아직 저장 안 됨</span>`
+  : '';
+
 function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show');
   clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),2400); }
 /* 같은 자리로 보내면 hashchange 가 오지 않는다 - 그때는 직접 그린다.
@@ -2490,7 +2496,12 @@ function loadMine(force){
       const got = (j.demands||[]).map(condFromRow);
       /* 서버가 빈 목록을 주는데 방금 낸 조건이 화면에 있으면 그대로 둔다.
          눈앞에서 사라지면 접수가 실패한 것처럼 보인다. */
-      const local = S.conds.filter(c => !c.seed && !got.some(g => g.id === c.id));
+      /* 서버가 모르는 조건은 화면에서 지우지 않는다 - 눈앞에서 사라지면
+         접수가 실패한 것처럼 보인다. 다만 **저장된 척하게 두지도 않는다.**
+         그대로 두기만 했더니 '등록됐다' 로 읽혔다(2026-09-23에 실제로 그랬다).
+         표시를 달아 화면이 사실대로 말하게 한다. */
+      const local = S.conds.filter(c => !c.seed && !got.some(g => g.id === c.id))
+                           .map(c => ({ ...c, unsaved: true }));
       S.conds = got.length || !local.length ? got : local;
       S.props = (j.proposals||[]).map(propFromRow);
       if(S.conds.length && !S.conds.some(c=>c.id===S.inboxCond)) S.inboxCond = S.conds[0].id;
@@ -4569,7 +4580,7 @@ V['#/my'] = () => {
         ${cnt? `<a class="tapx" data-go="#/inbox" data-cond="${c.id}" style="font-size:13.5px;font-weight:800;color:var(--ind)">제안 ${cnt}/${c.slots} 도착 →</a>`
               : `<span style="font-size:13.5px;font-weight:800;color:var(--n500)">제안 0/${c.slots}</span>`}
       </div>
-      <b style="display:block;font-size:${isMo()?15:17}px;font-weight:800;letter-spacing:-.02em;margin-bottom:6px">${esc(c.title)} ${demoTag(c,'vertical-align:middle')}</b>
+      <b style="display:block;font-size:${isMo()?15:17}px;font-weight:800;letter-spacing:-.02em;margin-bottom:6px">${esc(c.title)} ${demoTag(c,'vertical-align:middle')}${unsavedTag(c)}</b>
       <div class="lines" style="margin-bottom:14px">${c.lines.map(esc).join('<br>')}</div>
       ${c.status!=='closed'? `
         <div style="background:var(--n50);padding:12px 14px;margin-bottom:14px">
@@ -4689,7 +4700,7 @@ V['#/inbox'] = () => {
           <div style="display:flex;justify-content:space-between;margin-bottom:8px">
             <span class="badge ${c.status==='active'?'b-ok':c.status==='expiring'?'b-warn':'b-mute'}">${c.status==='active'?'활성':c.status==='expiring'?'만료임박':'종료'}</span>
             <span style="font-size:11px;font-weight:800;color:${n?'var(--ind)':'var(--n500)'}">제안 ${n}/5</span></div>
-          <b style="display:block;font-size:14px;font-weight:800;letter-spacing:-.02em;margin-bottom:4px">${esc(c.title)} ${demoTag(c,'vertical-align:middle')}</b>
+          <b style="display:block;font-size:14px;font-weight:800;letter-spacing:-.02em;margin-bottom:4px">${esc(c.title)} ${demoTag(c,'vertical-align:middle')}${unsavedTag(c)}</b>
           <span style="font-size:12.5px;line-height:1.6;color:var(--n700)">${c.lines[0]?esc(c.lines[0]):''}</span></div>`;}).join('')}
       <div class="beaverbox" style="margin-top:auto;margin-bottom:24px">${beaverlyMini(56)}
         <p>새 제안이 오면 <b style="color:var(--n900)">메일로 바로</b> 알려드려요. 들어와서 기다리실 필요 없습니다.</p></div>

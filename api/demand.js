@@ -15,6 +15,7 @@ import { notify, notifyMany, mask } from './_notify.js';
 import { readIdv } from './_idv.js';
 import { userFrom, sbHeaders, sbUrl } from './_auth.js';
 import { scopeHits, scopeOf, anyFits } from './feed.js';
+import { dbWhy } from './_dberr.js';
 
 const TABLE = 'bk_demand';
 
@@ -326,8 +327,16 @@ export default async function handler(req, res) {
         if (!r.ok) t = await r.text();
       }
       if (!r.ok) {
-        console.error('접수 저장 실패', r.status, t.slice(0, 300));
-        return res.status(502).json({ error: '저장하지 못했습니다', detail: t.slice(0, 200) });
+        /* 왜 거절당했는지 코드로 가려 사람 말로 돌려준다 - '저장하지 못했습니다'
+           한 줄만으로는 손님도 우리도 무엇을 고쳐야 하는지 알 수 없었다.
+           칸 이름이 든 원문은 로그에만 남기고 밖으로는 코드만 내보낸다. */
+        const why = dbWhy(t);
+        console.error('접수 저장 실패', r.status, why.code || '-', t.slice(0, 300));
+        return res.status(502).json({
+          error: why.msg || '저장하지 못했습니다',
+          code: why.code,
+          detail: t.slice(0, 200),
+        });
       }
     }
   } catch (e) {

@@ -8,6 +8,7 @@
  */
 
 import { userFrom, sbHeaders, sbUrl } from './_auth.js';
+import { dbWhy } from './_dberr.js';
 
 const KIND_KO = { home: '주거', shop: '상가', office: '오피스', storage: '창고' };
 
@@ -569,15 +570,19 @@ async function addListing(req, res, agent, user, b) {
         r = await put(old);
       } else {
         if (noTable(t0)) return res.status(503).json({ error: '아직 준비 중입니다 (0015 마이그레이션 필요)' });
-        console.error('[feed:listing-add]', r.status, t0.slice(0, 160));
-        return res.status(502).json({ error: '물건을 저장하지 못했습니다' });
+        /* 왜 거절당했는지 코드로 가려 사람 말로 돌려준다 - 중개사님이 화면만 보고
+           무엇을 고쳐야 할지 알 수 있어야 한다. 칸 이름이 든 원문은 로그에만 남긴다. */
+        const w0 = dbWhy(t0);
+        console.error('[feed:listing-add]', r.status, w0.code || '-', t0.slice(0, 200));
+        return res.status(502).json({ error: w0.msg || '물건을 저장하지 못했습니다', code: w0.code });
       }
     }
     if (!r.ok) {
       const t = await r.text();
       if (noTable(t)) return res.status(503).json({ error: '아직 준비 중입니다 (0015 마이그레이션 필요)' });
-      console.error('[feed:listing-add]', r.status, t.slice(0, 160));
-      return res.status(502).json({ error: '물건을 저장하지 못했습니다' });
+      const w = dbWhy(t);
+      console.error('[feed:listing-add]', r.status, w.code || '-', t.slice(0, 200));
+      return res.status(502).json({ error: w.msg || '물건을 저장하지 못했습니다', code: w.code });
     }
     return res.status(201).json({
       ok: true, row: (await r.json())[0] || null,

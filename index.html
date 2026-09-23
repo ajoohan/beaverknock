@@ -826,8 +826,13 @@ body.mo .chip{min-height:44px}
 
 /* ══════════ 모바일 손질 ══════════ */
 
-/* 지도는 한 단계일 뿐이다. 화면을 통째로 차지하면 아래가 있는 줄 모른다. */
-body.mo svg.map{max-height:200px}
+/* 지도는 한 단계일 뿐이다. 화면을 통째로 차지하면 아래가 있는 줄 모른다.
+   ⚠ 이 높이는 **여기에만 적는다.** 지도 글자 크기가 이 값에서 나오기 때문이다 -
+   720x600 을 이 높이로 눌러 그리므로 배율이 정해지고, mapLabelZoom() 이
+   그 배율의 역수를 글자에 곱한다. 전에는 JS 에도 200 을 따로 적어 두었는데
+   한쪽만 바꾸면 글자가 조용히 어긋난다. 이제 JS 가 이 값을 읽어 간다. */
+body.mo{--map-mo-h:200px}
+body.mo svg.map{max-height:var(--map-mo-h)}
 /* 지도 위 도구줄을 한 줄로 눌러 담는다 */
 body.mo .maptools{gap:6px}
 body.mo .maptools .btn{padding:8px 12px!important;font-size:12.5px!important}
@@ -3694,15 +3699,22 @@ const cellTint = name => CELL_TINTS[[...name].reduce((t,c)=>t+c.charCodeAt(0),0)
 
 /* ── 장면 하나를 통째로 그린다 ── */
 const MAP_W = 720, MAP_H = 600;
-/* 모바일에서 지도가 눌리는 높이. **CSS 의 `body.mo svg.map{max-height:200px}` 와
-   같은 값이어야 한다** - 한쪽만 바꾸면 글자 크기가 다시 어긋난다.
-   720×600 을 200px 높이로 그리면 0.333배가 되고, 그만큼 글자도 작아진다. */
-const MAP_MO_H = 200;
 /* 글자에 곱할 배수. 지도 글자 크기는 전부 '사용자 단위' 로 계산되는데
    그 값들은 1:1 로 그려진다고 보고 정해진 것이다. 데스크톱은 0.97배라 맞지만
    모바일은 0.33배여서 12.5 가 화면에서 4.1px 로 찍혔다 - 글자가 아니라 얼룩이었다.
-   배율의 역수를 곱해 화면에서 의도한 크기가 나오게 한다. */
-const mapLabelZoom = () => isMo() ? MAP_H / MAP_MO_H : 1;
+   배율의 역수를 곱해 화면에서 의도한 크기가 나오게 한다.
+
+   눌리는 높이는 **CSS 가 정한다**(body.mo 의 --map-mo-h). 여기에 숫자를 다시
+   적어두면 둘이 갈라지므로 읽어만 온다. 못 읽으면 200 으로 떨어지는데,
+   그때는 글자가 작아질 뿐 깨지지는 않는다.
+   한 번 그릴 때 라벨마다 부르면 getComputedStyle 이 수십 번 돈다 - 장면을
+   그리기 시작할 때 한 번만 재서 넘겨 쓴다. */
+function mapLabelZoom(){
+  if(!isMo()) return 1;
+  let h = 0;
+  try{ h = parseFloat(getComputedStyle(document.body).getPropertyValue('--map-mo-h')); }catch(e){}
+  return MAP_H / (h > 0 ? h : 200);
+}
 function mapScene(level, sel, shop){
   let sites, outline, sub2 = null, real = true;
   if(level==='seoul'){ sites = SEOUL_GU; outline = OUT_SEOUL2; }
@@ -3749,6 +3761,9 @@ function mapScene(level, sel, shop){
 
   /* 라벨 - 바깥선까지 넘겨서 '보이는 영역' 기준으로 자리를 잡는다 */
   const outT = op.map(q=>T(q));
+  /* 장면당 한 번만 잰다 - 라벨마다 부르면 getComputedStyle 이 수십 번 돈다.
+     아래 서울·인천 고정 라벨도 같은 값을 쓴다. */
+  const LZ = mapLabelZoom();
   const labels = S2.map((x,i)=>{
     if(isSeoulSite(i)) return '';
     if(!cells[i] || cells[i].length<3) return '';
@@ -3761,7 +3776,6 @@ function mapScene(level, sel, shop){
     const p = spot.p;
     /* 작은 셀은 글자를 줄여 옆 라벨과 부딪히지 않게 한다 */
     const ar = Math.abs(cells[i].reduce((t,p,k)=>{const q=cells[i][(k+1)%cells[i].length]; return t+p[0]*q[1]-q[0]*p[1];},0))/2;
-    const LZ = mapLabelZoom();
     const base = (level==='top' ? (ar<1400 ? 8 : ar<3000 ? 9 : 10) : x.t.length>=6 ? 11 : 12.5) * LZ;
     /* 셀을 무게중심 높이에서 가로로 잘라 쓸 수 있는 폭을 잰다.
        가장자리에 붙으면 선을 물으므로 조금 안쪽까지만 쓴다. */
@@ -3794,8 +3808,7 @@ function mapScene(level, sel, shop){
      CSS transform 을 못 받는 브라우저를 위해 **속성으로도 같은 값을 적어 둔다** -
      y 에서 오프셋을 뺐기 때문에, 둘 다 안 먹으면 두 줄이 통째로 겹친다.
      CSS 가 먹는 곳에서는 CSS 가 속성을 덮으므로 두 번 내려가지 않는다. */
-  const LZ0 = mapLabelZoom();
-  const z = n => +(n * LZ0).toFixed(1);
+  const z = n => +(n * LZ).toFixed(1);
   const seoulLabel = topLevel ? (()=>{ const p=G(126.985,37.540);
     return `<text x="${p[0].toFixed(1)}" y="${p[1].toFixed(1)}" text-anchor="middle" dominant-baseline="central" font-weight="800"
       style="font-size:calc(${z(14)}px / var(--mz,1));stroke-width:calc(${z(4)}px / var(--mz,1))"
@@ -9550,45 +9563,54 @@ function a11y(root){
       if(lab) break;
       par = par.parentElement;
     }
-    /* .lab 이 없는 칸도 있다 - 제안 작성의 주소 검색칸과 '한마디' 가 그랬다.
-       화면마다 손으로 달면 반드시 빠뜨리므로(지난 점검에서 배운 것이다)
-       여기서 두 단계로 받아둔다.
-       ① 바로 위의 구획명(.sect). '4. 한마디 - 다른 점을 먼저, 솔직하게' 처럼
-          사람이 읽는 진짜 이름표가 거기 있다. 앞의 번호는 이름이 아니라 뗀다.
-       ② 그것도 없으면 자리표시자. 글자를 치면 사라지므로 이름표로는 모자라지만
-          **아무 이름도 없는 것보다는 낫다.** */
-    if(!lab){
-      let name = '';
+    /* 이름을 어디서 얻든 **마지막에 한 자리로 모은다.** 전에는 .lab 이 없는 칸을
+       따로 처리하고 곧바로 return 해서, 아래의 중복 이름 처리를 건너뛰었다 -
+       같은 구획명 아래 칸이 둘이면 낭독기에 똑같이 읽혔다. */
+    let t = '', fromPh = false;
+    if(lab){
+      const c = lab.cloneNode(true);
+      c.querySelectorAll('.opt,.req').forEach(x => x.remove());   /* 도움말과 별표는 이름이 아니다 */
+      t = (c.textContent || '').replace(/\s+/g,' ').trim();
+      const box = el.parentElement;                                /* 원·㎡·개 - 단위도 이름의 일부다 */
+      if(t && box && box.classList.contains('unit')){
+        const u = box.querySelector('span'); if(u) t += ' ' + u.textContent.trim();
+      }
+    }else{
+      /* .lab 이 없는 칸도 있다 - 제안 작성의 주소 검색칸과 '한마디' 가 그랬다.
+         화면마다 손으로 달면 반드시 빠뜨리므로(지난 점검에서 배운 것이다)
+         여기서 두 단계로 받아둔다.
+         ① 바로 위의 구획명(.sect). '4. 한마디 - 다른 점을 먼저, 솔직하게' 처럼
+            사람이 읽는 진짜 이름표가 거기 있다. 앞의 번호는 이름이 아니라 뗀다.
+         ② 그것도 없으면 자리표시자. 글자를 치면 사라지므로 이름표로는 모자라지만
+            **아무 이름도 없는 것보다는 낫다.** */
       let q = el, hops = 0;
       while(q && q !== root && hops++ < 4){
         let sib = q.previousElementSibling;
         while(sib){
           if(sib.classList && sib.classList.contains('sect')){
-            name = (sib.textContent || '').replace(/\s+/g,' ').trim().replace(/^\d+\.\s*/, '');
+            t = (sib.textContent || '').replace(/\s+/g,' ').trim().replace(/^\d+\.\s*/, '');
             break;
           }
           sib = sib.previousElementSibling;
         }
-        if(name) break;
+        if(t) break;
         q = q.parentElement;
       }
-      if(!name){
+      if(!t){
         const ph = (el.getAttribute('placeholder') || '').replace(/\s+/g,' ').trim();
-        if(ph && ph !== '0') name = ph;
+        if(ph && ph !== '0'){ t = ph; fromPh = true; }
       }
-      if(name) el.setAttribute('aria-label', name.length > 40 ? name.slice(0, 40) + '…' : name);
-      return;
+      /* 예시 문장이 긴 자리표시자는 앞부분만 - 낭독기가 문단을 통째로 읽으면 더 나쁘다 */
+      if(t.length > 40) t = t.slice(0, 40) + '…';
     }
-    const c = lab.cloneNode(true);
-    c.querySelectorAll('.opt,.req').forEach(x => x.remove());   /* 도움말과 별표는 이름이 아니다 */
-    let t = (c.textContent || '').replace(/\s+/g,' ').trim();
     if(!t) return;
-    const box = el.parentElement;                                /* 만원·㎡·개 - 단위도 이름의 일부다 */
-    if(box && box.classList.contains('unit')){
-      const u = box.querySelector('span'); if(u) t += ' ' + u.textContent.trim();
-    }
+    /* 같은 이름이 두 번 나오면 구분해 준다. 이름이 이미 자리표시자에서 왔으면
+       자리표시자를 또 붙여봐야 같은 말만 두 번이다 - 그때는 번호로 가른다. */
     const n = (seen.get(t) || 0) + 1; seen.set(t, n);
-    if(n > 1){ const ph = el.getAttribute('placeholder'); t += (ph && ph !== '0') ? ' ' + ph : ' ' + n; }
+    if(n > 1){
+      const ph = el.getAttribute('placeholder');
+      t += (ph && ph !== '0' && !fromPh) ? ' ' + ph : ' ' + n;
+    }
     el.setAttribute('aria-label', t);
   });
 

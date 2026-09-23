@@ -3492,6 +3492,10 @@ function mapApplySoon(){
 function mapApply(){
   const el = mapEl(); if(!el) return;
   el.setAttribute('viewBox', mapViewBox());
+  /* 확대는 다시 그리지 않고 viewBox 만 바꾼다 - 그러면 글자도 같이 커진다.
+     지도 글자는 확대해도 화면에서 같은 크기로 남아야 한다(지도의 상식이다).
+     글자 크기를 이 값으로 나눠 두었으므로 여기서 k 를 넘겨주면 서로 상쇄된다. */
+  el.style.setProperty('--mz', MAPZ.k);
   /* 확대하지 않았을 때는 세로 스크롤을 페이지에 양보한다.
      확대한 뒤에야 지도가 손짓을 가져간다 - 나가는 길은 '원래대로' 가 있다. */
   el.style.touchAction = MAPZ.k > 1 ? 'none' : 'pan-y';
@@ -3581,7 +3585,11 @@ function fitLabel(name, room, base, min){
   if(name.length * base <= room) return {t:name, fs:base};
   const fs1 = room / name.length;
   if(fs1 >= min) return {t:name, fs:Math.max(min, Math.min(base, fs1))};
-  const shortN = name.replace(/(특별시|광역시|자치시|시|군|구)$/, '') || name;
+  /* 들어가지 않으면 글자를 줄이기 전에 **이름을 줄인다.** 지도 라벨의 정석이다 -
+     글자를 줄이면 못 읽게 되지만, 줄여 쓴 이름은 그대로 읽힌다.
+     하남시 지도에서 모든 칸이 '동' 이므로 '미사1동' 은 '미사1' 로 충분하다.
+     한 글자가 줄면 폭이 25% 줄어 들어갈 자리가 꽤 늘어난다. */
+  const shortN = name.replace(/(특별시|광역시|자치시|시|군|구|동)$/, '') || name;
   const fs2 = room / shortN.length;
   return {t:shortN, fs:Math.max(min, Math.min(base, fs2))};
 }
@@ -3686,6 +3694,15 @@ const cellTint = name => CELL_TINTS[[...name].reduce((t,c)=>t+c.charCodeAt(0),0)
 
 /* ── 장면 하나를 통째로 그린다 ── */
 const MAP_W = 720, MAP_H = 600;
+/* 모바일에서 지도가 눌리는 높이. **CSS 의 `body.mo svg.map{max-height:200px}` 와
+   같은 값이어야 한다** - 한쪽만 바꾸면 글자 크기가 다시 어긋난다.
+   720×600 을 200px 높이로 그리면 0.333배가 되고, 그만큼 글자도 작아진다. */
+const MAP_MO_H = 200;
+/* 글자에 곱할 배수. 지도 글자 크기는 전부 '사용자 단위' 로 계산되는데
+   그 값들은 1:1 로 그려진다고 보고 정해진 것이다. 데스크톱은 0.97배라 맞지만
+   모바일은 0.33배여서 12.5 가 화면에서 4.1px 로 찍혔다 - 글자가 아니라 얼룩이었다.
+   배율의 역수를 곱해 화면에서 의도한 크기가 나오게 한다. */
+const mapLabelZoom = () => isMo() ? MAP_H / MAP_MO_H : 1;
 function mapScene(level, sel, shop){
   let sites, outline, sub2 = null, real = true;
   if(level==='seoul'){ sites = SEOUL_GU; outline = OUT_SEOUL2; }
@@ -3744,27 +3761,48 @@ function mapScene(level, sel, shop){
     const p = spot.p;
     /* 작은 셀은 글자를 줄여 옆 라벨과 부딪히지 않게 한다 */
     const ar = Math.abs(cells[i].reduce((t,p,k)=>{const q=cells[i][(k+1)%cells[i].length]; return t+p[0]*q[1]-q[0]*p[1];},0))/2;
-    const base = level==='top' ? (ar<1400 ? 8 : ar<3000 ? 9 : 10) : x.t.length>=6 ? 11 : 12.5;
+    const LZ = mapLabelZoom();
+    const base = (level==='top' ? (ar<1400 ? 8 : ar<3000 ? 9 : 10) : x.t.length>=6 ? 11 : 12.5) * LZ;
     /* 셀을 무게중심 높이에서 가로로 잘라 쓸 수 있는 폭을 잰다.
        가장자리에 붙으면 선을 물으므로 조금 안쪽까지만 쓴다. */
     const room = spot.room * 0.84;
-    const L = fitLabel(x.t, room, base, level==='top' ? 6.5 : 9);
-    const fs = L.fs;
-    return `<text x="${p[0].toFixed(1)}" y="${(p[1]+fs*0.35).toFixed(1)}" text-anchor="middle" font-size="${fs.toFixed(1)}"
+    const L = fitLabel(x.t, room, base, (level==='top' ? 6.5 : 9) * LZ);
+    /* 키우고 나면 작은 셀에는 이름이 안 들어간다. 그때는 **그리지 않는다** -
+       셀 밖으로 삐져나온 글자나 3px 짜리 얼룩이나 읽히지 않기는 마찬가지고,
+       읽히지 않는 글자는 옆 동네 이름을 가리기까지 한다.
+       비워둬도 길은 있다: 눌러서 고르면 위 칩에 이름이 뜨고, 바로 위에 찾기 칸과
+       '목록' 보기가 있으며, 안내가 '작은 지역은 + 로 키워서 고르세요' 라고 말한다.
+       데스크톱은 0.97배라 지금까지와 똑같이 동작한다(LZ=1). */
+    if(isMo() && L.t.length * L.fs > room) return '';
+    const fs = L.fs, sw = Math.min(3 * LZ, fs * 0.34);
+    /* 세로 자리를 fs*0.35 로 손수 내리던 것을 dominant-baseline 에 맡긴다 -
+       글자 크기가 확대와 따로 놀게 되면 그 손보정만 어긋나기 때문이다.
+       크기와 테두리는 var(--mz) 로 나눠 둔다. 확대하면 mapApply 가 거기에 k 를
+       넣어주므로 서로 상쇄되어 **화면에서는 늘 같은 크기**로 남는다. */
+    return `<text x="${p[0].toFixed(1)}" y="${p[1].toFixed(1)}" text-anchor="middle" dominant-baseline="central"
+      style="font-size:calc(${fs.toFixed(1)}px / var(--mz,1));stroke-width:calc(${sw.toFixed(1)}px / var(--mz,1))"
       font-weight="${on?800:600}" fill="${on?'#fff':'var(--n700)'}" paint-order="stroke"
-      stroke="${on?'transparent':'rgba(255,255,255,.92)'}" stroke-width="${Math.min(3, fs*0.34).toFixed(1)}">${esc(L.t)}</text>`;
+      stroke="${on?'transparent':'rgba(255,255,255,.92)'}">${esc(L.t)}</text>`;
   }).join('');
 
+  /* 이 아래 고정 크기들도 '1:1 로 그려진다' 는 가정 위에 정해진 값이다.
+     모바일에서는 같은 배수를 곱해야 화면에서 의도한 크기가 나온다. */
+  const LZ0 = mapLabelZoom();
+  const z = n => +(n * LZ0).toFixed(1);
   const seoulLabel = topLevel ? (()=>{ const p=G(126.985,37.540);
-    return `<text x="${p[0].toFixed(1)}" y="${p[1].toFixed(1)}" text-anchor="middle" font-size="14" font-weight="800"
-      fill="#5C57A6" paint-order="stroke" stroke="rgba(255,255,255,.95)" stroke-width="4">서울특별시</text>
-      <text x="${p[0].toFixed(1)}" y="${(p[1]+13).toFixed(1)}" text-anchor="middle" font-size="9.5" font-weight="700"
-      fill="#8B86C4" paint-order="stroke" stroke="rgba(255,255,255,.95)" stroke-width="3">눌러서 구 고르기</text>`;})() : '';
+    return `<text x="${p[0].toFixed(1)}" y="${p[1].toFixed(1)}" text-anchor="middle" dominant-baseline="central" font-weight="800"
+      style="font-size:calc(${z(14)}px / var(--mz,1));stroke-width:calc(${z(4)}px / var(--mz,1))"
+      fill="#5C57A6" paint-order="stroke" stroke="rgba(255,255,255,.95)">서울특별시</text>
+      <text x="${p[0].toFixed(1)}" y="${(p[1]+z(13)).toFixed(1)}" text-anchor="middle" dominant-baseline="central" font-weight="700"
+      style="font-size:calc(${z(9.5)}px / var(--mz,1));stroke-width:calc(${z(3)}px / var(--mz,1))"
+      fill="#8B86C4" paint-order="stroke" stroke="rgba(255,255,255,.95)">눌러서 구 고르기</text>`;})() : '';
 
   const incheon = topLevel ? (()=>{ const p=OUT_INCHEON2.map(q=>G(q[0],q[1])); const c=G(126.638,37.468);
     return `<path d="${d(p)}" fill="#EDEAE4" stroke="#DDD8CE" stroke-width="1" data-act="map-na" data-v="인천광역시" style="cursor:not-allowed"/>
-      <text x="${c[0].toFixed(1)}" y="${c[1].toFixed(1)}" text-anchor="middle" font-size="10" font-weight="700" fill="#A9A296">인천</text>
-      <text x="${c[0].toFixed(1)}" y="${(c[1]+12).toFixed(1)}" text-anchor="middle" font-size="8.5" fill="#8A8272">준비 중</text>`;})() : '';
+      <text x="${c[0].toFixed(1)}" y="${c[1].toFixed(1)}" text-anchor="middle" dominant-baseline="central" font-weight="700"
+        style="font-size:calc(${z(10)}px / var(--mz,1))" fill="#A9A296">인천</text>
+      <text x="${c[0].toFixed(1)}" y="${(c[1]+z(12)).toFixed(1)}" text-anchor="middle" dominant-baseline="central"
+        style="font-size:calc(${z(8.5)}px / var(--mz,1))" fill="var(--n500)">준비 중</text>`;})() : '';
 
   const river = (()=>{ const dd = line(HANGANG.map(q=>G(q[0],q[1])));
     const w = level==='top' ? 5 : 8.5;
@@ -3786,7 +3824,7 @@ function mapScene(level, sel, shop){
   const clipId = 'clip-'+level;
   return `
   <svg class="map" viewBox="${mapViewBox()}" role="group" aria-label="지역 선택 지도"
-    style="touch-action:${MAPZ.k>1?'none':'pan-y'}">
+    style="touch-action:${MAPZ.k>1?'none':'pan-y'};--mz:${MAPZ.k}">
     <defs>
       <clipPath id="${clipId}"><path d="${d(op.map(p=>T(p)))}"/></clipPath>
       <linearGradient id="sky-${level}" x1="0" y1="0" x2="0" y2="1">
@@ -9503,7 +9541,35 @@ function a11y(root){
       if(lab) break;
       par = par.parentElement;
     }
-    if(!lab) return;
+    /* .lab 이 없는 칸도 있다 - 제안 작성의 주소 검색칸과 '한마디' 가 그랬다.
+       화면마다 손으로 달면 반드시 빠뜨리므로(지난 점검에서 배운 것이다)
+       여기서 두 단계로 받아둔다.
+       ① 바로 위의 구획명(.sect). '4. 한마디 - 다른 점을 먼저, 솔직하게' 처럼
+          사람이 읽는 진짜 이름표가 거기 있다. 앞의 번호는 이름이 아니라 뗀다.
+       ② 그것도 없으면 자리표시자. 글자를 치면 사라지므로 이름표로는 모자라지만
+          **아무 이름도 없는 것보다는 낫다.** */
+    if(!lab){
+      let name = '';
+      let q = el, hops = 0;
+      while(q && q !== root && hops++ < 4){
+        let sib = q.previousElementSibling;
+        while(sib){
+          if(sib.classList && sib.classList.contains('sect')){
+            name = (sib.textContent || '').replace(/\s+/g,' ').trim().replace(/^\d+\.\s*/, '');
+            break;
+          }
+          sib = sib.previousElementSibling;
+        }
+        if(name) break;
+        q = q.parentElement;
+      }
+      if(!name){
+        const ph = (el.getAttribute('placeholder') || '').replace(/\s+/g,' ').trim();
+        if(ph && ph !== '0') name = ph;
+      }
+      if(name) el.setAttribute('aria-label', name.length > 40 ? name.slice(0, 40) + '…' : name);
+      return;
+    }
     const c = lab.cloneNode(true);
     c.querySelectorAll('.opt,.req').forEach(x => x.remove());   /* 도움말과 별표는 이름이 아니다 */
     let t = (c.textContent || '').replace(/\s+/g,' ').trim();

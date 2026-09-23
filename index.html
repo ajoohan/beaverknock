@@ -3786,23 +3786,32 @@ function mapScene(level, sel, shop){
   }).join('');
 
   /* 이 아래 고정 크기들도 '1:1 로 그려진다' 는 가정 위에 정해진 값이다.
-     모바일에서는 같은 배수를 곱해야 화면에서 의도한 크기가 나온다. */
+     모바일에서는 같은 배수를 곱해야 화면에서 의도한 크기가 나온다.
+     ⚠ 둘째 줄을 y 에 더해 내리면 안 된다. y 는 사용자 단위라 확대와 함께 커지는데
+     글자 크기는 var(--mz) 로 나눠 고정해 두었으므로, 둘씩 따로 놀아 확대할수록
+     두 줄이 벌어진다(k=4.1 에서 39px 까지 떨어졌다 - 실제로 재서 확인했다).
+     내리는 일도 같은 값으로 나눠야 한다. transform 은 calc 을 받으므로 여기 쓴다.
+     CSS transform 을 못 받는 브라우저를 위해 **속성으로도 같은 값을 적어 둔다** -
+     y 에서 오프셋을 뺐기 때문에, 둘 다 안 먹으면 두 줄이 통째로 겹친다.
+     CSS 가 먹는 곳에서는 CSS 가 속성을 덮으므로 두 번 내려가지 않는다. */
   const LZ0 = mapLabelZoom();
   const z = n => +(n * LZ0).toFixed(1);
   const seoulLabel = topLevel ? (()=>{ const p=G(126.985,37.540);
     return `<text x="${p[0].toFixed(1)}" y="${p[1].toFixed(1)}" text-anchor="middle" dominant-baseline="central" font-weight="800"
       style="font-size:calc(${z(14)}px / var(--mz,1));stroke-width:calc(${z(4)}px / var(--mz,1))"
       fill="#5C57A6" paint-order="stroke" stroke="rgba(255,255,255,.95)">서울특별시</text>
-      <text x="${p[0].toFixed(1)}" y="${(p[1]+z(13)).toFixed(1)}" text-anchor="middle" dominant-baseline="central" font-weight="700"
-      style="font-size:calc(${z(9.5)}px / var(--mz,1));stroke-width:calc(${z(3)}px / var(--mz,1))"
+      <text x="${p[0].toFixed(1)}" y="${p[1].toFixed(1)}" text-anchor="middle" dominant-baseline="central" font-weight="700"
+      transform="translate(0 ${z(13)})"
+      style="font-size:calc(${z(9.5)}px / var(--mz,1));stroke-width:calc(${z(3)}px / var(--mz,1));transform:translateY(calc(${z(13)}px / var(--mz,1)))"
       fill="#8B86C4" paint-order="stroke" stroke="rgba(255,255,255,.95)">눌러서 구 고르기</text>`;})() : '';
 
   const incheon = topLevel ? (()=>{ const p=OUT_INCHEON2.map(q=>G(q[0],q[1])); const c=G(126.638,37.468);
     return `<path d="${d(p)}" fill="#EDEAE4" stroke="#DDD8CE" stroke-width="1" data-act="map-na" data-v="인천광역시" style="cursor:not-allowed"/>
       <text x="${c[0].toFixed(1)}" y="${c[1].toFixed(1)}" text-anchor="middle" dominant-baseline="central" font-weight="700"
         style="font-size:calc(${z(10)}px / var(--mz,1))" fill="#A9A296">인천</text>
-      <text x="${c[0].toFixed(1)}" y="${(c[1]+z(12)).toFixed(1)}" text-anchor="middle" dominant-baseline="central"
-        style="font-size:calc(${z(8.5)}px / var(--mz,1))" fill="var(--n500)">준비 중</text>`;})() : '';
+      <text x="${c[0].toFixed(1)}" y="${c[1].toFixed(1)}" text-anchor="middle" dominant-baseline="central"
+        transform="translate(0 ${z(12)})"
+        style="font-size:calc(${z(8.5)}px / var(--mz,1));transform:translateY(calc(${z(12)}px / var(--mz,1)))" fill="var(--n500)">준비 중</text>`;})() : '';
 
   const river = (()=>{ const dd = line(HANGANG.map(q=>G(q[0],q[1])));
     const w = level==='top' ? 5 : 8.5;

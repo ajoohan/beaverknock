@@ -130,6 +130,17 @@ body.mo .tapx::after{content:"";position:absolute;left:-3px;right:-3px;top:-14.5
    위아래 줄이 1px 를 남기고 안 겹친다. 그래야 44px 에 닿는다.
    여기서는 기본 규칙(±14.5px)을 그대로 쓰면 되므로 따로 덮지 않는다. */
 body.mo .footlinks{gap:30px 16px!important}
+/* ── 바닥글 링크는 데스크톱에서도 44px (대표 결정 2026-09-24) ──
+   마우스로는 17px 도 맞지만, 손가락으로 여는 노트북·태블릿도 이 폭으로 들어온다.
+   ::after 는 자리를 차지하지 않으므로 **배치는 한 픽셀도 안 움직인다.**
+   17px 짜리 줄에 위아래 13.5px 씩 = 정확히 44px.
+   줄 사이를 30px 로 벌려 두는 까닭은 위아래 줄이 서로를 먹지 않게 하기 위해서다
+   (27px 을 넓히므로 3px 가 남는다) - 모바일에서 쓰던 그 셈 그대로다.
+   ⚠ .tapx 를 통째로 데스크톱에 풀지는 않는다. 문장 속 링크까지 위아래 14.5px 씩
+   넓어지면 22px 짜리 줄에서 윗줄·아랫줄을 덮어, 글을 누르는데 링크가 열린다. */
+.footlinks{gap:30px 16px!important}
+.footlinks a{position:relative}
+.footlinks a::after{content:"";position:absolute;left:-3px;right:-3px;top:-13.5px;bottom:-13.5px}
 body.mo .back{position:relative}
 body.mo .back::after{content:"";position:absolute;left:0;right:0;top:-9px;bottom:-9px}
 

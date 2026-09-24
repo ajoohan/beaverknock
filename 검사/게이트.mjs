@@ -127,5 +127,24 @@ const 상가월세 = js2.slice(js2.indexOf('<div data-req="rent">'), js2.indexOf
 ok(/매월 낼 수 있는 최대/.test(상가월세) && !/관리비 포함/.test(상가월세),
    '상가 월세 칸은 관리비를 말하지 않는다 - 거기는 더하지 않는다');
 
+/* ── 바닥글 링크 과녁 44px ── (대표 결정 2026-09-24)
+   글자로만 된 링크는 줄 높이(17px)만큼만 눌린다. ::after 로 넓히되,
+   **줄 사이가 넓힌 만큼보다 커야 한다** - 아니면 윗줄 링크가 아랫줄을 덮어
+   '이용 안내' 를 눌렀는데 '개인정보 처리방침' 이 열린다. */
+const css = 길.css();
+const 넓힘 = css.match(/\.footlinks a::after\{[^}]*top:(-?[\d.]+)px;bottom:(-?[\d.]+)px/);
+ok(!!넓힘, '바닥글 링크를 위아래로 넓히는 규칙이 있다');
+if(넓힘){
+  const 위 = Math.abs(+넓힘[1]), 아래 = Math.abs(+넓힘[2]);
+  const 과녁 = 17 + 위 + 아래;
+  ok(과녁 >= 44, `과녁이 ${과녁}px 이다 (17px 줄 + 위아래 ${위}px)`);
+  const 줄사이 = +(css.match(/\.footlinks\{gap:(\d+)px/)||[0,0])[1];
+  ok(줄사이 > 위 + 아래,
+     `줄 사이 ${줄사이}px 가 넓힌 ${위+아래}px 보다 크다 - 윗줄이 아랫줄을 안 먹는다`);
+}
+/* .tapx 를 통째로 데스크톱에 풀면 문장 속 링크가 윗줄·아랫줄을 덮는다 */
+ok(/body\.mo \.tapx::after/.test(css) && !/^\.tapx::after/m.test(css),
+   '.tapx 넓히기는 모바일에만 둔다 - 문장 속 링크까지 넓히면 글을 눌러도 링크가 열린다');
+
 console.log(`${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

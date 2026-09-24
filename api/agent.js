@@ -153,15 +153,21 @@ export default async function handler(req, res) {
     status: autoApprove ? 'approved' : 'new',
     user_id: owner.id,
     email:    str(b.email, 120),
-    /* 상호·주소는 명부에 적힌 것을 먼저 쓴다 - 번호만 맞고 이름은 다른
-       사무소로 남으면, 운영 화면에서 그 줄을 믿을 수 없게 된다. */
+    /* 상호는 **명부에 적힌 것**을 먼저 쓴다 - 번호만 맞고 이름은 다른
+       사무소로 남으면, 운영 화면에서 그 줄을 믿을 수 없게 된다.
+       상호는 '누구인가' 라서 명부가 이겨야 한다. */
     office:   str((look && look.hit && look.hit.office) || b.office, 80),
     reg_no:   str((look && look.regNo) || b.reg_no, 40),
     /* ⚠ **서버가 본 결과**를 적는다. 화면이 보내온 값을 그대로 담으면,
        운영 화면에 '(공공데이터 확인됨)' 이라고 찍히는 줄을 신청자가 스스로
        만들 수 있다 - 확인했다는 표시는 확인한 쪽만 붙일 수 있어야 한다. */
     reg_verified: verified && role === 'agent',
-    addr:     str((look && look.hit && look.hit.addr) || b.addr, 200),
+    /* ⚠ 주소는 **반대다.** 적어 보낸 것을 먼저 쓴다.
+       중개사님은 주소 검색으로 정확한 도로명을 골라 보내는데, 경기 실시간 명부가
+       주는 주소는 `LEGALDONG_NM`(예: '덕풍동') 한 마디뿐이다 - 명부를 먼저 쓰면
+       **정확한 주소를 동 이름으로 덮어쓴다.** 주소는 신분이 아니라 연락에 쓰는
+       값이라, 틀리면 운영 화면에서 눈으로 보인다. */
+    addr:     str(b.addr || (look && look.hit && look.hit.addr), 200),
     relation: str(b.relation, 40),
     biz_no:   str(b.biz_no, 20),
     dev_type: str(b.dev_type, 40),
@@ -286,12 +292,15 @@ export async function verify(req, res, b) {
     }
     patch.reg_no = str(look.regNo || b.reg_no, 40);
     patch.reg_verified = true;
-    /* 상호·주소는 **명부에 적힌 것**을 먼저 쓴다. 적어 보낸 것을 그대로 담으면
-       번호만 맞고 이름은 다른 사무소로 남을 수 있다. */
+    /* 상호는 **명부에 적힌 것**을 먼저 쓴다. 적어 보낸 것을 그대로 담으면
+       번호만 맞고 이름은 다른 사무소로 남을 수 있다 - 상호는 '누구인가' 다.
+       주소는 반대다. 적어 보낸 것을 먼저 쓴다 - 중개사님은 주소 검색으로 정확한
+       도로명을 골라 보내는데, 경기 실시간 명부가 주는 주소는 '덕풍동' 한 마디뿐이라
+       명부를 먼저 쓰면 정확한 주소를 동 이름으로 덮어쓴다. */
     if (look.hit && look.hit.office) patch.office = str(look.hit.office, 80);
     else if (str(b.office))          patch.office = str(b.office, 80);
-    if (look.hit && look.hit.addr)   patch.addr   = str(look.hit.addr, 200);
-    else if (str(b.addr))            patch.addr   = str(b.addr, 200);
+    if (str(b.addr))                 patch.addr   = str(b.addr, 200);
+    else if (look.hit && look.hit.addr) patch.addr = str(look.hit.addr, 200);
   }
   patch.status = process.env.BK_AUTO_APPROVE === '0' ? 'new' : 'approved';
 

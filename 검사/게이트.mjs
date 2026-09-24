@@ -113,5 +113,19 @@ ok(남은조사.length === 0,
    남은조사.length ? `'을(를)' 표기가 남아 있다 - ${남은조사.slice(0,3).join(' / ')}`
                  : "화면에 나갈 글에 '을(를)' 같은 표기가 없다");
 
+/* ── 규칙과 적힌 말이 같은가 ── (2026-09-24 코드리뷰)
+   대조 3단계는 주거일 때 물건의 월세에 **관리비를 더해서** 손님 예산과 견준다.
+   그런데 화면은 여태 '매월 낼 수 있는 최대' 라고만 적었다. 규칙과 말이 다르면
+   손님은 월세만 적고 관리비까지 더해 걸러진다 - 왜 사라졌는지 알 길이 없다.
+   상가는 더하지 않으므로(feeIncluded: !shop) 거기에 적으면 그것대로 거짓말이다. */
+const js2 = 길.js();
+ok(/feeIncluded: !shop/.test(js2), '주거만 관리비를 더해 견준다 (feeIncluded: !shop)');
+const 주거월세 = js2.slice(js2.indexOf('return w.rent ?'), js2.indexOf('return w.rent ?') + 700);
+ok(/매월 낼 수 있는 최대 · 관리비 포함/.test(주거월세),
+   '주거 월세 칸이 **관리비 포함**이라고 말한다');
+const 상가월세 = js2.slice(js2.indexOf('<div data-req="rent">'), js2.indexOf('<div data-req="rent">') + 400);
+ok(/매월 낼 수 있는 최대/.test(상가월세) && !/관리비 포함/.test(상가월세),
+   '상가 월세 칸은 관리비를 말하지 않는다 - 거기는 더하지 않는다');
+
 console.log(`${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

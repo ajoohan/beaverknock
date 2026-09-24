@@ -86,10 +86,13 @@ const ready = () => !!(process.env.PORTONE_API_SECRET
    주소 검색(agent-verify.js)에는 같은 이유로 이미 빗장이 걸려 있었는데
    여기만 없었다. 같은 모양으로 건다. (2026-09-24)
 
-   사람이 본인확인을 받는 속도는 1분에 한두 번이다. 10번이면 넉넉하다 -
-   실패하고 다시 받는 경우까지 헤아린 값이다. */
+   ⚠ 수를 정할 때 **한 사람 기준으로 세면 안 된다.** 국내 통신사는 여럿을
+   한 주소(CGNAT) 뒤에 묶는다 - 같은 LTE 망에서 열 분이 1분 안에 본인확인을
+   받으면 열한 번째 분이 막힌다. 오픈 첫날이 꼭 그렇다.
+   30번이면 사람은 거의 닿지 않고, 두드리는 쪽은 1분에 30번으로 묶인다.
+   주소 검색(agent-verify.js)이 40번인 것과 같은 결의 값이다. */
 const hits = new Map();
-const WINDOW = 60_000, MAX = 10;
+const WINDOW = 60_000, MAX = 30;
 
 function tooMany(req) {
   const ip = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim()

@@ -3367,7 +3367,11 @@ ${gDeal ? `<div data-req="dongs"><span class="lab">찾으시는 동네 <span cla
           ${wonHint(d.dep, '까지')}
         </div>`;
         return w.rent ? `<div class="grid2 mo1">${depBox}
-        <div><span class="lab">월세 <span class="req">*</span> <span class="opt">매월 낼 수 있는 최대</span></span>
+        <!-- '관리비 포함' 을 적는 까닭 - 대조(matchStages 3단계)가 물건의
+             월세에 관리비를 **더해서** 이 값과 견준다. 그런데 화면은 여태
+             그 말을 하지 않았다. 규칙과 적힌 말이 다르면, 손님은 월세만 적고
+             관리비까지 더해 걸러진다 - 왜 사라졌는지 알 길이 없다. -->
+        <div><span class="lab">월세 <span class="req">*</span> <span class="opt">매월 낼 수 있는 최대 · 관리비 포함</span></span>
           <div class="unit"><input class="inp" data-in="rent" inputmode="numeric" value="${esc(comma(d.rent))}" placeholder="0"><span>원</span></div>${wonHint(d.rent)}</div>
       </div>` : depBox; })()}`:''}
 

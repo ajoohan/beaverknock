@@ -108,6 +108,17 @@ const 소유자 = await 부르기({ role:'owner', owner_type:'individual', name:
 ok(소유자.code === 200 && 쓴행 && 쓴행.status === 'approved', '개인 소유자는 바로 열린다');
 ok(쓴행.reg_verified === false, '소유자에게는 등록번호 확인 표시를 붙이지 않는다');
 
+/* ── 명부가 이기는 칸과 지는 칸 ──
+   상호는 '누구인가' 라서 명부가 이긴다. 주소는 연락에 쓰는 값이라 적어 보낸 것이
+   이긴다 - 경기 실시간 명부가 주는 주소는 '덕풍동' 한 마디뿐이라, 명부를 먼저
+   쓰면 중개사님이 주소 검색으로 고른 정확한 도로명을 덮어쓴다. (2026-09-24 코드리뷰) */
+const ajs = (await import('node:fs')).readFileSync(new URL(길.api('agent.js')), 'utf8');
+ok(/office:\s+str\(\(look && look\.hit && look\.hit\.office\) \|\| b\.office/.test(ajs),
+   '상호는 명부가 먼저다');
+ok(/addr:\s+str\(b\.addr \|\| \(look && look\.hit && look\.hit\.addr\)/.test(ajs),
+   '**주소는 적어 보낸 것이 먼저다** - 명부가 먼저면 도로명이 동 이름으로 덮인다');
+ok(/if \(str\(b\.addr\)\)\s+patch\.addr/.test(ajs), '자격 화면에서도 같은 순서다');
+
 /* ── 자격 따로 받기 (what:'verify') ── 이미 가입한 사람이 번호를 들고 온다 ── */
 이미있음 = { id:'a1', user_id:'u-1', role:'agent', status:'new', reg_verified:false };
 const 자격우기기 = await 부르기({ what:'verify', reg_no:'41450-2019-99999', reg_verified:true });

@@ -81,7 +81,12 @@ function koMonth(v) {
 
 const cache = new Map();
 
+/* 시군 이름은 화면에서 온다. 아무 글자나 그대로 캐시 열쇠로 쓰면 표가 끝없이
+   자란다 - 한 칸에 최대 6천 줄이 들어간다. 생김새를 보고, 뚜껑도 씌운다. */
+const SIGUN_OK = v => /^[가-힣]{2,8}(시|군|구)$/.test(v);
+
 async function fetchSigun(sigun, key) {
+  if (!SIGUN_OK(sigun)) throw new Error('시군 이름이 아님');
   const hit = cache.get(sigun);
   if (hit && Date.now() - hit.at < TTL) return hit.rows;
 
@@ -110,6 +115,9 @@ async function fetchSigun(sigun, key) {
     rows.push(...got);
     if (!got.length || rows.length >= total) break;
   }
+  /* 경기도 시군은 31곳이다. 그보다 훨씬 많이 쌓였다면 쓰지 않는 것이 섞인 것이니
+     오래된 것부터 비운다(Map 은 넣은 차례를 지킨다). */
+  if (cache.size >= 40) for (const k of cache.keys()) { cache.delete(k); if (cache.size < 40) break; }
   cache.set(sigun, { at: Date.now(), rows });
   return rows;
 }

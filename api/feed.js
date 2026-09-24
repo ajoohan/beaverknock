@@ -530,7 +530,10 @@ async function addListing(req, res, agent, user, b) {
     htype: txt(L.htype, 30),
     floor_no: txt(L.floorNo, 10), duplex: L.duplex === true,
     musts: arr(L.musts),
-    musts_free: txt(L.mustsFree, 120), fac_free: txt(L.facFree, 120),
+    /* fac_free(설비 자유기입)도 싣지 않는다 - biz·fac 과 같은 처지로, 물건 쪽은
+       칩을 걷은 뒤로 늘 빈 문자열이었다. 0028 에서 칸을 지웠다.
+       ⚠ 손님 조건의 facilities_free 는 **다른 값이다** - 그건 그대로 쓴다. */
+    musts_free: txt(L.mustsFree, 120),
     /* 중개대상물 표시·광고 명시사항 - 방향은 기준까지, 관리비는 산정 기준과 포함 비목까지 */
     dir: txt(L.dir, 10), dir_base: txt(L.dirBase, 20),
     fee_basis: txt(L.feeBasis, 20), fee_type: txt(L.feeType, 40), fee_items: txt(L.feeItems, 200),
@@ -564,9 +567,11 @@ async function addListing(req, res, agent, user, b) {
          여기만 빠져 있었다. */
       const noColumn = /does not exist|PGRST204/i.test(t0)
                     || /Could not find the '[a-z_]+' column/i.test(t0);
+      /* fac_free 는 목록에서 뺐다 - 더 이상 싣지 않으므로 그 이름으로 걸려 올 일이
+         없다. 남겨두면 '언젠가 다시 실을 것' 처럼 읽힌다. */
       if (noColumn
-          && /area|duplex|floor_no|musts_free|fac_free|dir|fee_basis|fee_type|fee_items|note|bdong|ho|htype|approved/.test(t0)) {
-        const { area, area_sup, floor_no, duplex, musts_free, fac_free,
+          && /area|duplex|floor_no|musts_free|dir|fee_basis|fee_type|fee_items|note|bdong|ho|htype|approved/.test(t0)) {
+        const { area, area_sup, floor_no, duplex, musts_free,
                 dir, dir_base, fee_basis, fee_type, fee_items, note,
                 bdong, ho, htype, approved, ...old } = row;
         dropped = ['면적', '정확한 층', '복층', '갖춰진 조건', '방향', '관리비 기준',

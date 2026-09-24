@@ -2453,10 +2453,11 @@ function listingFromRow(x){
     rooms:x.rooms||0, baths:x.baths||0, band:x.band||'', floors:x.floors||0,
     bdong:x.bdong||'', ho:x.ho||'', htype:x.htype||'',
     floorNo:x.floor_no||'', duplex:!!x.duplex,
-    /* fac(설비)는 더 이상 없다 - 업종·설비 칩을 걷은 뒤로 늘 빈 값이었고
-       0027 에서 칸을 지웠다. 상가 설비는 '매물 특징'(note)에 글로 적는다. */
+    /* fac(설비)·fac_free 는 더 이상 없다 - 업종·설비 칩을 걷은 뒤로 늘 빈 값이었고
+       0027·0028 에서 칸을 지웠다. 상가 설비는 '매물 특징'(note)에 글로 적는다.
+       ⚠ 손님 조건의 facFree 는 **다른 값이다** - 거기는 살아 있다. */
     musts:x.musts||[],
-    mustsFree:x.musts_free||'', facFree:x.fac_free||'',
+    mustsFree:x.musts_free||'',
     moveIn:x.move_in||'협의',
     photos:x.photos||0, at:agoText(x.created_at), status:x.status||'active',
   };
@@ -9880,7 +9881,7 @@ function handle(a,v,el){
            '주차 가능' 과 같은 말이라 대조도 그대로 된다. '불가' 는 담지 않는다:
            없다는 것을 굳이 적어 보내면 매물이 깎여 보일 뿐이다. */
         musts: shop ? (f.lpark === '가능' ? ['주차 가능'] : []) : (f.lmusts||[]),
-        mustsFree:shop?'':(f.lmustsFree||'').trim(), facFree:'',
+        mustsFree:shop?'':(f.lmustsFree||'').trim(),
         photos:0, at:'방금', status:'active' };
       if(S.lsBusy) return true;
       S.lsBusy = true; render();

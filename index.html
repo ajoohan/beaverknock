@@ -1056,7 +1056,10 @@ tbody tr.clickable:hover{background:var(--n50)}
 
    이 카드만 흰 바탕이면 옆 입력 카드들과 같은 무게로 읽힌다. 여기는 '앞으로
    무엇이 나가는가' 를 확인하는 자리이므로, 바탕과 테두리를 따로 준다. */
-.recap{background:var(--white);border:1.5px solid var(--ind200);border-radius:18px;overflow:hidden;
+/* 이 카드가 이 화면의 주인공이다. 여기서 '내가 원한 게 이게 맞다' 를 확인하고
+   보낸다. 위의 절차들을 접어 자리를 만들었으니, 그 자리를 실제로 쓴다 -
+   테두리를 굵히고 제목을 한 단 크게 세운다. */
+.recap{background:var(--white);border:2px solid var(--ind300);border-radius:18px;overflow:hidden;
   box-shadow:0 1px 2px rgba(35,37,92,.06), 0 14px 38px rgba(61,63,143,.13)}
 .recap .rc-top{padding:20px 24px 18px;border-bottom:1px solid var(--ind100);
   background:linear-gradient(180deg,var(--ind50) 0%,rgba(255,255,255,0) 100%)}
@@ -1065,13 +1068,16 @@ tbody tr.clickable:hover{background:var(--n50)}
   letter-spacing:.06em;color:#fff;background:var(--ind);
   border-radius:var(--r-full);padding:5px 12px}
 .recap .rc-eb i{display:block;width:5px;height:5px;border-radius:var(--r-full);background:rgba(255,255,255,.85)}
-.recap .rc-ttl{display:block;margin-top:12px;font-size:21px;font-weight:800;letter-spacing:-.038em;
+.recap .rc-ttl{display:block;margin-top:12px;font-size:30px;font-weight:800;letter-spacing:-.04em;
   line-height:1.3;color:var(--n900);word-break:keep-all;text-wrap:balance}
 .recap .rc-body{padding:4px 24px}
 .recap .rc-row{display:flex;gap:16px;align-items:flex-start;padding:14px 0;border-top:1px solid var(--n100)}
 .recap .rc-row:first-child{border-top:none}
 .recap .rc-k{flex:none;width:64px;padding-top:3px;font-size:11px;font-weight:800;color:var(--n500)}
-.recap .rc-v{flex:1;min-width:0;font-size:14px;font-weight:700;line-height:1.6;color:var(--n900);word-break:keep-all}
+.recap .rc-v{flex:1;min-width:0;font-size:16px;font-weight:700;line-height:1.6;color:var(--n900);word-break:keep-all}
+.recap .rc-k{padding-top:5px}
+body.mo .recap .rc-ttl{font-size:24px}
+body.mo .recap .rc-v{font-size:15px}
 /* 예산은 양쪽이 가장 먼저 보는 줄이다 - 한 단 크게, 숫자는 자리를 맞춰서 */
 /* 예산을 크게 두는 것은 그대로 둔다 - 양쪽이 가장 먼저 보는 줄이다.
    다만 반쯤 흐려지는 배경 띠는 걷는다. 한쪽만 물든 띠가 카드 안에서
@@ -1079,6 +1085,22 @@ tbody tr.clickable:hover{background:var(--n50)}
 .recap .rc-row.hi .rc-k{color:var(--ind)}
 .recap .rc-row.hi .rc-v{font-size:17px;font-weight:800;letter-spacing:-.02em;color:var(--ind);
   font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
+/* 끝난 절차를 한 줄로 접어 두는 바.
+   마지막 화면의 주인공은 '무엇을 보내는가' 이지 '무엇을 이미 했는가' 가 아니다.
+   끝났다는 사실만 남기고 자리는 요약에 내준다. 다시 여는 길은 늘 둔다. */
+.donebar{display:flex;align-items:center;gap:10px;padding:11px 14px;margin-bottom:12px;
+  background:var(--okbg);border:1px solid #A5CDB6;border-radius:12px}
+.donebar .dot{flex:none;width:20px;height:20px;border-radius:var(--r-full);background:var(--ok);
+  display:flex;align-items:center;justify-content:center}
+.donebar .dot svg{width:11px}
+.donebar .t{flex:1;min-width:0;font-size:13px;line-height:1.5;color:var(--n700);word-break:keep-all}
+.donebar .t b{font-weight:800;color:#166B3D}
+.donebar .lnk{flex:none;font-size:12.5px;font-weight:700;color:var(--n500);
+  text-decoration:underline;text-underline-offset:2px;white-space:nowrap}
+.donebar .lnk:hover{color:var(--n700)}
+body.mo .donebar{gap:8px;padding:10px 12px}
+body.mo .donebar .t{font-size:12.5px}
+
 /* 고지 블록 - 라벨과 값을 두 단으로. 좁은 화면에서는 한 단으로 눕는다. */
 .notice{margin-top:10px;padding:14px 18px;background:var(--n50);
   border:1px solid var(--hair);border-radius:12px}
@@ -4505,18 +4527,14 @@ const maskPhone = p => { const n=String(p).replace(/-/g,'');
 function verifyCard(d){
   if(d.verified){
     const m = d.vmethod==='portone' ? {t:'휴대폰 본인확인'} : VMETHODS.find(x=>x.k===d.vmethod);
+    /* 끝난 절차는 한 줄로 접는다. 이 화면의 주인공은 '무엇을 보내는가' 이지
+       '무엇을 이미 했는가' 가 아니다 - 확인이 끝났다는 사실만 남기고
+       자리는 아래 요약에 내준다. 다시 인증하는 길은 그대로 둔다. */
     return `
-    <div class="card pad" style="background:var(--okbg);border:1.5px solid #A5CDB6;box-shadow:none">
-      <div class="vcard" style="display:flex;align-items:center;gap:12px">
-        <span style="flex:none;width:30px;height:30px;border-radius:var(--r-full);background:#fff;border:1.5px solid #A5CDB6;display:flex;align-items:center;justify-content:center">
-          <svg viewBox="0 0 24 24" style="width:15px" fill="none"><path d="M4.5 12.5l5 5 10-11" stroke="#1B7A46" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-        <div style="flex:1;min-width:0">
-          <span style="display:block;font-size:14px;font-weight:800;color:#166B3D">본인 확인이 완료되었습니다</span>
-          <span style="display:block;margin-top:2px;font-size:12.5px;line-height:1.65;color:var(--n700)">
-            <b style="color:var(--n900)">${esc(d.name)}</b> · ${maskPhone(d.phone)}${isMo()?'<br>':' · '}${esc(m?m.t:'')} · ${esc(d.vat)}</span>
-        </div>
-        <button class="btn ghost sm vbtn" data-act="v-reset" style="flex:none;font-size:12.5px">다시 인증</button>
-      </div>
+    <div class="donebar">
+      <span class="dot"><svg viewBox="0 0 24 24" fill="none"><path d="M4.5 12.5l5 5 10-11" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      <span class="t"><b>본인확인 완료</b> · ${esc(d.name)} · ${maskPhone(d.phone)}</span>
+      <button class="lnk" data-act="v-reset">다시 인증</button>
     </div>`;
   }
 
@@ -4597,6 +4615,15 @@ V['#/contact'] = () => { const d=S.draft; const ok = contactOk(d);
         <div><span class="lab">연락 가능한 시간</span>${chipsHTML(TIMES, d.times, 'times', true)}</div>
       </div>
 
+      <!-- 필수 동의가 끝나면 접는다. 무엇에 동의했는지는 한 줄로 남기고,
+           다시 보고 싶으면 펼칠 수 있다. 동의 내용을 없애는 것이 아니라
+           **이미 끝난 일을 화면에서 내려놓는** 것이다. -->
+      ${(d.a1 && d.a2 && !S.showAgree) ? `
+      <div class="donebar">
+        <span class="dot"><svg viewBox="0 0 24 24" fill="none"><path d="M4.5 12.5l5 5 10-11" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        <span class="t"><b>필수 동의 완료</b> · 개인정보 제3자 제공 · 알림 발송${d.a3?' · 광고 수신(선택)':''}</span>
+        <button class="lnk" data-act="agree-open">내용 보기</button>
+      </div>` : `
       <div class="card agrees" style="padding:4px 20px">
         <div class="chk all ${d.a1&&d.a2&&d.a3?'on':''}" data-act="agree-all">
           <span class="box">${ICON_CHECK}</span><span class="txt"><b style="font-weight:800;color:var(--n900)">전체 동의</b>
@@ -4628,6 +4655,9 @@ V['#/contact'] = () => { const d=S.draft; const ok = contactOk(d);
           <dt>거부 권리</dt><dd>거부하실 수 있습니다. 다만 거부하시면 조건을 전달할 수 없습니다.</dd>
         </dl>
       </div>
+      ${(d.a1 && d.a2) ? `<div style="text-align:right;margin-top:8px">
+        <button class="lnk" data-act="agree-close" style="font-size:12.5px;font-weight:700;color:var(--n500);text-decoration:underline;text-underline-offset:2px">접기</button></div>` : ''}
+      `}
 
       <div class="recap">
         <div class="rc-top">
@@ -9262,6 +9292,10 @@ function handle(a,v,el){
       d[a]= d[a]===v? '' : v; render(); return true;
     case 'agree': d[v]=!d[v]; render(); return true;
     /* 하나라도 빠져 있으면 모두 켜고, 다 켜져 있으면 모두 끈다 */
+    /* 끝난 동의를 접고 펼친다. 초안에는 담지 않는다 - 보내는 값이 아니라
+       지금 화면을 어떻게 보고 있는가일 뿐이다. */
+    case 'agree-open':  S.showAgree = true;  render(); return true;
+    case 'agree-close': S.showAgree = false; render(); return true;
     case 'agree-all': { const on = !(d.a1 && d.a2 && d.a3); d.a1=d.a2=d.a3=on; render(); return true; }
 
     /* ── 로그인 ── */

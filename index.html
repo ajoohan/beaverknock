@@ -6446,6 +6446,11 @@ function demandPayload(d, slotN){
     shop_note: shop ? t(d.shopNote) : null,
     /* 살 집도 언제 들어가는지가 조건이다 - 상가만 보낼 이유가 없었다 */
     open_when: t(d.openWhen),
+    /* ⚠ 이 줄이 없어서 **주거 입주 시기가 한 번도 저장된 적이 없다.**
+       moveText() 가 '2026년 11월 초' 같은 문장을 만들어 두고, 화면과 운영
+       내보내기는 r.when_text 를 읽는데, 정작 보내는 곳이 없었다.
+       손님은 고르고 화면에도 보이니 아무도 눈치채지 못했다. */
+    when_text: shop ? null : (moveText(d) || null),
 
     memo: t(d.memo),
 

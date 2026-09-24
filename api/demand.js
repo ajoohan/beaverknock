@@ -275,7 +275,9 @@ export default async function handler(req, res) {
     sign_need: kind === 'shop' ? str(b.sign_need, 30) : null,
     park_need: NONHOME(kind) ? int(b.park_need) : null,
     shop_note: NONHOME(kind) ? str(b.shop_note, 500) : null,
-    open_when: NONHOME(kind) ? str(b.open_when, 30) : null,
+    /* 입주 시기는 유형을 가리지 않는다. 화면은 주거에서도 묻고 보내는데
+       여기서 주거만 버리고 있었다 - 클라이언트만 고치고 서버를 안 고친 자국이다. */
+    open_when: str(b.open_when, 30),
 
     /* 유형마다 다른 몇 가지. 칸을 새로 파지 않고 한 곳에 담는다 -
        사무실은 인원·건물, 창고는 층고·하역·온도. */

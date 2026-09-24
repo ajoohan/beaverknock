@@ -350,6 +350,13 @@ body.mo .scr .pad.opsPad{padding-left:16px;padding-right:16px}
    아무 일이 없었다 - 도형을 누르면 들어가지는데, 사람은 글자를 누른다.
    '눌러서 구 고르기' 라고 적어놓고 정작 그 글자가 클릭을 막고 있었다. */
 svg.map text{pointer-events:none;user-select:none}
+/* 못 넘어간 이유가 된 칸을 잠깐 감싼다. 토스트가 말한 것이 어디인지 눈으로 잇는다. */
+.needfix{animation:needfix 1.8s ease}
+@keyframes needfix{
+  0%,100%{box-shadow:0 0 0 0 rgba(178,43,49,0)}
+  15%,70%{box-shadow:0 0 0 3px rgba(178,43,49,.28)}
+}
+@media (prefers-reduced-motion:reduce){.needfix{animation:none;box-shadow:0 0 0 3px rgba(178,43,49,.28)}}
 
 .card{background:var(--white);border:1px solid var(--n100);border-radius:var(--r-lg);box-shadow:var(--sh1)}
 .card.hi{border:1.5px solid var(--ind);box-shadow:var(--sh2)}
@@ -3148,11 +3155,11 @@ V['#/register'] = () => {
           <b style="color:var(--n700)">표시만 필수입니다.</b></span></p></div>
 
       ${shop? `
-      <div><span class="lab">${w.what} <span class="req">*</span> <span class="opt">${w.whatOpt}</span></span>
+      <div data-req="biz"><span class="lab">${w.what} <span class="req">*</span> <span class="opt">${w.whatOpt}</span></span>
         <input class="inp" data-in="biz" value="${esc(d.biz)}" placeholder="${w.whatPh}">
         <p style="margin:8px 0 0;font-size:12.5px;line-height:1.6;color:var(--n500)">${w.note}</p>
       </div>
-<div><span class="lab">${w.area} <span class="req">*</span> <span class="opt">지도에서 고르거나 검색해서 고르세요 (여러 곳 가능)</span></span>
+<div data-req="dongs"><span class="lab">${w.area} <span class="req">*</span> <span class="opt">지도에서 고르거나 검색해서 고르세요 (여러 곳 가능)</span></span>
         <!-- 라벨이 '지도에서 고르거나 검색해서' 라고 말하는데 바로 아래에는
              검색칸만 있고, 지도는 칩·브레드크럼·툴바를 지나 네 번째 아래에 있었다.
              읽는 사람은 약속받은 지도를 못 보고 텍스트 칸만 본다.
@@ -3187,7 +3194,7 @@ V['#/register'] = () => {
       </div>
       <div class="grid2 mo1">
         <div><span class="lab">보증금 <span class="req">*</span> <span class="opt">감당 가능한 최대</span></span><div class="unit"><input class="inp" data-in="dep" inputmode="numeric" value="${esc(comma(d.dep))}" placeholder="0"><span>원</span></div>${wonHint(d.dep)}</div>
-        <div><span class="lab">월세 <span class="req">*</span> <span class="opt">매월 낼 수 있는 최대</span></span><div class="unit"><input class="inp" data-in="rent" inputmode="numeric" value="${esc(comma(d.rent))}" placeholder="0"><span>원</span></div>${wonHint(d.rent)}</div>
+        <div data-req="rent"><span class="lab">월세 <span class="req">*</span> <span class="opt">매월 낼 수 있는 최대</span></span><div class="unit"><input class="inp" data-in="rent" inputmode="numeric" value="${esc(comma(d.rent))}" placeholder="0"><span>원</span></div>${wonHint(d.rent)}</div>
       </div>
       ${movePicker(d)}
       <div><span class="lab">층 조건 <span class="opt">원하시는 층을 그대로 적어주세요</span></span>
@@ -3205,8 +3212,8 @@ V['#/register'] = () => {
         ${chipsHTML(DOCKS, d.dock||'', 'dock', false)}</div>
       <div><span class="lab">온도 조건</span>${chipsHTML(TEMPS, d.temp||'', 'temp', false)}</div>` : ''}
       ` : `
-      <div><span class="lab">거래 방식 <span class="req">*</span></span>${chipsHTML(DEALS, d.deal, 'deal', false)}</div>
-${gDeal ? `<div><span class="lab">찾으시는 동네 <span class="req">*</span> <span class="opt">지도에서 고르거나 검색해서 고르세요 (여러 곳 가능)</span></span>
+      <div data-req="deal"><span class="lab">거래 방식 <span class="req">*</span></span>${chipsHTML(DEALS, d.deal, 'deal', false)}</div>
+${gDeal ? `<div data-req="dongs"><span class="lab">찾으시는 동네 <span class="req">*</span> <span class="opt">지도에서 고르거나 검색해서 고르세요 (여러 곳 가능)</span></span>
         <!-- 라벨이 '지도에서 고르거나 검색해서' 라고 말하는데 바로 아래에는
              검색칸만 있고, 지도는 칩·브레드크럼·툴바를 지나 네 번째 아래에 있었다.
              읽는 사람은 약속받은 지도를 못 보고 텍스트 칸만 본다.
@@ -3226,7 +3233,7 @@ ${gDeal ? `<div><span class="lab">찾으시는 동네 <span class="req">*</span>
       ${gArea ? `
       ${(()=>{ const w = dealWords(d.deal);
         const depBox = `
-        <div><span class="lab">${w.dep} <span class="req">*</span> <span class="opt">${w.hint}</span></span>
+        <div data-req="dep"><span class="lab">${w.dep} <span class="req">*</span> <span class="opt">${w.hint}</span></span>
           <div class="unit"><input class="inp" data-in="dep" inputmode="numeric" value="${esc(comma(d.dep))}" placeholder="${w.ph}"><span>원</span></div>
           ${wonHint(d.dep, '까지')}
         </div>`;
@@ -3237,7 +3244,7 @@ ${gDeal ? `<div><span class="lab">찾으시는 동네 <span class="req">*</span>
 
       <!-- 주택 유형: 예산을 넣은 뒤에 연다. 여기까지가 필수다. -->
       ${gMoney ? `
-      <div><span class="lab">주택 유형 <span class="req">*</span></span>${chipsHTML(HTYPES, d.htype, 'htype', true)}</div>`:''}
+      <div data-req="htype"><span class="lab">주택 유형 <span class="req">*</span></span>${chipsHTML(HTYPES, d.htype, 'htype', true)}</div>`:''}
 
       <!-- 필수를 다 채우면 나머지가 **한꺼번에** 열린다.
            선택 항목까지 하나씩 잠그면 '아는 것만 채우셔도 됩니다' 가 거짓말이 된다. -->
@@ -3261,7 +3268,9 @@ ${gDeal ? `<div><span class="lab">찾으시는 동네 <span class="req">*</span>
   </div>
   <div class="foot">
     ${isMo()?'<span></span>':'<button class="btn ghost" data-go="#/kind" style="font-size:13.5px">← 유형 다시 고르기</button>'}
-    <button class="btn pri ${isMo()?'blk':''}" style="padding:16px ${isMo()?0:'50px'};font-size:15px" data-act="next-register">다음</button>
+    <!-- 넘어갈 수 있을 때만 색이 들어온다. 그래도 **눌리기는 한다** -
+         disabled 로 막으면 왜 못 넘어가는지 물어볼 길이 사라진다. -->
+    <button class="btn ${regMiss(d)?'ghost':'pri'} ${isMo()?'blk':''}" style="padding:16px ${isMo()?0:'50px'};font-size:15px" data-act="next-register">다음</button>
   </div>
 </div>`;};
 
@@ -3985,6 +3994,30 @@ function mapScene(level, sel, shop){
 }
 
 /* ── 위치 확인 ── */
+/* 무엇이 비어서 못 넘어가는지 **한 곳에서** 판단한다.
+   버튼 색(화면)과 눌렀을 때(토스트)가 다른 기준을 쓰면 서로 어긋난다 -
+   색은 꺼져 있는데 눌러도 아무 말이 없거나, 그 반대가 된다. */
+function regMiss(d){
+  const shop = NONHOME(d.kind), w = words(d.kind);
+  if(shop && !String(d.biz||'').trim()) return {k:'biz',     m:`${w.what}을(를) 적어주세요`};
+  if(shop && !+d.areaMin)               return {k:'areaMin', m:'희망 면적(전용)을 적어주세요'};
+  if(!shop && !d.deal)                  return {k:'deal',    m:'거래 방식을 선택해 주세요'};
+  if(!(d.dongs||[]).length)             return {k:'dongs',   m: shop?`${w.area}을(를) 하나 이상 선택해 주세요`:'동네를 하나 이상 선택해 주세요'};
+  if(!+d.dep)                           return {k:'dep',     m:'보증금을 입력해 주세요'};
+  if(shop && !+d.rent)                  return {k:'rent',    m:'월세를 입력해 주세요'};
+  if(!shop && !(d.htype||[]).length)    return {k:'htype',   m:'주택 유형을 선택해 주세요'};
+  return null;
+}
+/* 말만 하고 두면 '그런 칸 없는데' 가 된다 - 실제로 데려간다. */
+function goFix(miss){
+  toast(miss.m);
+  const el = $(`#app [data-req="${miss.k}"]`);
+  if(!el) return;
+  el.scrollIntoView({behavior:'smooth', block:'center'});
+  el.classList.add('needfix');
+  setTimeout(()=>el.classList.remove('needfix'), 1800);
+}
+
 function detectRegion(manual){
   if(!navigator.geolocation){ S.geoState='unavailable'; if(manual) toast('이 브라우저에서는 위치를 쓸 수 없습니다'); render(); return; }
   S.geoState='asking'; render();
@@ -9292,14 +9325,8 @@ function handle(a,v,el){
       render(); return true; }
 
     case 'next-register': {
-      const shop=NONHOME(d.kind), w=words(d.kind);
-      if(shop && !String(d.biz).trim()) return toast(`${w.what}을(를) 적어주세요`), true;
-      if(shop && !+d.areaMin) return toast('희망 면적(전용)을 적어주세요'), true;
-      if(!shop && !d.deal) return toast('거래 방식을 선택해 주세요'), true;
-      if(!d.dongs.length) return toast(shop?`${w.area}을(를) 하나 이상 선택해 주세요`:'동네를 하나 이상 선택해 주세요'), true;
-      if(!+d.dep) return toast('보증금을 입력해 주세요'), true;
-      if(shop && !+d.rent) return toast('월세를 입력해 주세요'), true;
-      if(!shop && !d.htype.length) return toast('주택 유형을 선택해 주세요'), true;
+      const miss = regMiss(d);
+      if(miss){ goFix(miss); return true; }
       go('#/contact'); return true; }
 
     case 'submit': {

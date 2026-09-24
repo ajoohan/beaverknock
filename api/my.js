@@ -149,12 +149,25 @@ async function consent(req, res, user, body) {
     return res.status(400).json({ error: '필수 항목에 동의해 주세요' });
   }
   const now = new Date().toISOString();
+
+  /* 이미 적힌 시각은 덮지 않는다.
+     나중에 **광고 수신만** 바꿔도 terms_at·privacy_at 이 지금으로 밀리면,
+     '언제 동의했는가' 에 답할 수 없게 된다 - 그러자고 만든 표다(0023).
+     못 읽었으면 지금 시각으로 적는다. 기록을 남기는 편이 안 남기는 것보다 낫다. */
+  const before = await read();
+  if (before.err) return res.status(502).json({ error: '확인하지 못했습니다' });
+  const prev = before.row || {};
+
   const row = {
     user_id: user.id,
-    terms_at: now,
-    privacy_at: now,
+    terms_at:   prev.terms_at   || now,
+    privacy_at: prev.privacy_at || now,
     marketing_at: set.marketing ? now : null,
-    marketing_off_at: set.marketing ? null : now,
+    /* 철회한 시각은 **실제로 철회한 그때**다. 동의한 적이 없으면 처음 거절한 때를
+       적고, 그 뒤로 계속 거절이면 그 시각을 그대로 둔다 - 저장할 때마다
+       밀어 두면 '언제 거두었나' 가 사라진다. */
+    marketing_off_at: set.marketing ? null
+      : (prev.marketing_at ? now : (prev.marketing_off_at || now)),
     ua: String(req.headers['user-agent'] || '').slice(0, 200),
     updated_at: now,
   };

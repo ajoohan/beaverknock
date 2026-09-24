@@ -191,6 +191,62 @@ async function searchAddr(req, res, b) {
   }
 }
 
+/* ══════════ 등록번호 대조 (서버가 직접) ══════════
+   ⚠ 이 함수가 생긴 까닭.
+   전에는 화면이 아래 handler 를 부르고, 그 결과를 `reg_verified:true` 로
+   되보내면 서버가 **그 말을 그대로 믿었다.** 손님 조건 전문이 걸린 문인데
+   두드리는 쪽이 '열어도 된다' 고 말하면 열어 주고 있었다 - 화면을 거치지 않고
+   `{role:'agent', reg_no:'형식만 맞는 번호', reg_verified:true}` 를 바로 넣으면
+   승인된 파트너가 됐다. 이제 agent.js 가 이 함수를 불러 **직접 본다.**
+
+   돌려주는 것: {ok, reason?, value, hit, state, source}
+     ok:false  형식이 틀렸다(reason 에 까닭)
+     hit:null  명부에서 못 찾았다 - 없는 것이지 틀린 것은 아니다
+     state     '영업중' 이 아니면 열지 않는다(휴업·폐업 등) */
+export async function lookupReg(regNo, sigun) {
+  const shape = checkShape(regNo);
+  if (!shape.ok) return { ok: false, reason: shape.reason };
+
+  const key = keyOf(shape.value);
+
+  /* ① 전국 명부 - 네트워크를 타지 않는다 */
+  const local = findByKey(key);
+  if (local) {
+    const st = typeof local.state === 'number' ? STATE_NM[local.state] : local.state;
+    return { ok: true, value: shape.value, regNo: shape.value, hit: local,
+             state: st || null, source: `국토교통부 (${STD_DATE} 기준)` };
+  }
+
+  /* ② 경기 실시간 - 파일 기준일 이후 개설한 곳을 위해 한 번 더 본다 */
+  const gkey = process.env.GG_API_KEY;
+  const sig = norm(sigun) || DEFAULT_SIGUN;
+  if (gkey) {
+    try {
+      const rows = await fetchSigun(sig, gkey);
+      const row = rows.find(r => keyOf(r.COPRTN_REG_NO) === key);
+      if (row) {
+        const d = norm(row.REGIST_DE);
+        return { ok: true, value: shape.value, regNo: row.COPRTN_REG_NO || shape.value,
+                 hit: { office: row.BIZMAN_CMPNM_INFO, rep: row.BRKR_NM,
+                        addr: row.LEGALDONG_NM || row.SIGUN_NM,
+                        state: norm(row.STATE_DIV_NM),
+                        since: /^\d{8}$/.test(d) ? `${d.slice(0,4)}-${d.slice(4,6)}` : null },
+                 state: norm(row.STATE_DIV_NM) || null, source: '경기데이터드림' };
+      }
+    } catch (e) {
+      console.error('[agent-verify] gg', sig, e && e.message);
+    }
+  }
+
+  return { ok: true, value: shape.value, regNo: shape.value, hit: null, state: null };
+}
+
+/* 찾았고 영업 중일 때만 연다. 휴업·폐업은 '등록은 있지만 지금은 아니다' 이고,
+   못 찾은 것은 '없는 것이 아니라 아직 명부에 안 올라왔을 수 있다' 이다.
+   둘 다 자동으로 열지 않는다 - 사람이 확인한다. */
+export const regOpens = look => !!(look && look.ok && look.hit
+  && (!look.state || STATE_OK.has(look.state)));
+
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST 만 받습니다' });

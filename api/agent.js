@@ -11,7 +11,7 @@
 
 import crypto from 'node:crypto';
 import { notify, mask } from './_notify.js';
-import { checkShape } from './agent-verify.js';
+import { checkShape, lookupReg, regOpens } from './agent-verify.js';
 import { userFrom } from './_auth.js';
 import { readIdv } from './_idv.js';
 
@@ -139,7 +139,13 @@ export default async function handler(req, res) {
      확인할 실마리(법인명·신탁사 등)가 이미 위에서 걸러졌다.
      확인 전이면 'new' 로 두고 요약만 보여준다 - 손님 조건 전문은 자격이
      확인된 뒤에 열린다. */
-  const verified = role === 'agent' ? (b.reg_verified === true) : true;
+  /* ⚠ 전에는 `b.reg_verified === true` 를 그대로 믿었다 - 화면이 보내온 값이다.
+     화면을 거치지 않고 그 한 줄만 넣으면 **승인된 파트너**가 됐다.
+     이제 서버가 공공데이터를 직접 본다. 화면이 뭐라고 보내든 상관없다.
+     번호를 안 적었으면 열지 않는다 - 자격은 나중에 what:'verify' 로 받는다. */
+  const look = role === 'agent' && str(b.reg_no)
+    ? await lookupReg(b.reg_no, b.sigun) : null;
+  const verified = role === 'agent' ? regOpens(look) : true;
   const autoApprove = process.env.BK_AUTO_APPROVE !== '0' && verified;
 
   const row = {
@@ -147,10 +153,15 @@ export default async function handler(req, res) {
     status: autoApprove ? 'approved' : 'new',
     user_id: owner.id,
     email:    str(b.email, 120),
-    office:   str(b.office, 80),
-    reg_no:   str(b.reg_no, 40),
-    reg_verified: b.reg_verified === true,
-    addr:     str(b.addr, 200),
+    /* 상호·주소는 명부에 적힌 것을 먼저 쓴다 - 번호만 맞고 이름은 다른
+       사무소로 남으면, 운영 화면에서 그 줄을 믿을 수 없게 된다. */
+    office:   str((look && look.hit && look.hit.office) || b.office, 80),
+    reg_no:   str((look && look.regNo) || b.reg_no, 40),
+    /* ⚠ **서버가 본 결과**를 적는다. 화면이 보내온 값을 그대로 담으면,
+       운영 화면에 '(공공데이터 확인됨)' 이라고 찍히는 줄을 신청자가 스스로
+       만들 수 있다 - 확인했다는 표시는 확인한 쪽만 붙일 수 있어야 한다. */
+    reg_verified: verified && role === 'agent',
+    addr:     str((look && look.hit && look.hit.addr) || b.addr, 200),
     relation: str(b.relation, 40),
     biz_no:   str(b.biz_no, 20),
     dev_type: str(b.dev_type, 40),
@@ -260,17 +271,27 @@ export async function verify(req, res, b) {
 
   const patch = {};
   if (me.role === 'agent') {
-    const shape = checkShape(b.reg_no);
-    if (!shape.ok) return res.status(400).json({ error: shape.reason });
     /* 공공데이터와 맞아떨어져야 연다. 형식만 맞는 번호로는 열지 않는다 -
-       손님 조건 전문이 걸린 문이다. */
-    if (b.reg_verified !== true) {
-      return res.status(400).json({ error: '등록번호를 확인하지 못했습니다 - 사무소 상호와 번호를 다시 봐주세요' });
+       손님 조건 전문이 걸린 문이다.
+       ⚠ 그 대조를 **서버가 직접 한다.** 전에는 화면이 보내온 reg_verified 를
+       믿었는데, 그러면 이 한 줄을 그냥 넣는 쪽에 문을 열어 주는 것이다. */
+    const look = await lookupReg(b.reg_no, b.sigun);
+    if (!look.ok) return res.status(400).json({ error: look.reason });
+    if (!regOpens(look)) {
+      return res.status(400).json({
+        error: look.hit
+          ? `등록은 확인했지만 현재 상태가 '${look.state}' 입니다 - 담당자가 확인한 뒤 연락드립니다`
+          : '등록번호를 확인하지 못했습니다 - 사무소 상호와 번호를 다시 봐주세요',
+      });
     }
-    patch.reg_no = str(b.reg_no, 40);
+    patch.reg_no = str(look.regNo || b.reg_no, 40);
     patch.reg_verified = true;
-    if (str(b.office)) patch.office = str(b.office, 80);
-    if (str(b.addr))   patch.addr   = str(b.addr, 200);
+    /* 상호·주소는 **명부에 적힌 것**을 먼저 쓴다. 적어 보낸 것을 그대로 담으면
+       번호만 맞고 이름은 다른 사무소로 남을 수 있다. */
+    if (look.hit && look.hit.office) patch.office = str(look.hit.office, 80);
+    else if (str(b.office))          patch.office = str(b.office, 80);
+    if (look.hit && look.hit.addr)   patch.addr   = str(look.hit.addr, 200);
+    else if (str(b.addr))            patch.addr   = str(b.addr, 200);
   }
   patch.status = process.env.BK_AUTO_APPROVE === '0' ? 'new' : 'approved';
 

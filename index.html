@@ -3122,13 +3122,19 @@ V['#/register'] = () => {
         <p style="margin:8px 0 0;font-size:12.5px;line-height:1.6;color:var(--n500)">${w.note}</p>
       </div>
 <div><span class="lab">${w.area} <span class="req">*</span> <span class="opt">지도에서 고르거나 검색해서 고르세요 (여러 곳 가능)</span></span>
-        <div class="ac" style="margin-bottom:12px">
-          <input class="inp" data-in="dongFree" value="${esc(d.dongFree||'')}" autocomplete="off"
-            placeholder="예) 미사, 신장, 강남 - 적으면 목록이 뜹니다" aria-label="${w.area} 검색">
-          <div class="aclist" data-aclist></div></div>
+        <!-- 라벨이 '지도에서 고르거나 검색해서' 라고 말하는데 바로 아래에는
+             검색칸만 있고, 지도는 칩·브레드크럼·툴바를 지나 네 번째 아래에 있었다.
+             읽는 사람은 약속받은 지도를 못 보고 텍스트 칸만 본다.
+             ① 고른 것 ② 지도 ③ 검색 순으로 바꾼다 -
+             내가 무엇을 골랐는지 먼저 보이고, 그다음이 라벨이 약속한 지도다. -->
         ${d.dongs.length?`<div class="chips" style="margin-bottom:12px">${d.dongs.map(x=>`
           <button class="chip on" data-act="dong" data-v="${esc(x)}">${esc(x)} ✕</button>`).join('')}</div>`:''}
         ${regionPicker(d, true)}
+        <div class="ac" style="margin-top:12px">
+          <span class="opt" style="display:block;margin-bottom:6px">이름을 아시면 검색이 빠릅니다</span>
+          <input class="inp" data-in="dongFree" value="${esc(d.dongFree||'')}" autocomplete="off"
+            placeholder="예) 미사, 신장, 강남 - 적으면 목록이 뜹니다" aria-label="${w.area} 검색">
+          <div class="aclist" data-aclist></div></div>
       </div>
       <div class="grid2 mo1">
         <div><span class="lab">희망 면적 <span class="req">*</span> <span class="opt">전용면적 기준 · 평</span></span>
@@ -3170,13 +3176,19 @@ V['#/register'] = () => {
       ` : `
       <div><span class="lab">거래 방식 <span class="req">*</span></span>${chipsHTML(DEALS, d.deal, 'deal', false)}</div>
 <div><span class="lab">찾으시는 동네 <span class="req">*</span> <span class="opt">지도에서 고르거나 검색해서 고르세요 (여러 곳 가능)</span></span>
-        <div class="ac" style="margin-bottom:12px">
-          <input class="inp" data-in="dongFree" value="${esc(d.dongFree||'')}" autocomplete="off"
-            placeholder="예) 미사, 덕풍, 강남 - 적으면 목록이 뜹니다" aria-label="동네 검색">
-          <div class="aclist" data-aclist></div></div>
+        <!-- 라벨이 '지도에서 고르거나 검색해서' 라고 말하는데 바로 아래에는
+             검색칸만 있고, 지도는 칩·브레드크럼·툴바를 지나 네 번째 아래에 있었다.
+             읽는 사람은 약속받은 지도를 못 보고 텍스트 칸만 본다.
+             ① 고른 것 ② 지도 ③ 검색 순으로 바꾼다 -
+             내가 무엇을 골랐는지 먼저 보이고, 그다음이 라벨이 약속한 지도다. -->
         ${d.dongs.length?`<div class="chips" style="margin-bottom:12px">${d.dongs.map(x=>`
           <button class="chip on" data-act="dong" data-v="${esc(x)}">${esc(x)} ✕</button>`).join('')}</div>`:''}
         ${regionPicker(d, false)}
+        <div class="ac" style="margin-top:12px">
+          <span class="opt" style="display:block;margin-bottom:6px">이름을 아시면 검색이 빠릅니다</span>
+          <input class="inp" data-in="dongFree" value="${esc(d.dongFree||'')}" autocomplete="off"
+            placeholder="예) 미사, 덕풍, 강남 - 적으면 목록이 뜹니다" aria-label="동네 검색">
+          <div class="aclist" data-aclist></div></div>
       </div>
       ${(()=>{ const w = dealWords(d.deal);
         const depBox = `

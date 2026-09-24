@@ -176,6 +176,16 @@ body.mo .back::after{content:"";position:absolute;left:0;right:0;top:-9px;bottom
    이름을 .gate 로 지었다가 한 번 데였다. 아래쪽에 이미 .gate 가 있고
    .gate:not(.open) 이 pointer-events:none 을 걸어서 버튼이 눌리지 않았다.
    클래스 이름을 새로 만들 때는 먼저 찾아보고 짓는다. */
+/* 파트너로 들어가는 문. **손님 문과 색이 달라야 한다** -
+   둘 다 인디고라 '내 조건 걸어두기' 와 '파트너로 시작하기' 가 한눈에 구분되지
+   않았다. 나란히 놓이는 자리도 있어서 어느 쪽이 내 문인지 헷갈린다.
+   clay 는 새로 들인 색이 아니다. 파트너 카드의 아이브로(FOR PARTNERS)가
+   원래 쓰던 색이라, 색을 바꾸는 것이 아니라 제자리를 찾아주는 것이다.
+   글씨는 navy900 - clay 위에서 8.31:1.
+   테두리를 clay700 으로 두른다. 채움만 두면 흰 바탕과 2.24:1 이라
+   버튼의 가장자리가 사라진다(어두운 카드 위에서는 문제없지만 밝은 곳도 있다). */
+.btn.partner{background:var(--clay);border-color:var(--clay700);color:var(--navy900);font-weight:800}
+.btn.partner:hover{filter:brightness(.95)}
 .btn.door{background:var(--ind50);border-color:var(--ind200);color:var(--ind);font-weight:700}
 .btn.door:hover{background:var(--ind100);border-color:var(--ind300)}
 .btn.door.solid{background:var(--ind);border-color:var(--ind);color:#fff;
@@ -2738,7 +2748,7 @@ V['#/'] = () => `
       <p class="d">손님이 조건을 걸어두고 기다립니다. 맞는 조건에만 1:1 로 제안하시면 됩니다 -
         전단도, 광고비도 없습니다. <b style="color:#fff;font-weight:700">제안은 무료입니다.</b></p>
       <div class="row">
-        <button class="btn pri" data-go="#/partner/join" style="padding:14px 26px;font-size:15px">파트너로 시작하기</button>
+        <button class="btn partner" data-go="#/partner/join" style="padding:14px 26px;font-size:15px">파트너로 시작하기</button>
         <button class="btn onDark" data-go="#/partner" style="padding:14px 22px;font-size:15px">먼저 둘러보기</button>
       </div>
       <!-- 상단바에서 파트너 로그인을 뺐으므로 돌아온 분의 길은 여기에 둔다 -->
@@ -4994,7 +5004,7 @@ V['#/partner'] = () => `
     <h1 class="t" style="font-size:${isMo()?25:40}px;color:#fff;line-height:1.28;max-width:20ch">서울·경기에서 집·가게를 구하는 손님이<br><span style="color:var(--ind300)">조건을 걸어두고</span> 기다리고 있습니다</h1>
     <p style="margin:0;font-size:${isMo()?14:17}px;line-height:1.75;color:#9AA3BF"><b style="color:#F0EDE7">제안을 보내는 데 드는 비용은 없습니다. 매물을 올리실 필요도 없습니다.</b><br class="mbr"> 네이버·직방에 올리는 광고비와 다릅니다 - 이미 원하는 게 정해진 손님입니다.</p>
     <div style="display:flex;align-items:center;gap:18px;${isMo()?'flex-direction:column;align-items:stretch':''}">
-      <button class="btn ${isMo()?'blk':''}" data-go="#/partner/join" style="background:var(--ind400);color:#fff;padding:16px 40px;font-size:17px">파트너로 가입하기</button>
+      <button class="btn partner ${isMo()?'blk':''}" data-go="#/partner/join" style="padding:16px 40px;font-size:17px">파트너로 가입하기</button>
       <a class="tapx" data-go="#/partner/demands" style="font-size:14px;font-weight:700;color:var(--ind300);text-decoration:underline;text-underline-offset:3px;padding:6px 2px">먼저 둘러보기</a>
       <span style="font-size:12.5px;line-height:1.7;color:var(--navy300)">공인중개사 · 소유자(개인 · 법인 · 신탁 위탁자) 모두 가입하실 수 있습니다 ·<br class="mbr"> 손님에게 제안을 보내는 데는 과금하지 않습니다</span>
     </div>
@@ -5056,7 +5066,7 @@ V['#/partner/demands'] = () => {
       : S.feedNeed==='login'    ? '로그인하시면 내 활동 조건에 맞는 손님만 보여드립니다.'
       : '잠시 후 다시 시도해 주세요.'}</span></span>
       ${S.feedNeed==='verify' ? `<a class="btn pri sm" data-go="#/partner/verify" style="flex:none">자격 인증하기</a>`
-      : S.feedNeed==='join' ? `<a class="btn pri sm" data-go="#/partner/join" style="flex:none">파트너 가입</a>`
+      : S.feedNeed==='join' ? `<a class="btn partner sm" data-go="#/partner/join" style="flex:none">파트너 가입</a>`
       : S.feedNeed==='login' ? `<button class="btn pri sm" data-act="nav-login" data-v="partner" style="flex:none">파트너 로그인</button>`
       : `<button class="btn sec sm" data-act="feed-retry" style="flex:none">다시 불러오기</button>`}
     </div>` : ''}

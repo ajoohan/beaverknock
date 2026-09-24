@@ -1455,6 +1455,11 @@ const MUSTS=['주차 가능','엘리베이터','반려동물','역세권','초�
 /* 매물에 적는 주택 유형. 손님 쪽 HTYPES 와 달리 '상관없음' 이 없고 원룸을 따로 둔다 -
    원룸은 방이 하나라는 뜻이므로 방 수를 또 물을 이유가 없다(중개사 회신 2026-09-21). */
 const LHTYPE = ['아파트','오피스텔','빌라·연립','원룸','단독·다가구','상가주택'];
+/* 중개사가 올릴 수 있는 물건의 유형. **손님이 고르는 넷(WHO)과 같아야 한다** -
+   한쪽이 좁으면 그 유형의 조건은 1단계(L.kind === d.kind)에서 영영 막힌다.
+   묻는 칸은 '주거냐 아니냐' 로만 갈린다(NONHOME) - 고르는 것만 넷이다. */
+const LKINDS = [{k:'home',t:'주거'},{k:'shop',t:'상가·점포'},
+                {k:'office',t:'사무실'},{k:'storage',t:'창고'}];
 const isOneRoom = t => t === '원룸';
 /* 입주 가능시기는 여러 개가 된다. 예전 행은 문자열 하나라 그것도 받아준다 -
    바꾸기 전에 올린 물건이 화면에서 빈칸으로 보이면 안 된다. */
@@ -1579,8 +1584,12 @@ function matchStages(L, d){
   /* 1. 유형 */
   /* 업종은 물건에서 받지 않는다 - 중개사 회신(2026-09-14). 그래서 여기서 거르지
      않고 아래 '확인' 단계로 넘긴다. 모르는 것을 맞다고도 틀리다고도 하지 않는다. */
-  const kindOk = L.kind === d.kind && (L.kind==='shop' ? true : (!m.deal || m.deal===L.deal));
-  st.push({k:'유형', ok:kindOk, note: L.kind==='shop' ? (m.biz||'') : (m.deal||'')});
+  /* 유형은 그대로 견준다. 넷이 다 물건 쪽에도 있으므로(LKINDS) 서로 만난다 -
+     전에는 중개사가 넷을 둘로만 올릴 수 있어서, 사무실·창고 조건이 여기서
+     통째로 막혔다. 1~4 단계는 통과해야 제안이 만들어지므로 그 손님에게는
+     **맞는 물건이 영영 한 건도 없었다.** */
+  const kindOk = L.kind === d.kind && (NONHOME(L.kind) ? true : (!m.deal || m.deal===L.deal));
+  st.push({k:'유형', ok:kindOk, note: NONHOME(L.kind) ? (m.biz||'') : (m.deal||'')});
   /* 2. 지역 */
   const norm = x => String(x).replace(/\s*(상권|전체)\s*/g,'');
   const regionOk = (m.dongs||[]).some(x => norm(x)===norm(L.dong));
@@ -6042,7 +6051,9 @@ V["#/partner/settings"] = () => {
 </div>`;};
 
 /* ---------- S-08 내 물건 (매칭 재고) ---------- */
-const priceOf = L => L.kind==='shop' || L.rent
+/* 물건 가격 한 줄. 주거가 아니면 늘 보증금/월세다 - 전에는 'shop' 하나만 보아
+   사무실·창고 물건에 월세가 0 이면 '전세 …' 로 나왔다. */
+const priceOf = L => NONHOME(L.kind) || L.rent
   ? `보증금 ${won(L.dep)} / 월 ${won(L.rent)}${L.fee?` · 관리비 ${won(L.fee)}`:''}`
   : `전세 ${won(L.dep)}${L.fee?` · 관리비 ${won(L.fee)}`:''}`;
 /* 고른 것과 직접 적은 것을 한 줄로 잇는다. 제안 한마디에도 이 문장이 그대로 들어간다 */
@@ -6185,7 +6196,7 @@ function addrBox(target, ph){
 /* 매물 등록 */
 V["#/partner/listing/new"] = () => {
   const f = S.form, g = k => f[k]||'';
-  const shop = f.lkind==='shop';
+  const shop = NONHOME(f.lkind);
   const req = listingOk(f);
   return `
 <div class="scr fade" style="background:var(--n50)">
@@ -6197,8 +6208,12 @@ V["#/partner/listing/new"] = () => {
       <p class="sub measure">등록하면 <b style="color:var(--n900)">지금 대기 중인 손님과 즉시 대조</b>합니다. 맞는 손님이 있으면 바로 제안할 수 있습니다.</p></div>
 
     <div class="card pad" style="display:flex;flex-direction:column;gap:16px">
+      <!-- 손님은 넷 중에서 고른다(주거·상가·사무실·창고). 여기를 둘로 묶어 두면
+           사무실·창고 조건은 **어떤 물건과도 영영 맞지 않는다** - 1단계가
+           L.kind === d.kind 로 가르기 때문이다. 묻는 칸은 주거냐 아니냐로만
+           갈리므로, 고르는 것만 넷으로 벌려 둔다. 서버는 이미 넷을 받는다. -->
       <div><span class="lab">유형 <span class="req">*</span></span>
-        ${chipsHTML(['주거','상가·사무실'], shop?'상가·사무실':'주거','lkindpick',false)}</div>
+        ${chipsHTML(LKINDS.map(x=>x.t), (LKINDS.find(x=>x.k===(f.lkind||'home'))||LKINDS[0]).t,'lkindpick',false)}</div>
       <div><span class="lab">주소 <span class="req">*</span> <span class="opt">도로명·지번·건물명으로 찾으실 수 있습니다</span></span>
         ${addrBox('laddr','예) 미사강변대로 220')}
         ${g('laddr')? `<div style="margin-top:8px;padding:11px 14px;background:var(--n50);border-radius:var(--r-sm);
@@ -9127,7 +9142,7 @@ function refreshGate(){
 }
 /* 화면과 새로고침이 각자 판단하면 언젠가 어긋나고, 그때 버튼만 안 눌린다 */
 function listingOk(f){
-  const g = k => f[k] || '', shop = f.lkind==='shop';
+  const g = k => f[k] || '', shop = NONHOME(f.lkind);
   /* 건물명은 있는 유형에서만 묻는다. 단독·다가구·상가주택은 동까지면 된다. */
   const nameOk = NO_BLDG_NAME(g('lhtype')) || !!String(g('lname')).trim();
   /* 방향은 주거에서만 묻는다 - 상가·사무실에서는 값을 가르지 않는다 */
@@ -9138,7 +9153,7 @@ function listingOk(f){
       && (shop ? !!String(g('lfloorNo')).trim() : +g('lrooms')>0);
 }
 function refreshListingBtn(){
-  const f=S.form, g=k=>f[k]||'', shop=f.lkind==='shop';
+  const f=S.form, g=k=>f[k]||'', shop=NONHOME(f.lkind);
   const ok = listingOk(f);
   const b=$('#app [data-act="save-listing"]'); if(b) b.disabled=!ok;
   const hint=$('#app [data-lhint]'); if(hint) hint.textContent = ok?'등록 즉시 대기 손님과 대조합니다':'* 표시 항목을 채워주세요';
@@ -9545,7 +9560,7 @@ function handle(a,v,el){
       const nd = {id:'d'+Date.now(), kind:d.kind, deal:NONHOME(d.kind)?(d.biz||(WHO[d.kind]||{}).tag||'상가'):(d.deal||'월세'),
         region:d.dongs.join(' · ')||'서울·경기', slotsLeft:slotN, at:'방금', pct:detailPct(d), urgent:false, who:d.who,
         lines:draftLines(d), memo:d.memo||'',
-        m: d.kind==='shop'
+        m: NONHOME(d.kind)
           ? {dongs:d.dongs, biz:d.biz, depMax:+d.dep||null, rentMax:+d.rent||null,
              /* 층·설비는 기입형이라 기계로 거르지 않는다 - 중개사가 읽고 판단한다 */
              pyMin:+d.areaMin||null, pyMax:+d.areaMax||null, floors:[],
@@ -9560,10 +9575,10 @@ function handle(a,v,el){
              htype:d.htype||[]},
         req:[['지역',d.dongs.join(' · ')],['예산',draftLines(d)[0]||''],['유형',(d.htype||[]).join(' · ')||d.biz||''],
              ].filter(r=>r[1]),
-        det:(d.kind==='shop'
+        det:(NONHOME(d.kind)
               ? [['층',d.shopFloorFree||''],['설비',d.facFree||''],['업종',d.biz||'']]
               : [['층',d.floor||''],['거주',d.house||''],['대출',d.loan||'']]).filter(r=>r[1]),
-        check:(d.kind==='shop'
+        check:(NONHOME(d.kind)
                 ? [d.shopFloorFree, d.facFree].filter(Boolean)
                 : (d.musts&&d.musts.length?d.musts:[])).slice(0,3)};
       S.demands.unshift(nd);
@@ -9825,10 +9840,10 @@ function handle(a,v,el){
     /* 유형을 바꿔도 주소·가격·면적은 그대로 둔다 - 같은 칸이다.
        그 유형에 없는 칸만 비운다. 상가는 고·중·저를 쓰지 않는다. */
     case 'lkindpick': {
-      /* 칩 글자를 '상가·사무실' 로 바꿨다(2026-09-21). 여기서 '상가' 만 보고 있으면
-         유형이 영영 안 바뀐다 - 글자와 이것을 같이 고쳐야 한다. */
-      const shop2 = v.startsWith('상가');
-      S.form.lkind = shop2?'shop':'home';
+      /* 글자로 유형을 되짚지 않는다 - 전에 칩 글자만 바꿨다가 유형이 영영
+         안 바뀌던 일이 있었다(2026-09-21). 이제 표(LKINDS)에서 찾는다. */
+      S.form.lkind = (LKINDS.find(x => x.t === v) || LKINDS[0]).k;
+      const shop2 = NONHOME(S.form.lkind);
       if(shop2){ S.form.lrooms=''; S.form.lbaths=''; S.form.lmusts=[]; S.form.lmustsFree=''; S.form.lband=''; S.form.lhtype=''; }
       else { S.form.lfloorNo=''; }
       render(); return true; }
@@ -9855,9 +9870,11 @@ function handle(a,v,el){
       if(v === 'j-addr') S.form['j-addr'] = ''; else S.form[v] = '';
       ADDR.rows = null; ADDR.note = ''; render(); return true;
     case 'save-listing': {
-      const f=S.form, shop=f.lkind==='shop';
+      const f=S.form, shop=NONHOME(f.lkind);
       const area = +f.larea||0;
-      const L={ id:'L'+Date.now(), kind: shop?'shop':'home', name:(f.lname||'').trim(),
+      /* 고른 유형을 그대로 싣는다. 전에는 넷을 둘로 접어 보내서, 사무실·창고를
+         올려도 표에는 'shop' 으로 남았고 그 유형의 손님과 영영 안 맞았다. */
+      const L={ id:'L'+Date.now(), kind: f.lkind || 'home', name:(f.lname||'').trim(),
         dong:(f.ldong||'').trim(), deal: f.ldeal||'월세',
         dep:+f.ldep||0, rent:+f.lrent||0, fee:+f.lfee||0,
         feeBasis:f.lfeeBasis||'', feeType:f.lfeeType||'', feeItems:(f.lfeeItems||'').trim(),

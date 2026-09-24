@@ -79,6 +79,30 @@ const ready = () => !!(process.env.PORTONE_API_SECRET
   && process.env.PORTONE_STORE_ID && process.env.PORTONE_CHANNEL_KEY
   && process.env.BK_SECRET_KEY);
 
+/* ── 남의 돈으로 도는 문에는 빗장을 건다 ──
+   이 문은 로그인을 묻지 않는다. 조건을 쓰기 **전에** 본인확인을 받기 때문이다.
+   그런데 한 번 부를 때마다 우리 열쇠로 포트원 API 를 두드린다 - 빗장이 없으면
+   아무나 끝없이 두드려 우리 몫의 한도를 태울 수 있다.
+   주소 검색(agent-verify.js)에는 같은 이유로 이미 빗장이 걸려 있었는데
+   여기만 없었다. 같은 모양으로 건다. (2026-09-24)
+
+   사람이 본인확인을 받는 속도는 1분에 한두 번이다. 10번이면 넉넉하다 -
+   실패하고 다시 받는 경우까지 헤아린 값이다. */
+const hits = new Map();
+const WINDOW = 60_000, MAX = 10;
+
+function tooMany(req) {
+  const ip = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim()
+          || (req.socket && req.socket.remoteAddress) || 'unknown';
+  const now = Date.now();
+  const seen = (hits.get(ip) || []).filter(t => now - t < WINDOW);
+  /* 표가 끝없이 자라지 않게 - 서버리스라도 한 인스턴스는 꽤 오래 산다 */
+  if (hits.size > 500) for (const [k, v] of hits) if (!v.some(t => now - t < WINDOW)) hits.delete(k);
+  if (seen.length >= MAX) return true;
+  seen.push(now); hits.set(ip, seen);
+  return false;
+}
+
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
 
@@ -100,6 +124,12 @@ export default async function handler(req, res) {
   const id = String(b.identity_verification_id ?? '').trim();
   if (!id || id.length > 120 || !/^[A-Za-z0-9_-]+$/.test(id)) {
     return res.status(400).json({ error: '본인확인 정보를 확인하지 못했습니다' });
+  }
+
+  /* 생김새를 본 **뒤에** 센다. 오타로 되돌아온 것까지 세면, 잘못 누른 분이
+     잠겨 버린다 - 포트원을 실제로 두드리는 것만 센다. */
+  if (tooMany(req)) {
+    return res.status(429).json({ error: '잠시 후 다시 시도해 주세요' });
   }
 
   try {

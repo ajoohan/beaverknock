@@ -13,10 +13,28 @@ import crypto from 'node:crypto';
 
 export const STATE_COOKIE = 'bk_nv_state';
 
+/* ── 돌아올 주소는 **아는 집만** ──
+   전에는 `x-forwarded-host` 를 그대로 믿었다. 그 헤더는 요청하는 쪽이 붙이는
+   값이고, 이 주소로 **세션이 실려 돌아온다**(verify 의 redirect_to).
+   지금 당장 새는 자리는 아니다 - Vercel 은 아는 도메인으로만 라우팅하고
+   Supabase 도 redirect_to 를 허용 목록과 대조한다. 다만 **기대 둘이 동시에
+   깨지면 그대로 뚫리는** 모양이라, 여기서 한 번 더 가른다.
+   네이버에 등록한 콜백 주소는 어차피 하나뿐이라, 모르는 집이면 표준 주소로
+   되돌려도 잃는 것이 없다.
+   BK_SITE 를 두면 그것이 이긴다 - 도메인을 옮길 때 코드를 안 고쳐도 된다. */
+const CANON = 'beaverknock.co.kr';
+const SITE_OK = h =>
+  h === CANON || h === 'www.' + CANON
+  || /^[a-z0-9-]+\.vercel\.app$/.test(h)          /* 미리보기 배포 */
+  || /^localhost(:\d+)?$/.test(h);
+
 export function origin(req) {
-  const host = req.headers['x-forwarded-host'] || req.headers.host;
-  const proto = req.headers['x-forwarded-proto'] || 'https';
-  return `${proto}://${host}`;
+  const pin = String(process.env.BK_SITE || '').trim().replace(/\/+$/, '');
+  if (pin) return pin;
+  const raw = String(req.headers['x-forwarded-host'] || req.headers.host || '')
+    .split(',')[0].trim().toLowerCase();
+  const host = SITE_OK(raw) ? raw : CANON;
+  return `${/^localhost/.test(host) ? 'http' : 'https'}://${host}`;
 }
 
 export default function handler(req, res) {

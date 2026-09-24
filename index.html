@@ -3946,6 +3946,30 @@ function detectRegion(manual){
   }, {timeout:8000, maximumAge:600000, enableHighAccuracy:false});
 }
 
+/* ── 고른 동네를 따라가는 지도 ──
+   강남구를 골랐는데 아래 지도가 하남을 비추고 있으면, 방금 고른 곳이 어디인지
+   확인할 길이 없다. 고른 것과 보이는 것이 다르면 고른 사람이 자기를 의심한다.
+   지도는 mapLevel 하나로 무엇을 비출지 정하는데, 동네를 고를 때 아무도
+   그 값을 건드리지 않아 언제나 기본값(하남)에 머물러 있었다. */
+function mapLevelFor(raw){
+  const name = String(raw || '').trim();
+  if(name === '서울 전체')  return 'seoul';
+  if(name === '하남 어디든') return 'hanam';
+  /* '미사역 상권' 처럼 꼬리가 붙은 이름도 하남 목록에 그대로 있다 */
+  if(DONG_TO_SI[name] === '하남시') return 'hanam';
+  const n = name.replace(/\s*상권\s*/g, '').trim();
+  if(SEOUL_GU.some(x => x.t === n)) return 'seoul';
+  if(DONG_TO_SI[n] === '하남시')    return 'hanam';
+  if(GG_SI.some(x => x.t === n))    return 'top';
+  return null;                      /* 모르는 이름이면 그대로 둔다 - 함부로 옮기면 더 헷갈린다 */
+}
+/* 새로 고른 곳만 따라간다. 지우는 것은 지도를 움직이지 않는다 -
+   지우려고 눌렀는데 화면이 튀면 무엇을 지웠는지 놓친다. */
+function followMap(d, name){
+  const lv = mapLevelFor(name);
+  if(lv && lv !== d.mapLevel){ d.mapLevel = lv; mapReset(); }
+}
+
 /* ── 목록(칩) 대체 데이터 ── */
 const LIST_GROUPS = shop => ([
   /* 하남은 '어디든' 을 맨 뒤에 둔다 - 동을 고르는 자리에서 전체가 가운데 끼면 눈에 걸린다 */
@@ -8891,7 +8915,11 @@ function handle(a,v,el){
       if(!dealWords(v).rent) d.rent = '';
       render(); return true;
 
-    case 'dong': toggleIn(d.dongs,v); render(); return true;
+    case 'dong': {
+      const had = d.dongs.includes(v);
+      toggleIn(d.dongs, v);
+      if(!had) followMap(d, v);          /* 새로 고른 곳으로 지도를 옮긴다 */
+      render(); return true; }
     case 'region-view': d.mapView=v; render(); return true;
     case 'map-drill': d.mapLevel=v; mapReset(); render(); return true;
     case 'map-zoom':
@@ -9078,7 +9106,7 @@ function handle(a,v,el){
     case 'ops-reveal': OPS.reveal = !OPS.reveal; opsFetch(); return true;
     case 'ops-csv':    return opsCsv();
     case 'pick-addr': { const t=String(v||'').trim(); if(!t) return true;
-      if(!d.dongs.includes(t)) d.dongs.push(t);
+      if(!d.dongs.includes(t)){ d.dongs.push(t); followMap(d, t); }
       d.dongFree=''; render(); return true; }
     case 'elev': d.elev = d.elev===v ? '' : v; render(); return true;
     case 'keyOk': d.keyOk = d.keyOk===v ? '' : v; render(); return true;

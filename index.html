@@ -1631,11 +1631,21 @@ function matchStages(L, d){
   /* musts 이름을 우선순위 이름으로 옮긴다 - '주차 가능' 은 10위 '주차' 다 */
   const mustKey = x => /주차/.test(x) ? '주차' : /반려/.test(x) ? '반려동물' : x;
 
-  const want = (L.kind==='home' ? (m.musts||[]) : (m.fac||[]));
-  const have = (L.kind==='home' ? (L.musts||[]) : (L.fac||[]));
+  /* 갖춰진 조건은 주거에서만 칩으로 오간다. 상가·사무실은 설비를 칩으로 받지
+     않기로 했고(기입형), 물건 쪽 fac 칸도 0027 에서 지웠다 - 양쪽 다 빈 목록이라
+     여기서는 아무 말도 나오지 않는 것이 맞다. */
+  const want = L.kind==='home' ? (m.musts||[]) : [];
+  const have = L.kind==='home' ? (L.musts||[]) : [];
   want.filter(x => !have.includes(x)).forEach(x => add(mustKey(x), x));
   /* 상가는 업종·설비를 물건에 적지 않는다. 손님이 걸어둔 것은 중개사가 직접 봐야 한다. */
   if(L.kind !== 'home' && m.biz) add('업종', `업종 ${m.biz}`);
+  /* 상가 주차 - 우선순위 7위인데 **여태 대조된 적이 없다.** 손님은 대수로 적고
+     (park_need) 물건은 '주차 가능' 한 마디로 적는데, 둘을 잇는 자리가 없었다.
+     대수까지 셀 수는 없으니 '가능' 표시가 없으면 확인 필요로 올린다 -
+     물건에 '불가' 는 담지 않으므로(깎여 보일 뿐이라) 없음과 불가가 같아 보인다.
+     그래서 틀렸다고 하지 않고 '확인' 이라고만 한다. */
+  if(L.kind !== 'home' && +m.parkNeed > 0 && !(L.musts||[]).includes('주차 가능'))
+    add('주차', `주차 ${m.parkNeed}대 필요 (물건에 주차 가능 표시 없음)`);
   /* 상가 입주시기 - 5위인데 여태 대조하지 않았다 */
   if(L.kind !== 'home' && m.openWhen && L.moveIn
      && !String(L.moveIn).includes(m.openWhen) && m.openWhen !== '협의')
@@ -2443,7 +2453,9 @@ function listingFromRow(x){
     rooms:x.rooms||0, baths:x.baths||0, band:x.band||'', floors:x.floors||0,
     bdong:x.bdong||'', ho:x.ho||'', htype:x.htype||'',
     floorNo:x.floor_no||'', duplex:!!x.duplex,
-    musts:x.musts||[], fac:x.fac||[],
+    /* fac(설비)는 더 이상 없다 - 업종·설비 칩을 걷은 뒤로 늘 빈 값이었고
+       0027 에서 칸을 지웠다. 상가 설비는 '매물 특징'(note)에 글로 적는다. */
+    musts:x.musts||[],
     mustsFree:x.musts_free||'', facFree:x.fac_free||'',
     moveIn:x.move_in||'협의',
     photos:x.photos||0, at:agoText(x.created_at), status:x.status||'active',
@@ -2561,8 +2573,29 @@ function demandFromRow(d){
     slotsLeft:d.slots_left, at:agoText(d.created_at), pct:0,
     urgent:(d.slots_left||0)<=1, lines:L.filter(Boolean), memo:d.memo||'',
     mine:!!d.mine, locked:!!d.locked,
+    /* ── 매칭이 읽는 값은 **전부** 여기에 실려야 한다 ──
+       matchStages 가 보는 것: dongs·deal·biz·depMax·rentMax·feeIncluded·rooms·
+       musts·pyMin·pyMax·floors·htype·openWhen·parkNeed·hArea·hBath·hFloor·hDir·hAge.
+       여기서 빠진 값은 **조용히 대조되지 않는다** - 손님은 걸었다고 믿고
+       중개사는 안 맞는 물건을 보낸다. 실제로 일곱 개가 빠져 있었다.
+       ⚠ 이 함수가 진짜 경로다. 조건 접수 직후 목록에 꽂아 넣는 쪽(case 'submit')
+       에만 실어두고 여기를 빠뜨리면, 시험할 때는 되는데 실제로는 안 된다. */
     m:{dongs:d.dongs||[], deal:d.deal, biz:d.biz,
-       depMax:d.dep, rentMax:d.rent, rooms:parseInt(d.rooms,10)||0, musts:d.musts||[],
+       depMax:d.dep, rentMax:d.rent,
+       /* 예산은 관리비를 더해 견준다(3단계 규칙). 주거 초안 쪽은 늘 true 인데
+          여기만 빠져 있어, 서버에서 온 조건은 관리비를 뺀 채로 견주고 있었다. */
+       feeIncluded: !shop,
+       /* '무관' 은 parseInt 가 NaN 을 내어 0 이 됐고, 화면에 '요청 0룸+' 로 나왔다 */
+       rooms: shop ? null : (parseInt(d.rooms,10) || null),
+       musts:d.musts||[],
+       /* 상가 필수키 - 면적(평)과 층. 없으면 4단계가 통째로 통과해 버린다.
+          손님이 적는 단위가 평이고(희망 면적 · 평), L.py 와 견준다. */
+       pyMin: shop ? (+d.area_min||null) : null,
+       pyMax: shop ? (+d.area_max||null) : null,
+       /* 층은 기입형이라 기계로 거르지 않는다 - 중개사가 읽고 판단한다 */
+       floors:[],
+       /* 우선순위 5·7위. 초안 쪽에만 실려 있어 진짜 조건에는 한 번도 닿지 않았다 */
+       htype:d.htype||[], openWhen:d.open_when||'', parkNeed:+d.park_need||0,
        hArea:d.area_bands||[], hBath:d.bath_want||'', hFloor:d.floor_bands||[],
        hDir:d.dir_want||[], hAge:d.age_band||''},
     req, det, check:[],
@@ -6012,8 +6045,11 @@ const priceOf = L => L.kind==='shop' || L.rent
   ? `보증금 ${won(L.dep)} / 월 ${won(L.rent)}${L.fee?` · 관리비 ${won(L.fee)}`:''}`
   : `전세 ${won(L.dep)}${L.fee?` · 관리비 ${won(L.fee)}`:''}`;
 /* 고른 것과 직접 적은 것을 한 줄로 잇는다. 제안 한마디에도 이 문장이 그대로 들어간다 */
-const appealOf = L => [...(L.kind==='home' ? (L.musts||[]) : (L.fac||[])),
-                       (L.kind==='home' ? L.mustsFree : L.facFree) || ''].filter(Boolean).join(' · ');
+/* 물건의 강점 한 줄. 상가도 musts 를 본다 - 주차를 거기에 담기로 했으므로
+   전에 보던 fac 은 상가에서 늘 비어 있었다(0027 에서 칸도 지웠다).
+   상가의 설비·업종은 '매물 특징'(note)에 글로 적고, 그건 따로 전해진다. */
+const appealOf = L => [...(L.musts||[]),
+                       (L.kind==='home' ? L.mustsFree : '') || ''].filter(Boolean).join(' · ');
 /* 면적은 ㎡ 를 앞에 두고 평을 괄호로 붙인다 - 중개사는 ㎡ 로, 손님은 평으로 본다 */
 const areaTag = L => L.area ? `${L.area}㎡(${pyOf(L.area)}평)` : L.py ? `${L.py}평` : '';
 /* 정확한 층을 적어두었으면 그것을 쓴다. 'B1' 처럼 숫자가 아니면 '층' 을 붙이지 않는다 */
@@ -9511,9 +9547,9 @@ function handle(a,v,el){
         m: d.kind==='shop'
           ? {dongs:d.dongs, biz:d.biz, depMax:+d.dep||null, rentMax:+d.rent||null,
              /* 층·설비는 기입형이라 기계로 거르지 않는다 - 중개사가 읽고 판단한다 */
-             pyMin:+d.areaMin||null, pyMax:+d.areaMax||null, floors:[], fac:[],
-             /* 입주시기는 상가 우선순위 5위다. 싣지 않으면 대조 자체가 안 된다. */
-             openWhen:d.openWhen||'',
+             pyMin:+d.areaMin||null, pyMax:+d.areaMax||null, floors:[],
+             /* 입주시기 5위 · 주차 7위. 싣지 않으면 대조 자체가 안 된다. */
+             openWhen:d.openWhen||'', parkNeed:+d.parkNeed||0,
              floorNote:d.shopFloorFree||'', facNote:d.facFree||''}
           : {dongs:d.dongs, deal:d.deal, depMax:+d.dep||null, rentMax:+d.rent||null,
              feeIncluded:true, rooms:d.rooms==='3룸'?3:d.rooms==='4룸+'?4:d.rooms==='1~2룸'?1:null, musts:d.musts,
@@ -9843,7 +9879,7 @@ function handle(a,v,el){
         /* 상가·사무실의 주차는 새 칸을 파지 않고 musts 에 담는다 - 손님 조건 쪽
            '주차 가능' 과 같은 말이라 대조도 그대로 된다. '불가' 는 담지 않는다:
            없다는 것을 굳이 적어 보내면 매물이 깎여 보일 뿐이다. */
-        musts: shop ? (f.lpark === '가능' ? ['주차 가능'] : []) : (f.lmusts||[]), fac:[],
+        musts: shop ? (f.lpark === '가능' ? ['주차 가능'] : []) : (f.lmusts||[]),
         mustsFree:shop?'':(f.lmustsFree||'').trim(), facFree:'',
         photos:0, at:'방금', status:'active' };
       if(S.lsBusy) return true;

@@ -512,7 +512,10 @@ async function addListing(req, res, agent, user, b) {
 
   const row = {
     agent_id: agent.id, agent_user: user.id,
-    kind, name, dong: txt(L.dong, 60), deal: txt(L.deal, 20), biz: txt(L.biz, 60),
+    /* biz(업종)·fac(설비)는 싣지 않는다. 물건 등록 화면에서 업종·설비 칩을
+       걷어낸 뒤로 화면이 늘 빈 값을 보냈고, 표에는 늘 빈 칸만 쌓였다.
+       0027 에서 칸 자체를 지웠다 - 여기서 보내면 등록이 통째로 막힌다. */
+    kind, name, dong: txt(L.dong, 60), deal: txt(L.deal, 20),
     dep: int0(L.dep), rent: int0(L.rent), fee: int0(L.fee),
     /* 면적은 ㎡ 로 담는다. py 는 대조와 옛 행이 아직 쓰므로 함께 남긴다 */
     area: num0(L.area), area_sup: num0(L.areaSup), py: num0(L.py),
@@ -526,7 +529,7 @@ async function addListing(req, res, agent, user, b) {
     bdong: txt(L.bdong, 20), ho: txt(L.ho, 20),
     htype: txt(L.htype, 30),
     floor_no: txt(L.floorNo, 10), duplex: L.duplex === true,
-    musts: arr(L.musts), fac: arr(L.fac),
+    musts: arr(L.musts),
     musts_free: txt(L.mustsFree, 120), fac_free: txt(L.facFree, 120),
     /* 중개대상물 표시·광고 명시사항 - 방향은 기준까지, 관리비는 산정 기준과 포함 비목까지 */
     dir: txt(L.dir, 10), dir_base: txt(L.dirBase, 20),

@@ -971,6 +971,18 @@ body.mo .vcard .vbtn{width:100%;margin-top:10px}
 .steps.done .no::before,.steps.done .link i{transition:none!important}
 .steps.done .no::after{animation:none!important}
 
+/* ── 되감기 ──
+   ① 부터 ④ 까지 다 차면 잠깐 머물렀다가 처음으로 돌아가 다시 시작한다.
+   돌아가는 순간을 그대로 보여주면 네 개가 한꺼번에 회색으로 툭 떨어져
+   '끝났다' 가 아니라 '꺼졌다' 로 읽힌다 - 잠깐 흐려진 사이에 돌려둔다.
+   흐린 동안에는 시간표를 통째로 끈다. 켜 둔 채로 .run 을 떼면 ④ 번 원이
+   제 지연시간(4.65초)만큼 기다렸다가 거꾸로 빠져나간다. */
+.steps{transition:opacity .42s var(--e-out)}
+.steps.rewind{opacity:.22}
+.steps.rewind .no,.steps.rewind .stt,.steps.rewind .sd,
+.steps.rewind .no::before,.steps.rewind .link i{transition:none!important}
+.steps.rewind .no::after{animation:none!important}
+
 @media (prefers-reduced-motion:reduce){
   .knock .ring{display:none}
   .knock img{animation:none}
@@ -2720,6 +2732,13 @@ const HOME_STEPS = [
   ['맞을 때만 연락이 옵니다', '그 물건을 가진 공인중개사가 직접 제안합니다.'],
   ['마음에 들면 상담합니다',  '연결을 누르면 그때 서로 연락처가 오갑니다.'],
 ];
+/* 네 걸음 시간표. **화면(지연 계산)과 반복(runSteps)이 같은 수를 봐야 한다** -
+   한쪽만 고치면 다 차기 전에 되감기거나, 다 찬 채로 한참을 서 있게 된다.
+   0.70·0.85 는 CSS 의 transition 길이와도 짝이다(.steps .no::before / .link i). */
+const STEP_FILL = 0.70, STEP_LINK = 0.85;
+const STEP_ONE  = STEP_FILL + STEP_LINK;                       /* 한 걸음 1.55초 */
+/* 마지막 원이 다 차고 물결(noRing, 지연 .45초 + 1.2초)까지 끝나는 때 */
+const STEP_ALL  = (HOME_STEPS.length - 1) * STEP_ONE + STEP_FILL + 0.45 + 1.2;
 
 /* ---------- D-01 랜딩 ---------- */
 V['#/'] = () => `
@@ -2820,10 +2839,9 @@ V['#/'] = () => `
       <div class="steps" style="display:grid;grid-template-columns:repeat(4,1fr);gap:0">
         ${HOME_STEPS.map(([t,d],i)=>{
           /* 이어달리기. 원이 다 차야 선이 출발하고, 선이 닿아야 다음 원이 찬다.
-             원 0.70초 · 선 0.85초 → 한 걸음에 1.55초, 넷이면 5.3초. */
-          const fill = 0.70, link = 0.85, step = fill + link;
-          const at = +(i * step).toFixed(2);          /* 이 원이 차기 시작하는 때 */
-          const out = +(at + fill).toFixed(2);        /* 다 차서 선이 떠나는 때 */
+             원 0.70초 · 선 0.85초 → 한 걸음에 1.55초. 시간표는 위 STEP_* 에 있다. */
+          const at = +(i * STEP_ONE).toFixed(2);        /* 이 원이 차기 시작하는 때 */
+          const out = +(at + STEP_FILL).toFixed(2);     /* 다 차서 선이 떠나는 때 */
           return `
           <div class="st" style="position:relative;padding:0 24px 0 0">
             <span class="link" aria-hidden="true"><i style="transition-delay:${out}s"></i></span>
@@ -5314,14 +5332,25 @@ V['#/partner/propose'] = (id) => { const d=S.demands.find(x=>x.id===id); if(!d) 
           display:flex;align-items:center;gap:10px">
           <b style="flex:1;min-width:0;font-size:13.5px;font-weight:700;color:var(--n900);line-height:1.5">${esc(g('addr'))}</b>
           <button class="chip" data-act="addr-clear" data-v="addr" style="flex:none;padding:6px 12px;font-size:12px">지우기</button></div>`:''}
-        <p style="margin:0;font-size:12.5px;line-height:1.7;color:var(--n500)">
-          <b style="color:var(--n900)">동·호수는 적지 않으셔도 됩니다</b> - 손님에게 보내는 것은 여기까지이고,
-          연결된 뒤에 직접 알려주시면 됩니다.
+        <p style="margin:0 0 14px;font-size:12.5px;line-height:1.7;color:var(--n500)">
+          <b style="color:var(--n900)">호수는 적지 않으셔도 됩니다</b> - 어느 세대인지는 연결된 뒤에
+          직접 알려주시면 됩니다.
           ${S.listings.length?`<a class="tapx" data-go="#/partner/listings" style="display:inline-block;padding:4px 2px;font-weight:700;color:var(--ind);text-decoration:underline">내 물건에서 불러오기</a>`:``}</p>
-        ${f.fromListing?`<p style="margin:10px 0 0;font-size:12.5px;font-weight:700;color:var(--ok)">✓ 내 물건에서 불러왔습니다 - 필요한 곳만 고치세요</p>`:``}
+        <!-- 동은 손님에게 보인다 - 같은 단지라도 동에 따라 조망·소음·동선이 다르다.
+             물건 등록 화면과 같은 원칙이다(0025). 호는 여기에 칸조차 두지 않는다.
+             여태 이 칸이 없어서, 물건에서 불러온 제안에만 동이 붙고 손으로 쓴
+             제안에는 늘 비어 있었다. -->
+        <div style="max-width:${isMo()?'none':'210px'}">
+          <span class="lab" style="font-size:12.5px">동 <span class="opt">손님에게 보입니다</span></span>
+          <div class="unit"><input class="inp" data-in="pbdong" value="${esc(g('pbdong'))}" placeholder="예) 101" style="padding:12px 14px;font-size:14px"><span>동</span></div></div>
       </div>
       <div class="card pad">
         <span class="sect"><span style="color:var(--ind)">2.</span> 필수 정보</span>
+        <!-- 주택유형. 손님은 '아파트·오피스텔' 처럼 유형을 걸어두고 기다린다.
+             그런데 제안 화면에는 고를 칸이 없어, 물건에서 불러온 것에만 붙었다.
+             상가·사무실 조건에는 묻지 않는다 - 거기에 주택유형은 없는 말이다. -->
+        ${home ? `<div style="margin-bottom:14px"><span class="lab" style="font-size:12.5px">주택 유형 <span class="opt">손님이 걸어둔 유형과 맞는지 보여드립니다</span></span>
+          ${chipsHTML(LHTYPE, g('phtype'),'phtype',false)}</div>` : ''}
         <div style="display:grid;grid-template-columns:repeat(${isMo()?2:3},minmax(0,1fr));gap:12px 14px">
           <div><span class="lab" style="font-size:12.5px">건물명</span><input class="inp" data-in="bname" value="${esc(g('bname'))}" placeholder="미사강변 ○○아파트" style="padding:12px 14px;font-size:14px"></div>
           <div><span class="lab" style="font-size:12.5px">${home?'공급면적':'계약면적'} <span style="color:var(--danger)">*</span></span>
@@ -7938,33 +7967,83 @@ V['#/ops/live'] = () => {
 
 const REDUCED = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-/* 네 걸음은 저절로 돌지 않는다. 보는 사람이 그 자리까지 왔을 때 한 번만 움직인다 -
-   화면 밖에서 이미 다 끝나 있으면 '완성되는' 느낌이 남지 않는다.
+/* 네 걸음은 ① → ④ 로 차오르고, 다 차면 잠깐 머물렀다가 처음으로 돌아가 다시 돈다.
+   다만 **보이는 동안에만** 돈다 - 화면 밖에서 혼자 도는 것은 배터리만 쓴다.
    #app 이 스크롤하는 상자라 거기를 기준으로 본다(창이 아니다). */
-let STEPS_RAN = false;
+const STEP_HOLD = 2.0, STEP_REWIND = 0.46;     /* 다 찬 채로 머무는 시간 · 흐려지는 시간 */
+let STEPS_T = null, STEPS_IO = null;
+function stopSteps(){
+  if(STEPS_T){ clearTimeout(STEPS_T); STEPS_T = null; }
+  if(STEPS_IO){ STEPS_IO.disconnect(); STEPS_IO = null; }
+}
 function runSteps(){
+  /* 재렌더마다 불린다 - 먼저 앞선 바퀴를 정리한다. 안 그러면 사라진 노드를
+     붙잡은 예약이 쌓이고, 화면을 옮겨 다닐수록 그만큼 늘어난다. */
+  stopSteps();
   const el = $('#app .steps');
-  if(!el || el.classList.contains('run')) return;
-  const go = () => { STEPS_RAN = true; el.classList.add('run'); };
-  /* 한 번 본 사람에게 다시 재생하지 않는다 - .done 이 시간표를 잘라낸다 */
-  if(STEPS_RAN){ el.classList.add('done','run'); return; }
-  if(REDUCED() || typeof IntersectionObserver !== 'function') return go();
+  if(!el) return;
+  /* 움직임을 줄여달라고 한 분께는 돌리지 않는다 - 완성된 모습으로 세워 둔다 */
+  if(REDUCED()){ el.classList.add('done','run'); return; }
 
-  const io = new IntersectionObserver(es => {
-    for(const e of es) if(e.isIntersecting){ io.disconnect(); go(); return; }
+  /* 같은 노드를 다시 쓰는 길이 하나 있다 - 탭을 뒤로 보냈다 돌아올 때다.
+     그때 앞선 바퀴가 흐려진 채(rewind) 멈춰 있었으면 그대로 굳어버린다.
+     시간표를 끈 채로 처음으로 돌려놓고 시작한다. 재는 사이사이가 중요하다 -
+     한 차례에 묶이면 브라우저가 거꾸로 흐르는 전환을 시작한다. */
+  if(el.classList.contains('run') || el.classList.contains('rewind')){
+    el.classList.add('rewind');    void el.offsetWidth;
+    el.classList.remove('run');    void el.offsetWidth;
+    el.classList.remove('rewind');
+  }
+
+  const alive = () => document.contains(el);
+  const after = (sec, fn) => { STEPS_T = setTimeout(() => alive() ? fn() : stopSteps(), sec * 1000); };
+
+  const cycle = () => {
+    el.classList.add('run');
+    after(STEP_ALL + STEP_HOLD, () => {
+      el.classList.add('rewind');                 /* 흐려지기 시작 */
+      after(STEP_REWIND, () => {
+        el.classList.remove('run');               /* 시간표가 꺼진 채로 처음으로 */
+        /* 여기서 한 번 재야 한다. 'run 을 뗀 것' 과 'rewind 를 뗀 것' 이 같은
+           차례에 묶이면 브라우저는 둘을 합쳐서 보고, 시간표가 되살아난 상태로
+           거꾸로 흐르는 전환을 시작한다. 재는 순간 앞의 것이 확정된다. */
+        void el.offsetWidth;
+        el.classList.remove('rewind');            /* 다시 밝아진다 */
+        after(STEP_REWIND, cycle);
+      });
+    });
+  };
+  const halt = () => {
+    if(STEPS_T){ clearTimeout(STEPS_T); STEPS_T = null; }
+    el.classList.remove('run', 'rewind');         /* 다음에 보일 때 처음부터 */
+  };
+
+  if(typeof IntersectionObserver !== 'function') return cycle();
+  STEPS_IO = new IntersectionObserver(es => {
+    if(!alive()) return stopSteps();
+    const seen = es.some(e => e.isIntersecting);
+    if(seen){ if(!STEPS_T) cycle(); }
+    else halt();
   }, { root: $('#app'), threshold: .3 });
 
-  /* 그리자마자 재면 아직 배치가 끝나지 않아 크기가 없다 - 두 프레임 뒤에 본다 */
-  requestAnimationFrame(() => requestAnimationFrame(() => {
-    if(!document.contains(el)) return;
-    io.observe(el);
+  /* 그리자마자 재면 아직 배치가 끝나지 않아 크기가 없다 - 두 프레임 뒤에 본다.
+     다만 **프레임이 오지 않는 창도 있다** - 창이 그려지지 않는 동안 rAF 는
+     멈춰 있다. 그때 관찰조차 시작하지 못하면 네 걸음은 영영 회색으로 남는다.
+     프레임이든 시계든, 먼저 오는 쪽으로 출발한다. */
+  let armed = false;
+  const arm = () => {
+    if(armed || !alive() || !STEPS_IO) return;
+    armed = true;
+    STEPS_IO.observe(el);
     /* 이미 화면 안에 있는데 관찰이 알려주지 않는 경우가 있다(창이 숨겨져 있을 때 등).
        그때는 직접 재서 켠다 - 기다리다 영영 회색으로 남는 것보다 낫다.
        화면 밖이면 아무것도 하지 않는다. 스크롤해서 왔을 때 채워져야 하기 때문이다. */
     const a = $('#app'); if(!a) return;
     const r = el.getBoundingClientRect(), ar = a.getBoundingClientRect();
-    if(r.top < ar.bottom - r.height * .3 && r.bottom > ar.top){ io.disconnect(); go(); }
-  }));
+    if(!STEPS_T && r.top < ar.bottom - r.height * .3 && r.bottom > ar.top) cycle();
+  };
+  requestAnimationFrame(() => requestAnimationFrame(arm));
+  setTimeout(arm, 120);
 }
 
 /* 세면 안 되는 숫자를 걸러낸다.
@@ -8915,7 +8994,7 @@ document.addEventListener('input', e=>{
     return;
   }
   if(k.startsWith('l') && S.route.startsWith('#/partner/listing')){ S.form[k]=v; refreshListingBtn(); return; }
-  if(['addr','bname','area','areaSup','dep','rent','fee','feeItems','approved','rooms','baths','floorNo','moveWhen','note','msg'].includes(k) && S.route.startsWith('#/partner/propose')){
+  if(['addr','bname','area','areaSup','dep','rent','fee','feeItems','approved','rooms','baths','floorNo','moveWhen','note','msg','pbdong'].includes(k) && S.route.startsWith('#/partner/propose')){
     S.form[k]= k==='msg'? v.slice(0,200) : v;
     if(k==='msg'){ const c=$('#app [data-msgcount]'); if(c) c.textContent=`${S.form.msg.length}/200`; }
     refreshChecks(); return;
@@ -9547,8 +9626,11 @@ function handle(a,v,el){
       S.form={dfilter:S.form.dfilter, ptab:S.form.ptab, photos:0, pkind:(dm&&dm.kind)||'home'};
       S.timeLeft=900; go('#/partner/propose/'+v); return true; }
 
+    /* phtype 은 제안 화면의 주택유형이다. 이름 앞에 p 를 붙인 까닭은
+       'htype' 이 손님 조건 등록에서 이미 쓰는 이름이기 때문이다 - 같은 이름을
+       쓰면 중개사가 유형을 고를 때 손님 초안을 건드리게 된다. */
     case 'feeType': case 'floorMode': case 'band': case 'moveIn': case 'dir': case 'park': case 'elev6':
-    case 'duplex': case 'dirBase': case 'feeBasis':
+    case 'duplex': case 'dirBase': case 'feeBasis': case 'phtype':
       S.form[a]= S.form[a]===v? '' : v; render(); return true;
     case 'photo': { const n=+v; S.form.photos = n < (S.form.photos||0) ? n : n+1; render(); return true; }
     case 'send-proposal': { const d2=S.demands.find(x=>x.id===v);
@@ -9577,12 +9659,10 @@ function handle(a,v,el){
         dir: f.dir, dir_base: f.dirBase, note: f.note,
         duplex: f.duplex === '복층',
         floor_mode: f.floorMode, floor_no: f.floorNo, band: f.band,
-        /* 물건에서 불러올 때 lbdong·lhtype 으로 담아두고 **보내지를 않았다.**
-           0025 가 제안 표에 bdong·htype 칸을 만든 이유가 이것인데, 서버는 읽고
-           표에는 칸이 있는데 오는 값이 없어 늘 비어 있었다 -
-           '동은 손님에게 보입니다' 가 한 번도 사실이 아니었다.
-           호(lho)는 보내지 않는다. 제안 표에는 그 칸을 일부러 두지 않았다(0025). */
-        bdong: f.lbdong || '', htype: f.lhtype || '',
+        /* 이제 제안 화면에서 직접 고른다(pbdong·phtype). 전에는 물건에서
+           불러올 때만 채워져, 손으로 쓴 제안에는 늘 비어 있었다.
+           호는 보내지 않는다. 제안 표에는 그 칸을 일부러 두지 않았다(0025). */
+        bdong: f.pbdong || '', htype: f.phtype || '',
         move_in: f.moveIn === '날짜 지정' ? ((f.moveWhen||'').trim() || '날짜 지정') : f.moveIn,
         park: f.park, approved: f.approved,
         photos: f.photos||0, msg: f.msg,
@@ -9796,7 +9876,9 @@ function handle(a,v,el){
         dep:String(L.dep), rent:String(L.rent), fee:String(L.fee),
         feeBasis:L.feeBasis||'', feeType:L.feeType||'', feeItems:L.feeItems||'',
         rooms:String(L.rooms||''), baths:String(L.baths||''),
-        lbdong:L.bdong||'', lho:L.ho||'', lhtype:L.htype||'',
+        /* 호(L.ho)는 옮기지 않는다 - 제안 화면에 칸도 없고 서버도 받지 않는다.
+           들고만 있어도 언젠가 payload 에 섞여 나간다. */
+        pbdong:L.bdong||'', phtype:L.htype||'',
         duplex:L.duplex?'복층':'단층',
         dir:L.dir||'', dirBase:L.dirBase||'',
         floorMode: L.floorNo ? '정확한 층' : '고·중·저',

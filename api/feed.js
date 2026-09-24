@@ -532,6 +532,9 @@ async function addListing(req, res, agent, user, b) {
     dir: txt(L.dir, 10), dir_base: txt(L.dirBase, 20),
     fee_basis: txt(L.feeBasis, 20), fee_type: txt(L.feeType, 40), fee_items: txt(L.feeItems, 200),
     note: txt(L.note, 1000),
+    /* 손님의 연식 조건(age_band)을 판단하려면 이 값이 물건에 있어야 한다.
+       여태 칸도 없고 묻지도 않아서 그 조건은 한 번도 판단된 적이 없다(0026). */
+    approved: txt(L.approved, 40),
     move_in: txt(L.moveIn, 40), photos: int0(L.photos) || 0,
   };
 
@@ -559,12 +562,12 @@ async function addListing(req, res, agent, user, b) {
       const noColumn = /does not exist|PGRST204/i.test(t0)
                     || /Could not find the '[a-z_]+' column/i.test(t0);
       if (noColumn
-          && /area|duplex|floor_no|musts_free|fac_free|dir|fee_basis|fee_type|fee_items|note|bdong|ho|htype/.test(t0)) {
+          && /area|duplex|floor_no|musts_free|fac_free|dir|fee_basis|fee_type|fee_items|note|bdong|ho|htype|approved/.test(t0)) {
         const { area, area_sup, floor_no, duplex, musts_free, fac_free,
                 dir, dir_base, fee_basis, fee_type, fee_items, note,
-                bdong, ho, htype, ...old } = row;
+                bdong, ho, htype, approved, ...old } = row;
         dropped = ['면적', '정확한 층', '복층', '갖춰진 조건', '방향', '관리비 기준',
-                   '매물 특징', '동·호', '주택 유형'];
+                   '매물 특징', '동·호', '주택 유형', '사용승인일'];
         console.error('[feed:listing-add] 새 칸을 빼고 저장했다 - 마이그레이션 확인 필요',
                       t0.slice(0, 160));
         r = await put(old);

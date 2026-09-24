@@ -5992,6 +5992,14 @@ V["#/partner/listing/new"] = () => {
           <div class="unit"><input class="inp num" data-in="lareaSup" inputmode="decimal" value="${esc(g('lareaSup'))}" placeholder="0"><span>㎡</span></div>
           <span data-py="lareaSup" style="display:block;margin-top:4px;font-size:11.5px;font-weight:700;color:var(--n500)">${pyTag(g('lareaSup'))}</span></div>
       </div>
+      <!-- 사용승인일. 손님이 '10년 이내' 같은 연식 조건을 걸 수 있는데(0022 age_band),
+           물건에 이 값이 없으면 그 조건은 **조용히 무시된다.** 여태 묻지 않아서
+           한 번도 판단된 적이 없었다. 몰라도 되는 칸이라 필수로 두지 않는다 -
+           비어 있으면 지금까지처럼 아무 말도 하지 않는다. -->
+      <div style="border-top:1px solid var(--hair);padding-top:16px">
+        <span class="lab">사용승인일 <span class="opt">모르시면 비워두세요 · 손님이 연식으로 거른 조건에 쓰입니다</span></span>
+        <input class="inp" data-in="lapproved" value="${esc(g('lapproved'))}" placeholder="예) 2016.06.24">
+      </div>
       ${shop? '' : `
       <div><span class="lab">주택 유형 <span class="req">*</span></span>${chipsHTML(LHTYPE, g('lhtype'),'lhtype',false)}</div>
       <div class="grid2 mo1">
@@ -9542,6 +9550,8 @@ function handle(a,v,el){
         htype: f.lhtype||'',
         bdong: (f.lbdong||'').trim(), ho: (f.lho||'').trim(),
         note:(f.lnote||'').trim(),
+        /* 연식 조건(손님의 age_band)을 판단하려면 이 값이 물건에 있어야 한다 */
+        approved:(f.lapproved||'').trim(),
         /* 상가·사무실의 주차는 새 칸을 파지 않고 musts 에 담는다 - 손님 조건 쪽
            '주차 가능' 과 같은 말이라 대조도 그대로 된다. '불가' 는 담지 않는다:
            없다는 것을 굳이 적어 보내면 매물이 깎여 보일 뿐이다. */

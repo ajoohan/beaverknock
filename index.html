@@ -344,7 +344,12 @@ body.mo .scr .pad.opsPad{padding-left:16px;padding-right:16px}
 .mapcell{cursor:pointer;transition:fill .16s var(--e-out), stroke .16s var(--e-out)}
 /* 손끝이 닿을 수 있는 곳에서는 hover 를 쓰지 않는다 - 눌러야 반응하는 것처럼 보인다 */
 @media (hover:hover){ .mapcell:not(.on):hover{fill:var(--ind50);stroke:var(--ind300);stroke-width:1.8} }
-.mapcell text{pointer-events:none;user-select:none}
+/* 지도 위 글자는 클릭을 먹지 않는다 - 그 아래 도형으로 흘려보낸다.
+   .mapcell 안의 동·구 이름에는 이미 걸려 있었는데, **'서울특별시' 와 '인천' 은
+   셀 바깥에서 따로 그려져 이 규칙을 못 받고 있었다.** 그래서 이름을 눌러도
+   아무 일이 없었다 - 도형을 누르면 들어가지는데, 사람은 글자를 누른다.
+   '눌러서 구 고르기' 라고 적어놓고 정작 그 글자가 클릭을 막고 있었다. */
+svg.map text{pointer-events:none;user-select:none}
 
 .card{background:var(--white);border:1px solid var(--n100);border-radius:var(--r-lg);box-shadow:var(--sh1)}
 .card.hi{border:1.5px solid var(--ind);box-shadow:var(--sh2)}
@@ -1768,7 +1773,12 @@ const blankDraft = () => ({who:'',kind:'',deal:'',dongs:[],dep:'',rent:'',htype:
   hArea:[], hBath:'', hFloor:[], hDir:[], hAge:'',
   openWhen:'', moveWhen:'', moveMonth:'', movePart:'',
   dongFree:'',mustFree:'',elev:'',
-  keyOk:'',signNeed:'',parkNeed:'',shopNote:'',shopFloorFree:'',facFree:'',mapView:'map',mapLevel:'hanam',
+  keyOk:'',signNeed:'',parkNeed:'',shopNote:'',shopFloorFree:'',facFree:'',mapView:'map',
+  /* 지도는 수도권 전체에서 시작한다. 하남에서 시작하면 서울·경기 다른 곳을
+     찾는 분은 '여기밖에 안 되나' 로 읽는다 - 실제로는 수도권 어디든 걸 수 있다.
+     하남은 서비스를 시작한 곳이라 목록 맨 위에 두고, 지도 도구줄에도
+     '하남시 동 단위' 로 한 번에 들어가는 길을 남겨둔다. */
+  mapLevel:'top',
   headcount:'',bldType:'',ceilH:'',dock:'',temp:'',
   biz:'',areaMin:'',areaMax:'',key:'',
   memo:'',floor:'',house:'',loan:'',name:'',phone:'',pref:'문자·카톡',times:[],a1:false,a2:false,a3:false,
@@ -4062,7 +4072,7 @@ function refreshAddr(){
 
 /* ── 지역 선택 블록 ── */
 function regionPicker(d, shop){
-  const lv = d.mapLevel || 'hanam';
+  const lv = d.mapLevel || 'top';
   const map = (d.mapView||'map')==='map';
   const crumbs = lv==='top' ? '수도권 전체'
     : lv==='seoul' ? '수도권 › <b style="color:var(--n900)">서울특별시</b>'

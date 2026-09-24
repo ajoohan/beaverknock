@@ -9394,6 +9394,12 @@ function handle(a,v,el){
         dir: f.dir, dir_base: f.dirBase, note: f.note,
         duplex: f.duplex === '복층',
         floor_mode: f.floorMode, floor_no: f.floorNo, band: f.band,
+        /* 물건에서 불러올 때 lbdong·lhtype 으로 담아두고 **보내지를 않았다.**
+           0025 가 제안 표에 bdong·htype 칸을 만든 이유가 이것인데, 서버는 읽고
+           표에는 칸이 있는데 오는 값이 없어 늘 비어 있었다 -
+           '동은 손님에게 보입니다' 가 한 번도 사실이 아니었다.
+           호(lho)는 보내지 않는다. 제안 표에는 그 칸을 일부러 두지 않았다(0025). */
+        bdong: f.lbdong || '', htype: f.lhtype || '',
         move_in: f.moveIn === '날짜 지정' ? ((f.moveWhen||'').trim() || '날짜 지정') : f.moveIn,
         park: f.park, approved: f.approved,
         photos: f.photos||0, msg: f.msg,

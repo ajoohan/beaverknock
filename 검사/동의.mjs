@@ -103,5 +103,20 @@ ok(/d\.a1 && d\.a2 && !S\.showAgree/.test(dj),
    '필수 둘을 다 해야 동의 칸이 접힌다 - 안 한 것을 접어두면 숨기는 것이다');
 ok(/광고/.test(dj) && /선택/.test(dj), '광고 수신을 선택이라고 밝힌다');
 
+/* ── 연결을 끊으면 동의 기록도 함께 지운다 ── (2026-09-25 대표 결정)
+   bk_consent 에는 동의 시각과 함께 **어떤 기기에서 했는지(ua)·IP 해시**가 있다.
+   연결이 끊어진 뒤에는 들고 있을 근거가 없다 - 더 처리할 것이 없으니
+   동의를 증명할 일도 없다. 끊었다는 **사실**은 열람 기록에 남는다. */
+const kjs = (await import('node:fs')).readFileSync(
+  new URL(길.api('auth/kakao/unlink.js')), 'utf8');
+ok(/sbUrl\('bk_consent', `user_id=eq\.\$\{u\.id\}`\)/.test(kjs),
+   '연결 해제 때 그 계정의 동의 기록을 지운다');
+ok(kjs.indexOf("bk_consent") < kjs.indexOf("admin('users/'"),
+   '계정을 지우기 **전에** 지운다 - 계정이 먼저 사라지면 어느 행인지 못 찾는다');
+ok(/does not exist\|PGRST205/.test(kjs.slice(kjs.indexOf('bk_consent'), kjs.indexOf('bk_consent')+900)),
+   '0023 을 아직 안 돌린 환경이면 넘어간다 - 동의 기록 하나 때문에 계정 삭제가 막히면 안 된다');
+ok(/동의 기록 \$\{동의\}건 삭제/.test(kjs),
+   '몇 건을 지웠는지 열람 기록에 남긴다 - 그것이 지웠다는 근거다');
+
 console.log(`${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

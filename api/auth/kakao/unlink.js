@@ -149,6 +149,32 @@ export default async function handler(req, res) {
     if (!dr.ok) throw new Error('조건을 지우지 못했습니다 ' + dr.status);
     gone = (await dr.json()).length;
 
+    /* ②-2 동의 기록도 지운다 (2026-09-25 대표 결정).
+          bk_consent 에는 동의한 시각과 함께 **어떤 기기에서 했는지(ua)와
+          IP 해시**가 들어 있다. 끊은 사람의 뜻은 '나와의 연결을 끊어라' 이고,
+          연결이 끊어진 뒤에는 그 기록을 들고 있을 근거가 없다 -
+          더 처리할 것이 없으니 동의를 증명할 일도 없다.
+
+          ⚠ 끊었다는 **사실 자체**는 사라지지 않는다. 바로 아래 logOps 가
+          '언제 · 무엇이 몇 건 지워졌는지' 를 열람 기록에 남긴다.
+          그것이 근거이고, 그 기록에는 이름도 연락처도 들어 있지 않다.
+
+          0023 을 아직 안 돌린 환경이면 표가 없다. 그때는 넘어간다 -
+          동의 기록 하나 때문에 계정 삭제가 막히면 안 된다. */
+    let 동의 = 0;
+    const cr = await fetch(sbUrl('bk_consent', `user_id=eq.${u.id}`), {
+      method: 'DELETE',
+      headers: { ...sbHeaders(), Prefer: 'return=representation' },
+    });
+    if (cr.ok) 동의 = (await cr.json()).length;
+    else {
+      const t = await cr.text().catch(() => '');
+      if (!/does not exist|PGRST205/i.test(t)) {
+        throw new Error('동의 기록을 지우지 못했습니다 ' + cr.status);
+      }
+      console.error('[kakao:unlink] bk_consent 없음 - 0023 을 실행해야 한다');
+    }
+
     /* ③ 계정을 지운다. 마지막이다 - 위 둘이 실패하면 여기까지 오지 않는다. */
     const ur = await fetch(admin('users/' + encodeURIComponent(u.id)), {
       method: 'DELETE', headers: adminHeaders(),
@@ -157,7 +183,8 @@ export default async function handler(req, res) {
 
     await logOps(req, null, {
       action: 'kakao-unlink', count: gone,
-      detail: `${why} · 조건 ${gone}건 삭제${agent ? ` · 파트너 신청 ${agent}건 분리(확인 필요)` : ''}`,
+      detail: `${why} · 조건 ${gone}건 삭제 · 동의 기록 ${동의}건 삭제`
+            + `${agent ? ` · 파트너 신청 ${agent}건 분리(확인 필요)` : ''}`,
     });
     return res.status(200).json({ ok: true });
   } catch (e) {

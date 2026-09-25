@@ -116,11 +116,15 @@ body.mo .nav .items{display:none}
    보이는 크기는 그대로 두고 누를 수 있는 자리만 위아래로 넓힌다.
    ::after 는 자리를 차지하지 않으므로 배치는 한 픽셀도 움직이지 않는다.
    가로는 거의 안 넓힌다 - 한 줄에 나란히 선 링크끼리 서로를 먹으면 안 된다. */
-body.mo .tapx{position:relative}
-/* 15px 짜리 줄에 위아래 14.5px 씩 - 정확히 44px 이 된다. 전에는 14px 이라
-   43px 에서 한 픽셀 모자랐다. 가로는 그대로 3px 만 - 한 줄에 나란히 선
-   링크끼리 서로를 먹으면 안 된다. */
-body.mo .tapx::after{content:"";position:absolute;left:-3px;right:-3px;top:-14.5px;bottom:-14.5px}
+/* ── 과녁은 **상자를 키워서** 44px 로 만든다 (2026-09-25) ──
+   전에는 보이지 않는 판(::after)을 덮어 누를 자리만 넓혔다. 자리를 안 먹는
+   대신 **옆 것의 자리를 먹는다** - 그래서 줄 사이를 30px 로 벌려 두어야 했고,
+   데스크톱에는 아예 걸지 못했다(문장 속 링크가 윗줄·아랫줄을 덮는다).
+   상자를 키우면 옆을 먹을 수가 없다. 이미 44px 을 넘는 것은 min-height 가
+   아무 일도 하지 않으므로 그대로다. 칩이 먼저 이 길로 갔고(2026-09-23),
+   같은 셈이 링크에도 맞는다.
+   문장 속 링크만 뺀다 - 줄 안에 나란히 선 링크는 원래 작다(2.5.8 예외). */
+.tapx:not(p .tapx){display:inline-flex;align-items:center;min-height:44px}
 /* 바닥글 링크는 좁은 화면에서 여러 줄로 접힌다. 줄 사이가 10px 뿐이라
    위아래로 14px 씩 넓히면 윗줄 링크가 아랫줄 링크를 덮어버린다 -
    '이용 안내' 를 눌렀는데 '개인정보 처리방침' 이 열린다.
@@ -129,18 +133,9 @@ body.mo .tapx::after{content:"";position:absolute;left:-3px;right:-3px;top:-14.5
    좁은 것이 한계였다. 줄 사이를 30px 로 벌리면 위아래 14.5px 씩 넓혀도
    위아래 줄이 1px 를 남기고 안 겹친다. 그래야 44px 에 닿는다.
    여기서는 기본 규칙(±14.5px)을 그대로 쓰면 되므로 따로 덮지 않는다. */
-body.mo .footlinks{gap:30px 16px!important}
-/* ── 바닥글 링크는 데스크톱에서도 44px (대표 결정 2026-09-24) ──
-   마우스로는 17px 도 맞지만, 손가락으로 여는 노트북·태블릿도 이 폭으로 들어온다.
-   ::after 는 자리를 차지하지 않으므로 **배치는 한 픽셀도 안 움직인다.**
-   17px 짜리 줄에 위아래 13.5px 씩 = 정확히 44px.
-   줄 사이를 30px 로 벌려 두는 까닭은 위아래 줄이 서로를 먹지 않게 하기 위해서다
-   (27px 을 넓히므로 3px 가 남는다) - 모바일에서 쓰던 그 셈 그대로다.
-   ⚠ .tapx 를 통째로 데스크톱에 풀지는 않는다. 문장 속 링크까지 위아래 14.5px 씩
-   넓어지면 22px 짜리 줄에서 윗줄·아랫줄을 덮어, 글을 누르는데 링크가 열린다. */
-.footlinks{gap:30px 16px!important}
-.footlinks a{position:relative}
-.footlinks a::after{content:"";position:absolute;left:-3px;right:-3px;top:-13.5px;bottom:-13.5px}
+body.mo .footlinks{gap:10px 16px!important}
+/* 바닥글 링크도 위 규칙 하나로 44px 이 된다. 어제 넣었던 덮개(::after)와
+   줄 사이 30px 은 걷는다 - 덮개를 안 쓰니 벌려 둘 까닭이 없다. */
 body.mo .back{position:relative}
 body.mo .back::after{content:"";position:absolute;left:0;right:0;top:-9px;bottom:-9px}
 
@@ -808,7 +803,9 @@ body.mo .btn.sm{min-height:40px}
    눈에는 어긋나 보였다. 이제 보이는 높이 자체를 44px 로 맞춘다 -
    덮어두던 판은 크기가 같아져 쓸모가 없어졌으므로 걷는다.
    폭은 그대로다. 칩 사이가 8px 뿐이라 가로로 넓히면 옆 칩을 빼앗는다. */
-body.mo .chip{min-height:44px}
+/* 데스크톱 칩은 34~41px 이었다. 같은 규칙을 폭에 상관없이 건다 -
+   손가락으로 여는 노트북·태블릿은 데스크톱 폭으로 들어온다. */
+.chip{display:inline-flex;align-items:center;justify-content:center;min-height:44px}
 
 /* href 없는 <a> 는 커서가 기본값이라 눌리는 줄 모른다.
    클릭을 받는 것은 전부 손가락 커서를 준다. */
@@ -3083,7 +3080,7 @@ V['#/login'] = () => {
 <div class="scr fade">
   <div class="nav pad"><a data-go="#/" style="flex:none">${logoLockup({h:25,tag:!isMo()})}</a>
     <div class="right" style="gap:${isMo()?14:22}px">
-      ${isMo()?'':'<a data-go="#/guide" style="font-size:14px;font-weight:600;color:var(--n700)">이용 안내</a><a data-go="#/faq" style="font-size:14px;font-weight:600;color:var(--n700)">자주 묻는 질문</a>'}
+      ${isMo()?'':'<a class="tapx" data-go="#/guide" style="font-size:14px;font-weight:600;color:var(--n700)">이용 안내</a><a class="tapx" data-go="#/faq" style="font-size:14px;font-weight:600;color:var(--n700)">자주 묻는 질문</a>'}
       <a class="tapx" data-go="#/partner" style="font-size:${isMo()?12.5:14}px;font-weight:600;color:var(--n700)">파트너 안내</a></div></div>
 
   <div style="flex:1;min-height:0;overflow:auto;display:flex;align-items:flex-start;justify-content:center;padding:${isMo()?'16px 24px 30px':'22px 40px 34px'}">

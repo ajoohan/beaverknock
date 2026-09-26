@@ -356,6 +356,61 @@ body.mo .scr .pad.opsPad{padding-left:16px;padding-right:16px}
    아무 일이 없었다 - 도형을 누르면 들어가지는데, 사람은 글자를 누른다.
    '눌러서 구 고르기' 라고 적어놓고 정작 그 글자가 클릭을 막고 있었다. */
 svg.map text{pointer-events:none;user-select:none}
+
+/* ══════════ 지역 고르기 ══════════
+   ── 도구는 지도 위에 (2026-09-26) ──
+   전에는 지도 위쪽에 버튼 여섯 개가 두 줄(146px)로 서 있었다. 지도가 200px 인데
+   도구가 그 73% 를 먹었다. 확대·축소·현재 위치는 어느 지도에서나 지도 위에 있다 -
+   그 자리로 옮기면 **페이지에서 차지하는 높이가 0** 이고 과녁은 44px 그대로다. */
+.regbar{display:flex;align-items:center;justify-content:space-between;
+  gap:10px;margin-bottom:8px;min-height:44px}
+.regbar .crumbs{font-size:12.5px;color:var(--n500);min-width:0}
+.regbar .crumbs b{font-weight:800;color:var(--n900)}
+/* 길을 보여주는 것과 그 길로 가는 것은 같은 것이다 - breadcrumb 이 곧 상위로
+   가는 버튼이다. '← 수도권 전체' 를 따로 둘 이유가 없었다. */
+.regbar .crumb{font:inherit;color:var(--ind);font-weight:700;text-decoration:underline;
+  text-underline-offset:3px;padding:10px 2px;cursor:pointer}
+.regbar .crumb:hover{color:var(--ind700)}
+
+/* 보는 방식은 둘 중 하나다 - 칩 두 개보다 하나로 붙은 토글이 '둘 중 하나' 를 말한다 */
+.seg{display:inline-flex;flex:none;background:var(--n100);border-radius:var(--r-full);padding:3px}
+.seg button{min-height:38px;padding:0 16px;border-radius:var(--r-full);
+  font-size:12.5px;font-weight:700;color:var(--n500);cursor:pointer;white-space:nowrap}
+.seg button.on{background:var(--white);color:var(--ind);box-shadow:0 1px 4px rgba(31,29,26,.12)}
+
+/* ── 아직 안 연 칸 미리보기 ──
+   하나씩 열리는 화면의 값은 '한 번에 하나만 보는 것' 인데, 그 대가로 처음에는
+   화면이 텅 빈다. 앞으로 무엇을 묻는지 흐리게 보여주면 빈 자리가 일을 한다 -
+   얼마나 남았는지 알면 시작할 마음이 생긴다. 열린 칸은 목록에서 빠진다. */
+.todo{margin-top:18px;padding:16px 18px;border:1px dashed var(--n300);
+  border-radius:14px;background:rgba(255,255,255,.45)}
+.todo .t{display:block;font-size:11.5px;font-weight:800;letter-spacing:.02em;
+  color:var(--n500);margin-bottom:10px}
+.todo .row{display:flex;align-items:baseline;gap:10px;padding:5px 0}
+.todo .row b{flex:none;min-width:72px;font-size:13.5px;font-weight:700;color:var(--n700)}
+.todo .row span{font-size:12.5px;line-height:1.5;color:var(--n500);word-break:keep-all}
+.todo p{margin:10px 0 0;padding-top:10px;border-top:1px solid var(--hair);
+  font-size:12px;line-height:1.6;color:var(--n500)}
+.todo p b{color:var(--ind);font-weight:800}
+body.mo .todo .row b{min-width:64px;font-size:13px}
+
+.mapbox{position:relative}
+.mapbtns{position:absolute;bottom:10px;display:flex;flex-direction:column;gap:6px;z-index:2}
+.mapbtns.left{left:10px}
+.mapbtns.right{right:10px}
+.mapbtns button{width:44px;height:44px;display:flex;align-items:center;justify-content:center;
+  background:rgba(255,255,255,.94);border:1px solid var(--hair);border-radius:12px;
+  font-size:17px;font-weight:800;line-height:1;color:var(--n700);cursor:pointer;
+  box-shadow:0 2px 8px rgba(31,29,26,.12);backdrop-filter:blur(4px)}
+.mapbtns button:hover{background:#fff;border-color:var(--ind300);color:var(--ind)}
+.mapbtns button:disabled{opacity:.55;cursor:default}
+/* display:flex 가 [hidden] 을 이긴다 - 확대하지 않았는데 '원래대로' 가 보였다 */
+.mapbtns button[hidden]{display:none}
+/* '하남시 동 단위' 는 글이라 정사각형에 안 들어간다 */
+.mapbtns button.wide{width:auto;padding:0 12px;font-size:12px;font-weight:700}
+body.mo .mapbtns{bottom:8px}
+body.mo .mapbtns.left{left:8px}
+body.mo .mapbtns.right{right:8px}
 /* 못 넘어간 이유가 된 칸을 잠깐 감싼다. 토스트가 말한 것이 어디인지 눈으로 잇는다. */
 .needfix{animation:needfix 1.8s ease}
 @keyframes needfix{
@@ -383,7 +438,10 @@ body.mo .card.pad{padding:16px}
 .unit span{position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:13.5px;color:var(--n500);pointer-events:none}
 .grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
 .grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
-body.mo .grid2.mo1{grid-template-columns:1fr}
+/* 좁은 화면에서 두 칸이 한 줄로 접히면 **위아래 묶음**이 된다.
+   나란히 설 때의 14px 를 그대로 두면 '방 수' 칩과 '화장실' 라벨이 붙어
+   한 묶음으로 읽힌다 - 접히는 순간 세로 간격은 묶음 사이 간격이어야 한다. */
+body.mo .grid2.mo1{grid-template-columns:1fr;gap:30px}
 
 .badge{display:inline-block;border-radius:var(--r-full);padding:4px 12px;font-size:11px;font-weight:800;white-space:nowrap}
 .b-ok{background:var(--okbg);color:var(--ok)} .b-warn{background:var(--warnbg);color:var(--warn)}
@@ -433,8 +491,13 @@ body.mo .rail{display:none}
 .split{display:flex;flex:1;min-height:0}
 .formcol{flex:1;display:flex;justify-content:center;overflow-y:auto;padding:40px 30px}
 body.mo .formcol{padding:20px 24px 0}
-.formcol .in{width:100%;max-width:700px;display:flex;flex-direction:column;gap:24px}
-body.mo .formcol .in{gap:20px}
+/* ── 묶음 사이를 벌린다 (2026-09-26) ──
+   재 보니 라벨→칩 10px · 칩→칩 8px · **묶음→묶음 20px** 이었다. 묶음 사이가
+   묶음 안의 두 배 남짓이라, 칩이 여러 줄로 접히는 순간 어디까지가 한 묶음인지
+   눈이 못 찾는다 - 한 화면에 칩이 마흔 개인데 전부 같은 간격으로 떠 있었다.
+   가까운 것끼리 묶여 보이려면 **안쪽보다 훨씬 멀어야** 한다. 8 : 10 : 30. */
+.formcol .in{width:100%;max-width:700px;display:flex;flex-direction:column;gap:32px}
+body.mo .formcol .in{gap:30px}
 
 /* 모바일 진행바 */
 .mprog{display:none}
@@ -863,7 +926,7 @@ body.mo .btn.sm{min-height:40px}
    720x600 을 이 높이로 눌러 그리므로 배율이 정해지고, mapLabelZoom() 이
    그 배율의 역수를 글자에 곱한다. 전에는 JS 에도 200 을 따로 적어 두었는데
    한쪽만 바꾸면 글자가 조용히 어긋난다. 이제 JS 가 이 값을 읽어 간다. */
-body.mo{--map-mo-h:200px}
+body.mo{--map-mo-h:250px}
 body.mo svg.map{max-height:var(--map-mo-h)}
 /* 지도 위 도구줄을 한 줄로 눌러 담는다 */
 body.mo .maptools{gap:6px}
@@ -3402,8 +3465,28 @@ ${gDeal ? `<div data-req="dongs"><span class="lab">찾으시는 동네 <span cla
       <div><span class="lab">꼭 필요한 것</span>${chipsHTML(MUSTS.concat(['기타']), d.musts, 'musts', true)}
         ${d.musts.includes('기타')?`<input class="inp" data-in="mustFree" value="${esc(d.mustFree||'')}" placeholder="예) 붙박이장 필수, 남향, 관리비 10만원 이하 (금액은 원 단위로 적어주세요)" style="margin-top:10px">`:''}</div>`:''}
 
-      ${gRest ? '' : `<p class="sub" style="margin:4px 0 0;font-size:12.5px;color:var(--n500)">
-        위 칸을 채우시면 다음 항목이 열립니다. 나머지는 채우지 않으셔도 됩니다.</p>`}
+      ${gRest ? '' : (()=>{
+        /* ── 아직 안 연 칸을 흐리게 보여준다 (2026-09-26) ──
+           전에는 이 자리에 '위 칸을 채우시면 다음 항목이 열립니다' 한 줄만 있고
+           그 아래로 **480px 가 텅 비어 있었다.** 처음 들어온 분은 칩 세 개와
+           빈 화면을 본다 - 이게 다인지, 고장인지 알 수가 없다.
+           앞으로 무엇을 묻는지 보여주면 빈 자리가 일을 한다. 얼마나 남았는지
+           알면 시작할 마음이 생긴다. 열린 칸은 목록에서 빠진다. */
+        const 남은 = [
+          [gDeal,  shop ? w.area : '동네',  shop ? '어느 상권에서 찾으세요' : '어느 동네에서 찾으세요'],
+          [gArea,  '예산',      shop ? '보증금 · 월세' : (dealWords(d.deal).rent ? '보증금 · 월세' : '가격')],
+          [gMoney, shop ? '' : '주택 유형', '아파트 · 오피스텔 · 빌라…'],
+          [gRest,  '세부 조건', shop ? '면적 · 층 · 입주 시기' : '면적 · 방 수 · 입주 시기'],
+        ].filter(([열림, 이름]) => !열림 && 이름);
+        if(!남은.length) return '';
+        return `
+        <div class="todo">
+          <span class="t">다음에 여쭐 것</span>
+          ${남은.map(([,이름,풀이])=>`
+          <div class="row"><b>${esc(이름)}</b><span>${esc(풀이)}</span></div>`).join('')}
+          <p>한 칸을 채우면 다음 칸이 열립니다.</p>
+        </div>`;
+      })()}
       `}
     </div></div>
   </div>
@@ -4258,39 +4341,47 @@ function regionPicker(d, shop){
     unavailable:'위치를 확인할 수 없어 하남시부터 보여드립니다',
   }[S.geoState] || '';
 
-  /* 보는 방식을 바꾸는 것과 지역을 고르는 것은 칩,
-     화면을 옮기거나 무언가를 실행하는 것만 버튼이다 */
+  /* ── 도구는 지도 위에 얹는다 (2026-09-26) ──
+     전에는 지도 위쪽에 버튼 여섯 개가 두 줄로 서 있었다. 재 보니 **도구가 146px,
+     지도가 200px** - 도구가 지도의 73%를 먹었다. 지도를 보러 온 사람이
+     버튼 더미를 먼저 본다.
+     확대·축소·현재 위치는 어느 지도에서나 지도 **위**에 있다. 그 자리로 옮기면
+     페이지에서 차지하는 높이가 0 이 되고, 손가락 과녁은 44px 그대로다.
+     상위로 가는 길은 breadcrumb 자체가 맡는다 - '← 수도권 전체' 버튼을 따로
+     둘 이유가 없었다. 길을 보여주는 것과 그 길로 가는 것은 같은 것이다. */
   const wide = lv==='seoul' ? '서울 전체' : lv==='hanam' ? '하남 어디든' : '';
+  const 길 = lv==='top' ? `<b>수도권 전체</b>`
+    : lv==='seoul' ? `<button class="crumb" data-act="map-drill" data-v="top">수도권</button> › <b>서울특별시</b>`
+    : `<button class="crumb" data-act="map-drill" data-v="top">수도권</button> › 경기도 › <b>하남시</b>`;
   return `
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;flex-wrap:wrap">
-      <span style="font-size:11px;font-weight:600;color:var(--n500)">${map?crumbs:(shop?'자주 찾는 상권':'자주 찾는 지역')}</span>
-      <div class="chips" style="flex:none;gap:6px">
-        <button class="chip ${map?'on':''}" data-act="region-view" data-v="map" style="padding:8px 16px;font-size:12.5px">지도</button>
-        <button class="chip ${map?'':'on'}" data-act="region-view" data-v="list" style="padding:8px 16px;font-size:12.5px">목록</button>
+    <div class="regbar">
+      <span class="crumbs">${map ? 길 : (shop?'자주 찾는 상권':'자주 찾는 지역')}${
+        map && lv!=='hanam' ? ` · <button class="crumb" data-act="map-drill" data-v="hanam">하남시 동 단위</button>` : ''}</span>
+      <div class="seg" role="group" aria-label="지역 고르는 방법">
+        <button class="${map?'on':''}" data-act="region-view" data-v="map">지도</button>
+        <button class="${map?'':'on'}" data-act="region-view" data-v="list">목록</button>
       </div>
     </div>
     ${map ? `
-    <div class="maptools" style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center">
-      ${lv!=='top'?`<button class="btn ghost sm" data-act="map-drill" data-v="top" style="padding:8px 12px">← 수도권 전체</button>`:''}
-      ${lv!=='hanam'?`<button class="btn ghost sm" data-act="map-drill" data-v="hanam" style="padding:8px 12px">하남시 동 단위</button>`:''}
-      <button class="btn ghost sm" data-act="geo" style="padding:8px 12px">${S.geoState==='asking'?'확인 중…':'📍 현재 위치로'}</button>
-      <span style="flex:1"></span>
-      <div class="chips" style="gap:6px;flex:none">
-        <button class="chip" data-act="map-zoom" data-v="out" aria-label="지도 축소"
-          style="padding:8px 14px;font-size:15px;font-weight:800;line-height:1">−</button>
-        <button class="chip" data-act="map-zoom" data-v="in" aria-label="지도 확대"
-          style="padding:8px 14px;font-size:15px;font-weight:800;line-height:1">+</button>
-        <button class="chip" data-act="map-zoom" data-v="reset" ${MAPZ.k>1?'':'hidden'}
-          style="padding:8px 14px;font-size:12.5px">원래대로</button>
+    <div class="mapbox">
+      ${mapScene(lv, d.dongs, shop)}
+      <div class="mapbtns left">
+        <button data-act="geo" aria-label="현재 위치로" title="현재 위치로"
+          ${S.geoState==='asking'?'disabled':''}>${S.geoState==='asking'?'…':'📍'}</button>
+      </div>
+      <div class="mapbtns right">
+        <button data-act="map-zoom" data-v="in"  aria-label="지도 확대">＋</button>
+        <button data-act="map-zoom" data-v="out" aria-label="지도 축소">－</button>
+        <button data-act="map-zoom" data-v="reset" aria-label="지도 원래대로"
+          title="원래대로" ${MAPZ.k>1?'':'hidden'}>⤾</button>
       </div>
     </div>
-    ${mapScene(lv, d.dongs, shop)}
     ${wide?`<div class="chips" style="margin-top:10px">
-      <button class="chip ${d.dongs.includes(wide)?'on':''}" data-act="dong" data-v="${wide}" style="padding:8px 16px;font-size:12.5px">${wide}</button>
+      <button class="chip ${d.dongs.includes(wide)?'on':''}" data-act="dong" data-v="${wide}">${wide}</button>
     </div>`:''}
     <p style="margin:10px 0 0;font-size:12.5px;line-height:1.6;color:var(--n500)">
-      ${geoLine?`${esc(geoLine)}<br>`:''}작은 지역은 <b style="color:var(--n700)">+</b> 로 키워서 고르세요 ·
-      손가락 두 개로 벌리거나 휠로도 됩니다.<br>실제 행정경계에 가깝게 그린 개념도입니다 - 위치 정보는 지도를 맞추는 데만 쓰고 저장하지 않습니다.</p>
+      ${geoLine?`${esc(geoLine)}<br>`:''}작은 지역은 <b style="color:var(--n700)">＋</b> 로 키워서 고르세요 ·
+      손가락 두 개로 벌려도 됩니다.</p>
     ` : zonesHTML(LIST_GROUPS(shop), d.dongs)}`;
 }
 

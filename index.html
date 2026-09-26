@@ -394,6 +394,25 @@ svg.map text{pointer-events:none;user-select:none}
 .todo p b{color:var(--ind);font-weight:800}
 body.mo .todo .row b{min-width:64px;font-size:13px}
 
+/* ── 접어 두는 선택 묶음 ──
+   폼의 맨 끝에 있고 매칭 우선순위로도 꼬리인 것이 가장 넓은 자리를 먹고 있었다.
+   접되 **무엇이 있는지는 보여준다** - 이름만 있으면 열어볼 까닭이 없다. */
+.opt-group{border:1px solid var(--hair);border-radius:14px;background:rgba(255,255,255,.5)}
+.opt-group summary{display:flex;align-items:center;gap:10px;min-height:52px;
+  padding:0 16px;cursor:pointer;list-style:none;user-select:none}
+.opt-group summary::-webkit-details-marker{display:none}
+.opt-group summary:hover{background:rgba(255,255,255,.75);border-radius:14px}
+/* ⚠ .cnt 는 이미 '선택 개수 뱃지'(남보라 알약)로 쓰이는 이름이다 - 그대로 쓰면
+   요약 글에 남보라 바탕이 깔린다. 이름은 한 곳에서만 쓴다. */
+.opt-group .sum{flex:1;min-width:0;font-size:12.5px;color:var(--n500);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.opt-group[open] .sum{color:var(--ind);font-weight:700}
+.opt-group .caret{flex:none;width:9px;height:9px;border-right:2px solid var(--n500);
+  border-bottom:2px solid var(--n500);transform:rotate(45deg) translateY(-2px);
+  transition:transform .18s var(--e-out)}
+.opt-group[open] .caret{transform:rotate(-135deg) translateY(-2px)}
+.opt-group .body{padding:2px 16px 16px}
+
 .mapbox{position:relative}
 .mapbtns{position:absolute;bottom:10px;display:flex;flex-direction:column;gap:6px;z-index:2}
 .mapbtns.left{left:10px}
@@ -3462,8 +3481,21 @@ ${gDeal ? `<div data-req="dongs"><span class="lab">찾으시는 동네 <span cla
         <div><span class="lab">화장실 <span class="opt">없으면 비워두셔도 됩니다</span></span>${chipsHTML(HBATH, d.hBath||'', 'hbath', false)}</div>
       </div>
       ${movePicker(d)}
-      <div><span class="lab">꼭 필요한 것</span>${chipsHTML(MUSTS.concat(['기타']), d.musts, 'musts', true)}
-        ${d.musts.includes('기타')?`<input class="inp" data-in="mustFree" value="${esc(d.mustFree||'')}" placeholder="예) 붙박이장 필수, 남향, 관리비 10만원 이하 (금액은 원 단위로 적어주세요)" style="margin-top:10px">`:''}</div>`:''}
+      <!-- ── 꼭 필요한 것은 접어 둔다 (2026-09-26) ──
+           열두 가지라 네 줄을 먹는다. 폼의 **맨 끝**에 있고, 매칭 우선순위로도
+           꼬리(주차 10위·반려동물 11위)인데 **가장 넓은 자리**를 차지했다.
+           고른 것이 있으면 펴 둔다 - 접어서 감추면 내가 무엇을 골랐는지 모른다.
+           '기타' 를 골랐을 때도 펴 둔다. 적을 칸이 안 보이면 적을 수가 없다. -->
+      ${(()=>{ const 고른 = (d.musts||[]).length;
+        return `<details class="opt-group" ${고른?'open':''}>
+        <summary>
+          <span class="lab" style="margin:0">꼭 필요한 것</span>
+          <span class="sum">${고른 ? `${고른}가지 고르셨습니다` : '주차 · 엘리베이터 · 반려동물 …'}</span>
+          <span class="caret" aria-hidden="true"></span>
+        </summary>
+        <div class="body">${chipsHTML(MUSTS.concat(['기타']), d.musts, 'musts', true)}
+          ${d.musts.includes('기타')?`<input class="inp" data-in="mustFree" value="${esc(d.mustFree||'')}" placeholder="예) 붙박이장 필수, 남향, 관리비 10만원 이하 (금액은 원 단위로 적어주세요)" style="margin-top:10px">`:''}</div>
+      </details>`; })()}`:''}
 
       ${gRest ? '' : (()=>{
         /* ── 아직 안 연 칸을 흐리게 보여준다 (2026-09-26) ──
@@ -3493,8 +3525,15 @@ ${gDeal ? `<div data-req="dongs"><span class="lab">찾으시는 동네 <span cla
   <div class="foot">
     ${isMo()?'<span></span>':'<button class="btn ghost" data-go="#/kind" style="font-size:13.5px">← 유형 다시 고르기</button>'}
     <!-- 넘어갈 수 있을 때만 색이 들어온다. 그래도 **눌리기는 한다** -
-         disabled 로 막으면 왜 못 넘어가는지 물어볼 길이 사라진다. -->
-    <button class="btn ${regMiss(d)?'ghost':'pri'} ${isMo()?'blk':''}" style="padding:16px ${isMo()?0:'50px'};font-size:15px" data-act="next-register">다음</button>
+         disabled 로 막으면 왜 못 넘어가는지 물어볼 길이 사라진다.
+         ── 버튼이 스스로 말한다 (2026-09-26) ──
+         전에는 회색 버튼에 '다음' 이라고만 적혀 있었다. 무엇이 모자란지는
+         **눌러 봐야** 알 수 있었다 - 회색을 보고 멈춘 사람은 영영 모른다.
+         버튼에 남은 한 가지를 적는다. 다 채우면 '다음' 으로 돌아온다. -->
+    ${(()=>{ const 빠진 = regMiss(d);
+      return `<button class="btn ${빠진?'ghost':'pri'} ${isMo()?'blk':''}"
+        style="padding:16px ${isMo()?0:'50px'};font-size:15px" data-act="next-register"
+        ${빠진?`aria-describedby="nextwhy"`:''}>${빠진 ? esc(빠진.m) : '다음'}</button>`; })()}
   </div>
 </div>`;};
 

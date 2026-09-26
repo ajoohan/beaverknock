@@ -36,8 +36,19 @@
   --clay900:#5E472B; --clay700:#7E5F3C; --clay:#C9A87C; --clay200:#E0CBAC; --clay100:#F5EDE2;
   --n900:#1F1D1A; --n700:#4A4640; --n500:#6E6859; --n300:#D6D1C8; --n200:#E4E0D9; --n100:#F0EDE7; --n50:#FAF8F5; --white:#fff;
   --ok:#1B7A46; --okbg:#EAF6EF; --danger:#B22B31; --dangerbg:#FBEFEF; --warn:#A85708; --warnbg:#FEF3E7;
-  --r-sm:8px; --r-md:12px; --r-lg:18px; --r-full:999px;
-  --sh1:0 2px 12px rgba(35,37,92,.06); --sh2:0 10px 30px rgba(35,37,92,.10); --sh3:0 16px 40px rgba(61,63,143,.26);
+  /* ── 둥글기 다섯 칸 ──
+     전에는 25가지였다(2·4·5·6·7·8·9·10·11·12·14·16·18·20·22…).
+     버튼 10 · 입력칸 11 · 메뉴 9 처럼 서로 한두 픽셀씩만 달랐는데,
+     그 한두 픽셀이 '고른 값' 이 아니라 '그때그때 적은 값' 으로 읽힌다.
+     누르는 것은 전부 sm, 담는 것은 md·lg. 2px 짜리 막대만 예외로 둔다. */
+  --r-xs:6px; --r-sm:10px; --r-md:14px; --r-lg:18px; --r-full:999px;
+  /* ── 그림자 세 칸 ── (전에는 :root 가 세 군데에서 이 셋을 서로 다르게 적고 있었다)
+     색을 띤 그림자는 물건이 빛나는 것처럼 보인다. 중립 남색 한 가지로만 드리운다. */
+  --sh0:0 1px 2px rgba(35,37,92,.06);
+  --sh1:0 1px 2px rgba(35,37,92,.05), 0 4px 12px rgba(35,37,92,.05);
+  --sh2:0 2px 6px rgba(35,37,92,.06), 0 12px 28px rgba(35,37,92,.10);
+  --sh3:0 8px 24px rgba(12,17,41,.12), 0 28px 60px rgba(12,17,41,.18);
+  --hair:rgba(31,29,26,.07);
   --warm:linear-gradient(180deg,#FDFCF9 0%,#F8F3EA 60%,#F5EDE2 100%);
   --font:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
 }
@@ -78,7 +89,7 @@ html.barSpace #app{scrollbar-gutter:stable}
    이것이었다 - 스크롤이 생기는 화면에서만 나타나서 더 늦게 보였다.
    그래서 꾸미기도 같은 조건으로 묶는다. 진짜 막대가 있는 곳에서만 꾸민다. */
 html.barSpace #app::-webkit-scrollbar{width:9px}
-html.barSpace #app::-webkit-scrollbar-thumb{background:#DCD8D0;border-radius:9px;border:3px solid transparent;background-clip:content-box}
+html.barSpace #app::-webkit-scrollbar-thumb{background:#DCD8D0;border-radius:var(--r-sm);border:3px solid transparent;background-clip:content-box}
 
 /* ===== 공통 UI ===== */
 .scr{min-height:100%;display:flex;flex-direction:column;background:var(--warm)}
@@ -105,7 +116,7 @@ body.mo .logo{font-size:15px}
 }
 .nav .items a{font-size:13.5px;font-weight:600;color:var(--n500);padding:8px 14px;border-radius:var(--r-sm)}
 .nav .items a:hover{background:var(--n50);color:var(--n700)}
-.nav .items a.on{font-weight:800;color:var(--ind)}
+.nav .items a.on{font-weight:700;color:var(--ind)}
 .nav .right{margin-left:auto;display:flex;align-items:center;gap:16px;font-size:13.5px;color:var(--n500)}
 body.mo .nav .items{display:none}
 .back{font-size:13.5px;color:var(--n500);font-weight:600;padding:6px 10px;border-radius:var(--r-sm)}
@@ -141,11 +152,11 @@ body.mo .back::after{content:"";position:absolute;left:0;right:0;top:-9px;bottom
 
 /* 모든 변형이 같은 크기로 그려지도록 테두리를 항상 1.5px 잡아둔다 -
    활성/비활성은 두께가 아니라 색으로만 구분한다 */
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:10px;
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:var(--r-sm);
   border:1.5px solid transparent;
-  font-weight:800;letter-spacing:-.02em;transition:transform .12s,box-shadow .15s,background .15s;text-align:center}
+  font-weight:700;letter-spacing:-.02em;transition:transform .12s,box-shadow .15s,background .15s;text-align:center}
 .btn:active{transform:scale(.985)}
-.btn.pri{background:var(--ind);border-color:var(--ind);color:#fff;box-shadow:0 12px 30px rgba(61,63,143,.24)}
+.btn.pri{background:var(--ind);border-color:var(--ind);color:#fff;box-shadow:var(--sh0)}
 .btn.pri:hover{background:var(--ind700);border-color:var(--ind700)}
 .btn.sec{border:1.5px solid var(--n300);background:var(--white);color:var(--ind)}
 .btn.sec:hover{border-color:var(--ind)}
@@ -160,21 +171,14 @@ body.mo .back::after{content:"";position:absolute;left:0;right:0;top:-9px;bottom
 /* 첫 화면 상단바의 문 한 짝.
    두 짝을 나란히 두니 어느 쪽으로 들어가야 하는지가 오히려 흐려졌다 - 파트너는
    가운데 카드가 이미 크게 부르고 있다. 여기는 손님 자리 하나만 둔다.
-   하나뿐이므로 공들인다: 납작한 단색 대신 아주 옅은 기울기와 안쪽 빛으로 두께를
-   주고, 누르면 실제로 들어가는 것처럼 안쪽 그림자로 눌린다. */
-.btn.enter{background:linear-gradient(180deg,#4E50A6 0%,var(--ind) 52%,#353779 100%);
-  border:1px solid #2C2E6B;color:#fff;font-weight:700;letter-spacing:-.01em;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.24),
-             0 1px 2px rgba(35,37,92,.22),
-             0 6px 16px rgba(61,63,143,.20);
-  transition:transform .16s var(--e-out),box-shadow .22s var(--e-out),filter .18s ease}
-.btn.enter:hover{transform:translateY(-1px);filter:brightness(1.05);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.28),
-             0 2px 5px rgba(35,37,92,.20),
-             0 10px 24px rgba(61,63,143,.30)}
-.btn.enter:active{transform:translateY(0);filter:none;
-  box-shadow:inset 0 2px 6px rgba(18,19,58,.38),0 1px 2px rgba(35,37,92,.18)}
-@media (prefers-reduced-motion:reduce){.btn.enter,.btn.enter:hover{transform:none}}
+   전에는 '하나뿐이니 공들이자' 며 기울기·안쪽 빛·바깥 번짐을 세 겹으로 얹었다.
+   공들인 것이 아니라 **장식이 하나 더 붙은 것**이었다 - 상단바처럼 조용해야 할
+   자리에서 이 버튼만 반짝였다. 주 버튼과 같은 단색으로 되돌린다. */
+.btn.enter{background:var(--ind);
+  border:1px solid var(--ind);color:#fff;font-weight:700;letter-spacing:-.01em;
+  box-shadow:var(--sh0)}
+.btn.enter:hover{background:var(--ind700);border-color:var(--ind700)}
+.btn.enter:active{background:var(--ind900);border-color:var(--ind900);box-shadow:none}
 /* 상단바의 들어오는 문 두 짝.
    전에는 하나가 중립 회색(ghost), 하나가 짙은 남색에 30px 그림자(pri)라
    나란히 두면 남남처럼 보였다. 같은 인디고 가족으로 묶고 농도만 달리한다 -
@@ -182,29 +186,32 @@ body.mo .back::after{content:"";position:absolute;left:0;right:0;top:-9px;bottom
    이름을 .gate 로 지었다가 한 번 데였다. 아래쪽에 이미 .gate 가 있고
    .gate:not(.open) 이 pointer-events:none 을 걸어서 버튼이 눌리지 않았다.
    클래스 이름을 새로 만들 때는 먼저 찾아보고 짓는다. */
-/* 파트너로 들어가는 문. **손님 문과 색이 달라야 한다** -
-   둘 다 인디고라 '내 조건 걸어두기' 와 '파트너로 시작하기' 가 한눈에 구분되지
-   않았다. 나란히 놓이는 자리도 있어서 어느 쪽이 내 문인지 헷갈린다.
-   clay 는 새로 들인 색이 아니다. 파트너 카드의 아이브로(FOR PARTNERS)가
-   원래 쓰던 색이라, 색을 바꾸는 것이 아니라 제자리를 찾아주는 것이다.
-   글씨는 navy900 - clay 위에서 8.31:1.
-   테두리를 clay700 으로 두른다. 채움만 두면 흰 바탕과 2.24:1 이라
-   버튼의 가장자리가 사라진다(어두운 카드 위에서는 문제없지만 밝은 곳도 있다). */
-.btn.partner{background:var(--clay);border-color:var(--clay700);color:var(--navy900);font-weight:800}
-.btn.partner:hover{filter:brightness(.95)}
+/* 파트너로 들어가는 문. **손님 문과 달라야 한다** -
+   둘 다 인디고면 '내 조건 걸어두기' 와 '파트너로 시작하기' 가 한눈에 구분되지
+   않는다. 나란히 놓이는 자리도 있어서 어느 쪽이 내 문인지 헷갈린다.
+
+   전에는 clay(#C9A87C) 로 채웠다. 달라 보이기는 했는데 **색 가족이 하나 더**
+   생겼다 - 인디고·남색·clay 셋이 한 화면에 선다. 그리고 이 버튼이 서는 자리는
+   둘 다 짙은 남색 띠 위다. 짙은 띠 위의 주 버튼은 **흰색**이 맞다.
+   흰 버튼은 남색을 '뒤집은 구간' 으로 읽히게 하고, clay 는 아이브로
+   (FOR PARTNERS)에 남아 파트너 자리라는 표시를 계속 한다.
+   글씨는 navy900 - 흰 바탕에서 18.9:1. 옆의 보조 버튼은 .onDark 라
+   흰 채움 + 테두리만 있는 짝이 된다. */
+.btn.partner{background:#fff;border-color:#fff;color:var(--navy900);font-weight:700}
+.btn.partner:hover{background:var(--n100);border-color:var(--n100)}
 .btn.door{background:var(--ind50);border-color:var(--ind200);color:var(--ind);font-weight:700}
 .btn.door:hover{background:var(--ind100);border-color:var(--ind300)}
 .btn.door.solid{background:var(--ind);border-color:var(--ind);color:#fff;
-  box-shadow:0 3px 10px rgba(61,63,143,.16)}
+  box-shadow:var(--sh0)}
 .btn.door.solid:hover{background:var(--ind700);border-color:var(--ind700);
-  box-shadow:0 5px 14px rgba(61,63,143,.22)}
+  box-shadow:var(--sh0)}
 .btn.lg{padding:16px 44px;font-size:16px}
 /* 크기는 아래 '버튼 크기는 셋뿐이다' 에서 한 번에 정한다 - 여기 두면 두 곳이 된다 */
 /* 꺼진 버튼도 '무엇이 켜질지' 는 읽혀야 한다. #C9C4BB 는 이 바탕에서 1.49:1 -
    눌리지 않는 것이 아니라 아예 안 보였다. 3.3:1 로 올린다. */
 .btn[disabled]{background:var(--n100)!important;color:#8A8272!important;box-shadow:none!important;cursor:not-allowed;border-color:var(--n100)!important}
 
-.chip{border:1.5px solid var(--n300);background:var(--white);color:var(--n700);border-radius:10px;
+.chip{border:1.5px solid var(--n300);background:var(--white);color:var(--n700);border-radius:var(--r-sm);
   padding:10px 16px;font-size:13.5px;transition:all .12s}
 .chip:hover{border-color:var(--ind300)}
 .chip.on{background:var(--ind);border-color:var(--ind);color:#fff;font-weight:700}
@@ -220,14 +227,14 @@ body.mo .chip{padding:12px 16px;font-size:13.5px;line-height:1.25}
 .scr .pad.opsPad{max-width:none;padding-left:20px;padding-right:20px}
 body.mo .scr .pad.opsPad{padding-left:16px;padding-right:16px}
 .opsNav{position:sticky;top:16px;display:flex;flex-direction:column;gap:2px;
-  background:var(--white);border:1px solid var(--hair);border-radius:16px;padding:10px}
+  background:var(--white);border:1px solid var(--hair);border-radius:var(--r-md);padding:10px}
 .opsNav .grp{padding:12px 12px 6px;font-size:11px;font-weight:800;letter-spacing:.06em;color:var(--n500)}
 .opsNav button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;
-  padding:11px 12px;border-radius:10px;font-size:13.5px;font-weight:700;color:var(--n700);
+  padding:11px 12px;border-radius:var(--r-sm);font-size:13.5px;font-weight:700;color:var(--n700);
   transition:background var(--t-fast) ease,color var(--t-fast) ease}
 .opsNav button:hover{background:var(--n50)}
-.opsNav button.on{background:var(--ind50);color:var(--ind);font-weight:800}
-.opsNav button .cnt{margin-left:auto;font-size:11px;font-weight:800;color:var(--n500);
+.opsNav button.on{background:var(--ind50);color:var(--ind);font-weight:700}
+.opsNav button .cnt{margin-left:auto;font-size:11px;font-weight:700;color:var(--n500);
   background:var(--n100);border-radius:var(--r-full);padding:2px 8px}
 .opsNav button.on .cnt{background:var(--ind100);color:var(--ind)}
 .opsHead{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;
@@ -254,10 +261,10 @@ body.mo .scr .pad.opsPad{padding-left:16px;padding-right:16px}
 .needBar.hot .dot::after{content:"";position:absolute;inset:0;border-radius:50%;
   background:var(--ind);animation:ping 2.4s var(--e-out) infinite}
 @keyframes ping{0%{transform:scale(1);opacity:.55}70%,100%{transform:scale(3.2);opacity:0}}
-.needBar b{font-size:13.5px;font-weight:800;color:var(--n900);letter-spacing:-.02em}
+.needBar b{font-size:13.5px;font-weight:700;color:var(--n900);letter-spacing:-.02em}
 .needBar .go{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:var(--r-full);
   border:1px solid var(--ind100);background:var(--white);color:var(--ind);
-  font-size:12.5px;font-weight:800;cursor:pointer;
+  font-size:12.5px;font-weight:700;cursor:pointer;
   transition:transform var(--t-fast) var(--e-spring),background var(--t-mid) ease,border-color var(--t-mid) ease}
 .needBar .go:hover{background:var(--ind50);border-color:var(--ind200)}
 .needBar .go:active{transform:scale(.96)}
@@ -270,12 +277,12 @@ body.mo .scr .pad.opsPad{padding-left:16px;padding-right:16px}
   transition:transform var(--t-mid) var(--e-out),box-shadow var(--t-mid) var(--e-out),border-color var(--t-mid) ease}
 .kpi:hover{transform:translate3d(0,-2px,0);box-shadow:var(--sh2);border-color:var(--ind100)}
 .kpi:active{transform:translate3d(0,0,0)}
-.kpi .cap{display:block;font-size:12.5px;font-weight:800;color:var(--n500);letter-spacing:-.01em}
+.kpi .cap{display:block;font-size:12.5px;font-weight:700;color:var(--n500);letter-spacing:-.01em}
 .kpi .big{display:block;margin-top:7px;font-size:30px;font-weight:800;letter-spacing:-.04em;
   color:var(--n900);line-height:1;font-variant-numeric:tabular-nums}
 .kpi .sub{display:flex;align-items:center;gap:6px;margin-top:7px;font-size:12.5px;
   font-weight:700;color:var(--n500);min-height:17px}
-.kpi .dl{font-variant-numeric:tabular-nums;font-weight:800}
+.kpi .dl{font-variant-numeric:tabular-nums;font-weight:700}
 .kpi .dl.up{color:var(--ok)} .kpi .dl.flat{color:var(--n500)}
 .kpi .spark{display:block;width:100%;height:38px;margin-top:8px}
 .kpi .spark path.ln{fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;
@@ -286,7 +293,7 @@ body.mo .scr .pad.opsPad{padding-left:16px;padding-right:16px}
 /* 세로 막대 - 자라는 것은 growBars 가 맡는다(i 의 height:%) */
 .bars{display:flex;align-items:flex-end;gap:3px;height:132px}
 .bars .col{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:flex-end;
-  height:100%;border-radius:5px;transition:background var(--t-fast) ease}
+  height:100%;border-radius:var(--r-xs);transition:background var(--t-fast) ease}
 .bars .col:hover{background:var(--n50)}
 .bars .col i{display:block;width:100%;border-radius:4px 4px 2px 2px;background:var(--ind200)}
 .bars .col i.on{background:linear-gradient(180deg,var(--ind300),var(--ind))}
@@ -299,7 +306,7 @@ body.mo .scr .pad.opsPad{padding-left:16px;padding-right:16px}
 .prog{display:flex;flex-direction:column;gap:13px}
 .prog .r .t{display:flex;justify-content:space-between;align-items:baseline;gap:8px;
   font-size:12.5px;font-weight:700;color:var(--n700);margin-bottom:6px}
-.prog .r .t b{font-size:13.5px;font-weight:800;color:var(--n900);font-variant-numeric:tabular-nums}
+.prog .r .t b{font-size:13.5px;font-weight:700;color:var(--n900);font-variant-numeric:tabular-nums}
 .prog .trk{height:8px;border-radius:var(--r-full);background:var(--n100);overflow:hidden}
 .prog .trk i{display:block;height:100%;border-radius:var(--r-full);
   background:linear-gradient(90deg,var(--ind300),var(--ind))}
@@ -313,11 +320,11 @@ body.mo .scr .pad.opsPad{padding-left:16px;padding-right:16px}
 .tl .it .w{flex:none;width:82px;font-size:12.5px;font-weight:700;color:var(--n500);
   font-variant-numeric:tabular-nums}
 .tl .it .x{flex:1;min-width:0;font-size:12.5px;color:var(--n700);line-height:1.5}
-.tl .it .x b{font-weight:800;color:var(--n900)}
+.tl .it .x b{font-weight:700;color:var(--n900)}
 
 /* 아직 안 온 값은 빈칸이 아니라 '오는 중' 이다 */
 .sk{display:block;background:linear-gradient(90deg,var(--n100),var(--n50),var(--n100));
-  background-size:220% 100%;border-radius:6px;animation:shim 1.3s linear infinite}
+  background-size:220% 100%;border-radius:var(--r-xs);animation:shim 1.3s linear infinite}
 @keyframes shim{to{background-position:-220% 0}}
 /* 펼쳐진 자리 - 들여쓰기와 세로선으로 '이 아래' 임을 말한다 */
 .opsNav .car{flex:none;width:0;height:0;border-left:4px solid currentColor;
@@ -326,9 +333,9 @@ body.mo .scr .pad.opsPad{padding-left:16px;padding-right:16px}
 .opsNav .car.open{transform:rotate(90deg);opacity:.9}
 .opsSub{display:flex;flex-direction:column;gap:1px;margin:2px 0 6px 20px;
   padding-left:10px;border-left:1.5px solid var(--ind100)}
-.opsSub button{padding:8px 10px;border-radius:8px;font-size:12.5px;font-weight:700;color:var(--n500)}
+.opsSub button{padding:8px 10px;border-radius:var(--r-sm);font-size:12.5px;font-weight:700;color:var(--n500)}
 .opsSub button:hover{background:var(--n50);color:var(--n700)}
-.opsSub button.on{background:var(--ind50);color:var(--ind);font-weight:800}
+.opsSub button.on{background:var(--ind50);color:var(--ind);font-weight:700}
 /* 세로 목록은 넉넉할 때만 값어치가 있다. 1024px 아래에서는 가로로 눕힌다 -
    기기 구분(767px)만 보면 768~1023 에서 목록이 눌려 글자가 잘린다. */
 @media (max-width:1023px){
@@ -343,8 +350,8 @@ body.mo .scr .pad.opsPad{padding-left:16px;padding-right:16px}
   .opsNav .car{display:none}
 }
 
-.map{width:100%;height:auto;display:block;border-radius:20px;background:#F2F5F7;
-  border:1px solid var(--hair);box-shadow:0 1px 2px rgba(35,37,92,.04), 0 8px 24px rgba(35,37,92,.06)}
+.map{width:100%;height:auto;display:block;border-radius:var(--r-lg);background:#F2F5F7;
+  border:1px solid var(--hair);box-shadow:var(--sh1)}
 .mapcell{cursor:pointer;transition:fill .16s var(--e-out), stroke .16s var(--e-out)}
 /* 손끝이 닿을 수 있는 곳에서는 hover 를 쓰지 않는다 - 눌러야 반응하는 것처럼 보인다 */
 @media (hover:hover){ .mapcell:not(.on):hover{fill:var(--ind50);stroke:var(--ind300);stroke-width:1.8} }
@@ -363,7 +370,7 @@ svg.map text{pointer-events:none;user-select:none}
 .regbar{display:flex;align-items:center;justify-content:space-between;
   gap:10px;margin-bottom:8px;min-height:44px}
 .regbar .crumbs{font-size:12.5px;color:var(--n500);min-width:0}
-.regbar .crumbs b{font-weight:800;color:var(--n900)}
+.regbar .crumbs b{font-weight:700;color:var(--n900)}
 /* 길을 보여주는 것과 그 길로 가는 것은 같은 것이다 - breadcrumb 이 곧 상위로
    가는 버튼이다. '← 수도권 전체' 를 따로 둘 이유가 없었다. */
 .regbar .crumb{font:inherit;color:var(--ind);font-weight:700;text-decoration:underline;
@@ -374,32 +381,32 @@ svg.map text{pointer-events:none;user-select:none}
 .seg{display:inline-flex;flex:none;background:var(--n100);border-radius:var(--r-full);padding:3px}
 .seg button{min-height:38px;padding:0 16px;border-radius:var(--r-full);
   font-size:12.5px;font-weight:700;color:var(--n500);cursor:pointer;white-space:nowrap}
-.seg button.on{background:var(--white);color:var(--ind);box-shadow:0 1px 4px rgba(31,29,26,.12)}
+.seg button.on{background:var(--white);color:var(--ind);box-shadow:var(--sh0)}
 
 /* ── 아직 안 연 칸 미리보기 ──
    하나씩 열리는 화면의 값은 '한 번에 하나만 보는 것' 인데, 그 대가로 처음에는
    화면이 텅 빈다. 앞으로 무엇을 묻는지 흐리게 보여주면 빈 자리가 일을 한다 -
    얼마나 남았는지 알면 시작할 마음이 생긴다. 열린 칸은 목록에서 빠진다. */
 .todo{margin-top:18px;padding:16px 18px;border:1px dashed var(--n300);
-  border-radius:14px;background:rgba(255,255,255,.45)}
-.todo .t{display:block;font-size:12.5px;font-weight:800;letter-spacing:.02em;
+  border-radius:var(--r-md);background:rgba(255,255,255,.45)}
+.todo .t{display:block;font-size:12.5px;font-weight:700;letter-spacing:.02em;
   color:var(--n500);margin-bottom:10px}
 .todo .row{display:flex;align-items:baseline;gap:10px;padding:5px 0}
 .todo .row b{flex:none;min-width:72px;font-size:13.5px;font-weight:700;color:var(--n700)}
 .todo .row span{font-size:12.5px;line-height:1.5;color:var(--n500);word-break:keep-all}
 .todo p{margin:10px 0 0;padding-top:10px;border-top:1px solid var(--hair);
   font-size:12.5px;line-height:1.6;color:var(--n500)}
-.todo p b{color:var(--ind);font-weight:800}
+.todo p b{color:var(--ind);font-weight:700}
 body.mo .todo .row b{min-width:64px;font-size:13.5px}
 
 /* ── 접어 두는 선택 묶음 ──
    폼의 맨 끝에 있고 매칭 우선순위로도 꼬리인 것이 가장 넓은 자리를 먹고 있었다.
    접되 **무엇이 있는지는 보여준다** - 이름만 있으면 열어볼 까닭이 없다. */
-.opt-group{border:1px solid var(--hair);border-radius:14px;background:rgba(255,255,255,.5)}
+.opt-group{border:1px solid var(--hair);border-radius:var(--r-md);background:rgba(255,255,255,.5)}
 .opt-group summary{display:flex;align-items:center;gap:10px;min-height:52px;
   padding:0 16px;cursor:pointer;list-style:none;user-select:none}
 .opt-group summary::-webkit-details-marker{display:none}
-.opt-group summary:hover{background:rgba(255,255,255,.75);border-radius:14px}
+.opt-group summary:hover{background:rgba(255,255,255,.75);border-radius:var(--r-md)}
 /* ⚠ .cnt 는 이미 '선택 개수 뱃지'(남보라 알약)로 쓰이는 이름이다 - 그대로 쓰면
    요약 글에 남보라 바탕이 깔린다. 이름은 한 곳에서만 쓴다. */
 .opt-group .sum{flex:1;min-width:0;font-size:12.5px;color:var(--n500);
@@ -420,9 +427,9 @@ body.mo .todo .row b{min-width:64px;font-size:13.5px}
 .mapbtns.left{left:10px}
 .mapbtns.right{right:10px}
 .mapbtns button{width:44px;height:44px;display:flex;align-items:center;justify-content:center;
-  background:rgba(255,255,255,.94);border:1px solid var(--hair);border-radius:12px;
-  font-size:16px;font-weight:800;line-height:1;color:var(--n700);cursor:pointer;
-  box-shadow:0 2px 8px rgba(31,29,26,.12);backdrop-filter:blur(4px)}
+  background:rgba(255,255,255,.94);border:1px solid var(--hair);border-radius:var(--r-sm);
+  font-size:16px;font-weight:700;line-height:1;color:var(--n700);cursor:pointer;
+  box-shadow:var(--sh0);backdrop-filter:blur(4px)}
 .mapbtns button:hover{background:#fff;border-color:var(--ind300);color:var(--ind)}
 .mapbtns button:disabled{opacity:.55;cursor:default}
 /* display:flex 가 [hidden] 을 이긴다 - 확대하지 않았는데 '원래대로' 가 보였다 */
@@ -447,7 +454,7 @@ body.mo .card.pad{padding:16px}
 .clickable{cursor:pointer;transition:transform .14s,box-shadow .14s,border-color .14s}
 .clickable:hover{transform:translateY(-2px);box-shadow:var(--sh2);border-color:var(--ind300)}
 
-.lab{display:block;font-size:13.5px;font-weight:800;margin-bottom:10px}
+.lab{display:block;font-size:13.5px;font-weight:700;margin-bottom:10px}
 .lab .req{color:var(--ind)}
 .lab .opt{font-weight:500;color:var(--n500);font-size:12.5px}
 .inp{width:100%;border:1.5px solid var(--n300);background:var(--white);
@@ -464,7 +471,7 @@ body.mo .card.pad{padding:16px}
    한 묶음으로 읽힌다 - 접히는 순간 세로 간격은 묶음 사이 간격이어야 한다. */
 body.mo .grid2.mo1{grid-template-columns:1fr;gap:30px}
 
-.badge{display:inline-block;border-radius:var(--r-full);padding:4px 12px;font-size:11px;font-weight:800;white-space:nowrap}
+.badge{display:inline-block;border-radius:var(--r-full);padding:4px 12px;font-size:11px;font-weight:700;white-space:nowrap}
 .b-ok{background:var(--okbg);color:var(--ok)} .b-warn{background:var(--warnbg);color:var(--warn)}
 /* 글자 링크는 눌리는 자리가 글자 높이(15px)뿐이라 손가락으로 맞히기 어렵다.
    보이는 모습은 그대로 두고 위아래 여백만 준다 - 줄 높이는 음수 마진으로 되돌린다. */
@@ -477,7 +484,7 @@ body.mo .grid2.mo1{grid-template-columns:1fr;gap:30px}
   transition:width .45s cubic-bezier(.2,.8,.2,1)}
 
 .chk{display:flex;gap:12px;align-items:flex-start;padding:14px 0;cursor:pointer}
-.chk .box{flex:none;width:21px;height:21px;border-radius:7px;border:1.8px solid var(--n300);background:var(--white);
+.chk .box{flex:none;width:21px;height:21px;border-radius:var(--r-xs);border:1.8px solid var(--n300);background:var(--white);
   display:flex;align-items:center;justify-content:center;margin-top:2px;transition:all .12s}
 .chk.on .box{background:var(--ind);border-color:var(--ind)}
 .chk .box svg{opacity:0;width:11px}
@@ -504,11 +511,11 @@ hr.hair{border:none;border-top:1px solid var(--n100);margin:0}
 body.mo .rail{display:none}
 .rail .step{display:flex;gap:14px;align-items:center;padding:10px 0}
 .rail .dot{flex:none;width:28px;height:28px;border-radius:var(--r-full);display:flex;align-items:center;justify-content:center;
-  font-size:13.5px;font-weight:800;border:1.5px solid var(--n300);color:var(--n500)}
+  font-size:13.5px;font-weight:700;border:1.5px solid var(--n300);color:var(--n500)}
 .rail .step.on .dot{background:var(--ind);border-color:var(--ind);color:#fff}
 .rail .step.done .dot{background:var(--ok);border-color:var(--ok);color:#fff}
 .rail .step span{font-size:13.5px;font-weight:600;color:var(--n500)}
-.rail .step.on span{font-weight:800;color:var(--n900)}
+.rail .step.on span{font-weight:700;color:var(--n900)}
 .split{display:flex;flex:1;min-height:0}
 .formcol{flex:1;display:flex;justify-content:center;overflow-y:auto;padding:40px 30px}
 body.mo .formcol{padding:20px 24px 0}
@@ -533,19 +540,19 @@ body.mo .foot{padding:14px 24px 24px}
 /* 토스트 */
 #toast{position:fixed;left:50%;bottom:34px;transform:translate(-50%,20px);z-index:200;opacity:0;pointer-events:none;
   background:var(--navy900);color:#fff;font-size:13.5px;font-weight:700;padding:14px 24px;border-radius:var(--r-full);
-  box-shadow:0 14px 36px rgba(12,17,41,.34);transition:opacity .22s,transform .22s;max-width:80vw}
+  box-shadow:var(--sh3);transition:opacity .22s,transform .22s;max-width:80vw}
 #toast.show{opacity:1;transform:translate(-50%,0)}
 
 /* 모달 */
 .modal{position:absolute;inset:0;z-index:60;background:rgba(31,29,26,.42);display:flex;align-items:center;justify-content:center;padding:24px}
 body.mo .modal{align-items:flex-end;padding:0}
-.modal .box{background:var(--white);border-radius:20px;padding:28px;width:100%;max-width:440px;box-shadow:0 24px 60px rgba(12,17,41,.28)}
-body.mo .modal .box{border-radius:22px 22px 0 0;max-width:none}
+.modal .box{background:var(--white);border-radius:var(--r-lg);padding:28px;width:100%;max-width:440px;box-shadow:var(--sh3)}
+body.mo .modal .box{border-radius:var(--r-lg) var(--r-lg) 0 0;max-width:none}
 /* 선택지 - 눌러서 고르는 것 */
 .optbtn{display:block;width:100%;text-align:left;border:1.5px solid var(--n300);background:var(--white);
-  border-radius:10px;padding:14px 16px;font-size:13.5px;font-weight:600;color:var(--n700);margin-bottom:10px;cursor:pointer}
+  border-radius:var(--r-sm);padding:14px 16px;font-size:13.5px;font-weight:600;color:var(--n700);margin-bottom:10px;cursor:pointer}
 .optbtn:hover{border-color:var(--ind300)}
-.optbtn.on{border-color:var(--ind);background:var(--ind50);color:var(--ind);font-weight:800}
+.optbtn.on{border-color:var(--ind);background:var(--ind50);color:var(--ind);font-weight:700}
 
 /* 안내문 - 읽는 것. 테두리도 배경도 없다 */
 .opt{font-weight:500;color:var(--n500);font-size:12.5px;line-height:1.45}
@@ -564,39 +571,35 @@ body.mo .modal .box{border-radius:22px 22px 0 0;max-width:none}
 @media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 
 /* ═══ 품질 패스: 질감 · 그림자 · 포커스 · 마이크로 타이포 ═══ */
-:root{
-  --sh1:0 1px 2px rgba(35,37,92,.04), 0 4px 14px rgba(35,37,92,.05);
-  --sh2:0 2px 6px rgba(35,37,92,.05), 0 14px 34px rgba(35,37,92,.09);
-  --sh3:0 4px 10px rgba(61,63,143,.16), 0 18px 44px rgba(61,63,143,.24);
-  --hair:rgba(31,29,26,.07);
-}
-/* 종이 질감 - 아주 미세하게만 */
+/* (그림자·헤어라인 토큰은 맨 위 :root 한 곳에만 둔다 - 여기 있던 두 번째 정의를 걷었다) */
+/* 종이 질감.
+   ⚠ 여기 화면마다 까는 결 한 겹이 있었는데, 아래 body::after 에 **화면 전체에
+   까는 결이 이미 한 겹 더** 있었다. 같은 잡티를 두 번 얹고 있었던 것이다.
+   화면 단위 쪽을 걷는다 - 한 겹이면 종이 느낌은 충분하고, 두 겹은 그냥 노이즈다.
+   (.scr > * 의 z-index 는 그대로 둔다. 랜딩이 배경 판을 따로 깔고 있다) */
 .scr{position:relative}
-.scr::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:0;opacity:.5;
-  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/><feColorMatrix type='saturate' values='0'/></filter><rect width='140' height='140' filter='url(%23n)' opacity='.035'/></svg>")}
 .scr > *{position:relative;z-index:1}
-.scr.dark::before{opacity:.35}
 
 /* 카드 - 헤어라인 + 상단 하이라이트 */
 .card{border-color:var(--hair);box-shadow:var(--sh1);transition:box-shadow .18s ease,border-color .18s ease,transform .18s cubic-bezier(.2,.8,.2,1)}
 .card.hi{border-color:rgba(61,63,143,.45);box-shadow:var(--sh2)}
-.clickable:hover{transform:translateY(-3px)}
+/* 들리는 높이는 아래 .card.clickable:hover 한 곳에서만 정한다.
+   여기에 -3px, 위에 -2px, 아래에 -2px 이 각각 적혀 있어서 카드냐 아니냐에 따라
+   들리는 양이 달랐다 - 같은 손짓에 화면이 다르게 답하면 그게 '만든 티' 다. */
 .clickable:active{transform:translateY(-1px)}
 
 /* 버튼 - 눌림 반응 정교화 */
 .btn{transition:background .16s ease,box-shadow .18s ease,transform .12s cubic-bezier(.2,.8,.2,1),border-color .16s ease}
-.btn.pri:hover{box-shadow:0 6px 14px rgba(61,63,143,.20),0 20px 46px rgba(61,63,143,.26)}
 .btn.pri:active{transform:translateY(1px) scale(.995)}
 .btn.sec:hover{background:var(--ind50)}
 
 /* 칩 */
-.chip{transition:background .14s ease,border-color .14s ease,color .14s ease,transform .12s ease}
-.chip:active{transform:scale(.97)}
-.chip.on{box-shadow:0 4px 12px rgba(61,63,143,.18)}
+/* (칩의 움직임·눌림·그림자는 아래 한 곳에서만 정한다 - 여기 있던 세 줄은
+   뒤에서 같은 속성을 다시 적어 한 번도 쓰인 적이 없다) */
 
 /* 입력 */
 .inp{transition:border-color .14s ease,box-shadow .14s ease}
-.inp:focus{border-color:var(--ind);box-shadow:0 0 0 3px rgba(61,63,143,.10)}
+.inp:focus{border-color:var(--ind);box-shadow:0 0 0 3px rgba(61,63,143,.12)}
 
 /* 접근성 포커스 */
 :focus-visible{outline:2px solid var(--ind);outline-offset:2px;border-radius:4px}
@@ -674,16 +677,16 @@ body::after{
 .btn{transition:transform var(--t-fast) var(--e-spring),
                 background var(--t-mid) ease, box-shadow var(--t-mid) ease, border-color var(--t-mid) ease}
 .btn:active{transform:scale(.97)}
-.chip{transition:transform var(--t-fast) var(--e-spring),
-                background var(--t-mid) ease, border-color var(--t-mid) ease, color var(--t-mid) ease}
-.chip:active{transform:scale(.95)}
-.chip.on{animation:pop var(--t-mid) var(--e-spring)}
+/* 고른 칩이 튀어오르던 것(pop)을 걷었다.
+   이 화면은 값이 바뀔 때마다 통째로 다시 그린다 - 다시 그리면 칩도 새로
+   만들어지고, 그러면 **애니메이션이 처음부터 다시 돈다.** 보증금을 적는 동안
+   이미 골라둔 칩 열 개가 매번 같이 들썩였다. 고른 것은 색과 체크표가 이미
+   말하고 있다. 누를 때의 반응(:active)만 남긴다. */
 /* 파란색만으로 '고름' 을 말하면, 색을 구분하기 어려운 사람에게는 아무 말도
    하지 않는 것과 같다. 고른 칩에는 표를 단다. */
 .chip.on::before{content:'';display:inline-block;width:9px;height:5px;margin-right:7px;
   border:2px solid currentColor;border-top:none;border-right:none;
   transform:translateY(-2px) rotate(-45deg);vertical-align:middle}
-@keyframes pop{0%{transform:scale(.94)}60%{transform:scale(1.03)}100%{transform:scale(1)}}
 
 /* 지도 셀도 같은 언어로 - 누르는 순간 살짝 눌린다 */
 .mapcell:active{opacity:.82}
@@ -691,7 +694,7 @@ body::after{
 /* ── 키보드 초점 - 없으면 키보드로는 쓸 수 없는 화면이 된다 ── */
 .btn:focus-visible, .chip:focus-visible, .inp:focus-visible,
 .optbtn:focus-visible, .chk:focus-visible, a:focus-visible, [data-act]:focus-visible{
-  outline:2.5px solid var(--ind300); outline-offset:2px; border-radius:10px;
+  outline:2.5px solid var(--ind300); outline-offset:2px; border-radius:var(--r-sm);
 }
 /* 마우스로 찍었을 때만 테두리를 지운다. 그냥 outline:none 을 두면
    바로 위에서 준 초점 링까지 같이 지워져, 키보드로는 어디에 있는지 알 수 없다. */
@@ -742,10 +745,11 @@ body::after{
   background:currentColor;display:block}
 
 /* 고른 칩이 한눈에 - 선택된 것만 그림자를 진다 */
-.chip.on{box-shadow:0 3px 10px rgba(61,63,143,.22)}
+/* 고른 칩은 색으로만 말한다 - 그림자까지 주면 칩이 버튼처럼 떠 보인다 */
+.chip.on{box-shadow:none}
 
 /* 동의 줄: 켜지면 바탕이 물든다 */
-.chk{border-radius:10px;padding-left:12px;padding-right:12px;margin-left:-12px;margin-right:-12px;
+.chk{border-radius:var(--r-sm);padding-left:12px;padding-right:12px;margin-left:-12px;margin-right:-12px;
   transition:background var(--t-mid) ease}
 .chk:hover{background:var(--n50)}
 /* 동의 목록 - 줄마다 선 굵기가 다르면 무게가 달라 보인다. 한 겹으로 통일하고
@@ -810,31 +814,27 @@ h1.t + .sub, .sub{font-size:15px;line-height:1.75;color:var(--n500)}
 .eyebrow{
   font-size:11px;font-weight:800;letter-spacing:.14em;color:var(--clay700);
   background:var(--clay100);border:1px solid var(--clay200);
-  padding:6px 12px 6px 10px;border-radius:7px;
+  padding:6px 12px 6px 10px;border-radius:var(--r-xs);
 }
 .eyebrow::before{width:4px;height:4px;border-radius:var(--r-full);background:var(--clay700)}
 
 /* ── 둥글기에 층을 준다 ──
    담는 것은 넉넉하게, 누르는 것은 단단하게. 전부 같으면 위계가 안 생긴다. */
-.card{border-radius:20px}
+.card{border-radius:var(--r-lg)}
 .card.pad{padding:24px 24px}
-.empty{border-radius:20px}
-.inp{border-radius:11px}
+.empty{border-radius:var(--r-lg)}
+.inp{border-radius:var(--r-sm)}
 
-/* ── 주 버튼: 한 겹 평면에서 벗어난다 ── */
-.btn.pri{
-  background:linear-gradient(180deg,#4A4CA0 0%,var(--ind) 55%,#383A86 100%);
-  border-color:#383A86;
-  box-shadow:0 1px 0 rgba(255,255,255,.16) inset,
-             0 2px 6px rgba(35,37,92,.18), 0 10px 26px rgba(61,63,143,.22);
-}
-.btn.pri:hover{
-  background:linear-gradient(180deg,#54569F 0%,#43459A 55%,#33356F 100%);
-  box-shadow:0 1px 0 rgba(255,255,255,.20) inset,
-             0 3px 8px rgba(35,37,92,.20), 0 14px 32px rgba(61,63,143,.28);
-}
-.btn.pri:active{box-shadow:0 1px 3px rgba(35,37,92,.24)}
-.btn.sec{background:var(--white);box-shadow:0 1px 2px rgba(35,37,92,.05)}
+/* ── 주 버튼: 평면으로 돌아온다 ──
+   전에는 세로 그라데이션(#4A4CA0→#383A86) 위에 흰 하이라이트를 한 줄 얹고,
+   26px 짜리 보라색 번짐을 깔았다. 입체로 보이게 하려던 것인데 -
+   이제는 그 셋이 한꺼번에 '오래된 버튼' 이라고 말한다.
+   지금 쓰이는 상용 서비스의 주 버튼은 **단색 한 겹**이다. 뜬 느낌은
+   그림자가 아니라 **색의 진하기**로 낸다. 누르면 한 칸 더 진해진다. */
+.btn.pri{background:var(--ind);border-color:var(--ind);box-shadow:var(--sh0)}
+.btn.pri:hover{background:var(--ind700);border-color:var(--ind700);box-shadow:var(--sh0)}
+.btn.pri:active{background:var(--ind900);border-color:var(--ind900);box-shadow:none}
+.btn.sec{background:var(--white);box-shadow:var(--sh0)}
 .btn.sec:hover{background:var(--ind50);border-color:var(--ind300)}
 
 /* ── 상단바: 화면이 여기서 시작한다고 말해준다 ── */
@@ -844,17 +844,21 @@ h1.t + .sub, .sub{font-size:15px;line-height:1.75;color:var(--n500)}
      뒤에 흐릴 것이 없으므로 backdrop-filter 는 비용만 낸다 - 뺀다. */
   background:rgba(255,255,255,.94);
   border-bottom:1px solid var(--hair);
-  box-shadow:0 1px 0 rgba(31,29,26,.03), 0 8px 24px -18px rgba(35,37,92,.35);
+  box-shadow:none;
 }
 /* 지금 어디인지는 글자 색과 밑줄로만 말한다.
    채운 알약까지 얹으니 세 가지로 같은 말을 하고 있었고, 무엇보다 알약은 버튼으로
    읽힌다 - 메뉴는 버튼이 아니다. 밑줄은 아래에서 미끄러지며 따라온다. */
-.nav .items a{padding:10px 16px;border-radius:9px;transition:color var(--t-fast) ease,background var(--t-fast) ease}
-.nav .items a.on{color:var(--ind);font-weight:800;background:transparent}
+.nav .items a{padding:10px 16px;border-radius:var(--r-sm);transition:color var(--t-fast) ease,background var(--t-fast) ease}
+.nav .items a.on{color:var(--ind);font-weight:700;background:transparent}
 .nav .items a.on:hover{background:var(--ind50)}
 
-/* ── 입력: 존재감 ── */
-.inp{padding:14px 16px;font-size:15px}
+/* ── 입력: 존재감 ──
+   높이를 48px 로 맞춘다(전에는 50px). 버튼이 48px 인데 입력칸이 50px 이라,
+   나란히 놓이는 자리 - 동네 검색칸과 그 옆 '검색' 버튼 - 에서 2px 이 어긋났다.
+   그래서 그 버튼 하나만 50px 로 따로 키워 두고 있었다. 칸을 줄이면 버튼도
+   제자리로 돌아온다. 이제 누르는 것과 적는 것의 높이가 같다. */
+.inp{padding:13px 16px;font-size:15px}
   /* iOS 는 16px 미만 입력칸을 탭하면 화면을 확대하고 그대로 둔다.
      maximum-scale 로 막는 방법도 있지만 그건 손가락으로 키우는 것까지 막는다.
      글자를 16px 로 올리는 쪽이 맞다 - 화면에서도 읽기 편해진다. */
@@ -863,10 +867,10 @@ h1.t + .sub, .sub{font-size:15px;line-height:1.75;color:var(--n500)}
 
 /* ── 칩: 더 단단하게 ── */
 .chip{font-weight:600;letter-spacing:-.01em}
-.chip.on{font-weight:800}
+.chip.on{font-weight:700}
 
 /* ── 뱃지: 납작하게, 대문자 간격 ── */
-.badge{border-radius:7px;padding:6px 10px;font-size:11px;letter-spacing:.01em}
+.badge{border-radius:var(--r-xs);padding:6px 10px;font-size:11px;letter-spacing:.01em}
 
 /* ── 구분선은 얇게, 대신 여백으로 나눈다 ── */
 .foot{border-top:1px solid var(--hair)}
@@ -892,7 +896,7 @@ h1.t + .sub, .sub{font-size:15px;line-height:1.75;color:var(--n500)}
 .btn.blk{width:100%;min-height:54px;font-size:16px}
 /* 머리말의 로그인 단추는 따로 논다 - 한 줄에 둘이 나란히 서서 좁아야 한다 */
 .btn.door,.btn.enter{padding:0 14px;min-height:40px;font-size:12.5px}
-.chip{min-height:34px}
+/* (칩 높이는 아래 44px 한 곳에서 정한다 - 여기 34px 은 덮여 있었다) */
 
 /* 손가락은 커서보다 굵다 - 폭이 좁아도 높이는 줄이지 않는다 */
 body.mo .btn{min-height:48px}
@@ -1021,7 +1025,7 @@ body.mo .vcard .vbtn{width:100%;margin-top:10px}
 /* 파트너 카드 - 넓은 화면에서 가장 먼저 눈에 들어와야 하는 것 */
 .pcard{background:var(--navy900);color:#F0EDE7;border-radius:var(--r-lg);
   padding:clamp(22px,1.6vw,28px);display:flex;flex-direction:column;gap:12px;box-shadow:var(--sh2)}
-.pcard .k{font-size:11px;font-weight:800;letter-spacing:.1em;color:var(--clay200)}
+.pcard .k{font-size:11px;font-weight:700;letter-spacing:.1em;color:var(--clay200)}
 .pcard .h{font-size:clamp(16px,1.2vw,21px);font-weight:800;letter-spacing:-.03em;color:#fff;line-height:1.4}
 .pcard .d{margin:0;font-size:13.5px;line-height:1.75;color:var(--navy300)}
 .pcard .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:2px}
@@ -1051,7 +1055,7 @@ body.mo .vcard .vbtn{width:100%;margin-top:10px}
   width:38px;height:38px;border-radius:var(--r-full);
   background:var(--white);border:2px solid var(--n300);color:var(--n500);
   display:flex;align-items:center;justify-content:center;
-  font-size:13.5px;font-weight:800;letter-spacing:-.01em;
+  font-size:13.5px;font-weight:700;letter-spacing:-.01em;
   transition:border-color .7s var(--e-out) var(--d,0s),
              color .5s var(--e-out) calc(var(--d,0s) + .22s),
              box-shadow .7s var(--e-out) var(--d,0s)}
@@ -1060,7 +1064,7 @@ body.mo .vcard .vbtn{width:100%;margin-top:10px}
   background:var(--ind);transform:scale(0);
   transition:transform .7s cubic-bezier(.34,.72,.36,1) var(--d,0s)}
 .steps.run .no::before{transform:scale(1)}
-.steps.run .no{border-color:var(--ind);color:#fff;box-shadow:0 3px 12px rgba(61,63,143,.26)}
+.steps.run .no{border-color:var(--ind);color:#fff;box-shadow:var(--sh0)}
 /* 다 차오른 그 순간 물결이 한 번 퍼진다 */
 .steps .no::after{content:'';position:absolute;inset:-2px;border-radius:inherit;
   border:2px solid var(--ind);opacity:0}
@@ -1069,7 +1073,7 @@ body.mo .vcard .vbtn{width:100%;margin-top:10px}
 /* 채워지기 전 색으로 --n300 을 쓰면 흰 바탕에서 1.52:1 이다. 모션이 어떤 이유로든
    시작되지 않으면(탭이 뒤에 있었다거나) 그 글씨는 끝까지 안 읽힌다 -
    쉬는 색을 읽히는 값으로 올리고, 차오르는 느낌은 원과 선에 맡긴다. */
-.steps .stt{display:block;font-size:15px;font-weight:800;letter-spacing:-.03em;
+.steps .stt{display:block;font-size:15px;font-weight:700;letter-spacing:-.03em;
   margin-bottom:4px;color:var(--n500);transition:color .7s var(--e-out)}
 .steps.run .stt{color:var(--n900)}
 .steps .sd{display:block;font-size:12.5px;line-height:1.6;color:var(--n500);max-width:32ch;
@@ -1175,14 +1179,14 @@ tbody tr.clickable:hover{background:var(--n50)}
 /* 주소 자동완성 - 고를 수 있는 것만 고르게 한다 */
 .ac{position:relative;width:100%}
 .aclist{position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:40;background:var(--white);
-  border:1px solid var(--hair);border-radius:12px;box-shadow:0 12px 30px rgba(35,37,92,.14);
+  border:1px solid var(--hair);border-radius:var(--r-md);box-shadow:var(--sh2);
   max-height:268px;overflow-y:auto}
 .aclist:empty{display:none}
 .aclist button{display:flex;width:100%;align-items:baseline;gap:10px;padding:12px 14px;
   text-align:left;border-bottom:1px solid var(--n50);border-radius:0;cursor:pointer}
 .aclist button:last-child{border-bottom:none}
 .aclist button:hover,.aclist button.hi{background:var(--ind50)}
-.aclist button b{font-size:13.5px;font-weight:800;color:var(--n900);white-space:nowrap}
+.aclist button b{font-size:13.5px;font-weight:700;color:var(--n900);white-space:nowrap}
 .aclist button small{font-size:11px;color:var(--n500)}
 .aclist .none{padding:14px 14px;font-size:12.5px;line-height:1.7;color:var(--n500)}
 
@@ -1194,8 +1198,8 @@ tbody tr.clickable:hover{background:var(--n50)}
 /* 이 카드가 이 화면의 주인공이다. 여기서 '내가 원한 게 이게 맞다' 를 확인하고
    보낸다. 위의 절차들을 접어 자리를 만들었으니, 그 자리를 실제로 쓴다 -
    테두리를 굵히고 제목을 한 단 크게 세운다. */
-.recap{background:var(--white);border:2px solid var(--ind300);border-radius:18px;overflow:hidden;
-  box-shadow:0 1px 2px rgba(35,37,92,.06), 0 14px 38px rgba(61,63,143,.13)}
+.recap{background:var(--white);border:2px solid var(--ind300);border-radius:var(--r-lg);overflow:hidden;
+  box-shadow:var(--sh1)}
 .recap .rc-top{padding:20px 24px 18px;border-bottom:1px solid var(--ind100);
   background:linear-gradient(180deg,var(--ind50) 0%,rgba(255,255,255,0) 100%)}
 /* 눈썹은 알림이다 - 알약으로 세워야 카드가 스스로를 소개한다 */
@@ -1208,7 +1212,7 @@ tbody tr.clickable:hover{background:var(--n50)}
 .recap .rc-body{padding:4px 24px}
 .recap .rc-row{display:flex;gap:16px;align-items:flex-start;padding:14px 0;border-top:1px solid var(--n100)}
 .recap .rc-row:first-child{border-top:none}
-.recap .rc-k{flex:none;width:64px;padding-top:3px;font-size:11px;font-weight:800;color:var(--n500)}
+.recap .rc-k{flex:none;width:64px;padding-top:3px;font-size:11px;font-weight:700;color:var(--n500)}
 .recap .rc-v{flex:1;min-width:0;font-size:16px;font-weight:700;line-height:1.6;color:var(--n900);word-break:keep-all}
 .recap .rc-k{padding-top:5px}
 body.mo .recap .rc-ttl{font-size:25px}
@@ -1218,18 +1222,18 @@ body.mo .recap .rc-v{font-size:15px}
    다만 반쯤 흐려지는 배경 띠는 걷는다. 한쪽만 물든 띠가 카드 안에서
    마감이 덜 된 것처럼 보였다. 글자 크기와 색만으로도 충분히 먼저 읽힌다. */
 .recap .rc-row.hi .rc-k{color:var(--ind)}
-.recap .rc-row.hi .rc-v{font-size:16px;font-weight:800;letter-spacing:-.02em;color:var(--ind);
+.recap .rc-row.hi .rc-v{font-size:16px;font-weight:700;letter-spacing:-.02em;color:var(--ind);
   font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
 /* 끝난 절차를 한 줄로 접어 두는 바.
    마지막 화면의 주인공은 '무엇을 보내는가' 이지 '무엇을 이미 했는가' 가 아니다.
    끝났다는 사실만 남기고 자리는 요약에 내준다. 다시 여는 길은 늘 둔다. */
 .donebar{display:flex;align-items:center;gap:10px;padding:11px 14px;margin-bottom:12px;
-  background:var(--okbg);border:1px solid #A5CDB6;border-radius:12px}
+  background:var(--okbg);border:1px solid #A5CDB6;border-radius:var(--r-md)}
 .donebar .dot{flex:none;width:20px;height:20px;border-radius:var(--r-full);background:var(--ok);
   display:flex;align-items:center;justify-content:center}
 .donebar .dot svg{width:11px}
 .donebar .t{flex:1;min-width:0;font-size:13.5px;line-height:1.5;color:var(--n700);word-break:keep-all}
-.donebar .t b{font-weight:800;color:#166B3D}
+.donebar .t b{font-weight:700;color:#166B3D}
 .donebar .lnk{flex:none;font-size:12.5px;font-weight:700;color:var(--n500);
   text-decoration:underline;text-underline-offset:2px;white-space:nowrap}
 .donebar .lnk:hover{color:var(--n700)}
@@ -1238,11 +1242,11 @@ body.mo .donebar .t{font-size:12.5px}
 
 /* 고지 블록 - 라벨과 값을 두 단으로. 좁은 화면에서는 한 단으로 눕는다. */
 .notice{margin-top:10px;padding:14px 18px;background:var(--n50);
-  border:1px solid var(--hair);border-radius:12px}
+  border:1px solid var(--hair);border-radius:var(--r-md)}
 .notice dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:7px 16px}
-.notice dt{font-size:12.5px;font-weight:800;color:var(--n500);white-space:nowrap;padding-top:1px}
+.notice dt{font-size:12.5px;font-weight:700;color:var(--n500);white-space:nowrap;padding-top:1px}
 .notice dd{margin:0;font-size:12.5px;line-height:1.6;color:var(--n700);word-break:keep-all}
-.notice dd b{font-weight:800;color:var(--n900)}
+.notice dd b{font-weight:700;color:var(--n900)}
 body.mo .notice{padding:14px 16px}
 body.mo .notice dl{grid-template-columns:1fr;gap:1px}
 body.mo .notice dt{margin-top:10px}
@@ -1252,7 +1256,7 @@ body.mo .notice dt:first-child{margin-top:0}
 .recap .rc-tags span{font-size:12.5px;font-weight:700;color:var(--ind);background:var(--ind50);
   border-radius:var(--r-full);padding:4px 12px}
 .recap .rc-memo{margin:2px 24px 18px;padding:12px 16px;background:var(--n50);
-  border-left:2.5px solid var(--ind300);border-radius:0 10px 10px 0;
+  border-left:2.5px solid var(--ind300);border-radius:0 var(--r-sm) var(--r-sm) 0;
   font-size:13.5px;line-height:1.75;color:var(--n700);word-break:keep-all}
 /* 이건 각주가 아니라 약속이다 - 회색으로 깔아두면 아무도 안 읽는다 */
 .recap .rc-note{padding:14px 24px;border-top:1px solid var(--ind100);background:var(--ind50);
@@ -1270,7 +1274,7 @@ body.mo .recap .rc-note{padding:12px 16px}
    다 펼쳐 놓으면 무엇부터 해야 하는지가 안 보인다 - 확인이 끝나면 열린다. */
 .gate{transition:opacity .42s var(--e-out), filter .42s var(--e-out)}
 .gate:not(.open){opacity:.38;filter:grayscale(.55);pointer-events:none;user-select:none}
-.gate-hint{display:flex;align-items:center;gap:10px;padding:14px 18px;border-radius:14px;
+.gate-hint{display:flex;align-items:center;gap:10px;padding:14px 18px;border-radius:var(--r-md);
   background:var(--ind50);border:1px dashed var(--ind200);
   font-size:13.5px;font-weight:700;color:var(--ind700);word-break:keep-all}
 .gate-hint i{flex:none;display:block;width:18px;height:18px;border-radius:var(--r-full);
@@ -1292,25 +1296,25 @@ body.mo .recap .rc-note{padding:12px 16px}
 
 /* 모바일 미세 조정 */
 body.mo .card.pad{padding:18px}
-body.mo .foot{box-shadow:0 -6px 20px rgba(35,37,92,.05)}
+body.mo .foot{box-shadow:0 -1px 0 var(--hair)}
 body.mo .empty{padding:34px 24px}
 
 /* 프레임 - 더 은은한 그림자 */
-#frame{box-shadow:0 2px 8px rgba(28,37,71,.08),0 24px 60px rgba(28,37,71,.18)}
-body.mo #frame{box-shadow:0 2px 8px rgba(28,37,71,.10),0 28px 64px rgba(28,37,71,.26)}
+#frame{box-shadow:var(--sh3)}
+body.mo #frame{box-shadow:var(--sh3)}
 
 /* ═══ 전수점검 반영: 탭바 · 헤더 · 상태 · 스켈레톤 ═══ */
 .tabbar{position:sticky;bottom:0;z-index:40;display:flex;background:rgba(255,255,255,.94);
   backdrop-filter:saturate(1.6) blur(14px);border-top:1px solid var(--hair);
   padding:8px 6px calc(8px + env(safe-area-inset-bottom));flex:none}
 .tabbar a{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 0;
-  color:var(--n500);font-size:11px;font-weight:600;border-radius:12px;transition:color .15s,background .15s}
+  color:var(--n500);font-size:11px;font-weight:600;border-radius:var(--r-sm);transition:color .15s,background .15s}
 .tabbar a svg{width:21px;height:21px}
-.tabbar a.on{color:var(--ind);font-weight:800}
+.tabbar a.on{color:var(--ind);font-weight:700}
 .tabbar a:active{background:var(--n50)}
 
 /* 클릭 가능한 스텝 (완료 단계로 되돌아가기) */
-.rail a.step{cursor:pointer;border-radius:10px;margin:0 -8px;padding-left:8px;padding-right:8px;transition:background .15s}
+.rail a.step{cursor:pointer;border-radius:var(--r-sm);margin:0 -8px;padding-left:8px;padding-right:8px;transition:background .15s}
 .rail a.step:hover{background:var(--n50)}
 .rail a.step:hover span:last-child{color:var(--n700)}
 
@@ -1322,12 +1326,12 @@ body.mo #frame{box-shadow:0 2px 8px rgba(28,37,71,.10),0 28px 64px rgba(28,37,71
 
 /* 선택 항목 개수 뱃지 */
 .cnt{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 6px;
-  border-radius:var(--r-full);background:var(--ind);color:#fff;font-size:11px;font-weight:800;margin-left:6px}
+  border-radius:var(--r-full);background:var(--ind);color:#fff;font-size:11px;font-weight:700;margin-left:6px}
 
 /* 스켈레톤 (화면설계서: 스피너 금지) */
 @keyframes shim{0%{background-position:-380px 0}100%{background-position:380px 0}}
 .skel{background:linear-gradient(90deg,var(--n100) 8%,#F7F4EE 22%,var(--n100) 36%);
-  background-size:760px 100%;animation:shim 1.3s linear infinite;border-radius:8px}
+  background-size:760px 100%;animation:shim 1.3s linear infinite;border-radius:var(--r-sm)}
 
 /* 링크 밑줄 오프셋 통일 */
 #app a[style*="underline"]{text-underline-offset:3px;text-decoration-thickness:1px}
@@ -1408,12 +1412,10 @@ p,li,dd,.sub,.lines,.opt{line-break:strict;overflow-wrap:break-word}
 
 /* ── 그림자 ──
    한 겹짜리 그림자는 스티커처럼 뜬다. 가까운 그림자와 먼 그림자를
-   겹쳐야 종이가 놓인 것처럼 보인다. */
-:root{
-  --sh1:0 1px 2px rgba(35,37,92,.04), 0 6px 18px rgba(35,37,92,.05);
-  --sh2:0 2px 4px rgba(35,37,92,.05), 0 14px 34px rgba(35,37,92,.09);
-  --sh3:0 3px 8px rgba(61,63,143,.16), 0 18px 44px rgba(61,63,143,.22);
-}
+   겹쳐야 종이가 놓인 것처럼 보인다.
+   ⚠ 값은 맨 위 :root 한 곳에만 있다. 여기 세 번째 정의가 또 있었는데 -
+   같은 이름을 세 군데에서 다르게 적어 놓으면 고칠 때 어느 것이 진짜인지
+   아무도 모른다. 실제로 맨 위 것과 중간 것은 아무 일도 하고 있지 않았다. */
 
 /* ── 움직임 ──
    지금까지 .12s / .14s / .15s / ease 가 제각각이라 화면마다 리듬이 달랐다.
@@ -1432,7 +1434,7 @@ p,li,dd,.sub,.lines,.opt{line-break:strict;overflow-wrap:break-word}
 :where(button,a,input,select,textarea,[tabindex]):focus-visible{
   outline:2px solid var(--ind);
   outline-offset:2px;
-  border-radius:6px;
+  border-radius:var(--r-xs);
 }
 
 /* ── 진입 ──
@@ -1504,7 +1506,7 @@ const won = w => {
    이 자리만 손으로 바꾼다(data-wonhint 로 찾는다).
    tail 은 '까지' 처럼 뒤에 붙는 말이다 - 상한이라는 뜻이 사라지면 안 된다. */
 const wonHint = (v, tail) => `<span data-wonhint${tail?` data-suffix="${tail}"`:''}
-  style="display:block;min-height:17px;margin-top:6px;font-size:12.5px;font-weight:800;color:var(--ind)"
+  style="display:block;min-height:17px;margin-top:6px;font-size:12.5px;font-weight:700;color:var(--ind)"
   >${+v > 0 ? won(+v) + '원' + (tail||'') : ''}</span>`;
 
 /* ---------- 도메인 데이터 ---------- */
@@ -2093,7 +2095,7 @@ const S = {
 /* ---------- 유틸 ---------- */
 /* 예시 데이터임을 항목마다 밝힌다. 실제로 등록·수신한 것에는 붙지 않는다. */
 const demoTag = (o, style='') => o && o.seed
-  ? `<span class="badge" style="background:var(--clay100);border:1px solid var(--clay200);color:var(--clay700);font-size:11px;font-weight:800;padding:2px 8px;${style}">예시</span>`
+  ? `<span class="badge" style="background:var(--clay100);border:1px solid var(--clay200);color:var(--clay700);font-size:11px;font-weight:700;padding:2px 8px;${style}">예시</span>`
   : '';
 
 /* 서버가 아직 모르는 조건. 화면에는 남겨두되 저장된 척은 하지 않는다.
@@ -2254,7 +2256,7 @@ function wmImpact(h, m, kind, o){
         ${front}
       </span>
     </span>
-    <i style="position:absolute;left:47%;right:${pad*1.15}px;bottom:${pad*.52}px;height:${Math.max(2,h*.09)}px;background:${deep};border-radius:9px"></i>
+    <i style="position:absolute;left:47%;right:${pad*1.15}px;bottom:${pad*.52}px;height:${Math.max(2,h*.09)}px;background:${deep};border-radius:var(--r-sm)"></i>
   </span>`;}
 
 const WM_IMPACT = [
@@ -2475,7 +2477,7 @@ function zonesHTML(zones, sel){
     const open = i===0 || picked>0;
     return `<details class="zgroup" ${open?'open':''} style="margin-bottom:10px">
       <summary style="display:flex;align-items:center;gap:8px;cursor:pointer;list-style:none;
-        font-size:12.5px;font-weight:800;color:var(--n500);padding:8px 0;user-select:none">
+        font-size:12.5px;font-weight:700;color:var(--n500);padding:8px 0;user-select:none">
         <svg class="caret" viewBox="0 0 12 12" style="width:10px;height:10px;flex:none;transition:transform var(--t-fast) ease">
           <path d="M4 2.5 L8 6 L4 9.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         <span>${esc(z.t)}</span>
@@ -2915,12 +2917,14 @@ const STEP_ALL  = (HOME_STEPS.length - 1) * STEP_ONE + STEP_FILL + 0.45 + 1.2;
 /* ---------- D-01 랜딩 ---------- */
 V['#/'] = () => `
 <div class="scr fade" style="position:relative;overflow:${isMo()?'visible':'hidden'}">
-  <!-- 바탕 빛 - 평면을 깨는 최소한의 깊이 -->
+  <!-- 바탕.
+       전에는 여기에 색 번짐 두 덩이(인디고 920px · clay 700px)를 깔았다.
+       '평면을 깨는 깊이' 라고 적어 뒀는데, 실제로는 **한 화면에 색 가족이
+       세 개** 서는 원인이었다. 첫 화면에서 가장 크게 보이는 것이 글이 아니라
+       배경의 두 덩이였다. 따뜻한 종이색 한 겹만 남긴다 - 깊이는 비버 그림과
+       짙은 파트너 띠가 이미 만들고 있다. -->
   <div aria-hidden="true" style="position:absolute;inset:0;pointer-events:none;z-index:0;
-    background:
-      radial-gradient(920px 620px at 82% 6%, rgba(61,63,143,.10), transparent 62%),
-      radial-gradient(700px 520px at 4% 92%, rgba(201,168,124,.20), transparent 66%),
-      var(--warm)"></div>
+    background:var(--warm)"></div>
 
   <div class="nav pad" style="position:relative;z-index:3">
     <span style="flex:none">${logoLockup({h:25,tag:!isMo()})}</span>
@@ -2939,7 +2943,7 @@ V['#/'] = () => `
   ${isMo()? `
   <!-- 모바일: 세로. 문구가 먼저, 캐릭터는 남는 공간만 -->
   <div style="flex:none;display:flex;flex-direction:column;align-items:center;text-align:center;gap:14px;padding:20px 24px 0;position:relative;z-index:3">
-    <span class="badge" style="background:var(--clay100);border:1px solid var(--clay200);color:var(--clay700);padding:8px 16px;font-size:12.5px"><b style="font-weight:800;letter-spacing:.02em">Close Beta Service</b> · 서울·경기에서 먼저 시작합니다</span>
+    <span class="badge" style="background:var(--clay100);border:1px solid var(--clay200);color:var(--clay700);padding:8px 16px;font-size:12.5px"><b style="font-weight:700;letter-spacing:.02em">Close Beta Service</b> · 서울·경기에서 먼저 시작합니다</span>
     <h1 class="t" style="font-size:31px;line-height:1.32">찾아다니지 마세요.<br>조건을 걸어두면<br><span style="color:var(--ind)">문을 두드립니다.</span></h1>
     <p style="margin:0;font-size:13.5px;line-height:1.75;color:var(--n700);max-width:30ch">원하는 집·가게의 조건을 남기면, 맞는 물건이 있는 공인중개사가 직접 연락합니다.</p>
   </div>
@@ -2976,7 +2980,7 @@ V['#/'] = () => `
        넓은 화면으로 오는 사람은 대개 중개사·소유자다 - 그 칸을 먼저 내어준다. -->
   <div class="hero" style="flex:1;min-height:0;position:relative;z-index:2">
     <div style="display:flex;flex-direction:column;align-items:flex-start;gap:20px;padding-bottom:28px">
-      <span class="badge" style="background:var(--clay100);border:1px solid var(--clay200);color:var(--clay700);padding:8px 16px;font-size:12.5px"><b style="font-weight:800;letter-spacing:.02em">Close Beta Service</b> · 서울·경기에서 먼저 시작합니다</span>
+      <span class="badge" style="background:var(--clay100);border:1px solid var(--clay200);color:var(--clay700);padding:8px 16px;font-size:12.5px"><b style="font-weight:700;letter-spacing:.02em">Close Beta Service</b> · 서울·경기에서 먼저 시작합니다</span>
       <h1 class="t" style="font-size:56px;line-height:1.14;max-width:15ch;text-align:left">
         찾아다니지 마세요.<br>조건을 걸어두면<br><span style="color:var(--ind);position:relative;display:inline-block">문을 두드립니다.<i style="position:absolute;left:0;right:0;bottom:.06em;height:.14em;background:rgba(201,168,124,.42);border-radius:2px;z-index:-1"></i></span>
       </h1>
@@ -3113,12 +3117,12 @@ const snsSoon = k => (SNS.find(x => x.k === k) || {}).soon || '준비 중';
 
 function snsButton(x){ return `
   <button data-act="sns" data-v="${x.k}" style="position:relative;display:flex;align-items:center;justify-content:center;gap:10px;width:100%;
-    padding:14px 16px;border-radius:11px;cursor:${x.soon?'not-allowed':'pointer'};font-size:15px;font-weight:700;letter-spacing:-.01em;
+    padding:14px 16px;border-radius:var(--r-sm);cursor:${x.soon?'not-allowed':'pointer'};font-size:15px;font-weight:700;letter-spacing:-.01em;
     background:${x.bg};color:${x.fg};border:1.5px solid ${x.bd};min-height:52px;${x.soon?'opacity:.62;':''}
     transition:filter .14s ease,box-shadow .14s ease">
     <span style="flex:none;display:flex">${x.ic}</span>${x.t}
     ${x.soon?`<span aria-label="${x.soon}" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);
-      font-size:11px;font-weight:800;letter-spacing:0;padding:4px 8px;border-radius:var(--r-full);white-space:nowrap;
+      font-size:11px;font-weight:700;letter-spacing:0;padding:4px 8px;border-radius:var(--r-full);white-space:nowrap;
       background:${x.fg==='#fff'?'rgba(255,255,255,.18)':'rgba(0,0,0,.10)'};color:${x.fg}">${x.soon}</span>`:''}
   </button>`;}
 
@@ -3187,7 +3191,7 @@ V['#/login'] = () => {
     <div style="width:100%;max-width:${isMo()?'none':'400px'};display:flex;flex-direction:column;gap:16px">
 
       <div style="display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center">
-        ${asPartner?`<span style="font-size:12.5px;font-weight:800;letter-spacing:.06em;color:var(--ind);
+        ${asPartner?`<span style="font-size:12.5px;font-weight:700;letter-spacing:.06em;color:var(--ind);
           background:var(--ind50);border:1px solid #D9DAF0;border-radius:var(--r-full);padding:6px 14px">파트너</span>`:''}
         <h1 class="t" style="font-size:${isMo()?21:25}px">${
           S.signup ? '비버노크 시작하기'
@@ -3314,7 +3318,7 @@ V['#/reset-pw'] = () => findShell('비밀번호 찾기',
   '가입하신 이메일로 <b style="color:var(--n900)">재설정 링크</b>를 보내드립니다.',
   S.resetSent ? `
     <div class="card pad" style="background:var(--okbg);border-color:#A5CDB6;box-shadow:none">
-      <b style="display:block;font-size:15px;font-weight:800;color:#166B3D;margin-bottom:6px">메일을 보냈습니다</b>
+      <b style="display:block;font-size:15px;font-weight:700;color:#166B3D;margin-bottom:6px">메일을 보냈습니다</b>
       <p style="margin:0;font-size:13.5px;line-height:1.75;color:var(--n700)">
         <b style="color:var(--n900)">${esc(S.resetSent)}</b> 로 재설정 링크를 보냈습니다.
         메일이 보이지 않으면 스팸함도 확인해 주세요. 링크는 30분 동안 유효합니다.</p>
@@ -3345,7 +3349,7 @@ V['#/kind'] = () => `
         <button class="card clickable" data-act="who" data-v="${k}" style="padding:${isMo()?'18px':'22px 26px'};text-align:left;display:flex;justify-content:space-between;align-items:center;gap:14px">
           <span style="min-width:0">
             <span style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
-              <b style="font-size:16px;font-weight:800;letter-spacing:-.03em">${w.t}</b>
+              <b style="font-size:16px;font-weight:700;letter-spacing:-.03em">${w.t}</b>
               <span class="badge ${k==='home'?'b-ind':'b-mute'}" style="font-size:11px">${w.tag}</span>
               ${w.slots>5?`<span class="badge b-ok" style="font-size:11px">제안 ${w.slots}건</span>`:''}
             </span>
@@ -3574,7 +3578,7 @@ V['#/detail'] = () => { const d=S.draft, pct=detailPct(d); return `
 
       <div class="card pad" style="padding:16px 20px">
         <div style="display:flex;justify-content:space-between;margin-bottom:10px">
-          <span data-pct style="font-size:13.5px;font-weight:800;color:var(--ind)">지금 ${pct}%</span>
+          <span data-pct style="font-size:13.5px;font-weight:700;color:var(--ind)">지금 ${pct}%</span>
           <span style="font-size:11px;color:var(--n500)">${pct>=90?'충분합니다 · 제안 품질이 올라갑니다':'다 채우면 우선 매칭에 도움이 됩니다'}</span>
         </div>
         <div class="gauge"><i style="width:${pct}%"></i></div>
@@ -3868,7 +3872,7 @@ function movePicker(d){
         ${moveYears().map((g,gi)=>`
         <div style="margin-top:${gi?14:0}px">
           <span style="display:flex;align-items:center;gap:8px;margin-bottom:7px;
-            font-size:12.5px;font-weight:800;color:${gi?'var(--ind)':'var(--n500)'}">
+            font-size:12.5px;font-weight:700;color:${gi?'var(--ind)':'var(--n500)'}">
             <span class="num">${g.y}년</span>
             ${gi?'<span style="font-weight:700;color:var(--ind300)">여기부터 해가 바뀝니다</span>':''}
             <i style="flex:1;height:1px;background:${gi?'var(--ind100)':'var(--n100)'}"></i></span>
@@ -3901,6 +3905,26 @@ function movePicker(d){
    viewBox 만 바꾼다 - 다시 그리지 않으므로 고르던 것이 흐트러지지 않고,
    글자도 함께 커져서 확대할수록 읽기 쉬워진다. */
 const MAPZ = { k:1, x:0, y:0, drag:null, moved:false, pts:new Map(), base:0, baseK:1 };
+
+/* 지도 위의 단추 넷.
+   전에는 글자였다 - 📍 ＋ － ⤾. 그림씨(이모지)와 전각기호는 **쓰는 기기마다
+   다른 글꼴로 그려진다.** 📍 는 안드로이드에서 빨간 압정, 윈도에서 파란 핀,
+   맥에서 또 다른 그림이 되고, ⤾ 는 아예 네모(□)로 빠지는 기기가 있다.
+   같은 단추가 사람마다 다르게 보이면 그건 우리가 그린 화면이 아니다.
+   선 굵기·모서리를 맞춘 그림 넷으로 직접 그린다. 색은 글자색을 따라간다. */
+const ICO = (() => {
+  const s = p => `<svg viewBox="0 0 20 20" width="19" height="19" fill="none" aria-hidden="true"
+      stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+  return {
+    /* 지금 여기 - 가운데 점과 네 방향 눈금. 압정보다 '내 위치' 로 읽힌다 */
+    locate: s(`<circle cx="10" cy="10" r="4.2"/><circle cx="10" cy="10" r="1.1" fill="currentColor" stroke="none"/>
+               <path d="M10 1.6v2.4M10 16v2.4M1.6 10h2.4M16 10h2.4"/>`),
+    plus:   s(`<path d="M10 4.6v10.8M4.6 10h10.8"/>`),
+    minus:  s(`<path d="M4.6 10h10.8"/>`),
+    /* 원래대로 - 되돌아가는 화살 */
+    reset:  s(`<path d="M4.2 8.6A6.4 6.4 0 1 1 3.9 12"/><path d="M3.4 4.3v4.5h4.5"/>`),
+  };
+})();
 const MAP_KMAX = 6;
 
 function mapViewBox(){
@@ -4433,13 +4457,13 @@ function regionPicker(d, shop){
       ${mapScene(lv, d.dongs, shop)}
       <div class="mapbtns left">
         <button data-act="geo" aria-label="현재 위치로" title="현재 위치로"
-          ${S.geoState==='asking'?'disabled':''}>${S.geoState==='asking'?'…':'📍'}</button>
+          ${S.geoState==='asking'?'disabled':''}>${S.geoState==='asking'?'…':ICO.locate}</button>
       </div>
       <div class="mapbtns right">
-        <button data-act="map-zoom" data-v="in"  aria-label="지도 확대">＋</button>
-        <button data-act="map-zoom" data-v="out" aria-label="지도 축소">－</button>
+        <button data-act="map-zoom" data-v="in"  aria-label="지도 확대">${ICO.plus}</button>
+        <button data-act="map-zoom" data-v="out" aria-label="지도 축소">${ICO.minus}</button>
         <button data-act="map-zoom" data-v="reset" aria-label="지도 원래대로"
-          title="원래대로" ${MAPZ.k>1?'':'hidden'}>⤾</button>
+          title="원래대로" ${MAPZ.k>1?'':'hidden'}>${ICO.reset}</button>
       </div>
     </div>
     ${wide?`<div class="chips" style="margin-top:10px">
@@ -4477,7 +4501,7 @@ function demandCards(rows){
             <span style="flex:1"></span>
             <span style="font-size:11px;color:var(--n500)">${esc(String(r.created_at||'').replace('T',' ').slice(5,16))}</span>
           </div>
-          <b style="display:block;font-size:15px;font-weight:800;letter-spacing:-.02em;margin-bottom:4px">
+          <b style="display:block;font-size:15px;font-weight:700;letter-spacing:-.02em;margin-bottom:4px">
             ${esc((r.dongs||[]).join(' · ')||'-')}</b>
           <span class="num" style="display:block;font-size:13.5px;font-weight:700;color:var(--ind);margin-bottom:4px">${esc(money)}</span>
           <span style="display:block;font-size:12.5px;line-height:1.6;color:var(--n500)">${esc(key)}</span>
@@ -4488,7 +4512,7 @@ function demandCards(rows){
         ${open?`
         <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--n100)">
           <pre data-sharetext="${esc(r.id)}" style="margin:0 0 10px;padding:14px 14px;background:var(--n50);
-            border-radius:11px;white-space:pre-wrap;word-break:keep-all;font-family:inherit;
+            border-radius:var(--r-sm);white-space:pre-wrap;word-break:keep-all;font-family:inherit;
             font-size:12.5px;line-height:1.8;color:var(--n900)">${esc(opsShare(r))}</pre>
           <div style="display:flex;flex-direction:column;gap:8px">
             <button class="btn pri sm blk" data-act="ops-copy" data-v="${esc(r.id)}">중개사에게 보낼 글 복사</button>
@@ -4504,7 +4528,7 @@ function agentNeedCheck(rows){
   const n = (rows||[]).filter(r => r.role==='agent' && !r.reg_verified).length;
   if(!n) return '';
   return `<div class="card pad" style="margin:0 0 12px;background:var(--warnbg);border-color:#E8D5A8;box-shadow:none">
-    <b style="font-size:13.5px;font-weight:800">등록번호 미확인 ${n}건</b>
+    <b style="font-size:13.5px;font-weight:700">등록번호 미확인 ${n}건</b>
     <span style="display:block;margin-top:4px;font-size:12.5px;line-height:1.6;color:var(--n700)">
       공공데이터에서 찾지 못한 신청입니다. 최근 개설했거나 번호를 잘못 적었을 수 있으니 직접 확인이 필요합니다.</span>
   </div>`;
@@ -4525,7 +4549,7 @@ function agentCards(rows){
           <span style="flex:1"></span>
           <span style="font-size:11px;color:var(--n500)">${esc(String(r.created_at||'').replace('T',' ').slice(5,16))}</span>
         </div>
-        <b style="display:block;font-size:15px;font-weight:800;letter-spacing:-.02em">${esc(r.name||'')}</b>
+        <b style="display:block;font-size:15px;font-weight:700;letter-spacing:-.02em">${esc(r.name||'')}</b>
         <span class="num" style="display:block;margin-top:2px;font-size:13.5px;color:var(--n700)">${esc(r.phone||'')}</span>
         ${(r.office||r.addr)?`<span style="display:block;margin-top:4px;font-size:12.5px;color:var(--n700)">${esc(r.office||r.addr)}</span>`:''}
         ${(r.reg_no||r.biz_no)?`<span style="display:flex;align-items:center;gap:6px;margin-top:4px">
@@ -4576,7 +4600,7 @@ function opsSummary(rows, agents){
 
   const tile = (label, val, sub, tone) => `
     <div class="card pad" style="padding:16px 18px">
-      <span style="display:block;font-size:11px;font-weight:800;color:var(--n500);margin-bottom:6px">${label}</span>
+      <span style="display:block;font-size:11px;font-weight:700;color:var(--n500);margin-bottom:6px">${label}</span>
       <b class="num countable" style="display:block;font-size:25px;font-weight:800;letter-spacing:-.03em;
         color:${tone||'var(--n900)'};line-height:1.1">${val}</b>
       ${sub?`<span style="display:block;margin-top:6px;font-size:11px;color:var(--n500)">${sub}</span>`:''}
@@ -4592,11 +4616,11 @@ function opsSummary(rows, agents){
 
   <div style="display:grid;grid-template-columns:${isMo()?'1fr':'1.1fr 1fr'};gap:10px;margin-bottom:14px">
     <div class="card pad" style="padding:16px 18px">
-      <span style="display:block;font-size:11px;font-weight:800;color:var(--n500);margin-bottom:12px">최근 7일 유입</span>
+      <span style="display:block;font-size:11px;font-weight:700;color:var(--n500);margin-bottom:12px">최근 7일 유입</span>
       <div style="display:flex;align-items:flex-end;gap:6px;height:74px">
         ${days.map((n,i)=>`
           <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px">
-            <span class="num" style="font-size:11px;font-weight:800;color:${n?'var(--ind)':'var(--n500)'}">${n}</span>
+            <span class="num" style="font-size:11px;font-weight:700;color:${n?'var(--ind)':'var(--n500)'}">${n}</span>
             <i class="growbar" style="display:block;width:100%;border-radius:4px 4px 0 0;
               background:${i===6?'var(--ind)':'var(--ind300)'};opacity:${n?1:.25};
               height:${Math.max(3, Math.round(n/peak*44))}px"></i>
@@ -4605,7 +4629,7 @@ function opsSummary(rows, agents){
       </div>
     </div>
     <div class="card pad" style="padding:16px 18px">
-      <span style="display:block;font-size:11px;font-weight:800;color:var(--n500);margin-bottom:12px">많이 찾는 지역</span>
+      <span style="display:block;font-size:11px;font-weight:700;color:var(--n500);margin-bottom:12px">많이 찾는 지역</span>
       ${top.length ? `<div style="display:flex;flex-direction:column;gap:8px">
         ${top.map(([d,n])=>`
           <div style="display:flex;align-items:center;gap:10px">
@@ -4614,7 +4638,7 @@ function opsSummary(rows, agents){
             <i style="flex:1;height:7px;border-radius:4px;background:var(--n100);position:relative;overflow:hidden">
               <b style="position:absolute;inset:0 auto 0 0;width:${Math.round(n/top[0][1]*100)}%;
                 background:var(--ind300);border-radius:4px"></b></i>
-            <span class="num" style="flex:none;font-size:12.5px;font-weight:800;color:var(--n500)">${n}</span>
+            <span class="num" style="flex:none;font-size:12.5px;font-weight:700;color:var(--n500)">${n}</span>
           </div>`).join('')}
       </div>` : `<p style="margin:0;font-size:12.5px;color:var(--n500)">조건이 쌓이면 어느 동이 몰리는지 보입니다.</p>`}
     </div>
@@ -4651,7 +4675,7 @@ function agentPanel(){
   if(!all && AG.loading) return `<div class="card pad" style="display:flex;justify-content:center;padding:30px 0">${bkLoader(28)}</div>`;
   if(!all) return `
     <div class="card pad" style="max-width:440px">
-      <b style="display:block;font-size:15px;font-weight:800;margin-bottom:10px">가입 신청 보기</b>
+      <b style="display:block;font-size:15px;font-weight:700;margin-bottom:10px">가입 신청 보기</b>
       <p style="margin:0 0 14px;font-size:13.5px;line-height:1.75;color:var(--n700)">
         조건과 같은 암호를 씁니다. 위에서 이미 넣으셨다면 바로 불러옵니다.</p>
       <button class="btn pri blk" data-act="ag-load">
@@ -4679,7 +4703,7 @@ function agentPanel(){
     ${picked.length ? `
     <div class="card pad" style="margin-bottom:12px;border-color:var(--ind200);background:var(--ind50);box-shadow:none;
       display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
-      <b style="font-size:13.5px;font-weight:800;color:var(--ind)">${picked.length}건 선택됨</b>
+      <b style="font-size:13.5px;font-weight:700;color:var(--ind)">${picked.length}건 선택됨</b>
       <div class="chips" style="gap:6px">
         ${Object.entries(AG_STATUS).map(([k,[,t]])=>`
           <button class="chip" data-act="ag-bulk" data-v="${k}" style="padding:8px 14px;font-size:12.5px"
@@ -4696,11 +4720,11 @@ function agentPanel(){
           <input type="checkbox" data-act="ag-pick-all" ${allPicked?'checked':''}
             style="width:17px;height:17px;accent-color:var(--ind);cursor:pointer">
           <span style="font-size:12.5px;font-weight:700;color:var(--n500)">전체</span></label>` : ''}
-        <b style="font-size:15px;font-weight:800">${rows.length===all.length?`신청 ${all.length}건`:`${rows.length}건 / 전체 ${all.length}건`}</b>
+        <b style="font-size:15px;font-weight:700">${rows.length===all.length?`신청 ${all.length}건`:`${rows.length}건 / 전체 ${all.length}건`}</b>
         <span style="font-size:11px;color:var(--n500)">${AG.at?esc(AG.at.replace('T',' ').slice(0,16)):''} 기준</span>
       </div>
       ${rows.length===0 ? `<div style="padding:40px 18px;text-align:center">
-        <p style="margin:0 0 6px;font-size:15px;font-weight:800">${all.length?'조건에 맞는 신청이 없습니다':'아직 신청이 없습니다'}</p>
+        <p style="margin:0 0 6px;font-size:15px;font-weight:700">${all.length?'조건에 맞는 신청이 없습니다':'아직 신청이 없습니다'}</p>
         <p style="margin:0;font-size:13.5px;color:var(--n500)">${all.length?'찾는 말을 바꿔보세요.':'중개사 가입 화면으로 신청이 들어오면 여기에 쌓입니다.'}</p></div>`
       : isMo() ? agentCards(rows) : `
       <div style="overflow-x:auto">
@@ -4708,7 +4732,7 @@ function agentPanel(){
           <thead><tr style="background:var(--n50)">
             <th style="width:38px;padding:10px 0 10px 14px"></th>
             ${['신청','상태','역할','성함','연락처','사무소 · 물건','등록번호 · 사업자','이메일'].map(h=>
-              `<th style="text-align:left;padding:10px 14px;font-size:11px;font-weight:800;color:var(--n500)">${h}</th>`).join('')}
+              `<th style="text-align:left;padding:10px 14px;font-size:11px;font-weight:700;color:var(--n500)">${h}</th>`).join('')}
           </tr></thead>
           <tbody>${rows.map(r=>`
             <tr style="border-top:1px solid var(--n100);${AG.pick[r.id]?'background:var(--ind50)':''}">
@@ -4970,7 +4994,7 @@ V['#/done'] = () => `
         <span style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
           <span style="width:22px;height:22px;border-radius:var(--r-full);background:var(--ok);display:flex;align-items:center;justify-content:center">
             <svg viewBox="0 0 12 12" style="width:11px"><path d="M2 6.5 L5 9.5 L10 3" stroke="#fff" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-          <b style="font-size:15px;font-weight:800;letter-spacing:-.02em;color:#166B3D">조건에 맞는 곳 ${S.matched}건을 바로 찾았습니다</b></span>
+          <b style="font-size:15px;font-weight:700;letter-spacing:-.02em;color:#166B3D">조건에 맞는 곳 ${S.matched}건을 바로 찾았습니다</b></span>
         <p style="margin:0 0 14px;font-size:13.5px;line-height:1.75;color:var(--n700)">
           이미 물건을 가지고 계신 중개사분이 <b style="color:var(--n900);font-weight:700">제안을 보내왔습니다.</b>
           지금 제안함에서 확인하실 수 있습니다.</p>
@@ -4983,7 +5007,7 @@ V['#/done'] = () => `
         </div>
       </div>` : `
       <div class="card pad" style="text-align:left">
-        <b style="display:block;font-size:15px;font-weight:800;letter-spacing:-.02em;color:var(--n900);margin-bottom:10px">조금만 기다려 주세요</b>
+        <b style="display:block;font-size:15px;font-weight:700;letter-spacing:-.02em;color:var(--n900);margin-bottom:10px">조금만 기다려 주세요</b>
         <p style="margin:0 0 14px;font-size:13.5px;line-height:1.75;color:var(--n700)">
           지금 등록된 곳 중에는 조건에 딱 맞는 자리가 없습니다.<br>
           <b style="color:var(--n900);font-weight:700">해당 지역 중개사분들께 조건을 전달했으니</b>, 맞는 곳이 나오면 바로 알려드리겠습니다.</p>
@@ -5013,15 +5037,15 @@ V['#/my'] = () => {
     return `<div class="card ${c.status==='active'?'hi':''} pad fade" style="${c.status==='closed'?'opacity:.6':''}">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
         <span class="badge ${st[0]}">${st[1]}</span>
-        ${cnt? `<a class="tapx" data-go="#/inbox" data-cond="${c.id}" style="font-size:13.5px;font-weight:800;color:var(--ind)">제안 ${cnt}/${c.slots} 도착 →</a>`
-              : `<span style="font-size:13.5px;font-weight:800;color:var(--n500)">제안 0/${c.slots}</span>`}
+        ${cnt? `<a class="tapx" data-go="#/inbox" data-cond="${c.id}" style="font-size:13.5px;font-weight:700;color:var(--ind)">제안 ${cnt}/${c.slots} 도착 →</a>`
+              : `<span style="font-size:13.5px;font-weight:700;color:var(--n500)">제안 0/${c.slots}</span>`}
       </div>
-      <b style="display:block;font-size:${isMo()?15:16}px;font-weight:800;letter-spacing:-.02em;margin-bottom:6px">${esc(c.title)} ${demoTag(c,'vertical-align:middle')}${unsavedTag(c)}</b>
+      <b style="display:block;font-size:${isMo()?15:16}px;font-weight:700;letter-spacing:-.02em;margin-bottom:6px">${esc(c.title)} ${demoTag(c,'vertical-align:middle')}${unsavedTag(c)}</b>
       <div class="lines" style="margin-bottom:14px">${c.lines.map(esc).join('<br>')}</div>
       ${c.status!=='closed'? `
         <div style="background:var(--n50);padding:12px 14px;margin-bottom:14px">
           <div style="display:flex;justify-content:space-between;margin-bottom:8px">
-            <span style="font-size:11px;font-weight:800;color:var(--ind)">조건 입력 ${c.pct}%</span>
+            <span style="font-size:11px;font-weight:700;color:var(--ind)">조건 입력 ${c.pct}%</span>
             <a class="tapx" data-go="#/detail" style="font-size:12.5px;color:var(--n500);text-decoration:underline">더 채우면 맞는 제안이 옵니다</a>
           </div><div class="gauge" style="height:5px"><i style="width:${c.pct}%"></i></div>
         </div>
@@ -5060,13 +5084,13 @@ V['#/my'] = () => {
     <div class="card pad" style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
       <div style="flex:none;position:relative;width:42px;height:42px;border-radius:var(--r-full);
         background:var(--ind50);overflow:hidden;
-        display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:var(--ind)">
+        display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:var(--ind)">
         ${esc((S.user.name||'?').slice(0,1))}
         ${S.user.avatar ? `<img src="${esc(S.user.avatar)}" alt="" referrerpolicy="no-referrer"
              style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover"
              onerror="this.remove()">` : ''}</div>
       <div style="flex:1;min-width:0">
-        <b style="display:block;font-size:15px;font-weight:800;color:var(--n900);letter-spacing:-.02em">${esc(S.user.name||'회원')} 님</b>
+        <b style="display:block;font-size:15px;font-weight:700;color:var(--n900);letter-spacing:-.02em">${esc(S.user.name||'회원')} 님</b>
         <span class="num" style="display:block;margin-top:2px;font-size:12.5px;color:var(--n500);
           overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(S.user.email||'')}</span>
       </div>
@@ -5075,7 +5099,7 @@ V['#/my'] = () => {
     <p style="margin:-6px 0 0;font-size:12.5px;line-height:1.7;color:var(--n500)">
       ${esc(S.user.label||'')} 계정에서 받은 <b style="color:var(--n700)">이름</b>은 중개사에게 전달되는 조건에 함께 쓰이고,
       <b style="color:var(--n700)">이메일</b>은 이 계정을 알아보고 걸어두신 조건을 다시 불러오는 데만 씁니다.</p>` : ''}
-    ${seedGate(S.mineReady, () => S.conds.length? rows : `<div class="empty"><p style="margin:0 0 6px;font-size:15px;font-weight:800">아직 등록한 조건이 없습니다</p>
+    ${seedGate(S.mineReady, () => S.conds.length? rows : `<div class="empty"><p style="margin:0 0 6px;font-size:15px;font-weight:700">아직 등록한 조건이 없습니다</p>
       <p style="margin:0 0 18px;font-size:13.5px;color:var(--n500)">조건을 걸어두면 맞는 물건이 있을 때만 연락이 옵니다.</p>
       <button class="btn pri md" data-act="restart">조건 등록하기</button></div>`)}
     <div class="beaverbox" style="margin-top:auto;margin-bottom:${isMo()?'14px':'26px'};max-width:${isMo()?'none':'560px'}">
@@ -5098,7 +5122,7 @@ V['#/inbox'] = () => {
         ${p.photos? `<span style="position:absolute;right:12px;bottom:10px;background:rgba(12,17,41,.62);color:#fff;font-size:11px;font-weight:700;border-radius:var(--r-full);padding:4px 10px">사진 ${p.photos}장</span>`:''}
       </div>
       <div style="padding:16px 18px;display:flex;flex-direction:column;gap:10px">
-        <div><b style="display:block;font-size:15px;font-weight:800;letter-spacing:-.02em">${esc(p.title)} ${demoTag(p,'vertical-align:middle')}</b>
+        <div><b style="display:block;font-size:15px;font-weight:700;letter-spacing:-.02em">${esc(p.title)} ${demoTag(p,'vertical-align:middle')}</b>
         <span class="num" style="font-size:13.5px;color:var(--n700)">${p.rent? `보증금 ${won(p.dep)} / 월 ${won(p.rent)}` : `전세 ${won(p.dep)}`} · 관리비 ${won(p.fee)}</span>
         <span style="display:block;font-size:12.5px;color:var(--n500)">${p.dong} · 전용 ${p.py}평 · ${p.floor} · 주차 ${esc(p.parking)}</span></div>
         <div style="border-top:1px solid var(--n100);padding-top:10px;display:flex;flex-direction:column;gap:6px">
@@ -5106,19 +5130,19 @@ V['#/inbox'] = () => {
           <div style="display:flex;gap:8px"><span class="badge b-ok" style="flex:none;font-size:11px;padding:2px 8px">일치</span><span style="font-size:12.5px;line-height:1.45;color:var(--n700)">${p.match.map(esc).join(' · ')}</span></div>
         </div>
         ${p.status==='selected'&&p.contact&&p.contact.phone? `<div style="background:var(--okbg);padding:10px 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-          <span style="font-size:11px;font-weight:800;color:var(--ok)">연결됨</span>
-          <span class="num" style="font-size:13.5px;font-weight:800;color:var(--ok)">${esc(p.contact.phone)}</span>
+          <span style="font-size:11px;font-weight:700;color:var(--ok)">연결됨</span>
+          <span class="num" style="font-size:13.5px;font-weight:700;color:var(--ok)">${esc(p.contact.phone)}</span>
           <span style="font-size:12.5px;color:var(--n700)">${esc(p.contact.office||p.contact.role||'')}</span></div>`:''}
         <div style="display:flex;justify-content:space-between;align-items:center">
           <span style="font-size:11px;color:var(--n500)">${esc(p.agency.name)} · ${p.at}</span>
-          <span style="font-size:13.5px;font-weight:800;color:var(--ind)">자세히 →</span></div>
+          <span style="font-size:13.5px;font-weight:700;color:var(--ind)">자세히 →</span></div>
       </div>
     </div>`;
   const empty = () => {
     const over = cond && cond.expires < 10;
     return `<div class="empty">
       <span style="display:flex;justify-content:center;margin-bottom:8px">${beaverly(126)}</span>
-      <p style="margin:0 0 8px;font-size:15px;font-weight:800">${over?'아직 도착한 제안이 없습니다':'조건이 중개사에게 전달됐습니다'}</p>
+      <p style="margin:0 0 8px;font-size:15px;font-weight:700">${over?'아직 도착한 제안이 없습니다':'조건이 중개사에게 전달됐습니다'}</p>
       <p style="margin:0 auto 18px;max-width:420px;font-size:13.5px;line-height:1.6;color:var(--n500)">
         ${over?'지금 조건에 맞는 물건이 시장에 없을 수 있습니다. 실제 거래 데이터로 확인해 보세요.':'제안이 오면 가입하신 메일로 알려드립니다. 들어와서 기다리실 필요 없습니다.'}</p>
       ${over? `<button class="btn pri md" data-go="#/relax">어떻게 하면 제안이 올까요?</button>`
@@ -5130,20 +5154,20 @@ V['#/inbox'] = () => {
   <div class="pad" style="flex:1;padding-top:${isMo()?18:30}px;display:flex;gap:24px;max-width:${isMo()?'none':'1180px'};margin:0 auto;width:100%;${isMo()?'flex-direction:column':''}">
     ${isMo()?'':`
     <div style="flex:none;width:320px;display:flex;flex-direction:column;gap:12px">
-      <h2 style="margin:0;font-size:13.5px;font-weight:800;color:var(--n500)">내 조건</h2>
+      <h2 style="margin:0;font-size:13.5px;font-weight:700;color:var(--n500)">내 조건</h2>
       ${S.conds.map(c=>{const n=S.props.filter(p=>p.cond===c.id&&p.status!=='hidden').length;
         return `<div class="card ${c.id===S.inboxCond?'hi':''} clickable" data-act="pick-cond" data-v="${c.id}" style="padding:16px 18px">
           <div style="display:flex;justify-content:space-between;margin-bottom:8px">
             <span class="badge ${c.status==='active'?'b-ok':c.status==='expiring'?'b-warn':'b-mute'}">${c.status==='active'?'활성':c.status==='expiring'?'만료임박':'종료'}</span>
-            <span style="font-size:11px;font-weight:800;color:${n?'var(--ind)':'var(--n500)'}">제안 ${n}/5</span></div>
-          <b style="display:block;font-size:13.5px;font-weight:800;letter-spacing:-.02em;margin-bottom:4px">${esc(c.title)} ${demoTag(c,'vertical-align:middle')}${unsavedTag(c)}</b>
+            <span style="font-size:11px;font-weight:700;color:${n?'var(--ind)':'var(--n500)'}">제안 ${n}/5</span></div>
+          <b style="display:block;font-size:13.5px;font-weight:700;letter-spacing:-.02em;margin-bottom:4px">${esc(c.title)} ${demoTag(c,'vertical-align:middle')}${unsavedTag(c)}</b>
           <span style="font-size:12.5px;line-height:1.6;color:var(--n700)">${c.lines[0]?esc(c.lines[0]):''}</span></div>`;}).join('')}
       <div class="beaverbox" style="margin-top:auto;margin-bottom:24px">${beaverlyMini(56)}
         <p>새 제안이 오면 <b style="color:var(--n900)">메일로 바로</b> 알려드려요. 들어와서 기다리실 필요 없습니다.</p></div>
     </div>`}
     <div style="flex:1;display:flex;flex-direction:column;gap:14px;min-width:0;padding-bottom:24px">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
-        <h1 style="margin:0;font-size:${isMo()?15:16}px;font-weight:800">제안 ${list.length}건</h1>
+        <h1 style="margin:0;font-size:${isMo()?15:16}px;font-weight:700">제안 ${list.length}건</h1>
         ${isMo()? `<select class="inp" data-act="pick-cond-sel" aria-label="조건 고르기" style="width:auto;min-height:44px;padding:8px 10px;font-weight:700">
           ${S.conds.map(c=>`<option value="${c.id}" ${c.id===S.inboxCond?'selected':''}>${esc(c.title)}</option>`).join('')}</select>`
         : `<span style="font-size:12.5px;color:var(--n500)">${esc(cond?cond.title:'')} · 다른 점을 먼저 보여드립니다</span>`}
@@ -5187,7 +5211,7 @@ V['#/proposal'] = (id) => { const p=S.props.find(x=>x.id===id); if(!p) return V[
       <p style="margin:8px 0 0;padding-top:10px;border-top:1px solid var(--n100);font-size:12.5px;line-height:1.6;color:var(--n500)">
         ${p.risk?`${esc(p.risk)}<br class="mbr">`:''}중개사가 적어 보낸 내용입니다 - 계약 전 등기사항증명서와 건축물대장을 직접 확인하세요.</p></div>` : ''}
     <div class="card pad" style="display:flex;justify-content:space-between;align-items:center;gap:12px">
-      <div><b style="display:block;font-size:13.5px;font-weight:800">${esc(p.agency.name)}가 보낸 제안입니다</b>
+      <div><b style="display:block;font-size:13.5px;font-weight:700">${esc(p.agency.name)}가 보낸 제안입니다</b>
       <span style="font-size:12.5px;line-height:1.6;color:var(--n500)">${p.agency.reg
         ? `대표 ${esc(p.agency.rep)} · 등록 ${esc(p.agency.reg)} · ${esc(p.agency.addr)}`
         : '연결을 누르시면 사무소와 등록번호를 확인하실 수 있습니다'}</span></div>
@@ -5264,8 +5288,8 @@ V['#/connect'] = (id) => { const p=S.props.find(x=>x.id===id); if(!p) return V['
       <h1 class="t" style="font-size:${isMo()?25:31}px">연결되었습니다</h1>
       <p style="margin:0;font-size:15px;line-height:1.75;color:var(--n700)">아래로 직접 연락하실 수 있습니다.<br class="mbr"> 내 이름과 연락처도 함께 전달됐으니, 먼저 연락이 올 수도 있습니다.</p>
       <div class="card pad" style="text-align:center;box-shadow:var(--sh2)">
-        <span style="display:block;font-size:12.5px;font-weight:800;color:var(--n500);margin-bottom:6px">${esc(ct.role||'공인중개사')}</span>
-        <b style="display:block;font-size:16px;font-weight:800;letter-spacing:-.02em;margin-bottom:10px">${esc(ct.office||ct.name||'-')}</b>
+        <span style="display:block;font-size:12.5px;font-weight:700;color:var(--n500);margin-bottom:6px">${esc(ct.role||'공인중개사')}</span>
+        <b style="display:block;font-size:16px;font-weight:700;letter-spacing:-.02em;margin-bottom:10px">${esc(ct.office||ct.name||'-')}</b>
         ${ct.phone?`<a class="num" href="tel:${esc(String(ct.phone).replace(/[^0-9+]/g,''))}" style="font-size:${isMo()?25:31}px;font-weight:800;letter-spacing:-.02em;color:var(--ind);text-decoration:none">${esc(ct.phone)}</a>`
                  :`<span style="font-size:13.5px;color:var(--n500)">연락처를 불러오지 못했습니다 - 제안함에서 다시 확인해 주세요</span>`}
         ${ct.reg_no?`<span style="display:block;margin-top:10px;font-size:11px;color:var(--n500)">등록번호 ${esc(ct.reg_no)}</span>`:''}
@@ -5334,18 +5358,18 @@ V['#/relax'] = () => `
       <div class="card" style="padding:6px 24px">
         ${[['1층 · 12~18평 · 월 180 이하','1건',false],['1층 · 12~18평 · 월 210까지','9건',true],['2층 이상도 받으면','16건',false]]
           .map(([l,n,hi],i)=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 0;${i<2?'border-bottom:1px solid var(--n100)':''}">
-            <span style="font-size:13.5px;${hi?'font-weight:800;color:var(--ind)':'color:var(--n700)'}">${l}</span>
-            <span class="num" style="font-size:15px;font-weight:${hi?900:800};${hi?'color:var(--ind)':''}">${n}${hi?' <span class="badge b-ind" style="font-size:11px">여기</span>':''}</span></div>`).join('')}
+            <span style="font-size:13.5px;${hi?'font-weight:700;color:var(--ind)':'color:var(--n700)'}">${l}</span>
+            <span class="num" style="font-size:15px;font-weight:${hi?700:400};${hi?'color:var(--ind)':''}">${n}${hi?' <span class="badge b-ind" style="font-size:11px">여기</span>':''}</span></div>`).join('')}
       </div>
       <p style="margin:0;font-size:12.5px;color:var(--n500)">국토교통부 실거래가 공개시스템 - 참고 지표이며 실제와 다를 수 있습니다.</p>
     </div>
     <div style="width:${isMo()?'100%':'440px'};display:flex;flex-direction:column;gap:12px">
-      <span style="font-size:15px;font-weight:800">한 가지만 바꿔보시겠어요?</span>
+      <span style="font-size:15px;font-weight:700">한 가지만 바꿔보시겠어요?</span>
       ${[['월세 210까지 올리기','맞는 자리가 1건 → 9건으로 늘어납니다'],
          ['2층도 받기','카페는 2층 성공 사례가 많은 상권입니다 · +7건'],
          ['하남시청역 상권 추가하기','10분 거리 · 거래 5건 추가']].map(([t,d])=>`
         <button class="card clickable" data-act="relax" data-v="${esc(t)}" style="padding:18px 24px;text-align:left">
-          <b style="display:block;font-size:15px;font-weight:800;color:var(--ind);margin-bottom:4px">${t}</b>
+          <b style="display:block;font-size:15px;font-weight:700;color:var(--ind);margin-bottom:4px">${t}</b>
           <span style="font-size:13.5px;color:var(--n500)">${d}</span></button>`).join('')}
       <button class="btn ghost" data-go="#/inbox">그냥 기다릴게요</button>
     </div>
@@ -5366,7 +5390,7 @@ V['#/partner'] = () => `
   </div>
   <div class="pad" style="flex:1;display:flex;align-items:center;gap:40px">
    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:24px;max-width:${isMo()?'none':'820px'}">
-    <span style="align-self:flex-start;font-size:12.5px;font-weight:800;color:#9AA3BF;border:1px solid var(--navy600);border-radius:var(--r-full);padding:8px 18px"><b style="font-weight:800;letter-spacing:.02em">Close Beta Service</b> · 서울·경기에서 먼저 시작합니다</span>
+    <span style="align-self:flex-start;font-size:12.5px;font-weight:700;color:#9AA3BF;border:1px solid var(--navy600);border-radius:var(--r-full);padding:8px 18px"><b style="font-weight:700;letter-spacing:.02em">Close Beta Service</b> · 서울·경기에서 먼저 시작합니다</span>
     <h1 class="t" style="font-size:${isMo()?25:31}px;color:#fff;line-height:1.28;max-width:20ch">서울·경기에서 집·가게를 구하는 손님이<br><span style="color:var(--ind300)">조건을 걸어두고</span> 기다리고 있습니다</h1>
     <p style="margin:0;font-size:${isMo()?13.5:16}px;line-height:1.75;color:#9AA3BF"><b style="color:#F0EDE7">제안을 보내는 데 드는 비용은 없습니다. 매물을 올리실 필요도 없습니다.</b><br class="mbr"> 네이버·직방에 올리는 광고비와 다릅니다 - 이미 원하는 게 정해진 손님입니다.</p>
     <div style="display:flex;align-items:center;gap:18px;${isMo()?'flex-direction:column;align-items:stretch':''}">
@@ -5383,12 +5407,12 @@ V['#/partner'] = () => `
   <div class="pad" style="flex:none;border-top:1px solid var(--navy700);padding-top:24px;padding-bottom:30px;display:flex;gap:40px;align-items:center;${isMo()?'flex-direction:column;align-items:stretch':''}">
     <div style="display:flex;gap:36px;flex:1;${isMo()?'flex-direction:column;gap:14px':''}">
       ${[['01','활동 지역 설정','취급 유형·지역·예산 하한'],['02','맞는 손님 메일 알림','유형·지역·예산까지 · 연락처는 연결 뒤에'],['03','물건 있으면 90초 제안','손님이 검토 후 연락을 결정']].map(([n,t,d])=>`
-        <div><span style="display:block;font-size:13.5px;font-weight:800;color:var(--ind300);margin-bottom:4px">${n}</span>
-        <span style="display:block;font-size:15px;font-weight:800;color:#F0EDE7;letter-spacing:-.02em">${t}</span>
+        <div><span style="display:block;font-size:13.5px;font-weight:700;color:var(--ind300);margin-bottom:4px">${n}</span>
+        <span style="display:block;font-size:15px;font-weight:700;color:#F0EDE7;letter-spacing:-.02em">${t}</span>
         <span style="font-size:12.5px;color:#9AA3BF">${d}</span></div>`).join('')}
     </div>
     <div style="flex:none;width:${isMo()?'100%':'350px'};background:var(--navy800);border:1px solid var(--navy600);padding:16px 24px">
-      <span style="display:block;font-size:11px;font-weight:800;color:#9AA3BF;margin-bottom:8px">지금 쓰시는 방식과 비교하면</span>
+      <span style="display:block;font-size:11px;font-weight:700;color:#9AA3BF;margin-bottom:8px">지금 쓰시는 방식과 비교하면</span>
       <span style="font-size:13.5px;line-height:1.75;color:#F0EDE7">매물을 올려두고 연락이 오기를 기다리는 방식과 다릅니다.<br class="mbr"> 여기서는 <b style="color:var(--ind300)">수요가 확인된 손님에게만, 무료로</b> 보냅니다.</span>
     </div>
   </div>
@@ -5432,7 +5456,7 @@ V['#/partner/demands'] = () => {
       : S.feedNeed==='login'    ? '로그인하시면 내 활동 조건에 맞는 손님만 보여드립니다.'
       : '잠시 후 다시 시도해 주세요.'}</span></span>
       ${S.feedNeed==='verify' ? `<a class="btn pri sm" data-go="#/partner/verify" style="flex:none">자격 인증하기</a>`
-      : S.feedNeed==='join' ? `<a class="btn partner sm" data-go="#/partner/join" style="flex:none">파트너 가입</a>`
+      : S.feedNeed==='join' ? `<a class="btn pri sm" data-go="#/partner/join" style="flex:none">파트너 가입</a>`
       : S.feedNeed==='login' ? `<button class="btn pri sm" data-act="nav-login" data-v="partner" style="flex:none">파트너 로그인</button>`
       : `<button class="btn sec sm" data-act="feed-retry" style="flex:none">다시 불러오기</button>`}
     </div>` : ''}
@@ -5451,22 +5475,22 @@ V['#/partner/demands'] = () => {
       <a class="btn sec sm" data-go="#/partner/settings">활동 조건에서 재개</a></div>` : ''}
     ${hidden ? (S.feedByListing ? `<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:var(--n50);border:1px solid var(--hair);padding:12px 16px">
       <span style="font-size:13.5px;color:var(--n700)">올려두신 물건과 맞지 않아 <b style="color:var(--n900)">${hidden}건</b>을 보여드리지 않았습니다</span>
-      <a data-go="#/partner/listing/new" style="font-size:13.5px;font-weight:800;color:var(--ind)">물건 더 올리기 →</a></div>`
+      <a data-go="#/partner/listing/new" style="font-size:13.5px;font-weight:700;color:var(--ind)">물건 더 올리기 →</a></div>`
     : `<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:var(--n50);border:1px solid var(--hair);padding:12px 16px">
       <span style="font-size:13.5px;color:var(--n700)">활동 조건에 맞지 않아 <b style="color:var(--n900)">${hidden}건</b>을 보여드리지 않았습니다</span>
-      <a data-go="#/partner/settings" style="font-size:13.5px;font-weight:800;color:var(--ind)">활동 조건 넓히기 →</a></div>`) : ''}
+      <a data-go="#/partner/settings" style="font-size:13.5px;font-weight:700;color:var(--ind)">활동 조건 넓히기 →</a></div>`) : ''}
     <div style="display:grid;grid-template-columns:repeat(${isMo()?1:2},minmax(0,1fr));gap:16px">
       ${list.map(d=>`
       <div class="card pad fade" style="display:flex;flex-direction:column;gap:12px;${d.mine?'opacity:.78':''}">
         <div style="display:flex;justify-content:space-between;align-items:center">
           <span style="display:flex;align-items:center;gap:8px">
-            <span style="font-size:13.5px;font-weight:800;color:var(--ind)">${d.kind==='home'?'주거':'상가'} · ${esc(d.deal)}</span>
+            <span style="font-size:13.5px;font-weight:700;color:var(--ind)">${d.kind==='home'?'주거':'상가'} · ${esc(d.deal)}</span>
             ${d.who&&WHO[d.who]&&d.who!=='home'?`<span class="badge b-mute" style="font-size:11px">${WHO[d.who].tag}</span>`:''}</span>
           <span style="display:flex;align-items:center;gap:8px">
             ${d.urgent?'<span class="badge b-warn">마감 임박</span>':''}
-            <span style="font-size:12.5px;font-weight:800;color:var(--n700)">남은 슬롯 <span class="num">${d.slotsLeft}/5</span></span></span>
+            <span style="font-size:12.5px;font-weight:700;color:var(--n700)">남은 슬롯 <span class="num">${d.slotsLeft}/5</span></span></span>
         </div>
-        <b style="font-size:${isMo()?15:16}px;font-weight:800;letter-spacing:-.02em">${esc(d.region)} ${demoTag(d,'vertical-align:middle')}</b>
+        <b style="font-size:${isMo()?15:16}px;font-weight:700;letter-spacing:-.02em">${esc(d.region)} ${demoTag(d,'vertical-align:middle')}</b>
         <div class="lines" style="font-size:13.5px">${d.lines.map(esc).join('<br>')}</div>
         ${d.locked?`<p style="margin:0;background:var(--n50);padding:12px 14px;font-size:12.5px;line-height:1.6;color:var(--n500)">
           손님이 적은 사정과 자세한 조건은 <b style="color:var(--n700)">자격을 확인한 뒤</b>에 보입니다.</p>`:''}
@@ -5496,7 +5520,7 @@ V['#/partner/demand'] = (id) => { const d=S.demands.find(x=>x.id===id); if(!d) r
       <a class="back" data-go="#/partner/demands">← 수요 목록</a>
       <span style="display:flex;gap:8px;align-items:center">
         ${d.urgent?'<span class="badge b-warn">마감 임박</span>':''}
-        <span style="font-size:13.5px;font-weight:800;color:var(--n700)">남은 슬롯 <span class="num">${d.slotsLeft}/5</span></span></span>
+        <span style="font-size:13.5px;font-weight:700;color:var(--n700)">남은 슬롯 <span class="num">${d.slotsLeft}/5</span></span></span>
     </div>
     <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap">
       <h1 class="t" style="font-size:${isMo()?16:21}px">${d.kind==='home'?'주거':'상가'} · ${esc(d.deal)} <span style="font-size:15px;color:var(--ind)">${esc(d.region)}</span> ${demoTag(d,'vertical-align:middle')}</h1>
@@ -5520,7 +5544,7 @@ V['#/partner/demand'] = (id) => { const d=S.demands.find(x=>x.id===id); if(!d) r
       <span class="sect">제안 전 확인하세요</span>
       <div style="display:flex;gap:${isMo()?10:22}px;flex-wrap:wrap">
         ${d.check.map(c=>`<span style="display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--n700)">
-          <span style="width:17px;height:17px;border:1.5px solid var(--n300);border-radius:5px"></span>${esc(c)}</span>`).join('')}
+          <span style="width:17px;height:17px;border:1.5px solid var(--n300);border-radius:var(--r-xs)"></span>${esc(c)}</span>`).join('')}
       </div>
       <p style="margin:10px 0 0;font-size:12.5px;color:var(--n500)">확인 안 된 항목이 있어도 보낼 수 있습니다 - 한마디에 솔직하게 적어주시면 됩니다.</p>
     </div>
@@ -5654,8 +5678,8 @@ V['#/partner/propose'] = (id) => { const d=S.demands.find(x=>x.id===id); if(!d) 
     <div style="flex:none;width:${isMo()?'100%':'320px'};display:flex;flex-direction:column;gap:14px">
       <div class="card pad" style="${isMo()?'':'position:sticky;top:0'}">
         <div style="display:flex;justify-content:space-between;margin-bottom:12px">
-          <span style="font-size:13.5px;font-weight:800;color:var(--ind)">명시사항 검사</span>
-          <span class="num" data-checkcount style="font-size:13.5px;font-weight:800;color:${allOk?'var(--ok)':'var(--n500)'}">${allOk?'모두 충족':'충족'} (${passed}/${checks.length})</span>
+          <span style="font-size:13.5px;font-weight:700;color:var(--ind)">명시사항 검사</span>
+          <span class="num" data-checkcount style="font-size:13.5px;font-weight:700;color:${allOk?'var(--ok)':'var(--n500)'}">${allOk?'모두 충족':'충족'} (${passed}/${checks.length})</span>
         </div>
         <div data-checks style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px">
           ${checks.map(([k,ok])=>`<span style="font-size:12.5px;font-weight:600;color:${ok?'var(--ok)':'var(--danger)'}">${ok?'✓':'✕'} ${k}</span>`).join('')}
@@ -5688,13 +5712,13 @@ V['#/partner/proposals'] = () => {
     ${seedGate(S.mpReady, () => list.length? list.map(p=>{const b=badge(p); return `
       <div class="card pad fade" style="${['expired','rejected','withdrawn'].includes(p.status)?'opacity:.8':''}">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap">
-          <b style="font-size:15px;font-weight:800;letter-spacing:-.02em">${esc(p.title)} ${demoTag(p,'vertical-align:middle')}</b>
+          <b style="font-size:15px;font-weight:700;letter-spacing:-.02em">${esc(p.title)} ${demoTag(p,'vertical-align:middle')}</b>
           <span class="badge ${b[0]}">${esc(b[1])}</span></div>
         <span class="num" style="font-size:13.5px;color:var(--n700)">${esc(p.price)}</span>
         <span style="display:block;font-size:12.5px;color:var(--n500);margin-top:2px">손님 조건: ${esc(p.line)}</span>
         ${p.status==='selected'&&p.cphone? `<div style="margin-top:10px;background:var(--okbg);padding:12px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-          <span style="font-size:11px;font-weight:800;color:var(--ok)">손님 연락처</span>
-          <span class="num" style="font-size:16px;font-weight:800;color:var(--ok)">${esc(p.cphone)}</span>
+          <span style="font-size:11px;font-weight:700;color:var(--ok)">손님 연락처</span>
+          <span class="num" style="font-size:16px;font-weight:700;color:var(--ok)">${esc(p.cphone)}</span>
           <span style="font-size:12.5px;color:var(--n700)">${esc(p.cust||'손님')}님이 연결에 동의하셨습니다 · 이 상담에만 사용해 주세요</span></div>`:''}
         ${p.reason? `<p style="margin:10px 0 0;background:var(--n50);padding:12px 16px;font-size:13.5px;line-height:1.6;color:var(--n700)">${esc(p.reason)}</p>`:''}
         <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;gap:10px;flex-wrap:wrap">
@@ -5706,7 +5730,7 @@ V['#/partner/proposals'] = () => {
         </div>
       </div>`;}).join('')
     : `<div class="empty"><span style="display:flex;justify-content:center;margin-bottom:8px">${beaverly(120)}</span>
-       <p style="margin:0 0 6px;font-size:15px;font-weight:800">아직 보낸 제안이 없습니다</p>
+       <p style="margin:0 0 6px;font-size:15px;font-weight:700">아직 보낸 제안이 없습니다</p>
        <p style="margin:0 0 18px;font-size:13.5px;color:var(--n500)">지금 서울·경기에서 12명의 손님이 조건을 걸어두고 기다립니다.</p>
        <button class="btn pri md" data-go="#/partner/demands">수요 목록 보기</button></div>`)}
     <p style="margin:2px 0 ${isMo()?'12px':'0'};font-size:12.5px;line-height:1.6;color:var(--n500)">발송 후 수정은 불가합니다 - 전달 내용의 무결성을 위해 회수 후 재작성만 가능합니다. 회수는 손님이 열람하기 전에만 됩니다.</p>
@@ -5751,7 +5775,7 @@ V["#/partner/join"] = () => {
     <p class="sub measure">역할에 따라 필요한 확인이 다릅니다. 소요 시간을 먼저 알려드립니다.</p>
     <div style="display:flex;flex-direction:column;gap:12px;margin-top:6px">
       ${JOIN_ROLES.map(r=>`<button class="card clickable" data-act="j-role" data-v="${r.k}" style="padding:${isMo()?'20px':'24px 26px'};text-align:left;display:flex;justify-content:space-between;align-items:center;gap:14px">
-        <span><b style="display:block;font-size:16px;font-weight:800;letter-spacing:-.03em;margin-bottom:4px">${r.t}</b>
+        <span><b style="display:block;font-size:16px;font-weight:700;letter-spacing:-.03em;margin-bottom:4px">${r.t}</b>
         <span style="font-size:13.5px;color:var(--n500)">${r.d}</span></span>
         <svg viewBox="0 0 24 24" style="width:21px;flex:none" fill="none" stroke="#3D3F8F" stroke-width="2.2" stroke-linecap="round"><path d="M9 5 L16 12 L9 19"/></svg>
       </button>`).join('')}
@@ -5772,7 +5796,7 @@ V["#/partner/join"] = () => {
     ${vf ? `
     <div class="card pad" style="border:1.5px solid var(--ind200);background:var(--ind50);margin-top:6px">
       <span class="sect" style="margin-bottom:8px">확인되었습니다</span>
-      <div style="font-size:15px;font-weight:800;color:var(--n900)">${esc(vf.name)}</div>
+      <div style="font-size:15px;font-weight:700;color:var(--n900)">${esc(vf.name)}</div>
       <div style="font-size:13.5px;color:var(--n500);margin-top:2px">${esc(fmtPhone(vf.phone))} · ${esc(vf.vat)}</div>
     </div>
     <div style="display:flex;flex-direction:column;gap:14px;margin-top:14px">
@@ -5855,14 +5879,14 @@ function verifyBody(){
     ${f.jCheck ? (f.jCheck.verified ? `
       <div class="card pad" data-jcheck style="margin-top:14px;border-color:#A5CDB6;background:var(--okbg)">
         <span class="badge b-ok" style="margin-bottom:8px">공공데이터 확인됨</span>
-        <b style="display:block;font-size:15px;font-weight:800">${esc(f.jCheck.office||'등록된 사무소')}</b>
+        <b style="display:block;font-size:15px;font-weight:700">${esc(f.jCheck.office||'등록된 사무소')}</b>
         <span style="display:block;font-size:13.5px;line-height:1.7;color:var(--n700);margin:6px 0 14px">
           ${[f.jCheck.rep&&('대표 '+f.jCheck.rep), f.jCheck.addr, f.jCheck.state, f.jCheck.since].filter(Boolean).map(esc).join(' · ')}<br>
           등록번호 ${esc(f.jCheck.reg_no)}</span>
         <button class="btn blk" data-act="j-confirm" style="background:var(--ok);color:#fff">제 사무소가 맞습니다</button></div>` : `
       <div class="card pad" data-jcheck style="margin-top:14px;background:var(--n50);box-shadow:none">
         <span class="badge b-warn" style="margin-bottom:8px">형식만 확인</span>
-        <b style="display:block;font-size:13.5px;font-weight:800">${esc(f.jCheck.reg_no)}</b>
+        <b style="display:block;font-size:13.5px;font-weight:700">${esc(f.jCheck.reg_no)}</b>
         <p style="margin:6px 0 14px;font-size:12.5px;line-height:1.75;color:var(--n700)">${esc(f.jCheck.note||'')}</p>
         <button class="btn sec blk" data-act="j-confirm">이대로 신청하기</button></div>`) : ''}
     <p style="margin:14px 0 0;background:var(--n50);padding:14px 16px;font-size:12.5px;line-height:1.75;color:var(--n500)">
@@ -5898,7 +5922,7 @@ function verifyBody(){
           <span style="flex:none;width:18px;height:18px;border-radius:50%;border:2px solid ${ot===o.k?'var(--ind)':'var(--n300)'};
             display:flex;align-items:center;justify-content:center">
             ${ot===o.k?'<span style="width:8px;height:8px;border-radius:50%;background:var(--ind)"></span>':''}</span>
-          <span><b style="display:block;font-size:13.5px;font-weight:800">${o.t}</b>
+          <span><b style="display:block;font-size:13.5px;font-weight:700">${o.t}</b>
           <span style="font-size:12.5px;color:var(--n500)">${o.d}</span></span></button>`).join('')}
       </div></div>
 
@@ -5966,7 +5990,7 @@ V['#/partner/verify'] = () => `
     <div style="width:100%;max-width:${isMo()?'none':'520px'};display:flex;flex-direction:column;gap:16px">
       <div class="card pad" style="background:var(--ind50);border-color:#D9DAF0">
         <span style="font-size:13.5px;line-height:1.7;color:var(--n700)">
-          <b style="display:block;font-size:15px;font-weight:800;color:var(--n900);margin-bottom:3px">한 번만 확인하면 끝입니다</b>
+          <b style="display:block;font-size:15px;font-weight:700;color:var(--n900);margin-bottom:3px">한 번만 확인하면 끝입니다</b>
           손님이 적은 사정과 연락처가 걸린 문이라, 자격을 확인한 분께만 엽니다.
           확인되면 바로 조건 전문을 보고 제안하실 수 있습니다.</span>
       </div>
@@ -6034,7 +6058,7 @@ V["#/partner/stats"] = () => {
   const vr = sent? Math.round(viewed/sent*100) : 0;
   const sr = viewed? Math.round(selected/viewed*100) : 0;
   const tile = (k,v,sub,avg,main) => `<div class="card" style="padding:16px 18px;${main?'border-color:rgba(61,63,143,.4);background:rgba(245,245,252,.6)':''}">
-    <span style="display:block;font-size:12.5px;font-weight:800;color:var(--n500)">${k}</span>
+    <span style="display:block;font-size:12.5px;font-weight:700;color:var(--n500)">${k}</span>
     <span class="num" style="font-size:25px;font-weight:800;letter-spacing:-.02em;${main?'color:var(--ind)':''}">${v}</span>
     ${sub?`<span style="display:block;font-size:11px;font-weight:700;color:${avg==null?'var(--n500)':avg?'var(--ok)':'var(--warn)'}">${sub}</span>`:''}</div>`;
   return `
@@ -6046,7 +6070,7 @@ V["#/partner/stats"] = () => {
       <p class="sub" style="font-size:13.5px">보내신 제안 전체 기준입니다. 좋은 제안을 쓰는 것이 이기는 길입니다.</p></div>
 
     ${sent ? '' : `<div class="card pad" style="background:var(--ind50);border-color:#D9DAF0">
-      <b style="display:block;font-size:15px;font-weight:800;color:var(--n900);margin-bottom:4px">아직 보내신 제안이 없습니다</b>
+      <b style="display:block;font-size:15px;font-weight:700;color:var(--n900);margin-bottom:4px">아직 보내신 제안이 없습니다</b>
       <span style="font-size:13.5px;line-height:1.7;color:var(--n700)">제안을 보내시면 열람률과 선택률이 여기에 쌓입니다.
         숫자가 없는 동안에는 아래 산식만 보여드립니다 - 없는 성과를 지어내지 않습니다.</span>
     </div>`}
@@ -6100,7 +6124,7 @@ function meCard(){
   const row = (k, v) => v ? `<div class="kv"><dt>${k}</dt><dd>${esc(String(v))}</dd></div>` : '';
   const ST = { approved:'승인됨', new:'확인 중', contacted:'확인 중', rejected:'보류' };
   return `<div class="card pad">
-    <h2 style="margin:0 0 12px;font-size:15px;font-weight:800;letter-spacing:-.02em">내 정보</h2>
+    <h2 style="margin:0 0 12px;font-size:15px;font-weight:700;letter-spacing:-.02em">내 정보</h2>
     <div style="display:grid;grid-template-columns:repeat(${isMo()?1:2},minmax(0,1fr));gap:4px 24px">
       ${row('계정', u && u.email)}
       ${row('로그인', u && u.label ? `${u.label} 계정` : '')}
@@ -6136,7 +6160,7 @@ V["#/partner/settings"] = () => {
   const week = Math.max(0, Math.round(now * 0.6));
   const drop = base > 0 && now <= base/2;
   const sect = (no,title,hint,body) => `<div class="card pad">
-    <h2 style="margin:0 0 ${hint?4:12}px;font-size:15px;font-weight:800;letter-spacing:-.02em"><span style="color:var(--ind);margin-right:6px">${no}.</span>${title}</h2>
+    <h2 style="margin:0 0 ${hint?4:12}px;font-size:15px;font-weight:700;letter-spacing:-.02em"><span style="color:var(--ind);margin-right:6px">${no}.</span>${title}</h2>
     ${hint?`<p style="margin:0 0 12px;font-size:12.5px;line-height:1.6;color:var(--n500)">${hint}</p>`:''}
     ${body}</div>`;
   return `
@@ -6167,7 +6191,7 @@ V["#/partner/settings"] = () => {
                거들 필요는 없다. --n500 은 5.54:1 이면서 여전히 물러나 보인다. */
             `<span class="chip" style="border-style:dashed;color:var(--n500);cursor:default">${x} · 준비 중</span>`).join('')}</div>`)}
         ${sect('2','활동 지역','서울은 구, 경기는 시·군 단위입니다',
-          `<div style="margin-bottom:12px;padding:12px 16px;background:var(--ind50);border-radius:12px">
+          `<div style="margin-bottom:12px;padding:12px 16px;background:var(--ind50);border-radius:var(--r-sm)">
             <span style="display:block;font-size:12.5px;font-weight:700;color:var(--n700);margin-bottom:8px">
               사무소 근처를 한 번에 고르기</span>
             <div class="chips" style="gap:6px">
@@ -6207,7 +6231,7 @@ V["#/partner/settings"] = () => {
       <!-- 실시간 도달 패널 -->
       <div style="${isMo()?'':'position:sticky;top:16px'};display:flex;flex-direction:column;gap:12px">
         <div class="card pad" style="text-align:center">
-          <span style="display:block;font-size:12.5px;font-weight:800;color:var(--n500)">지금 이 설정이면</span>
+          <span style="display:block;font-size:12.5px;font-weight:700;color:var(--n500)">지금 이 설정이면</span>
           <p style="margin:14px 0 2px;font-size:13.5px;color:var(--n700)">대기 중인 손님</p>
           <p class="num" style="margin:0;font-size:31px;font-weight:800;letter-spacing:-.03em;color:${now?'var(--ind)':'var(--danger)'}">${now}건</p>
           <p style="margin:6px 0 14px;font-size:13.5px;color:var(--n700)">이번 주 새 조건 ${week}건</p>
@@ -6261,14 +6285,14 @@ V["#/partner/listings"] = () => {
     const ms = matchesFor(L);
     return `<div class="card pad clickable fade" data-go="#/partner/listing/${L.id}" style="display:flex;flex-direction:column;gap:10px">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
-        <span style="font-size:13.5px;font-weight:800;color:var(--ind)">${L.kind==='home'?'주거':'상가'} · ${esc(L.deal||'')}</span>
+        <span style="font-size:13.5px;font-weight:700;color:var(--ind)">${L.kind==='home'?'주거':'상가'} · ${esc(L.deal||'')}</span>
         ${ms.length? `<span class="badge b-ok">맞는 손님 ${ms.length}명</span>` : `<span class="badge b-mute">대기 중</span>`}
       </div>
-      <b style="font-size:${isMo()?15:16}px;font-weight:800;letter-spacing:-.02em">${esc(L.name)} ${demoTag(L,'vertical-align:middle')}</b>
+      <b style="font-size:${isMo()?15:16}px;font-weight:700;letter-spacing:-.02em">${esc(L.name)} ${demoTag(L,'vertical-align:middle')}</b>
       <div class="lines"><span class="num">${priceOf(L)}</span><br>${esc(specOf(L))}</div>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-top:auto;padding-top:2px">
         <span style="font-size:12.5px;color:var(--n500)">등록 ${esc(L.at)} · 사진 ${L.photos}장</span>
-        <span style="font-size:13.5px;font-weight:800;color:${ms.length?'var(--ind)':'var(--n500)'}">${ms.length?'제안 보내기 →':'자세히 →'}</span>
+        <span style="font-size:13.5px;font-weight:700;color:${ms.length?'var(--ind)':'var(--n500)'}">${ms.length?'제안 보내기 →':'자세히 →'}</span>
       </div></div>`;}).join('');
   const total = S.listings.reduce((n,L)=>n+matchesFor(L).length,0);
   return `
@@ -6285,7 +6309,7 @@ V["#/partner/listings"] = () => {
       <b style="font-size:13.5px;color:var(--ok)">지금 바로 제안할 수 있는 손님이 ${total}명 있습니다</b>
       <span style="font-size:12.5px;color:var(--n700)">물건을 눌러 확인하세요</span></div>`:''}
     ${seedGate(S.lsReady, () => S.listings.length? `<div style="display:grid;grid-template-columns:repeat(${isMo()?1:2},minmax(0,1fr));gap:16px">${rows}</div>`
-      : `<div class="empty">${beaverlyMini(110)}<p style="margin:8px 0 6px;font-size:15px;font-weight:800">아직 올려둔 물건이 없습니다</p>
+      : `<div class="empty">${beaverlyMini(110)}<p style="margin:8px 0 6px;font-size:15px;font-weight:700">아직 올려둔 물건이 없습니다</p>
          <p style="margin:0 auto 18px;max-width:400px;font-size:13.5px;line-height:1.6;color:var(--n500)">보유하신 물건을 올려두시면, 조건이 맞는 손님을 이 화면에서 바로 찾아드립니다.</p>
          <button class="btn pri md" data-go="#/partner/listing/new">첫 매물 등록하기</button></div>`)}
     <p style="margin:2px 0 ${isMo()?'12px':'0'};font-size:12.5px;line-height:1.75;color:var(--n500)">
@@ -6525,12 +6549,12 @@ V["#/partner/listing"] = (id) => {
   const card = ({d,st}) => `
     <div class="card pad fade" style="display:flex;flex-direction:column;gap:10px">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
-        <span style="font-size:13.5px;font-weight:800;color:var(--ind)">${d.kind==='home'?'주거':'상가'} · ${esc(d.deal)}</span>
+        <span style="font-size:13.5px;font-weight:700;color:var(--ind)">${d.kind==='home'?'주거':'상가'} · ${esc(d.deal)}</span>
         <span style="display:flex;gap:8px;align-items:center">
           ${d.urgent?'<span class="badge b-warn">마감 임박</span>':''}
           <span style="font-size:12.5px;font-weight:700;color:var(--n700)">슬롯 <span class="num">${d.slotsLeft}/5</span></span></span>
       </div>
-      <b style="font-size:15px;font-weight:800;letter-spacing:-.02em">${esc(d.region)}</b>
+      <b style="font-size:15px;font-weight:700;letter-spacing:-.02em">${esc(d.region)}</b>
       <div class="lines" style="font-size:13.5px">${d.lines.slice(0,2).map(esc).join('<br>')}</div>
       ${d.memo? `<p style="margin:0;background:var(--ind50);padding:10px 14px;font-size:13.5px;line-height:1.6;color:var(--ind700);font-style:italic">"${esc(d.memo.length>46?d.memo.slice(0,46)+'…':d.memo)}"</p>`:''}
       <div style="border-top:1px solid var(--hair);padding-top:10px;display:flex;flex-wrap:wrap;gap:6px">
@@ -6549,9 +6573,9 @@ V["#/partner/listing"] = (id) => {
     <a class="back" data-go="#/partner/listings">← 내 물건</a>
     <div class="card pad" style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap">
       <div>
-        <span style="font-size:13.5px;font-weight:800;color:var(--ind)">${L.kind==='home'?'주거':'상가'} · ${esc(L.deal||'')}</span>
+        <span style="font-size:13.5px;font-weight:700;color:var(--ind)">${L.kind==='home'?'주거':'상가'} · ${esc(L.deal||'')}</span>
         <h1 class="t" style="font-size:${isMo()?21:25}px;margin-top:6px">${esc(L.name)} ${demoTag(L,'vertical-align:middle')}</h1>
-        <p class="num" style="margin:6px 0 0;font-size:15px;font-weight:800;color:var(--ind)">${priceOf(L)}</p>
+        <p class="num" style="margin:6px 0 0;font-size:15px;font-weight:700;color:var(--ind)">${priceOf(L)}</p>
         <p style="margin:4px 0 0;font-size:13.5px;color:var(--n500)">${esc(specOf(L))} · 입주 ${esc(L.moveIn)} · 사진 ${L.photos}장</p>
         ${appealOf(L) ? `<p style="margin:8px 0 0;font-size:13.5px;line-height:1.7;color:var(--ind700)">
           <b style="color:var(--ind)">강점</b> ${esc(appealOf(L))}</p>` : ''}
@@ -6566,7 +6590,7 @@ V["#/partner/listing"] = (id) => {
       <span style="font-size:12.5px;color:var(--n500)">유형 → 지역 → 예산(±10%) → 필수 → 확인 순으로 대조했습니다</span>
     </div>
     ${ms.length? `<div style="display:grid;grid-template-columns:repeat(${isMo()?1:2},minmax(0,1fr));gap:16px">${ms.map(card).join('')}</div>`
-      : `<div class="empty"><p style="margin:0 0 6px;font-size:15px;font-weight:800">아직 맞는 손님이 없습니다</p>
+      : `<div class="empty"><p style="margin:0 0 6px;font-size:15px;font-weight:700">아직 맞는 손님이 없습니다</p>
          <p style="margin:0 auto;max-width:400px;font-size:13.5px;line-height:1.6;color:var(--n500)">수요 목록에 새 조건이 들어온 뒤 이 화면을 다시 열면 그때 다시 대조합니다.</p></div>`}
   </div>
   ${tabbar('l','p')}
@@ -6617,7 +6641,7 @@ V["#/brand"] = () => {
         ${WM_DEV.map(([n,fn,why])=>`<div class="card" style="padding:0;overflow:hidden">
           <div style="padding:${isMo()?"34px 20px":"46px 28px"};display:flex;align-items:center;justify-content:center;min-height:${isMo()?110:140}px">${fn({h:isMo()?36:46,m:"light"})}</div>
           <div style="padding:12px 18px;border-top:1px solid var(--hair);background:var(--n50)">
-            <b style="display:block;font-size:13.5px;font-weight:800">${n}</b>
+            <b style="display:block;font-size:13.5px;font-weight:700">${n}</b>
             <span style="font-size:11px;color:var(--n500);line-height:1.6">${why}</span></div>
           <div style="display:flex;border-top:1px solid var(--hair)">
             <div style="flex:1;padding:16px 10px;display:flex;align-items:center;justify-content:center;background:var(--ind)">${fn({h:20,m:"dark"})}</div>
@@ -6628,11 +6652,11 @@ V["#/brand"] = () => {
 
       <div class="card" style="margin-top:14px;padding:0;overflow:hidden">
         <div style="padding:12px 18px;border-bottom:1px solid var(--hair);background:var(--n50)">
-          <b style="font-size:12.5px;font-weight:800">헤더에 얹었을 때</b>
+          <b style="font-size:12.5px;font-weight:700">헤더에 얹었을 때</b>
           <span style="font-size:11px;color:var(--n500)"> - 실제로 가장 많이 보이는 크기입니다</span></div>
         ${[['D1',{}],['D2',{bw:.05,lw:.07,bl:.30}],['D5',{line:false,bw:.06,bl:.38}],['D6',{flat:true,bw:.06,lw:.085}]]
           .map(([n,op])=>`<div style="display:flex;align-items:center;gap:24px;padding:14px 20px;border-bottom:1px solid var(--hair)">
-            <span style="width:26px;font-size:11px;font-weight:800;color:var(--n500)">${n}</span>
+            <span style="width:26px;font-size:11px;font-weight:700;color:var(--n500)">${n}</span>
             ${wmDoor(24,"light",op)}
             <span style="margin-left:auto;display:flex;gap:14px;font-size:13.5px;color:var(--n500)">
               <span>내 조건</span><span>제안함</span></span>
@@ -6644,7 +6668,7 @@ V["#/brand"] = () => {
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px">
           ${[["비버 / BEAVER","#5F61B0","중간 인디고"],["노크 / KNOCK","#31336F","진한 인디고"],["브래킷","#6E70BC","연한 인디고 · 문틀은 물러선다"]]
             .map(([k,hex,label])=>`<span style="display:flex;align-items:center;gap:10px;background:var(--n50);padding:10px 14px">
-              <i style="width:18px;height:18px;border-radius:5px;background:${hex};flex:none"></i>
+              <i style="width:18px;height:18px;border-radius:var(--r-xs);background:${hex};flex:none"></i>
               <span style="font-size:12.5px"><b style="font-weight:800">${k}</b> <span class="num" style="color:var(--n500)">${hex}</span> · ${label}</span></span>`).join("")}
         </div>
         <p style="margin:12px 0 0;font-size:12.5px;line-height:1.6;color:var(--n500)">
@@ -6660,7 +6684,7 @@ V["#/brand"] = () => {
         ${WM_IMPACT.map(([n,k,why])=>`<div class="card" style="padding:0;overflow:hidden">
           <div style="padding:${isMo()?"38px 20px":"48px 24px"};display:flex;align-items:center;justify-content:center;min-height:${isMo()?116:146}px">${wmImpact(isMo()?36:42,"light",k)}</div>
           <div style="padding:12px 16px;border-top:1px solid var(--hair);background:var(--n50);min-height:74px">
-            <b style="display:block;font-size:12.5px;font-weight:800">${n}</b>
+            <b style="display:block;font-size:12.5px;font-weight:700">${n}</b>
             <span style="font-size:11px;color:var(--n500);line-height:1.6">${why}</span></div>
           <div style="display:flex;border-top:1px solid var(--hair)">
             <div style="flex:1;padding:16px 8px;display:flex;align-items:center;justify-content:center;background:var(--ind)">${wmImpact(19,"dark",k)}</div>
@@ -6679,7 +6703,7 @@ V["#/brand"] = () => {
         ${WM_EN.map(([n,fn,why])=>`<div class="card" style="padding:0;overflow:hidden">
           <div style="padding:${isMo()?"26px 18px":"34px 22px"};display:flex;align-items:center;justify-content:center;min-height:${isMo()?86:104}px">${fn(isMo()?30:36,"light")}</div>
           <div style="padding:12px 16px;border-top:1px solid var(--hair);background:var(--n50)">
-            <b style="display:block;font-size:12.5px;font-weight:800">${n}</b>
+            <b style="display:block;font-size:12.5px;font-weight:700">${n}</b>
             <span style="font-size:11px;color:var(--n500);line-height:1.6">${why}</span></div></div>`).join("")}
       </div>
       <div class="card pad" style="margin-top:14px">
@@ -6714,7 +6738,7 @@ V["#/brand"] = () => {
               <span style="margin-left:auto;display:flex;gap:16px;font-size:13.5px;color:var(--n500)"><span>내 조건</span><span>제안함</span></span>
             </div>
             <div style="padding:12px 24px;border-top:1px solid var(--hair);background:var(--n50)">
-              <b style="font-size:12.5px;font-weight:800">${n}</b>
+              <b style="font-size:12.5px;font-weight:700">${n}</b>
               <span style="font-size:11px;color:var(--n500)"> - ${why}</span></div>
           </div>`).join('')}
       </div>
@@ -6748,7 +6772,7 @@ V["#/brand"] = () => {
         ${box("반전", "인디고·다크 바탕 · 화이트", `${logoLockup({h:30,mode:"dark"})}`, "var(--ind)")}
         ${box("단색 (먹)", "인쇄·팩스·음영 제한 매체", `${logoLockup({h:30,mode:"mono"})}`, "var(--n100)")}
         ${box("공급자 락업", "중개사·소유자·시행사 화면", `${logoLockup({h:28,partner:true})}`)}
-        ${box("최소 크기", "가로 88px - 도트를 생략합니다", `<b style="font-size:16px;font-weight:800;letter-spacing:-.052em;color:var(--ind)">비버노크</b>`)}
+        ${box("최소 크기", "가로 88px - 도트를 생략합니다", `<b style="font-size:16px;font-weight:700;letter-spacing:-.052em;color:var(--ind)">비버노크</b>`)}
         ${box("영문", "해외 표기 · 도메인 · 푸터", `${wmEnCaps(26,"light")}`)}
       </div>
     </div>
@@ -6758,7 +6782,7 @@ V["#/brand"] = () => {
       <div class="card pad">
         <span class="sect">여백 (Clear space)</span>
         <div style="display:flex;align-items:center;justify-content:center;padding:12px 0">
-          <span style="position:relative;display:inline-flex;padding:24px;border:1.4px dashed rgba(61,63,143,.4);border-radius:10px">
+          <span style="position:relative;display:inline-flex;padding:24px;border:1.4px dashed rgba(61,63,143,.4);border-radius:var(--r-sm)">
             ${logoLockup({h:30})}
             <span style="position:absolute;left:7px;top:50%;transform:translateY(-50%);font-size:11px;font-weight:700;color:var(--ind)">글자높이</span>
           </span>
@@ -6800,7 +6824,7 @@ function modalHTML(){
   if(S.modal.type==='close'){
     const REASONS=['여기서 구했어요','다른 데서 구했어요','당분간 안 구하기로 했어요'];
     return `<div class="modal" data-act="modal-bg"><div class="box" data-stop role="dialog" aria-modal="true" aria-labelledby="mdT" tabindex="-1">
-      <h2 id="mdT" style="margin:0 0 6px;font-size:16px;font-weight:800;letter-spacing:-.03em">조건을 종료할까요?</h2>
+      <h2 id="mdT" style="margin:0 0 6px;font-size:16px;font-weight:700;letter-spacing:-.03em">조건을 종료할까요?</h2>
       <p style="margin:0 0 18px;font-size:13.5px;line-height:1.6;color:var(--n500)">사유를 알려주시면 서비스를 고치는 데 큰 도움이 됩니다. <b style="color:var(--n700)">이 답이 저희의 유일한 성과 지표입니다.</b></p>
       ${REASONS.map(r=>`<button class="optbtn ${S.modal.reason===r?'on':''}" data-act="close-reason" data-v="${esc(r)}">${esc(r)}</button>`).join('')}
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px">
@@ -6814,7 +6838,7 @@ function modalHTML(){
     const list = rows.reduce((t,r)=>t+(r.listings||0), 0);
     const heavy = prop + list > 0;
     return `<div class="modal" data-act="modal-bg"><div class="box" data-stop role="dialog" aria-modal="true" aria-labelledby="mdT" tabindex="-1">
-      <h2 id="mdT" style="margin:0 0 6px;font-size:16px;font-weight:800;letter-spacing:-.03em;color:var(--danger)">
+      <h2 id="mdT" style="margin:0 0 6px;font-size:16px;font-weight:700;letter-spacing:-.03em;color:var(--danger)">
         ${m.loading ? '무엇이 지워지는지 확인하는 중입니다' : `${rows.length}건을 지울까요?`}</h2>
       <p style="margin:0 0 14px;font-size:13.5px;line-height:1.7;color:var(--n500)">
         ${m.loading ? '잠시만 기다려 주세요.'
@@ -6847,7 +6871,7 @@ function modalHTML(){
       : status==='rejected' ? '보류하면 손님 조건이 다시 보이지 않습니다. 되돌릴 수 있습니다.'
       : '표시만 바뀝니다. 열람 권한과는 무관합니다.';
     return `<div class="modal" data-act="modal-bg"><div class="box" data-stop role="dialog" aria-modal="true" aria-labelledby="mdT" tabindex="-1">
-      <h2 id="mdT" style="margin:0 0 6px;font-size:16px;font-weight:800;letter-spacing:-.03em">${ids.length}건을 ${esc(label)}${josa(label,'으로','로')} 바꿀까요?</h2>
+      <h2 id="mdT" style="margin:0 0 6px;font-size:16px;font-weight:700;letter-spacing:-.03em">${ids.length}건을 ${esc(label)}${josa(label,'으로','로')} 바꿀까요?</h2>
       <p style="margin:0 0 14px;font-size:13.5px;line-height:1.7;color:var(--n500)">${what}</p>
       <div style="max-height:180px;overflow:auto;background:var(--n50);padding:12px 14px;display:flex;flex-direction:column;gap:6px">
         ${rows.slice(0,12).map(r=>`<span style="font-size:12.5px;line-height:1.5">
@@ -7366,7 +7390,7 @@ function opsSettingPanel(){
     <span style="display:block;margin-top:4px;font-size:12.5px;line-height:1.7;color:var(--n700)">${note}</span></dd></div>`;
   return `
     <div class="card pad">
-      <b style="display:block;font-size:15px;font-weight:800;margin-bottom:12px">지금 켜져 있는 것</b>
+      <b style="display:block;font-size:15px;font-weight:700;margin-bottom:12px">지금 켜져 있는 것</b>
       ${line('휴대폰 본인확인', idvOn,
         idvOn ? '포트원 채널이 붙어 있습니다. 접수는 본인확인을 통과해야 들어옵니다.<br>지금은 <b>테스트 채널</b>이라 실제 확인은 되지 않습니다 - 실계약 MID 로 바꿔야 합니다.'
               : '꺼져 있으면 이름·연락처를 적은 그대로 받습니다. Vercel 에 PORTONE_* 세 개를 넣고 재배포하면 켜집니다.')}
@@ -7380,12 +7404,12 @@ function opsSettingPanel(){
         '조건·계정·매물·신고를 열어본 기록이 남습니다. <b>열람 기록</b>에서 봅니다.')}
     </div>
     <div class="card pad" style="margin-top:14px">
-      <b style="display:block;font-size:15px;font-weight:800;margin-bottom:8px">지금 로그인</b>
+      <b style="display:block;font-size:15px;font-weight:700;margin-bottom:8px">지금 로그인</b>
       <p style="margin:0;font-size:13.5px;line-height:1.75;color:var(--n700)">
         ${S.user?`<b style="color:var(--n900)">${esc(S.user.email||S.user.name||'')}</b> · ${esc(S.user.label||'')} 계정`:'로그인되어 있지 않습니다'}</p>
     </div>
     <div class="card pad" style="margin-top:14px">
-      <b style="display:block;font-size:15px;font-weight:800;margin-bottom:8px">시험할 분 초대하기</b>
+      <b style="display:block;font-size:15px;font-weight:700;margin-bottom:8px">시험할 분 초대하기</b>
       <p style="margin:0 0 12px;font-size:13.5px;line-height:1.8;color:var(--n700)">
         암호는 이제 묻지 않습니다. <b style="color:var(--n900)">로그인만 하면</b> 이 주소로 바로 들어옵니다.<br>
         ${OPS.openUntil
@@ -7394,7 +7418,7 @@ function opsSettingPanel(){
           : `지금은 <b style="color:var(--n900)">운영자 명단(BK_OPS_USERS)에 있는 계정</b>만 들어옵니다.
              여러 명이 시험하실 거라면 Vercel 에 <b>BK_OPS_OPEN_UNTIL</b> 을 (예: ${esc(opsDatePlus(7))}) 넣어 기간을 여세요.`}</p>
       <div style="padding:13px 15px;background:var(--n50);border-radius:var(--r-sm);border:1px solid var(--n100)">
-        <span style="display:block;font-size:12.5px;font-weight:800;color:var(--n500);margin-bottom:7px">그대로 보내시면 됩니다</span>
+        <span style="display:block;font-size:12.5px;font-weight:700;color:var(--n500);margin-bottom:7px">그대로 보내시면 됩니다</span>
         <code style="display:block;font-size:12.5px;line-height:1.85;word-break:break-all;
           color:var(--n900);white-space:pre-wrap">${esc(opsInviteText())}</code>
       </div>
@@ -7404,7 +7428,7 @@ function opsSettingPanel(){
       </div>
       ${OPS.needPass ? `
       <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--n100)">
-        <b style="display:block;font-size:13.5px;font-weight:800;color:var(--n900);margin-bottom:6px">암호를 담은 임시 링크</b>
+        <b style="display:block;font-size:13.5px;font-weight:700;color:var(--n900);margin-bottom:6px">암호를 담은 임시 링크</b>
         <p style="margin:0 0 10px;font-size:12.5px;line-height:1.75;color:var(--n700)">
           지금은 운영자 명단이 비어 있어 암호가 유일한 문입니다. 그동안 쓰실 링크입니다.</p>
         <div class="chips" style="gap:6px;margin-bottom:10px">
@@ -7430,7 +7454,7 @@ function opsSettingPanel(){
         <span style="font-weight:600">안 지우셔도 ${esc(opsLinkWhen(OPS.openUntil))} 에 서버가 스스로 닫습니다.</span></p>` : ''}
     </div>
     <div class="card pad" style="margin-top:14px">
-      <b style="display:block;font-size:15px;font-weight:800;margin-bottom:8px">여기서 바꾸지 않는 것</b>
+      <b style="display:block;font-size:15px;font-weight:700;margin-bottom:8px">여기서 바꾸지 않는 것</b>
       <p style="margin:0;font-size:13.5px;line-height:1.8;color:var(--n700)">
         환경변수(포트원 키·접근 암호·운영자 명단)는 <b>Vercel</b>에서 바꾸고 재배포해야 반영됩니다.<br>
         표 구조를 바꾸는 일(마이그레이션)은 <b>Supabase</b>에서 합니다.<br>
@@ -7460,7 +7484,7 @@ function reportPanel(){
         return `
         <div class="card pad" style="${r.report_status?'':'border-color:#E3C98A'}">
           <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px">
-            <b style="font-size:13.5px;font-weight:800;letter-spacing:-.02em">${esc(r.report_type||'유형 없음')}</b>
+            <b style="font-size:13.5px;font-weight:700;letter-spacing:-.02em">${esc(r.report_type||'유형 없음')}</b>
             <span class="badge ${m[0]}">${m[1]}</span></div>
           ${r.report_detail?`<p style="margin:0 0 10px;background:var(--n50);padding:12px 14px;font-size:13.5px;line-height:1.7;color:var(--n700)">${esc(r.report_detail)}</p>`:''}
           <div class="kv" style="margin-bottom:10px"><dt>물건</dt>
@@ -7653,7 +7677,7 @@ function demandPanel(){
     <div class="card pad" style="padding:0;overflow:hidden">
       <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--hair)">
         <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">
-          <b style="font-size:15px;font-weight:800">${rows.length===all.length?`접수 ${all.length}건`:`${rows.length}건 / 전체 ${all.length}건`}</b>
+          <b style="font-size:15px;font-weight:700">${rows.length===all.length?`접수 ${all.length}건`:`${rows.length}건 / 전체 ${all.length}건`}</b>
           ${(()=>{ const todo = all.filter(r=>!OPS.sent[r.id]).length;
             return todo ? `<span class="badge b-warn">아직 안 보낸 것 ${todo}건</span>` : `<span class="badge b-ok">전부 보냈습니다</span>`; })()}
         </div>
@@ -7663,14 +7687,14 @@ function demandPanel(){
         </div>
       </div>
       ${rows.length===0 ? `<div style="padding:40px 18px;text-align:center">
-        <p style="margin:0 0 6px;font-size:15px;font-weight:800">${all.length?'조건에 맞는 접수가 없습니다':'아직 접수된 조건이 없습니다'}</p>
+        <p style="margin:0 0 6px;font-size:15px;font-weight:700">${all.length?'조건에 맞는 접수가 없습니다':'아직 접수된 조건이 없습니다'}</p>
         <p style="margin:0;font-size:13.5px;color:var(--n500)">${all.length?'찾는 말이나 거른 조건을 바꿔보세요.':'링크로 조건이 들어오면 여기에 쌓입니다.'}</p></div>`
       : isMo() ? demandCards(rows) : `
       <div style="overflow-x:auto">
         <table style="width:100%;border-collapse:collapse;font-size:13.5px;white-space:nowrap">
           <thead><tr style="background:var(--n50)">
             ${['접수','유형','이름','연락처','지역','예산','핵심 조건','확인'].map(h=>
-              `<th style="text-align:left;padding:10px 14px;font-size:11px;font-weight:800;color:var(--n500);letter-spacing:.02em">${h}</th>`).join('')}
+              `<th style="text-align:left;padding:10px 14px;font-size:11px;font-weight:700;color:var(--n500);letter-spacing:.02em">${h}</th>`).join('')}
           </tr></thead>
           <tbody>${rows.map(r=>{
             const shop = NONHOME(r.kind);
@@ -7702,7 +7726,7 @@ function demandPanel(){
             ${open?`<tr><td colspan="8" style="padding:0 14px 16px;background:var(--ind50)">
               <div style="display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap">
                 <pre data-sharetext="${esc(r.id)}" style="flex:1;min-width:280px;margin:0;padding:14px 16px;background:var(--white);
-                  border:1px solid var(--hair);border-radius:12px;white-space:pre-wrap;word-break:keep-all;
+                  border:1px solid var(--hair);border-radius:var(--r-sm);white-space:pre-wrap;word-break:keep-all;
                   font-family:inherit;font-size:12.5px;line-height:1.85;color:var(--n900)">${esc(opsShare(r))}</pre>
                 <div style="flex:none;display:flex;flex-direction:column;gap:8px;min-width:150px">
                   <button class="btn pri sm" data-act="ops-copy" data-v="${esc(r.id)}">중개사에게 보낼 글 복사</button>
@@ -7852,7 +7876,7 @@ function dashFlow(days){
   const tot = dem.reduce((a,b)=>a+b,0), tot2 = lst.reduce((a,b)=>a+b,0);
   return `<div class="card pad" style="padding-top:16px;padding-bottom:16px">
     <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:12px">
-      <b style="font-size:13.5px;font-weight:800;color:var(--n900);letter-spacing:-.02em">최근 ${DASH_DAYS}일 흐름</b>
+      <b style="font-size:13.5px;font-weight:700;color:var(--n900);letter-spacing:-.02em">최근 ${DASH_DAYS}일 흐름</b>
       <span style="display:flex;gap:12px;font-size:12.5px;font-weight:700;color:var(--n500)">
         <span><i style="display:inline-block;width:9px;height:9px;border-radius:2px;background:var(--ind);vertical-align:-1px;margin-right:5px"></i>조건 ${tot}</span>
         <span><i style="display:inline-block;width:9px;height:9px;border-radius:2px;background:var(--ind200);vertical-align:-1px;margin-right:5px"></i>매물 ${tot2}</span>
@@ -7890,7 +7914,7 @@ function dashProg(){
   const back = US.rows ? US.rows.filter(u=>u.last_sign_in_at &&
     new Date(u.last_sign_in_at) - new Date(u.created_at) > 6e4).length : null;
   return `<div class="card pad" style="padding-top:16px;padding-bottom:16px">
-    <b style="display:block;font-size:13.5px;font-weight:800;color:var(--n900);letter-spacing:-.02em;margin-bottom:14px">처리 현황</b>
+    <b style="display:block;font-size:13.5px;font-weight:700;color:var(--n900);letter-spacing:-.02em;margin-bottom:14px">처리 현황</b>
     <div class="prog">
       ${row('제안 보낸 조건', sent, OPS.rows ? OPS.rows.length : null, '', '전달 여부는 이 브라우저에만 남습니다')}
       ${row('승인한 공급자', appr, AG.rows && AG.rows.length, 'ok')}
@@ -7909,14 +7933,14 @@ const logWho = r => r.email || r.who || (r.action === 'kakao-unlink' ? '카카�
 
 function dashRecent(){
   if(LG.rows == null) return `<div class="card pad" style="padding-top:16px;padding-bottom:16px">
-    <b style="display:block;font-size:13.5px;font-weight:800;color:var(--n900);margin-bottom:12px">최근 움직임</b>
+    <b style="display:block;font-size:13.5px;font-weight:700;color:var(--n900);margin-bottom:12px">최근 움직임</b>
     ${[0,1,2,3].map(()=>`<span class="sk" style="height:14px;margin-bottom:10px"></span>`).join('')}</div>`;
   const rows = LG.rows.slice(0, 7);
   return `<div class="card pad" style="padding-top:16px;padding-bottom:16px">
     <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:12px">
-      <b style="font-size:13.5px;font-weight:800;color:var(--n900);letter-spacing:-.02em">최근 움직임</b>
+      <b style="font-size:13.5px;font-weight:700;color:var(--n900);letter-spacing:-.02em">최근 움직임</b>
       <button data-act="ops-tab" data-v="log"
-        style="border:none;background:none;padding:0;color:var(--ind);font-size:12.5px;font-weight:800;cursor:pointer">전체 기록 →</button>
+        style="border:none;background:none;padding:0;color:var(--ind);font-size:12.5px;font-weight:700;cursor:pointer">전체 기록 →</button>
     </div>
     ${rows.length ? `<div class="tl">${rows.map(r=>{
       const d = new Date(r.at);
@@ -8024,9 +8048,9 @@ function statsPanel(){
     <span class="sect">깔때기</span>
     ${d.funnel.map((f,i)=>`<div style="display:flex;align-items:center;gap:12px;margin-bottom:9px">
       <span style="width:${isMo()?72:86}px;flex:none;font-size:12.5px;font-weight:700;color:var(--n500)">${f.k}</span>
-      <div style="flex:1;height:22px;background:var(--n100);border-radius:6px;overflow:hidden">
-        <i style="display:block;height:100%;width:${pct(f.v)}%;background:var(--ind);opacity:${1-i*.16};border-radius:6px"></i></div>
-      <span class="num" style="width:38px;text-align:right;font-size:13.5px;font-weight:800">${f.v}</span>
+      <div style="flex:1;height:22px;background:var(--n100);border-radius:var(--r-xs);overflow:hidden">
+        <i style="display:block;height:100%;width:${pct(f.v)}%;background:var(--ind);opacity:${1-i*.16};border-radius:var(--r-xs)"></i></div>
+      <span class="num" style="width:38px;text-align:right;font-size:13.5px;font-weight:700">${f.v}</span>
       <span style="width:40px;text-align:right">${step(i)}</span>
     </div>`).join('')}
   </div>
@@ -8036,7 +8060,7 @@ function statsPanel(){
        ['제안을 보낸 공급자', d.agents ? d.agents.sent : '-',
         d.agents ? `이 기간 기준 · 승인된 공급자는 누적 ${d.agents.approved}명` : '']]
       .map(([k,v,sub])=>`<div class="card" style="padding:16px">
-        <span style="display:block;font-size:12.5px;font-weight:800;color:var(--n500)">${k}</span>
+        <span style="display:block;font-size:12.5px;font-weight:700;color:var(--n500)">${k}</span>
         <span class="num" style="font-size:24px;font-weight:800;letter-spacing:-.02em">${v}</span>
         ${sub?`<span style="display:block;margin-top:2px;font-size:11px;line-height:1.4;color:var(--n500)">${sub}</span>`:''}</div>`).join('')}
   </div>
@@ -8046,7 +8070,7 @@ function statsPanel(){
     <div style="display:flex;flex-direction:column;gap:2px">
       ${stuck.map(([t,v,why,tab,sub])=>`
         <div style="display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--n100)">
-          <span class="num" style="width:44px;flex:none;font-size:20px;font-weight:800;color:${v?'var(--danger)':'var(--n500)'}">${v}</span>
+          <span class="num" style="width:44px;flex:none;font-size:20px;font-weight:700;color:${v?'var(--danger)':'var(--n500)'}">${v}</span>
           <span style="flex:1;font-size:13.5px;line-height:1.5"><b style="font-weight:800;color:var(--n900)">${t}</b>
             <span style="display:block;font-size:12.5px;color:var(--n500)">${why}</span></span>
           ${v && tab ? `<button class="btn sec sm" data-act="st-go" data-v="${tab}:${sub||''}" style="flex:none">보기</button>` : ''}
@@ -8055,7 +8079,7 @@ function statsPanel(){
   </div>
 
   ${d.capped ? `<div class="card pad" style="background:var(--warnbg);border-color:#E3C98A;margin-bottom:14px">
-    <b style="display:block;font-size:13.5px;font-weight:800;color:var(--n900);margin-bottom:3px">한도에 닿아 실제보다 작게 나옵니다</b>
+    <b style="display:block;font-size:13.5px;font-weight:700;color:var(--n900);margin-bottom:3px">한도에 닿아 실제보다 작게 나옵니다</b>
     <span style="font-size:12.5px;line-height:1.6;color:var(--n700)">한 번에 ${esc(d.capped.join(' · '))}까지만 세었습니다.
       기간을 줄여서 보시거나, 한도를 올려야 합니다.</span></div>` : ''}
 
@@ -8119,7 +8143,7 @@ function opsGateScreen(){
   if(!S.user){
     const google = SNS.find(x => x.k === 'google');
     return wrap(`
-    <b style="display:block;text-align:center;font-size:16px;font-weight:800;color:var(--n900);margin-bottom:6px">관리자 로그인</b>
+    <b style="display:block;text-align:center;font-size:16px;font-weight:700;color:var(--n900);margin-bottom:6px">관리자 로그인</b>
     <p style="margin:0 0 16px;text-align:center;font-size:12.5px;line-height:1.7;color:var(--n500)">
       접수된 조건에는 이름과 연락처가 들어 있습니다.<br>누가 무엇을 열어봤는지 남습니다.</p>
     <div style="display:flex;flex-direction:column;gap:10px">
@@ -8144,7 +8168,7 @@ function opsGateScreen(){
 
   /* 로그인은 했는데 권한이 없다 */
   if(OPS.err && !OPS.needPass) return wrap(`
-    <b style="display:block;font-size:15px;font-weight:800;color:var(--danger);margin-bottom:8px">${esc(OPS.err)}</b>
+    <b style="display:block;font-size:15px;font-weight:700;color:var(--danger);margin-bottom:8px">${esc(OPS.err)}</b>
     <p style="margin:0 0 14px;font-size:13.5px;line-height:1.75;color:var(--n700)">
       지금 <b style="color:var(--n900)">${esc(S.user.email||S.user.name||'로그인됨')}</b> 으로 로그인해 계십니다.
       운영자 명단(<b>BK_OPS_USERS</b>)에 이 계정을 넣거나, 시험 기간(<b>BK_OPS_OPEN_UNTIL</b>)을 여시면 열립니다.</p>
@@ -8155,7 +8179,7 @@ function opsGateScreen(){
 
   /* 여기까지 오면 서버가 암호를 달라고 한 것이다 - 명단이 비어 있는 경우다 */
   return wrap(`
-    <b style="display:block;font-size:15px;font-weight:800;color:var(--n900);margin-bottom:10px">접근 암호</b>
+    <b style="display:block;font-size:15px;font-weight:700;color:var(--n900);margin-bottom:10px">접근 암호</b>
     <p style="margin:0 0 14px;font-size:13.5px;line-height:1.75;color:var(--n700)">
       운영자 명단이 비어 있어 암호가 유일한 문입니다.
       Vercel 에 <b>BK_OPS_USERS</b> 로 계정을 넣어두시면 다음부터는 묻지 않습니다.</p>
@@ -8195,7 +8219,7 @@ V['#/ops/live'] = () => {
         ${OPS.openUntil ? `<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;
           margin-bottom:14px;padding:12px 16px;border-radius:var(--r-lg);
           background:var(--warnbg);border:1px solid #F0DCC0">
-          <b style="font-size:13.5px;font-weight:800;color:var(--warn)">시험 기간 · 문이 열려 있습니다</b>
+          <b style="font-size:13.5px;font-weight:700;color:var(--warn)">시험 기간 · 문이 열려 있습니다</b>
           <span style="font-size:12.5px;line-height:1.6;color:var(--warn)">
             ${esc(opsLinkWhen(OPS.openUntil))} 까지는 <b>로그인한 계정이면 누구나</b> 접근 암호만으로 들어옵니다.
             그 뒤에는 서버가 스스로 닫습니다.${OPS.guest?' 지금 계정은 <b>운영자 명단 밖</b>입니다.':''}</span>
@@ -8427,7 +8451,7 @@ function docShell(eyebrow, title, lead, body){
     ${body}
     ${bizFooter ? `<div style="margin-top:28px;padding-top:18px;border-top:1px solid var(--n100)">${bizFooter()}</div>` : ''}
     <div class="card pad" style="margin-top:24px;background:var(--ind50);border-color:#D9DAF0">
-      <b style="display:block;font-size:15px;font-weight:800;color:var(--n900);margin-bottom:6px">아직 궁금한 게 남으셨나요?</b>
+      <b style="display:block;font-size:15px;font-weight:700;color:var(--n900);margin-bottom:6px">아직 궁금한 게 남으셨나요?</b>
       <p style="margin:0 0 14px;font-size:13.5px;line-height:1.75;color:var(--n700)">
         조건을 걸어두시면 맞는 곳이 있을 때만 연락이 갑니다. 마음에 안 들면 그냥 두셔도 됩니다.</p>
       <button class="btn pri" data-go="#/kind">내 조건 걸어두기</button>
@@ -8459,9 +8483,9 @@ V['#/guide'] = () => docShell('HOW IT WORKS', '어떻게 쓰나요',
       <div class="card pad" style="display:flex;gap:16px;align-items:flex-start">
         <span style="flex:none;width:34px;height:34px;border-radius:var(--r-full);
           background:${i===0?'var(--ind)':'var(--ind100)'};color:${i===0?'#fff':'var(--ind)'};
-          display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800">${i+1}</span>
+          display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700">${i+1}</span>
         <div style="flex:1;min-width:0">
-          <b style="display:block;font-size:15px;font-weight:800;color:var(--n900);margin-bottom:4px">${t}</b>
+          <b style="display:block;font-size:15px;font-weight:700;color:var(--n900);margin-bottom:4px">${t}</b>
           <span style="display:block;font-size:13.5px;font-weight:700;color:var(--ind);margin-bottom:6px">${s1}</span>
           <span style="display:block;font-size:13.5px;line-height:1.75;color:var(--n700)">${s2}</span>
         </div>
@@ -8469,7 +8493,7 @@ V['#/guide'] = () => docShell('HOW IT WORKS', '어떻게 쓰나요',
   </div>
 
   <div class="card pad hi" style="margin-top:18px">
-    <b style="display:block;font-size:15px;font-weight:800;color:var(--n900);margin-bottom:10px">저희가 하지 않는 것</b>
+    <b style="display:block;font-size:15px;font-weight:700;color:var(--n900);margin-bottom:10px">저희가 하지 않는 것</b>
     <div class="kv"><dt>매물 목록</dt><dd>매물을 늘어놓고 고르게 하지 않습니다. 매물은 중개사가 보내는 1:1 제안 안에만 있습니다.</dd></div>
     <div class="kv"><dt>중개</dt><dd>거래에 관여하지 않습니다. 계약은 중개사와 직접 하십니다.</dd></div>
     <div class="kv"><dt>비용 청구</dt><dd>이용자와 중개사 모두에게 어떤 비용도 받지 않습니다.</dd></div>
@@ -8501,7 +8525,7 @@ V['#/faq'] = () => docShell('FAQ', '자주 묻는 질문',
   `<div style="display:flex;flex-direction:column;gap:10px">
     ${FAQ.map(([q,a])=>`
       <div class="card pad">
-        <b style="display:flex;gap:10px;font-size:15px;font-weight:800;color:var(--n900);margin-bottom:8px">
+        <b style="display:flex;gap:10px;font-size:15px;font-weight:700;color:var(--n900);margin-bottom:8px">
           <span style="flex:none;color:var(--ind)">Q</span><span>${q}</span></b>
         <p style="margin:0 0 0 24px;font-size:13.5px;line-height:1.8;color:var(--n700)">${a}</p>
       </div>`).join('')}
@@ -8523,6 +8547,47 @@ function resetJoin(){
   }
   /* 다 보내고 나가는 길에는 아무 말도 하지 않는다 - 끝난 일이다 */
   if(had && !done) setTimeout(()=>toast('가입 작성 내용을 비웠습니다 - 다시 들어오시면 처음부터입니다'), 80);
+}
+
+/* ── 가운뎃점은 줄 끝에 홀로 남지 않는다 ──
+   `word-break:keep-all` 은 한글 어절 안을 안 끊어 주지만, **가운뎃점(·)에서는
+   끊는다.** 그래서 파트너 안내의 큰 제목이 이렇게 갈라져 있었다:
+
+       서울·경기에서 집·        ← 점 하나가 줄 끝에 매달린다
+       가게를 구하는 손님이
+
+   이 화면은 '서울·경기', '집·가게', '개인 · 법인 · 신탁 위탁자' 처럼 점을 아주
+   많이 쓴다. 줄이 어디서 접히느냐는 글자 수와 화면 폭에 따라 매번 달라지므로,
+   눈에 띈 한 곳만 고치면 다음 폭에서 다른 곳이 갈라진다. 규칙으로 막는다.
+
+   · 붙은 점(집·가게) - 점 **양쪽**을 접착제(U+2060)로 막는다. 통째로 움직인다.
+     뒤만 막으면 끊을 자리가 점 앞으로 옮겨갈 뿐이다 - 실제로 그렇게 났다:
+     '집' 에서 끊기고 다음 줄이 '·가게를' 로 시작했다.
+   · 띄어 쓴 점(A · B) - 점 **앞**을 붙임표(U+00A0)로 앞말에 붙인다.
+     그러면 'A ·' 로 끝나지 않고 'A·' 로 끝나며, 다음 줄이 'B' 로 시작한다.
+     뒤의 보통 빈칸은 그대로 둔다 - 거기가 접혀야 할 자리다.
+
+   글자 마디(text node)만 훑는다. 태그 속성이나 코드에는 손대지 않는다. */
+const WJ = '⁠', NB = ' ';
+function 가운뎃점붙이기(뿌리){
+  const 훑개 = document.createTreeWalker(뿌리, NodeFilter.SHOW_TEXT);
+  const 할것 = [];
+  for(let n = 훑개.nextNode(); n; n = 훑개.nextNode()){
+    if(!n.data.includes('·')) continue;
+    /* 입력칸 안의 값은 건드리지 않는다 - 적어 넣은 글자가 바뀌면 안 된다 */
+    const p = n.parentElement;
+    if(p && (p.closest('textarea') || p.closest('script') || p.closest('style'))) continue;
+    할것.push(n);
+  }
+  for(const n of 할것){
+    n.data = n.data
+      .replace(/ +· +/g, NB + '·' + ' ')   /* 띄어 쓴 점: 앞말에 붙인다 */
+      /* 붙은 점: 앞 글자를 함께 잡아 양쪽을 막는다.
+         뒤돌아보기(lookbehind)를 쓰면 한 줄이 짧아지지만, 그것을 못 읽는
+         브라우저에서는 **이 파일 전체가 문법 오류**로 죽는다. 한 글자를
+         같이 집어 오는 쪽이 안전하다. */
+      .replace(/([^\s ⁠])·(?![\s⁠])/g, '$1' + WJ + '·' + WJ);
+  }
 }
 
 function render(){
@@ -8634,6 +8699,7 @@ function render(){
   const same = S.lastRoute === h;
   const keep = same ? app.scrollTop : 0;
   app.innerHTML = html + modalHTML();
+  가운뎃점붙이기(app);
   /* .scr.fade 는 opacity 0 → 1 이라, 같은 화면을 다시 그릴 때마다 화면 전체가
      한 번 사라졌다 나타난다. 첫 진입에서 세션 확인·설정 조회로 렌더가 두세 번
      겹치면 그게 '깜빡임' 으로 보인다. 화면이 바뀔 때만 재생한다. */

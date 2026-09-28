@@ -1468,6 +1468,13 @@ p,li,dd,.sub,.lines,.opt{line-break:strict;overflow-wrap:break-word}
   border-radius:var(--r-xs);
 }
 
+/* ── 눈에는 안 보이고 낭독기에만 읽히는 글 ──
+   `display:none` 이나 `visibility:hidden` 은 낭독기에서도 사라진다 - 그러면
+   안 쓴 것과 같다. 1px 짜리로 접어 두되 **화면 안에** 둔다.
+   (`clip-path` 만 쓰면 어떤 낭독기는 건너뛴다. 옛 `clip` 을 같이 둔다.) */
+.sr{position:absolute!important;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;
+  clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;border:0}
+
 /* ── 진입 ──
    화면이 통째로 나타나기보다, 위에서 가볍게 내려앉는 편이 덜 소란스럽다. */
 @keyframes riseIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
@@ -4338,7 +4345,7 @@ function mapScene(level, sel, shop){
 
   const clipId = 'clip-'+level;
   return `
-  <svg class="map" viewBox="${mapViewBox()}" role="group" aria-label="지역 선택 지도"
+  <svg class="map" viewBox="${mapViewBox()}" aria-hidden="true" focusable="false"
     style="touch-action:${MAPZ.k>1?'none':'pan-y'};--mz:${MAPZ.k}">
     <defs>
       <clipPath id="${clipId}"><path d="${d(op.map(p=>T(p)))}"/></clipPath>
@@ -4496,13 +4503,20 @@ function regionPicker(d, shop){
       <span class="crumbs">${map ? 길 : (shop?'자주 찾는 상권':'자주 찾는 지역')}${
         map && lv!=='hanam' ? ` · <button class="crumb" data-act="map-drill" data-v="hanam">하남시 동 단위</button>` : ''}</span>
       <div class="seg" role="group" aria-label="지역 고르는 방법">
-        <button class="${map?'on':''}" data-act="region-view" data-v="map">지도</button>
-        <button class="${map?'':'on'}" data-act="region-view" data-v="list">목록</button>
+        <button class="${map?'on':''}" data-act="region-view" data-v="map" aria-pressed="${map}">지도</button>
+        <button class="${map?'':'on'}" data-act="region-view" data-v="list" aria-pressed="${!map}">목록</button>
       </div>
     </div>
     ${map ? `
     <div class="mapbox">
       ${mapScene(lv, d.dongs, shop)}
+      <!-- 지도는 **마우스·손가락으로 고르는 화면**이다. 안에 길(path) 57개가
+           들어 있는데 하나하나 초점을 주면 Tab 을 쉰일곱 번 눌러야 한다 -
+           그게 더 못 쓸 화면이다. 그래서 그림 자체는 낭독기에서 감추고,
+           같은 일을 하는 **목록**이 바로 위에 있다고 말해 준다.
+           목록은 진짜 버튼 일흔세 개가 세 묶음으로 들어 있다. -->
+      <p class="sr">지도는 마우스나 손가락으로 고르는 화면입니다.
+        바로 위의 <b>목록</b>을 고르시면 동네 이름으로 골라 넣으실 수 있습니다.</p>
       <div class="mapbtns left">
         <button data-act="geo" aria-label="현재 위치로" title="현재 위치로"
           ${S.geoState==='asking'?'disabled':''}>${S.geoState==='asking'?'…':ICO.locate}</button>
@@ -8681,6 +8695,42 @@ function 되돌린초점(뿌리, 표){
   try{ el.focus({ preventScroll: true }); }catch(_){}
 }
 
+/* ── 클릭을 받는 것은 키보드로도 닿아야 한다 ──
+   `href` 없는 `<a>` 는 **초점을 못 받는다.** 브라우저가 그것을 링크로 보지
+   않기 때문이다 - 마우스로는 눌리지만 Tab 으로는 아예 건너뛰어지고, 낭독기의
+   링크 목록에도 안 나온다. 재 봤더니 화면 열 개에 **마흔 곳**이 그랬다:
+
+     이용 안내 · 자주 묻는 질문 · 파트너 안내 · 브랜드 (바닥글 전부)
+     ← 처음으로 · 아이디 찾기 · 비밀번호 찾기 · 회원가입 · 소유자로 가입 · 로고
+
+   즉 **키보드만 쓰는 사람은 이 서비스의 주요 이동 경로에 닿을 수 없었다.**
+   전에 '커서가 기본값이라 눌리는 줄 모른다' 며 손가락 커서를 달아 둔 적이
+   있는데(CSS), 커서만 고치고 초점은 놓쳤다.
+
+   템플릿 마흔 곳을 하나씩 고치면 반드시 빠뜨린다 - 지난 점검에서 배운 것이다.
+   그려진 뒤에 한 번에 채운다. `data-go` 는 어디로 가는 것이니 link,
+   `data-act` 는 무언가를 하는 것이니 button 으로 읽히게 한다. */
+function 키보드로도닿게(뿌리){
+  뿌리.querySelectorAll('a[data-go],a[data-act]').forEach(a => {
+    if(a.hasAttribute('href')) return;                  /* 진짜 링크는 그대로 둔다 */
+    if(!a.hasAttribute('tabindex')) a.setAttribute('tabindex','0');
+    if(!a.hasAttribute('role')) a.setAttribute('role', a.hasAttribute('data-go') ? 'link' : 'button');
+  });
+}
+/* 초점이 닿아도 **눌리지 않으면 반쪽이다.** 진짜 링크·버튼과 달리
+   `role` 만 붙인 `<a>` 는 엔터를 눌러도 브라우저가 아무 일도 하지 않는다.
+   link 는 엔터로, button 은 엔터와 띄어쓰기로 - 각자의 약속대로 눌러 준다. */
+document.addEventListener('keydown', e => {
+  if(e.key !== 'Enter' && e.key !== ' ' && e.key !== 'Spacebar') return;
+  if(e.altKey || e.ctrlKey || e.metaKey) return;
+  const el = e.target.closest && e.target.closest('a[tabindex="0"][role]');
+  if(!el || el.hasAttribute('href')) return;
+  const 버튼 = el.getAttribute('role') === 'button';
+  if(e.key !== 'Enter' && !버튼) return;               /* 링크는 띄어쓰기로 눌리지 않는다 */
+  e.preventDefault();                                   /* 띄어쓰기로 화면이 내려가지 않게 */
+  el.click();
+});
+
 function render(){
   let h = location.hash || '#/';
   if(S.lastRoute === '#/partner/join' && h !== '#/partner/join') resetJoin();
@@ -8792,6 +8842,7 @@ function render(){
   const 잡고있던곳 = same ? 초점표(document.activeElement) : null;
   app.innerHTML = html + modalHTML();
   가운뎃점붙이기(app);
+  키보드로도닿게(app);
   되돌린초점(app, 잡고있던곳);
   /* 화면이 **바뀐** 경우에는 돌려줄 자리가 없다. 그냥 두면 초점이 <body> 에
      남아서, 낭독기로 듣는 분은 '주거' 를 고른 뒤 **아무 소리도 듣지 못한다** -

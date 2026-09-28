@@ -144,5 +144,50 @@ ok(/:not\(p \.tapx\)/.test(css),
 ok(/\.tapx:not\(p \.tapx\)\{[^}]*align-items:center/.test(css),
    '키운 상자 안에서 글자가 가운데 선다 - 안 그러면 위로 쏠린다');
 
+/* ── 파트너가 자기 화면으로 가는 문 (2026-09-28 이훈희 님 제보) ──
+   문턱을 세우는 것만큼 **문을 내는 것**도 이 파일의 일이다.
+   승인된 중개사가 첫 화면으로 들어오면 파트너 화면으로 가는 길이 아예 없었다.
+   원인은 하나였다 - `S.agent` 를 채우는 곳이 `loadFeed()` 뿐인데 라우터는
+   그것을 파트너 수요 목록에서만 부른다. 아무도 묻지 않으니 답이 없었다. */
+const api = (await import('node:fs')).readFileSync(new URL(길.api('my.js')), 'utf8');
+ok(/body\.what === 'agent'/.test(api),
+   "서버가 '내가 파트너인가' 에 답하는 자리가 있다 (/api/my, what:'agent')");
+ok(/import \{ approvedAgent, meAgent \} from '\.\/feed\.js'/.test(api),
+   '자격을 보는 눈은 feed 와 같은 것을 쓴다 - 두 군데서 다르게 보면 어긋난다');
+ok(/agent: null, note: 'lookup-failed'/.test(api),
+   '못 물어봤으면 막지 않고 손님으로 둔다 - 진짜 문턱은 화면마다 서버가 다시 본다');
+ok(!/agent-me\.js|whoami/.test(api), '새 주소를 내지 않았다 - 함수 상한(12개)이 꽉 찼다');
+
+ok(/async function readAgent\(\)/.test(js), '화면도 로그인 직후 한 번 물어본다');
+ok(/await Promise\.all\(\[readConsent\(\), readAgent\(\)\]\)/.test(js),
+   '동의와 나란히 묻는다 - 둘 다 "내가 누구인가" 라 앞뒤로 기다릴 이유가 없다');
+ok(/if\(\(S\.agent && S\.agent\.id\) !== 전 && S\.lastRoute !== null\) render\(\)/.test(js),
+   '첫 그림이 나간 뒤에 답이 와도 다시 그린다 - boot 이 1.2초에서 끊기 때문이다');
+
+ok(/function partnerDoor\(kind\)\{/.test(js), '손님 화면에서 파트너 화면으로 가는 문이 있다');
+ok(/if\(!S\.agent\) return '';/.test(js),
+   '파트너가 아닌 분에게는 보이지 않는다 - 아무 말도 하지 않는다');
+ok(/S\.agent\.status === 'approved'/.test(js) && /'#\/partner\/verify'/.test(js),
+   '아직 자격 확인 전이면 수요 목록이 아니라 그 자리로 보낸다');
+{
+  const nav = 함수('function navUser(active)');
+  ok(/partnerDoor/.test(nav), '손님 상단바에 그 문이 있다 - 전에는 내 조건·제안함뿐이었다');
+  ok(/isMo\(\)\?'':partnerDoor\('link'\)/.test(nav) && /isMo\(\)\?partnerDoor\(\):''/.test(nav),
+     '데스크톱은 메뉴에, 모바일은 오른쪽에 - 한 화면에 하나만 선다');
+}
+ok(/\$\{isMo\(\) && S\.agent \? partnerDoor\(\) : ''\}/.test(js),
+   '첫 화면에서도 문이 두 번 서지 않는다 (처음에 실제로 두 번 섰다)');
+ok(/S\.agent \? partnerDoor\('link'\) : `<a data-go="#\/partner">파트너 안내<\/a>`/.test(js),
+   '파트너로 확인된 분에게는 안내 대신 자기 화면으로 가는 길을 보여준다');
+ok(/맞는 손님이 기다립니다/.test(js),
+   "첫 화면의 파트너 띠도 이미 들어와 계신 분께 '먼저 두드리세요' 라고 하지 않는다");
+
+/* 이 가드는 **원래부터 있었다.** S.agent 가 늘 비어 있어서 한 번도 돌지 못했을 뿐이다.
+   위에서 S.agent 를 채워 주기 시작했으므로 이제 실제로 돈다. */
+ok(/h==='#\/partner\/join' && S\.agent && S\.form\.jSent/.test(js),
+   '이미 신청한 계정은 가입 화면을 다시 걸지 않는다');
+ok(/S\.agent\.status === 'approved' \? '#\/partner\/demands' : '#\/partner\/verify'/.test(js),
+   '승인됐으면 수요 목록으로, 아니면 자격 확인으로 보낸다');
+
 console.log(`${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

@@ -7,6 +7,7 @@
  */
 
 import { userFrom, sbHeaders, sbUrl } from './_auth.js';
+import { approvedAgent, meAgent } from './feed.js';
 
 const KIND_KO = { home: '주거', shop: '상가', office: '오피스', storage: '창고' };
 
@@ -26,6 +27,27 @@ export default async function handler(req, res) {
      손님·파트너 공통이라 '내 것' 을 다루는 이 자리가 맞다. */
   const body = req.method === 'POST' ? (req.body || {}) : {};
   if (body.what === 'consent') return consent(req, res, user, body);
+
+  /* 내가 파트너인가.
+     ── 왜 여기에 있나 ──
+     지금까지 이 물음에 답하는 자리는 `/api/feed` 뿐이었다. 그런데 feed 는
+     **파트너 화면에서만** 불린다. 그래서 승인된 중개사가 첫 화면으로 들어오면
+     화면은 그분이 파트너인 줄을 모른다 - 상단바에 파트너로 가는 문이 없고,
+     '이미 신청한 계정은 가입 화면을 다시 걸지 않는다' 는 라우터의 가드도
+     `S.agent` 가 비어 있어서 한 번도 돌지 못했다(2026-09-28 이훈희 님 제보).
+     로그인 직후 한 번 물어볼 자리가 필요한데, 함수 상한(12개)이 꽉 찼다 -
+     동의와 같은 이유로 '내 것' 을 다루는 이 자리에 붙인다.
+     ⚠ 못 물어봤다고 막지 않는다. 파트너인지 모르면 손님 화면을 보여주면 되고,
+     진짜 문턱은 어차피 서버가 각 화면에서 다시 본다. */
+  if (body.what === 'agent') {
+    try {
+      const chk = await approvedAgent(user);
+      if (chk.error) return res.status(200).json({ ok: true, agent: null, note: 'lookup-failed' });
+      return res.status(200).json({ ok: true, agent: meAgent(chk.agent) || null });
+    } catch (e) {
+      return res.status(200).json({ ok: true, agent: null, note: 'lookup-failed' });
+    }
+  }
 
   try {
     const dq = new URLSearchParams({

@@ -1778,14 +1778,20 @@ function matchStages(L, d){
      1~4 단계는 통과해야만 제안이 만들어지므로(matchesFor·listingsFor),
      새 조건을 그 위에 얹으면 경계에 걸린 좋은 물건이 통째로 사라진다.
      '다름' 으로 보여주는 것이 우리 방식이다. */
-  /* ── 우선순위 (대표 지시 2026-09-23 · 화장실 추가 2026-09-24) ──
-     주거 : 유형 · 위치 · 거래방식 · 가격 · 주택유형 · 면적 · 화장실 · 층 · 방향 · 주차 · 반려동물
+  /* ── 우선순위 (대표 지시 2026-09-23 · 화장실 추가 2026-09-24
+                  · 화장실을 층 뒤로 2026-09-28) ──
+     주거 : 유형 · 위치 · 거래방식 · 가격 · 주택유형 · 면적 · 층 · 화장실 · 방향 · 주차 · 반려동물
      상가 : 유형 · 위치 · 거래방식 · 가격 · 입주시기 · 면적 · 주차
      앞의 넷은 위 1~4 단계가 이미 가른다 - 여기서는 5위부터 줄을 세운다.
      전에는 musts 에서 나온 것(주차·반려동물 = 제일 뒤)이 목록 **맨 앞**에 왔다.
-     중개사가 위에서부터 읽는데 제일 덜 중요한 것이 먼저 보였다. */
+     중개사가 위에서부터 읽는데 제일 덜 중요한 것이 먼저 보였다.
+
+     ⚠ 2026-09-28 **중개사 의견으로 화장실을 층 뒤로 내렸다.** 9/24 에 면적
+     바로 다음(7위)에 넣었던 것을 한 칸 내려 8위로 둔다. 파는 쪽에서 보면
+     층이 먼저다 - 층은 못 바꾸는 조건이고, 화장실 개수는 같은 층의 다른 집에서
+     맞출 여지가 있다. 현장에서 먼저 묻는 순서를 따른다. */
   const RANK = L.kind === 'home'
-    ? { 주택유형:5, 면적:6, 화장실:7, 층:8, 방향:9, 주차:10, 반려동물:11 }
+    ? { 주택유형:5, 면적:6, 층:7, 화장실:8, 방향:9, 주차:10, 반려동물:11 }
     : { 입주시기:5, 면적:6, 주차:7 };
   /* 목록에 없는 것(엘리베이터·역세권·업종…)은 뒤로 보낸다. 버리지는 않는다 -
      손님이 걸어둔 조건을 우리가 임의로 지울 수는 없다. */
@@ -2734,8 +2740,10 @@ function demandFromRow(d){
   /* 새 조건(2026-09-16). 손님이 고른 밴드를 그대로 보여준다 - 우리가 풀어 쓰면
      중개사가 '무엇을 고른 건지' 를 되짚을 수 없다. */
   put('면적', (d.area_bands||[]).join(' · '));
-  put('화장실', d.bath_want);
+  /* 읽는 차례를 우선순위와 맞춘다 - 표는 층이 먼저인데 목록은 화장실이 먼저면,
+     중개사가 보는 것과 우리가 줄 세우는 것이 서로 다른 말을 한다 (9/28 중개사 의견) */
   put('층', (d.floor_bands||[]).join(' · ') || d.floor_avoid || d.shop_floor_free);
+  put('화장실', d.bath_want);
   put('방향', (d.dir_want||[]).join(' · '));
   put('사용승인', d.age_band);
   put('엘리베이터', d.elevator);
@@ -7194,8 +7202,8 @@ function opsShare(r){
     /* 손님이 고른 밴드를 그대로 옮긴다 - 우리가 풀어 쓰면 중개사가 '무엇을 고른 건지' 를
        되짚을 수 없다. 안 고른 항목은 put 이 알아서 건너뛴다(= 무관). */
     put('면적   ', (r.area_bands||[]).join(' · '));
-    put('화장실 ', r.bath_want);
     put('층     ', (r.floor_bands||[]).join(' · ') || r.floor_avoid);
+    put('화장실 ', r.bath_want);
     put('방향   ', (r.dir_want||[]).join(' · '));
     put('사용승인 ', r.age_band);
     put('승강기 ', r.elevator);
@@ -7770,8 +7778,8 @@ function demandPanel(){
             const key = shop
               ? [r.biz, (r.area_min?`전용 ${r.area_min}~${r.area_max||''}평`:''), r.shop_floor_free, r.facilities_free].filter(Boolean).join(' · ')
               : [(r.htype||[]).join('·'), r.rooms,
-                 (r.area_bands||[]).join('·'), r.bath_want && `화장실 ${r.bath_want}`,
-                 (r.floor_bands||[]).join('·'), (r.dir_want||[]).join('·'), r.age_band,
+                 (r.area_bands||[]).join('·'), (r.floor_bands||[]).join('·'),
+                 r.bath_want && `화장실 ${r.bath_want}`, (r.dir_want||[]).join('·'), r.age_band,
                  r.when_text, (r.musts||[]).join('·'), r.must_free].filter(Boolean).join(' · ');
             const sent = !!OPS.sent[r.id];
             const fresh = new Date(r.created_at).getTime() > OPS.seen;

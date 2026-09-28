@@ -69,6 +69,46 @@ ok(/role="\$\{multi\?'group':'radiogroup'\}"/.test(js),
 ok(/aria-pressed="\$\{k\}"/.test(js) && /role="radio" aria-checked="\$\{k\}"/.test(js),
    '칩 하나하나가 **골라졌는지**를 보조기기에 말한다 (전에는 방법이 아예 없었다)');
 
+/* ── ③-2 라디오라고 말했으면 라디오처럼 움직여야 한다 ──
+   낭독기가 "라디오 단추, 3 중 2" 라고 읽으면 듣는 사람은 화살표로 옮길 수
+   있다고 기대한다. 이름만 달고 동작을 안 붙이면 안 붙인 것만 못하다. */
+ok(/tabindex="\$\{i===문\?0:-1\}"/.test(js),
+   '라디오 묶음은 Tab 으로 한 번만 들어간다 - 고른 칸 하나만 문이다');
+ok(/const 문 = multi \? -1 : Math\.max\(0, list\.findIndex\(켜짐\)\)/.test(js),
+   '아직 안 골랐으면 첫 칸이 문이다 - 문이 없으면 Tab 으로 들어갈 수가 없다');
+ok(/closest\('\.chips\.one > \.chip\[role="radio"\]'\)/.test(js),
+   '화살표 처리기가 하나만 고르는 줄에만 걸린다 - 여럿 고르는 줄은 Tab 으로 다닌다');
+ok(/\(i \+ \(앞으로 \? 1 : -1\) \+ 줄\.length\) % 줄\.length/.test(js),
+   '끝에서 화살표를 더 누르면 처음으로 돌아온다');
+ok(/다음\.focus\(\{preventScroll:true\}\);\s*\n\s*다음\.click\(\);/.test(js),
+   '옮기는 즉시 골라진다 - 옮겨 놓고 또 Space 를 치게 하지 않는다(라디오의 표준 동작)');
+ok(/if\(e\.altKey \|\| e\.ctrlKey \|\| e\.metaKey\) return;/.test(js),
+   '조합키가 눌린 화살표는 넘긴다 - 브라우저의 제 기능을 빼앗지 않는다');
+ok(/\.filter\(b => b\.matches\('\.chip\[role="radio"\]'\) && !b\.disabled\)/.test(js),
+   '못 고르는 칸은 건너뛴다 - 입주시기처럼 지난 달이 막혀 있는 줄이 있다');
+
+/* ── ③-3 다시 그려도 손가락이 있던 자리를 놓치지 않는다 ──
+   칩 하나 고를 때마다 #app 을 통째로 다시 만든다. 그냥 두면 초점이 <body> 로
+   떨어져서, 조건 등록의 칩 마흔 개를 **하나 고를 때마다 맨 위에서 다시 Tab**
+   해야 한다. 키보드로는 못 쓰는 화면이 된다. */
+ok(/const 잡고있던곳 = same \? 초점표\(document\.activeElement\) : null;/.test(js),
+   '다시 그리기 **전에** 어디를 잡고 있었는지 적어 둔다');
+ok(js.indexOf('const 잡고있던곳') < js.indexOf('app.innerHTML = html + modalHTML()'),
+   '적어 두는 것이 지우는 것보다 먼저다 - 지운 뒤에는 알 방법이 없다');
+ok(/되돌린초점\(app, 잡고있던곳\)/.test(js), '그린 뒤에 같은 자리를 찾아 돌려준다');
+ok(/same \? 초점표/.test(js),
+   '화면이 바뀌면 돌려주지 않는다 - 새 화면의 엉뚱한 자리에 붙으면 더 혼란스럽다');
+ok(/const act = q\('data-act'\);\s*\n\s*if\(act\) return act \+ \(q\('data-v'\) \|\| ''\);/.test(js),
+   "자리는 data-act+data-v 로 찾는다 - 새 버튼은 다른 물건이지만 **같은 일을 하는 자리**다");
+ok(/CSS\.escape/.test(js), '값을 선택자에 넣을 때 이스케이프한다 - 동 이름에 따옴표가 섞일 수 있다');
+ok(/되돌린초점[\s\S]{0,700}?try\{ el\.focus\(\{ preventScroll: true \}\); \}catch/.test(js),
+   '초점을 돌려주면서 화면을 끌어당기지 않는다');
+/* IME 를 여기서 읽으면 선언(let)보다 위라 통째로 죽는다 - 2026-09-27 에 한 번 밟았다 */
+const 되돌림 = js.slice(js.indexOf('function 되돌린초점'), js.indexOf('function render()'))
+  .replace(/\/\*[\s\S]*?\*\//g, '');            /* 주석은 돌지 않는다 - 거기 적힌 이름은 세지 않는다 */
+ok(!/\bIME\b/.test(되돌림),
+   '되돌린초점 안에서 IME 를 읽지 않는다 - 그 변수(let)보다 위에 있어서 읽으면 죽는다');
+
 ok(/\.chip\.on::before\{[^}]*border-radius:var\(--r-full\)[^}]*background:currentColor/.test(css),
    '기본은 점이다 - 하나만 고르는 자리가 더 많다');
 ok(/\.chips\.multi \.chip\.on::before\{[^}]*rotate\(-45deg\)/.test(css),

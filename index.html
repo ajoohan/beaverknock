@@ -2504,10 +2504,14 @@ function mprog(pct){ return `<div class="mprog"><i style="width:${pct}%"></i></d
    있는지 알 방법이 아예 없었다. */
 function chipsHTML(list, sel, act, multi){
   const 켜짐 = v => multi ? (sel||[]).includes(v) : sel === v;
+  /* 라디오 묶음은 Tab 으로 **한 번만** 들어간다 - 고른 칸이 그 문이고,
+     아직 안 골랐으면 첫 칸이 문이다. 안에서는 화살표로 옮긴다(아래 처리기). */
+  const 문 = multi ? -1 : Math.max(0, list.findIndex(켜짐));
   return `<div class="chips ${multi?'multi':'one'}" role="${multi?'group':'radiogroup'}">${
-    list.map(v=>{ const k = 켜짐(v);
+    list.map((v,i)=>{ const k = 켜짐(v);
       return `<button class="chip ${k?'on':''}" data-act="${act}" data-v="${esc(v)}"
-        ${multi ? `aria-pressed="${k}"` : `role="radio" aria-checked="${k}"`}>${esc(v)}</button>`;
+        ${multi ? `aria-pressed="${k}"`
+                : `role="radio" aria-checked="${k}" tabindex="${i===문?0:-1}"`}>${esc(v)}</button>`;
     }).join('')}</div>`;}
 function zonesHTML(zones, sel){
   /* 칩 97 개를 한 번에 펼치면 목록이 지도보다 길어진다 - 실제로 610px 더 길었다.
@@ -8644,6 +8648,39 @@ function 가운뎃점붙이기(뿌리){
   }
 }
 
+/* ── 다시 그려도 손가락이 있던 자리를 놓치지 않는다 ──
+   이 화면은 칩 하나 고를 때마다 `#app` 을 통째로 다시 만든다. 누르고 있던 칩도
+   같이 사라지므로 **초점이 <body> 로 떨어진다.** 재 봤더니 그랬다:
+
+     '전세' 에 초점 → Space → 초점이 body
+
+   마우스로는 티가 안 나지만 키보드로 쓰면 못 쓸 화면이다. 조건 등록에는 칩이
+   마흔 개쯤 있는데, 하나 고를 때마다 **맨 위에서부터 다시 Tab** 해야 한다.
+   낭독기로 들으면 고른 순간 읽던 자리를 잃는다.
+
+   그래서 다시 그리기 **전에** 어디를 잡고 있었는지 적어 두고, 그린 **뒤에**
+   같은 자리를 찾아 돌려준다. 자리는 `data-act`+`data-v` 로 찾는다 - 새로 만든
+   버튼은 다른 물건이지만 **같은 일을 하는 자리**다.
+   화면이 바뀐 경우(same=false)에는 돌려주지 않는다 - 새 화면의 엉뚱한 자리에
+   초점이 붙으면 그게 더 혼란스럽다. */
+const 초점표 = el => {
+  if(!el || el === document.body || !el.getAttribute) return null;
+  const q = (k) => { const v = el.getAttribute(k); return v == null ? null : `[${k}="${CSS.escape(v)}"]`; };
+  const act = q('data-act');
+  if(act) return act + (q('data-v') || '');
+  return q('data-in') || q('data-go') || null;
+};
+function 되돌린초점(뿌리, 표){
+  if(!표) return;
+  /* 적고 있던 칸이면 커서가 끝으로 간다. redrawKeepingCaret 를 타고 온 길이면
+     그쪽이 곧바로 커서까지 제자리에 놓으므로 여기서는 초점만 돌려주면 된다.
+     (IME 를 여기서 보지 않는다 - 이 함수가 그 변수보다 위에 있어서,
+      선언 전에 읽으면 통째로 죽는다. 실제로 볼 필요도 없다.) */
+  let el; try{ el = 뿌리.querySelector(표); }catch(_){ return; }
+  if(!el) return;
+  try{ el.focus({ preventScroll: true }); }catch(_){}
+}
+
 function render(){
   let h = location.hash || '#/';
   if(S.lastRoute === '#/partner/join' && h !== '#/partner/join') resetJoin();
@@ -8752,8 +8789,21 @@ function render(){
   const app = $('#app');
   const same = S.lastRoute === h;
   const keep = same ? app.scrollTop : 0;
+  const 잡고있던곳 = same ? 초점표(document.activeElement) : null;
   app.innerHTML = html + modalHTML();
   가운뎃점붙이기(app);
+  되돌린초점(app, 잡고있던곳);
+  /* 화면이 **바뀐** 경우에는 돌려줄 자리가 없다. 그냥 두면 초점이 <body> 에
+     남아서, 낭독기로 듣는 분은 '주거' 를 고른 뒤 **아무 소리도 듣지 못한다** -
+     화면은 조용히 넘어가 있고, 다음 Tab 은 맨 위 로고부터 다시 시작한다.
+     새 화면의 제목으로 옮겨 준다. 그러면 제목이 읽히면서 '여기로 왔다' 가 된다.
+     (화면 열두 개를 재 보니 전부 <h1> 이 하나씩 있다.)
+     ⚠ 처음 열 때는 옮기지 않는다 - 들어오자마자 초점을 가져가면 브라우저가
+     복원해 주는 스크롤 위치까지 끌어당긴다. S.lastRoute 가 null 인 때가 그때다. */
+  if(!same && S.lastRoute !== null){
+    const 제목 = app.querySelector('h1');
+    if(제목){ 제목.setAttribute('tabindex','-1'); 제목.focus({preventScroll:true}); }
+  }
   /* .scr.fade 는 opacity 0 → 1 이라, 같은 화면을 다시 그릴 때마다 화면 전체가
      한 번 사라졌다 나타난다. 첫 진입에서 세션 확인·설정 조회로 렌더가 두세 번
      겹치면 그게 '깜빡임' 으로 보인다. 화면이 바뀔 때만 재생한다. */
@@ -10470,6 +10520,33 @@ document.addEventListener('keydown', e=>{
   if(e.shiftKey && (i <= 0)){ e.preventDefault(); all[all.length-1].focus(); }
   else if(!e.shiftKey && i === all.length-1){ e.preventDefault(); all[0].focus(); }
   else if(i < 0){ e.preventDefault(); all[0].focus(); }
+});
+
+/* ── 하나만 고르는 칩 줄은 화살표로 옮긴다 ──
+   `role="radio"` 를 달아 놓으면 낭독기가 "라디오 단추, 3 중 2" 라고 읽어 준다.
+   그 말을 들은 사람은 **화살표로 옮길 수 있다고 기대한다** - 그게 라디오의
+   약속이다. 이름만 달고 동작을 안 붙이면 안 붙인 것만 못하다.
+
+   라디오 묶음은 **Tab 으로 한 번만 들어간다.** 안에서는 화살표로 옮기고,
+   옮기는 즉시 골라진다(표준 동작이다 - 옮겨 놓고 또 Space 를 치게 하지 않는다).
+   그래서 chipsHTML 이 고른 칩에만 tabindex=0 을 주고 나머지는 -1 로 둔다.
+   고른 것이 없으면 첫 칸이 문이 된다.
+
+   누르면 화면을 다시 그리지만, 위의 되돌린초점() 이 같은 자리를 찾아 준다. */
+document.addEventListener('keydown', e=>{
+  if(e.key!=='ArrowLeft' && e.key!=='ArrowRight' && e.key!=='ArrowUp' && e.key!=='ArrowDown') return;
+  if(e.altKey || e.ctrlKey || e.metaKey) return;
+  const 지금 = e.target.closest && e.target.closest('.chips.one > .chip[role="radio"]');
+  if(!지금) return;
+  const 줄 = [...지금.parentElement.children]
+    .filter(b => b.matches('.chip[role="radio"]') && !b.disabled);
+  const i = 줄.indexOf(지금);
+  if(i < 0 || 줄.length < 2) return;
+  const 앞으로 = (e.key==='ArrowRight' || e.key==='ArrowDown');
+  const 다음 = 줄[(i + (앞으로 ? 1 : -1) + 줄.length) % 줄.length];
+  e.preventDefault();
+  다음.focus({preventScroll:true});
+  다음.click();
 });
 
 /* 주소 자동완성 - 손을 마우스로 옮기지 않고도 고를 수 있어야 한다 */

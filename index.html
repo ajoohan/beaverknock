@@ -25,16 +25,16 @@
 <style>
 /* ===== 비버노크 디자인 토큰 (03_브랜드/tokens.css) ===== */
 :root{
-  --ind900:#23255C; --ind700:#31336F; --ind:#3D3F8F; --ind300:#6E70BC; --ind-dark:#8C8ED0; --ind200:#CFD0EC; --ind100:#E9E9F7; --ind50:#F5F5FC;
-  --navy900:#0C1129; --navy800:#121936; --navy700:#1C2547; --navy600:#2E3A62; --navy400:#4C5678;
+  --ind900:#2F3192; --ind700:#4144BE; --ind:#4F52D1; --ind300:#6366D6; --ind-dark:#A3A5F2; --ind200:#D5D6FA; --ind100:#EDEDFE; --ind50:#F6F6FF;
+  --navy900:#15163A; --navy800:#1C1D47; --navy700:#282A5A; --navy600:#3A3C70; --navy400:#575A8C;
   /* navy400 은 선·면에 쓰라고 만든 값이다. 어두운 바탕에 글씨로 얹으면 2.58:1 로
      기준(4.5:1)에 한참 못 미친다 - 글씨용으로 한 칸 밝은 것을 따로 둔다. */
-  --navy300:#8A94B8;
+  --navy300:#9395C4;
   /* ind300 에 흰 글씨를 얹으면 4.46:1 로 기준에 아슬아슬하게 못 미친다.
      버튼 바탕으로 쓸 때는 이것을 쓴다 - 흰 글씨와 5.49:1 이다. */
-  --ind400:#5F61B0;
-  --clay900:#5E472B; --clay700:#7E5F3C; --clay:#C9A87C; --clay200:#E0CBAC; --clay100:#F5EDE2;
-  --n900:#1F1D1A; --n700:#4A4640; --n500:#6E6859; --n300:#D6D1C8; --n200:#E4E0D9; --n100:#F0EDE7; --n50:#FAF8F5; --white:#fff;
+  --ind400:#5B5EE0;
+  --clay900:#6B3B18; --clay700:#9A5A2E; --clay:#F0A878; --clay200:#FAD9C0; --clay100:#FFF3EA;
+  --n900:#1D1C2A; --n700:#46455A; --n500:#6B6A7D; --n300:#D6D5E1; --n200:#E6E5EE; --n100:#F0EFF5; --n50:#F8F7FB; --white:#fff;
   --ok:#1B7A46; --okbg:#EAF6EF; --danger:#B22B31; --dangerbg:#FBEFEF; --warn:#A85708; --warnbg:#FEF3E7;
   /* ── 알림 카드의 테두리 ──
      채움(okbg·warnbg)과 글자(ok·warn)는 토큰이 있었는데 **테두리만 없었다.**
@@ -44,26 +44,26 @@
      인디고 카드는 --ind200 을 쓴다(따로 만들 이유가 없다). */
   --okline:#A5CDB6; --warnline:#E8D5A8; --dangerline:#E8C4C4;
   /* 꺼진 글자 · 아직 안 적은 칸의 안내 글자 */
-  --off:#8A8272; --ph:#B5AFA5;
+  --off:#8B8AA0; --ph:#B4B3C4;
   /* ── 둥글기 다섯 칸 ──
      전에는 25가지였다(2·4·5·6·7·8·9·10·11·12·14·16·18·20·22…).
      버튼 10 · 입력칸 11 · 메뉴 9 처럼 서로 한두 픽셀씩만 달랐는데,
      그 한두 픽셀이 '고른 값' 이 아니라 '그때그때 적은 값' 으로 읽힌다.
      누르는 것은 전부 sm, 담는 것은 md·lg. 2px 짜리 막대만 예외로 둔다. */
-  --r-xs:6px; --r-sm:10px; --r-md:14px; --r-lg:18px; --r-full:999px;
+  --r-xs:8px; --r-sm:12px; --r-md:16px; --r-lg:22px; --r-full:999px;
   /* ── 그림자 세 칸 ── (전에는 :root 가 세 군데에서 이 셋을 서로 다르게 적고 있었다)
      색을 띤 그림자는 물건이 빛나는 것처럼 보인다. 중립 남색 한 가지로만 드리운다. */
-  --sh0:0 1px 2px rgba(35,37,92,.06);
-  --sh1:0 1px 2px rgba(35,37,92,.05), 0 4px 12px rgba(35,37,92,.05);
-  --sh2:0 2px 6px rgba(35,37,92,.06), 0 12px 28px rgba(35,37,92,.10);
-  --sh3:0 8px 24px rgba(12,17,41,.12), 0 28px 60px rgba(12,17,41,.18);
-  --hair:rgba(31,29,26,.07);
-  --warm:linear-gradient(180deg,#FDFCF9 0%,#F8F3EA 60%,#F5EDE2 100%);
+  --sh0:0 1px 2px rgba(40,42,110,.06);
+  --sh1:0 1px 2px rgba(40,42,110,.04), 0 6px 16px rgba(40,42,110,.06);
+  --sh2:0 2px 8px rgba(40,42,110,.06), 0 16px 36px rgba(40,42,110,.10);
+  --sh3:0 10px 30px rgba(21,22,58,.10), 0 30px 64px rgba(21,22,58,.14);
+  --hair:rgba(29,28,42,.07);
+  --warm:linear-gradient(180deg,#FFFFFF 0%,#FAFAFE 55%,#F4F4FD 100%);
   --font:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
 }
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
-body{font-family:var(--font);background:#E7E4DF;color:var(--n900);-webkit-font-smoothing:antialiased;
+body{font-family:var(--font);background:#ECEBF3;color:var(--n900);-webkit-font-smoothing:antialiased;
   -moz-osx-font-smoothing:grayscale;min-height:100vh;display:flex;flex-direction:column;align-items:center}
 /* 바닥 여백을 두지 않는다. #stage 가 이미 100dvh 라 화면을 꽉 채우는데,
    그 아래로 60px 이 더 붙으면 창이 딱 그만큼 스크롤되고 회색 바닥이 드러난다. */
@@ -98,7 +98,7 @@ html.barSpace #app{scrollbar-gutter:stable}
    이것이었다 - 스크롤이 생기는 화면에서만 나타나서 더 늦게 보였다.
    그래서 꾸미기도 같은 조건으로 묶는다. 진짜 막대가 있는 곳에서만 꾸민다. */
 html.barSpace #app::-webkit-scrollbar{width:9px}
-html.barSpace #app::-webkit-scrollbar-thumb{background:#DCD8D0;border-radius:var(--r-sm);border:3px solid transparent;background-clip:content-box}
+html.barSpace #app::-webkit-scrollbar-thumb{background:#D9D8E4;border-radius:var(--r-sm);border:3px solid transparent;background-clip:content-box}
 
 /* ===== 공통 UI ===== */
 .scr{min-height:100%;display:flex;flex-direction:column;background:var(--warm)}
@@ -161,7 +161,7 @@ body.mo .back::after{content:"";position:absolute;left:0;right:0;top:-9px;bottom
 
 /* 모든 변형이 같은 크기로 그려지도록 테두리를 항상 1.5px 잡아둔다 -
    활성/비활성은 두께가 아니라 색으로만 구분한다 */
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:var(--r-sm);
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:var(--r-full);
   border:1.5px solid transparent;
   font-weight:700;letter-spacing:-.02em;transition:transform .12s,box-shadow .15s,background .15s;text-align:center}
 .btn:active{transform:scale(.985)}
@@ -174,8 +174,8 @@ body.mo .back::after{content:"";position:absolute;left:0;right:0;top:-9px;bottom
 /* 어두운 바탕에 얹는 보조 버튼. ghost 를 그대로 쓰면 밝은 바탕에 밝은 글씨가 되어
    글자가 사라진다 - 실제로 파트너 카드에서 '먼저 둘러보기' 가 안 보였다.
    바탕을 비우고 테두리와 글씨로만 세운다. */
-.btn.onDark{background:transparent;color:var(--n100);border-color:rgba(240,237,231,.38);font-weight:700}
-.btn.onDark:hover{background:rgba(240,237,231,.10);border-color:rgba(240,237,231,.62)}
+.btn.onDark{background:transparent;color:var(--n100);border-color:rgba(240,239,245,.38);font-weight:700}
+.btn.onDark:hover{background:rgba(240,239,245,.10);border-color:rgba(240,239,245,.62)}
 
 /* 첫 화면 상단바의 문 한 짝.
    두 짝을 나란히 두니 어느 쪽으로 들어가야 하는지가 오히려 흐려졌다 - 파트너는
@@ -199,7 +199,7 @@ body.mo .back::after{content:"";position:absolute;left:0;right:0;top:-9px;bottom
    둘 다 인디고면 '내 조건 걸어두기' 와 '파트너로 시작하기' 가 한눈에 구분되지
    않는다. 나란히 놓이는 자리도 있어서 어느 쪽이 내 문인지 헷갈린다.
 
-   전에는 clay(#C9A87C) 로 채웠다. 달라 보이기는 했는데 **색 가족이 하나 더**
+   전에는 clay(#F0A878) 로 채웠다. 달라 보이기는 했는데 **색 가족이 하나 더**
    생겼다 - 인디고·남색·clay 셋이 한 화면에 선다. 그리고 이 버튼이 서는 자리는
    둘 다 짙은 남색 띠 위다. 짙은 띠 위의 주 버튼은 **흰색**이 맞다.
    흰 버튼은 남색을 '뒤집은 구간' 으로 읽히게 하고, clay 는 아이브로
@@ -220,9 +220,9 @@ body.mo .back::after{content:"";position:absolute;left:0;right:0;top:-9px;bottom
    눌리지 않는 것이 아니라 아예 안 보였다. 3.3:1 로 올린다. */
 .btn[disabled]{background:var(--n100)!important;color:var(--off)!important;box-shadow:none!important;cursor:not-allowed;border-color:var(--n100)!important}
 
-.chip{border:1.5px solid var(--n300);background:var(--white);color:var(--n700);border-radius:var(--r-sm);
+.chip{border:1.5px solid var(--n200);background:var(--white);color:var(--n700);border-radius:var(--r-full);
   padding:10px 16px;font-size:13.5px;transition:all .12s}
-.chip:hover{border-color:var(--ind300)}
+.chip:hover{border-color:var(--ind200);background:var(--ind50)}
 .chip.on{background:var(--ind);border-color:var(--ind);color:#fff;font-weight:700}
 body.mo .chip{padding:12px 16px;font-size:13.5px;line-height:1.25}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
@@ -501,7 +501,7 @@ body.mo .grid2.mo1{grid-template-columns:1fr;gap:30px}
 .chk .txt{font-size:13.5px;line-height:1.6;color:var(--n700)}
 .chk .txt small{display:block;margin-top:4px;font-size:12.5px;color:var(--n500);line-height:1.45}
 
-h1.t{margin:0;font-weight:800;letter-spacing:-.052em;line-height:1.32;text-wrap:balance}
+h1.t{margin:0;font-weight:760;letter-spacing:-.045em;line-height:1.32;text-wrap:balance}
 .sub{margin:8px 0 0;font-size:13.5px;color:var(--n500);line-height:1.6}
 .muted{color:var(--n500)}
 .kv{display:flex;font-size:13.5px;line-height:1.6;margin-bottom:6px}
@@ -553,7 +553,7 @@ body.mo .foot{padding:14px 24px 24px}
 #toast.show{opacity:1;transform:translate(-50%,0)}
 
 /* 모달 */
-.modal{position:absolute;inset:0;z-index:60;background:rgba(31,29,26,.42);display:flex;align-items:center;justify-content:center;padding:24px}
+.modal{position:absolute;inset:0;z-index:60;background:rgba(29,28,42,.42);display:flex;align-items:center;justify-content:center;padding:24px}
 body.mo .modal{align-items:flex-end;padding:0}
 .modal .box{background:var(--white);border-radius:var(--r-lg);padding:28px;width:100%;max-width:440px;box-shadow:var(--sh3)}
 body.mo .modal .box{border-radius:var(--r-lg) var(--r-lg) 0 0;max-width:none}
@@ -570,7 +570,7 @@ body.mo .modal .box{border-radius:var(--r-lg) var(--r-lg) 0 0;max-width:none}
 .empty{text-align:center;padding:52px 30px;border:1px dashed var(--n300);border-radius:var(--r-lg);background:rgba(255,255,255,.6)}
 
 /* 비버 안내 박스 */
-.beaverbox{display:flex;align-items:center;gap:14px;padding:16px 18px;background:rgba(245,237,226,.92);border-radius:var(--r-lg)}
+.beaverbox{display:flex;align-items:center;gap:14px;padding:16px 18px;background:rgba(246,246,255,.92);border-radius:var(--r-lg)}
 .beaverbox svg{width:58px;flex:none}
 .beaverbox p{margin:0;font-size:13.5px;line-height:1.6;color:var(--n700)}
 
@@ -591,7 +591,7 @@ body.mo .modal .box{border-radius:var(--r-lg) var(--r-lg) 0 0;max-width:none}
 
 /* 카드 - 헤어라인 + 상단 하이라이트 */
 .card{border-color:var(--hair);box-shadow:var(--sh1);transition:box-shadow .18s ease,border-color .18s ease,transform .18s cubic-bezier(.2,.8,.2,1)}
-.card.hi{border-color:rgba(61,63,143,.45);box-shadow:var(--sh2)}
+.card.hi{border-color:rgba(79,82,209,.45);box-shadow:var(--sh2)}
 /* 들리는 높이는 아래 .card.clickable:hover 한 곳에서만 정한다.
    여기에 -3px, 위에 -2px, 아래에 -2px 이 각각 적혀 있어서 카드냐 아니냐에 따라
    들리는 양이 달랐다 - 같은 손짓에 화면이 다르게 답하면 그게 '만든 티' 다. */
@@ -608,7 +608,7 @@ body.mo .modal .box{border-radius:var(--r-lg) var(--r-lg) 0 0;max-width:none}
 
 /* 입력 */
 .inp{transition:border-color .14s ease,box-shadow .14s ease}
-.inp:focus{border-color:var(--ind);box-shadow:0 0 0 3px rgba(61,63,143,.12)}
+.inp:focus{border-color:var(--ind);box-shadow:0 0 0 3px rgba(79,82,209,.12)}
 
 /* 접근성 포커스 */
 :focus-visible{outline:2px solid var(--ind);outline-offset:2px;border-radius:4px}
@@ -677,7 +677,7 @@ body::after{
   content:''; position:absolute; inset:0; pointer-events:none; opacity:0;
   transition:opacity var(--t-mid) ease;
   background:radial-gradient(380px circle at var(--mx,50%) var(--my,0%),
-             rgba(61,63,143,.09), transparent 62%);
+             rgba(79,82,209,.09), transparent 62%);
 }
 .card:hover::before{opacity:1}
 .card.clickable:hover{transform:translateY(-2px);box-shadow:var(--sh2)}
@@ -729,7 +729,7 @@ body::after{
 }
 /* 마우스로 찍었을 때만 테두리를 지운다. 그냥 outline:none 을 두면
    바로 위에서 준 초점 링까지 같이 지워져, 키보드로는 어디에 있는지 알 수 없다. */
-.inp:focus{border-color:var(--ind);box-shadow:0 0 0 3px rgba(61,63,143,.12)}
+.inp:focus{border-color:var(--ind);box-shadow:0 0 0 3px rgba(79,82,209,.12)}
 .inp:focus:not(:focus-visible){outline:none}
 
 /* ── 움직임을 줄이도록 설정한 사람에게는 움직이지 않는다 ── */
@@ -744,7 +744,7 @@ body::after{
    세 층으로 나눈다 - 주인공 / 보통 / 배경. */
 
 /* 주인공: 왼쪽에 색 기둥을 세워 시선을 잡는다 */
-.card.hi{position:relative;border-color:rgba(61,63,143,.34)}
+.card.hi{position:relative;border-color:rgba(79,82,209,.34)}
 .card.hi::after{
   content:''; position:absolute; left:0; top:0; bottom:0; width:3px;
   background:linear-gradient(180deg,var(--ind),var(--ind300));
@@ -830,7 +830,7 @@ table tbody tr:hover{background:var(--ind50)}
 .empty{position:relative;overflow:hidden}
 .empty::before{
   content:''; position:absolute; inset:0; pointer-events:none;
-  background:radial-gradient(420px circle at 50% 0%, rgba(61,63,143,.05), transparent 70%);
+  background:radial-gradient(420px circle at 50% 0%, rgba(79,82,209,.05), transparent 70%);
 }
 
 
@@ -838,14 +838,14 @@ table tbody tr:hover{background:var(--ind50)}
 
 /* ── 타입: 제목이 제목처럼 ──
    Pretendard 는 가변폰트다(45~920). 800 에서 멈출 이유가 없다. */
-h1.t{font-weight:860;letter-spacing:-.052em;line-height:1.18}
+h1.t{font-weight:760;letter-spacing:-.045em;line-height:1.2}
 h1.t + .sub, .sub{font-size:15px;line-height:1.75;color:var(--n500)}
 
 /* 화면 이름표 - 짧은 선 하나로는 라벨로 안 읽힌다 */
 .eyebrow{
-  font-size:11px;font-weight:800;letter-spacing:.14em;color:var(--clay700);
+  font-size:11px;font-weight:700;letter-spacing:.1em;color:var(--clay700);
   background:var(--clay100);border:1px solid var(--clay200);
-  padding:6px 12px 6px 10px;border-radius:var(--r-xs);
+  padding:6px 12px 6px 10px;border-radius:var(--r-full);
 }
 .eyebrow::before{width:4px;height:4px;border-radius:var(--r-full);background:var(--clay700)}
 
@@ -1051,13 +1051,34 @@ body.mo .vcard .vbtn{width:100%;margin-top:10px}
   .hero{grid-template-columns:minmax(0,1.04fr) minmax(0,.76fr) minmax(0,.82fr)}
   .hero > .heroSide{grid-column:auto}
 }
+/* ── 첫 화면의 작은 장식 셋 ── (2026-10-01 '귀엽지만 세련되게')
+   · 베타 알약: 베이지 상자 대신 흰 알약에 복숭아 점 하나. 말은 그대로다.
+   · 강조어: 형광펜 밑줄을 걷었다. 2010년대 랜딩의 상징 같은 장식이라
+     화면 전체를 그 시절로 끌고 갔다. 색 하나로 충분하다.
+   · 비버 자리: 연보라·복숭아 두 동그라미가 살짝 어긋나 겹친다. */
+.beta{display:inline-flex;align-items:center;gap:8px;padding:7px 14px 7px 10px;border-radius:var(--r-full);
+  background:var(--white);border:1px solid var(--n200);box-shadow:var(--sh0);
+  font-size:12.5px;font-weight:600;color:var(--n700);white-space:nowrap}
+.beta::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--clay);
+  box-shadow:0 0 0 3px var(--clay100);flex:none}
+.beta b{font-weight:700;color:var(--ind);letter-spacing:-.01em}
+.accentWord{color:var(--ind)}
+.blob{position:absolute;bottom:4%;left:50%;transform:translateX(-50%);width:min(400px,90%);aspect-ratio:1;pointer-events:none}
+.blob::before,.blob::after{content:"";position:absolute;border-radius:50%}
+.blob::before{inset:0;background:radial-gradient(circle at 40% 38%,var(--ind100) 0%,rgba(237,237,254,.7) 52%,rgba(237,237,254,0) 72%)}
+.blob::after{width:46%;aspect-ratio:1;right:4%;top:6%;background:radial-gradient(circle,var(--clay100) 0%,rgba(255,243,234,.85) 45%,rgba(255,243,234,0) 72%)}
 .heroBand{width:100%;max-width:min(1760px,94vw);margin:0 auto;padding:0 clamp(32px,3.4vw,76px)}
 
 /* 파트너 카드 - 넓은 화면에서 가장 먼저 눈에 들어와야 하는 것 */
-.pcard{background:var(--navy900);color:var(--n100);border-radius:var(--r-lg);
-  padding:clamp(22px,1.6vw,28px);display:flex;flex-direction:column;gap:12px;box-shadow:var(--sh2)}
+.pcard{background:linear-gradient(160deg,var(--navy800) 0%,var(--navy900) 70%);color:var(--n100);
+  border-radius:var(--r-lg);position:relative;overflow:hidden;
+  padding:clamp(24px,1.8vw,32px);display:flex;flex-direction:column;gap:12px;box-shadow:var(--sh3)}
+/* 모서리에 번지는 빛 하나 - 짙은 상자가 '판' 이 아니라 '창' 으로 읽힌다 */
+.pcard::before{content:"";position:absolute;right:-60px;top:-70px;width:220px;height:220px;border-radius:50%;
+  background:radial-gradient(circle,rgba(99,102,214,.45) 0%,transparent 70%);pointer-events:none}
+.pcard > *{position:relative}
 .pcard .k{font-size:11px;font-weight:700;letter-spacing:.1em;color:var(--clay200)}
-.pcard .h{font-size:clamp(16px,1.2vw,21px);font-weight:800;letter-spacing:-.03em;color:#fff;line-height:1.4}
+.pcard .h{font-size:clamp(17px,1.25vw,22px);font-weight:720;letter-spacing:-.03em;color:#fff;line-height:1.4}
 .pcard .d{margin:0;font-size:13.5px;line-height:1.75;color:var(--navy300)}
 .pcard .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:2px}
 
@@ -1497,7 +1518,7 @@ p,li,dd,.sub,.lines,.opt{line-break:strict;overflow-wrap:break-word}
      본문 script 가 1MB 라, 이 조각이 없으면 그것을 다 받을 때까지 흰 화면이다.
      class 를 쓰지 않고 style 로만 쓴다 - 스타일시트를 기다리지 않게. -->
 <div id="boot" style="position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;
-  align-items:center;justify-content:center;gap:18px;background:#F5EFE6;
+  align-items:center;justify-content:center;gap:18px;background:#FAFAFE;
   font-family:-apple-system,'Malgun Gothic',sans-serif;transition:opacity .28s ease">
   <!-- 첫 화면도 같은 표시를 쓴다. 자바스크립트가 아직 안 돌아 bkLoader() 를 못 부르므로
        같은 모양을 손으로 적어 둔다 - 클래스와 키프레임은 위 <style> 에 이미 있다.
@@ -2170,8 +2191,8 @@ const isMo = () => S.device==='mo';
 
 /* ══════════ 워드마크 시안 (한글 4 · 영문 3) ══════════
    공통 원칙: 앞에 심볼을 붙이지 않는다. 노크의 힘은 글자에서 만든다. */
-const WM_INK = m => m==="dark" ? "#FFFFFF" : m==="mono" ? "#1F1D1A" : "#3D3F8F";
-const WM_SUB = m => m==="dark" ? "rgba(255,255,255,.5)" : m==="mono" ? "rgba(31,29,26,.45)" : "rgba(61,63,143,.42)";
+const WM_INK = m => m==="dark" ? "#FFFFFF" : m==="mono" ? "#1D1C2A" : "#4F52D1";
+const WM_SUB = m => m==="dark" ? "rgba(255,255,255,.5)" : m==="mono" ? "rgba(29,28,42,.45)" : "rgba(79,82,209,.42)";
 
 /* A. 잔향 - 두드린 뒤 퍼지는 울림을 도트 3개로 */
 function wmEcho(h,m){ const ink=WM_INK(m), ec=WM_SUB(m), d=Math.max(2.4,h*.115);
@@ -2184,7 +2205,7 @@ function wmEcho(h,m){ const ink=WM_INK(m), ec=WM_SUB(m), d=Math.max(2.4,h*.115);
     </span></span>`;}
 
 /* B. 강세 - 이름의 동사부(노크)에 무게를 싣는다 */
-function wmStress(h,m){ const ink=WM_INK(m), sub=m==="dark"?"rgba(255,255,255,.62)":m==="mono"?"rgba(31,29,26,.55)":"rgba(61,63,143,.55)";
+function wmStress(h,m){ const ink=WM_INK(m), sub=m==="dark"?"rgba(255,255,255,.62)":m==="mono"?"rgba(29,28,42,.55)":"rgba(79,82,209,.55)";
   return `<b style="font-size:${h*.86}px;letter-spacing:-.052em;line-height:1;display:inline-block">
     <span style="font-weight:500;color:${sub}">비버</span><span style="font-weight:800;color:${ink}">노크</span></b>`;}
 
@@ -2226,15 +2247,15 @@ const WM_EN = [
 /* ══════════ 워드마크 색상 규칙 (한글·영문 공통) ══════════
    「비버 / BEAVER」 = 연한 인디고 · 「노크 / KNOCK」 = 진한 인디고.
    이름의 동사부에 색과 무게를 함께 싣는다. */
-const WM_DEEP = m => m==="dark" ? "#FFFFFF"              : m==="mono" ? "#1F1D1A"              : "var(--ind700)";
+const WM_DEEP = m => m==="dark" ? "#FFFFFF"              : m==="mono" ? "#1D1C2A"              : "var(--ind700)";
 /* 「비버」는 오래 #9698CE 였다. 밝은 바탕에서 2.36~2.73:1 로, 이름의 앞 절반이
    꺼진 글씨처럼 보였다 - 제품 전 화면에서 가장 여러 번 반복되던 대비 미달이다.
    로고가 실제로 얹히는 바탕(흰색 · 따뜻한 기울기의 위아래 · n50 · ind50 · n100)을
    전부 재보니 4.5:1 을 다 넘기는 값은 --ind400 뿐이었다. 한 칸 밝은 #6568B7 은
-   따뜻한 바탕 아래쪽(#F5EDE2)에서 4.29 로 떨어진다.
+   따뜻한 바탕 아래쪽(#FFF3EA)에서 4.29 로 떨어진다.
    두 톤 차이는 4.19배에서 2.09배로 줄지만, 읽히지 않는 두 톤은 두 톤이 아니다. */
-const WM_LITE = m => m==="dark" ? "rgba(255,255,255,.58)": m==="mono" ? "rgba(31,29,26,.46)"   : "var(--ind400)";
-const WM_EDGE = m => m==="dark" ? "rgba(255,255,255,.62)": m==="mono" ? "rgba(31,29,26,.5)"    : "#6E70BC";
+const WM_LITE = m => m==="dark" ? "rgba(255,255,255,.58)": m==="mono" ? "rgba(29,28,42,.46)"   : "var(--ind400)";
+const WM_EDGE = m => m==="dark" ? "rgba(255,255,255,.62)": m==="mono" ? "rgba(29,28,42,.5)"    : "#6366D6";
 
 /* 한글 - 모서리 브래킷(문틀) + 노크 타격선 */
 function wmDoor(h, m, o){
@@ -2275,7 +2296,7 @@ const BURST_12 = "M50 2 L57.5 19 L74 9 L70 28 L89 26 L77 41 L96 50 L77 59 L89 74
 function wmImpact(h, m, kind, o){
   o = o || {};
   const deep = WM_DEEP(m), lite = WM_LITE(m), edge = WM_EDGE(m);
-  const soft = m==="dark" ? "rgba(255,255,255,.18)" : m==="mono" ? "rgba(31,29,26,.13)" : "rgba(110,112,188,.20)";
+  const soft = m==="dark" ? "rgba(255,255,255,.18)" : m==="mono" ? "rgba(29,28,42,.13)" : "rgba(110,112,188,.20)";
   const fs = h*.86, bw = Math.max(1.6,h*.06), bl = h*.34, pad = h*.34;
   let behind = "", front = "", tilt = "";
 
@@ -2366,7 +2387,7 @@ function bkLoader(size, mode){
    opt: {h, mode, partner, en(영문 병기), tag(태그라인), stack(세로)} */
 function logoLockup(opt){
   const o = opt||{}, h = o.h||26, m = o.mode||"light";
-  const sub = m==="dark" ? "rgba(255,255,255,.62)" : m==="mono" ? "rgba(31,29,26,.5)" : "var(--n500)";
+  const sub = m==="dark" ? "rgba(255,255,255,.62)" : m==="mono" ? "rgba(29,28,42,.5)" : "var(--n500)";
   const rule = m==="dark" ? "rgba(255,255,255,.28)" : "var(--n300)";
   /* 태그라인과 '파트너' 는 로고 크기에 비례해 줄어든다. 푸터(h=18)에서는
      7.9px · 8.3px 까지 내려가 한글이 읽히지 않았다 - 영문 부제와 달리 이 둘은
@@ -2415,7 +2436,7 @@ function beaverlyMini(h){ return `<img src="${BEAVERLY_FRONT}" alt=""
   style="height:${h||56}px;width:auto;display:block;flex:none;user-select:none;-webkit-user-drag:none">`;}
 
 const ICON_CHECK = `<svg viewBox="0 0 12 12"><path d="M2 6.5 L5 9.5 L10 3" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-const ICON_PHOTO = `<svg viewBox="0 0 24 24" fill="none" stroke="#6E70BC" stroke-width="1.5"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.6"/><path d="M3 16 L9 11 L14 15 L17 13 L21 16"/></svg>`;
+const ICON_PHOTO = `<svg viewBox="0 0 24 24" fill="none" stroke="#6366D6" stroke-width="1.5"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.6"/><path d="M3 16 L9 11 L14 15 L17 13 L21 16"/></svg>`;
 
 /* ---------- 공통 조각 ---------- */
 /* 모바일 하단 탭바 - 수요자/공급자 각각 */
@@ -3023,7 +3044,7 @@ V['#/'] = () => `
   ${isMo()? `
   <!-- 모바일: 세로. 문구가 먼저, 캐릭터는 남는 공간만 -->
   <div style="flex:none;display:flex;flex-direction:column;align-items:center;text-align:center;gap:14px;padding:20px 24px 0;position:relative;z-index:3">
-    <span class="badge" style="background:var(--clay100);border:1px solid var(--clay200);color:var(--clay700);padding:8px 16px;font-size:12.5px"><b style="font-weight:700;letter-spacing:.02em">Close Beta Service</b> · 서울·경기에서 먼저 시작합니다</span>
+    <span class="beta"><b>Close Beta</b>서울·경기에서 먼저 시작합니다</span>
     <h1 class="t" style="font-size:31px;line-height:1.32">찾아다니지 마세요.<br>조건을 걸어두면<br><span style="color:var(--ind)">문을 두드립니다.</span></h1>
     <p style="margin:0;font-size:13.5px;line-height:1.75;color:var(--n700);max-width:30ch">원하는 집·가게의 조건을 남기면, 맞는 물건이 있는 공인중개사가 직접 연락합니다.</p>
   </div>
@@ -3060,9 +3081,9 @@ V['#/'] = () => `
        넓은 화면으로 오는 사람은 대개 중개사·소유자다 - 그 칸을 먼저 내어준다. -->
   <div class="hero" style="flex:1;min-height:0;position:relative;z-index:2">
     <div style="display:flex;flex-direction:column;align-items:flex-start;gap:20px;padding-bottom:28px">
-      <span class="badge" style="background:var(--clay100);border:1px solid var(--clay200);color:var(--clay700);padding:8px 16px;font-size:12.5px"><b style="font-weight:700;letter-spacing:.02em">Close Beta Service</b> · 서울·경기에서 먼저 시작합니다</span>
+      <span class="beta"><b>Close Beta</b>서울·경기에서 먼저 시작합니다</span>
       <h1 class="t" style="font-size:56px;line-height:1.14;max-width:15ch;text-align:left">
-        찾아다니지 마세요.<br>조건을 걸어두면<br><span style="color:var(--ind);position:relative;display:inline-block">문을 두드립니다.<i style="position:absolute;left:0;right:0;bottom:.06em;height:.14em;background:rgba(201,168,124,.42);border-radius:2px;z-index:-1"></i></span>
+        찾아다니지 마세요.<br>조건을 걸어두면<br><span class="accentWord">문을 두드립니다.</span>
       </h1>
       <p style="margin:0;font-size:16px;line-height:1.75;color:var(--n700);max-width:38ch;text-align:left">
         원하는 집·가게의 조건을 남기면, 맞는 물건이 있는 공인중개사가 직접 연락합니다.</p>
@@ -3072,8 +3093,9 @@ V['#/'] = () => `
       </div>
     </div>
     <div style="position:relative;height:100%;display:flex;align-items:flex-end;justify-content:center;min-height:0">
-      <span style="position:absolute;bottom:6%;left:50%;transform:translateX(-50%);width:min(420px,92%);aspect-ratio:1;border-radius:var(--r-full);
-        background:radial-gradient(circle, rgba(245,237,226,.95) 0%, rgba(245,237,226,.55) 55%, transparent 72%)"></span>
+      <!-- 비버 뒤의 둥근 자리. 연보라와 복숭아 두 색이 겹친 동그라미 하나 -
+           캐릭터가 바닥에 '놓인' 것이 아니라 자기 자리에 '서 있는' 것처럼 보인다. -->
+      <span class="blob" aria-hidden="true"></span>
       <span style="position:relative;z-index:2;padding-bottom:34px">${knockScene(300)}</span>
     </div>
 
@@ -3130,19 +3152,22 @@ ${S.agent ? `
        바탕색을 화면 끝까지 칠하므로 폭이 어긋날 자리가 없다.
        (전에는 가운데 띠에 흰 바탕을 함께 걸어 두어, 화면이 넓으면 양옆으로
         바탕색이 비쳐 나왔다 - 폭이 이상해 보이던 것이 그것이다.) -->
-  <div style="flex:none;position:relative;z-index:3;background:var(--navy900);color:var(--n200);--fc:#B5B1AA">
+  <!-- 바닥글은 밝게 둔다 (2026-10-01). 짙은 남색 띠가 화면 아래 4분의 1을
+       덮고 있어서, 첫 화면에 짙은 덩어리가 둘(파트너 칸 · 바닥글) 섰다.
+       무게는 파트너 칸 하나면 된다 - 바닥글은 조용히 정보만 건넨다. -->
+  <div style="flex:none;position:relative;z-index:3;background:var(--n50);color:var(--n700);border-top:1px solid var(--n100)">
     <div class="heroBand" style="padding-top:22px;padding-bottom:24px;display:flex;flex-direction:column;gap:12px">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap">
-        ${logoLockup({h:18,en:true,tag:true,stack:true,mode:'dark'})}
+        ${logoLockup({h:18,en:true,tag:true,stack:true})}
         <div class="footlinks" style="display:flex;gap:18px;flex-wrap:wrap">
           ${[['#/guide','이용 안내'],['#/faq','자주 묻는 질문'],['#/partner','파트너 안내']]
-            .map(([h,t])=>`<a class="tapx" data-go="${h}" style="font-size:12.5px;color:var(--n300)">${t}</a>`).join('')}
-          <a class="tapx" href="/terms" target="_blank" rel="noopener" style="font-size:12.5px;color:var(--n300)">이용약관</a>
-          <a class="tapx" href="/privacy" target="_blank" rel="noopener" style="font-size:12.5px;color:var(--n300)">개인정보 처리방침</a>
-          <a class="tapx" data-go="#/brand" style="font-size:12.5px;color:var(--n300)">브랜드</a>
+            .map(([h,t])=>`<a class="tapx" data-go="${h}" style="font-size:12.5px;color:var(--n500)">${t}</a>`).join('')}
+          <a class="tapx" href="/terms" target="_blank" rel="noopener" style="font-size:12.5px;color:var(--n500)">이용약관</a>
+          <a class="tapx" href="/privacy" target="_blank" rel="noopener" style="font-size:12.5px;color:var(--n500)">개인정보 처리방침</a>
+          <a class="tapx" data-go="#/brand" style="font-size:12.5px;color:var(--n500)">브랜드</a>
         </div>
       </div>
-      <div style="height:1px;background:rgba(240,237,231,.14)"></div>
+      <div style="height:1px;background:var(--n200)"></div>
       ${bizFooter()}
     </div>
   </div>`}
@@ -3179,8 +3204,8 @@ function bizFooter(){
 function groundSvg(){
   return `<svg viewBox="0 0 1440 120" preserveAspectRatio="none" aria-hidden="true"
     style="position:absolute;left:0;right:0;bottom:0;width:100%;height:${isMo()?58:78}px">
-    <path d="M0 44 Q 300 18 720 38 Q 1100 54 1440 32 L1440 120 L0 120 Z" fill="#F0E6D6"/>
-    <path d="M0 74 Q 360 56 780 70 Q 1120 82 1440 66 L1440 120 L0 120 Z" fill="#E8DCC6"/>
+    <path d="M0 44 Q 300 18 720 38 Q 1100 54 1440 32 L1440 120 L0 120 Z" fill="#EEEEFC"/>
+    <path d="M0 74 Q 360 56 780 70 Q 1120 82 1440 66 L1440 120 L0 120 Z" fill="#E3E3F8"/>
   </svg>`;
 }
 
@@ -3446,7 +3471,7 @@ V['#/kind'] = () => `
               ${w.slots>5?`<span class="badge b-ok" style="font-size:11px">제안 ${w.slots}건</span>`:''}
             </span>
             <span style="font-size:13.5px;line-height:1.6;color:var(--n500)">${w.d}</span></span>
-          <svg viewBox="0 0 24 24" style="width:21px;flex:none" fill="none" stroke="#3D3F8F" stroke-width="2.2" stroke-linecap="round"><path d="M9 5 L16 12 L9 19"/></svg>
+          <svg viewBox="0 0 24 24" style="width:21px;flex:none" fill="none" stroke="#4F52D1" stroke-width="2.2" stroke-linecap="round"><path d="M9 5 L16 12 L9 19"/></svg>
         </button>`).join('')}
       </div>
       <p style="margin:0;font-size:12.5px;line-height:1.75;color:var(--n500)">
@@ -4360,7 +4385,7 @@ function mapScene(level, sel, shop){
       fill="#8B86C4" paint-order="stroke" stroke="rgba(255,255,255,.95)">눌러서 구 고르기</text>`;})() : '';
 
   const incheon = topLevel ? (()=>{ const p=OUT_INCHEON2.map(q=>G(q[0],q[1])); const c=G(126.638,37.468);
-    return `<path d="${d(p)}" fill="#EDEAE4" stroke="#DDD8CE" stroke-width="1" data-act="map-na" data-v="인천광역시" style="cursor:not-allowed"/>
+    return `<path d="${d(p)}" fill="#ECEBF3" stroke="#DCDBE6" stroke-width="1" data-act="map-na" data-v="인천광역시" style="cursor:not-allowed"/>
       <text x="${c[0].toFixed(1)}" y="${c[1].toFixed(1)}" text-anchor="middle" dominant-baseline="central" font-weight="700"
         style="font-size:calc(${z(10)}px / var(--mz,1))" fill="#A9A296">인천</text>
       <text x="${c[0].toFixed(1)}" y="${c[1].toFixed(1)}" text-anchor="middle" dominant-baseline="central"
@@ -5072,15 +5097,15 @@ V['#/done'] = () => `
   <div class="nav pad"><a data-go="#/" style="flex:none">${logoLockup({h:25,tag:!isMo()})}</a><div class="right"><a class="tapx" data-go="#/my" style="font-weight:600">내 조건 확인</a></div></div>
   <div style="flex:1;display:flex;${isMo()?'flex-direction:column;':''}align-items:center;justify-content:center;gap:${isMo()?24:80}px;padding:${isMo()?'10px 26px 26px':'0 76px'}">
     <div style="position:relative;display:flex;align-items:center;justify-content:center;flex:none">
-      <div style="position:absolute;width:${isMo()?240:400}px;height:${isMo()?240:400}px;border-radius:var(--r-full);background:rgba(245,237,226,.92)"></div>
+      <div style="position:absolute;width:${isMo()?240:400}px;height:${isMo()?240:400}px;border-radius:var(--r-full);background:rgba(246,246,255,.92)"></div>
       <span style="position:absolute;left:2%;bottom:2%;z-index:2">${beaverly(isMo()?190:320)}</span>
       <svg viewBox="0 0 300 190" style="width:${isMo()?260:440}px;position:relative" aria-label="문">
-        <ellipse cx="150" cy="180" rx="120" ry="8" fill="#E0CBAC" opacity=".55"/>
+        <ellipse cx="150" cy="180" rx="120" ry="8" fill="#FAD9C0" opacity=".55"/>
         <rect x="186" y="6" width="78" height="170" rx="8" fill="var(--ind700)"/>
-        <rect x="197" y="18" width="56" height="64" rx="5" fill="#3D3F8F"/>
-        <rect x="204" y="26" width="42" height="48" rx="4" fill="#F5EDE2" opacity=".95"/>
-        <rect x="197" y="94" width="56" height="70" rx="5" fill="#3D3F8F"/>
-        <circle cx="195" cy="96" r="4" fill="#C9A87C"/>
+        <rect x="197" y="18" width="56" height="64" rx="5" fill="#4F52D1"/>
+        <rect x="204" y="26" width="42" height="48" rx="4" fill="#FFF3EA" opacity=".95"/>
+        <rect x="197" y="94" width="56" height="70" rx="5" fill="#4F52D1"/>
+        <circle cx="195" cy="96" r="4" fill="#F0A878"/>
         </svg>
     </div>
     <div style="width:${isMo()?'100%':'470px'};display:flex;flex-direction:column;gap:${isMo()?14:20}px;text-align:${isMo()?'center':'left'}">
@@ -5218,11 +5243,11 @@ V['#/inbox'] = () => {
   const card = p => `
     <div class="card ${p.isNew?'hi':''} clickable fade" data-go="#/proposal/${p.id}" style="overflow:hidden;${p.read&&!p.isNew?'opacity:.85':''}">
       <div style="height:${isMo()?128:150}px;background:${p.photos?'var(--ind100)':'var(--n100)'};display:flex;align-items:center;justify-content:center;position:relative">
-        ${p.photos? `<svg viewBox="0 0 24 24" style="width:26px" fill="none" stroke="#6E70BC" stroke-width="1.5"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.6"/><path d="M3 16 L9 11 L14 15 L17 13 L21 16"/></svg>`
+        ${p.photos? `<svg viewBox="0 0 24 24" style="width:26px" fill="none" stroke="#6366D6" stroke-width="1.5"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.6"/><path d="M3 16 L9 11 L14 15 L17 13 L21 16"/></svg>`
           : `<span style="font-size:11px;color:var(--n500)">사진 미첨부</span>`}
         ${p.isNew? `<span class="badge b-ind" style="position:absolute;left:12px;top:12px;background:var(--ind);color:#fff">NEW</span>`
           : `<span class="badge b-mute" style="position:absolute;left:12px;top:12px">읽음</span>`}
-        ${p.photos? `<span style="position:absolute;right:12px;bottom:10px;background:rgba(12,17,41,.62);color:#fff;font-size:11px;font-weight:700;border-radius:var(--r-full);padding:4px 10px">사진 ${p.photos}장</span>`:''}
+        ${p.photos? `<span style="position:absolute;right:12px;bottom:10px;background:rgba(21,22,58,.62);color:#fff;font-size:11px;font-weight:700;border-radius:var(--r-full);padding:4px 10px">사진 ${p.photos}장</span>`:''}
       </div>
       <div style="padding:16px 18px;display:flex;flex-direction:column;gap:10px">
         <div><b style="display:block;font-size:15px;font-weight:700;letter-spacing:-.02em">${esc(p.title)} ${demoTag(p,'vertical-align:middle')}</b>
@@ -5327,8 +5352,8 @@ V['#/proposal'] = (id) => { const p=S.props.find(x=>x.id===id); if(!p) return V[
   <div class="pad" style="flex:1;padding-top:${isMo()?0:28}px;display:flex;gap:32px;max-width:${isMo()?'none':'1180px'};margin:0 auto;width:100%;${isMo()?'flex-direction:column;padding-left:0;padding-right:0':''}">
     <div style="flex:none;width:${isMo()?'100%':'520px'};display:flex;flex-direction:column;gap:12px">
       <div style="height:${isMo()?200:360}px;${isMo()?'':'border-radius:var(--r-lg);'}background:${p.photos?'var(--ind100)':'var(--n100)'};display:flex;align-items:center;justify-content:center;position:relative">
-        ${p.photos? `<svg viewBox="0 0 24 24" style="width:38px" fill="none" stroke="#6E70BC" stroke-width="1.4"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.6"/><path d="M3 16 L9 11 L14 15 L17 13 L21 16"/></svg>
-          <span style="position:absolute;right:14px;bottom:12px;background:rgba(12,17,41,.62);color:#fff;font-size:11px;font-weight:700;border-radius:var(--r-full);padding:4px 12px" class="num">1 / ${p.photos}</span>`
+        ${p.photos? `<svg viewBox="0 0 24 24" style="width:38px" fill="none" stroke="#6366D6" stroke-width="1.4"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.6"/><path d="M3 16 L9 11 L14 15 L17 13 L21 16"/></svg>
+          <span style="position:absolute;right:14px;bottom:12px;background:rgba(21,22,58,.62);color:#fff;font-size:11px;font-weight:700;border-radius:var(--r-full);padding:4px 12px" class="num">1 / ${p.photos}</span>`
         : `<span style="font-size:13.5px;color:var(--n500)">사진 미첨부</span>`}
       </div>
       ${isMo()?'':`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
@@ -5379,12 +5404,12 @@ V['#/connect'] = (id) => { const p=S.props.find(x=>x.id===id); if(!p) return V['
   <div class="nav solid pad"><a data-go="#/" style="flex:none">${logoLockup({h:25,tag:!isMo()})}</a><div class="right"><a data-go="#/inbox" style="font-weight:600">제안함</a></div></div>
   <div style="flex:1;display:flex;${isMo()?'flex-direction:column;':''}align-items:center;justify-content:center;gap:${isMo()?20:80}px;padding:${isMo()?'10px 26px 26px':'0 76px'}">
     <div style="position:relative;display:flex;align-items:center;justify-content:center;flex:none">
-      <div style="position:absolute;width:${isMo()?230:390}px;height:${isMo()?230:390}px;border-radius:var(--r-full);background:rgba(245,237,226,.95)"></div>
+      <div style="position:absolute;width:${isMo()?230:390}px;height:${isMo()?230:390}px;border-radius:var(--r-full);background:rgba(246,246,255,.95)"></div>
       <span style="position:absolute;left:2%;bottom:2%;z-index:2">${beaverly(isMo()?185:310)}</span>
       <svg viewBox="0 0 300 190" style="width:${isMo()?250:420}px;position:relative">
-        <ellipse cx="150" cy="180" rx="120" ry="8" fill="#E0CBAC" opacity=".55"/>
-        <rect x="186" y="6" width="78" height="170" rx="8" fill="#23255C"/>
-        <path d="M186 20 L120 180 L230 180 L230 20 Z" fill="#F5EDE2" opacity=".55"/>
+        <ellipse cx="150" cy="180" rx="120" ry="8" fill="#FAD9C0" opacity=".55"/>
+        <rect x="186" y="6" width="78" height="170" rx="8" fill="#2F3192"/>
+        <path d="M186 20 L120 180 L230 180 L230 20 Z" fill="#FFF3EA" opacity=".55"/>
         </svg>
     </div>
     <div style="width:${isMo()?'100%':'460px'};display:flex;flex-direction:column;gap:16px;text-align:${isMo()?'center':'left'}">
@@ -5494,16 +5519,18 @@ V['#/partner'] = () => `
   <div class="pad" style="flex:1;display:flex;align-items:center;gap:40px">
    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:24px;max-width:${isMo()?'none':'820px'}">
     <span style="align-self:flex-start;font-size:12.5px;font-weight:700;color:var(--navy300);border:1px solid var(--navy600);border-radius:var(--r-full);padding:8px 18px"><b style="font-weight:700;letter-spacing:.02em">Close Beta Service</b> · 서울·경기에서 먼저 시작합니다</span>
-    <h1 class="t" style="font-size:${isMo()?25:31}px;color:#fff;line-height:1.28;max-width:20ch">서울·경기에서 집·가게를 구하는 손님이<br><span style="color:var(--ind300)">조건을 걸어두고</span> 기다리고 있습니다</h1>
+    <h1 class="t" style="font-size:${isMo()?25:31}px;color:#fff;line-height:1.28;max-width:20ch">서울·경기에서 집·가게를 구하는 손님이<br><span style="color:var(--ind-dark)">조건을 걸어두고</span> 기다리고 있습니다</h1>
     <p style="margin:0;font-size:${isMo()?13.5:16}px;line-height:1.75;color:var(--navy300)"><b style="color:var(--n100)">제안을 보내는 데 드는 비용은 없습니다. 매물을 올리실 필요도 없습니다.</b><br class="mbr"> 네이버·직방에 올리는 광고비와 다릅니다 - 이미 원하는 게 정해진 손님입니다.</p>
     <div style="display:flex;align-items:center;gap:18px;${isMo()?'flex-direction:column;align-items:stretch':''}">
-      <button class="btn partner ${isMo()?'blk':''}" data-go="#/partner/join">파트너로 가입하기</button>
-      <a class="tapx" data-go="#/partner/demands" style="font-size:13.5px;font-weight:700;color:var(--ind300);text-decoration:underline;text-underline-offset:3px;padding:6px 2px">먼저 둘러보기</a>
-      <span style="font-size:12.5px;line-height:1.7;color:var(--navy300)">공인중개사 · 소유자(개인 · 법인 · 신탁 위탁자) 모두 가입하실 수 있습니다 ·<br class="mbr"> 손님에게 제안을 보내는 데는 과금하지 않습니다</span>
+      <!-- 단추와 글 링크는 접히지 않는다. 1100px 에서 '파트너로 / 가입하기' 로
+           두 줄이 되어 단추가 찌그러졌다 - 줄어드는 것은 옆의 설명글이 맡는다. -->
+      <button class="btn partner ${isMo()?'blk':''}" data-go="#/partner/join" style="flex:none;white-space:nowrap">파트너로 가입하기</button>
+      <a class="tapx" data-go="#/partner/demands" style="flex:none;white-space:nowrap;font-size:13.5px;font-weight:700;color:var(--ind-dark);text-decoration:underline;text-underline-offset:3px;padding:6px 2px">먼저 둘러보기</a>
+      <span style="flex:1;min-width:0;font-size:12.5px;line-height:1.7;color:var(--navy300)">공인중개사 · 소유자(개인 · 법인 · 신탁 위탁자) 모두 가입하실 수 있습니다 ·<br class="mbr"> 손님에게 제안을 보내는 데는 과금하지 않습니다</span>
     </div>
    </div>
    ${isMo()?'':`<div style="flex:none;position:relative;display:flex;align-items:center;justify-content:center">
-     <div style="position:absolute;width:340px;height:340px;border-radius:var(--r-full);background:radial-gradient(circle,rgba(233,233,247,.18) 0%,rgba(110,112,188,.10) 55%,transparent 72%)"></div>
+     <div style="position:absolute;width:340px;height:340px;border-radius:var(--r-full);background:radial-gradient(circle,rgba(163,165,242,.22) 0%,rgba(99,102,214,.12) 55%,transparent 72%)"></div>
      <span style="position:relative">${beaverly(360)}</span>
    </div>`}
   </div>
@@ -5602,7 +5629,7 @@ V['#/partner/demands'] = () => {
           <span style="font-size:12.5px;color:var(--n500)">등록 ${esc(d.at)} · 입력 ${d.pct}%</span>
           ${d.locked? `<button class="btn pri sm" data-go="#/partner/verify">자격 인증하고 열기</button>`
             : d.mine? `<button class="btn sm" data-go="#/partner/proposals" style="background:var(--n100);color:var(--n500)">제안함 · 열람됨</button>`
-            : d.slotsLeft===0? `<span class="btn sm" style="background:var(--n100);color:#C9C4BB">제안 마감</span>`
+            : d.slotsLeft===0? `<span class="btn sm" style="background:var(--n100);color:var(--off)">제안 마감</span>`
             : `<button class="btn pri sm" data-go="#/partner/demand/${d.id}">자세히 보기</button>`}
         </div>
       </div>`).join('')}
@@ -5640,7 +5667,7 @@ V['#/partner/demand'] = (id) => { const d=S.demands.find(x=>x.id===id); if(!d) r
       ${d.det.map(([k,v])=>`<div class="kv"><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}
       <p style="margin:8px 0 0;font-size:12.5px;color:var(--n500)">미입력 항목은 표시하지 않습니다 - 추측하지 마세요.</p>
     </div>
-    ${d.memo? `<div class="card pad" style="background:var(--ind50);border:1.8px solid rgba(61,63,143,.35)">
+    ${d.memo? `<div class="card pad" style="background:var(--ind50);border:1.8px solid rgba(79,82,209,.35)">
       <span class="sect">손님이 직접 쓴 사정</span>
       <p style="margin:0;font-size:${isMo()?15:16}px;font-weight:500;line-height:1.75">"${esc(d.memo)}"</p></div>`:''}
     <div class="card pad">
@@ -5884,7 +5911,7 @@ V["#/partner/join"] = () => {
       ${JOIN_ROLES.map(r=>`<button class="card clickable" data-act="j-role" data-v="${r.k}" style="padding:${isMo()?'20px':'24px 26px'};text-align:left;display:flex;justify-content:space-between;align-items:center;gap:14px">
         <span><b style="display:block;font-size:16px;font-weight:700;letter-spacing:-.03em;margin-bottom:4px">${r.t}</b>
         <span style="font-size:13.5px;color:var(--n500)">${r.d}</span></span>
-        <svg viewBox="0 0 24 24" style="width:21px;flex:none" fill="none" stroke="#3D3F8F" stroke-width="2.2" stroke-linecap="round"><path d="M9 5 L16 12 L9 19"/></svg>
+        <svg viewBox="0 0 24 24" style="width:21px;flex:none" fill="none" stroke="#4F52D1" stroke-width="2.2" stroke-linecap="round"><path d="M9 5 L16 12 L9 19"/></svg>
       </button>`).join('')}
     </div>`;
   if(step===2){
@@ -6164,7 +6191,7 @@ V["#/partner/stats"] = () => {
   const selected = P.filter(p=>p.status==='selected').length;
   const vr = sent? Math.round(viewed/sent*100) : 0;
   const sr = viewed? Math.round(selected/viewed*100) : 0;
-  const tile = (k,v,sub,avg,main) => `<div class="card" style="padding:16px 18px;${main?'border-color:rgba(61,63,143,.4);background:rgba(245,245,252,.6)':''}">
+  const tile = (k,v,sub,avg,main) => `<div class="card" style="padding:16px 18px;${main?'border-color:rgba(79,82,209,.4);background:rgba(245,245,252,.6)':''}">
     <span style="display:block;font-size:12.5px;font-weight:700;color:var(--n500)">${k}</span>
     <span class="num" style="font-size:25px;font-weight:800;letter-spacing:-.02em;${main?'color:var(--ind)':''}">${v}</span>
     ${sub?`<span style="display:block;font-size:11px;font-weight:700;color:${avg==null?'var(--n500)':avg?'var(--ok)':'var(--warn)'}">${sub}</span>`:''}</div>`;
@@ -6773,7 +6800,7 @@ V["#/brand"] = () => {
       <div class="card pad" style="margin-top:14px">
         <span class="sect">색 규칙 - 한글·영문 공통</span>
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px">
-          ${[["비버 / BEAVER","var(--ind400)","중간 인디고"],["노크 / KNOCK","var(--ind700)","진한 인디고"],["브래킷","#6E70BC","연한 인디고 · 문틀은 물러선다"]]
+          ${[["비버 / BEAVER","var(--ind400)","중간 인디고"],["노크 / KNOCK","var(--ind700)","진한 인디고"],["브래킷","#6366D6","연한 인디고 · 문틀은 물러선다"]]
             .map(([k,hex,label])=>`<span style="display:flex;align-items:center;gap:10px;background:var(--n50);padding:10px 14px">
               <i style="width:18px;height:18px;border-radius:var(--r-xs);background:${hex};flex:none"></i>
               <span style="font-size:12.5px"><b style="font-weight:800">${k}</b> <span class="num" style="color:var(--n500)">${hex}</span> · ${label}</span></span>`).join("")}
@@ -6889,7 +6916,7 @@ V["#/brand"] = () => {
       <div class="card pad">
         <span class="sect">여백 (Clear space)</span>
         <div style="display:flex;align-items:center;justify-content:center;padding:12px 0">
-          <span style="position:relative;display:inline-flex;padding:24px;border:1.4px dashed rgba(61,63,143,.4);border-radius:var(--r-sm)">
+          <span style="position:relative;display:inline-flex;padding:24px;border:1.4px dashed rgba(79,82,209,.4);border-radius:var(--r-sm)">
             ${logoLockup({h:30})}
             <span style="position:absolute;left:7px;top:50%;transform:translateY(-50%);font-size:11px;font-weight:700;color:var(--ind)">글자높이</span>
           </span>
@@ -6921,7 +6948,7 @@ V["#/brand"] = () => {
     </div>
 
     <p style="margin:0;font-size:12.5px;line-height:1.75;color:var(--n500)">
-      비버노크 로고 시스템 v1.1 · 인디고 500 #3D3F8F · Pretendard 800 / 자간 −5.2% · 심볼(문 아이콘) 방향은 폐기</p>
+      비버노크 로고 시스템 v1.1 · 인디고 500 #4F52D1 · Pretendard 800 / 자간 −5.2% · 심볼(문 아이콘) 방향은 폐기</p>
   </div>
 </div>`;};
 

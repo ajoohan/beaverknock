@@ -1,8 +1,10 @@
 /* 본인확인 — 포트원 V2.
  *
- * 다날(휴대폰 본인인증)과 KG이니시스(통합 본인인증) 중 **먼저 심사가 끝나는
- * 쪽으로 연다.** 코드는 어느 쪽인지 모른다 - PORTONE_CHANNEL_KEY 만 바꾸면 된다.
- * 포트원 V2 가 PG 차이를 흡수해 verifiedCustomer 로 같은 모양을 돌려주기 때문이다.
+ * 다날(휴대폰 문자 인증)과 KG이니시스(통합 본인인증 - 카카오·네이버·토스·PASS)
+ * **둘 다 연다** (2026-10-06, 둘 다 실계약 완료). 고르는 것은 손님이다 -
+ * 앱 간편인증이 편한 분이 있고, 앱이 없어 문자가 편한 분이 있다.
+ * 결과 확인(POST)은 어느 쪽이든 같다. 포트원 V2 가 PG 차이를 흡수해
+ * verifiedCustomer 로 같은 모양을 돌려주기 때문이다.
  * ⚠ 다날은 테스트 모드를 지원하지 않는다. 실채널 키를 넣는 그 순간이 첫 시험이다.
  *
  * 지금까지는 아무 숫자 여섯 자리나 넣으면 통과했다. 화면에는 "본인확인 완료"가
@@ -23,7 +25,9 @@
  * 환경변수
  *   PORTONE_API_SECRET    서버 전용 (V2 API Secret)
  *   PORTONE_STORE_ID      브라우저에 내려보낸다 (공개 식별자)
- *   PORTONE_CHANNEL_KEY   브라우저에 내려보낸다 (공개 식별자)
+ *   PORTONE_CHANNEL_KEY_INICIS  KG이니시스 통합인증 채널 (공개 식별자)
+ *   PORTONE_CHANNEL_KEY_DANAL   다날 휴대폰 본인인증 채널 (공개 식별자)
+ *   PORTONE_CHANNEL_KEY   예전 한 개짜리. 위 둘이 비어 있을 때만 쓴다
  *   BK_SECRET_KEY         표에 서명할 때 쓴다 · bk_idv_use 에 적을 때도 쓴다
  *   BK_URL                bk_idv_use 를 읽고 쓴다
  *   PORTONE_LIVE          실계약 채널이면 '1'. 공용 테스트 MID 면 비워 둔다
@@ -75,8 +79,19 @@ import { sbHeaders, sbUrl } from './_auth.js';
 
 const API = 'https://api.portone.io/identity-verifications';
 
+/* 열려 있는 창구. 순서가 곧 화면의 순서다 - 간편인증이 먼저다
+   (앱 하나 열면 끝나서 대개 더 빠르다). 둘 다 비어 있으면 예전 한 개짜리
+   키로 물러선다 - 키를 옮겨 넣는 사이에 본인확인이 꺼지면 안 된다. */
+function channels() {
+  const e = process.env, list = [];
+  if (e.PORTONE_CHANNEL_KEY_INICIS) list.push({ k: 'inicis', key: e.PORTONE_CHANNEL_KEY_INICIS.trim() });
+  if (e.PORTONE_CHANNEL_KEY_DANAL)  list.push({ k: 'danal',  key: e.PORTONE_CHANNEL_KEY_DANAL.trim() });
+  if (!list.length && e.PORTONE_CHANNEL_KEY) list.push({ k: 'one', key: e.PORTONE_CHANNEL_KEY.trim() });
+  return list;
+}
+
 const ready = () => !!(process.env.PORTONE_API_SECRET
-  && process.env.PORTONE_STORE_ID && process.env.PORTONE_CHANNEL_KEY
+  && process.env.PORTONE_STORE_ID && channels().length
   && process.env.BK_SECRET_KEY);
 
 /* ── 남의 돈으로 도는 문에는 빗장을 건다 ──
@@ -112,10 +127,13 @@ export default async function handler(req, res) {
   /* 화면이 시작할 때 한 번 묻는다 - 붙어 있으면 진짜 흐름을, 아니면 준비 중을 보여준다.
      store_id·channel_key 는 브라우저에 드러나도 되는 값이다. */
   if (req.method === 'GET') {
-    return res.status(200).json(ready()
-      ? { enabled: true, live: isLive(), store_id: process.env.PORTONE_STORE_ID,
-          channel_key: process.env.PORTONE_CHANNEL_KEY }
-      : { enabled: false, live: false });
+    if (!ready()) return res.status(200).json({ enabled: false, live: false });
+    const ch = channels();
+    return res.status(200).json({
+      enabled: true, live: isLive(), store_id: process.env.PORTONE_STORE_ID,
+      channels: ch,
+      channel_key: ch[0].key,          /* 예전 화면(캐시)이 읽던 자리 - 남겨 둔다 */
+    });
   }
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST 만 받습니다' });
   if (!ready()) return res.status(503).json({ error: '본인확인이 아직 연결되지 않았습니다' });

@@ -1067,6 +1067,11 @@ body.mo .vcard .vbtn{width:100%;margin-top:10px}
 .blob::before,.blob::after{content:"";position:absolute;border-radius:50%}
 .blob::before{inset:0;background:radial-gradient(circle at 40% 38%,var(--ind100) 0%,rgba(237,237,254,.7) 52%,rgba(237,237,254,0) 72%)}
 .blob::after{width:46%;aspect-ratio:1;right:4%;top:6%;background:radial-gradient(circle,var(--clay100) 0%,rgba(255,243,234,.85) 45%,rgba(255,243,234,0) 72%)}
+/* 본인확인 창구 고르기 - 버튼 안에 '무엇으로 하는지' 를 한 줄 더 적는다 */
+.idvPick{display:flex;flex-direction:column;gap:10px}
+.idvPick .btn{flex-direction:column;gap:3px;padding:12px 18px;min-height:56px}
+.idvPick .btn .t{font-size:15px;font-weight:700}
+.idvPick .btn .d{font-size:12px;font-weight:600;opacity:.82}
 .heroBand{width:100%;max-width:min(1760px,94vw);margin:0 auto;padding:0 clamp(32px,3.4vw,76px)}
 
 /* 파트너 카드 - 넓은 화면에서 가장 먼저 눈에 들어와야 하는 것 */
@@ -4956,10 +4961,9 @@ function verifyCard(d){
       <p style="margin:0 0 14px;font-size:12.5px;line-height:1.75;color:var(--n700)">
         확인된 <b style="color:var(--n900)">이름과 연락처만</b> 중개사에게 전달됩니다. 장난 문의와 허위 조건을 막기 위한 절차이며,
         <b style="color:var(--n900)">주민등록번호는 저장하지 않습니다.</b></p>
-      <button class="btn pri" data-act="idv" style="width:100%" ${S.idvBusy?'disabled':''}>
-        ${S.idvBusy?'확인 중…':'휴대폰으로 본인확인'}</button>
+      ${idvButtons('demand')}
       <p style="margin:12px 0 0;font-size:12.5px;line-height:1.7;color:var(--n500)">
-        통신사 창이 열립니다. 끝나면 이 화면으로 돌아옵니다.</p>
+        인증 창이 열립니다. 끝나면 이 화면으로 돌아옵니다.</p>
     </div>`;
   }
 
@@ -5940,8 +5944,7 @@ V["#/partner/join"] = () => {
       <button class="btn pri blk" data-act="j-pass">다음</button>
     </div>` : `
     <div style="margin-top:6px">
-      <button class="btn pri blk" data-act="idv" data-v="partner" ${S.idvBusy?'disabled':''}>
-        ${S.idvBusy?'확인 중…':'휴대폰으로 본인확인'}</button>
+      ${idvButtons('partner')}
       <p style="margin:12px 0 0;font-size:12.5px;line-height:1.7;color:var(--n500)">
         통신사 창이 열립니다. 끝나면 이 화면으로 돌아옵니다.</p>
     </div>`}`;
@@ -9050,6 +9053,32 @@ function idvConfig(){
   return fetch('/api/idv').then(r=>r.json()).then(done).catch(()=>done({enabled:false}));
 }
 
+/* ── 본인확인 창구 둘 (2026-10-06 다날·KG이니시스 실계약) ──
+   간편인증(KG이니시스 통합인증)은 카카오·네이버·토스·PASS 앱으로 끝난다.
+   휴대폰 문자(다날)는 앱이 없거나 앱 인증이 낯선 분을 위한 길이다.
+   한쪽만 붙어 있으면 버튼도 하나다 - 고를 것이 없는데 고르게 하지 않는다. */
+const IDV_KIND = {
+  inicis: { t: '간편인증으로 확인', d: '카카오 · 네이버 · 토스 · PASS' },
+  danal:  { t: '휴대폰 문자로 확인', d: '통신사 문자로 인증번호를 받습니다' },
+};
+const idvChannels = cfg => (cfg && cfg.channels && cfg.channels.length)
+  ? cfg.channels
+  : (cfg && cfg.channel_key ? [{ k: 'one', key: cfg.channel_key }] : []);
+function idvButtons(target){
+  const 창구들 = idvChannels(S.idvCfg);
+  const busy = S.idvBusy ? 'disabled' : '';
+  if(창구들.length <= 1){
+    const k = 창구들[0] ? 창구들[0].k : 'one';
+    return `<button class="btn pri blk" data-act="idv" data-v="${target}:${k}" ${busy}>
+      ${S.idvBusy ? '확인 중…' : '휴대폰으로 본인확인'}</button>`;
+  }
+  return `<div class="idvPick" role="group" aria-label="본인확인 방법">${창구들.map((c, i) => {
+    const 말 = IDV_KIND[c.k] || { t: '본인확인', d: '' };
+    return `<button class="btn ${i ? 'sec' : 'pri'} blk" data-act="idv" data-v="${target}:${c.k}" ${busy}>
+      <span class="t">${S.idvBusy ? '확인 중…' : 말.t}</span>${말.d ? `<span class="d">${말.d}</span>` : ''}</button>`;
+  }).join('')}</div>`;
+}
+
 /* 본인확인을 부르는 자리가 둘이다 - 손님 조건 등록, 공급자 가입.
    휴대폰에서는 페이지가 통째로 넘어갔다 오므로 어디서 불렀는지도 담아둔다. */
 const IDV_FOR = 'bk.idv.for';
@@ -9058,10 +9087,14 @@ const idvFor = {
   set(v){ try{ sessionStorage.setItem(IDV_FOR, v); }catch(e){} },
 };
 
-async function idvStart(target){
+async function idvStart(target, kind){
   idvFor.set(target === 'partner' ? 'partner' : 'demand');
   const cfg = await idvConfig();
   if(!cfg.enabled) return toast('본인확인이 아직 연결되지 않았습니다');
+  /* 고른 창구의 키. 모르는 이름이 오면(예전 화면) 첫 창구로 연다 */
+  const 창구들 = idvChannels(cfg);
+  const 창구 = 창구들.find(c => c.k === kind) || 창구들[0];
+  if(!창구 || !창구.key) return toast('본인확인이 아직 연결되지 않았습니다');
 
   let PortOne;
   try{ PortOne = await idvSdk(); }
@@ -9077,7 +9110,7 @@ async function idvStart(target){
   S.idvBusy = true; render();
   try{
     const res = await PortOne.requestIdentityVerification({
-      storeId: cfg.store_id, channelKey: cfg.channel_key,
+      storeId: cfg.store_id, channelKey: 창구.key,
       identityVerificationId: id,
       /* 해시는 빼고 보낸다 - 물음표가 해시 안으로 들어가면 못 읽는다 */
       redirectUrl: location.origin + location.pathname,
@@ -10082,7 +10115,8 @@ function handle(a,v,el){
       return true; }
 
     /* ── 본인확인 ── */
-    case 'idv': idvStart(v === 'partner' ? 'partner' : 'demand'); return true;
+    case 'idv': { const [t, k] = String(v || '').split(':');
+      idvStart(t === 'partner' ? 'partner' : 'demand', k); return true; }
     case 'v-reset': {
       /* 다른 명의로 다시 받겠다는 뜻이다 - 남겨둔 확인 결과도 함께 지운다 */
       d.verified=false; d.vstep='idle'; d.vat=''; S.idv=null; S.idvToken=null;

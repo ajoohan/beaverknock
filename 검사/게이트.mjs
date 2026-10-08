@@ -189,5 +189,14 @@ ok(/h==='#\/partner\/join' && S\.agent && S\.form\.jSent/.test(js),
 ok(/S\.agent\.status === 'approved' \? '#\/partner\/demands' : '#\/partner\/verify'/.test(js),
    '승인됐으면 수요 목록으로, 아니면 자격 확인으로 보낸다');
 
+/* ── 로그인 전에는 내 것을 묻지 않는다 (2026-10-08) ──
+   파트너 안내(#/partner)는 누구나 여는데, 라우터가 거기서 내 물건·내 제안을 불러
+   로그인 안 한 방문마다 /api/feed 를 두 번 두드리고 401 을 두 번 받았다. */
+for(const 이름 of ['loadListings', 'loadMyProps', 'loadMine', 'loadFeed']){
+  const 몸 = js.slice(js.indexOf(`function ${이름}(`), js.indexOf(`function ${이름}(`) + 260);
+  ok(/if\(!세션있음\(\)\) return;|if\(!sess \|\| !sess\.access_token\)/.test(몸),
+     `${이름} 은 세션이 없으면 서버를 부르지 않는다`);
+}
+
 console.log(`${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

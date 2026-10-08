@@ -2702,7 +2702,13 @@ function listingFromRow(x){
   };
 }
 
+/* 로그인 전에는 묻지 않는다 (2026-10-08). 파트너 안내(#/partner)는 누구나 여는
+   화면인데, 라우터가 여기서 내 물건·내 제안을 불러서 **로그인 안 한 방문마다
+   서버를 두 번 두드리고 401 을 두 번 받았다.** loadFeed 에는 이 문턱이 있었고
+   이 둘에만 없었다. 예시는 그대로 두면 된다 - 로그인 전 화면이 원래 그렇다. */
+const 세션있음 = () => { const s = store.get(); return !!(s && s.access_token); };
 function loadListings(force){
+  if(!세션있음()) return;
   if(S.lsLoading || (S.lsAt && !force && Date.now()-S.lsAt < 20000)) return;
   S.lsLoading = true;
   apiFetch('/api/feed', {method:'POST', body: JSON.stringify({what:'listings'})})
@@ -2735,6 +2741,7 @@ function myPropFromRow(x){
 }
 
 function loadMyProps(force){
+  if(!세션있음()) return;
   if(S.mpLoading || (S.mpAt && !force && Date.now()-S.mpAt < 20000)) return;
   S.mpLoading = true;
   apiFetch('/api/feed', {method:'POST', body: JSON.stringify({what:'mine'})})

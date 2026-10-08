@@ -55,6 +55,61 @@ async function 물어보기(env){
   ok(답.live === false, 'PORTONE_LIVE 가 없으면 실계약으로 읽지 않는다');
 }
 
+/* ── 결과 확인: 어느 창구에서 받은 인증인가 ──
+   포트원은 상점 단위로 답한다. 9월 내내 공개됐던 시험 채널로 받은 인증이
+   실계약을 켠 뒤에도 '확인된 이름' 으로 서명되면 안 된다. */
+let 사용기록 = 0;
+async function 확인(env, 창구){
+  for(const k of [...키들, ...Object.keys(기본), 'BK_URL']) delete process.env[k];
+  Object.assign(process.env, { BK_URL: 'https://fake.supabase.co' }, env);
+  사용기록 = 0;
+  globalThis.fetch = async (u) => {
+    u = String(u);
+    if(u.includes('api.portone.io')) return new Response(JSON.stringify({
+      status: 'VERIFIED', id: 'v1',
+      ...(창구 === undefined ? {} : { channel: 창구 }),
+      verifiedCustomer: { name: '김민수', phoneNumber: '01012345678', birthDate: '1990-01-01', operator: 'SKT' },
+    }), { status: 200 });
+    if(u.includes('bk_idv_use')){ 사용기록++; return new Response('', { status: 201 }); }
+    return new Response('[]', { status: 200 });
+  };
+  let 답 = null, 상태 = 0;
+  const res = { setHeader(){}, status(c){ 상태 = c; return this; }, json(j){ 답 = j; return this; } };
+  await idv({ method: 'POST', headers: { 'x-forwarded-for': '9.9.9.' + Math.floor(Math.random()*250) },
+              body: { identity_verification_id: 'bk-test-' + Math.random().toString(36).slice(2) } }, res);
+  return { 상태, 답, 사용기록 };
+}
+const 실계약 = { ...기본, PORTONE_CHANNEL_KEY_INICIS: 'ch-ini', PORTONE_CHANNEL_KEY_DANAL: 'ch-dan', PORTONE_LIVE: '1' };
+{
+  const r = await 확인(실계약, { type: 'LIVE', key: 'ch-dan', id: 'c1' });
+  ok(r.상태 === 200 && r.답.ok && r.답.token, '실계약 · 열어 둔 LIVE 창구 → 통과');
+}
+{
+  const r = await 확인(실계약, { type: 'TEST', key: 'channel-key-예전시험', id: 'c0' });
+  ok(r.상태 === 403 && !r.답.token, '실계약인데 시험 채널에서 받은 인증 → 막는다');
+  ok(r.사용기록 === 0, '막을 때는 번호를 태우지 않는다');
+}
+{
+  const r = await 확인(실계약, { type: 'LIVE', key: 'ch-남의것', id: 'c9' });
+  ok(r.상태 === 403, '실계약 · LIVE 라도 열어 두지 않은 창구 → 막는다');
+}
+{
+  const r = await 확인(실계약, undefined);
+  ok(r.상태 === 403, '실계약인데 channel 이 실려 오지 않으면 → 막는다 (모르면 열지 않는다)');
+}
+{
+  const r = await 확인(실계약, { type: 'LIVE', id: 'c1' });
+  ok(r.상태 === 200, '실계약 · LIVE 인데 키가 안 실려 오면 → 통과 (우리 상점의 LIVE 는 우리 것뿐이다)');
+}
+{
+  const r = await 확인({ ...기본, PORTONE_CHANNEL_KEY: 'ch-old' }, { type: 'TEST', key: 'ch-old', id: 'c0' });
+  ok(r.상태 === 200, '시험 기간 · 열어 둔 시험 창구 → 통과 (흐름을 돌려 볼 수 있어야 한다)');
+}
+{
+  const r = await 확인({ ...기본, PORTONE_CHANNEL_KEY: 'ch-old' }, { type: 'TEST', key: 'ch-다른것', id: 'c0' });
+  ok(r.상태 === 403, '시험 기간이라도 열어 두지 않은 창구 → 막는다');
+}
+
 /* ── 화면 ── */
 const js = 길.js();
 const 몸통 = 이름 => { const i = js.indexOf(이름); return i < 0 ? '' : js.slice(i, i + 1600); };

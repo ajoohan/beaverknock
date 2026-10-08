@@ -167,6 +167,26 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: '본인확인이 완료되지 않았습니다', status: j.status });
     }
 
+    /* ── 어느 창구에서 받은 인증인가 (2026-10-08) ──
+       포트원은 **상점 단위**로 묻는다 - 우리 열쇠로 조회하면 같은 상점의
+       어느 채널에서 받은 인증이든 VERIFIED 로 돌아온다. 그런데 9월 내내
+       /api/idv 가 **시험 채널 키**를 공개로 내려보냈고, 그 채널은 포트원에
+       아직 살아 있다. 그 키로 시험 인증을 마친 id 를 여기로 보내면, 실계약을
+       켠 뒤에도 가짜 이름이 '확인된 이름' 으로 서명되어 나갔다.
+       그래서 응답의 channel 을 본다.
+         · 실계약(PORTONE_LIVE=1)이면 LIVE 채널만 받는다. channel 이 없으면 막는다.
+         · 키가 실려 오면 지금 열어 둔 창구의 키여야 한다 - 시험 기간에도 그렇다.
+       어긋나면 번호를 태우기(claimOnce) **전에** 돌려보낸다. */
+    const 창구 = j.channel || null;
+    const 열어둔키 = channels().map(c => c.key);
+    const 어긋남 = isLive()
+      ? (!창구 || 창구.type !== 'LIVE' || (창구.key && !열어둔키.includes(창구.key)))
+      : (창구 && 창구.key && !열어둔키.includes(창구.key));
+    if (어긋남) {
+      console.error('[idv] 창구 불일치', 창구 ? `${창구.type || '?'} ${String(창구.key || '').slice(0, 24)}` : 'channel 없음');
+      return res.status(403).json({ error: '이 본인확인은 받을 수 없습니다 - 다시 받아주세요', again: true });
+    }
+
     /* 통과한 것을 확인한 다음에 번호를 잡는다. 실패한 시도까지 태워버리면
        다시 시도할 때 막힌다. */
     const once = await claimOnce(id);

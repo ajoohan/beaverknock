@@ -1,10 +1,12 @@
 /* 비버노크 법적 고지 문서 - 자바스크립트 없이 서버가 그대로 내려주는 정적 문서.
    해시 라우트(#/privacy)는 서버로 전달되지 않아 외부 검수 기관이 읽지 못한다. */
 :root{
-  --ind900:#23255C; --ind700:#31336F; --ind:#3D3F8F; --ind300:#6E70BC; --ind100:#E9E9F7; --ind50:#F5F5FC;
-  --clay700:#8A6A45; --clay200:#E0CBAC; --clay100:#F5EDE2;
-  --n900:#1F1D1A; --n700:#4A4640; --n500:#857F76; --n300:#D6D1C8; --n100:#F0EDE7; --n50:#FAF8F5; --white:#fff;
-  --hair:rgba(31,29,26,.09);
+  /* index.html 의 :root 와 같은 값이다 (2026-10-08 개편). 한쪽을 바꾸면 여기도 바꾼다 -
+     검사/조판.mjs 가 두 곳이 같은지 본다. */
+  --ind900:#2F3192; --ind700:#4144BE; --ind:#4F52D1; --ind300:#6366D6; --ind100:#EDEDFE; --ind50:#F6F6FF;
+  --clay700:#9A5A2E; --clay200:#FAD9C0; --clay100:#FFF3EA;
+  --n900:#1D1C2A; --n700:#46455A; --n500:#6B6A7D; --n300:#D6D5E1; --n100:#F0EFF5; --n50:#F8F7FB; --white:#fff;
+  --hair:rgba(29,28,42,.08);
 }
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
@@ -17,7 +19,7 @@ body{margin:0;background:var(--n50);color:var(--n700);
 .top .in{max-width:760px;margin:0 auto;padding:18px 22px;display:flex;align-items:center;
   justify-content:space-between;gap:16px;flex-wrap:wrap}
 .brand{display:inline-flex;align-items:baseline;gap:8px;text-decoration:none}
-.brand b{font-size:17px;font-weight:800;letter-spacing:-.03em;color:var(--ind700)}
+.brand b{font-size:17px;font-weight:760;letter-spacing:-.03em;color:var(--ind700)}
 .brand span{font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--ind300)}
 .top nav{display:flex;gap:16px;font-size:13px;font-weight:600}
 .top nav a{color:var(--n700);text-decoration:none}
@@ -26,13 +28,13 @@ body{margin:0;background:var(--n50);color:var(--n700);
 
 main{max-width:760px;margin:0 auto;padding:34px 22px 56px}
 .eyebrow{display:block;font-size:11px;font-weight:800;letter-spacing:.1em;color:var(--ind)}
-h1{margin:9px 0 12px;font-size:26px;font-weight:800;letter-spacing:-.04em;line-height:1.3;
+h1{margin:9px 0 12px;font-size:26px;font-weight:760;letter-spacing:-.045em;line-height:1.3;
   color:var(--n900);text-wrap:balance}
 .lead{margin:0 0 10px;font-size:14.5px;line-height:1.8;color:var(--n700)}
 .lead b{color:var(--n900);font-weight:800}
 .stamp{margin:0 0 26px;font-size:12.5px;color:var(--n500)}
 
-section{background:var(--white);border:1px solid var(--hair);border-radius:14px;
+section{background:var(--white);border:1px solid var(--hair);border-radius:22px;
   padding:20px 24px;margin-bottom:12px}
 h2{margin:0 0 10px;font-size:16px;font-weight:800;letter-spacing:-.02em;color:var(--n900)}
 section p{margin:0 0 9px;font-size:14px;line-height:1.8}
@@ -49,8 +51,8 @@ li:last-child{margin-bottom:0}
 dl{margin:0}
 
 .blank{display:inline-block;background:var(--clay100);border:1px solid var(--clay200);
-  color:var(--clay700);padding:1px 9px;border-radius:6px;font-weight:800;font-size:12.5px}
-.note{background:var(--ind50);border:1px solid var(--ind100);border-radius:12px;
+  color:var(--clay700);padding:1px 9px;border-radius:999px;font-weight:800;font-size:12.5px}
+.note{background:var(--ind50);border:1px solid var(--ind100);border-radius:16px;
   padding:14px 18px;margin-bottom:12px;font-size:13.5px;line-height:1.75;color:var(--ind700)}
 .note b{color:var(--ind900)}
 

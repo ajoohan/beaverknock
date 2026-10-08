@@ -45,16 +45,16 @@ function build(req, { subject, rows, link, to: toArg, cta, note }) {
     || `https://${req.headers['x-forwarded-host'] || req.headers.host || 'beaverknockkorea.vercel.app'}`;
 
   const body = rows.map(([k, v]) =>
-    `<tr><td style="padding:7px 14px 7px 0;color:#6E6859;font-size:13px;white-space:nowrap">${esc(k)}</td>` +
-    `<td style="padding:7px 0;color:#1F1D1A;font-size:14px;font-weight:600">${esc(v)}</td></tr>`).join('');
+    `<tr><td style="padding:7px 14px 7px 0;color:#6B6A7D;font-size:13px;white-space:nowrap">${esc(k)}</td>` +
+    `<td style="padding:7px 0;color:#1D1C2A;font-size:14px;font-weight:600">${esc(v)}</td></tr>`).join('');
 
   const html = `<div style="font-family:-apple-system,'Malgun Gothic',sans-serif;max-width:520px;margin:0 auto;padding:26px 22px">
-    <div style="font-size:12px;font-weight:800;letter-spacing:.08em;color:#3D3F8F">BEAVER KNOCK</div>
-    <h1 style="margin:8px 0 18px;font-size:19px;font-weight:800;letter-spacing:-.02em;color:#1F1D1A">${esc(subject)}</h1>
+    <div style="font-size:12px;font-weight:800;letter-spacing:.08em;color:#4F52D1">BEAVER KNOCK</div>
+    <h1 style="margin:8px 0 18px;font-size:19px;font-weight:800;letter-spacing:-.02em;color:#1D1C2A">${esc(subject)}</h1>
     <table style="border-collapse:collapse;width:100%">${body}</table>
-    <a href="${host}${link}" style="display:inline-block;margin-top:22px;padding:12px 22px;border-radius:10px;
-      background:#3D3F8F;color:#fff;font-size:14px;font-weight:700;text-decoration:none">${esc(cta || '운영 화면에서 보기')}</a>
-    <p style="margin:18px 0 0;font-size:11.5px;line-height:1.7;color:#6E6859">
+    <a href="${host}${link}" style="display:inline-block;margin-top:22px;padding:12px 24px;border-radius:999px;
+      background:#4F52D1;color:#fff;font-size:14px;font-weight:700;text-decoration:none">${esc(cta || '운영 화면에서 보기')}</a>
+    <p style="margin:18px 0 0;font-size:11.5px;line-height:1.7;color:#6B6A7D">
       ${esc(note || '연락처는 가려서 보냅니다. 전체 내용은 운영 화면에서 암호를 넣고 확인하세요.')}</p>
   </div>`;
 

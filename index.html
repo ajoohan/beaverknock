@@ -45,6 +45,12 @@
   --okline:#A5CDB6; --warnline:#E8D5A8; --dangerline:#E8C4C4;
   /* 꺼진 글자 · 아직 안 적은 칸의 안내 글자 */
   --off:#8B8AA0; --ph:#B4B3C4;
+  /* ── 누르는 것의 테두리 (2026-10-08) ──
+     칩·입력칸은 테두리가 곧 '여기를 누르세요' 다. n200(#E6E5EE)은 흰 바탕에서
+     1.25:1 이라 칩이 테두리 없는 글자처럼 보였다. WCAG 1.4.11 은 3:1.
+     흰 바탕 3.36 · 연보라 바탕 3.08 · ind50 카드 3.13 - 셋 다 넘는 가장 연한 값.
+     값이 --off 와 같지만 뜻이 다르다(꺼진 글자 ≠ 경계선) - 따로 둔다. */
+  --edge:#8B8AA0;
   /* ── 둥글기 다섯 칸 ──
      전에는 25가지였다(2·4·5·6·7·8·9·10·11·12·14·16·18·20·22…).
      버튼 10 · 입력칸 11 · 메뉴 9 처럼 서로 한두 픽셀씩만 달랐는데,
@@ -220,9 +226,10 @@ body.mo .back::after{content:"";position:absolute;left:0;right:0;top:-9px;bottom
    눌리지 않는 것이 아니라 아예 안 보였다. 3.3:1 로 올린다. */
 .btn[disabled]{background:var(--n100)!important;color:var(--off)!important;box-shadow:none!important;cursor:not-allowed;border-color:var(--n100)!important}
 
-.chip{border:1.5px solid var(--n200);background:var(--white);color:var(--n700);border-radius:var(--r-full);
+.chip{border:1.5px solid var(--edge);background:var(--white);color:var(--n700);border-radius:var(--r-full);
   padding:10px 16px;font-size:13.5px;transition:all .12s}
-.chip:hover{border-color:var(--ind200);background:var(--ind50)}
+/* 꺼진 칩(지난 달 등)은 손을 올려도 반응하지 않는다 - 고를 수 있는 것처럼 보이면 안 된다 */
+.chip:not(:disabled):hover{border-color:var(--ind);background:var(--ind50)}
 .chip.on{background:var(--ind);border-color:var(--ind);color:#fff;font-weight:700}
 body.mo .chip{padding:12px 16px;font-size:13.5px;line-height:1.25}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
@@ -466,7 +473,7 @@ body.mo .card.pad{padding:16px}
 .lab{display:block;font-size:13.5px;font-weight:700;margin-bottom:10px}
 .lab .req{color:var(--ind)}
 .lab .opt{font-weight:500;color:var(--n500);font-size:12.5px}
-.inp{width:100%;border:1.5px solid var(--n300);background:var(--white);
+.inp{width:100%;border:1.5px solid var(--edge);background:var(--white);
   padding:14px 16px;font-size:15px;color:var(--n900);outline:none;transition:border-color .12s}
 .inp:focus{border-color:var(--ind)}
 /* (안내 글자 색은 아래 --ph 한 곳에서 - 여기 #C9C4BB 는 덮여 있었다) */
@@ -493,7 +500,7 @@ body.mo .grid2.mo1{grid-template-columns:1fr;gap:30px}
   transition:width .45s cubic-bezier(.2,.8,.2,1)}
 
 .chk{display:flex;gap:12px;align-items:flex-start;padding:14px 0;cursor:pointer}
-.chk .box{flex:none;width:21px;height:21px;border-radius:var(--r-xs);border:1.8px solid var(--n300);background:var(--white);
+.chk .box{flex:none;width:21px;height:21px;border-radius:var(--r-xs);border:1.8px solid var(--edge);background:var(--white);
   display:flex;align-items:center;justify-content:center;margin-top:2px;transition:all .12s}
 .chk.on .box{background:var(--ind);border-color:var(--ind)}
 .chk .box svg{opacity:0;width:11px}
@@ -2501,6 +2508,9 @@ function partnerDoor(kind){
   const 열림 = S.agent.status === 'approved';
   const 곳 = 열림 ? '#/partner/demands' : '#/partner/verify';
   const 말 = 열림 ? (ownerSide() ? '내 물건' : '파트너 화면') : '자격 확인';
+  /* 짙은 파트너 칸 안에서는 그 칸의 주 단추(흰색)와 같은 모양이어야 한다.
+     연한 알약(door sm)을 쓰면 옆의 '안내 다시 보기' 보다 작고 흐려서 위계가 뒤집혔다. */
+  if(kind === 'onDark') return `<a class="btn partner" data-go="${곳}">${말}</a>`;
   return kind === 'link'
     ? `<a data-go="${곳}">${말}</a>`
     : `<a class="btn door sm" data-go="${곳}" style="flex:none">${말}</a>`;
@@ -3116,7 +3126,7 @@ ${S.agent ? `
         ? '걸어둔 조건 중 맞는 것만 골라 보여드립니다. 바로 제안하실 수 있습니다.'
         : '자격 확인만 끝나면 손님의 조건 전문을 보고 제안하실 수 있습니다.'}</p>
       <div class="row">
-        ${partnerDoor()}
+        ${partnerDoor('onDark')}
         <button class="btn onDark" data-go="#/partner">파트너 안내 다시 보기</button>
       </div>` : `
       <b class="h">중개사·소유자이신가요?<br>먼저 두드리세요.</b>
@@ -5633,7 +5643,7 @@ V['#/partner/demands'] = () => {
           <span style="font-size:12.5px;color:var(--n500)">등록 ${esc(d.at)} · 입력 ${d.pct}%</span>
           ${d.locked? `<button class="btn pri sm" data-go="#/partner/verify">자격 인증하고 열기</button>`
             : d.mine? `<button class="btn sm" data-go="#/partner/proposals" style="background:var(--n100);color:var(--n500)">제안함 · 열람됨</button>`
-            : d.slotsLeft===0? `<span class="btn sm" style="background:var(--n100);color:var(--off)">제안 마감</span>`
+            : d.slotsLeft===0? `<span class="btn sm" style="background:var(--n100);color:var(--n500)">제안 마감</span>`
             : `<button class="btn pri sm" data-go="#/partner/demand/${d.id}">자세히 보기</button>`}
         </div>
       </div>`).join('')}

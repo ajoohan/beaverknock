@@ -148,5 +148,42 @@ for(const k of ['locate','plus','minus','reset','photo'])
   ok(new RegExp(`${k}:\\s*s\\(`).test(js), `ICO.${k} 가 있다`);
 ok(/aria-label="\$\{찼다 \? /.test(js), '사진 칸은 몇 번째인지까지 낭독기에 말한다');
 
+/* ── ⑤ 누르는 것의 경계선 (2026-10-08) ──
+   칩·입력칸·체크 상자는 테두리가 곧 '여기를 누르세요' 다. 개편에서 n200 으로
+   낮췄더니 1.25:1 이 되어 칩이 테두리 없는 글자처럼 보였다. 3:1 을 지킨다. */
+const 대비 = (a, b) => {
+  const L = h => { const c = [1,3,5].map(i => parseInt(h.slice(i, i+2), 16) / 255)
+    .map(v => v <= .03928 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4);
+    return .2126*c[0] + .7152*c[1] + .0722*c[2]; };
+  const x = L(a), y = L(b); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05);
+};
+const 뿌리 = css.match(/:root\{([\s\S]*?)\n\}/)[1];
+const 토큰 = k => (뿌리.match(new RegExp(`--${k}:\\s*(#[0-9A-Fa-f]{6})`)) || [])[1];
+const 경계 = 토큰('edge');
+ok(!!경계, '--edge 토큰이 있다');
+for(const [바탕, 이름] of [['#FFFFFF','흰 바탕'], ['#F4F4FD','연보라 바탕(--warm 끝)'], [토큰('ind50'),'ind50 카드']])
+  ok(경계 && 대비(경계, 바탕) >= 3, `경계선이 ${이름}에서 3:1 이상 (${경계 ? 대비(경계, 바탕).toFixed(2) : '-'})`);
+ok(/\.chip\{border:1\.5px solid var\(--edge\)/.test(css), '칩 테두리가 --edge');
+ok(/\.inp\{width:100%;border:1\.5px solid var\(--edge\)/.test(css), '입력칸 테두리가 --edge');
+ok(/\.chk \.box\{[^}]*border:1\.8px solid var\(--edge\)/.test(css), '체크 상자 테두리가 --edge');
+ok(!/\.chip:hover\{/.test(css) && /\.chip:not\(:disabled\):hover\{/.test(css), '꺼진 칩은 손을 올려도 반응하지 않는다');
+
+/* ── ⑥ 약관·처리방침도 같은 색이다 ──
+   개편 때 index.html 의 :root 만 바꾸고 legal-base.css 는 그대로 남아,
+   약관을 누르면 예전 탁한 인디고·베이지 화면이 열렸다. 겹치는 이름은 값이 같아야 한다. */
+const fs = await import('node:fs');
+const 법 = fs.readFileSync(new URL('../legal-base.css', import.meta.url), 'utf8');
+const 법뿌리 = 법.match(/:root\{([\s\S]*?)\}/)[1];
+const 겹침 = [...법뿌리.matchAll(/--([a-z0-9-]+):\s*(#[0-9A-Fa-f]{6})/g)];
+ok(겹침.length >= 10, `legal-base.css 의 색 토큰을 읽었다 (${겹침.length}개)`);
+const 어긋남 = 겹침.filter(([, k, v]) => 토큰(k) && 토큰(k).toUpperCase() !== v.toUpperCase()).map(([, k]) => k);
+ok(어긋남.length === 0, `약관 화면의 색이 본 화면과 같다${어긋남.length ? ' - 다른 것: ' + 어긋남.join(', ') : ''}`);
+const 메일 = fs.readFileSync(new URL('../api/_notify.js', import.meta.url), 'utf8');
+ok(!/#3D3F8F|#1F1D1A|#6E6859/i.test(메일), '알림 메일에 예전 색이 남아 있지 않다');
+
+/* ── ⑦ 짙은 파트너 칸의 주 단추는 흰 단추다 ── */
+ok(/if\(kind === 'onDark'\) return `<a class="btn partner"/.test(js), 'partnerDoor 가 짙은 칸용 흰 단추를 낸다');
+ok(/\$\{partnerDoor\('onDark'\)\}/.test(js), '첫 화면 파트너 칸이 그 단추를 쓴다');
+
 console.log(`${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

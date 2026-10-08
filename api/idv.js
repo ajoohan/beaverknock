@@ -132,7 +132,7 @@ export default async function handler(req, res) {
     return res.status(200).json({
       enabled: true, live: isLive(), store_id: process.env.PORTONE_STORE_ID,
       channels: ch,
-      channel_key: ch[0].key,          /* 예전 화면(캐시)이 읽던 자리 - 남겨 둔다 */
+      channel_key: ch[0].key,          /* 10/6 이전 화면(캐시)이 읽던 자리. 새 화면은 channels 만 본다 - 몇 주 뒤 지운다 */
     });
   }
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST 만 받습니다' });

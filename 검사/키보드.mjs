@@ -29,15 +29,21 @@ ok(/if\(!a\.hasAttribute\('tabindex'\)\)/.test(js) && /if\(!a\.hasAttribute\('ro
 
 /* ── ② 닿기만 하고 눌리지 않으면 반쪽이다 ──
    role 만 붙인 <a> 는 엔터를 눌러도 브라우저가 아무 일도 하지 않는다. */
-const 누르기 = js.slice(js.indexOf("closest('a[tabindex=\"0\"][role]')") - 700,
-                        js.indexOf("closest('a[tabindex=\"0\"][role]')") + 700);
+const 표 = "closest('a[tabindex=\"0\"][role], [tabindex=\"0\"][role=\"button\"]')";
+const 누르기 = js.slice(js.indexOf(표) - 700, js.indexOf(표) + 700);
+ok(js.indexOf(표) > 0, '엔터 처리기가 링크와 눌리는 카드를 함께 맡는다');
+ok((js.match(/addEventListener\('keydown'/g) || []).length > 0
+   && !/closest\('\[role="button"\]\[tabindex="0"\]'\)/.test(js),
+   '엔터를 듣는 처리기는 하나뿐이다 - 둘이면 같은 단추가 두 번 눌린다');
+ok(/document\.activeElement !== el\) return;/.test(누르기),
+   '초점이 그 요소 자체에 있을 때만 누른다 - 카드 안 단추의 엔터가 카드까지 누르면 안 된다');
 ok(/e\.key !== 'Enter' && e\.key !== ' '/.test(누르기), '엔터와 띄어쓰기를 듣는다');
 ok(/if\(e\.key !== 'Enter' && !버튼\) return;/.test(누르기),
    '링크는 띄어쓰기로 눌리지 않는다 - 링크의 약속이 그렇다');
 ok(/e\.preventDefault\(\);/.test(누르기), '띄어쓰기로 화면이 내려가지 않게 막는다');
 ok(/if\(e\.altKey \|\| e\.ctrlKey \|\| e\.metaKey\) return;/.test(누르기),
    '조합키가 눌렸으면 넘긴다 - 브라우저의 제 기능을 빼앗지 않는다');
-ok(/if\(!el \|\| el\.hasAttribute\('href'\)\) return;/.test(누르기),
+ok(/if\(!el \|\| el\.hasAttribute\('href'\)/.test(누르기),
    '진짜 링크는 브라우저가 알아서 한다 - 두 번 눌리면 안 된다');
 
 /* ── ③ 지도는 눈으로 고르는 화면이다 ──

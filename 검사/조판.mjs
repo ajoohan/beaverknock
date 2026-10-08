@@ -80,8 +80,13 @@ ok(/closest\('\.chips\.one > \.chip\[role="radio"\]'\)/.test(js),
    '화살표 처리기가 하나만 고르는 줄에만 걸린다 - 여럿 고르는 줄은 Tab 으로 다닌다');
 ok(/\(i \+ \(앞으로 \? 1 : -1\) \+ 줄\.length\) % 줄\.length/.test(js),
    '끝에서 화살표를 더 누르면 처음으로 돌아온다');
-ok(/다음\.focus\(\{preventScroll:true\}\);\s*\n\s*다음\.click\(\);/.test(js),
-   '옮기는 즉시 골라진다 - 옮겨 놓고 또 Space 를 치게 하지 않는다(라디오의 표준 동작)');
+/* 2026-10-08 바꿈: 옮기는 즉시 고르면, 고를 때 다른 칸을 비우는 칩(거래방식 → 월세,
+   매물 유형 → 방 수·화장실)을 **지나가기만 해도** 적어 둔 값이 지워졌다. */
+const 화살표 = js.slice(js.indexOf('하나만 고르는 칩 줄은 화살표로 옮긴다'), js.indexOf('주소 자동완성 - 손을 마우스로'));
+ok(화살표.length > 200 && !/다음\.click\(\)/.test(화살표),
+   '화살표는 옮기기만 한다 - 지나가기만 해도 적어 둔 값이 지워지면 안 된다');
+ok(/줄\.forEach\(c => c\.setAttribute\('tabindex', c === 다음 \? '0' : '-1'\)\)/.test(화살표),
+   '옮긴 칩이 문이 된다 - Tab 으로 나갔다 들어와도 그 자리다');
 ok(/if\(e\.altKey \|\| e\.ctrlKey \|\| e\.metaKey\) return;/.test(js),
    '조합키가 눌린 화살표는 넘긴다 - 브라우저의 제 기능을 빼앗지 않는다');
 ok(/\.filter\(b => b\.matches\('\.chip\[role="radio"\]'\) && !b\.disabled\)/.test(js),
@@ -108,6 +113,18 @@ const 되돌림 = js.slice(js.indexOf('function 되돌린초점'), js.indexOf('f
   .replace(/\/\*[\s\S]*?\*\//g, '');            /* 주석은 돌지 않는다 - 거기 적힌 이름은 세지 않는다 */
 ok(!/\bIME\b/.test(되돌림),
    '되돌린초점 안에서 IME 를 읽지 않는다 - 그 변수(let)보다 위에 있어서 읽으면 죽는다');
+
+/* ── 한글을 적는 중에는 누가 불러도 다시 그리지 않는다 (2026-10-08) ──
+   늦게 온 응답(readAgent · loadFeed)이 render() 를 부르면 조합이 'ㅁ' 에서 끊겼다.
+   render 가 IME 를 읽으므로 그 선언은 **var** 여야 한다 - let 이면 위 줄처럼 죽는다. */
+ok(/\nvar IME = false, 밀린그리기 = null, 밀린전체 = false;/.test(js) && !/\nlet IME\b/.test(js),
+   'IME 상태는 var 로 둔다 - render() 가 그보다 위에서 읽는다');
+const 그리기머리 = js.slice(js.indexOf('function render(){'), js.indexOf('function render(){') + 200);
+ok(/if\(IME && 적는중\(\) && S\.lastRoute === \(location\.hash \|\| '#\/'\)\)\{ 밀린전체 = true; return; \}/.test(그리기머리),
+   '조합 중이면 같은 화면 다시 그리기를 미룬다 (화면이 바뀌는 것은 미루지 않는다)');
+ok(/else if\(밀린전체\)\{ 밀린전체 = false; render\(\); \}/.test(js), '조합이 끝나면 미뤄 둔 그리기를 한다');
+ok(/a\.setSelectionRange\(Math\.min\(커서\[0\], n\), Math\.min\(커서\[1\], n\)\)/.test(js),
+   '다시 그린 뒤 커서를 있던 자리에 돌려놓는다');
 
 ok(/\.chip\.on::before\{[^}]*border-radius:var\(--r-full\)[^}]*background:currentColor/.test(css),
    '기본은 점이다 - 하나만 고르는 자리가 더 많다');

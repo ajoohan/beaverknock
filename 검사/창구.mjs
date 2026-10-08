@@ -120,6 +120,10 @@ ok((js.match(/\$\{idvButtons\('partner'\)\}/g) || []).length === 1, '공급자 �
 ok(!/data-act="idv"[^>]*>\s*\$\{S\.idvBusy\?'확인 중…':'휴대폰으로 본인확인'\}/.test(js.replace(/function idvButtons[\s\S]*?\n\}/, '')),
    '버튼을 손으로 따로 적은 자리가 남아 있지 않다');
 
+/* 예전 키로 물러서는 규칙은 서버(channels) 한 곳에만 둔다 - 두 곳이면 한쪽만 고쳐져 어긋난다 */
+ok(/const idvChannels = cfg => \(cfg && Array\.isArray\(cfg\.channels\)\) \? cfg\.channels : \[\];/.test(js)
+   && !/cfg\.channel_key/.test(js), '화면은 서버가 준 창구 목록만 쓴다 (자기 대체 규칙이 없다)');
+
 const 버튼 = 몸통('function idvButtons');
 ok(/창구들\.length\s*<=\s*1/.test(버튼), '창구가 하나면 버튼도 하나');
 ok(/data-v="\$\{target\}:\$\{c\.k\}"/.test(버튼), '버튼마다 어느 창구인지 실려 간다');

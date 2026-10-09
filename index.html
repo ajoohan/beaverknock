@@ -7334,7 +7334,7 @@ function lgFetch(){
 const LG_ACT = { demands:'조건 조회', agents:'가입 신청 조회', 'agent-status':'상태 변경',
   reports:'신고 조회', 'report-mark':'신고 처리', listings:'매물 조회', users:'손님 계정 조회',
   stats:'지표 조회', 'mark-sent':'전달 표시', 'agent-delete':'가입 삭제',
-  'agent-del-preview':'삭제 전 확인', 'kakao-unlink':'카카오 연결 해제' };
+  'agent-del-preview':'삭제 전 확인', 'kakao-unlink':'카카오 연결 해제', 'idv-reject':'본인확인 거절' };
 
 /* 손님이 신고한 제안. 메일로도 가지만 무엇을 이미 처리했는지는 여기서 본다. */
 const RP = { rows:null, loading:false, err:'', at:'', note:'', only:'todo', busy:'' };
@@ -7538,21 +7538,30 @@ const opsInviteText = () => [
   '암호는 따로 없습니다. 로그인만 하시면 열립니다.',
 ].join('\n');
 
+/* 열람 기록에 남은 '본인확인 거절'(api/idv.js) 중 최근 24시간. 기록을 아직 안 불러왔으면 비어 있다 */
+const 최근거절 = () => (LG.rows || []).filter(r => r.action === 'idv-reject'
+  && Date.now() - new Date(r.at || r.created_at || 0).getTime() < 864e5);
 function opsSettingPanel(){
   const idvOn = !!(S.idvCfg && S.idvCfg.enabled);
+  /* on: true 켜짐 · false 꺼짐 · 'bad' 켜져 있는데 어긋남 (켜진 채 거절만 하는 상태를
+     '꺼짐' 으로 그리면 손님 영향이 없는 줄 안다) */
   const line = (t, on, note) => `<div class="kv"><dt>${esc(t)}</dt><dd>
-    <span class="badge ${on?'b-ok':'b-warn'}">${on?'켜짐':'꺼짐'}</span>
+    <span class="badge ${on==='bad'?'b-danger':on?'b-ok':'b-warn'}">${on==='bad'?'어긋남':on?'켜짐':'꺼짐'}</span>
     <span style="display:block;margin-top:4px;font-size:12.5px;line-height:1.7;color:var(--n700)">${note}</span></dd></div>`;
   return `
     <div class="card pad">
       <b style="display:block;font-size:15px;font-weight:700;margin-bottom:12px">지금 켜져 있는 것</b>
-      ${line('휴대폰 본인확인', idvOn && !(S.idvCfg && S.idvCfg.warn), (()=>{
+      ${line('휴대폰 본인확인', (S.idvCfg && S.idvCfg.warn) || 최근거절().length ? 'bad' : idvOn, (()=>{
         if(!idvOn) return '꺼져 있으면 이름·연락처를 적은 그대로 받습니다. Vercel 에 PORTONE_* 를 넣고 재배포하면 켜집니다.';
         /* 실계약이라고 해 놓고 예전 키로 물러선 상태 - 손님은 인증을 끝까지 하고도
            거절만 받는다. 겉으로는 '켜짐' 이라 아무도 모른다. 여기서 크게 말한다. */
         if(S.idvCfg.warn === 'live-legacy-key') return `<b style="color:var(--danger)">설정이 어긋났습니다 - 지금 본인확인이 전부 거절되고 있을 수 있습니다.</b><br>
           PORTONE_LIVE=1 인데 새 창구 키(<b>PORTONE_CHANNEL_KEY_INICIS</b> · <b>_DANAL</b>)가 없어 예전 시험 키로 열립니다.
           두 키를 넣고 재배포하세요.`;
+        const 거절 = 최근거절();
+        if(거절.length) return `<b style="color:var(--danger)">최근 24시간 본인확인 ${거절.length}건이 창구가 맞지 않아 거절됐습니다.</b><br>
+          새 창구 칸에 <b>시험 채널 키</b>가 들어갔는지 포트원 콘솔에서 확인하세요 (실 연동 채널의 키여야 합니다).
+          마지막 기록: ${esc(거절[0].detail || '')}`;
         const 이름 = {inicis:'간편인증(KG이니시스)', danal:'휴대폰 문자(다날)', one:'예전 한 개짜리 키'};
         const 창구 = (S.idvCfg.channels||[]).map(c => 이름[c.k] || c.k).join(' · ');
         return S.idvCfg.live
@@ -8091,10 +8100,10 @@ function dashProg(){
 const LOG_KO = { demands:'조건 목록', agents:'가입 신청', listings:'매물', users:'손님 계정',
   reports:'신고', 'report-mark':'신고 처리', 'agent-status':'가입 상태 변경',
   'agent-delete':'가입 삭제', 'agent-del-preview':'삭제 전 확인',
-  stats:'지표', 'mark-sent':'전달 표시', 'kakao-unlink':'카카오 연결 해제' };
+  stats:'지표', 'mark-sent':'전달 표시', 'kakao-unlink':'카카오 연결 해제', 'idv-reject':'본인확인 거절' };
 
 /* 웹훅은 사람이 부른 것이 아니다. '운영자' 로 적으면 누가 지웠는지를 잘못 말한다. */
-const logWho = r => r.email || r.who || (r.action === 'kakao-unlink' ? '카카오' : '');
+const logWho = r => r.email || r.who || (r.action === 'kakao-unlink' ? '카카오' : r.action === 'idv-reject' ? '본인확인 서버' : '');
 
 function dashRecent(){
   if(LG.rows == null) return `<div class="card pad" style="padding-top:16px;padding-bottom:16px">
@@ -9656,8 +9665,13 @@ document.addEventListener('compositionend', () => {
    (초점이 옮겨 간 뒤에 그려야 새 칸을 덮지 않는다 - 다음 틱으로 미룬다) */
 document.addEventListener('focusout', e => {
   if(!e.target || !e.target.closest || !e.target.closest('#app')) return;
-  if(!IME && !밀린전체) return;
+  if(!IME && !밀린전체 && !밀린그리기) return;
   IME = false;
+  /* 칸 이름이 붙은 미뤄 둔 그리기(redrawKeepingCaret)도 여기서 끝낸다 (2026-10-09).
+     남겨 두면 나중에 **다른 칸**의 compositionend 가 그 옛 칸 이름으로 그리기를
+     불러 초점을 옛 칸으로 끌고 갔다 - 동네를 치던 글자가 보증금 칸에 들어갔다.
+     이름 없이 그린다: 되돌린초점이 지금 초점이 간 칸을 지켜 준다. */
+  if(밀린그리기){ 밀린그리기 = null; 밀린전체 = true; }
   setTimeout(() => { if(밀린전체 && !IME){ 밀린전체 = false; render(); } }, 0);
 });
 function redrawKeepingCaret(key){

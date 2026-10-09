@@ -55,10 +55,19 @@ async function 물어보기(env){
      LIVE 만 받으므로 모든 인증이 거절된다. 그 상태가 겉으로 보여야 한다. */
   const { 답 } = await 물어보기({ ...기본, PORTONE_CHANNEL_KEY: 'ch-old', PORTONE_LIVE: '1' });
   ok(답.warn === 'live-legacy-key', '실계약인데 예전 키로 물러섰으면 경고를 내보낸다');
+  const 원래 = console.error; let 줄 = 0; console.error = (...a) => { if(String(a[0]).includes('PORTONE_LIVE=1')) 줄++; };
+  for(let i = 0; i < 5; i++) await 물어보기({ ...기본, PORTONE_CHANNEL_KEY: 'ch-old', PORTONE_LIVE: '1' });
+  console.error = 원래;
+  ok(줄 === 0, '방문마다 같은 경고를 서버 기록에 쌓지 않는다 (인스턴스마다 한 번 - 이미 남겼다)');
   const { 답: 정상 } = await 물어보기({ ...기본, PORTONE_CHANNEL_KEY_INICIS: 'ch-ini', PORTONE_LIVE: '1' });
   ok(!('warn' in 정상), '새 키가 있으면 경고가 없다');
 }
 ok(/S\.idvCfg\.warn === 'live-legacy-key'/.test(길.js()), '운영 화면이 그 경고를 띄운다');
+ok(/on==='bad'\?'b-danger'/.test(길.js()) && /on==='bad'\?'어긋남'/.test(길.js()),
+   "어긋난 상태는 '꺼짐' 이 아니라 빨간 '어긋남' 으로 그린다");
+ok(/\(S\.idvCfg && S\.idvCfg\.warn\) \|\| 최근거절\(\)\.length \? 'bad'/.test(길.js()),
+   '경고가 있거나 최근 24시간 거절이 있으면 어긋남이다');
+ok(/'idv-reject':'본인확인 거절'/.test(길.js()), "열람 기록에 '본인확인 거절' 로 보인다");
 {
   const { 답 } = await 물어보기({ ...기본, PORTONE_CHANNEL_KEY_INICIS: 'ch-ini' });
   ok(답.live === false, 'PORTONE_LIVE 가 없으면 실계약으로 읽지 않는다');
@@ -67,13 +76,14 @@ ok(/S\.idvCfg\.warn === 'live-legacy-key'/.test(길.js()), '운영 화면이 그
 /* ── 결과 확인: 어느 창구에서 받은 인증인가 ──
    포트원은 상점 단위로 답한다. 9월 내내 공개됐던 시험 채널로 받은 인증이
    실계약을 켠 뒤에도 '확인된 이름' 으로 서명되면 안 된다. */
-let 사용기록 = 0;
+let 사용기록 = 0, 운영기록 = [];
 async function 확인(env, 창구){
   for(const k of [...키들, ...Object.keys(기본), 'BK_URL']) delete process.env[k];
   Object.assign(process.env, { BK_URL: 'https://fake.supabase.co' }, env);
-  사용기록 = 0;
-  globalThis.fetch = async (u) => {
+  사용기록 = 0; 운영기록 = [];
+  globalThis.fetch = async (u, o) => {
     u = String(u);
+    if(u.includes('bk_ops_log')){ 운영기록.push(JSON.parse(o.body)); return new Response('', { status: 201 }); }
     if(u.includes('api.portone.io')) return new Response(JSON.stringify({
       status: 'VERIFIED', id: 'v1',
       ...(창구 === undefined ? {} : { channel: 창구 }),
@@ -86,17 +96,22 @@ async function 확인(env, 창구){
   const res = { setHeader(){}, status(c){ 상태 = c; return this; }, json(j){ 답 = j; return this; } };
   await idv({ method: 'POST', headers: { 'x-forwarded-for': '9.9.9.' + Math.floor(Math.random()*250) },
               body: { identity_verification_id: 'bk-test-' + Math.random().toString(36).slice(2) } }, res);
-  return { 상태, 답, 사용기록 };
+  return { 상태, 답, 사용기록, 운영기록 };
 }
 const 실계약 = { ...기본, PORTONE_CHANNEL_KEY_INICIS: 'ch-ini', PORTONE_CHANNEL_KEY_DANAL: 'ch-dan', PORTONE_LIVE: '1' };
 {
   const r = await 확인(실계약, { type: 'LIVE', key: 'ch-dan', id: 'c1' });
   ok(r.상태 === 200 && r.답.ok && r.답.token, '실계약 · 열어 둔 LIVE 창구 → 통과');
+  ok(r.운영기록.length === 0, '통과한 인증은 거절 기록을 남기지 않는다');
 }
 {
   const r = await 확인(실계약, { type: 'TEST', key: 'channel-key-예전시험', id: 'c0' });
   ok(r.상태 === 403 && !r.답.token, '실계약인데 시험 채널에서 받은 인증 → 막는다');
   ok(r.사용기록 === 0, '막을 때는 번호를 태우지 않는다');
+  const 기록 = r.운영기록.find(x => x.action === 'idv-reject');
+  ok(!!기록 && /창구 불일치/.test(기록.detail) && /실계약 중/.test(기록.detail),
+     '거절을 열람 기록에 남긴다 (새 칸에 시험 키를 넣은 실수도 실제 거절로 드러난다)');
+  ok(기록 && !/김민수|01012345678/.test(JSON.stringify(기록)), '그 기록에 이름·번호는 적지 않는다');
 }
 {
   const r = await 확인(실계약, { type: 'LIVE', key: 'ch-남의것', id: 'c9' });

@@ -63,6 +63,27 @@ const 입력칸 = (값 = '', 커서 = 0) => ({
     ok(t.셈.n === 0, '칸을 떠난 그 순간에는 아직 그리지 않는다 (새 칸을 덮지 않게)');
     t.흘리기();
     ok(t.셈.n === 1 && !t.틀.IME, 'compositionend 없이 칸을 떠나도 미뤄 둔 그리기를 한다'); }
+  { /* 칸 이름이 붙은 미뤄 둔 그리기(redrawKeepingCaret)가 칸을 떠난 뒤 남아 있으면,
+       나중에 다른 칸의 compositionend 가 옛 칸 이름으로 그려 초점을 끌고 갔다 */
+    const document = 가짜문서(), 타이머 = [], 셈 = { n: 0 }, 끌림 = [];
+    const S = { lastRoute: '#/register' }, location = { hash: '#/register' };
+    const 조합 = 떼기('var IME = false, 밀린그리기 = null, 밀린전체 = false;', '}, 0);\n});');
+    const 적는중src2 = 떼기('const 적는중 = () => {', '};');
+    const 문턱2 = 떼기("if(IME && 적는중() && S.lastRoute === (location.hash || '#/')){", 'return; }');
+    const 틀 = new Function('document', 'S', 'location', 'setTimeout', '셈', '끌림', `
+      ${적는중src2}
+      function render(){ ${문턱2} 셈.n++; }
+      function redrawKeepingCaret(key){ if(IME){ 밀린그리기 = key; return; } 끌림.push(key); render(); }
+      ${조합}
+      return { redrawKeepingCaret, get 밀린그리기(){ return 밀린그리기; } };`)(document, S, location, fn => 타이머.push(fn), 셈, 끌림);
+    document.activeElement = 입력칸('5000');
+    document.울림('compositionstart'); 틀.redrawKeepingCaret('dep');
+    ok(틀.밀린그리기 === 'dep', '(준비) 보증금 칸 조합 중 칸 이름 붙은 그리기가 미뤄졌다');
+    document.울림('focusout', { target: 앱안 }); while(타이머.length) 타이머.shift()();
+    ok(틀.밀린그리기 === null && 셈.n === 1, '칸을 떠나면 칸 이름 없이 한 번 그리고 미뤄 둔 이름을 지운다');
+    document.activeElement = 입력칸('미사');
+    document.울림('compositionstart'); document.울림('compositionend');
+    ok(끌림.length === 0, '나중에 다른 칸에서 조합이 끝나도 옛 칸(보증금)으로 끌고 가지 않는다'); }
   { const t = 만들기(); t.document.activeElement = 입력칸('미사');
     t.document.울림('compositionstart'); t.location.hash = '#/contact'; t.틀.render();
     ok(t.셈.n === 1, '화면이 바뀌는 그리기는 미루지 않는다'); }

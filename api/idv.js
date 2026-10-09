@@ -76,6 +76,7 @@ async function claimOnce(vid) {
 
 import { signIdv } from './_idv.js';
 import { sbHeaders, sbUrl } from './_auth.js';
+import { logOps } from './_opslog.js';
 
 const API = 'https://api.portone.io/identity-verifications';
 
@@ -89,6 +90,8 @@ function channels() {
   if (!list.length && e.PORTONE_CHANNEL_KEY) list.push({ k: 'one', key: e.PORTONE_CHANNEL_KEY.trim() });
   return list;
 }
+
+let 경고남김 = false;
 
 const ready = () => !!(process.env.PORTONE_API_SECRET
   && process.env.PORTONE_STORE_ID && channels().length
@@ -137,7 +140,12 @@ export default async function handler(req, res) {
        설정 실수가 겉으로 안 보였다. 경고를 함께 내보내고(운영 화면이 띄운다)
        서버 기록에도 남긴다. 창구를 막지는 않는다 - 예전 키가 실은 실채널일 수도 있다. */
     const warn = isLive() && ch.every(c => c.k === 'one') ? 'live-legacy-key' : null;
-    if (warn) console.error('[idv] PORTONE_LIVE=1 인데 새 창구 키가 없다 - 예전 키로 열리고, 그 키가 시험 채널이면 모든 인증이 거절된다');
+    /* 이 GET 은 모든 방문자가 화면을 열 때마다 부른다 - 요청마다 남기면 같은 줄이
+       로그를 덮어 진짜 오류가 묻힌다. 함수 인스턴스마다 한 번만 남긴다. */
+    if (warn && !경고남김) {
+      경고남김 = true;
+      console.error('[idv] PORTONE_LIVE=1 인데 새 창구 키가 없다 - 예전 키로 열리고, 그 키가 시험 채널이면 모든 인증이 거절된다');
+    }
     return res.status(200).json({
       enabled: true, live: isLive(), store_id: process.env.PORTONE_STORE_ID,
       ...(warn ? { warn } : {}),
@@ -193,7 +201,13 @@ export default async function handler(req, res) {
       ? (!창구 || 창구.type !== 'LIVE' || (창구.key && !열어둔키.includes(창구.key)))
       : (창구 && 창구.key && !열어둔키.includes(창구.key));
     if (어긋남) {
-      console.error('[idv] 창구 불일치', 창구 ? `${창구.type || '?'} ${String(창구.key || '').slice(0, 24)}` : 'channel 없음');
+      const 무엇 = 창구 ? `${창구.type || '?'} ${String(창구.key || '').slice(0, 24)}` : 'channel 없음';
+      console.error('[idv] 창구 불일치', 무엇);
+      /* 열람 기록에도 남긴다 (2026-10-09). 경고(GET warn)는 '예전 키로 물러선 경우' 만
+         잡는다 - 새 칸에 실수로 시험 채널 키를 넣어도 모든 인증이 여기서 거절되는데
+         겉으로는 '실계약으로 열려 있습니다' 였다. 키 종류를 짐작하는 대신 **실제로
+         거절된 사실**을 운영 화면이 세게 한다. 이름·번호는 적지 않는다. */
+      await logOps(req, null, { action: 'idv-reject', detail: `창구 불일치 · ${무엇}${isLive() ? ' · 실계약 중' : ''}` });
       return res.status(403).json({ error: '이 본인확인은 받을 수 없습니다 - 다시 받아주세요', again: true });
     }
 

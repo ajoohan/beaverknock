@@ -194,7 +194,9 @@ export default async function handler(req, res) {
        그래서 응답의 channel 을 본다.
          · 실계약(PORTONE_LIVE=1)이면 LIVE 채널만 받는다. channel 이 없으면 막는다.
          · 키가 실려 오면 지금 열어 둔 창구의 키여야 한다 - 시험 기간에도 그렇다.
-       어긋나면 번호를 태우기(claimOnce) **전에** 돌려보낸다. */
+       어긋나도 번호는 태운다(2026-10-09 바꿈). 처음엔 '태우지 않고' 돌려보냈는데,
+       그러면 같은 id 를 계속 보내 열람 기록을 끝없이 쌓을 수 있었다 - 채널은 id 에
+       붙박이라 같은 id 가 나중에 통과할 일은 없다. 두 번째부터는 409 로 조용히 끝난다. */
     const 창구 = j.channel || null;
     const 열어둔키 = channels().map(c => c.key);
     const 어긋남 = isLive()
@@ -202,6 +204,10 @@ export default async function handler(req, res) {
       : (창구 && 창구.key && !열어둔키.includes(창구.key));
     if (어긋남) {
       const 무엇 = 창구 ? `${창구.type || '?'} ${String(창구.key || '').slice(0, 24)}` : 'channel 없음';
+      const 처음 = await claimOnce(id);
+      if (!처음.ok && 처음.why === 'used') {
+        return res.status(409).json({ error: '이미 사용된 본인확인입니다 - 다시 받아주세요', again: true });
+      }
       console.error('[idv] 창구 불일치', 무엇);
       /* 열람 기록에도 남긴다 (2026-10-09). 경고(GET warn)는 '예전 키로 물러선 경우' 만
          잡는다 - 새 칸에 실수로 시험 채널 키를 넣어도 모든 인증이 여기서 거절되는데

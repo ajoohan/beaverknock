@@ -150,8 +150,20 @@ async function readLog(req, res, p, opsUser) {
       }
       return res.status(500).json({ error: '기록을 불러오지 못했습니다' });
     }
+    const rows = await r.json();
+    /* 최근 24시간 본인확인 거절 수는 **따로** 센다 (2026-10-09). 화면이 받은 rows 는
+       최근 limit 줄뿐이고 '연락처 열어본 것만' 필터가 걸리면 거절 줄이 아예 빠진다 -
+       그 안에서 세면 전부 거절되는 중에도 '켜짐' 이 떴다. 50 건이면 충분히 '많다' 다. */
+    let idvRejects = null;
+    try {
+      const since = new Date(Date.now() - 864e5).toISOString();
+      const rq = new URLSearchParams({ select: 'at,detail', action: 'eq.idv-reject',
+        at: 'gte.' + since, order: 'at.desc', limit: '50' });
+      const rr = await fetch(sbUrl('bk_ops_log', rq.toString()), { headers: sbHeaders() });
+      if (rr.ok) { const x = await rr.json(); idvRejects = { n: x.length, last: x[0] || null }; }
+    } catch (_) { /* 못 셌으면 null - 화면은 rows 로 물러선다 */ }
     /* 이 조회 자체는 기록하지 않는다. 기록을 보는 일이 기록을 밀어내면 안 된다. */
-    return res.status(200).json({ rows: await r.json(), at: new Date().toISOString() });
+    return res.status(200).json({ rows, idvRejects, at: new Date().toISOString() });
   } catch (e) {
     return res.status(500).json({ error: '기록을 불러오지 못했습니다' });
   }

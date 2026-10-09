@@ -7324,7 +7324,7 @@ function lgFetch(){
   apiFetch('/api/demands', {method:'POST',
     body: JSON.stringify({what:'log', pass: OPS.pass, limit: 300, only: LG.only || undefined})})
     .then(r => r.json().catch(()=>({})).then(j => {
-      if(r.ok){ LG.rows = j.rows || []; LG.at = j.at || ''; LG.note = j.note || ''; }
+      if(r.ok){ LG.rows = j.rows || []; LG.at = j.at || ''; LG.note = j.note || ''; LG.idvRejects = j.idvRejects || null; }
       else LG.err = j.error || '조회에 실패했습니다';
       LG.loading = false; render();
     }))
@@ -7539,8 +7539,13 @@ const opsInviteText = () => [
 ].join('\n');
 
 /* 열람 기록에 남은 '본인확인 거절'(api/idv.js) 중 최근 24시간. 기록을 아직 안 불러왔으면 비어 있다 */
-const 최근거절 = () => (LG.rows || []).filter(r => r.action === 'idv-reject'
-  && Date.now() - new Date(r.at || r.created_at || 0).getTime() < 864e5);
+const 최근거절 = () => {
+  /* 서버가 따로 센 값을 먼저 쓴다 - rows 는 최근 300줄이고 필터가 걸리면 거절 줄이 빠진다 */
+  const x = LG.idvRejects;
+  if(x && typeof x.n === 'number') return Array.from({length: x.n}, (_, i) => i === 0 && x.last ? x.last : {});
+  return (LG.rows || []).filter(r => r.action === 'idv-reject'
+    && Date.now() - new Date(r.at || r.created_at || 0).getTime() < 864e5);
+};
 function opsSettingPanel(){
   const idvOn = !!(S.idvCfg && S.idvCfg.enabled);
   /* on: true 켜짐 · false 꺼짐 · 'bad' 켜져 있는데 어긋남 (켜진 채 거절만 하는 상태를

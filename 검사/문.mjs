@@ -115,6 +115,19 @@ Date.now = () => 진짜Now() + 31 * 60 * 1000;
 ok(I.readIdv(옛표) === null, '30분이 지난 표는 읽히지 않는다');
 Date.now = 진짜Now;
 ok(!!I.readIdv(옛표), '시간을 되돌리면 다시 읽힌다 - 막은 것은 시간이지 표가 아니다');
+/* 실계약 전환 직전 시험 창구로 끊은 표 (2026-10-09) */
+{
+  const 시험표 = I.signIdv({ name: '한상혁', phone: '01012345678', live: false });
+  const 실표 = I.signIdv({ name: '한상혁', phone: '01012345678', live: true });
+  const 전 = process.env.PORTONE_LIVE;
+  process.env.PORTONE_LIVE = '1';
+  ok(I.readIdv(시험표) === null, '실계약 중에는 시험 창구에서 끊은 표를 받지 않는다');
+  ok(I.readIdv(옛표) === null, '실계약 중에는 live 표시가 없는 예전 표도 받지 않는다');
+  ok(!!I.readIdv(실표), '실계약 중 실계약 표는 받는다');
+  delete process.env.PORTONE_LIVE;
+  ok(!!I.readIdv(시험표), '시험 기간에는 시험 표도 받는다 - 흐름을 돌려 볼 수 있어야 한다');
+  if (전 !== undefined) process.env.PORTONE_LIVE = 전;
+}
 /* 다른 열쇠로 끊은 표 */
 const 본래열쇠 = process.env.BK_SECRET_KEY;
 process.env.BK_SECRET_KEY = 'z'.repeat(40);

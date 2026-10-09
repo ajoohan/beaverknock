@@ -42,5 +42,9 @@ export function readIdv(token) {
   try { p = JSON.parse(unb64u(body).toString('utf8')); } catch { return null; }
   if (!p || typeof p.at !== 'number' || Date.now() - p.at > TTL) return null;
   if (!p.name || !p.phone) return null;
+  /* 실계약 중에는 실계약에서 끊은 표만 받는다 (2026-10-09).
+     PORTONE_LIVE=1 로 바꾸기 직전에 시험 창구로 받은 표가 30분 동안 살아 있었다 -
+     그 사이 가짜 이름으로 조건을 내거나 공급자로 가입할 수 있었다. */
+  if (process.env.PORTONE_LIVE === '1' && p.live !== true) return null;
   return p;
 }

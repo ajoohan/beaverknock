@@ -194,9 +194,15 @@ ok(/S\.agent\.status === 'approved' \? '#\/partner\/demands' : '#\/partner\/veri
    로그인 안 한 방문마다 /api/feed 를 두 번 두드리고 401 을 두 번 받았다. */
 for(const 이름 of ['loadListings', 'loadMyProps', 'loadMine', 'loadFeed']){
   const 몸 = js.slice(js.indexOf(`function ${이름}(`), js.indexOf(`function ${이름}(`) + 260);
-  ok(/if\(!세션있음\(\)\) return;|if\(!sess \|\| !sess\.access_token\)/.test(몸),
-     `${이름} 은 세션이 없으면 서버를 부르지 않는다`);
+  ok(/if\(!세션있음\(\)\)/.test(몸), `${이름} 은 세션이 없으면 서버를 부르지 않는다`);
 }
+/* 세션 판정은 한 곳 - 각자 적으면 그중 하나가 또 빠진다 */
+ok((js.match(/const 세션있음 = /g) || []).length === 1, '세션 판정 함수는 하나뿐이다');
+ok(/const waitingFor = ready => 세션있음\(\) && !ready;/.test(js), '기다림 표시도 같은 판정을 쓴다');
+ok(!/function load(Feed|Mine|Listings|MyProps)\([^)]*\)\{\s*\n\s*const sess = store\.get\(\);/.test(js),
+   '불러오는 함수들이 세션을 따로 읽지 않는다');
+/* 공개 안내 화면(#/partner)에서는 내 목록을 부르지 않는다 - 로그인한 손님도 403 을 받았다 */
+ok(!/h==='#\/partner'\) loadMyProps|h==='#\/partner'\) loadListings/.test(js), '#/partner 에서 내 제안·내 물건을 부르지 않는다');
 
 console.log(`${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

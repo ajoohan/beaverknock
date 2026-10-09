@@ -51,6 +51,15 @@ async function 물어보기(env){
   ok(답.enabled === false, '키가 하나도 없으면 꺼져 있다');
 }
 {
+  /* LIVE=1 만 먼저 넣고 새 키가 없으면 예전 키(시험 채널)로 열리고, 결과 확인은
+     LIVE 만 받으므로 모든 인증이 거절된다. 그 상태가 겉으로 보여야 한다. */
+  const { 답 } = await 물어보기({ ...기본, PORTONE_CHANNEL_KEY: 'ch-old', PORTONE_LIVE: '1' });
+  ok(답.warn === 'live-legacy-key', '실계약인데 예전 키로 물러섰으면 경고를 내보낸다');
+  const { 답: 정상 } = await 물어보기({ ...기본, PORTONE_CHANNEL_KEY_INICIS: 'ch-ini', PORTONE_LIVE: '1' });
+  ok(!('warn' in 정상), '새 키가 있으면 경고가 없다');
+}
+ok(/S\.idvCfg\.warn === 'live-legacy-key'/.test(길.js()), '운영 화면이 그 경고를 띄운다');
+{
   const { 답 } = await 물어보기({ ...기본, PORTONE_CHANNEL_KEY_INICIS: 'ch-ini' });
   ok(답.live === false, 'PORTONE_LIVE 가 없으면 실계약으로 읽지 않는다');
 }

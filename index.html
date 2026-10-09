@@ -2633,7 +2633,11 @@ function changed(key, rows){
 }
 
 /* 아직 서버에서 못 받았으면 '없음' 이 아니다. 빈 화면으로 단정하지 않는다. */
-const waitingFor = ready => !!store.get() && !ready;
+/* 로그인했는가 - 서버에 내 것을 물어도 되는가. 판정은 여기 한 곳이다 (2026-10-09).
+   loadFeed · loadMine · loadListings · loadMyProps · waitingFor 가 각자 적고 있었고,
+   그중 둘에 빠져 있어서 로그인 전 방문마다 401 이 났다. */
+const 세션있음 = () => { const s = store.get(); return !!(s && s.access_token); };
+const waitingFor = ready => 세션있음() && !ready;
 /* 기다리는 동안에는 표시 하나만 둔다. 무엇을 불러오는지는 잠시 뒤 화면이
    스스로 말한다 - 읽히기도 전에 사라지는 글자를 굳이 띄우지 않는다.
    못 보는 분을 위한 안내는 bkLoader 의 aria-label 이 맡는다. */
@@ -2706,7 +2710,6 @@ function listingFromRow(x){
    화면인데, 라우터가 여기서 내 물건·내 제안을 불러서 **로그인 안 한 방문마다
    서버를 두 번 두드리고 401 을 두 번 받았다.** loadFeed 에는 이 문턱이 있었고
    이 둘에만 없었다. 예시는 그대로 두면 된다 - 로그인 전 화면이 원래 그렇다. */
-const 세션있음 = () => { const s = store.get(); return !!(s && s.access_token); };
 function loadListings(force){
   if(!세션있음()) return;
   if(S.lsLoading || (S.lsAt && !force && Date.now()-S.lsAt < 20000)) return;
@@ -2854,8 +2857,7 @@ function demandFromRow(d){
 /* 손님: 내 조건과 거기에 온 제안을 서버에서 받는다.
    시드는 로그인하지 않았을 때만 보여준다 - '예시' 배지가 붙어 있다. */
 function loadMine(force){
-  const sess = store.get();
-  if(!sess || !sess.access_token) return;
+  if(!세션있음()) return;
   if(S.mineLoading || (S.mineAt && !force && Date.now()-S.mineAt < 20000)) return;
   S.mineLoading = true;
   apiFetch('/api/my')
@@ -2913,8 +2915,7 @@ function scopeFromServer(j){
 
 /* 중개사: 내 활동 조건에 맞는 손님 조건을 서버에서 받는다. */
 function loadFeed(force){
-  const sess = store.get();
-  if(!sess || !sess.access_token){ S.feedErr='로그인이 필요합니다'; S.feedNeed='login'; return; }
+  if(!세션있음()){ S.feedErr='로그인이 필요합니다'; S.feedNeed='login'; return; }
   if(S.feedLoading || (S.feedAt && !force && Date.now()-S.feedAt < 20000)) return;
   S.feedLoading = true;
   /* 거르는 값은 서버가 저장해 둔 것을 쓴다 - 여기서 보내지 않는다.
@@ -7545,9 +7546,19 @@ function opsSettingPanel(){
   return `
     <div class="card pad">
       <b style="display:block;font-size:15px;font-weight:700;margin-bottom:12px">지금 켜져 있는 것</b>
-      ${line('휴대폰 본인확인', idvOn,
-        idvOn ? '포트원 채널이 붙어 있습니다. 접수는 본인확인을 통과해야 들어옵니다.<br>지금은 <b>테스트 채널</b>이라 실제 확인은 되지 않습니다 - 실계약 MID 로 바꿔야 합니다.'
-              : '꺼져 있으면 이름·연락처를 적은 그대로 받습니다. Vercel 에 PORTONE_* 세 개를 넣고 재배포하면 켜집니다.')}
+      ${line('휴대폰 본인확인', idvOn && !(S.idvCfg && S.idvCfg.warn), (()=>{
+        if(!idvOn) return '꺼져 있으면 이름·연락처를 적은 그대로 받습니다. Vercel 에 PORTONE_* 를 넣고 재배포하면 켜집니다.';
+        /* 실계약이라고 해 놓고 예전 키로 물러선 상태 - 손님은 인증을 끝까지 하고도
+           거절만 받는다. 겉으로는 '켜짐' 이라 아무도 모른다. 여기서 크게 말한다. */
+        if(S.idvCfg.warn === 'live-legacy-key') return `<b style="color:var(--danger)">설정이 어긋났습니다 - 지금 본인확인이 전부 거절되고 있을 수 있습니다.</b><br>
+          PORTONE_LIVE=1 인데 새 창구 키(<b>PORTONE_CHANNEL_KEY_INICIS</b> · <b>_DANAL</b>)가 없어 예전 시험 키로 열립니다.
+          두 키를 넣고 재배포하세요.`;
+        const 이름 = {inicis:'간편인증(KG이니시스)', danal:'휴대폰 문자(다날)', one:'예전 한 개짜리 키'};
+        const 창구 = (S.idvCfg.channels||[]).map(c => 이름[c.k] || c.k).join(' · ');
+        return S.idvCfg.live
+          ? `<b>실계약</b>으로 열려 있습니다 · 창구: ${esc(창구)}. 접수는 본인확인을 통과해야 들어옵니다.`
+          : `창구: ${esc(창구)}. 지금은 <b>시험 채널</b>이라 실제 확인은 되지 않습니다 - 실계약 키를 넣고 PORTONE_LIVE=1 로 바꿔야 합니다.`;
+      })())}
       ${line('운영자 계정 잠금', !OPS.openUntil,
         OPS.openUntil
           ? `<b style="color:var(--warn)">지금은 시험 기간이라 느슨합니다.</b> ${esc(opsLinkWhen(OPS.openUntil))} 까지는
@@ -9026,8 +9037,10 @@ function render(){
   if(h==='#/ops/live' && OPS.rows && (OPS.tab||'home')==='home') dashDoLoad();
   if(h==='#/my' || h==='#/inbox' || h.startsWith('#/proposal/')) loadMine(false);
   if(h==='#/partner/demands' || h.startsWith('#/partner/demand/')) loadFeed(false);
-  if(h==='#/partner/proposals' || h==='#/partner/stats' || h==='#/partner') loadMyProps(false);
-  if(h.startsWith('#/partner/listing') || h==='#/partner') loadListings(false);
+  /* '#/partner' 는 누구나 여는 안내 화면이고 내 제안·내 물건을 쓰지 않는다 (2026-10-09).
+     거기서 부르면 로그인한 손님 계정도 방문마다 /api/feed 를 두 번 부르고 403 을 받았다. */
+  if(h==='#/partner/proposals' || h==='#/partner/stats') loadMyProps(false);
+  if(h.startsWith('#/partner/listing')) loadListings(false);
   /* 위치는 먼저 묻지 않는다. 사이트에 들어오자마자 권한창이 뜨면 대부분 거절하고,
      거절당한 권한은 되돌리기 어렵다. 지도에서 '📍 현재 위치로' 를 누른 사람에게만 묻는다. */
 
@@ -9637,6 +9650,15 @@ document.addEventListener('compositionend', () => {
   IME = false;
   if(밀린그리기){ const k = 밀린그리기; 밀린그리기 = null; 밀린전체 = false; redrawKeepingCaret(k); }
   else if(밀린전체){ 밀린전체 = false; render(); }
+});
+/* 일부 휴대폰 키보드는 칸을 떠날 때 compositionend 없이 초점만 잃는다. 그러면
+   IME 가 참으로 남고 미뤄 둔 그리기가 다음 손짓까지 안 돌았다. 칸을 떠나면 끝난 것으로 본다.
+   (초점이 옮겨 간 뒤에 그려야 새 칸을 덮지 않는다 - 다음 틱으로 미룬다) */
+document.addEventListener('focusout', e => {
+  if(!e.target || !e.target.closest || !e.target.closest('#app')) return;
+  if(!IME && !밀린전체) return;
+  IME = false;
+  setTimeout(() => { if(밀린전체 && !IME){ 밀린전체 = false; render(); } }, 0);
 });
 function redrawKeepingCaret(key){
   if(IME){ 밀린그리기 = key; return; }

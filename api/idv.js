@@ -129,8 +129,18 @@ export default async function handler(req, res) {
   if (req.method === 'GET') {
     if (!ready()) return res.status(200).json({ enabled: false, live: false });
     const ch = channels();
+    /* ── 실계약이라고 해 놓고 예전 키로 물러선 상태 (2026-10-09) ──
+       PORTONE_LIVE=1 만 먼저 넣고 새 창구 키(_INICIS · _DANAL)가 아직 없으면
+       예전 PORTONE_CHANNEL_KEY(시험 채널)로 창이 열린다. 그런데 결과 확인(POST)은
+       LIVE 채널만 받으므로 **모든 본인확인이 거절된다** - 손님은 인증을 끝까지
+       하고도 '받을 수 없습니다' 만 본다. 그런데도 여기는 enabled·live 둘 다 참이라
+       설정 실수가 겉으로 안 보였다. 경고를 함께 내보내고(운영 화면이 띄운다)
+       서버 기록에도 남긴다. 창구를 막지는 않는다 - 예전 키가 실은 실채널일 수도 있다. */
+    const warn = isLive() && ch.every(c => c.k === 'one') ? 'live-legacy-key' : null;
+    if (warn) console.error('[idv] PORTONE_LIVE=1 인데 새 창구 키가 없다 - 예전 키로 열리고, 그 키가 시험 채널이면 모든 인증이 거절된다');
     return res.status(200).json({
       enabled: true, live: isLive(), store_id: process.env.PORTONE_STORE_ID,
+      ...(warn ? { warn } : {}),
       channels: ch,
       channel_key: ch[0].key,          /* 10/6 이전 화면(캐시)이 읽던 자리. 새 화면은 channels 만 본다 - 몇 주 뒤 지운다 */
     });
@@ -206,7 +216,9 @@ export default async function handler(req, res) {
     }
 
     /* ci·di 는 여기서 끝난다. 로그에도 남기지 않는다. */
-    const token = signIdv({ name, phone, birth, op: String(c.operator ?? '').slice(0, 20) });
+    /* live: 실계약에서 끊은 표인가. 전환 직전 시험 창구로 받은 표가 전환 뒤
+       30분 동안 통하지 않게, 읽는 쪽(readIdv)이 이 값을 본다. */
+    const token = signIdv({ name, phone, birth, op: String(c.operator ?? '').slice(0, 20), live: isLive() });
 
     return res.status(200).json({
       ok: true, name, phone, birth,

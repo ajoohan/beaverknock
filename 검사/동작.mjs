@@ -151,18 +151,30 @@ const 입력칸 = (값 = '', 커서 = 0) => ({
     ok(a.눌림 === 0, '조합키가 눌린 엔터는 넘긴다'); }
 }
 
-/* ═════ ④ 라디오는 키보드로 다시 눌러 해제되지 않는다 (2026-10-12) ═════ */
+/* ═════ ④ 라디오는 다시 눌러도 풀리지 않고, 비우는 길은 눈에 보인다 (2026-10-12) ═════
+   처음엔 키보드에서만 '다시 누르기' 를 막았다 - 마우스·터치로는 여전히 풀렸다.
+   근본에서 고쳤다: 처리기가 같은 값을 다시 받아도 그대로이고, 비울 수 있는 줄에만
+   '선택 해제' 단추가 있다. 화면 코드의 chipsHTML 과 처리기 조각을 그대로 돌린다. */
 {
-  const src = 떼기("document.addEventListener('keydown', e=>{\n  if(e.key !== ' ' && e.key !== 'Enter' && e.key !== 'Spacebar') return;\n  const 칩 =", '\n});');
-  const document = 가짜문서();
-  new Function('document', src)(document);
-  const 칩 = (켜짐, 라디오 = true) => ({ closest: s => {
-    const 맞음 = 라디오 && 켜짐 ? s.includes('[aria-checked="true"]') : false;
-    return 맞음 ? {} : null; } });
-  const 누르기 = (el, key) => { let 막음 = false; document.울림('keydown', { key, target: el, preventDefault(){ 막음 = true; } }); return 막음; };
-  ok(누르기(칩(true), ' ') && 누르기(칩(true), 'Enter'), '고른 라디오 칩에서 Space·Enter 는 막는다 (선택이 풀리지 않는다)');
-  ok(!누르기(칩(false), ' '), '아직 안 고른 칩의 Space 는 그대로 둔다 (그걸로 고른다)');
-  ok(!누르기(칩(true, false), ' '), '여럿 고르는 칩(라디오 아님)은 Space 로 끌 수 있다');
+  const escSrc = 떼기('const esc = s =>', ');\n', true);
+  const 줄src = 떼기('const 비울수있는줄 = new Set([', ']);');
+  const 칩src = 떼기('function chipsHTML(list, sel, act, multi){', "      ? `<button class=\"chip-clear\" data-act=\"${act}\" data-v=\"\">선택 해제</button>` : ''}`;}");
+  const chipsHTML = new Function(`${escSrc}\n${줄src}\n${칩src}\nreturn chipsHTML;`)();
+  const 해제 = h => /class="chip-clear"/.test(h);
+  ok(!해제(chipsHTML(['1개','2개'], '', 'hbath', false)), '아직 안 고른 줄에는 선택 해제가 없다');
+  ok(해제(chipsHTML(['1개','2개'], '2개', 'hbath', false)), '고른 줄(비울 수 있는 줄)에는 선택 해제가 보인다');
+  ok(/data-act="hbath" data-v="">선택 해제/.test(chipsHTML(['1개','2개'], '2개', 'hbath', false)), '선택 해제는 빈 값으로 같은 처리기를 부른다');
+  ok(!해제(chipsHTML(['전세','월세','매매'], '월세', 'ldeal', false)), '기본값이 있는 줄(거래방식)에는 선택 해제가 없다');
+  ok(!해제(chipsHTML(['A','B'], ['A'], 'htype', true)), '여럿 고르는 줄에는 없다 (다시 눌러 끄면 된다)');
+  /* 처리기: 같은 값을 다시 받아도 그대로, 빈 값이면 비운다 */
+  const 처리 = 떼기("    case 'hbath':", 'return true;');
+  const d = { hBath: '2개' };
+  const 돌리기 = v => new Function('d', 'v', 'render', `switch('hbath'){ ${처리} }`)(d, v, () => {});
+  돌리기('2개'); ok(d.hBath === '2개', '고른 칩을 다시 눌러도 선택이 풀리지 않는다 (마우스·터치·키보드 모두)');
+  돌리기(''); ok(d.hBath === '', '선택 해제를 누르면 비워진다');
+  const 남은토글 = (js.match(/case '([^']+)':[^\n]*===v ?\? ?'' ?: ?v/g) || []).join(' ');
+  ok(!/'(hbath|hage|elev|keyOk|signNeed|move-when|rooms|ldeal|lhtype)'/.test(남은토글), '라디오 줄 처리기에 "같으면 비우기" 가 남아 있지 않다');
+  ok(!/'고른 것을 다시 눌러 해제' 하지 않는다/.test(js), '키보드에서만 막던 특수 처리기는 걷었다 - 근본에서 고쳤으니 필요 없다');
 }
 
 /* ═════ ⑤ 손으로 짠 칩 줄도 골라졌는지를 보조기기에 말한다 ═════ */

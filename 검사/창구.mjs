@@ -78,10 +78,33 @@ ok(/'idv-reject':'본인확인 거절'/.test(길.js()), "열람 기록에 '본�
 {
   const fs = await import('node:fs');
   const 운영 = fs.readFileSync(new URL('../api/demands.js', import.meta.url), 'utf8');
-  ok(/action: 'eq\.idv-reject'/.test(운영) && /idvRejects/.test(운영),
-     '최근 24시간 거절 수는 서버가 따로 센다 (화면의 300줄·필터와 상관없이)');
-  ok(/LG\.idvRejects = j\.idvRejects/.test(길.js()) && /const x = LG\.idvRejects;/.test(길.js()),
-     '운영 화면은 서버가 센 수를 먼저 쓴다');
+  /* 서버: readLog 조각을 떼어 fetch 흉내로 돌린다 - 쿼리 문자열을 실제로 본다 */
+  const 시작 = 운영.indexOf('async function readLog(');
+  const 끝 = 시작 + 운영.slice(시작).search(/\r?\n\}\r?\n/) + 3;   /* 서버 파일은 줄바꿈이 CRLF 일 수 있다 */
+  const 물음 = [];
+  const readLog = new Function('fetch', 'sbUrl', 'sbHeaders', `${운영.slice(시작, 끝)}; return readLog;`)(
+    async u => { 물음.push(String(u));
+      if(String(u).includes('action=eq.idv-reject')) return new Response(JSON.stringify([{ at: '2026-10-12T01:00:00Z', detail: '창구 불일치 · TEST' }, { at: 'x' }]), { status: 200 });
+      return new Response(JSON.stringify([{ action: 'demands' }]), { status: 200 }); },
+    (t, q) => `https://fake/${t}?${q || ''}`, () => ({}));
+  let 답 = null; const res = { status(){ return this; }, json(j){ 답 = j; return this; } };
+  const 전 = Date.now();
+  await readLog({}, res, { only: 'reveal' }, null);
+  const 센물음 = 물음.find(u => u.includes('action=eq.idv-reject')) || '';
+  const 기준 = decodeURIComponent((센물음.match(/at=gte\.([^&]+)/) || [])[1] || '');
+  ok(!!센물음 && !/reveal=/.test(센물음), "거절 수는 '연락처 열어본 것만' 필터와 상관없이 따로 묻는다");
+  ok(기준 && Math.abs(new Date(기준).getTime() - (전 - 864e5)) < 5000, '최근 24시간을 센다 (gte 지금-24시간)');
+  ok(답 && 답.idvRejects && 답.idvRejects.n === 2 && /창구 불일치/.test(답.idvRejects.last.detail), '건수와 마지막 기록을 함께 돌려준다');
+  /* 화면: 최근거절 조각을 떼어 LG 를 바꿔 가며 돌린다 */
+  const 화면 = 길.js();
+  const 조각 = 화면.slice(화면.indexOf('const 최근거절 = () => {'), 화면.indexOf('\n};', 화면.indexOf('const 최근거절 = () => {')) + 3);
+  const 판정 = LG => new Function('LG', `${조각}; return 최근거절();`)(LG);
+  ok(판정({ rows: [], idvRejects: { n: 3, last: { detail: '창구 불일치' } } }).length === 3,
+     '열람 기록 rows 에 거절이 없어도(필터·300줄) 서버가 센 수로 어긋남을 안다');
+  ok(판정({ rows: [{ action: 'idv-reject', at: new Date().toISOString() }], idvRejects: { n: 0, last: null } }).length === 0,
+     '서버가 0 이라고 하면 rows 로 다시 세지 않는다 (서버 수가 먼저)');
+  ok(판정({ rows: [{ action: 'idv-reject', at: new Date().toISOString() }, { action: 'idv-reject', at: '2000-01-01' }] }).length === 1,
+     '서버 수가 없으면 rows 의 최근 24시간만 센다');
 }
 {
   const { 답 } = await 물어보기({ ...기본, PORTONE_CHANNEL_KEY_INICIS: 'ch-ini' });

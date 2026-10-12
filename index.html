@@ -1079,6 +1079,10 @@ body.mo .vcard .vbtn{width:100%;margin-top:10px}
 .idvPick .btn{flex-direction:column;gap:3px;padding:12px 18px;min-height:56px}
 .idvPick .btn .t{font-size:15px;font-weight:700}
 .idvPick .btn .d{font-size:12px;font-weight:600;opacity:.82}
+/* '선택 해제' - 칩 줄 바로 아래의 작은 글 단추. 과녁은 32px(WCAG 2.5.8 최소 24) */
+.chip-clear{display:inline-flex;align-items:center;min-height:32px;margin-top:4px;padding:0 2px;
+  font-size:12.5px;font-weight:600;color:var(--n500);text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.chip-clear:hover{color:var(--ind)}
 .heroBand{width:100%;max-width:min(1760px,94vw);margin:0 auto;padding:0 clamp(32px,3.4vw,76px)}
 
 /* 파트너 카드 - 넓은 화면에서 가장 먼저 눈에 들어와야 하는 것 */
@@ -2571,6 +2575,15 @@ function mprog(pct){ return `<div class="mprog"><i style="width:${pct}%"></i></d
    표 모양과 **보조기기에 읽히는 역할**을 둘 다 여기서 가른다 -
    전에는 그냥 <button> 이라, 화면을 읽어 주는 기기로는 어느 칩이 골라져
    있는지 알 방법이 아예 없었다. */
+/* ── 비울 수 있는 하나-고르기 줄 (2026-10-12) ──
+   전에는 고른 칩을 **다시 누르면** 비워졌다. 라디오라고 말해 놓고(role=radio)
+   다시 눌러 풀리면 낭독기는 '선택 안 됨' 을 읽고, 키보드·마우스·터치가 서로 다르게
+   움직였다. 다시 눌러도 그대로이게 하고, 비울 수 있어야 하는 줄에만 **눈에 보이는
+   '선택 해제'** 를 둔다 - 무엇을 누르면 비워지는지 누구에게나 같다.
+   기본값이 있는 줄(거래방식=월세 · 층=중층 · 단층/복층)은 비울 이유가 없어 넣지 않는다. */
+const 비울수있는줄 = new Set(['move-when','elev','keyOk','signNeed','hbath','hage','moveWhy','bldType','dock','temp',
+  'rooms','floor','house','loan','pref','feeType','floorMode','band','moveIn','dir','park','elev6','dirBase',
+  'feeBasis','phtype','lfeeBasis','lfeeType','ldir','ldirBase','lhtype','lpark']);
 function chipsHTML(list, sel, act, multi){
   const 켜짐 = v => multi ? (sel||[]).includes(v) : sel === v;
   /* 라디오 묶음은 Tab 으로 **한 번만** 들어간다 - 고른 칸이 그 문이고,
@@ -2581,7 +2594,8 @@ function chipsHTML(list, sel, act, multi){
       return `<button class="chip ${k?'on':''}" data-act="${act}" data-v="${esc(v)}"
         ${multi ? `aria-pressed="${k}"`
                 : `role="radio" aria-checked="${k}" tabindex="${i===문?0:-1}"`}>${esc(v)}</button>`;
-    }).join('')}</div>`;}
+    }).join('')}</div>${!multi && sel && 비울수있는줄.has(act)
+      ? `<button class="chip-clear" data-act="${act}" data-v="">선택 해제</button>` : ''}`;}
 function zonesHTML(zones, sel){
   /* 칩 97 개를 한 번에 펼치면 목록이 지도보다 길어진다 - 실제로 610px 더 길었다.
      서비스 시작 지역만 펴두고 나머지는 접는다. 고른 것이 있는 묶음도 펴 둔다. */
@@ -9876,7 +9890,7 @@ function handle(a,v,el){
     case 'who': { d.who=v; d.kind=WHO[v].kind; go('#/register'); return true; }
     case 'kind': d.kind=v; go('#/register'); return true;
     case 'move-when':
-      d.moveWhen = d.moveWhen===v ? '' : v;
+      d.moveWhen = v;
       /* 날짜를 지정하지 않기로 했으면 골라둔 달도 함께 치운다 -
          화면에 없는 값이 조건으로 나가면 안 된다. */
       if(d.moveWhen !== '날짜 지정'){ d.moveMonth=''; d.movePart=''; }
@@ -10095,9 +10109,9 @@ function handle(a,v,el){
     case 'pick-addr': { const t=String(v||'').trim(); if(!t) return true;
       if(!d.dongs.includes(t)){ d.dongs.push(t); followMap(d, t); }
       d.dongFree=''; render(); return true; }
-    case 'elev': d.elev = d.elev===v ? '' : v; render(); return true;
-    case 'keyOk': d.keyOk = d.keyOk===v ? '' : v; render(); return true;
-    case 'signNeed': d.signNeed = d.signNeed===v ? '' : v; render(); return true;
+    case 'elev': d.elev = v; render(); return true;
+    case 'keyOk': d.keyOk = v; render(); return true;
+    case 'signNeed': d.signNeed = v; render(); return true;
     /* 가입 동의 */
     case 'save-id': {
       S.saveId = !S.saveId;
@@ -10115,13 +10129,13 @@ function handle(a,v,el){
     case 'harea': toggleIn(d.hArea,v); render(); return true;
     case 'hfloor': toggleIn(d.hFloor,v); render(); return true;
     case 'hdir':  toggleIn(d.hDir,v);  render(); return true;
-    case 'hbath': d.hBath = (d.hBath===v?'':v); render(); return true;
-    case 'hage':  d.hAge  = (d.hAge===v?'':v);  render(); return true;
+    case 'hbath': d.hBath = v; render(); return true;
+    case 'hage':  d.hAge  = v;  render(); return true;
     case 'times': toggleIn(d.times,v); render(); return true;
     case 'moveWhy':
     case 'bldType': case 'dock': case 'temp':
     case 'rooms': case 'floor': case 'house': case 'loan': case 'pref':
-      d[a]= d[a]===v? '' : v; render(); return true;
+      d[a]= v; render(); return true;
     case 'agree': d[v]=!d[v]; render(); return true;
     /* 하나라도 빠져 있으면 모두 켜고, 다 켜져 있으면 모두 끈다 */
     /* 끝난 동의를 접고 펼친다. 초안에는 담지 않는다 - 보내는 값이 아니라
@@ -10383,7 +10397,7 @@ function handle(a,v,el){
        쓰면 중개사가 유형을 고를 때 손님 초안을 건드리게 된다. */
     case 'feeType': case 'floorMode': case 'band': case 'moveIn': case 'dir': case 'park': case 'elev6':
     case 'duplex': case 'dirBase': case 'feeBasis': case 'phtype':
-      S.form[a]= S.form[a]===v? '' : v; render(); return true;
+      S.form[a]= v; render(); return true;
     case 'photo': { const n=+v; S.form.photos = n < (S.form.photos||0) ? n : n+1; render(); return true; }
     case 'send-proposal': { const d2=S.demands.find(x=>x.id===v);
       /* 회색 버튼만 보여주면 왜 안 되는지 알 수 없다 - 빠진 것을 그대로 말한다.
@@ -10530,7 +10544,7 @@ function handle(a,v,el){
       render(); return true; }
     case 'lband': case 'lduplex': case 'lfeeBasis': case 'lfeeType':
     case 'ldir': case 'ldirBase': case 'lhtype': case 'lpark':
-      S.form[a] = S.form[a]===v ? '' : v;
+      S.form[a] = v;
       /* 원룸은 방이 하나다 - 방 수 칸이 사라지므로 적어둔 값도 같이 치운다.
          남겨두면 화면에 없는 값이 조용히 저장된다. */
       if(a==='lhtype' && isOneRoom(S.form.lhtype)) S.form.lrooms = '';
@@ -10541,7 +10555,7 @@ function handle(a,v,el){
       if(!lmoveArr().includes('날짜 지정')) S.form.lmoveWhen = '';
       render(); return true; }
     case 'ldeal':
-      S.form.ldeal = S.form.ldeal===v ? '' : v;
+      S.form.ldeal = v;
       if(!dealWords(S.form.ldeal||'월세').rent) S.form.lrent = '';
       render(); return true;
     case 'lmusts': { S.form[a]=S.form[a]||[]; toggleIn(S.form[a], v); render(); return true; }
@@ -10831,15 +10845,6 @@ document.addEventListener('keydown', e=>{
   e.preventDefault();
   줄.forEach(c => c.setAttribute('tabindex', c === 다음 ? '0' : '-1'));
   다음.focus({preventScroll:true});
-});
-/* 라디오는 키보드로 '고른 것을 다시 눌러 해제' 하지 않는다 (2026-10-12).
-   처리기 상당수가 `같은 값이면 비운다` 로 짜여 있어서(선택 칸을 마우스로 비울 수
-   있게 한 것), 고른 칩에서 Space 를 한 번 더 치면 선택이 풀리고 낭독기는
-   '선택 안 됨' 이라고 읽었다 - 라디오의 약속과 어긋난다. 마우스로 비우는 길은 그대로다. */
-document.addEventListener('keydown', e=>{
-  if(e.key !== ' ' && e.key !== 'Enter' && e.key !== 'Spacebar') return;
-  const 칩 = e.target.closest && e.target.closest('.chips.one > .chip[role="radio"][aria-checked="true"]');
-  if(칩) e.preventDefault();
 });
 
 /* 주소 자동완성 - 손을 마우스로 옮기지 않고도 고를 수 있어야 한다 */

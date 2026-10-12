@@ -162,7 +162,7 @@ ok(/async function readAgent\(미리\)/.test(js), '화면도 로그인 직후 �
 /* 2026-10-12: 둘을 한 번의 호출(what:'me')로 받고 나눠 읽는다 - 못 받으면 예전처럼 따로 묻는다 */
 ok(/await Promise\.all\(\[readConsent\(둘 && 둘\.consent\), readAgent\(둘 && 둘\.agent\)\]\)/.test(js),
    '동의와 나란히 읽는다 - 둘 다 "내가 누구인가" 라 앞뒤로 기다릴 이유가 없다');
-ok(/if\(\(S\.agent && S\.agent\.id\) !== 전 && S\.lastRoute !== null\) render\(\)/.test(js),
+ok(/if\(\(\(S\.agent && S\.agent\.id\) !== 전 \|\|[\s\S]{0,140}&& S\.lastRoute !== null\) render\(\)/.test(js),
    '첫 그림이 나간 뒤에 답이 와도 다시 그린다 - boot 이 1.2초에서 끊기 때문이다');
 
 ok(/function partnerDoor\(kind\)\{/.test(js), '손님 화면에서 파트너 화면으로 가는 문이 있다');
@@ -229,6 +229,19 @@ ok(!/h==='#\/partner'\) loadMyProps|h==='#\/partner'\) loadListings/.test(js), '
   S.user.email = '';
   ok(/data-in="j-email"/.test(joinEmailField({})), '계정 메일이 없으면(카카오 미동의) 그때만 칸을 보인다');
   ok(/email: accountEmail\(\) \|\| f\['j-email'\] \|\| ''/.test(js), '신청에는 계정 메일을 담는다');
+}
+
+/* ── 2026-10-12 가입 전 계정이 파트너 화면(수요 목록·품질 점수)을 그대로 봤다 ── */
+{
+  const 길목 = js.slice(js.indexOf('const PARTNER_ONLY'), js.indexOf('const NEEDS_OK'));
+  ok(/const PARTNER_ONLY = h\.startsWith\('#\/partner\/'\) && h !== '#\/partner\/join';/.test(길목),
+     '파트너 화면은 #/partner/ 아래 전부 - 가입 화면만 문 밖이다');
+  ok(/if\(PARTNER_ONLY && !S\.user\)\{[^}]*location\.replace\('#\/login'\)/.test(길목), '로그인 전이면 로그인으로');
+  ok(/if\(PARTNER_ONLY && S\.agentKnown && !S\.agent\)\{\s*location\.replace\('#\/partner\/join'\)/.test(길목),
+     '파트너가 아니라고 확인되면 가입으로 - 모를 때는 튕기지 않는다');
+  ok(/S\.agentKnown = !!ok;/.test(js) && /S\.agent=null; S\.agentKnown=false;/.test(js), '확인 여부는 계정을 읽을 때 정해지고 로그아웃 때 지운다');
+  ok(/S\.agentKnown = false; readAgent\(\);/.test(js), '가입이 끝나면 파트너 정보를 다시 받는다 - 완료 화면 단추가 가입으로 튕기지 않게');
+  ok(!/data-go="#\/partner\/demands"[^>]*>먼저 둘러보기/.test(js), '안내 화면에서 파트너 아닌 분을 수요 목록으로 보내지 않는다');
 }
 
 console.log(`${ran - fail} 통과 / ${fail} 실패`);

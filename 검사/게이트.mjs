@@ -162,7 +162,7 @@ ok(/async function readAgent\(미리\)/.test(js), '화면도 로그인 직후 �
 /* 2026-10-12: 둘을 한 번의 호출(what:'me')로 받고 나눠 읽는다 - 못 받으면 예전처럼 따로 묻는다 */
 ok(/await Promise\.all\(\[readConsent\(둘 && 둘\.consent\), readAgent\(둘 && 둘\.agent\)\]\)/.test(js),
    '동의와 나란히 읽는다 - 둘 다 "내가 누구인가" 라 앞뒤로 기다릴 이유가 없다');
-ok(/if\(\(\(S\.agent && S\.agent\.id\) !== 전 \|\|[\s\S]{0,140}&& S\.lastRoute !== null\) render\(\)/.test(js),
+ok(/if\(agentKey\(\) !== 전 && S\.lastRoute !== null\) render\(\)/.test(js),
    '첫 그림이 나간 뒤에 답이 와도 다시 그린다 - boot 이 1.2초에서 끊기 때문이다');
 
 ok(/function partnerDoor\(kind\)\{/.test(js), '손님 화면에서 파트너 화면으로 가는 문이 있다');
@@ -185,7 +185,7 @@ ok(/맞는 손님이 기다립니다/.test(js),
 
 /* 이 가드는 **원래부터 있었다.** S.agent 가 늘 비어 있어서 한 번도 돌지 못했을 뿐이다.
    위에서 S.agent 를 채워 주기 시작했으므로 이제 실제로 돈다. */
-ok(/h==='#\/partner\/join' && S\.agent && S\.form\.jSent/.test(js),
+ok(/h==='#\/partner\/join' && S\.agent && !\['ok','sending','already'\]\.includes\(S\.form\.jSent\)/.test(js),
    '이미 신청한 계정은 가입 화면을 다시 걸지 않는다');
 ok(/S\.agent\.status === 'approved' \? '#\/partner\/demands' : '#\/partner\/verify'/.test(js),
    '승인됐으면 수요 목록으로, 아니면 자격 확인으로 보낸다');
@@ -216,10 +216,59 @@ ok(!/h==='#\/partner'\) loadMyProps|h==='#\/partner'\) loadListings/.test(js), '
   const 가입 = js.slice(js.indexOf('V["#/partner/join"]'), js.indexOf('function sendVerify'));
   ok(/if\(!S\.idvCfg\) body =/.test(가입) && /else if\(live\) body =/.test(가입),
      '설정을 모르면 어느 양식도 그리지 않는다 - 이름만 받는 양식으로 가면 다음이 되돌아온다');
-  ok(/if\(!\(S\.idvCfg && S\.idvCfg\.live\)\)\{ S\.idvCfg = null; idvCfgAt = 0; idvConfig\(\)/.test(js),
-     '서버가 본인확인을 요구하면 설정을 다시 받아 버튼 화면으로 바꾼다');
+  ok(/S\.idvCfg = \{ \.\.\.\(S\.idvCfg \|\| \{\}\), enabled: true, live: true, channels: \[\] \};/.test(js),
+     '서버가 본인확인을 요구하면 다시 받기 전에도 실연동으로 둔다 - 받기가 실패해도 이름만 받는 양식으로 안 간다');
+  ok(/if\(!idvChannels\(cfg\)\.length && idvCfgBusy\) cfg = await idvCfgBusy;/.test(js),
+     '창구를 모르면 본인확인 창을 열기 전에 진짜 답을 기다린다');
+}
 
-  /* 가입할 때 넣은 메일을 또 묻지 않는다 - 실제로 돌려 본다 */
+/* ── idvConfig 를 실제로 돌린다 ── */
+{
+  const 시작 = js.indexOf('let idvCfgAt = 0');
+  const 끝 = js.indexOf('\n}\n', js.indexOf('function idvConfig()')) + 3;
+  const 몸 = js.slice(시작, 끝);
+  const 쉼 = () => new Promise(r => setTimeout(r, 0));
+  const 만들기 = (BOOTED = true) => {
+    const 판 = { S: {}, 그림: 0, 답: null };
+    const fetch = async () => {
+      if(판.답 === 'fail') throw new Error('net');
+      if(판.답 === 500) return { ok: false, status: 500, json: async () => ({}) };
+      return { ok: true, status: 200, json: async () => 판.답 };
+    };
+    const f = new Function('S', 'fetch', 'render', 'BOOTED',
+      `${몸}; return { idvConfig, 시각: v => { idvCfgAt = v; } };`);
+    return Object.assign(판, f(판.S, fetch, () => 판.그림++, BOOTED));
+  };
+  const 실연동 = { enabled: true, live: true, channels: [{ k: 'inicis', key: 'k1' }] };
+  {
+    const 판 = 만들기(); 판.답 = 실연동;
+    await 판.idvConfig();
+    ok(판.S.idvCfg.live === true && 판.그림 === 1, '처음 받은 답으로 설정이 생기고 한 번 다시 그린다');
+    판.시각(Date.now() - 10 * 60 * 1000); 판.답 = 'fail';
+    판.idvConfig(); await 쉼(); await 쉼();
+    ok(판.S.idvCfg.live === true && 판.그림 === 1,
+       '5분 뒤 다시 묻다 통신이 끊겨도 갖고 있던 실연동 설정을 버리지 않는다(화면도 그대로)');
+    판.시각(Date.now() - 10 * 60 * 1000); 판.답 = 500;
+    판.idvConfig(); await 쉼(); await 쉼();
+    ok(판.S.idvCfg.live === true, '서버가 500 을 줘도 마찬가지다');
+    판.시각(Date.now() - 10 * 60 * 1000); 판.답 = { enabled: true, live: false, channels: [] };
+    판.idvConfig(); await 쉼(); await 쉼();
+    ok(판.S.idvCfg.live === false && 판.그림 === 2, '진짜 답이 바뀌었으면 그 답을 따르고 다시 그린다');
+  }
+  {
+    const 판 = 만들기(); 판.답 = 'fail';
+    const cfg = await 판.idvConfig();
+    ok(cfg.enabled === false, '갖고 있던 답이 없으면 그때만 "안 붙음" 이다');
+  }
+  {
+    const 판 = 만들기(false); 판.답 = 실연동;
+    await 판.idvConfig();
+    ok(판.그림 === 0, '첫 화면을 그리기 전에는 다시 그리지 않는다 - 계정을 몰라 가드가 엉뚱하게 튕길 수 있다');
+  }
+}
+
+/* ── 가입할 때 넣은 메일을 또 묻지 않는다 - 실제로 돌려 본다 ── */
+{
   const 시작 = js.indexOf('const accountEmail = ');
   const 끝 = js.indexOf('V["#/partner/join"]');
   const S = { user: { email: 'jin@plustonic.com' } };
@@ -231,15 +280,48 @@ ok(!/h==='#\/partner'\) loadMyProps|h==='#\/partner'\) loadListings/.test(js), '
   ok(/email: accountEmail\(\) \|\| f\['j-email'\] \|\| ''/.test(js), '신청에는 계정 메일을 담는다');
 }
 
-/* ── 2026-10-12 가입 전 계정이 파트너 화면(수요 목록·품질 점수)을 그대로 봤다 ── */
+/* ── 2026-10-12 가입 전 계정이 파트너 화면(수요 목록·품질 점수)을 그대로 봤다 ──
+   라우터의 그 길목을 떼어 실제로 돌린다. */
 {
-  const 길목 = js.slice(js.indexOf('const PARTNER_ONLY'), js.indexOf('const NEEDS_OK'));
-  ok(/const PARTNER_ONLY = h\.startsWith\('#\/partner\/'\) && h !== '#\/partner\/join';/.test(길목),
-     '파트너 화면은 #/partner/ 아래 전부 - 가입 화면만 문 밖이다');
-  ok(/if\(PARTNER_ONLY && !S\.user\)\{[^}]*location\.replace\('#\/login'\)/.test(길목), '로그인 전이면 로그인으로');
-  ok(/if\(PARTNER_ONLY && S\.agentKnown && !S\.agent\)\{\s*location\.replace\('#\/partner\/join'\)/.test(길목),
-     '파트너가 아니라고 확인되면 가입으로 - 모를 때는 튕기지 않는다');
-  ok(/S\.agentKnown = !!ok;/.test(js) && /S\.agent=null; S\.agentKnown=false;/.test(js), '확인 여부는 계정을 읽을 때 정해지고 로그아웃 때 지운다');
+  const 시작 = js.indexOf("  /* 'already' 도 남긴다");
+  const 끝 = js.indexOf('  /* 손님 조건 전문 · 제안 · 매물 등록은');
+  const 길목 = js.slice(시작, 끝);
+  const 가기 = (h, S, 세션 = false) => {
+    let 간곳 = null;
+    const location = { replace: x => { 간곳 = x; } };
+    new Function('h', 'S', 'location', '세션있음', 길목 + '\nreturn;')(h, S, location, () => 세션);
+    return 간곳;
+  };
+  const 손 = (o = {}) => ({ user: { id: 'u' }, agent: null, agentKnown: true, form: {}, ...o });
+  ok(가기('#/partner/demands', 손({ user: null }), false) === '#/login', '로그인 전이면 로그인으로');
+  ok(가기('#/partner/demands', 손({ user: null, agentKnown: false }), true) === null,
+     '세션은 있는데 계정을 읽는 중이면(느린 통신) 튕기지 않고 기다린다');
+  ok(가기('#/partner/settings', 손()) === '#/partner/join', '파트너가 아니라고 확인되면 가입으로');
+  ok(가기('#/partner/demands', 손({ agentKnown: false })) === null, '파트너인지 모를 때는 튕기지 않는다');
+  ok(가기('#/partner/demands', 손({ agent: { id: 'a', status: 'approved' } })) === null, '파트너는 그대로 들어간다');
+  ok(가기('#/partner/join', 손()) === null, '가입 화면은 이 문 밖이다');
+  ok(가기('#/partner', 손()) === null, '공개 안내(#/partner)도 문 밖이다');
+  ok(가기('#/partner/join', 손({ agent: { id: 'a', status: 'pending' }, form: { jSent: 'already' } })) === null,
+     "'already' 안내는 남긴다 - 왜 반영되지 않았는지 읽어야 한다");
+  ok(가기('#/partner/join', 손({ agent: { id: 'a', status: 'pending' }, form: {} })) === '#/partner/verify',
+     '이미 신청한 계정이 가입 화면으로 오면 자격 확인으로');
+}
+
+/* ── readAgent 를 실제로 돌린다 - '파트너 아님' 이 확정되는 것도 다시 그린다 ── */
+{
+  const 몸 = js.slice(js.indexOf('const agentKey = '), js.indexOf('async function saveConsent'));
+  const S = { agent: null, agentKnown: false, lastRoute: '#/partner/demands' };
+  let 그림 = 0;
+  const 받은답 = m => ({ ok: m.status === 200, j: m.body });
+  const { readAgent } = new Function('S', 'render', '받은답', 'apiFetch',
+    몸 + '; return { readAgent };')(S, () => 그림++, 받은답, async () => { throw new Error('x'); });
+  await readAgent({ status: 200, body: { agent: null } });
+  ok(S.agentKnown === true && 그림 === 1, "모름 → '파트너 아님' 확정이면 다시 그린다(가드가 가입으로 보내게)");
+  await readAgent({ status: 200, body: { agent: null } });
+  ok(그림 === 1, '같은 답이 다시 오면 그리지 않는다 - 가입 양식을 적는 중에 흔들지 않는다');
+  await readAgent({ status: 200, body: { agent: { id: 'a1' } } });
+  ok(그림 === 2, '파트너가 되면 다시 그린다');
+  ok(/S\.agent=null; S\.agentKnown=false;/.test(js), '로그아웃 때 확인 여부도 지운다');
   ok(/S\.agentKnown = false; readAgent\(\);/.test(js), '가입이 끝나면 파트너 정보를 다시 받는다 - 완료 화면 단추가 가입으로 튕기지 않게');
   ok(!/data-go="#\/partner\/demands"[^>]*>먼저 둘러보기/.test(js), '안내 화면에서 파트너 아닌 분을 수요 목록으로 보내지 않는다');
 }

@@ -204,7 +204,8 @@ ok(/data-v="\$\{target\}:\$\{c\.k\}"/.test(버튼), '버튼마다 어느 창구�
 
 const 시작 = 몸통('async function idvStart');
 ok(/async function idvStart\(target,\s*kind\)/.test(시작), 'idvStart 가 창구를 받는다');
-ok(/find\(c => c\.k === kind\)/.test(시작), '고른 창구를 찾는다');
+ok(/const 고름 = await idvPickChannel\(kind\);/.test(시작) && /find\(c => c\.k === kind\)/.test(몸통('async function idvPickChannel')),
+   '고른 창구를 찾는다(idvPickChannel - 게이트 검사가 실제로 돌린다)');
 ok(/channelKey:\s*창구\.key/.test(시작), '고른 창구의 키로 창을 연다');
 ok(!/channelKey:\s*cfg\.channel_key/.test(시작), '예전처럼 첫 키로 고정해 열지 않는다');
 

@@ -2651,6 +2651,13 @@ function changed(key, rows){
    loadFeed · loadMine · loadListings · loadMyProps · waitingFor 가 각자 적고 있었고,
    그중 둘에 빠져 있어서 로그인 전 방문마다 401 이 났다. */
 const 세션있음 = () => { const s = store.get(); return !!(s && s.access_token); };
+/* 로그인이 필요한 화면의 판정도 한 곳이다 (2026-10-12).
+   세션은 저장돼 있는데 계정을 아직 읽는 중이면(느린 통신) '로그인 전' 이 아니다 -
+   그때 로그인 화면으로 보내면 멀쩡히 로그인한 분이 튕긴다. 다만 계정 확인이
+   통신 문제로 실패했으면(오프라인) 영영 기다리지 않고 로그인 전으로 친다. */
+let 계정확인실패 = false;
+const 계정확인중 = () => !S.user && 세션있음() && !계정확인실패;
+const 로그인전 = () => !S.user && !계정확인중();
 const waitingFor = ready => 세션있음() && !ready;
 /* 기다리는 동안에는 표시 하나만 둔다. 무엇을 불러오는지는 잠시 뒤 화면이
    스스로 말한다 - 읽히기도 전에 사라지는 글자를 굳이 띄우지 않는다.
@@ -8934,7 +8941,18 @@ function render(){
   }
   if(h==='#/agree' && (!S.user || !consentNeeded())){ location.replace(S.user?'#/my':'#/login'); return; }
   const MINE = h==='#/my' || h==='#/inbox' || h.startsWith('#/proposal/') || h.startsWith('#/connect/') || h.startsWith('#/report/');
-  if(MINE && !S.user){ S.loginAs='guest'; S.afterLogin = h; location.replace('#/login'); return; }
+  /* 로그인이 필요한 화면인데 계정을 읽는 중이면 아무 가드도 타지 않고 기다린다.
+     #/my 처럼 S.user 를 곧바로 읽는 화면이 있어 그리지도 않는다. 계정 확인이 끝나면
+     boot 가 다시 그린다. */
+  if((MINE || h==='#/contact' || h.startsWith('#/partner/')) && 계정확인중()){
+    $('#app').innerHTML = `
+      <div class="scr" style="align-items:center;justify-content:center;padding:40px 24px">
+        ${bkLoader(34)}
+      </div>`;
+    S.lastRoute = null;
+    return;
+  }
+  if(MINE && 로그인전()){ S.loginAs='guest'; S.afterLogin = h; location.replace('#/login'); return; }
   /* 조건을 걸려면 로그인이 필요하다. 계정이 있어야 받은 제안을 다시 볼 수 있고,
      기기를 바꿔도 남는다. 우회로를 두면 그 이유가 흐려진다. */
   /* 무엇을 묻는지 보기도 전에 벽을 세우지 않는다.
@@ -8944,7 +8962,7 @@ function render(){
      기기를 바꿔도 남아야 하기 때문이다.
      전에는 #/kind 에서 막았다. 그러면 '무엇을 적어야 하나' 를 보기도 전에
      가입부터 해야 해서, 서비스를 살펴볼 길이 없었다. */
-  if(h==='#/contact' && !S.user){
+  if(h==='#/contact' && 로그인전()){
     S.loginAs='guest'; S.afterLogin='#/contact';
     keepDraft();                       /* 소셜 로그인은 페이지를 떠난다 - 적어둔 것을 담아둔다 */
     location.replace('#/login'); return;
@@ -8955,7 +8973,7 @@ function render(){
      제안도 쓸 수 없는 계정이 만들어진다(bk_agent_user_idx 는 계정당 하나라 다시
      신청할 수도 없다). 계정을 먼저 만들게 하면 카카오·네이버·구글로도 가입된다 -
      로그인 화면이 이미 그 넷을 다 들고 있다. */
-  if(h==='#/partner/join' && !S.user){
+  if(h==='#/partner/join' && 로그인전()){
     S.loginAs='partner'; S.afterLogin='#/partner/join'; location.replace('#/login'); return;
   }
   /* 이미 신청한 계정은 가입 화면을 다시 걸을 이유가 없다 - 계정당 하나뿐이다.
@@ -8971,7 +8989,7 @@ function render(){
      기다린다 - readAgent 가 답을 받으면 다시 그린다. 공개 안내(#/partner)와
      가입(#/partner/join)은 이 문 밖이다. */
   const PARTNER_ONLY = h.startsWith('#/partner/') && h !== '#/partner/join';
-  if(PARTNER_ONLY && !S.user && !세션있음()){   /* 세션은 있는데 계정을 읽는 중이면 기다린다 */
+  if(PARTNER_ONLY && 로그인전()){
     S.loginAs='partner'; S.afterLogin = h; location.replace('#/login'); return;
   }
   if(PARTNER_ONLY && S.agentKnown && !S.agent){
@@ -9165,18 +9183,23 @@ function idvSdk(){
 let idvCfgAt = 0, idvCfgBusy = null;
 function idvConfig(){
   if(S.idvCfg && Date.now() - idvCfgAt < 5*60*1000) return Promise.resolve(S.idvCfg);
+  /* 창구까지 비교한다 - need_idv 뒤 '실연동·창구 모름' 에서 진짜 창구가 오면 버튼 이름이
+     바뀌어야 하고, 다날이 붙으면 버튼이 둘이 되어야 한다 */
+  const 열쇠 = c => c ? `${!!c.enabled}/${!!c.live}/${idvChannels(c).map(x => x.k).join(',')}` : '';
   const done = (j, 실패) => {
-    const 전 = S.idvCfg ? `${!!S.idvCfg.enabled}/${!!S.idvCfg.live}` : '';
+    const 전 = 열쇠(S.idvCfg);
     idvCfgBusy = null;
     /* 다시 묻다가 실패했으면 갖고 있던 답을 버리지 않는다 - 통신이 한 번 끊겼다고
        실연동이 꺼진 것으로 바꾸면 가입 화면이 '준비 중' 양식으로 돌아간다.
        30초 뒤에 다시 묻도록 시각만 당겨 둔다. 갖고 있던 답이 없을 때만 '안 붙음' 이다. */
     if(실패 && S.idvCfg){ idvCfgAt = Date.now() - 4.5*60*1000; return S.idvCfg; }
     S.idvCfg = j || {enabled:false};
-    idvCfgAt = Date.now();
+    /* 처음부터 실패했으면 '안 붙음' 으로 두되 5분이 아니라 30초 뒤에 다시 묻는다 -
+       서버는 실연동인데 화면이 5분 동안 본인확인 없이 그리면 접수가 계속 거절된다 */
+    idvCfgAt = 실패 ? Date.now() - 4.5*60*1000 : Date.now();
     /* 첫 화면을 그리기 전(BOOTED 전)에는 그리지 않는다 - 그때는 계정을 아직 몰라
        로그인 가드가 엉뚱하게 튕길 수 있다. 첫 그리기는 boot 가 맡는다. */
-    if(BOOTED && 전 !== `${!!S.idvCfg.enabled}/${!!S.idvCfg.live}`) render();
+    if(BOOTED && 전 !== 열쇠(S.idvCfg)) render();
     return S.idvCfg;
   };
   /* 화면이 다시 그려질 때마다 묻지 않게 하나만 띄운다 */
@@ -9224,16 +9247,29 @@ const idvFor = {
   set(v){ try{ sessionStorage.setItem(IDV_FOR, v); }catch(e){} },
 };
 
-async function idvStart(target, kind){
-  idvFor.set(target === 'partner' ? 'partner' : 'demand');
+/* 서버가 본인확인을 요구했다(need_idv) = 실연동이다. 화면이 모르고 있었다면
+   서버의 말을 먼저 믿어 '실연동' 으로 두고(버튼 화면), 창구는 다시 받은 답으로 채운다.
+   다시 받기가 실패해도 이름만 받는 양식으로 돌아가지 않는다. */
+function idvMustBeLive(){
+  if(S.idvCfg && S.idvCfg.live) return;
+  S.idvCfg = { ...(S.idvCfg || {}), enabled: true, live: true, channels: [] };
+  idvCfgAt = 0; idvConfig().catch(()=>null);
+}
+/* 누른 버튼의 창구를 고른다. need_idv 뒤처럼 창구를 아직 모르면 진짜 답을 기다린다.
+   모르는 이름이 오면(예전 화면) 첫 창구로 연다. 없으면 null. */
+async function idvPickChannel(kind){
   let cfg = await idvConfig();
-  /* need_idv 뒤에는 '실연동' 으로만 알고 창구는 모른다 - 진짜 답을 기다린다 */
   if(!idvChannels(cfg).length && idvCfgBusy) cfg = await idvCfgBusy;
-  if(!cfg.enabled) return toast('본인확인이 아직 연결되지 않았습니다');
-  /* 고른 창구의 키. 모르는 이름이 오면(예전 화면) 첫 창구로 연다 */
+  if(!cfg || !cfg.enabled) return null;
   const 창구들 = idvChannels(cfg);
   const 창구 = 창구들.find(c => c.k === kind) || 창구들[0];
-  if(!창구 || !창구.key) return toast('본인확인이 아직 연결되지 않았습니다');
+  return 창구 && 창구.key ? { cfg, 창구 } : null;
+}
+async function idvStart(target, kind){
+  idvFor.set(target === 'partner' ? 'partner' : 'demand');
+  const 고름 = await idvPickChannel(kind);
+  if(!고름) return toast('본인확인이 아직 연결되지 않았습니다');
+  const { cfg, 창구 } = 고름;
 
   let PortOne;
   try{ PortOne = await idvSdk(); }
@@ -9426,12 +9462,13 @@ async function hydrate(sess){
   if(!sess || !sess.access_token) return false;
   if(sess.expires_at && sess.expires_at * 1000 < Date.now() + 30000){
     sess = await refreshSession(sess);
-    if(!sess) return false;
+    if(!sess){ 계정확인실패 = true; return false; }   /* 갱신 실패 - 서버가 거절했으면 세션도 이미 지워졌다 */
   }
   try{
     const r = await fetch(`${SB_URL}/auth/v1/user`, {headers: authHeaders(sess.access_token)});
     if(!r.ok){ store.set(null); return false; }
     S.user = meFrom(await r.json(), sess.access_token);
+    계정확인실패 = false;
     clearSeeds(true);          /* 들어온 뒤에는 예시를 지운다 - 위 주석 참고 */
     /* 동의를 받은 적이 있는지(없으면 #/agree) · 파트너인지(없으면 손님 화면).
        둘 다 '내가 누구인가' 라 나란히 묻는다 - 앞뒤로 기다릴 이유가 없다. */
@@ -9444,7 +9481,7 @@ async function hydrate(sess){
     }catch(_){}
     await Promise.all([readConsent(둘 && 둘.consent), readAgent(둘 && 둘.agent)]);
     return true;
-  }catch(e){ return false; }
+  }catch(e){ if(!S.user) 계정확인실패 = true; return false; }   /* 오프라인 - 기다리는 화면에 갇히지 않게 */
 }
 
 /* 서버에 물어본다. 못 물어봤으면 막지 않는다 - 동의 화면에 갇혀 서비스를
@@ -9499,7 +9536,7 @@ async function readAgent(미리){
     }
     S.agent = (ok && j.agent) || null;
     S.agentKnown = !!ok;
-  }catch(e){ S.agent = null; }
+  }catch(e){ S.agent = null; S.agentKnown = false; }   /* 못 물었으면 '모름' - '아님' 으로 단정하면 파트너가 가입으로 튕긴다 */
   /* 첫 그림이 이미 나간 뒤에 답이 올 수 있다 - boot 이 1.2초에서 끊고 그리기
      때문이다. 그때 다시 그리지 않으면 파트너로 가는 문이 **다음에 어디를
      누를 때까지** 안 보인다. 답이 달라졌을 때만 다시 그린다. */
@@ -9622,14 +9659,7 @@ function sendAgent(f){
            '확인되었습니다' 카드를 치워야 다시 받을 수 있다. 적어둔 것은 남긴다. */
         const 받았었다 = !!S.form.jVerified;
         S.form.jSent = ''; S.form.jVerified = null; S.idvToken = null; S.form.jStep = 2;
-        /* 서버가 본인확인을 요구한다 = 실연동이다. 화면이 모르고 있었다면 설정을 다시
-           받아 버튼 화면으로 바꾼다 - 이름만 받는 양식으로 되돌리면 같은 자리를 맴돈다. */
-        /* 다시 받는 것이 실패해도 이름만 받는 양식으로 돌아가지 않게, 서버의 말을 먼저
-           믿어 '실연동' 으로 둔다(창구는 다시 받은 답으로 채운다 - idvStart 가 기다린다). */
-        if(!(S.idvCfg && S.idvCfg.live)){
-          S.idvCfg = { ...(S.idvCfg || {}), enabled: true, live: true, channels: [] };
-          idvCfgAt = 0; idvConfig().catch(()=>null);
-        }
+        idvMustBeLive();   /* 이름만 받는 양식으로 되돌리면 같은 자리를 맴돈다 */
         toast(받았었다 ? '본인확인이 만료되었습니다 - 한 번만 다시 받아주세요' : '본인확인을 먼저 받아주세요');
       }
       else if(j.need_login){
@@ -11047,9 +11077,9 @@ function opsAuto(){
   const idvReady = idvConfig().catch(()=>null);
   if(readAuthRedirect() || readIdvRedirect()) return;   /* 돌아오는 길은 그쪽이 알아서 그린다 */
   const wait = [idvReady];
-  /* 계정 확인이 1.2초를 넘겨 끝났는데 실패했다면(만료된 세션) 그때 다시 그린다 -
-     파트너 화면은 세션이 있는 동안 기다리고 있으므로, 세션이 사라졌으면 로그인으로 가야 한다. */
-  if(store.get()) wait.push(hydrate().then(ok => { if(!ok && BOOTED) render(); return ok; }).catch(()=>null));
+  /* 1.2초를 넘겨 끝났으면 성공이든 실패든 다시 그린다 - 로그인이 필요한 화면은
+     계정을 읽는 동안 기다림 표시만 두고 있다(실패면 그때 로그인으로 간다). */
+  if(store.get()) wait.push(hydrate().then(ok => { if(BOOTED) render(); return ok; }).catch(()=>null));
   const cap = new Promise(r => setTimeout(r, 1200));
   Promise.race([Promise.all(wait), cap]).then(()=>{ render(); bootDone(); opsAuto(); });
 })();

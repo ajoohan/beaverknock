@@ -216,28 +216,28 @@ ok(!/h==='#\/partner'\) loadMyProps|h==='#\/partner'\) loadListings/.test(js), '
   const 가입 = js.slice(js.indexOf('V["#/partner/join"]'), js.indexOf('function sendVerify'));
   ok(/if\(!S\.idvCfg\) body =/.test(가입) && /else if\(live\) body =/.test(가입),
      '설정을 모르면 어느 양식도 그리지 않는다 - 이름만 받는 양식으로 가면 다음이 되돌아온다');
-  ok(/S\.idvCfg = \{ \.\.\.\(S\.idvCfg \|\| \{\}\), enabled: true, live: true, channels: \[\] \};/.test(js),
-     '서버가 본인확인을 요구하면 다시 받기 전에도 실연동으로 둔다 - 받기가 실패해도 이름만 받는 양식으로 안 간다');
-  ok(/if\(!idvChannels\(cfg\)\.length && idvCfgBusy\) cfg = await idvCfgBusy;/.test(js),
-     '창구를 모르면 본인확인 창을 열기 전에 진짜 답을 기다린다');
 }
 
-/* ── idvConfig 를 실제로 돌린다 ── */
+/* ── idvConfig · need_idv · 창구 고르기를 실제로 돌린다 ── */
 {
   const 시작 = js.indexOf('let idvCfgAt = 0');
   const 끝 = js.indexOf('\n}\n', js.indexOf('function idvConfig()')) + 3;
-  const 몸 = js.slice(시작, 끝);
+  const 고르기시작 = js.indexOf('function idvMustBeLive()');
+  const 고르기끝 = js.indexOf('async function idvStart(');
+  const 몸 = js.slice(시작, 끝) + '\n' + js.slice(고르기시작, 고르기끝);
+  const idvChannels = cfg => (cfg && Array.isArray(cfg.channels)) ? cfg.channels : [];
   const 쉼 = () => new Promise(r => setTimeout(r, 0));
   const 만들기 = (BOOTED = true) => {
-    const 판 = { S: {}, 그림: 0, 답: null };
+    const 판 = { S: {}, 그림: 0, 답: null, 부름: 0 };
     const fetch = async () => {
+      판.부름++;
       if(판.답 === 'fail') throw new Error('net');
       if(판.답 === 500) return { ok: false, status: 500, json: async () => ({}) };
       return { ok: true, status: 200, json: async () => 판.답 };
     };
-    const f = new Function('S', 'fetch', 'render', 'BOOTED',
-      `${몸}; return { idvConfig, 시각: v => { idvCfgAt = v; } };`);
-    return Object.assign(판, f(판.S, fetch, () => 판.그림++, BOOTED));
+    const f = new Function('S', 'fetch', 'render', 'BOOTED', 'idvChannels',
+      `${몸}; return { idvConfig, idvMustBeLive, idvPickChannel, 시각: v => { idvCfgAt = v; }, 시각보기: () => idvCfgAt };`);
+    return Object.assign(판, f(판.S, fetch, () => 판.그림++, BOOTED, idvChannels));
   };
   const 실연동 = { enabled: true, live: true, channels: [{ k: 'inicis', key: 'k1' }] };
   {
@@ -259,11 +259,40 @@ ok(!/h==='#\/partner'\) loadMyProps|h==='#\/partner'\) loadListings/.test(js), '
     const 판 = 만들기(); 판.답 = 'fail';
     const cfg = await 판.idvConfig();
     ok(cfg.enabled === false, '갖고 있던 답이 없으면 그때만 "안 붙음" 이다');
+    const 남은 = 5 * 60 * 1000 - (Date.now() - 판.시각보기());
+    ok(남은 <= 31 * 1000, `처음부터 실패했으면 5분이 아니라 30초 뒤에 다시 묻는다 (${Math.round(남은 / 1000)}초)`);
   }
   {
     const 판 = 만들기(false); 판.답 = 실연동;
     await 판.idvConfig();
     ok(판.그림 === 0, '첫 화면을 그리기 전에는 다시 그리지 않는다 - 계정을 몰라 가드가 엉뚱하게 튕길 수 있다');
+  }
+  /* need_idv: 화면은 '안 붙음' 이라 알고 있었는데 서버가 본인확인을 요구했다 */
+  {
+    const 판 = 만들기(); 판.답 = { enabled: false, live: false, channels: [] };
+    await 판.idvConfig(); 판.그림 = 0;
+    판.답 = 'fail';
+    판.idvMustBeLive(); await 쉼(); await 쉼();
+    ok(판.S.idvCfg.live === true && 판.S.idvCfg.enabled === true,
+       '서버가 본인확인을 요구하면 다시 받기가 실패해도 실연동으로 둔다 - 이름만 받는 양식으로 안 간다');
+    판.시각(0); 판.답 = 실연동;
+    const 고름 = await 판.idvPickChannel('inicis');
+    ok(고름 && 고름.창구.key === 'k1', '창구를 모르면 진짜 답을 기다렸다가 그 창구로 연다');
+    ok(판.그림 >= 1, '창구가 생기면 다시 그린다 - 버튼 이름이 간편인증으로 바뀐다');
+  }
+  {
+    const 판 = 만들기(); 판.답 = 실연동;
+    await 판.idvConfig(); 판.그림 = 0;
+    판.시각(Date.now() - 10 * 60 * 1000);
+    판.답 = { ...실연동, channels: [...실연동.channels, { k: 'danal', key: 'k2' }] };
+    await 판.idvConfig(); await 쉼(); await 쉼();
+    ok(판.그림 === 1, '실연동 그대로 창구만 늘어도(다날) 다시 그린다 - 버튼이 둘이 된다');
+    ok((await 판.idvPickChannel('danal')).창구.key === 'k2', '고른 창구로 연다');
+    ok((await 판.idvPickChannel('옛이름')).창구.key === 'k1', '모르는 이름이면 첫 창구로 연다');
+  }
+  {
+    const 판 = 만들기(); 판.답 = { enabled: false };
+    ok(await 판.idvPickChannel('inicis') === null, '안 붙어 있으면 열 창구가 없다');
   }
 }
 
@@ -281,30 +310,49 @@ ok(!/h==='#\/partner'\) loadMyProps|h==='#\/partner'\) loadListings/.test(js), '
 }
 
 /* ── 2026-10-12 가입 전 계정이 파트너 화면(수요 목록·품질 점수)을 그대로 봤다 ──
-   라우터의 그 길목을 떼어 실제로 돌린다. */
+   로그인이 필요한 화면의 길목 전체(MINE · #/contact · #/partner/join · 파트너 화면)를
+   떼어 실제로 돌린다. 로그인 판정 함수도 원본 그대로 쓴다. */
 {
-  const 시작 = js.indexOf("  /* 'already' 도 남긴다");
+  const 판정 = js.slice(js.indexOf('let 계정확인실패 = false;'), js.indexOf('const 로그인전 = ') + 60).split('\n').slice(0, 3).join('\n');
+  const 시작 = js.indexOf("  const MINE = h==='#/my'");
   const 끝 = js.indexOf('  /* 손님 조건 전문 · 제안 · 매물 등록은');
   const 길목 = js.slice(시작, 끝);
-  const 가기 = (h, S, 세션 = false) => {
-    let 간곳 = null;
+  const 가기 = (h, S, 세션 = false, 실패 = false) => {
+    let 간곳 = null, 그림 = '';
     const location = { replace: x => { 간곳 = x; } };
-    new Function('h', 'S', 'location', '세션있음', 길목 + '\nreturn;')(h, S, location, () => 세션);
-    return 간곳;
+    const $ = () => ({ set innerHTML(v){ 그림 = v; } });
+    const store = { get: () => 세션 ? { access_token: 't' } : null };
+    new Function('h', 'S', 'location', 'store', '$', 'bkLoader', 'keepDraft',
+      `const 세션있음 = () => { const s = store.get(); return !!(s && s.access_token); };
+       ${판정.replace('let 계정확인실패 = false;', `let 계정확인실패 = ${실패};`)}
+       ${길목}\nreturn;`)(h, S, location, store, $, () => '<i>loader</i>', () => {});
+    return 간곳 || (그림 ? '기다림' : null);
   };
   const 손 = (o = {}) => ({ user: { id: 'u' }, agent: null, agentKnown: true, form: {}, ...o });
-  ok(가기('#/partner/demands', 손({ user: null }), false) === '#/login', '로그인 전이면 로그인으로');
-  ok(가기('#/partner/demands', 손({ user: null, agentKnown: false }), true) === null,
+  ok(가기('#/partner/demands', 손({ user: null })) === '#/login', '로그인 전이면 로그인으로');
+  ok(가기('#/partner/demands', 손({ user: null, agentKnown: false }), true) === '기다림',
      '세션은 있는데 계정을 읽는 중이면(느린 통신) 튕기지 않고 기다린다');
+  /* 같은 판정이 손님 화면에도 - 전에는 파트너 화면에만 있었다 */
+  for(const h of ['#/my', '#/inbox', '#/proposal/p1', '#/contact', '#/partner/join']){
+    ok(가기(h, 손({ user: null }), true) === '기다림', `${h} 도 계정을 읽는 동안은 로그인으로 보내지 않는다`);
+    ok(가기(h, 손({ user: null }), false) === '#/login', `${h} 는 로그인 전이면 로그인으로`);
+  }
+  ok(가기('#/my', 손({ user: null }), true, true) === '#/login',
+     '계정 확인이 통신 문제로 실패했으면 영영 기다리지 않고 로그인으로');
+  ok(가기('#/kind', 손({ user: null }), true) === null, '로그인이 필요 없는 화면은 기다리지 않는다');
+  ok(가기('#/partner', 손({ user: null }), true) === null, '공개 안내(#/partner)도 기다리지 않는다');
   ok(가기('#/partner/settings', 손()) === '#/partner/join', '파트너가 아니라고 확인되면 가입으로');
   ok(가기('#/partner/demands', 손({ agentKnown: false })) === null, '파트너인지 모를 때는 튕기지 않는다');
   ok(가기('#/partner/demands', 손({ agent: { id: 'a', status: 'approved' } })) === null, '파트너는 그대로 들어간다');
-  ok(가기('#/partner/join', 손()) === null, '가입 화면은 이 문 밖이다');
-  ok(가기('#/partner', 손()) === null, '공개 안내(#/partner)도 문 밖이다');
+  ok(가기('#/partner/join', 손()) === null, '가입 화면은 파트너 문 밖이다');
   ok(가기('#/partner/join', 손({ agent: { id: 'a', status: 'pending' }, form: { jSent: 'already' } })) === null,
      "'already' 안내는 남긴다 - 왜 반영되지 않았는지 읽어야 한다");
   ok(가기('#/partner/join', 손({ agent: { id: 'a', status: 'pending' }, form: {} })) === '#/partner/verify',
      '이미 신청한 계정이 가입 화면으로 오면 자격 확인으로');
+  ok(!/if\((MINE|PARTNER_ONLY) && !S\.user/.test(js) && !/h==='#\/(contact|partner\/join)' && !S\.user/.test(js),
+     '로그인 가드가 S.user 를 따로 보지 않는다 - 판정은 로그인전() 한 곳');
+  ok(/if\(BOOTED\) render\(\); return ok;/.test(js), '계정 확인이 늦게 끝나면 성공이든 실패든 다시 그린다 - 기다림에서 풀려나야 한다');
+  ok(/\}catch\(e\)\{ if\(!S\.user\) 계정확인실패 = true; return false; \}/.test(js), '오프라인으로 계정 확인이 실패하면 표시해 둔다');
 }
 
 /* ── readAgent 를 실제로 돌린다 - '파트너 아님' 이 확정되는 것도 다시 그린다 ── */
@@ -321,6 +369,8 @@ ok(!/h==='#\/partner'\) loadMyProps|h==='#\/partner'\) loadListings/.test(js), '
   ok(그림 === 1, '같은 답이 다시 오면 그리지 않는다 - 가입 양식을 적는 중에 흔들지 않는다');
   await readAgent({ status: 200, body: { agent: { id: 'a1' } } });
   ok(그림 === 2, '파트너가 되면 다시 그린다');
+  await readAgent();
+  ok(S.agent === null && S.agentKnown === false, "못 물었으면(통신 실패) '모름' 으로 둔다 - '아님' 으로 단정하면 파트너가 가입으로 튕긴다");
   ok(/S\.agent=null; S\.agentKnown=false;/.test(js), '로그아웃 때 확인 여부도 지운다');
   ok(/S\.agentKnown = false; readAgent\(\);/.test(js), '가입이 끝나면 파트너 정보를 다시 받는다 - 완료 화면 단추가 가입으로 튕기지 않게');
   ok(!/data-go="#\/partner\/demands"[^>]*>먼저 둘러보기/.test(js), '안내 화면에서 파트너 아닌 분을 수요 목록으로 보내지 않는다');

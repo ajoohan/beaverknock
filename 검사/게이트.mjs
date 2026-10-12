@@ -294,6 +294,17 @@ ok(!/h==='#\/partner'\) loadMyProps|h==='#\/partner'\) loadListings/.test(js), '
     const 판 = 만들기(); 판.답 = { enabled: false };
     ok(await 판.idvPickChannel('inicis') === null, '안 붙어 있으면 열 창구가 없다');
   }
+  /* need_idv 뒤 다시 받기가 실패해 끝난(30초 쉬는 중) 상태에서 통신이 돌아와 버튼을 누른다 */
+  {
+    const 판 = 만들기(); 판.답 = { enabled: false, live: false, channels: [] };
+    await 판.idvConfig();
+    판.답 = 'fail'; 판.idvMustBeLive(); await 쉼(); await 쉼();
+    const 전부름 = 판.부름;
+    판.답 = 실연동;                      /* 30초가 지나지 않았다 - 시각은 그대로 둔다 */
+    const 고름 = await 판.idvPickChannel('inicis');
+    ok(고름 && 고름.창구.key === 'k1' && 판.부름 === 전부름 + 1,
+       '창구를 모르는데 묻는 중도 아니면, 누른 지금 한 번 더 묻는다 - "아직 연결되지 않았습니다" 로 30초 기다리게 하지 않는다');
+  }
 }
 
 /* ── 가입할 때 넣은 메일을 또 묻지 않는다 - 실제로 돌려 본다 ── */
@@ -313,8 +324,10 @@ ok(!/h==='#\/partner'\) loadMyProps|h==='#\/partner'\) loadListings/.test(js), '
    로그인이 필요한 화면의 길목 전체(MINE · #/contact · #/partner/join · 파트너 화면)를
    떼어 실제로 돌린다. 로그인 판정 함수도 원본 그대로 쓴다. */
 {
-  const 판정 = js.slice(js.indexOf('let 계정확인실패 = false;'), js.indexOf('const 로그인전 = ') + 60).split('\n').slice(0, 3).join('\n');
-  const 시작 = js.indexOf("  const MINE = h==='#/my'");
+  /* 판정 함수 셋 - 'let 계정확인실패' 부터 '로그인전' 줄 끝까지 (줄 수에 기대지 않는다) */
+  const 판정시작 = js.indexOf('let 계정확인실패 = false;');
+  const 판정 = js.slice(판정시작, js.indexOf('\n', js.indexOf('const 로그인전 = ', 판정시작)));
+  const 시작 = js.indexOf("  const OPEN = ['#/', '#/guide'");
   const 끝 = js.indexOf('  /* 손님 조건 전문 · 제안 · 매물 등록은');
   const 길목 = js.slice(시작, 끝);
   const 가기 = (h, S, 세션 = false, 실패 = false) => {
@@ -322,10 +335,10 @@ ok(!/h==='#\/partner'\) loadMyProps|h==='#\/partner'\) loadListings/.test(js), '
     const location = { replace: x => { 간곳 = x; } };
     const $ = () => ({ set innerHTML(v){ 그림 = v; } });
     const store = { get: () => 세션 ? { access_token: 't' } : null };
-    new Function('h', 'S', 'location', 'store', '$', 'bkLoader', 'keepDraft',
+    new Function('h', 'S', 'location', 'store', '$', 'bkLoader', 'keepDraft', 'consentNeeded',
       `const 세션있음 = () => { const s = store.get(); return !!(s && s.access_token); };
        ${판정.replace('let 계정확인실패 = false;', `let 계정확인실패 = ${실패};`)}
-       ${길목}\nreturn;`)(h, S, location, store, $, () => '<i>loader</i>', () => {});
+       ${길목}\nreturn;`)(h, S, location, store, $, () => '<i>loader</i>', () => {}, () => !!S.needConsent);
     return 간곳 || (그림 ? '기다림' : null);
   };
   const 손 = (o = {}) => ({ user: { id: 'u' }, agent: null, agentKnown: true, form: {}, ...o });
@@ -333,6 +346,9 @@ ok(!/h==='#\/partner'\) loadMyProps|h==='#\/partner'\) loadListings/.test(js), '
   ok(가기('#/partner/demands', 손({ user: null, agentKnown: false }), true) === '기다림',
      '세션은 있는데 계정을 읽는 중이면(느린 통신) 튕기지 않고 기다린다');
   /* 같은 판정이 손님 화면에도 - 전에는 파트너 화면에만 있었다 */
+  ok(가기('#/agree', 손({ user: null }), true) === '기다림', '동의 화면도 계정을 읽는 동안은 로그인으로 보내지 않는다');
+  ok(가기('#/agree', 손({ user: null }), false) === '#/login', '동의 화면은 로그인 전이면 로그인으로');
+  ok(가기('#/kind', 손({ needConsent: true })) === '#/agree', '동의를 안 받은 계정은 동의 화면으로(가드 순서가 바뀌어도 그대로)');
   for(const h of ['#/my', '#/inbox', '#/proposal/p1', '#/contact', '#/partner/join']){
     ok(가기(h, 손({ user: null }), true) === '기다림', `${h} 도 계정을 읽는 동안은 로그인으로 보내지 않는다`);
     ok(가기(h, 손({ user: null }), false) === '#/login', `${h} 는 로그인 전이면 로그인으로`);
@@ -351,7 +367,13 @@ ok(!/h==='#\/partner'\) loadMyProps|h==='#\/partner'\) loadListings/.test(js), '
      '이미 신청한 계정이 가입 화면으로 오면 자격 확인으로');
   ok(!/if\((MINE|PARTNER_ONLY) && !S\.user/.test(js) && !/h==='#\/(contact|partner\/join)' && !S\.user/.test(js),
      '로그인 가드가 S.user 를 따로 보지 않는다 - 판정은 로그인전() 한 곳');
-  ok(/if\(BOOTED\) render\(\); return ok;/.test(js), '계정 확인이 늦게 끝나면 성공이든 실패든 다시 그린다 - 기다림에서 풀려나야 한다');
+  ok(/if\(BOOTED && S\.lastRoute === null\) render\(\); return ok;/.test(js),
+     '계정 확인이 늦게 끝나면 기다림 표시를 띄운 화면만 다시 그린다 - 공개 화면은 흔들지 않는다');
+  {
+    const 온 = js.slice(js.indexOf("addEventListener('online'"), js.indexOf("addEventListener('online'") + 600);
+    ok(/if\(!계정확인실패 \|\| S\.user \|\| !세션있음\(\)\) return;\s*계정확인실패 = false;/.test(온) && /hydrate\(\)\.then\(\(\) => render\(\)\)/.test(온),
+       '통신이 돌아오면 저장된 세션으로 계정을 다시 확인한다 - 새로고침 전까지 로그아웃 취급하지 않는다');
+  }
   ok(/\}catch\(e\)\{ if\(!S\.user\) 계정확인실패 = true; return false; \}/.test(js), '오프라인으로 계정 확인이 실패하면 표시해 둔다');
 }
 

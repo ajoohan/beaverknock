@@ -2658,6 +2658,14 @@ const 세션있음 = () => { const s = store.get(); return !!(s && s.access_toke
 let 계정확인실패 = false;
 const 계정확인중 = () => !S.user && 세션있음() && !계정확인실패;
 const 로그인전 = () => !S.user && !계정확인중();
+/* 통신이 끊겨 계정 확인에 실패했던 분은, 통신이 돌아오면 저장된 세션으로 다시 확인한다.
+   그러지 않으면 새로고침할 때까지 로그아웃된 사람처럼 다뤄진다. */
+addEventListener('online', () => {
+  if(!계정확인실패 || S.user || !세션있음()) return;
+  계정확인실패 = false;          /* 다시 '확인 중' - 로그인이 필요한 화면은 기다림 표시로 */
+  render();
+  hydrate().then(() => render()).catch(() => render());
+});
 const waitingFor = ready => 세션있음() && !ready;
 /* 기다리는 동안에는 표시 하나만 둔다. 무엇을 불러오는지는 잠시 뒤 화면이
    스스로 말한다 - 읽히기도 전에 사라지는 글자를 굳이 띄우지 않는다.
@@ -8935,16 +8943,12 @@ function render(){
   /* 동의를 안 받은 계정은 어디로도 못 간다 - 받고 나서 가던 길로 이어진다.
      첫 화면·안내 문서는 열어둔다. 읽는 것까지 막을 이유는 없다. */
   const OPEN = ['#/', '#/guide', '#/faq', '#/partner', '#/agree', '#/login'];
-  if(S.user && consentNeeded() && !OPEN.includes(h)){
-    if(!S.afterLogin) S.afterLogin = h;
-    location.replace('#/agree'); return;
-  }
-  if(h==='#/agree' && (!S.user || !consentNeeded())){ location.replace(S.user?'#/my':'#/login'); return; }
   const MINE = h==='#/my' || h==='#/inbox' || h.startsWith('#/proposal/') || h.startsWith('#/connect/') || h.startsWith('#/report/');
   /* 로그인이 필요한 화면인데 계정을 읽는 중이면 아무 가드도 타지 않고 기다린다.
+     동의 가드보다 앞이어야 한다 - #/agree 도 S.user 를 보고 로그인으로 보내기 때문이다.
      #/my 처럼 S.user 를 곧바로 읽는 화면이 있어 그리지도 않는다. 계정 확인이 끝나면
      boot 가 다시 그린다. */
-  if((MINE || h==='#/contact' || h.startsWith('#/partner/')) && 계정확인중()){
+  if((MINE || h==='#/agree' || h==='#/contact' || h.startsWith('#/partner/')) && 계정확인중()){
     $('#app').innerHTML = `
       <div class="scr" style="align-items:center;justify-content:center;padding:40px 24px">
         ${bkLoader(34)}
@@ -8952,6 +8956,11 @@ function render(){
     S.lastRoute = null;
     return;
   }
+  if(S.user && consentNeeded() && !OPEN.includes(h)){
+    if(!S.afterLogin) S.afterLogin = h;
+    location.replace('#/agree'); return;
+  }
+  if(h==='#/agree' && (!S.user || !consentNeeded())){ location.replace(S.user?'#/my':'#/login'); return; }
   if(MINE && 로그인전()){ S.loginAs='guest'; S.afterLogin = h; location.replace('#/login'); return; }
   /* 조건을 걸려면 로그인이 필요하다. 계정이 있어야 받은 제안을 다시 볼 수 있고,
      기기를 바꿔도 남는다. 우회로를 두면 그 이유가 흐려진다. */
@@ -9259,7 +9268,12 @@ function idvMustBeLive(){
    모르는 이름이 오면(예전 화면) 첫 창구로 연다. 없으면 null. */
 async function idvPickChannel(kind){
   let cfg = await idvConfig();
-  if(!idvChannels(cfg).length && idvCfgBusy) cfg = await idvCfgBusy;
+  if(!idvChannels(cfg).length){
+    /* 다시 받던 것이 이미 실패해 끝났으면(30초 쉬는 중) 누른 지금 한 번 더 묻는다 -
+       통신이 돌아왔는데 '아직 연결되지 않았습니다' 로 30초를 기다리게 하지 않는다 */
+    if(!idvCfgBusy){ idvCfgAt = 0; idvConfig().catch(()=>null); }
+    if(idvCfgBusy) cfg = await idvCfgBusy;
+  }
   if(!cfg || !cfg.enabled) return null;
   const 창구들 = idvChannels(cfg);
   const 창구 = 창구들.find(c => c.k === kind) || 창구들[0];
@@ -11077,9 +11091,11 @@ function opsAuto(){
   const idvReady = idvConfig().catch(()=>null);
   if(readAuthRedirect() || readIdvRedirect()) return;   /* 돌아오는 길은 그쪽이 알아서 그린다 */
   const wait = [idvReady];
-  /* 1.2초를 넘겨 끝났으면 성공이든 실패든 다시 그린다 - 로그인이 필요한 화면은
-     계정을 읽는 동안 기다림 표시만 두고 있다(실패면 그때 로그인으로 간다). */
-  if(store.get()) wait.push(hydrate().then(ok => { if(BOOTED) render(); return ok; }).catch(()=>null));
+  /* 1.2초를 넘겨 끝났고 기다림 표시를 띄워 둔 화면이면(S.lastRoute === null) 성공이든
+     실패든 다시 그린다 - 실패면 그때 로그인으로 간다. 공개 화면은 다시 그리지 않는다:
+     이미 보고 고르기 시작한 분의 화면을 흔들 이유가 없다(파트너 문 같은 것은
+     readAgent·readConsent 가 답이 달라졌을 때 알아서 다시 그린다). */
+  if(store.get()) wait.push(hydrate().then(ok => { if(BOOTED && S.lastRoute === null) render(); return ok; }).catch(()=>null));
   const cap = new Promise(r => setTimeout(r, 1200));
   Promise.race([Promise.all(wait), cap]).then(()=>{ render(); bootDone(); opsAuto(); });
 })();

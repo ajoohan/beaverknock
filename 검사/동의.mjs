@@ -88,6 +88,28 @@ ok(r.code === 503 && /0023/.test(r.body.error || ''),
    `표가 없는데 저장하려 하면 무엇이 필요한지 말한다 - "${r.body.error}"`);
 표없음 = false;
 
+/* ── 동의 + 파트너를 한 번에 (what:'me', 2026-10-12) ──
+   로그인마다 두 번 부르던 것을 한 번으로. 각 답은 따로 부를 때와 같은 모양이어야
+   화면이 그대로 읽는다. */
+{
+  있던행 = { user_id: 사용자.id, terms_at: '2026-10-01T00:00:00Z', privacy_at: '2026-10-01T00:00:00Z', marketing_at: null };
+  const 따로동의 = await 부르기({ what:'consent' });
+  const 따로파트너 = await 부르기({ what:'agent' });
+  const 함께 = await 부르기({ what:'me' });
+  ok(함께.code === 200 && 함께.body.ok && 함께.body.consent && 함께.body.agent, "what:'me' 가 두 답을 함께 돌려준다");
+  ok(JSON.stringify(함께.body.consent.body) === JSON.stringify(따로동의.body) && 함께.body.consent.status === 따로동의.code,
+     '동의 답은 따로 물었을 때와 같다');
+  ok(JSON.stringify(함께.body.agent.body) === JSON.stringify(따로파트너.body) && 함께.body.agent.status === 따로파트너.code,
+     '파트너 답은 따로 물었을 때와 같다');
+  표없음 = true;
+  const 표없을때 = await 부르기({ what:'me' });
+  ok(표없을때.code === 200 && 표없을때.body.consent.body.ready === false, '동의 표가 없어도 한 번에 묻기는 막히지 않는다');
+  표없음 = false; 있던행 = null;
+  const 화면 = 길.js();
+  ok(/JSON\.stringify\(\{what:'me'\}\)/.test(화면) && /readConsent\(둘 && 둘\.consent\), readAgent\(둘 && 둘\.agent\)/.test(화면),
+     '화면은 로그인 때 한 번에 묻고 그 답을 나눠 읽는다');
+}
+
 /* ── 조건 접수 쪽 필수 동의 ── 화면만 막으면 막은 게 아니다 ── */
 const dj = 길.js();
 const 서버 = (await import('node:fs')).readFileSync(

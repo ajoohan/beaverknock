@@ -39,14 +39,21 @@ export default async function handler(req, res) {
      동의와 같은 이유로 '내 것' 을 다루는 이 자리에 붙인다.
      ⚠ 못 물어봤다고 막지 않는다. 파트너인지 모르면 손님 화면을 보여주면 되고,
      진짜 문턱은 어차피 서버가 각 화면에서 다시 본다. */
-  if (body.what === 'agent') {
-    try {
-      const chk = await approvedAgent(user);
-      if (chk.error) return res.status(200).json({ ok: true, agent: null, note: 'lookup-failed' });
-      return res.status(200).json({ ok: true, agent: meAgent(chk.agent) || null });
-    } catch (e) {
-      return res.status(200).json({ ok: true, agent: null, note: 'lookup-failed' });
-    }
+  if (body.what === 'agent') return agentAnswer(res, user);
+
+  /* 동의 + 파트너를 한 번에 (2026-10-12).
+     로그인할 때마다 화면이 이 둘을 따로 물어서 함수 호출 두 번 · 토큰 확인(userFrom)
+     두 번이 들었다. 콜드스타트 둘이 boot 의 1.2초와 겹치면 늦게 온 쪽이 화면을 다시
+     그렸다. 각 답은 따로 부를 때와 **같은 모양**으로 담는다 - 화면은 그대로 읽는다. */
+  if (body.what === 'me') {
+    const 담기 = () => { const o = { status: 200, body: null };
+      return { o, res: { setHeader() {}, status(c) { o.status = c; return this; }, json(j) { o.body = j; return this; } } }; };
+    const c = 담기(), a = 담기();
+    await Promise.all([
+      consent(req, c.res, user, {}).catch(() => { c.o.status = 502; c.o.body = { error: '확인하지 못했습니다' }; }),
+      agentAnswer(a.res, user),
+    ]);
+    return res.status(200).json({ ok: true, consent: c.o, agent: a.o });
   }
 
   try {
@@ -138,6 +145,16 @@ export default async function handler(req, res) {
    읽기: {what:'consent'} · 쓰기: {what:'consent', set:{terms, privacy, marketing}}
    항목마다 '언제' 를 담는다. true/false 로 두면 언제 동의했는지가 사라지고,
    철회한 것인지 처음부터 안 한 것인지도 구분되지 않는다. */
+async function agentAnswer(res, user) {
+  try {
+    const chk = await approvedAgent(user);
+    if (chk.error) return res.status(200).json({ ok: true, agent: null, note: 'lookup-failed' });
+    return res.status(200).json({ ok: true, agent: meAgent(chk.agent) || null });
+  } catch (e) {
+    return res.status(200).json({ ok: true, agent: null, note: 'lookup-failed' });
+  }
+}
+
 async function consent(req, res, user, body) {
   const url = sbUrl('bk_consent', new URLSearchParams({
     select: '*', user_id: 'eq.' + user.id, limit: '1' }).toString());

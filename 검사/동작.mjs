@@ -151,5 +151,27 @@ const 입력칸 = (값 = '', 커서 = 0) => ({
     ok(a.눌림 === 0, '조합키가 눌린 엔터는 넘긴다'); }
 }
 
+/* ═════ ④ 라디오는 키보드로 다시 눌러 해제되지 않는다 (2026-10-12) ═════ */
+{
+  const src = 떼기("document.addEventListener('keydown', e=>{\n  if(e.key !== ' ' && e.key !== 'Enter' && e.key !== 'Spacebar') return;\n  const 칩 =", '\n});');
+  const document = 가짜문서();
+  new Function('document', src)(document);
+  const 칩 = (켜짐, 라디오 = true) => ({ closest: s => {
+    const 맞음 = 라디오 && 켜짐 ? s.includes('[aria-checked="true"]') : false;
+    return 맞음 ? {} : null; } });
+  const 누르기 = (el, key) => { let 막음 = false; document.울림('keydown', { key, target: el, preventDefault(){ 막음 = true; } }); return 막음; };
+  ok(누르기(칩(true), ' ') && 누르기(칩(true), 'Enter'), '고른 라디오 칩에서 Space·Enter 는 막는다 (선택이 풀리지 않는다)');
+  ok(!누르기(칩(false), ' '), '아직 안 고른 칩의 Space 는 그대로 둔다 (그걸로 고른다)');
+  ok(!누르기(칩(true, false), ' '), '여럿 고르는 칩(라디오 아님)은 Space 로 끌 수 있다');
+}
+
+/* ═════ ⑤ 손으로 짠 칩 줄도 골라졌는지를 보조기기에 말한다 ═════ */
+for(const 이름 of ['harea', 'move-month', 'move-part', 'dfilter', 'ptab', 'sc-assets', 'sc-exclude']){
+  const i = js.indexOf(`data-act="${이름}"`);
+  const 줄 = i < 0 ? '' : js.slice(i, i + 160);
+  ok(/aria-pressed="\$\{/.test(줄), `${이름} 칩이 aria-pressed 를 단다`);
+}
+ok(!/aria-describedby="nextwhy"/.test(js), '없는 id 를 가리키는 aria-describedby 가 없다');
+
 console.log(`\n${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

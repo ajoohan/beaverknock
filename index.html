@@ -3644,7 +3644,7 @@ ${gDeal ? `<div data-req="dongs"><span class="lab">찾으시는 동네 <span cla
       <!-- 지금까지 주거에는 면적 칸이 아예 없었다. 매물에는 전용·공급 ㎡ 가
            들어 있으므로 손님 쪽만 채우면 그날로 맞춰볼 수 있다. -->
       <div><span class="lab">희망 면적 <span class="opt">전용면적 기준 · 여러 개 고르셔도 됩니다</span></span>
-        <div class="chips multi">${HAREA.map(b=>`<button class="chip ${d.hArea.includes(b.t)?'on':''}" data-act="harea" data-v="${esc(b.t)}">${esc(b.t)}<span style="opacity:.62;font-weight:600;margin-left:5px">${esc(b.py)}</span></button>`).join('')}</div></div>
+        <div class="chips multi">${HAREA.map(b=>`<button class="chip ${d.hArea.includes(b.t)?'on':''}" data-act="harea" data-v="${esc(b.t)}" aria-pressed="${d.hArea.includes(b.t)}">${esc(b.t)}<span style="opacity:.62;font-weight:600;margin-left:5px">${esc(b.py)}</span></button>`).join('')}</div></div>
       <div class="grid2 mo1">
         <div><span class="lab">방 수</span>${chipsHTML(ROOMS, d.rooms, 'rooms', false)}</div>
         <div><span class="lab">화장실 <span class="opt">없으면 비워두셔도 됩니다</span></span>${chipsHTML(HBATH, d.hBath||'', 'hbath', false)}</div>
@@ -3701,7 +3701,7 @@ ${gDeal ? `<div data-req="dongs"><span class="lab">찾으시는 동네 <span cla
          버튼에 남은 한 가지를 적는다. 다 채우면 '다음' 으로 돌아온다. -->
     ${(()=>{ const 빠진 = regMiss(d);
       return `<button class="btn ${빠진?'ghost':'pri'} ${isMo()?'blk':''}" data-act="next-register"
-        ${빠진?`aria-describedby="nextwhy"`:''}>${빠진 ? esc(빠진.m) : '다음'}</button>`; })()}
+        >${빠진 ? esc(빠진.m) : '다음'}</button>`; })()}
   </div>
 </div>`;};
 
@@ -4017,7 +4017,7 @@ function movePicker(d){
             ${gi?'<span style="font-weight:700;color:var(--ind300)">여기부터 해가 바뀝니다</span>':''}
             <i style="flex:1;height:1px;background:${gi?'var(--ind100)':'var(--n100)'}"></i></span>
           <div class="chips" style="gap:6px">${g.items.map(x=>{ const off = moveMonthPast(x);
-            return `<button class="chip ${d.moveMonth===x.v?'on':''}" data-act="move-month" data-v="${x.v}"
+            return `<button class="chip ${d.moveMonth===x.v?'on':''}" data-act="move-month" data-v="${x.v}" aria-pressed="${d.moveMonth===x.v}"
               ${off?'disabled title="이번 달은 남은 시기가 없습니다"':''}
               style="padding:8px 14px;font-size:12.5px${off?';opacity:.4;cursor:not-allowed':''}">${x.m}월</button>`;
           }).join('')}</div>
@@ -4026,7 +4026,7 @@ function movePicker(d){
       ${d.moveMonth ? `<div style="margin-top:12px">
         <span style="display:block;margin-bottom:6px;font-size:12.5px;font-weight:700;color:var(--n700)">그 달 안에서는</span>
         <div class="chips" style="gap:6px">${MOVE_PART.map(pt=>{ const off = movePartPast(d.moveMonth, pt);
-          return `<button class="chip ${d.movePart===pt?'on':''}" data-act="move-part" data-v="${pt}"
+          return `<button class="chip ${d.movePart===pt?'on':''}" data-act="move-part" data-v="${pt}" aria-pressed="${d.movePart===pt}"
             ${off?'disabled title="이미 지난 시기입니다"':''}
             style="padding:8px 16px${off?';opacity:.4;cursor:not-allowed':''}">${pt}<span
               style="margin-left:6px;font-size:11px;font-weight:600;opacity:.6">${MOVE_RANGE[pt]}</span></button>`;
@@ -5596,7 +5596,7 @@ V['#/partner/demands'] = () => {
       <p class="sub" style="font-size:13.5px">${S.feedByListing
         ? `올려두신 물건과 <b style="color:var(--n900)">지역 · 유형 · 거래방식 · 예산</b>이 모두 맞는 손님만 보여드립니다. 손님 연락처는 연결 확정 전까지 표시되지 않습니다.`
         : `매칭 적합도 순 - 선착순이 아닙니다 · 내 품질 점수 <b style="color:var(--n900)">${qualityScore()}점</b>이 노출 순위에 반영됩니다. 손님 연락처는 연결 확정 전까지 표시되지 않습니다.`}</p></div>
-      ${S.feedByListing?'':`<div class="chips">${['전체', ...Object.values(WHO).map(w=>w.tag)].map(x=>`<button class="chip ${f===x?'on':''}" data-act="dfilter" data-v="${x}">${x}</button>`).join('')}</div>`}
+      ${S.feedByListing?'':`<div class="chips">${['전체', ...Object.values(WHO).map(w=>w.tag)].map(x=>`<button class="chip ${f===x?'on':''}" data-act="dfilter" data-v="${x}" aria-pressed="${f===x}">${x}</button>`).join('')}</div>`}
     </div>
     ${S.feedErr ? `<div class="card pad" style="border-color:var(--warnline);background:var(--warnbg);box-shadow:none;
       display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
@@ -5864,7 +5864,7 @@ V['#/partner/proposals'] = () => {
   <div class="pad" style="flex:1;padding-top:${isMo()?18:30}px;padding-bottom:24px;max-width:${isMo()?'none':'1000px'};margin:0 auto;width:100%;display:flex;flex-direction:column;gap:14px">
     <div><span class="eyebrow">MY PROPOSALS</span>
     <h1 class="t" style="font-size:${isMo()?21:25}px;margin-top:8px">내 제안</h1></div>
-    <div class="chips">${TABS.map(([k,l,st])=>`<button class="chip ${tab===k?'on':''}" data-act="ptab" data-v="${k}">${l} ${S.myprops.filter(p=>st.includes(p.status)).length}</button>`).join('')}</div>
+    <div class="chips">${TABS.map(([k,l,st])=>`<button class="chip ${tab===k?'on':''}" data-act="ptab" data-v="${k}" aria-pressed="${tab===k}">${l} ${S.myprops.filter(p=>st.includes(p.status)).length}</button>`).join('')}</div>
     ${seedGate(S.mpReady, () => list.length? list.map(p=>{const b=badge(p); return `
       <div class="card pad fade" style="${['expired','rejected','withdrawn'].includes(p.status)?'opacity:.8':''}">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap">
@@ -6336,7 +6336,7 @@ V["#/partner/settings"] = () => {
       <div style="display:flex;flex-direction:column;gap:14px">
         ${sect('1','취급 유형','',
           `<div class="chips multi">${ASSET_KINDS.map(k=>{ const soon = ASSET_SOON.includes(k);
-            return `<button class="chip ${sc.assets.includes(k)?'on':''}" data-act="sc-assets" data-v="${esc(k)}"
+            return `<button class="chip ${sc.assets.includes(k)?'on':''}" data-act="sc-assets" data-v="${esc(k)}" aria-pressed="${sc.assets.includes(k)}"
               style="padding:10px 16px;font-size:13.5px">${esc(k)}${soon?' <span style="opacity:.6;font-size:11px">· 준비 중</span>':''}</button>`;
           }).join('')}</div>`
           + `<div class="chips" style="margin-top:8px">${['토지','공장'].map(x=>
@@ -6363,7 +6363,7 @@ V["#/partner/settings"] = () => {
         ${sect('3','취급 불가 항목','자신 없는 대분류만 고르세요. 고른 유형의 손님에게는 알림이 가지 않습니다.',
           `<div class="chips multi">${EXCLUDE_KINDS.map(k=>{
             const soon = EXCLUDE_SOON.includes(k);
-            return `<button class="chip ${sc.excluded.includes(k)?'on':''}" data-act="sc-exclude" data-v="${esc(k)}"
+            return `<button class="chip ${sc.excluded.includes(k)?'on':''}" data-act="sc-exclude" data-v="${esc(k)}" aria-pressed="${sc.excluded.includes(k)}"
               style="padding:10px 16px;font-size:13.5px">${esc(k)}${soon?' <span style="opacity:.6;font-size:11px">· 준비 중</span>':''}</button>`;
           }).join('')}</div>`
           + (sc.excluded.length ? `<p style="margin:10px 0 0;padding:12px 16px;font-size:13.5px;font-weight:700;background:${drop?'var(--dangerbg)':'var(--warnbg)'};color:${drop?'var(--danger)':'var(--warn)'}">
@@ -9368,18 +9368,31 @@ async function hydrate(sess){
     clearSeeds(true);          /* 들어온 뒤에는 예시를 지운다 - 위 주석 참고 */
     /* 동의를 받은 적이 있는지(없으면 #/agree) · 파트너인지(없으면 손님 화면).
        둘 다 '내가 누구인가' 라 나란히 묻는다 - 앞뒤로 기다릴 이유가 없다. */
-    await Promise.all([readConsent(), readAgent()]);
+    /* 한 번에 묻는다 (2026-10-12, /api/my what:'me'). 못 물었으면 예전처럼 따로 묻는다 */
+    let 둘 = null;
+    try{
+      const r = await apiFetch('/api/my', {method:'POST', body: JSON.stringify({what:'me'})});
+      const j = await r.json().catch(()=>({}));
+      if(r.ok && j.consent && j.agent) 둘 = j;
+    }catch(_){}
+    await Promise.all([readConsent(둘 && 둘.consent), readAgent(둘 && 둘.agent)]);
     return true;
   }catch(e){ return false; }
 }
 
 /* 서버에 물어본다. 못 물어봤으면 막지 않는다 - 동의 화면에 갇혀 서비스를
    못 쓰는 쪽이 더 나쁘다. 0023 전이면 서버가 ready:false 로 답한다. */
-async function readConsent(){
+/* 미리 = 함께 받아 온 답 {status, body} (hydrate 의 what:'me'). 없으면 직접 묻는다 */
+const 받은답 = 미리 => ({ ok: 미리.status >= 200 && 미리.status < 300, j: 미리.body || {} });
+async function readConsent(미리){
   try{
-    const r = await apiFetch('/api/my', {method:'POST', body: JSON.stringify({what:'consent'})});
-    const j = await r.json().catch(()=>({}));
-    if(!r.ok || j.ready === false){ S.consent = 'skip'; return; }
+    let ok, j;
+    if(미리) ({ ok, j } = 받은답(미리));
+    else {
+      const r = await apiFetch('/api/my', {method:'POST', body: JSON.stringify({what:'consent'})});
+      ok = r.ok; j = await r.json().catch(()=>({}));
+    }
+    if(!ok || j.ready === false){ S.consent = 'skip'; return; }
     S.consent = j.consent || false;
     if(S.consent){ S.ag = {terms:!!S.consent.terms_at, privacy:!!S.consent.privacy_at, mkt:!!S.consent.marketing_at}; return; }
     /* 소셜로 나가기 전에 체크하신 것을 들고 왔다면 그대로 적는다 - 또 묻지 않는다 */
@@ -9407,12 +9420,16 @@ const consentNeeded = () => S.consent === false;
        그 가드가 `S.agent` 를 보게 되어 있어서, 비어 있으면 그냥 지나친다.
    버그라기보다 **구멍**이다. 아무도 묻지 않아서 답이 없었을 뿐이다.
    못 물어봤으면 손님으로 둔다 - 막지 않는다. 진짜 문턱은 서버가 화면마다 본다. */
-async function readAgent(){
+async function readAgent(미리){
   const 전 = S.agent && S.agent.id;
   try{
-    const r = await apiFetch('/api/my', {method:'POST', body: JSON.stringify({what:'agent'})});
-    const j = await r.json().catch(()=>({}));
-    S.agent = (r.ok && j.agent) || null;
+    let ok, j;
+    if(미리) ({ ok, j } = 받은답(미리));
+    else {
+      const r = await apiFetch('/api/my', {method:'POST', body: JSON.stringify({what:'agent'})});
+      ok = r.ok; j = await r.json().catch(()=>({}));
+    }
+    S.agent = (ok && j.agent) || null;
   }catch(e){ S.agent = null; }
   /* 첫 그림이 이미 나간 뒤에 답이 올 수 있다 - boot 이 1.2초에서 끊고 그리기
      때문이다. 그때 다시 그리지 않으면 파트너로 가는 문이 **다음에 어디를
@@ -10814,6 +10831,15 @@ document.addEventListener('keydown', e=>{
   e.preventDefault();
   줄.forEach(c => c.setAttribute('tabindex', c === 다음 ? '0' : '-1'));
   다음.focus({preventScroll:true});
+});
+/* 라디오는 키보드로 '고른 것을 다시 눌러 해제' 하지 않는다 (2026-10-12).
+   처리기 상당수가 `같은 값이면 비운다` 로 짜여 있어서(선택 칸을 마우스로 비울 수
+   있게 한 것), 고른 칩에서 Space 를 한 번 더 치면 선택이 풀리고 낭독기는
+   '선택 안 됨' 이라고 읽었다 - 라디오의 약속과 어긋난다. 마우스로 비우는 길은 그대로다. */
+document.addEventListener('keydown', e=>{
+  if(e.key !== ' ' && e.key !== 'Enter' && e.key !== 'Spacebar') return;
+  const 칩 = e.target.closest && e.target.closest('.chips.one > .chip[role="radio"][aria-checked="true"]');
+  if(칩) e.preventDefault();
 });
 
 /* 주소 자동완성 - 손을 마우스로 옮기지 않고도 고를 수 있어야 한다 */

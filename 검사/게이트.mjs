@@ -158,9 +158,10 @@ ok(/agent: null, note: 'lookup-failed'/.test(api),
    '못 물어봤으면 막지 않고 손님으로 둔다 - 진짜 문턱은 화면마다 서버가 다시 본다');
 ok(!/agent-me\.js|whoami/.test(api), '새 주소를 내지 않았다 - 함수 상한(12개)이 꽉 찼다');
 
-ok(/async function readAgent\(\)/.test(js), '화면도 로그인 직후 한 번 물어본다');
-ok(/await Promise\.all\(\[readConsent\(\), readAgent\(\)\]\)/.test(js),
-   '동의와 나란히 묻는다 - 둘 다 "내가 누구인가" 라 앞뒤로 기다릴 이유가 없다');
+ok(/async function readAgent\(미리\)/.test(js), '화면도 로그인 직후 한 번 물어본다');
+/* 2026-10-12: 둘을 한 번의 호출(what:'me')로 받고 나눠 읽는다 - 못 받으면 예전처럼 따로 묻는다 */
+ok(/await Promise\.all\(\[readConsent\(둘 && 둘\.consent\), readAgent\(둘 && 둘\.agent\)\]\)/.test(js),
+   '동의와 나란히 읽는다 - 둘 다 "내가 누구인가" 라 앞뒤로 기다릴 이유가 없다');
 ok(/if\(\(S\.agent && S\.agent\.id\) !== 전 && S\.lastRoute !== null\) render\(\)/.test(js),
    '첫 그림이 나간 뒤에 답이 와도 다시 그린다 - boot 이 1.2초에서 끊기 때문이다');
 

@@ -205,5 +205,31 @@ ok(!/function load(Feed|Mine|Listings|MyProps)\([^)]*\)\{\s*\n\s*const sess = st
 /* 공개 안내 화면(#/partner)에서는 내 목록을 부르지 않는다 - 로그인한 손님도 403 을 받았다 */
 ok(!/h==='#\/partner'\) loadMyProps|h==='#\/partner'\) loadListings/.test(js), '#/partner 에서 내 제안·내 물건을 부르지 않는다');
 
+/* ── 2026-10-12 실연동을 켠 날: 로그인하고 돌아오면 가입 화면이 '준비 중' 양식에 갇혔다 ──
+   boot 가 돌아오는 길(readAuthRedirect)에서는 본인확인 설정을 묻지 않았다. */
+{
+  const boot = js.slice(js.indexOf('(function boot(){'));
+  ok(boot.indexOf('idvConfig()') >= 0 && boot.indexOf('idvConfig()') < boot.indexOf('readAuthRedirect()'),
+     '로그인·본인확인에서 돌아오는 길에도 본인확인 설정을 먼저 묻는다');
+  ok(/if\(h === '#\/partner\/join' \|\| h\.startsWith\('#\/contact'\)\) idvConfig\(\)/.test(js),
+     '가입·연락처 화면에 들어올 때마다 설정을 확인한다(오래된 탭 포함)');
+  const 가입 = js.slice(js.indexOf('V["#/partner/join"]'), js.indexOf('function sendVerify'));
+  ok(/if\(!S\.idvCfg\) body =/.test(가입) && /else if\(live\) body =/.test(가입),
+     '설정을 모르면 어느 양식도 그리지 않는다 - 이름만 받는 양식으로 가면 다음이 되돌아온다');
+  ok(/if\(!\(S\.idvCfg && S\.idvCfg\.live\)\)\{ S\.idvCfg = null; idvCfgAt = 0; idvConfig\(\)/.test(js),
+     '서버가 본인확인을 요구하면 설정을 다시 받아 버튼 화면으로 바꾼다');
+
+  /* 가입할 때 넣은 메일을 또 묻지 않는다 - 실제로 돌려 본다 */
+  const 시작 = js.indexOf('const accountEmail = ');
+  const 끝 = js.indexOf('V["#/partner/join"]');
+  const S = { user: { email: 'jin@plustonic.com' } };
+  const esc = x => String(x);
+  const { joinEmailField, accountEmail } = new Function('S', 'esc', js.slice(시작, 끝) + '; return { joinEmailField, accountEmail };')(S, esc);
+  ok(joinEmailField({}) === '' && accountEmail() === 'jin@plustonic.com', '계정 메일이 있으면 이메일 칸을 그리지 않는다');
+  S.user.email = '';
+  ok(/data-in="j-email"/.test(joinEmailField({})), '계정 메일이 없으면(카카오 미동의) 그때만 칸을 보인다');
+  ok(/email: accountEmail\(\) \|\| f\['j-email'\] \|\| ''/.test(js), '신청에는 계정 메일을 담는다');
+}
+
 console.log(`${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

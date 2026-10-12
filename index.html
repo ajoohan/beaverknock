@@ -5935,6 +5935,13 @@ const OWNER_TYPES = [
   {k:'trustor',    t:'신탁 위탁자',   d:'신탁등기된 건물의 시행사·위탁자'},
 ];
 const OWNER_KO = {individual:'개인', corp:'법인', trustor:'신탁 위탁자'};
+/* 가입할 때 넣은 메일을 또 묻지 않는다. 계정 메일이 곧 자료를 받을 곳이다.
+   카카오 로그인은 메일 제공에 동의하지 않으면 메일이 없다 - 그때만 칸을 보인다. */
+const accountEmail = () => String((S.user && S.user.email) || '').trim();
+const joinEmailField = f => accountEmail() ? '' : `<div><span class="lab">이메일 <span class="opt">선택 · 자료를 메일로 받고 싶으시면</span></span>
+        <input class="inp" data-in="j-email" type="email" value="${esc(f['j-email']||'')}"
+          placeholder="office@example.com" autocomplete="email"></div>`;
+
 V["#/partner/join"] = () => {
   const f = S.form, step = f.jStep || 1, role = f.jRole;
   const roleName = (JOIN_ROLES.find(r=>r.k===role)||{}).t || '';
@@ -5956,10 +5963,16 @@ V["#/partner/join"] = () => {
     const live = !!(S.idvCfg && S.idvCfg.live);
     const vf = f.jVerified;
 
+    /* 설정을 아직 모르면 어느 양식도 그리지 않는다. 모르는 채로 '준비 중' 양식을
+       그리면 서버는 본인확인을 요구하고 화면은 이름만 받아, 다음을 눌러도 되돌아온다. */
+    if(!S.idvCfg) body = `
+    <h1 class="t" style="font-size:${isMo()?21:25}px">본인확인을<br class="mbr">  준비하고 있습니다</h1>
+    <p class="sub measure" role="status">잠시만 기다려 주세요.</p>`;
+
     /* 실계약 채널이 붙으면 여기도 손님 쪽과 같은 절차를 밟는다.
        테스트 MID 로는 켜지 않는다 - 테스트 값으로 공급자가 만들어지면
        운영 화면에서 심사할 수가 없다. */
-    if(live) body = `
+    else if(live) body = `
     <h1 class="t" style="font-size:${isMo()?21:25}px">본인확인을<br class="mbr">  받아주세요</h1>
     <p class="sub measure">손님에게 전달되는 이름과 연락처라 확인된 값만 씁니다.
       주민등록번호는 받지도 저장하지도 않습니다.</p>
@@ -5970,9 +5983,7 @@ V["#/partner/join"] = () => {
       <div style="font-size:13.5px;color:var(--n500);margin-top:2px">${esc(fmtPhone(vf.phone))} · ${esc(vf.vat)}</div>
     </div>
     <div style="display:flex;flex-direction:column;gap:14px;margin-top:14px">
-      <div><span class="lab">이메일 <span class="opt">선택 · 자료를 메일로 받고 싶으시면</span></span>
-        <input class="inp" data-in="j-email" type="email" value="${esc(f['j-email']||'')}"
-          placeholder="office@example.com" autocomplete="email"></div>
+      ${joinEmailField(f)}
       <button class="btn pri blk" data-act="j-pass">다음</button>
     </div>` : `
     <div style="margin-top:6px">
@@ -5992,9 +6003,7 @@ V["#/partner/join"] = () => {
         <input class="inp num" data-in="j-phone" inputmode="numeric" maxlength="13"
           value="${esc(f['j-phone']||'')}" placeholder="010-1234-5678" autocomplete="tel">
         <span data-warn="jphone" class="warn">${(f['j-phone']||'') && !phoneOk ? '번호를 확인해 주세요' : ''}</span></div>
-      <div><span class="lab">이메일 <span class="opt">선택 · 자료를 메일로 받고 싶으시면</span></span>
-        <input class="inp" data-in="j-email" type="email" value="${esc(f['j-email']||'')}"
-          placeholder="office@example.com" autocomplete="email"></div>
+      ${joinEmailField(f)}
       <input data-in="website" value="" tabindex="-1" autocomplete="off" aria-hidden="true"
         style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0">
       <button class="btn ${nameOk&&phoneOk?'pri':'sec'} blk" data-act="j-pass">다음</button>
@@ -8964,6 +8973,8 @@ function render(){
     location.replace('#/partner/demands'); return;
   }
   if(h.startsWith('#/partner/propose/') && S.timeLeft<=0){ S.timeLeft = 900; }
+  /* 본인확인 여부로 모양이 갈리는 화면 - 설정이 없거나 오래됐으면 다시 묻는다 */
+  if(h === '#/partner/join' || h.startsWith('#/contact')) idvConfig().catch(()=>null);
   S.route = h;
   const parts = h.split('/');
   let html;
@@ -9128,15 +9139,26 @@ function idvSdk(){
    '아직 안 붙었다' 쪽으로 그려진다 - 그 뒤에 답이 와도 다시 그리지 않으면
    화면은 이름·연락처를 달라고 하는데 판정은 본인확인을 요구하는 상태가 된다.
    말과 기준이 어긋나면 아무리 적어도 문이 안 열린다. 답이 오면 다시 그린다. */
+/* 2026-10-12 - 파트너 가입도 같은 기준을 쓴다. 예전에는 '#/contact' 일 때만,
+   그것도 enabled 가 바뀔 때만 다시 그려서, 답이 늦으면 가입 화면이 실연동이
+   켜진 뒤에도 "준비 중" 으로 남았다(서버는 본인확인을 요구하는데). live 가
+   바뀌어도 다시 그린다. 오래 열어 둔 탭은 그사이 설정이 바뀌었을 수 있어
+   5분이 지났으면 다시 묻는다(그동안은 갖고 있던 답으로 그린다). */
+let idvCfgAt = 0, idvCfgBusy = null;
 function idvConfig(){
-  if(S.idvCfg) return Promise.resolve(S.idvCfg);
+  if(S.idvCfg && Date.now() - idvCfgAt < 5*60*1000) return Promise.resolve(S.idvCfg);
   const done = j => {
-    const was = !!(S.idvCfg && S.idvCfg.enabled);
+    const 전 = S.idvCfg ? `${!!S.idvCfg.enabled}/${!!S.idvCfg.live}` : '';
     S.idvCfg = j || {enabled:false};
-    if(was !== !!S.idvCfg.enabled && String(S.route||'').startsWith('#/contact')) render();
+    idvCfgAt = Date.now(); idvCfgBusy = null;
+    /* 첫 화면을 그리기 전(BOOTED 전)에는 그리지 않는다 - 그때는 계정을 아직 몰라
+       로그인 가드가 엉뚱하게 튕길 수 있다. 첫 그리기는 boot 가 맡는다. */
+    if(BOOTED && 전 !== `${!!S.idvCfg.enabled}/${!!S.idvCfg.live}`) render();
     return S.idvCfg;
   };
-  return fetch('/api/idv').then(r=>r.json()).then(done).catch(()=>done({enabled:false}));
+  /* 화면이 다시 그려질 때마다 묻지 않게 하나만 띄운다 */
+  if(!idvCfgBusy) idvCfgBusy = fetch('/api/idv').then(r=>r.json()).then(done).catch(()=>done({enabled:false}));
+  return S.idvCfg ? Promise.resolve(S.idvCfg) : idvCfgBusy;
 }
 
 /* ── 본인확인 창구 둘 (2026-10-06 다날·KG이니시스 실계약) ──
@@ -9155,6 +9177,10 @@ function idvButtons(target){
   const busy = S.idvBusy ? 'disabled' : '';
   if(창구들.length <= 1){
     const k = 창구들[0] ? 창구들[0].k : 'one';
+    /* 하나뿐이어도 무엇으로 하는지는 말한다 - '간편인증' 이면 카카오·네이버·토스·PASS 다 */
+    const 말 = IDV_KIND[k];
+    if(말) return `<div class="idvPick"><button class="btn pri blk" data-act="idv" data-v="${target}:${k}" ${busy}>
+      <span class="t">${S.idvBusy ? '확인 중…' : 말.t}</span><span class="d">${말.d}</span></button></div>`;
     return `<button class="btn pri blk" data-act="idv" data-v="${target}:${k}" ${busy}>
       ${S.idvBusy ? '확인 중…' : '휴대폰으로 본인확인'}</button>`;
   }
@@ -9537,7 +9563,7 @@ function sendAgent(f){
     role: f.jRole,
     name: (f['j-name']||'').trim(),
     phone: (f['j-phone']||'').replace(/-/g,''),
-    email: f['j-email']||'',
+    email: accountEmail() || f['j-email'] || '',
     office: f['j-office']||'',
     reg_no: f['j-reg']||'',
     reg_verified: !!(f.jCheck && f.jCheck.verified),
@@ -9560,8 +9586,12 @@ function sendAgent(f){
       else if(j.need_idv){
         /* 표가 30분에 끊긴다. 인증을 채우다 시간이 지나면 여기로 온다.
            '확인되었습니다' 카드를 치워야 다시 받을 수 있다. 적어둔 것은 남긴다. */
+        const 받았었다 = !!S.form.jVerified;
         S.form.jSent = ''; S.form.jVerified = null; S.idvToken = null; S.form.jStep = 2;
-        toast('본인확인이 만료되었습니다 - 한 번만 다시 받아주세요');
+        /* 서버가 본인확인을 요구한다 = 실연동이다. 화면이 모르고 있었다면 설정을 다시
+           받아 버튼 화면으로 바꾼다 - 이름만 받는 양식으로 되돌리면 같은 자리를 맴돈다. */
+        if(!(S.idvCfg && S.idvCfg.live)){ S.idvCfg = null; idvCfgAt = 0; idvConfig().catch(()=>null); }
+        toast(받았었다 ? '본인확인이 만료되었습니다 - 한 번만 다시 받아주세요' : '본인확인을 먼저 받아주세요');
       }
       else if(j.need_login){
         /* 화면 가드를 지나왔는데 여기로 왔다 = 적는 사이에 세션이 끊겼다 */
@@ -10455,7 +10485,8 @@ function handle(a,v,el){
       const f = S.form;
       /* 실계약 채널이 붙어 있으면 확인을 받지 않고는 넘어갈 수 없다.
          서버(api/agent.js)도 같은 것을 본다 - 화면만 막으면 막은 게 아니다. */
-      if(S.idvCfg && S.idvCfg.live && !f.jVerified){
+      if(!S.idvCfg){ idvConfig().catch(()=>null); return toast('본인확인을 준비하고 있습니다 - 잠시 후 다시 눌러 주세요'), true; }
+      if(S.idvCfg.live && !f.jVerified){
         return toast('본인확인을 먼저 받아주세요'), true;
       }
       if((f['j-name']||'').trim().length < 2) return toast('성함을 적어주세요'), true;
@@ -10971,8 +11002,12 @@ function opsAuto(){
      저장한 보람이 없다. 비밀번호는 담아둔 적이 없으므로 채울 것도 없다. */
   const savedId = idStore.get();
   if(savedId){ S.email = savedId; S.saveId = true; }
+  /* 본인확인 설정은 돌아오는 길에도 받는다. 예전에는 아래 return 뒤에서만 물어서,
+     로그인하고 파트너 가입으로 돌아오면 설정이 없는 채로 '준비 중' 양식이 그려졌다
+     (2026-10-12 실연동을 켠 날 대표님이 그 화면에 갇혔다). */
+  const idvReady = idvConfig().catch(()=>null);
   if(readAuthRedirect() || readIdvRedirect()) return;   /* 돌아오는 길은 그쪽이 알아서 그린다 */
-  const wait = [idvConfig().catch(()=>null)];
+  const wait = [idvReady];
   if(store.get()) wait.push(hydrate().catch(()=>null));
   const cap = new Promise(r => setTimeout(r, 1200));
   Promise.race([Promise.all(wait), cap]).then(()=>{ render(); bootDone(); opsAuto(); });

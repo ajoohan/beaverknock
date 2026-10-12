@@ -293,6 +293,9 @@ ok(!/h==='#\/partner'\) loadMyProps|h==='#\/partner'\) loadListings/.test(js), '
   {
     const 판 = 만들기(); 판.답 = { enabled: false };
     ok(await 판.idvPickChannel('inicis') === null, '안 붙어 있으면 열 창구가 없다');
+    const 전 = 판.부름;
+    await 판.idvPickChannel('inicis'); await 판.idvPickChannel('inicis');
+    ok(판.부름 === 전, '정말 꺼져 있으면 누를 때마다 서버에 묻지 않는다');
   }
   /* need_idv 뒤 다시 받기가 실패해 끝난(30초 쉬는 중) 상태에서 통신이 돌아와 버튼을 누른다 */
   {
@@ -367,12 +370,67 @@ ok(!/h==='#\/partner'\) loadMyProps|h==='#\/partner'\) loadListings/.test(js), '
      '이미 신청한 계정이 가입 화면으로 오면 자격 확인으로');
   ok(!/if\((MINE|PARTNER_ONLY) && !S\.user/.test(js) && !/h==='#\/(contact|partner\/join)' && !S\.user/.test(js),
      '로그인 가드가 S.user 를 따로 보지 않는다 - 판정은 로그인전() 한 곳');
-  ok(/if\(BOOTED && S\.lastRoute === null\) render\(\); return ok;/.test(js),
-     '계정 확인이 늦게 끝나면 기다림 표시를 띄운 화면만 다시 그린다 - 공개 화면은 흔들지 않는다');
+  ok(/hydrate\(\)\.then\(ok => \{ 계정다시그리기\(\); return ok; \}\)/.test(js), '계정 확인이 늦게 끝나면 계정다시그리기 가 정한다');
+  ok(/S\.lastRoute = h;\n  그린계정 = 지금계정\(\);/.test(js), '그릴 때마다 누구로 그렸는지 적어 둔다');
+  /* 계정다시그리기 · 'online' 다시 확인을 실제로 돌린다 */
   {
-    const 온 = js.slice(js.indexOf("addEventListener('online'"), js.indexOf("addEventListener('online'") + 600);
-    ok(/if\(!계정확인실패 \|\| S\.user \|\| !세션있음\(\)\) return;\s*계정확인실패 = false;/.test(온) && /hydrate\(\)\.then\(\(\) => render\(\)\)/.test(온),
-       '통신이 돌아오면 저장된 세션으로 계정을 다시 확인한다 - 새로고침 전까지 로그아웃 취급하지 않는다');
+    const 몸 = js.slice(js.indexOf('let 그린계정 = '), js.indexOf('const waitingFor = '));
+    const 만들기 = (o = {}) => {
+      const 판 = { S: { user: null, afterLogin: null, lastRoute: '#/', ...o.S }, 그림: 0, 확인: 0, 세션: true,
+                  hash: o.hash || '#/', 결과: o.결과 ?? true, 손: null };
+      const location = { get hash(){ return 판.hash; }, replace: x => { 판.hash = x; 판.간곳 = x; } };
+      const hydrate = () => { 판.확인++; return new Promise(r => { 판.끝내기 = () => {
+        if(판.결과 === 'throw') throw new Error('x');
+        if(판.결과) 판.S.user = { id: 'u1' }; else 판.실패로(); r(판.결과); }; }); };
+      const f = new Function('S', 'render', 'hydrate', 'location', 'addEventListener', '세션있음', '판',
+        `let BOOTED = true; let 계정확인실패 = 판.실패 ?? true;
+         ${몸}
+         return { 계정다시그리기, 그렸다: () => { 그린계정 = 지금계정(); }, 실패보기: () => 계정확인실패, 실패로: () => { 계정확인실패 = true; } };`);
+      판.S.lastRoute = o.S && 'lastRoute' in o.S ? o.S.lastRoute : '#/';
+      Object.assign(판, f(판.S, () => { 판.그림++; }, hydrate, location, (e, fn) => { if(e === 'online') 판.손 = fn; }, () => 판.세션, 판));
+      return 판;
+    };
+    const 쉼 = () => new Promise(r => setTimeout(r, 0));
+    {
+      const 판 = 만들기(); 판.그렸다();            /* 로그아웃 모습으로 그려져 있다 */
+      판.S.user = { id: 'u1' }; 판.계정다시그리기();
+      ok(판.그림 === 1, '로그아웃 모습으로 그려졌는데 로그인이 확인되면 다시 그린다(상단바·동의 화면)');
+      판.그렸다(); 판.계정다시그리기();
+      ok(판.그림 === 1, '이미 그 계정으로 그려졌으면(readAgent 가 그렸으면) 또 그리지 않는다');
+    }
+    {
+      const 판 = 만들기({ S: { lastRoute: null } }); 판.그렸다(); 판.계정다시그리기();
+      ok(판.그림 === 1, '기다림 표시를 띄운 화면은 다시 그린다');
+    }
+    {
+      const 판 = 만들기({ hash: '#/login', S: { afterLogin: '#/partner/demands' } });
+      판.손(); 판.손();                              /* 망을 갈아타며 두 번 온다 */
+      ok(판.확인 === 1, "'online' 이 연달아 와도 계정 확인은 한 번만 돈다");
+      ok(판.실패보기() === false, '확인하는 동안은 다시 "확인 중" 이다');
+      판.끝내기(); await 쉼(); await 쉼();
+      ok(판.간곳 === '#/partner/demands' && 판.S.afterLogin === null,
+         '오프라인이라 로그인 화면으로 갔던 분은 확인되면 가려던 곳으로 돌아간다');
+    }
+    {
+      const 판 = 만들기({ hash: '#/kind' }); 판.그렸다();
+      판.손(); 판.끝내기(); await 쉼(); await 쉼();
+      ok(판.그림 === 1 && !판.간곳, '공개 화면이면 그 자리에서 로그인 모습으로 한 번만 다시 그린다');
+    }
+    {
+      const 판 = 만들기({ hash: '#/login', S: { afterLogin: '#/my' } }); 판.결과 = false;
+      판.손(); 판.끝내기(); await 쉼(); await 쉼();
+      ok(!판.간곳, '다시 확인이 실패하면 로그인 화면에 그대로 둔다');
+      판.손();
+      ok(판.확인 === 2, '실패한 뒤에는 다음 online 에 또 확인할 수 있다');
+    }
+    {
+      const 판 = 만들기(); 판.실패 = false;
+      const 판2 = (() => { const p = 만들기(); return p; })();
+      판2.S.user = { id: 'x' }; 판2.손();
+      ok(판2.확인 === 0, '이미 로그인돼 있으면 다시 확인하지 않는다');
+      판2.S.user = null; 판2.세션 = false; 판2.손();
+      ok(판2.확인 === 0, '저장된 세션이 없으면 다시 확인하지 않는다');
+    }
   }
   ok(/\}catch\(e\)\{ if\(!S\.user\) 계정확인실패 = true; return false; \}/.test(js), '오프라인으로 계정 확인이 실패하면 표시해 둔다');
 }

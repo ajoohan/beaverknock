@@ -2658,13 +2658,30 @@ const 세션있음 = () => { const s = store.get(); return !!(s && s.access_toke
 let 계정확인실패 = false;
 const 계정확인중 = () => !S.user && 세션있음() && !계정확인실패;
 const 로그인전 = () => !S.user && !계정확인중();
+/* 화면이 '누구로' 그려져 있는지. 계정 확인이 늦게 끝났을 때 다시 그릴지를 이것으로 정한다 -
+   기다림을 띄워 둔 화면(S.lastRoute === null)이거나, 로그아웃 모습으로 그려졌는데 이제
+   로그인이 확인됐으면(상단바·동의 화면 이동) 다시 그린다. readAgent 가 이미 다시
+   그렸으면 같은 계정이라 또 그리지 않는다 - 보고 있는 화면을 두 번 흔들지 않는다. */
+let 그린계정 = '';
+const 지금계정 = () => (S.user && (S.user.id || S.user.email)) || '';
+function 계정다시그리기(){
+  if(!BOOTED) return;            /* 첫 그리기는 boot 가 맡는다 */
+  if(S.lastRoute === null || 그린계정 !== 지금계정()) render();
+}
 /* 통신이 끊겨 계정 확인에 실패했던 분은, 통신이 돌아오면 저장된 세션으로 다시 확인한다.
-   그러지 않으면 새로고침할 때까지 로그아웃된 사람처럼 다뤄진다. */
+   그러지 않으면 새로고침할 때까지 로그아웃된 사람처럼 다뤄진다. 오프라인 동안
+   로그인이 필요한 화면은 로그인 화면으로 갔으므로, 확인되면 가려던 곳으로 보낸다.
+   'online' 은 망을 갈아탈 때 몇 번씩 오기도 한다 - 확인을 시작하면서 실패 표시를 지우므로
+   두 번째부터는 첫 줄에서 돌아간다(다시 실패하면 hydrate 가 표시를 되살린다). */
 addEventListener('online', () => {
   if(!계정확인실패 || S.user || !세션있음()) return;
-  계정확인실패 = false;          /* 다시 '확인 중' - 로그인이 필요한 화면은 기다림 표시로 */
-  render();
-  hydrate().then(() => render()).catch(() => render());
+  계정확인실패 = false;
+  hydrate().catch(() => false).then(ok => {
+    if(ok && location.hash === '#/login' && S.afterLogin){
+      const 갈곳 = S.afterLogin; S.afterLogin = null; location.replace(갈곳); return;
+    }
+    계정다시그리기();
+  });
 });
 const waitingFor = ready => 세션있음() && !ready;
 /* 기다리는 동안에는 표시 하나만 둔다. 무엇을 불러오는지는 잠시 뒤 화면이
@@ -9093,6 +9110,7 @@ function render(){
      그려져도(로그인 확인이 끝나는 그 순간이 꼭 그렇다) 영영 회색으로 남는다. */
   runSteps();
   S.lastRoute = h;
+  그린계정 = 지금계정();
 
   /* 대시보드 숫자는 화면보다 늦게 도착한다. 도착해서 값이 달라진 그때
      한 번만 다시 움직인다 - 20초마다 다시 세어 올라가면 산만하다. */
@@ -9268,7 +9286,9 @@ function idvMustBeLive(){
    모르는 이름이 오면(예전 화면) 첫 창구로 연다. 없으면 null. */
 async function idvPickChannel(kind){
   let cfg = await idvConfig();
-  if(!idvChannels(cfg).length){
+  /* 켜져 있다고 알면서 창구만 모를 때(need_idv 뒤)만 다시 묻는다 - 정말 꺼져 있으면
+     누를 때마다 서버에 묻지 않고 곧바로 알린다 */
+  if(!idvChannels(cfg).length && cfg && cfg.enabled){
     /* 다시 받던 것이 이미 실패해 끝났으면(30초 쉬는 중) 누른 지금 한 번 더 묻는다 -
        통신이 돌아왔는데 '아직 연결되지 않았습니다' 로 30초를 기다리게 하지 않는다 */
     if(!idvCfgBusy){ idvCfgAt = 0; idvConfig().catch(()=>null); }
@@ -11091,11 +11111,9 @@ function opsAuto(){
   const idvReady = idvConfig().catch(()=>null);
   if(readAuthRedirect() || readIdvRedirect()) return;   /* 돌아오는 길은 그쪽이 알아서 그린다 */
   const wait = [idvReady];
-  /* 1.2초를 넘겨 끝났고 기다림 표시를 띄워 둔 화면이면(S.lastRoute === null) 성공이든
-     실패든 다시 그린다 - 실패면 그때 로그인으로 간다. 공개 화면은 다시 그리지 않는다:
-     이미 보고 고르기 시작한 분의 화면을 흔들 이유가 없다(파트너 문 같은 것은
-     readAgent·readConsent 가 답이 달라졌을 때 알아서 다시 그린다). */
-  if(store.get()) wait.push(hydrate().then(ok => { if(BOOTED && S.lastRoute === null) render(); return ok; }).catch(()=>null));
+  /* 1.2초를 넘겨 끝났으면 계정다시그리기 가 정한다 - 기다림을 띄운 화면이거나
+     로그아웃 모습으로 그려졌던 화면만 다시 그린다(실패면 그때 로그인으로 간다). */
+  if(store.get()) wait.push(hydrate().then(ok => { 계정다시그리기(); return ok; }).catch(()=>null));
   const cap = new Promise(r => setTimeout(r, 1200));
   Promise.race([Promise.all(wait), cap]).then(()=>{ render(); bootDone(); opsAuto(); });
 })();

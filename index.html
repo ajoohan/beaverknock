@@ -9435,7 +9435,10 @@ async function idvFinish(id){
 }
 
 /* 휴대폰에서 돌아온 길. 담아둔 조건을 되살린 뒤 결과를 확인한다. */
-function readIdvRedirect(){
+/* 먼저읽기: 돌아온 길에서 계정을 먼저 읽는 일(세션 갱신 포함). 그게 끝난 뒤에 결과를 묻는다 -
+   포트원 화면에 오래 머물다 오면 저장된 열쇠가 만료돼 있어, 갱신 전에 물으면 401 이 나고
+   성공한 인증을 '확인하지 못했습니다' 로 알린다(다시 받으면 요금도 다시 든다). */
+function readIdvRedirect(먼저읽기){
   const id = new URLSearchParams(location.search).get('identityVerificationId');
   if(!id) return false;
   history.replaceState(null, '', location.pathname);
@@ -9453,7 +9456,7 @@ function readIdvRedirect(){
     }catch(e){}
   }
   location.hash = idvFor.get() === 'partner' ? '#/partner/join' : '#/contact';
-  idvFinish(id);
+  Promise.resolve(먼저읽기 ? 먼저읽기() : null).catch(() => null).then(() => idvFinish(id));
   return true;
 }
 
@@ -11182,10 +11185,8 @@ function opsAuto(){
   /* 휴대폰 본인확인은 포트원 페이지에서 '페이지째' 돌아온다. 그 길에도 계정을 다시 읽어야 한다 -
      안 읽으면 S.user 가 빈 채로 남아, 가입·연락처 화면이 '계정 읽는 중' 기다림에 영영 머문다
      (2026-10-13 실연동 다음 날 발견 - 전에는 로그인 화면으로 튕겼다). */
-  if(readIdvRedirect()){
-    if(store.get()) hydrate().catch(() => false).then(() => 계정다시그리기());
-    return;
-  }
+  if(readIdvRedirect(() => (store.get() ? hydrate().catch(() => false) : Promise.resolve(false))
+                              .then(() => 계정다시그리기()))) return;
   const wait = [idvReady];
   /* 1.2초를 넘겨 끝났으면 계정다시그리기 가 정한다 - 기다림을 띄운 화면이거나
      로그아웃 모습으로 그려졌던 화면만 다시 그린다(실패면 그때 로그인으로 간다). */

@@ -15,7 +15,7 @@ const 여기 = path.dirname(fileURLToPath(import.meta.url));
    늘면 새로 넣은 것이다 - 둘 다 눈에 띄어야 한다. */
 const 목록 = [
   ['밴드',          59, '면적·연식·층 밴드의 경계와 빈 값'],
-  ['게이트',        192, '등록·제안·접수의 문턱 · 파트너가 자기 화면으로 가는 문'],
+  ['게이트',        194, '등록·제안·접수의 문턱 · 파트너가 자기 화면으로 가는 문'],
   ['호',            16, '호수는 손님에게 가지 않는다 (동은 간다)'],
   ['동의',          36, '필수·선택을 가르고 **언제** 동의했는지를 남긴다'],
   ['광고',          33, '표시·광고 명시사항이 손님 화면까지 닿는가'],
@@ -49,6 +49,17 @@ try{
 }catch(e){
   실패++;
   console.log(`  실패  ${'문법'.padEnd(14)} 화면 스크립트가 통째로 죽는다 - ${e.message}`);
+}
+/* ── 배포될 파일이 검사한 파일과 같은가 (2026-10-13) ──
+   검사는 저장소 밖의 원본을 본다. 배포되는 것은 저장소의 index.html 이다.
+   복사를 빠뜨리면 검사는 '실패 없음' 인데 낡거나 깨진 화면이 나간다. */
+{
+  const 배포본 = path.resolve(여기, '..', 'index.html');
+  if(길.보는곳 === '원본' && fs.existsSync(배포본)){
+    const 같다 = fs.readFileSync(배포본).equals(fs.readFileSync(길.HTML경로));
+    if(같다) console.log(`  OK    ${'배포본'.padEnd(14)}  통과  index.html 이 검사한 원본과 같다`);
+    else { 실패++; console.log(`  실패  ${'배포본'.padEnd(14)} index.html 이 원본과 다르다 - 복사를 빠뜨렸다(cp 원본 → index.html)`); }
+  }
 }
 for(const [이름, 기대, 설명] of 목록){
   const p = path.join(여기, 이름 + '.mjs');

@@ -354,9 +354,25 @@ ok(!/h==='#\/partner'\) loadMyProps|h==='#\/partner'\) loadListings/.test(js), '
   /* 휴대폰 본인확인은 페이지째 돌아온다 - 그 길에도 계정을 읽어야 기다림에서 풀려난다 */
   {
     const boot = js.slice(js.indexOf('(function boot(){'));
-    ok(/if\(readIdvRedirect\(\)\)\{\s*if\(store\.get\(\)\) hydrate\(\)\.catch\(\(\) => false\)\.then\(\(\) => 계정다시그리기\(\)\);\s*return;\s*\}/.test(boot),
+    ok(/if\(readIdvRedirect\(\(\) => \(store\.get\(\) \? hydrate\(\)\.catch\(\(\) => false\) : Promise\.resolve\(false\)\)\s*\.then\(\(\) => 계정다시그리기\(\)\)\)\) return;/.test(boot),
        '본인확인에서 돌아오는 길에도 계정을 읽고, 읽고 나면 다시 그린다');
     ok(!/readAuthRedirect\(\) \|\| readIdvRedirect\(\)/.test(boot), '본인확인 복귀가 계정 읽기 없이 끝나지 않는다');
+    /* 결과는 계정 읽기(세션 갱신)가 끝난 뒤에 묻는다 - 실제로 돌려 순서를 본다 */
+    const 몸 = 함수('function readIdvRedirect(먼저읽기){');
+    const 순서 = [];
+    let 끝내기;
+    const 판 = { hash: '' };
+    const f = new Function('location', 'history', 'URLSearchParams', 'idvFor', 'sessionStorage', 'S', 'IDV_FORM', 'IDV_KEEP', 'blankDraft', 'idvFinish',
+      `${몸}; return readIdvRedirect;`);
+    const 읽기 = f({ search: '?identityVerificationId=bk-1', pathname: '/', set hash(v){ 판.hash = v; } },
+      { replaceState(){} }, URLSearchParams, { get: () => 'partner' },
+      { getItem: () => null, removeItem(){} }, { form: {} }, 'f', 'k', () => ({}), id => 순서.push('확인 ' + id));
+    const 돌아옴 = 읽기(() => new Promise(r => { 끝내기 = () => { 순서.push('계정 읽음'); r(); }; }));
+    await new Promise(r => setTimeout(r, 0));
+    ok(돌아옴 === true && 판.hash === '#/partner/join' && 순서.length === 0,
+       '계정을 다 읽기 전에는 본인확인 결과를 묻지 않는다 - 만료된 열쇠로 물으면 성공한 인증을 실패로 알린다');
+    끝내기(); await new Promise(r => setTimeout(r, 0)); await new Promise(r => setTimeout(r, 0));
+    ok(순서.join(' → ') === '계정 읽음 → 확인 bk-1', `계정을 읽은 뒤에 결과를 묻는다 (${순서.join(' → ')})`);
   }
   /* 같은 판정이 손님 화면에도 - 전에는 파트너 화면에만 있었다 */
   ok(가기('#/agree', 손({ user: null }), true) === '기다림', '동의 화면도 계정을 읽는 동안은 로그인으로 보내지 않는다');

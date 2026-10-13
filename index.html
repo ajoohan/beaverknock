@@ -2663,7 +2663,9 @@ const 로그인전 = () => !S.user && !계정확인중();
    로그인이 확인됐으면(상단바·동의 화면 이동) 다시 그린다. readAgent 가 이미 다시
    그렸으면 같은 계정이라 또 그리지 않는다 - 보고 있는 화면을 두 번 흔들지 않는다. */
 let 그린계정 = '';
-const 지금계정 = () => (S.user && (S.user.id || S.user.email)) || '';
+/* 본인확인만 마친 손님(S.user = {method:'verify', email:''}, id 없음)도 '로그아웃' 과
+   구분되어야 한다 - 방식까지 넣어 열쇠를 만든다 */
+const 지금계정 = () => S.user ? `${S.user.method || ''}:${S.user.id || S.user.email || S.user.name || '?'}` : '';
 function 계정다시그리기(){
   if(!BOOTED) return;            /* 첫 그리기는 boot 가 맡는다 */
   if(S.lastRoute === null || 그린계정 !== 지금계정()) render();
@@ -2677,8 +2679,14 @@ addEventListener('online', () => {
   if(!계정확인실패 || S.user || !세션있음()) return;
   계정확인실패 = false;
   hydrate().catch(() => false).then(ok => {
-    if(ok && location.hash === '#/login' && S.afterLogin){
-      const 갈곳 = S.afterLogin; S.afterLogin = null; location.replace(갈곳); return;
+    if(ok){
+      const 갈곳 = S.afterLogin;
+      /* 가려던 곳은 이번에 쓰든 안 쓰든 비운다 - 남겨 두면 며칠 뒤 다른 로그인에서
+         엉뚱하게 그리로 간다(오프라인 동안 다른 화면으로 옮겼을 때) */
+      S.afterLogin = null;
+      /* 로그인 화면에서 비밀번호를 적는 중이거나 직접 로그인하는 중이면 화면을 빼앗지 않는다 -
+         그 자리에서 '들어와 계십니다' 로 다시 그리기만 한다 */
+      if(갈곳 && location.hash === '#/login' && !S.authBusy && !S.pw){ location.replace(갈곳); return; }
     }
     계정다시그리기();
   });

@@ -417,6 +417,27 @@ ok(!/h==='#\/partner'\) loadMyProps|h==='#\/partner'\) loadListings/.test(js), '
       ok(판.그림 === 1 && !판.간곳, '공개 화면이면 그 자리에서 로그인 모습으로 한 번만 다시 그린다');
     }
     {
+      const 판 = 만들기({ hash: '#/guide', S: { afterLogin: '#/partner/demands' } }); 판.그렸다();
+      판.손(); 판.끝내기(); await 쉼(); await 쉼();
+      ok(!판.간곳 && 판.S.afterLogin === null,
+         '오프라인 동안 다른 화면으로 옮겼으면 가려던 곳 기록을 지운다 - 며칠 뒤 다른 로그인에서 엉뚱하게 가지 않게');
+    }
+    {
+      const 판 = 만들기({ hash: '#/login', S: { afterLogin: '#/my', pw: 'abc' } }); 판.그렸다();
+      판.손(); 판.끝내기(); await 쉼(); await 쉼();
+      ok(!판.간곳 && 판.그림 === 1, '로그인 화면에서 비밀번호를 적는 중이면 화면을 빼앗지 않고 다시 그리기만 한다');
+    }
+    {
+      const 판 = 만들기({ hash: '#/login', S: { afterLogin: '#/my', authBusy: true } });
+      판.손(); 판.끝내기(); await 쉼(); await 쉼();
+      ok(!판.간곳, '직접 로그인하는 중이면 그쪽에 맡긴다');
+    }
+    {
+      const 판 = 만들기(); 판.그렸다();
+      판.S.user = { method: 'verify', label: '본인확인', name: '한상혁', email: '' }; 판.계정다시그리기();
+      ok(판.그림 === 1, "본인확인만 마친 손님(id·메일 없음)도 '로그아웃' 과 구분한다");
+    }
+    {
       const 판 = 만들기({ hash: '#/login', S: { afterLogin: '#/my' } }); 판.결과 = false;
       판.손(); 판.끝내기(); await 쉼(); await 쉼();
       ok(!판.간곳, '다시 확인이 실패하면 로그인 화면에 그대로 둔다');
@@ -433,6 +454,19 @@ ok(!/h==='#\/partner'\) loadMyProps|h==='#\/partner'\) loadListings/.test(js), '
     }
   }
   ok(/\}catch\(e\)\{ if\(!S\.user\) 계정확인실패 = true; return false; \}/.test(js), '오프라인으로 계정 확인이 실패하면 표시해 둔다');
+  /* 그린계정 은 render 끝에서만 적힌다. 그 전에 화면을 그리고 일찍 돌아가는 길(대기 표시 등)은
+     반드시 S.lastRoute = null 을 남겨야 계정다시그리기 가 나중에 다시 그린다.
+     render 안에서 #app 을 직접 채우는 곳마다 그 표시가 바로 뒤에 있는지 본다. */
+  {
+    const 몸 = 함수('function render(){');
+    const 끝 = 몸.indexOf('  S.lastRoute = h;');
+    const 앞 = 몸.slice(0, 끝);
+    const 자리 = [...앞.matchAll(/\$\('#app'\)\.innerHTML\s*=/g)].map(m => m.index);
+    ok(자리.length >= 2, `render 의 일찍 그리는 길을 찾았다 (${자리.length}곳)`);
+    const 빠짐 = 자리.filter(i => { const 뒤 = 앞.slice(i, 앞.indexOf('return', i)); return !/S\.lastRoute = null/.test(뒤); });
+    ok(빠짐.length === 0, `일찍 그리고 돌아가는 길은 모두 S.lastRoute = null 을 남긴다 (빠진 곳 ${빠짐.length})`);
+    ok(/  S\.lastRoute = h;\n  그린계정 = 지금계정\(\);/.test(몸), '끝까지 그린 길은 누구로 그렸는지 적는다');
+  }
 }
 
 /* ── readAgent 를 실제로 돌린다 - '파트너 아님' 이 확정되는 것도 다시 그린다 ── */

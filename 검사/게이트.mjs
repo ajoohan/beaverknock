@@ -436,6 +436,18 @@ ok(!/h==='#\/partner'\) loadMyProps|h==='#\/partner'\) loadListings/.test(js), '
       ok(!판.간곳, '직접 로그인하는 중이면 그쪽에 맡긴다');
       ok(판.S.afterLogin === '#/my', '직접 로그인이 끝나면 가려던 곳으로 가야 하므로 남겨 둔다');
     }
+    /* 운영 로그인 길 - 관리자 계정으로 바꿔 들어오려는 중이다 */
+    {
+      const 판 = 만들기({ hash: '#/login', S: { afterLogin: '#/ops/live', pw: 'admin-pass' } }); 판.그렸다();
+      판.손(); 판.끝내기(); await 쉼(); await 쉼();
+      ok(판.S.pw === 'admin-pass', '운영 로그인 화면에서 적던 비밀번호는 지우지 않는다 - 양식이 그대로 보이므로');
+      ok(!판.간곳 && 판.S.afterLogin === '#/ops/live', '저장돼 있던 다른 계정으로 운영 화면에 데려가지 않는다');
+    }
+    {
+      const 판 = 만들기({ hash: '#/login', S: { afterLogin: '#/ops/live' } }); 판.그렸다();
+      판.손(); 판.끝내기(); await 쉼(); await 쉼();
+      ok(!판.간곳, '적고 있지 않아도 마찬가지 - 계정을 바꾸러 온 길이다');
+    }
     {
       const 판 = 만들기(); 판.그렸다();
       판.S.user = { method: 'verify', label: '본인확인', name: '한상혁', email: '' }; 판.계정다시그리기();
@@ -482,7 +494,8 @@ ok(!/h==='#\/partner'\) loadMyProps|h==='#\/partner'\) loadListings/.test(js), '
        '이미 들어와 있으면 로그인 양식 대신 "들어와 계십니다 · 계속하기" 를 보인다');
     /* 그 조건을 실제로 돌린다 */
     const 줄 = js.slice(js.indexOf('const 로그인됨화면 = '), js.indexOf('\n', js.indexOf('const 로그인됨화면 = ')));
-    const 판단 = (S, 세션 = true) => new Function('S', '세션있음', `${줄}; return 로그인됨화면();`)(S, () => 세션);
+    const 운영 = js.slice(js.indexOf('const OPS_HOME = '), js.indexOf('\n', js.indexOf('const OPS_HOME = ')));
+    const 판단 = (S, 세션 = true) => new Function('S', '세션있음', `${운영}; ${줄}; return 로그인됨화면();`)(S, () => 세션);
     const 계정 = { id: 'u1', email: 'a@b.c', method: 'email' };
     ok(판단({ user: 계정 }) === true, '계정으로 들어와 있으면 "들어와 계십니다"');
     ok(판단({ user: null }) === false, '로그인 전이면 양식');
@@ -492,7 +505,6 @@ ok(!/h==='#\/partner'\) loadMyProps|h==='#\/partner'\) loadListings/.test(js), '
     ok(판단({ user: 계정, agBusy: true }) === false, '가입 동의를 저장하는 중이면 그 화면 그대로 - 카드가 끼어들지 않는다');
     ok(판단({ user: 계정, afterLogin: '#/ops/live' }) === false, '운영 화면으로 가는 길이면 관리자 계정으로 들어오도록 양식');
     ok(판단({ user: 계정, afterLogin: '#/partner/demands' }) === true, '다른 곳으로 가는 길이면 카드');
-    ok(/if\(!S\.authBusy\)\{ S\.pw = ''; S\.pw2 = ''; \}/.test(js), '카드로 바뀌면 적다 만 비밀번호를 메모리에서 지운다');
     ok(/case 'login-continue': 로그인뒤로가기\(\); return true;/.test(js), '계속하기 는 가려던 곳으로 잇는다');
     ok(/data-act="logout" data-v="login"/.test(로그인) && /location\.replace\(location\.pathname \+ \(v === 'login' \? '#\/login' : ''\)\)/.test(js),
        '"다른 계정으로 들어가기" 는 로그아웃하고 로그인 화면으로 돌아온다');
@@ -519,6 +531,10 @@ ok(!/h==='#\/partner'\) loadMyProps|h==='#\/partner'\) loadListings/.test(js), '
   ok(/S\.agentKnown = false; readAgent\(\);/.test(js), '가입이 끝나면 파트너 정보를 다시 받는다 - 완료 화면 단추가 가입으로 튕기지 않게');
   ok(!/data-go="#\/partner\/demands"[^>]*>먼저 둘러보기/.test(js), '안내 화면에서 파트너 아닌 분을 수요 목록으로 보내지 않는다');
 }
+
+/* 운영 화면 주소는 한 곳 - 로그인 화면 예외가 같은 이름을 봐야 한다 */
+ok((js.match(/'#\/ops\/live'/g) || []).length === 1 && /const OPS_HOME = '#\/ops\/live';/.test(js),
+   '운영 화면 주소(#/ops/live)는 OPS_HOME 한 곳에만 적혀 있다');
 
 console.log(`${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

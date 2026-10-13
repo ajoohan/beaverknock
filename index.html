@@ -2673,12 +2673,15 @@ function 로그인뒤로가기(){
   S.afterLogin = null;
   go(to);
 }
+/* 운영 화면 첫 자리. 운영 로그인 길·라우터·로그인 화면 예외가 모두 이 이름을 쓴다 -
+   주소가 여러 곳에 따로 적혀 있으면 하나만 바뀌어도 예외가 조용히 깨진다. */
+const OPS_HOME = '#/ops/live';
 /* 로그인 화면이 양식 대신 '들어와 계십니다' 를 보일 때 - 조건은 여기 한 곳.
    · 계정 세션이 있어야 한다: 본인확인만 마친 손님(S.user = {method:'verify'})은 계정이
      아니다 - 그분은 로그인 양식을 봐야 계정을 만들 수 있다.
    · 직접 로그인하거나(authBusy) 가입 동의를 저장하는(agBusy) 중이면 그쪽 화면이 맞다.
    · 운영 화면으로 가는 길이면 관리자 계정으로 다시 들어오는 경우가 많다 - 양식을 보인다. */
-const 로그인됨화면 = () => !!(S.user && 세션있음() && !S.authBusy && !S.agBusy && S.afterLogin !== '#/ops/live');
+const 로그인됨화면 = () => !!(S.user && 세션있음() && !S.authBusy && !S.agBusy && S.afterLogin !== OPS_HOME);
 function 계정다시그리기(){
   if(!BOOTED) return;            /* 첫 그리기는 boot 가 맡는다 */
   if(S.lastRoute === null || 그린계정 !== 지금계정()) render();
@@ -2693,12 +2696,15 @@ addEventListener('online', () => {
   계정확인실패 = false;
   hydrate().catch(() => false).then(ok => {
     if(ok && location.hash === '#/login'){
-      /* 로그인 화면에 있었다 = 오프라인이라 밀려났던 분이다. 적고 있거나 직접 로그인하는
-         중이 아니면 가려던 곳으로 보낸다. 적는 중이면 화면을 빼앗지 않는다 - 로그인 화면이
-         '들어와 계십니다 · 계속하기' 로 바뀌고, 가려던 곳은 그 단추가 쓰도록 남겨 둔다. */
-      if(!S.authBusy && !S.pw){ 로그인뒤로가기(); return; }
-      /* 적다 만 비밀번호는 이제 쓸 데가 없다 - 메모리에 남기지 않는다 */
-      if(!S.authBusy){ S.pw = ''; S.pw2 = ''; }
+      /* 로그인 화면에 있었다 = 오프라인이라 밀려났던 분이다. 다만 로그인 화면이 양식을
+         그대로 둬야 하는 때(운영 계정으로 바꿔 들어오는 길·직접 로그인·동의 저장 중)는
+         건드리지 않는다 - 데려가지도, 적던 비밀번호를 지우지도 않는다.
+         그 밖에는: 적는 중이 아니면 가려던 곳으로 보내고, 적는 중이면 화면이
+         '들어와 계십니다 · 계속하기' 로 바뀌므로 적다 만 비밀번호만 지운다(가려던 곳은 남긴다). */
+      if(로그인됨화면()){
+        if(!S.pw){ 로그인뒤로가기(); return; }
+        S.pw = ''; S.pw2 = '';
+      }
     }
     /* 로그인 화면을 떠나 있었으면 가려던 곳 기록은 낡았다 - 남겨 두면 며칠 뒤 다른
        로그인에서 엉뚱하게 그리로 간다(오프라인 동안 다른 화면으로 옮겼을 때) */
@@ -7622,7 +7628,7 @@ function opsCopy(text, said){
   el.remove();
 }
 
-const opsUrl = () => location.origin + location.pathname + '#/ops/live';
+const opsUrl = () => location.origin + location.pathname + OPS_HOME;
 const opsDatePlus = d => new Date(Date.now() + d*864e5).toISOString().slice(0,10);
 const opsInviteText = () => [
   '비버노크 운영 화면 시험 안내',
@@ -8469,7 +8475,7 @@ function opsGateScreen(){
       지금 <b style="color:var(--n700)">${esc(S.user.email||S.user.name||'로그인됨')}</b> 으로 로그인해 계십니다.</p>`);
 }
 
-V['#/ops/live'] = () => {
+V[OPS_HOME] = () => {
   if(!OPS.rows) return opsGateScreen();
 
   const tab = OPS.tab || 'home';
@@ -8977,7 +8983,7 @@ function render(){
   /* 내 정보 영역은 로그인이 필요하다 */
   /* 지표 대시보드는 아직 예시 숫자다. 실데이터 화면의 암호를 통과하기 전에는 열지 않는다. */
   /* A-04 화면을 지웠다. 이 주소로 들어오면 운영 화면으로 보낸다 */
-  if(h==='#/ops'){ location.replace('#/ops/live'); return; }
+  if(h==='#/ops'){ location.replace(OPS_HOME); return; }
   /* 소유자에게 활동 지역·유형을 물을 이유는 없다 - 올려둔 물건이 곧 조건이다.
      그래도 자기 정보는 봐야 하므로 되돌려 보내지 않는다. 화면 안에서 가린다. */
   /* 임시 링크로 들어왔다. 암호를 채워 넣고 주소는 곧바로 지운다 -
@@ -8988,7 +8994,7 @@ function render(){
              : got.dead ? {err:'이 링크는 기한이 지났습니다', until:got.until}
              : {ok:true, until:got.until};
     if(got && !got.dead){ OPS.pass = got.pass; OPS.err = ''; }
-    location.replace('#/ops/live');
+    location.replace(OPS_HOME);
     return;
   }
   /* 개인정보 처리방침은 한 벌뿐이다 - 옛 주소로 들어오면 그 문서로 보낸다 */
@@ -9162,7 +9168,7 @@ function render(){
     opsFetch();
   }
   /* 운영 화면에 들어왔으면 묻지 않고 한 번 열어본다 */
-  if(h === '#/ops/live' && !OPS.rows && !OPS.loading && !OPS.tried && S.user) opsFetch();
+  if(h === OPS_HOME && !OPS.rows && !OPS.loading && !OPS.tried && S.user) opsFetch();
 
   const dash = $('#opsDash');
   const dsig = dash ? (dash.dataset.sig || '') : '';
@@ -9177,7 +9183,7 @@ function render(){
   if(h.startsWith('#/partner/propose/')) startTimer(); else stopTimer();
   /* 화면에 들어갈 때 서버에서 받아온다. 20초 안에 다시 들어오면 그대로 쓴다. */
   /* 대시보드는 한 화면에서 전부 보여준다 - 탭을 하나씩 열게 하지 않는다 */
-  if(h==='#/ops/live' && OPS.rows && (OPS.tab||'home')==='home') dashDoLoad();
+  if(h===OPS_HOME && OPS.rows && (OPS.tab||'home')==='home') dashDoLoad();
   if(h==='#/my' || h==='#/inbox' || h.startsWith('#/proposal/')) loadMine(false);
   if(h==='#/partner/demands' || h.startsWith('#/partner/demand/')) loadFeed(false);
   /* '#/partner' 는 누구나 여는 안내 화면이고 내 제안·내 물건을 쓰지 않는다 (2026-10-09).
@@ -10109,13 +10115,13 @@ function handle(a,v,el){
       S.afterLogin = v === 'partner' ? '#/partner/demands'
         : (location.hash && location.hash !== '#/partner' ? location.hash : '#/');
       go('#/login'); return true; }
-    case 'ops-login':  S.afterLogin = '#/ops/live'; go('#/login'); return true;
+    case 'ops-login':  S.afterLogin = OPS_HOME; go('#/login'); return true;
     /* 운영 화면 안에서 바로 들어온다. 끝나면 손님 화면이 아니라 여기로 돌아온다. */
     case 'ops-email':
-      S.afterLogin = '#/ops/live'; S.signup = false;
+      S.afterLogin = OPS_HOME; S.signup = false;
       return handle('login-email', v);
     case 'ops-sns':
-      S.afterLogin = '#/ops/live';
+      S.afterLogin = OPS_HOME;
       return handle('sns', v);
     case 'ops-retry':  OPS.tried = false; OPS.err = ''; opsFetch(); return true;
     case 'ops-invite-copy': opsCopy(opsInviteText(), '안내문을 복사했습니다'); return true;

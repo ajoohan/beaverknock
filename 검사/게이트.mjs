@@ -428,6 +428,7 @@ ok(!/h==='#\/partner'\) loadMyProps|h==='#\/partner'\) loadListings/.test(js), '
       판.손(); 판.끝내기(); await 쉼(); await 쉼();
       ok(!판.간곳 && 판.그림 === 1, '로그인 화면에서 비밀번호를 적는 중이면 화면을 빼앗지 않고 다시 그리기만 한다');
       ok(판.S.afterLogin === '#/my', '그때 가려던 곳은 남겨 둔다 - 곧 누를 로그인·계속하기 가 써야 한다');
+      ok(판.S.pw === '', '적다 만 비밀번호는 지운다 - 화면이 "들어와 계십니다" 로 바뀌어 쓸 데가 없다');
     }
     {
       const 판 = 만들기({ hash: '#/login', S: { afterLogin: '#/my', authBusy: true } });
@@ -477,8 +478,21 @@ ok(!/h==='#\/partner'\) loadMyProps|h==='#\/partner'\) loadListings/.test(js), '
   {
     const 시작 = js.indexOf("V['#/login'] = () => {");
     const 로그인 = js.slice(시작, js.indexOf('const emailOk', 시작));
-    ok(/if\(S\.user && !S\.authBusy\)\{/.test(로그인) && /data-act="login-continue"/.test(로그인) && /들어와 계십니다/.test(로그인),
+    ok(/if\(로그인됨화면\(\)\)\{/.test(로그인) && /data-act="login-continue"/.test(로그인) && /들어와 계십니다/.test(로그인),
        '이미 들어와 있으면 로그인 양식 대신 "들어와 계십니다 · 계속하기" 를 보인다');
+    /* 그 조건을 실제로 돌린다 */
+    const 줄 = js.slice(js.indexOf('const 로그인됨화면 = '), js.indexOf('\n', js.indexOf('const 로그인됨화면 = ')));
+    const 판단 = (S, 세션 = true) => new Function('S', '세션있음', `${줄}; return 로그인됨화면();`)(S, () => 세션);
+    const 계정 = { id: 'u1', email: 'a@b.c', method: 'email' };
+    ok(판단({ user: 계정 }) === true, '계정으로 들어와 있으면 "들어와 계십니다"');
+    ok(판단({ user: null }) === false, '로그인 전이면 양식');
+    ok(판단({ user: { method: 'verify', name: '한상혁', email: '' } }, false) === false,
+       '본인확인만 마친 손님(계정 세션 없음)은 양식을 본다 - 그래야 계정을 만든다');
+    ok(판단({ user: 계정, authBusy: true }) === false, '직접 로그인하는 중이면 그 화면 그대로');
+    ok(판단({ user: 계정, agBusy: true }) === false, '가입 동의를 저장하는 중이면 그 화면 그대로 - 카드가 끼어들지 않는다');
+    ok(판단({ user: 계정, afterLogin: '#/ops/live' }) === false, '운영 화면으로 가는 길이면 관리자 계정으로 들어오도록 양식');
+    ok(판단({ user: 계정, afterLogin: '#/partner/demands' }) === true, '다른 곳으로 가는 길이면 카드');
+    ok(/if\(!S\.authBusy\)\{ S\.pw = ''; S\.pw2 = ''; \}/.test(js), '카드로 바뀌면 적다 만 비밀번호를 메모리에서 지운다');
     ok(/case 'login-continue': 로그인뒤로가기\(\); return true;/.test(js), '계속하기 는 가려던 곳으로 잇는다');
     ok(/data-act="logout" data-v="login"/.test(로그인) && /location\.replace\(location\.pathname \+ \(v === 'login' \? '#\/login' : ''\)\)/.test(js),
        '"다른 계정으로 들어가기" 는 로그아웃하고 로그인 화면으로 돌아온다');

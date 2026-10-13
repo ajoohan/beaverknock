@@ -2666,6 +2666,13 @@ let 그린계정 = '';
 /* 본인확인만 마친 손님(S.user = {method:'verify', email:''}, id 없음)도 '로그아웃' 과
    구분되어야 한다 - 방식까지 넣어 열쇠를 만든다 */
 const 지금계정 = () => S.user ? `${S.user.method || ''}:${S.user.id || S.user.email || S.user.name || '?'}` : '';
+/* 로그인이 끝난 뒤 가려던 곳으로 간다 - 읽고, 비우고, 간다를 한 자리에서.
+   이메일 로그인·동의 저장·통신 복귀가 각자 적다가 '비우기만 하고 안 가는' 길이 생겼다. */
+function 로그인뒤로가기(){
+  const to = S.afterLogin || '#/my';
+  S.afterLogin = null;
+  go(to);
+}
 function 계정다시그리기(){
   if(!BOOTED) return;            /* 첫 그리기는 boot 가 맡는다 */
   if(S.lastRoute === null || 그린계정 !== 지금계정()) render();
@@ -2679,15 +2686,15 @@ addEventListener('online', () => {
   if(!계정확인실패 || S.user || !세션있음()) return;
   계정확인실패 = false;
   hydrate().catch(() => false).then(ok => {
-    if(ok){
-      const 갈곳 = S.afterLogin;
-      /* 가려던 곳은 이번에 쓰든 안 쓰든 비운다 - 남겨 두면 며칠 뒤 다른 로그인에서
-         엉뚱하게 그리로 간다(오프라인 동안 다른 화면으로 옮겼을 때) */
-      S.afterLogin = null;
-      /* 로그인 화면에서 비밀번호를 적는 중이거나 직접 로그인하는 중이면 화면을 빼앗지 않는다 -
-         그 자리에서 '들어와 계십니다' 로 다시 그리기만 한다 */
-      if(갈곳 && location.hash === '#/login' && !S.authBusy && !S.pw){ location.replace(갈곳); return; }
+    if(ok && location.hash === '#/login'){
+      /* 로그인 화면에 있었다 = 오프라인이라 밀려났던 분이다. 적고 있거나 직접 로그인하는
+         중이 아니면 가려던 곳으로 보낸다. 적는 중이면 화면을 빼앗지 않는다 - 로그인 화면이
+         '들어와 계십니다 · 계속하기' 로 바뀌고, 가려던 곳은 그 단추가 쓰도록 남겨 둔다. */
+      if(!S.authBusy && !S.pw){ 로그인뒤로가기(); return; }
     }
+    /* 로그인 화면을 떠나 있었으면 가려던 곳 기록은 낡았다 - 남겨 두면 며칠 뒤 다른
+       로그인에서 엉뚱하게 그리로 간다(오프라인 동안 다른 화면으로 옮겼을 때) */
+    else if(ok) S.afterLogin = null;
     계정다시그리기();
   });
 });
@@ -3367,6 +3374,24 @@ V['#/agree'] = () => `
 </div>`;
 
 V['#/login'] = () => {
+  /* 이미 들어와 계시면(통신이 돌아와 저장된 로그인이 확인됐을 때 등) 로그인 양식을 또
+     내밀지 않는다 - 누구로 들어와 있는지 말하고, 가려던 곳으로 잇는다 */
+  if(S.user && !S.authBusy){
+    const 누구 = S.user.email || S.user.name || S.user.label || '';
+    return `
+<div class="scr fade">
+  <div class="nav pad"><a data-go="#/" style="flex:none">${logoLockup({h:25,tag:!isMo()})}</a></div>
+  <div style="flex:1;min-height:0;overflow:auto;display:flex;align-items:flex-start;justify-content:center;padding:${isMo()?'16px 24px 30px':'22px 40px 34px'}">
+    <div style="width:100%;max-width:${isMo()?'none':'400px'};display:flex;flex-direction:column;gap:16px;text-align:center">
+      <h1 class="t" style="font-size:${isMo()?21:25}px">들어와 계십니다</h1>
+      <p style="margin:0;font-size:13.5px;line-height:1.75;color:var(--n700)" role="status">
+        ${누구 ? `<b style="color:var(--n900)">${esc(누구)}</b> 계정으로 로그인되어 있습니다.` : '로그인되어 있습니다.'}</p>
+      <button class="btn pri blk" data-act="login-continue">계속하기</button>
+      <a class="tapx" data-act="logout" data-v="login" style="align-self:center;font-size:13.5px;font-weight:600;color:var(--n700);cursor:pointer">다른 계정으로 들어가기</a>
+    </div>
+  </div>
+</div>`;
+  }
   const emailOk = /^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(S.email);
   const pwOk = S.pw.length >= 8;
   const asPartner = S.loginAs === 'partner';
@@ -9595,7 +9620,7 @@ async function saveConsent(){
     const j = await r.json().catch(()=>({}));
     if(!r.ok){ S.agBusy=false; render(); return toast(j.error || '저장하지 못했습니다'); }
     S.consent = j.consent || true; S.agBusy = false;
-    go(S.afterLogin || '#/my'); S.afterLogin = null;
+    로그인뒤로가기();
   }catch(e){ S.agBusy=false; render(); toast('네트워크 문제로 저장하지 못했습니다'); }
 }
 
@@ -10339,9 +10364,10 @@ function handle(a,v,el){
         /* 가입 화면에서 이미 받았다. 바로 적어두면 동의 화면을 거치지 않는다.
            실패해도 막지 않는다 - 그때는 #/agree 가 한 번 더 받는다. */
         if(mode==='signup' && agreeOk()) saveConsent();
-        else { const to = S.afterLogin || '#/my'; S.afterLogin = null; go(to); }
+        else 로그인뒤로가기();
       });
       return true; }
+    case 'login-continue': 로그인뒤로가기(); return true;
     case 'logout': {
       signOutRemote();
       S.user=null; S.idv=null; S.idvToken=null; S.agent=null; S.agentKnown=false; S.afterLogin=null;
@@ -10371,7 +10397,8 @@ function handle(a,v,el){
          '로그아웃했는데 앞사람 화면이 남아 있다' 는 일이 원천적으로 없어진다.
          인사는 다시 읽힌 뒤에 한다 - 이 창은 곧 사라진다. */
       try{ sessionStorage.setItem('bk.bye','1'); }catch(e){}
-      location.replace(location.pathname);
+      /* '다른 계정으로 들어가기' 는 로그인 화면으로 돌아온다 */
+      location.replace(location.pathname + (v === 'login' ? '#/login' : ''));
       return true; }
 
     /* ── 본인확인 ── */

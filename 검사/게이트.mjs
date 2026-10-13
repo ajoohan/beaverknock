@@ -382,12 +382,13 @@ ok(!/h==='#\/partner'\) loadMyProps|h==='#\/partner'\) loadListings/.test(js), '
       const hydrate = () => { 판.확인++; return new Promise(r => { 판.끝내기 = () => {
         if(판.결과 === 'throw') throw new Error('x');
         if(판.결과) 판.S.user = { id: 'u1' }; else 판.실패로(); r(판.결과); }; }); };
-      const f = new Function('S', 'render', 'hydrate', 'location', 'addEventListener', '세션있음', '판',
+      const f = new Function('S', 'render', 'hydrate', 'location', 'addEventListener', '세션있음', '판', 'go',
         `let BOOTED = true; let 계정확인실패 = 판.실패 ?? true;
          ${몸}
          return { 계정다시그리기, 그렸다: () => { 그린계정 = 지금계정(); }, 실패보기: () => 계정확인실패, 실패로: () => { 계정확인실패 = true; } };`);
       판.S.lastRoute = o.S && 'lastRoute' in o.S ? o.S.lastRoute : '#/';
-      Object.assign(판, f(판.S, () => { 판.그림++; }, hydrate, location, (e, fn) => { if(e === 'online') 판.손 = fn; }, () => 판.세션, 판));
+      Object.assign(판, f(판.S, () => { 판.그림++; }, hydrate, location, (e, fn) => { if(e === 'online') 판.손 = fn; }, () => 판.세션, 판,
+        x => { 판.hash = x; 판.간곳 = x; }));
       return 판;
     };
     const 쉼 = () => new Promise(r => setTimeout(r, 0));
@@ -426,11 +427,13 @@ ok(!/h==='#\/partner'\) loadMyProps|h==='#\/partner'\) loadListings/.test(js), '
       const 판 = 만들기({ hash: '#/login', S: { afterLogin: '#/my', pw: 'abc' } }); 판.그렸다();
       판.손(); 판.끝내기(); await 쉼(); await 쉼();
       ok(!판.간곳 && 판.그림 === 1, '로그인 화면에서 비밀번호를 적는 중이면 화면을 빼앗지 않고 다시 그리기만 한다');
+      ok(판.S.afterLogin === '#/my', '그때 가려던 곳은 남겨 둔다 - 곧 누를 로그인·계속하기 가 써야 한다');
     }
     {
       const 판 = 만들기({ hash: '#/login', S: { afterLogin: '#/my', authBusy: true } });
       판.손(); 판.끝내기(); await 쉼(); await 쉼();
       ok(!판.간곳, '직접 로그인하는 중이면 그쪽에 맡긴다');
+      ok(판.S.afterLogin === '#/my', '직접 로그인이 끝나면 가려던 곳으로 가야 하므로 남겨 둔다');
     }
     {
       const 판 = 만들기(); 판.그렸다();
@@ -466,6 +469,19 @@ ok(!/h==='#\/partner'\) loadMyProps|h==='#\/partner'\) loadListings/.test(js), '
     const 빠짐 = 자리.filter(i => { const 뒤 = 앞.slice(i, 앞.indexOf('return', i)); return !/S\.lastRoute = null/.test(뒤); });
     ok(빠짐.length === 0, `일찍 그리고 돌아가는 길은 모두 S.lastRoute = null 을 남긴다 (빠진 곳 ${빠짐.length})`);
     ok(/  S\.lastRoute = h;\n  그린계정 = 지금계정\(\);/.test(몸), '끝까지 그린 길은 누구로 그렸는지 적는다');
+  }
+  /* 로그인 뒤 이동은 한 곳 - 세 군데가 각자 적다가 '비우기만 하고 안 가는' 길이 생겼다 */
+  ok((js.match(/S\.afterLogin \|\| '#\/my'/g) || []).length === 2
+     && /function 로그인뒤로가기\(\)\{\s*const to = S\.afterLogin \|\| '#\/my';\s*S\.afterLogin = null;\s*go\(to\);/.test(js),
+     '가려던 곳으로 가는 일은 로그인뒤로가기 한 곳에서 한다(나머지 하나는 소셜 로그인이 페이지를 떠나기 전 담아두는 자리)');
+  {
+    const 시작 = js.indexOf("V['#/login'] = () => {");
+    const 로그인 = js.slice(시작, js.indexOf('const emailOk', 시작));
+    ok(/if\(S\.user && !S\.authBusy\)\{/.test(로그인) && /data-act="login-continue"/.test(로그인) && /들어와 계십니다/.test(로그인),
+       '이미 들어와 있으면 로그인 양식 대신 "들어와 계십니다 · 계속하기" 를 보인다');
+    ok(/case 'login-continue': 로그인뒤로가기\(\); return true;/.test(js), '계속하기 는 가려던 곳으로 잇는다');
+    ok(/data-act="logout" data-v="login"/.test(로그인) && /location\.replace\(location\.pathname \+ \(v === 'login' \? '#\/login' : ''\)\)/.test(js),
+       '"다른 계정으로 들어가기" 는 로그아웃하고 로그인 화면으로 돌아온다');
   }
 }
 

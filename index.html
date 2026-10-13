@@ -7233,6 +7233,22 @@ function demandPayload(d, slotN){
 
 /* 저장은 화면을 막지 않는다 - 결과는 나중에 토스트로만 알린다 */
 function saveDemand(d, slotN, 자리){
+  /* 서버가 받지 않았다 - 이유가 무엇이든(본인확인·값·빈도·DB·통신) 한 길로 되돌린다.
+     화면은 먼저 '접수되었습니다' 로 넘어가 있으므로 그 자리에 두면 손님은 전달된 줄 안다 -
+     조건은 메모리에만 있다가 '내 조건' 을 다시 열면 사라진다(2026-10-13).
+     먼저 그려 둔 이번 조건·수요·즉시 제안을 거두고, 적은 것은 그대로 둔 채 연락처 화면으로. */
+  const 되돌리기 = 말 => {
+    if(자리){
+      S.conds   = S.conds.filter(c => c.id !== 자리.condId);
+      S.demands = S.demands.filter(x => x.id !== 자리.demandId);
+      S.props   = S.props.filter(p => p.cond !== 자리.condId);
+      if(S.inboxCond === 자리.condId) S.inboxCond = null;
+      S.matched = 0;
+    }
+    S.saved = false;
+    go('#/contact');
+    toast(말);
+  };
   let body;
   try {
     body = JSON.stringify({
@@ -7240,39 +7256,27 @@ function saveDemand(d, slotN, 자리){
       website: trapValue(),              /* 함정칸 - 사람은 비워 둔다 */
       elapsed: Date.now() - FORM_T0,     /* 너무 빠른 제출은 서버가 막는다 */
     });
-  } catch(e){ console.warn('조건 변환 실패', e); return; }
+  } catch(e){ console.warn('조건 변환 실패', e); return 되돌리기('조건을 보내지 못했습니다 - 적은 조건은 그대로 있으니 다시 눌러 주세요'); }
   apiFetch('/api/demand', { method:'POST', body }).then(r=>{
     if(r.ok){ S.saved = true; S.mineAt = 0; loadMine(true); return; }
     return r.json().catch(()=>({})).then(j=>{
       console.warn('조건 저장 실패', r.status, j);
-      /* 확인한 지 30분이 지나면 표가 만료된다. 확인했다고 표시해 둔 채로 두면
-         눌러도 계속 실패한다 - 상태를 되돌려 다시 받게 한다. */
+      /* 확인한 지 30분이 지나면 표가 만료된다. 확인했다고 표시해 둔 채로 두면 눌러도 계속
+         실패한다 - 상태를 되돌려 다시 받게 한다. 본인확인이 꺼진 줄 알던 화면이면 버튼
+         화면으로 바꾼다(파트너 가입과 같은 처리). */
       if(j.need_idv){
-        /* 서버가 받지 않았다. 화면은 먼저 '접수되었습니다' 로 넘어가 있으므로 그 자리에 두면
-           손님은 전달된 줄 안다 - 조건은 메모리에만 있다가 '내 조건' 을 다시 열면 사라진다.
-           (2026-10-13 실연동 뒤: 본인확인 30분이 지나 누르면 이렇게 된다)
-           먼저 그려 둔 것을 거두고, 적은 것은 그대로 둔 채 연락처 화면으로 되돌린다.
-           본인확인이 꺼진 줄 알던 화면이면 버튼 화면으로 바꾼다(파트너 가입과 같은 처리). */
-        if(자리){
-          S.conds   = S.conds.filter(c => c.id !== 자리.condId);
-          S.demands = S.demands.filter(x => x.id !== 자리.demandId);
-          S.props   = S.props.filter(p => p.cond !== 자리.condId);
-          if(S.inboxCond === 자리.condId) S.inboxCond = null;
-          S.matched = 0;
-        }
         const 받았었다 = !!(S.draft && S.draft.verified);
         S.idvToken=null; S.idv=null;
         Object.assign(S.draft, {verified:false, vstep:'idle', vat:''});
-        S.saved=false;
         idvMustBeLive();
-        go('#/contact');
-        return toast(받았었다 ? '본인확인이 만료되어 전달되지 않았습니다 - 다시 확인한 뒤 전달해 주세요'
-                              : '본인확인을 받아야 전달됩니다 - 확인한 뒤 다시 눌러 주세요');
+        return 되돌리기(받았었다 ? '본인확인이 만료되어 전달되지 않았습니다 - 다시 확인한 뒤 전달해 주세요'
+                                 : '본인확인을 받아야 전달됩니다 - 확인한 뒤 다시 눌러 주세요');
       }
-      toast(j.error || '조건은 화면에 남았지만 서버 저장에 실패했습니다');
+      되돌리기(j.error ? `전달되지 않았습니다 - ${j.error}`
+                       : '서버에 저장하지 못했습니다 - 적은 조건은 그대로 있으니 다시 눌러 주세요');
     });
   }).catch(e=>{ console.warn('조건 저장 실패', e);
-    toast('네트워크 문제로 서버 저장에 실패했습니다'); });
+    되돌리기('네트워크 문제로 전달되지 않았습니다 - 적은 조건은 그대로 있으니 다시 눌러 주세요'); });
 }
 
 

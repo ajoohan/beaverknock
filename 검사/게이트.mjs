@@ -662,6 +662,24 @@ ok((js.match(/'#\/ops\/live'/g) || []).length === 1 && /const OPS_HOME = '#\/ops
   ok(/받아야 전달됩니다/.test(처음부터.알림), `확인한 적이 없으면 받아야 한다고 말한다 - "${처음부터.알림}"`);
   const 성공 = await 돌리기({ ok: true, status: 200, body: {} });
   ok(!성공.간곳 && 성공.S.conds.length === 2, '서버가 받았으면 화면을 건드리지 않는다');
+  /* 다른 거절(DB·빈도·값)도 같은 길 - 완료 화면에 남기지 않는다 */
+  const 장애 = await 돌리기({ ok: false, status: 502, body: { error: 'DB에 닿지 못했습니다' } });
+  ok(장애.간곳 === '#/contact' && 장애.S.conds.map(c => c.id).join() === 'old' && 장애.S.draft.verified === true,
+     'DB 장애로 거절돼도 거두고 연락처 화면으로 - 본인확인은 그대로 둔다(다시 받을 필요 없다)');
+  ok(/DB에 닿지 못했습니다/.test(장애.알림) && 장애.바뀜 === 0, `서버가 준 이유를 보여 준다 - "${장애.알림}"`);
+  const 빠름 = await 돌리기({ ok: false, status: 429, body: { error: '너무 빠릅니다. 잠시 후 다시 시도해 주세요' } });
+  ok(빠름.간곳 === '#/contact', '너무 빠르다는 거절도 되돌린다 - 다시 누르면 된다');
+  /* 통신이 끊긴 경우 */
+  {
+    const 몸2 = 함수('function saveDemand(d, slotN, 자리){');
+    const S = { draft: { kind: 'apt', verified: true }, conds: [{ id: 'c1' }], demands: [{ id: 'd1' }], props: [], matched: 1, inboxCond: 'c1' };
+    let 간곳 = null, 알림 = '';
+    new Function('S', 'apiFetch', 'demandPayload', 'trapValue', 'FORM_T0', 'loadMine', 'render', 'toast', 'idvMustBeLive', 'go', 'console',
+      `${몸2}; return saveDemand;`)(S, async () => { throw new Error('offline'); }, () => ({}), () => '', 0, () => {}, () => {},
+      t => { 알림 = t; }, () => {}, x => { 간곳 = x; }, { warn(){} })(S.draft, 5, { condId: 'c1', demandId: 'd1' });
+    for(let i = 0; i < 5; i++) await new Promise(r => setTimeout(r, 0));
+    ok(간곳 === '#/contact' && S.conds.length === 0 && /네트워크/.test(알림), '통신이 끊겨 실패해도 거두고 연락처 화면으로 되돌린다');
+  }
   ok(/saveDemand\(d, slotN, \{condId: id, demandId: nd\.id\}\);/.test(js), '전달 버튼은 거둘 자리를 함께 넘긴다');
 }
 

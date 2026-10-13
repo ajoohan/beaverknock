@@ -577,5 +577,39 @@ ok((js.match(/'#\/ops\/live'/g) || []).length === 1 && /const OPS_HOME = '#\/ops
      '가드보다 먼저 지운다 - 가드가 새 목적지를 적은 뒤에 지우면 안 된다');
 }
 
+/* ── 2026-10-13 본인확인을 마치면 '가입이 끝났습니다' 가 떴는데 신청은 보내지지 않았다 ──
+   idvFinish 의 파트너 길을 실제로 돌린다. */
+{
+  const 몸 = 함수('async function idvFinish(id)');
+  const 돌리기 = async (form, 답 = { ok: true, token: 't1', name: '한상혁', phone: '01024153437' }) => {
+    const S = { form: { ...form }, draft: {}, idvBusy: false };
+    const 보냄 = [];
+    const f = new Function('S', 'apiFetch', 'render', 'toast', 'fmtPhone', 'idvFor', 'requestAnimationFrame', '$', 'REDUCED', 'sendAgent',
+      `${몸}; return idvFinish;`);
+    const idvFinish = f(S, async () => ({ ok: true, json: async () => 답 }), () => {}, () => {}, x => x,
+      { get: () => 'partner' }, () => {}, () => null, () => true, x => 보냄.push(x));
+    await idvFinish('bk-1');
+    return { S, 보냄 };
+  };
+  const { S, 보냄 } = await 돌리기({ jRole: 'agent', jStep: 2 });
+  ok(S.form.jStep === 2, `본인확인을 마치면 2단계('확인되었습니다 · 다음')에 머문다 (jStep ${S.form.jStep})`);
+  ok(S.form.jVerified && S.form.jVerified.name === '한상혁', '확인된 이름·번호가 카드에 들어간다');
+  ok(!S.form.jSent && 보냄.length === 0, '신청은 아직 보내지 않았다 - 다음(j-pass)이 보낸다');
+  ok(S.idvToken === 't1', '서버로 보낼 본인확인 표를 쥐고 있다');
+  const 역할없음 = await 돌리기({});
+  ok(역할없음.S.form.jStep === 1, '역할을 잃었으면(드문 경우) 자격 선택으로 되돌린다');
+  /* 완료 화면(3단계)은 보낸 뒤에만 - j-pass 가 3단계로 넘기며 곧바로 sendAgent 를 부른다 */
+  ok(/S\.form\.jStep = 3; S\.form\.jSent = 'sending'; render\(\);\s*sendAgent\(S\.form\);/.test(js),
+     '3단계로 넘어가는 길은 신청 보내기와 함께다');
+  ok((js.match(/jStep:\s*S\.form\.jRole \? 3/g) || []).length === 0, '본인확인 뒤 3단계로 건너뛰는 길이 없다');
+}
+/* 동의 화면으로 잠깐 다녀오는 길은 가입 화면을 비우지 않는다 - 본인확인을 다시(요금도 다시) 받게 된다 */
+{
+  const 줄 = js.slice(js.indexOf("  if(S.lastRoute === '#/partner/join' && h !== '#/partner/join'"), js.indexOf('resetJoin();', js.indexOf("  if(S.lastRoute === '#/partner/join'")) + 'resetJoin();'.length);
+  const 떠나기 = h => { let 비움 = 0; new Function('S', 'h', 'resetJoin', 줄)({ lastRoute: '#/partner/join' }, h, () => 비움++); return 비움; };
+  ok(떠나기('#/agree') === 0, '가입 화면 → 동의 화면은 비우지 않는다');
+  ok(떠나기('#/') === 1 && 떠나기('#/partner') === 1, '그 밖으로 떠나면 비운다');
+}
+
 console.log(`${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

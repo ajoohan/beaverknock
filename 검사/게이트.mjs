@@ -536,5 +536,29 @@ ok(!/h==='#\/partner'\) loadMyProps|h==='#\/partner'\) loadListings/.test(js), '
 ok((js.match(/'#\/ops\/live'/g) || []).length === 1 && /const OPS_HOME = '#\/ops\/live';/.test(js),
    '운영 화면 주소(#/ops/live)는 OPS_HOME 한 곳에만 적혀 있다');
 
+/* ── 로그인 화면을 로그인하지 않고 떠나면 '가려던 곳' 을 지운다 - 그 규칙을 실제로 돌린다 ── */
+{
+  const 길정의 = js.slice(js.indexOf('const 로그인길 = '), js.indexOf('\n', js.indexOf('const 로그인길 = ')));
+  const 규칙시작 = js.indexOf('  if(로그인길(S.lastRoute) && !로그인길(h)');
+  const 규칙 = js.slice(규칙시작, js.indexOf('S.afterLogin = null;', 규칙시작) + 'S.afterLogin = null;'.length);
+  const 떠나기 = (전, h, o = {}) => {
+    const S = { lastRoute: 전, afterLogin: '#/ops/live', authBusy: false, ...o };
+    new Function('S', 'h', `${길정의}; ${규칙}`)(S, h);
+    return S.afterLogin;
+  };
+  ok(떠나기('#/login', '#/') === null, '운영 로그인을 열었다 그냥 나가면 운영 화면으로 가려던 기록을 지운다');
+  ok(떠나기('#/login', '#/guide', { afterLogin: '#/partner/demands' }) === null, '어떤 목적지든 로그인하지 않고 나가면 지운다');
+  ok(떠나기('#/login', '#/find-id') === '#/ops/live' && 떠나기('#/reset-pw', '#/login') === '#/ops/live',
+     '아이디·비밀번호 찾기를 오가는 동안은 지킨다');
+  ok(떠나기('#/reset-pw', '#/') === null, '찾기 화면에서 나가도 지운다');
+  ok(떠나기('#/login', '#/agree', { afterLogin: '#/my' }) === '#/my', '로그인 직후 동의 화면으로 가는 길은 지킨다');
+  ok(떠나기('#/login', '#/my', { afterLogin: '#/my' }) === '#/my', '목적지로 가는 중이면 지킨다');
+  ok(떠나기('#/login', '#/', { authBusy: true }) === '#/ops/live', '직접 로그인하는 중이면 지킨다');
+  ok(떠나기('#/kind', '#/') === '#/ops/live', '로그인 화면이 아닌 곳끼리 오갈 때는 건드리지 않는다');
+  const 렌더 = 함수('function render(){');
+  ok(렌더.indexOf('if(로그인길(S.lastRoute)') > 0 && 렌더.indexOf('if(로그인길(S.lastRoute)') < 렌더.indexOf('const MINE ='),
+     '가드보다 먼저 지운다 - 가드가 새 목적지를 적은 뒤에 지우면 안 된다');
+}
+
 console.log(`${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

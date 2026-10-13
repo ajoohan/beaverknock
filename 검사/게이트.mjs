@@ -554,7 +554,10 @@ ok((js.match(/'#\/ops\/live'/g) || []).length === 1 && /const OPS_HOME = '#\/ops
      '아이디·비밀번호 찾기를 오가는 동안은 지킨다');
   ok(떠나기('#/reset-pw', '#/') === null, '찾기 화면에서 나가도 지운다');
   ok(떠나기('#/login', '#/agree', { afterLogin: '#/my' }) === '#/my', '로그인 직후 동의 화면으로 가는 길은 지킨다');
-  ok(떠나기('#/login', '#/my', { afterLogin: '#/my', user: { id: 'u1' } }) === '#/my', '로그인이 끝나 목적지로 가는 중이면 지킨다');
+  ok(떠나기('#/login', '#/my', { afterLogin: '#/my', user: { id: 'u1' } }) === null,
+     "로그인된 채 '들어와 계십니다' 에서 뒤로 가기로 나가도 지운다(목적지로 가는 길은 로그인뒤로가기 가 미리 비운다)");
+  ok(/function 로그인뒤로가기\(\)\{\s*const to = S\.afterLogin \|\| '#\/my';\s*S\.afterLogin = null;\s*go\(to\);/.test(js),
+     '로그인 뒤 이동은 가기 전에 기록을 비운다 - 그래서 규칙에 목적지 예외가 필요 없다');
   ok(떠나기('#/login', '#/partner', { afterLogin: '#/partner' }) === null,
      '로그인하지 않고 뒤로 가기로 원래 화면에 돌아가면(같은 주소여도) 지운다');
   ok(떠나기('#/login', '#/', { authBusy: true }) === '#/ops/live', '직접 로그인하는 중이면 지킨다');

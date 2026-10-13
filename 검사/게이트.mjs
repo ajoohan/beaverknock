@@ -627,5 +627,43 @@ ok((js.match(/'#\/ops\/live'/g) || []).length === 1 && /const OPS_HOME = '#\/ops
   ok(떠나기('#/') === 1 && 떠나기('#/partner') === 1, '그 밖으로 떠나면 비운다');
 }
 
+/* ── 2026-10-13 손님 조건 전달: 서버가 본인확인을 요구했는데 화면은 '접수되었습니다' 에 머물렀다 ──
+   saveDemand 를 실제로 돌린다. */
+{
+  const 몸 = 함수('function saveDemand(d, slotN, 자리){');
+  const 돌리기 = async (답, 확인했었다 = true) => {
+    const S = {
+      draft: { kind: 'apt', verified: 확인했었다, vstep: 'done', vat: '2026.10.13', name: '한' },
+      conds: [{ id: 'c1' }, { id: 'old' }], demands: [{ id: 'd1' }, { id: 'oldd' }],
+      props: [{ id: 'p1', cond: 'c1' }, { id: 'p0', cond: 'old' }], inboxCond: 'c1', matched: 1,
+      idvToken: 'tok', idv: {}, saved: true,
+    };
+    const 판 = { S, 간곳: null, 알림: '', 바뀜: 0 };
+    const f = new Function('S', 'apiFetch', 'demandPayload', 'trapValue', 'FORM_T0', 'loadMine', 'render', 'toast', 'idvMustBeLive', 'go', 'console',
+      `${몸}; return saveDemand;`);
+    const saveDemand = f(S, async () => ({ ok: 답.ok, status: 답.status, json: async () => 답.body }),
+      () => ({}), () => '', Date.now(), () => {}, () => {}, t => { 판.알림 = t; }, () => { 판.바뀜++; },
+      x => { 판.간곳 = x; }, { warn(){} });
+    saveDemand(S.draft, 5, { condId: 'c1', demandId: 'd1' });
+    for(let i = 0; i < 5; i++) await new Promise(r => setTimeout(r, 0));
+    return 판;
+  };
+  const 거절 = await 돌리기({ ok: false, status: 401, body: { need_idv: true } });
+  ok(거절.간곳 === '#/contact', '서버가 본인확인을 요구하면 완료 화면에 두지 않고 연락처 화면으로 되돌린다');
+  ok(거절.S.conds.map(c => c.id).join() === 'old' && 거절.S.demands.map(x => x.id).join() === 'oldd'
+     && 거절.S.props.map(p => p.id).join() === 'p0',
+     '먼저 그려 둔 이번 조건·수요·즉시 제안을 거둔다 - 다른 조건은 그대로');
+  ok(거절.S.inboxCond === null && 거절.S.matched === 0, '완료 화면이 가리키던 것도 비운다');
+  ok(거절.S.draft.kind === 'apt' && 거절.S.draft.name === '한' && 거절.S.draft.verified === false,
+     '적은 조건은 그대로 두고 본인확인만 다시 받게 한다');
+  ok(거절.바뀜 === 1, '본인확인이 꺼진 줄 알던 화면이면 버튼 화면으로 바꾼다(idvMustBeLive)');
+  ok(/만료/.test(거절.알림), `확인했었으면 만료라고 말한다 - "${거절.알림}"`);
+  const 처음부터 = await 돌리기({ ok: false, status: 401, body: { need_idv: true } }, false);
+  ok(/받아야 전달됩니다/.test(처음부터.알림), `확인한 적이 없으면 받아야 한다고 말한다 - "${처음부터.알림}"`);
+  const 성공 = await 돌리기({ ok: true, status: 200, body: {} });
+  ok(!성공.간곳 && 성공.S.conds.length === 2, '서버가 받았으면 화면을 건드리지 않는다');
+  ok(/saveDemand\(d, slotN, \{condId: id, demandId: nd\.id\}\);/.test(js), '전달 버튼은 거둘 자리를 함께 넘긴다');
+}
+
 console.log(`${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

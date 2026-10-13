@@ -418,10 +418,12 @@ ok(!/h==='#\/partner'\) loadMyProps|h==='#\/partner'\) loadListings/.test(js), '
       ok(판.그림 === 1 && !판.간곳, '공개 화면이면 그 자리에서 로그인 모습으로 한 번만 다시 그린다');
     }
     {
-      const 판 = 만들기({ hash: '#/guide', S: { afterLogin: '#/partner/demands' } }); 판.그렸다();
+      /* 로그인 화면을 떠날 때 지우는 일은 render 의 규칙이 맡는다 - 통신 복귀가 또 지우면
+         찾기 화면처럼 지켜야 할 자리에서까지 지워진다 */
+      const 판 = 만들기({ hash: '#/find-id', S: { afterLogin: '#/partner/demands' } }); 판.그렸다();
       판.손(); 판.끝내기(); await 쉼(); await 쉼();
-      ok(!판.간곳 && 판.S.afterLogin === null,
-         '오프라인 동안 다른 화면으로 옮겼으면 가려던 곳 기록을 지운다 - 며칠 뒤 다른 로그인에서 엉뚱하게 가지 않게');
+      ok(!판.간곳 && 판.S.afterLogin === '#/partner/demands',
+         '아이디 찾기 중에 통신이 돌아와도 가려던 곳을 지우지 않는다(찾고 나면 로그인 화면으로 돌아온다)');
     }
     {
       const 판 = 만들기({ hash: '#/login', S: { afterLogin: '#/my', pw: 'abc' } }); 판.그렸다();
@@ -552,7 +554,9 @@ ok((js.match(/'#\/ops\/live'/g) || []).length === 1 && /const OPS_HOME = '#\/ops
      '아이디·비밀번호 찾기를 오가는 동안은 지킨다');
   ok(떠나기('#/reset-pw', '#/') === null, '찾기 화면에서 나가도 지운다');
   ok(떠나기('#/login', '#/agree', { afterLogin: '#/my' }) === '#/my', '로그인 직후 동의 화면으로 가는 길은 지킨다');
-  ok(떠나기('#/login', '#/my', { afterLogin: '#/my' }) === '#/my', '목적지로 가는 중이면 지킨다');
+  ok(떠나기('#/login', '#/my', { afterLogin: '#/my', user: { id: 'u1' } }) === '#/my', '로그인이 끝나 목적지로 가는 중이면 지킨다');
+  ok(떠나기('#/login', '#/partner', { afterLogin: '#/partner' }) === null,
+     '로그인하지 않고 뒤로 가기로 원래 화면에 돌아가면(같은 주소여도) 지운다');
   ok(떠나기('#/login', '#/', { authBusy: true }) === '#/ops/live', '직접 로그인하는 중이면 지킨다');
   ok(떠나기('#/kind', '#/') === '#/ops/live', '로그인 화면이 아닌 곳끼리 오갈 때는 건드리지 않는다');
   const 렌더 = 함수('function render(){');

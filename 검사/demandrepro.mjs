@@ -110,4 +110,48 @@ for (const [name, d] of Object.entries(KINDS)) {
   if (res.code !== 201) console.log('        응답: ' + JSON.stringify(res.body).slice(0,160));
 }
 console.log((fail ? fail + '개 실패' : '네 유형 모두 이상 없음'));
+
+/* ── 같은 전달을 두 번 받지 않는다 (2026-10-13, 0029) ──
+   통신이 끊겨 답을 못 받은 손님이 다시 누르면 같은 번호(client_req)로 온다. */
+{
+  const 보내기 = async (번호, 표상태) => {
+    sentRow = null;
+    globalThis.fetch = async (url, opt = {}) => {
+      const u = String(url), m = (opt.method || 'GET').toUpperCase();
+      if (u.includes('/auth/v1/user')) return new Response(JSON.stringify({ id:'11111111-2222-3333-4444-555555555555', email:'a@b.c' }), { status:200 });
+      if (u.includes('bk_demand') && m === 'POST') {
+        const row = JSON.parse(opt.body);
+        if (표상태 === '칸없음' && 'client_req' in row)
+          return new Response(JSON.stringify({ code:'PGRST204', message:"Could not find the 'client_req' column of 'bk_demand' in the schema cache" }), { status:400 });
+        if (표상태 === '이미' && row.client_req)
+          return new Response(JSON.stringify({ code:'23505', message:'duplicate key value violates unique constraint "bk_demand_client_req_idx"' }), { status:409 });
+        sentRow = row; return new Response('', { status:201 });
+      }
+      return new Response('[]', { status:200 });
+    };
+    const body = mk({ ...KINDS.home, reqId: 번호 }, 5);
+    body.idv_token = signIdv({ name:'한상혁', phone:'01012345678', birth:'19850101', op:'SKT' });
+    body.elapsed = 9000; body.website = '';
+    const res = { code:0, body:null, setHeader(){}, status(c){ this.code=c; return this; }, json(b){ this.body=b; return this; } };
+    await handler({ method:'POST', headers:{ authorization:'Bearer ' + 'y'.repeat(40) },
+      socket:{ remoteAddress:'10.9.' + Math.floor(Math.random()*200) + '.' + Math.floor(Math.random()*200) }, body }, res);
+    return res;
+  };
+  const 처음 = await 보내기('r-test-0001abcd', '새');
+  const t1 = 처음.code === 201 && sentRow && sentRow.client_req === 'r-test-0001abcd';
+  if (!t1) fail++;
+  console.log((t1 ? '  OK  ' : '  X   ') + '전달 번호가 표에 함께 들어간다 (' + 처음.code + ')');
+  const 두번째 = await 보내기('r-test-0001abcd', '이미');
+  const t2 = 두번째.code === 200 && 두번째.body && 두번째.body.already === true && 두번째.body.ok === true;
+  if (!t2) fail++;
+  console.log((t2 ? '  OK  ' : '  X   ') + '같은 번호로 다시 오면 "이미 받았다" 로 성공 답한다 - 중복 행·중복 알림 없음 (' + 두번째.code + ')');
+  const 칸없음 = await 보내기('r-test-0002abcd', '칸없음');
+  const t3 = 칸없음.code === 201 && sentRow && !('client_req' in sentRow);
+  if (!t3) fail++;
+  console.log((t3 ? '  OK  ' : '  X   ') + '0029 를 아직 안 돌렸으면 번호 칸만 빼고 저장한다 - 접수는 산다 (' + 칸없음.code + ')');
+  const 이상한번호 = await 보내기('<script>', '새');
+  const t4 = 이상한번호.code === 201 && sentRow && sentRow.client_req === null;
+  if (!t4) fail++;
+  console.log((t4 ? '  OK  ' : '  X   ') + '모양이 이상한 번호는 받지 않는다(null)');
+}
 process.exit(fail ? 1 : 0);

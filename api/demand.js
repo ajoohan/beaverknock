@@ -304,6 +304,10 @@ export default async function handler(req, res) {
 
     slots: int(b.slots) || 5,
     slots_left: int(b.slots) || 5,
+    /* 같은 전달을 두 번 받지 않는다(2026-10-13). 화면이 접수마다 번호를 붙이고, 응답을 못 받아
+       다시 누르면 같은 번호로 온다 - 표의 유일 색인(0029)이 두 번째를 막는다.
+       0029 전이면 아래 missingColumn 고리가 이 칸만 빼고 넣는다(막지 못할 뿐 접수는 산다). */
+    client_req: /^[A-Za-z0-9_-]{8,64}$/.test(String(b.client_req || '')) ? String(b.client_req) : null,
     source: str(b.source, 80),
     user_agent: String(req.headers['user-agent'] ?? '').slice(0, 300),
     ip_hash: iph,
@@ -327,6 +331,11 @@ export default async function handler(req, res) {
         delete row[miss];
         r = await insert(row);
         if (!r.ok) t = await r.text();
+      }
+      /* 같은 번호로 이미 받은 전달이다 - 처음 것이 저장돼 있으니 성공으로 답한다.
+         알림은 다시 보내지 않는다(처음 접수 때 보냈다). */
+      if (!r.ok && r.status === 409 && /bk_demand_client_req|client_req/.test(t)) {
+        return res.status(200).json({ ok: true, already: true });
       }
       if (!r.ok) {
         /* 왜 거절당했는지 코드로 가려 사람 말로 돌려준다 - '저장하지 못했습니다'

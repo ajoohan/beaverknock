@@ -7226,6 +7226,8 @@ function demandPayload(d, slotN){
     agree_marketing: !!d.a3,
 
     slots: slotN, slots_left: slotN,
+    /* 같은 전달을 두 번 받지 않게 하는 번호 - 다시 누르면 같은 번호로 간다(서버·0029 가 막는다) */
+    client_req: d.reqId || null,
     source: location.hostname || 'local',
     user_agent: (navigator.userAgent || '').slice(0, 300),
   };
@@ -7237,7 +7239,7 @@ function saveDemand(d, slotN, 자리){
      화면은 먼저 '접수되었습니다' 로 넘어가 있으므로 그 자리에 두면 손님은 전달된 줄 안다 -
      조건은 메모리에만 있다가 '내 조건' 을 다시 열면 사라진다(2026-10-13).
      먼저 그려 둔 이번 조건·수요·즉시 제안을 거두고, 적은 것은 그대로 둔 채 연락처 화면으로. */
-  const 되돌리기 = 말 => {
+  const 되돌리기 = (말, 갈곳 = '#/contact') => {
     if(자리){
       S.conds   = S.conds.filter(c => c.id !== 자리.condId);
       S.demands = S.demands.filter(x => x.id !== 자리.demandId);
@@ -7246,9 +7248,12 @@ function saveDemand(d, slotN, 자리){
       S.matched = 0;
     }
     S.saved = false;
-    go('#/contact');
+    go(갈곳);
     toast(말);
   };
+  /* 이 조건을 처음 보낼 때 번호를 붙이고, 서버가 받았다고 할 때까지 그대로 둔다.
+     답을 못 받아 다시 누르면 같은 번호로 가서, 이미 저장된 것이면 서버가 '이미 받았다' 로 답한다. */
+  if(!d.reqId) d.reqId = 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2, 12);
   let body;
   try {
     body = JSON.stringify({
@@ -7258,7 +7263,7 @@ function saveDemand(d, slotN, 자리){
     });
   } catch(e){ console.warn('조건 변환 실패', e); return 되돌리기('조건을 보내지 못했습니다 - 적은 조건은 그대로 있으니 다시 눌러 주세요'); }
   apiFetch('/api/demand', { method:'POST', body }).then(r=>{
-    if(r.ok){ S.saved = true; S.mineAt = 0; loadMine(true); return; }
+    if(r.ok){ S.saved = true; d.reqId = null; S.mineAt = 0; loadMine(true); return; }
     return r.json().catch(()=>({})).then(j=>{
       console.warn('조건 저장 실패', r.status, j);
       /* 확인한 지 30분이 지나면 표가 만료된다. 확인했다고 표시해 둔 채로 두면 눌러도 계속
@@ -7271,6 +7276,12 @@ function saveDemand(d, slotN, 자리){
         idvMustBeLive();
         return 되돌리기(받았었다 ? '본인확인이 만료되어 전달되지 않았습니다 - 다시 확인한 뒤 전달해 주세요'
                                  : '본인확인을 받아야 전달됩니다 - 확인한 뒤 다시 눌러 주세요');
+      }
+      /* 값이 모자라 거절됐으면(400) 연락처 화면에서는 고칠 수 없다 - 그 칸이 있는 화면으로 */
+      const 빠짐 = r.status === 400 ? regMiss(S.draft) : null;
+      if(빠짐){
+        되돌리기(`전달되지 않았습니다 - ${빠짐.m}`, '#/register');
+        return setTimeout(() => goFix(빠짐), 350);
       }
       되돌리기(j.error ? `전달되지 않았습니다 - ${j.error}`
                        : '서버에 저장하지 못했습니다 - 적은 조건은 그대로 있으니 다시 눌러 주세요');

@@ -631,19 +631,19 @@ ok((js.match(/'#\/ops\/live'/g) || []).length === 1 && /const OPS_HOME = '#\/ops
    saveDemand 를 실제로 돌린다. */
 {
   const 몸 = 함수('function saveDemand(d, slotN, 자리){');
-  const 돌리기 = async (답, 확인했었다 = true) => {
+  const 돌리기 = async (답, 확인했었다 = true, o = {}) => {
     const S = {
-      draft: { kind: 'apt', verified: 확인했었다, vstep: 'done', vat: '2026.10.13', name: '한' },
+      draft: { kind: 'apt', verified: 확인했었다, vstep: 'done', vat: '2026.10.13', name: '한', ...(o.draft || {}) },
       conds: [{ id: 'c1' }, { id: 'old' }], demands: [{ id: 'd1' }, { id: 'oldd' }],
       props: [{ id: 'p1', cond: 'c1' }, { id: 'p0', cond: 'old' }], inboxCond: 'c1', matched: 1,
       idvToken: 'tok', idv: {}, saved: true,
     };
-    const 판 = { S, 간곳: null, 알림: '', 바뀜: 0 };
-    const f = new Function('S', 'apiFetch', 'demandPayload', 'trapValue', 'FORM_T0', 'loadMine', 'render', 'toast', 'idvMustBeLive', 'go', 'console',
+    const 판 = { S, 간곳: null, 알림: '', 바뀜: 0, 고침: null, 보낸번호: null };
+    const f = new Function('S', 'apiFetch', 'demandPayload', 'trapValue', 'FORM_T0', 'loadMine', 'render', 'toast', 'idvMustBeLive', 'go', 'console', 'regMiss', 'goFix', 'setTimeout',
       `${몸}; return saveDemand;`);
     const saveDemand = f(S, async () => ({ ok: 답.ok, status: 답.status, json: async () => 답.body }),
-      () => ({}), () => '', Date.now(), () => {}, () => {}, t => { 판.알림 = t; }, () => { 판.바뀜++; },
-      x => { 판.간곳 = x; }, { warn(){} });
+      d => { 판.보낸번호 = d.reqId; return {}; }, () => '', Date.now(), () => {}, () => {}, t => { 판.알림 = t; }, () => { 판.바뀜++; },
+      x => { 판.간곳 = x; }, { warn(){} }, () => o.빠짐 || null, m => { 판.고침 = m; }, fn => fn());
     saveDemand(S.draft, 5, { condId: 'c1', demandId: 'd1' });
     for(let i = 0; i < 5; i++) await new Promise(r => setTimeout(r, 0));
     return 판;
@@ -681,6 +681,25 @@ ok((js.match(/'#\/ops\/live'/g) || []).length === 1 && /const OPS_HOME = '#\/ops
     ok(간곳 === '#/contact' && S.conds.length === 0 && /네트워크/.test(알림), '통신이 끊겨 실패해도 거두고 연락처 화면으로 되돌린다');
   }
   ok(/saveDemand\(d, slotN, \{condId: id, demandId: nd\.id\}\);/.test(js), '전달 버튼은 거둘 자리를 함께 넘긴다');
+
+  /* ── 같은 전달을 두 번 받지 않게 - 번호를 붙이고, 다시 누르면 같은 번호로 ── */
+  {
+    const 실패 = await 돌리기({ ok: false, status: 502, body: {} });
+    ok(/^r[a-z0-9]{8,}$/.test(실패.보낸번호 || ''), `처음 보낼 때 전달 번호를 붙인다 (${실패.보낸번호})`);
+    ok(실패.S.draft.reqId === 실패.보낸번호, '실패하면 번호를 그대로 둔다 - 다시 누르면 같은 번호로 가서 서버가 중복을 막는다');
+    const 다시 = await 돌리기({ ok: true, status: 200, body: { ok: true, already: true } }, true, { draft: { reqId: 'rkeep12345' } });
+    ok(다시.보낸번호 === 'rkeep12345', '다시 누르면 같은 번호로 보낸다');
+    ok(!다시.간곳 && 다시.S.draft.reqId === null, "서버가 '이미 받았다' 고 해도 성공으로 받고 번호를 비운다 - 다음 조건은 새 번호");
+    ok(/client_req: d\.reqId \|\| null,/.test(js), '전달 내용에 번호가 실린다');
+  }
+  /* ── 값이 모자라 거절되면(400) 그 칸이 있는 화면으로 ── */
+  {
+    const 빠짐 = { k: 'dongs', m: '지역을 골라 주세요' };
+    const 값오류 = await 돌리기({ ok: false, status: 400, body: { error: '지역을 골라 주세요' } }, true, { 빠짐 });
+    ok(값오류.간곳 === '#/register' && 값오류.고침 === 빠짐, '빠진 칸이 있는 조건 화면으로 데려가 그 칸을 짚는다 - 연락처 화면에서는 고칠 수 없다');
+    const 모름 = await 돌리기({ ok: false, status: 400, body: { error: '본문을 읽지 못했습니다' } });
+    ok(모름.간곳 === '#/contact', '화면이 빠진 칸을 못 찾으면 연락처 화면으로(서버가 준 이유를 보인다)');
+  }
 }
 
 console.log(`${ran - fail} 통과 / ${fail} 실패`);

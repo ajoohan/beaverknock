@@ -9029,6 +9029,10 @@ function render(){
         ${bkLoader(34)}
       </div>`;
     S.lastRoute = null;
+    /* 기다림도 '그려진 화면' 이다 - 가림막을 걷는다. 돌아오는 길(본인확인·소셜 로그인)에서는
+       boot 가 가림막을 걷지 않으므로 여기서 걷어야 하고, 그래야 BOOTED 가 서서
+       계정다시그리기 가 계정을 읽은 뒤 다시 그린다. */
+    bootDone();
     return;
   }
   if(S.user && consentNeeded() && !OPEN.includes(h)){
@@ -11169,7 +11173,14 @@ function opsAuto(){
      로그인하고 파트너 가입으로 돌아오면 설정이 없는 채로 '준비 중' 양식이 그려졌다
      (2026-10-12 실연동을 켠 날 대표님이 그 화면에 갇혔다). */
   const idvReady = idvConfig().catch(()=>null);
-  if(readAuthRedirect() || readIdvRedirect()) return;   /* 돌아오는 길은 그쪽이 알아서 그린다 */
+  if(readAuthRedirect()) return;   /* 돌아오는 길은 그쪽이 알아서 그린다 */
+  /* 휴대폰 본인확인은 포트원 페이지에서 '페이지째' 돌아온다. 그 길에도 계정을 다시 읽어야 한다 -
+     안 읽으면 S.user 가 빈 채로 남아, 가입·연락처 화면이 '계정 읽는 중' 기다림에 영영 머문다
+     (2026-10-13 실연동 다음 날 발견 - 전에는 로그인 화면으로 튕겼다). */
+  if(readIdvRedirect()){
+    if(store.get()) hydrate().catch(() => false).then(() => 계정다시그리기());
+    return;
+  }
   const wait = [idvReady];
   /* 1.2초를 넘겨 끝났으면 계정다시그리기 가 정한다 - 기다림을 띄운 화면이거나
      로그아웃 모습으로 그려졌던 화면만 다시 그린다(실패면 그때 로그인으로 간다). */

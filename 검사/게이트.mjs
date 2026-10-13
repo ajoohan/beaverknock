@@ -333,21 +333,31 @@ ok(!/h==='#\/partner'\) loadMyProps|h==='#\/partner'\) loadListings/.test(js), '
   const 시작 = js.indexOf("  const OPEN = ['#/', '#/guide'");
   const 끝 = js.indexOf('  /* 손님 조건 전문 · 제안 · 매물 등록은');
   const 길목 = js.slice(시작, 끝);
+  let 가림막 = 0;
   const 가기 = (h, S, 세션 = false, 실패 = false) => {
     let 간곳 = null, 그림 = '';
     const location = { replace: x => { 간곳 = x; } };
     const $ = () => ({ set innerHTML(v){ 그림 = v; } });
     const store = { get: () => 세션 ? { access_token: 't' } : null };
-    new Function('h', 'S', 'location', 'store', '$', 'bkLoader', 'keepDraft', 'consentNeeded',
+    new Function('h', 'S', 'location', 'store', '$', 'bkLoader', 'keepDraft', 'consentNeeded', 'bootDone',
       `const 세션있음 = () => { const s = store.get(); return !!(s && s.access_token); };
        ${판정.replace('let 계정확인실패 = false;', `let 계정확인실패 = ${실패};`)}
-       ${길목}\nreturn;`)(h, S, location, store, $, () => '<i>loader</i>', () => {}, () => !!S.needConsent);
+       ${길목}\nreturn;`)(h, S, location, store, $, () => '<i>loader</i>', () => {}, () => !!S.needConsent, () => { 가림막++; });
     return 간곳 || (그림 ? '기다림' : null);
   };
   const 손 = (o = {}) => ({ user: { id: 'u' }, agent: null, agentKnown: true, form: {}, ...o });
   ok(가기('#/partner/demands', 손({ user: null })) === '#/login', '로그인 전이면 로그인으로');
+  가림막 = 0;
   ok(가기('#/partner/demands', 손({ user: null, agentKnown: false }), true) === '기다림',
      '세션은 있는데 계정을 읽는 중이면(느린 통신) 튕기지 않고 기다린다');
+  ok(가림막 === 1, '기다림 화면도 가림막을 걷는다 - 돌아오는 길에서는 boot 가 걷지 않는다(BOOTED 가 서야 다시 그린다)');
+  /* 휴대폰 본인확인은 페이지째 돌아온다 - 그 길에도 계정을 읽어야 기다림에서 풀려난다 */
+  {
+    const boot = js.slice(js.indexOf('(function boot(){'));
+    ok(/if\(readIdvRedirect\(\)\)\{\s*if\(store\.get\(\)\) hydrate\(\)\.catch\(\(\) => false\)\.then\(\(\) => 계정다시그리기\(\)\);\s*return;\s*\}/.test(boot),
+       '본인확인에서 돌아오는 길에도 계정을 읽고, 읽고 나면 다시 그린다');
+    ok(!/readAuthRedirect\(\) \|\| readIdvRedirect\(\)/.test(boot), '본인확인 복귀가 계정 읽기 없이 끝나지 않는다');
+  }
   /* 같은 판정이 손님 화면에도 - 전에는 파트너 화면에만 있었다 */
   ok(가기('#/agree', 손({ user: null }), true) === '기다림', '동의 화면도 계정을 읽는 동안은 로그인으로 보내지 않는다');
   ok(가기('#/agree', 손({ user: null }), false) === '#/login', '동의 화면은 로그인 전이면 로그인으로');

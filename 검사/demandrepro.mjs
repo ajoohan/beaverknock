@@ -153,10 +153,10 @@ console.log((fail ? fail + '개 실패' : '네 유형 모두 이상 없음'));
   {
     const 서버 = fs.readFileSync(new URL(길.api('demand.js')), 'utf8');
     const 자리 = 서버.indexOf('const 요청번호 = ');
-    const 먼저 = 자리 > 0 && 자리 < 서버.indexOf('if (hit.length > BURST_MAX)') && 자리 < 서버.indexOf('WINDOW_MIN * 60_000')
-              && 서버.indexOf('hit.push(now)') < 자리;
+    const 먼저 = 자리 > 0 && 자리 < 서버.indexOf('if (hit.length >= BURST_MAX)') && 자리 < 서버.indexOf('WINDOW_MIN * 60_000')
+              && 서버.indexOf('if (hit.length >= BURST_MAX)') < 서버.indexOf('hit.push(now)');
     if (!먼저) fail++;
-    console.log((먼저 ? '  OK  ' : '  X   ') + '이미 받은 전달인지를 빈도 제한(연타·10분)이 막기 전에 본다 - 세기는 그보다 먼저');
+    console.log((먼저 ? '  OK  ' : '  X   ') + '이미 받은 전달인지를 빈도 제한(연타·10분)보다 먼저 보고, 연타는 막힌 요청을 세지 않는다');
     const 뒤 = 자리 > 서버.indexOf('readIdv(b.idv_token)') && 자리 > 서버.indexOf('if (bad) return');
     if (!뒤) fail++;
     console.log((뒤 ? '  OK  ' : '  X   ') + '다만 본인확인·값 검사 뒤에 본다 - 표 없는 가짜 요청이 빈도 제한 없이 DB 를 두드리지 못한다');
@@ -191,9 +191,32 @@ console.log((fail ? fail + '개 실패' : '네 유형 모두 이상 없음'));
       await handler({ method:'POST', headers:{ authorization:'Bearer ' + 'y'.repeat(40) }, socket:{ remoteAddress:'10.88.8.8' }, body }, res);
       if (res.code === 429) 막힘++;
     }
-    const t7 = 막힘 >= 20 && 조회수 <= 9;
+    const t7 = 막힘 >= 20 && 조회수 <= 10;
     if (!t7) fail++;
-    console.log((t7 ? '  OK  ' : '  X   ') + `한 IP 에서 번호만 바꿔 30번 보내면 대부분 막히고 조회도 끝없이 하지 않는다 (막힘 ${막힘}, 조회 ${조회수})`);
+    console.log((t7 ? '  OK  ' : '  X   ') + `한 IP 에서 번호만 바꿔 30번 보내면 대부분 막히고 조회도 1분에 10번까지만 (막힘 ${막힘}, 조회 ${조회수})`);
+  }
+  /* 연타에 막힌 뒤에도, 이미 저장된 전달을 다시 누르면 '이미 받았다' 를 받는다 */
+  {
+    globalThis.fetch = async (url, opt = {}) => {
+      const u = String(url), m = (opt.method || 'GET').toUpperCase();
+      if (u.includes('client_req=eq.rkeep0000001')) return new Response('[{"id":"d1"}]', { status:200 });
+      if (u.includes('client_req=eq.')) return new Response('[]', { status:200 });
+      if (u.includes('/auth/v1/user')) return new Response(JSON.stringify({ id:'11111111-2222-3333-4444-555555555555' }), { status:200 });
+      if (m === 'POST') return new Response('', { status:201 });
+      return new Response('[]', { status:200 });
+    };
+    const 표 = signIdv({ name:'한상혁', phone:'01012345678', birth:'19850101', op:'SKT' });
+    const 보내 = async 번호 => {
+      const body = mk({ ...KINDS.home, reqId: 번호 }, 5); body.idv_token = 표; body.elapsed = 9000; body.website = '';
+      const res = { code:0, body:null, setHeader(){}, status(c){ this.code=c; return this; }, json(b){ this.body=b; return this; } };
+      await handler({ method:'POST', headers:{ authorization:'Bearer ' + 'y'.repeat(40) }, socket:{ remoteAddress:'10.66.6.6' }, body }, res);
+      return res;
+    };
+    for (let i = 0; i < 6; i++) await 보내('rfill000000' + i);       /* 연타 한도를 넘긴다 */
+    const 다시 = await 보내('rkeep0000001');
+    const t8 = 다시.code === 200 && 다시.body && 다시.body.already === true;
+    if (!t8) fail++;
+    console.log((t8 ? '  OK  ' : '  X   ') + '연타에 막힌 뒤에도 이미 저장된 전달은 "이미 받았다" 로 답한다 - 다시 누르는 손님이 갇히지 않는다 (' + 다시.code + ')');
   }
   const 칸없음 = await 보내기('r-test-0002abcd', '칸없음');
   const t3 = 칸없음.code === 201 && sentRow && !('client_req' in sentRow);

@@ -209,32 +209,6 @@ export default async function handler(req, res) {
     null;
   if (bad) return res.status(400).json({ error: bad });
 
-  /* ── 이미 받은 전달인가 (2026-10-13, 0029) ──
-     답을 못 받은 손님이 다시 누르면 같은 번호로 온다. 빈도 제한보다 **먼저** 본다 -
-     이미 저장된 것을 '잠시 후 다시' 로 막으면 손님은 또 누르고 또 막힌다.
-     다만 본인확인·값 검사 **뒤에** 본다 - 그 앞에 두면 표 없는 가짜 요청도 번호만 붙이면
-     빈도 제한 없이 DB 조회를 일으킨다. 진짜 재전송은 유효한 표와 같은 값을 들고 온다.
-     번호는 무작위라 남의 것을 맞힐 수 없고, 답은 '받았다' 한 줄뿐이라 드러나는 것도 없다.
-     0029 전이면 조회가 실패한다 - 그때는 그냥 지나간다. */
-  const 요청번호 = /^[A-Za-z0-9_-]{8,64}$/.test(String(b.client_req || '')) ? String(b.client_req) : null;
-  if (요청번호) {
-    try {
-      const r0 = await fetch(`${BK_URL}/rest/v1/${TABLE}?select=id&client_req=eq.${encodeURIComponent(요청번호)}&limit=1`,
-        { headers: { apikey: BK_SECRET_KEY, Authorization: 'Bearer ' + BK_SECRET_KEY } });
-      if (r0.ok) {
-        const prev = await r0.json();
-        if (Array.isArray(prev) && prev.length) return res.status(200).json({ ok: true, already: true });
-      }
-    } catch { /* 조회가 안 되면 아래로 - 색인이 마지막으로 막는다 */ }
-  }
-
-  /* 빈도 제한은 값 검사를 통과한 뒤에 센다.
-     오타로 몇 번 되돌아온 사람이 잠겨 버리면 안 된다 — 저장을 시도한 것만 센다. */
-  const hit = (burst.get(ip) || []).filter(t => now - t < BURST_WINDOW);
-  if (hit.length >= BURST_MAX) return res.status(429).json({ error: '잠시 후 다시 시도해 주세요' });
-  hit.push(now); burst.set(ip, hit);
-  if (burst.size > 5000) burst.clear();
-
   const salt = BK_SECRET_KEY.slice(0, 24);
   const iph = ipHash(ip, salt);
   const sb = p => `${BK_URL}/rest/v1/${p}`;
@@ -243,6 +217,35 @@ export default async function handler(req, res) {
     Authorization: 'Bearer ' + BK_SECRET_KEY,
     'Content-Type': 'application/json',
   };
+
+  /* 빈도 제한은 값 검사를 통과한 뒤에 센다 - 오타로 몇 번 되돌아온 사람이 잠겨 버리면 안 된다.
+     **세는 것은 아래 조회보다 먼저** 한다: 본인확인 표 하나로 번호만 바꿔 가며 보내도
+     조회마다 한 번씩 세어져, 조회 길이 빈도 제한 밖에 남지 않는다.
+     **막는 것은 조회 뒤에** 한다: 이미 저장된 전달을 '잠시 후 다시' 로 막지 않기 위해서다. */
+  const hit = (burst.get(ip) || []).filter(t => now - t < BURST_WINDOW);
+  hit.push(now); burst.set(ip, hit);
+  if (burst.size > 5000) burst.clear();
+
+  /* ── 이미 받은 전달인가 (2026-10-13, 0029) ──
+     답을 못 받은 손님이 다시 누르면 같은 번호로 온다. 빈도 제한보다 **먼저** 본다 -
+     이미 저장된 것을 '잠시 후 다시' 로 막으면 손님은 또 누르고 또 막힌다.
+     다만 본인확인·값 검사 **뒤에** 본다 - 그 앞에 두면 표 없는 가짜 요청도 번호만 붙이면
+     빈도 제한 없이 DB 조회를 일으킨다. 진짜 재전송은 유효한 표와 같은 값을 들고 온다.
+     번호는 무작위라 남의 것을 맞힐 수 없고, 답은 '받았다' 한 줄뿐이라 드러나는 것도 없다.
+     0029 전이면 조회가 실패한다 - 그때는 그냥 지나간다. */
+  const 요청번호 = /^[A-Za-z0-9_-]{8,64}$/.test(String(b.client_req || '')) ? String(b.client_req) : null;
+  if (요청번호 && hit.length <= BURST_MAX * 3) {   /* 조회도 끝없이 하지는 않는다 */
+    try {
+      const r0 = await fetch(sb(`${TABLE}?select=id&client_req=eq.${encodeURIComponent(요청번호)}&limit=1`), { headers: H });
+      if (r0.ok) {
+        const prev = await r0.json();
+        if (Array.isArray(prev) && prev.length) return res.status(200).json({ ok: true, already: true });
+      }
+    } catch { /* 조회가 안 되면 아래로 - 색인이 마지막으로 막는다 */ }
+  }
+
+  /* 빈도 제한 - 막는 판단은 위의 '이미 받은 전달' 확인 뒤에 한다(세기는 그 앞에서 했다) */
+  if (hit.length > BURST_MAX) return res.status(429).json({ error: '잠시 후 다시 시도해 주세요' });
 
   /* ── 인스턴스를 갈아타도 남는 제한: 최근 10분 접수 수를 센다 ── */
   try {

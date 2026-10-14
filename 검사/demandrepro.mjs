@@ -153,9 +153,10 @@ console.log((fail ? fail + '개 실패' : '네 유형 모두 이상 없음'));
   {
     const 서버 = fs.readFileSync(new URL(길.api('demand.js')), 'utf8');
     const 자리 = 서버.indexOf('const 요청번호 = ');
-    const 먼저 = 자리 > 0 && 자리 < 서버.indexOf('burst.get(ip)') && 자리 < 서버.indexOf('WINDOW_MIN * 60_000');
+    const 먼저 = 자리 > 0 && 자리 < 서버.indexOf('if (hit.length > BURST_MAX)') && 자리 < 서버.indexOf('WINDOW_MIN * 60_000')
+              && 서버.indexOf('hit.push(now)') < 자리;
     if (!먼저) fail++;
-    console.log((먼저 ? '  OK  ' : '  X   ') + '이미 받은 전달인지를 빈도 제한(연타·10분)보다 먼저 본다');
+    console.log((먼저 ? '  OK  ' : '  X   ') + '이미 받은 전달인지를 빈도 제한(연타·10분)이 막기 전에 본다 - 세기는 그보다 먼저');
     const 뒤 = 자리 > 서버.indexOf('readIdv(b.idv_token)') && 자리 > 서버.indexOf('if (bad) return');
     if (!뒤) fail++;
     console.log((뒤 ? '  OK  ' : '  X   ') + '다만 본인확인·값 검사 뒤에 본다 - 표 없는 가짜 요청이 빈도 제한 없이 DB 를 두드리지 못한다');
@@ -170,6 +171,29 @@ console.log((fail ? fail + '개 실패' : '네 유형 모두 이상 없음'));
     const t6 = res.code === 401 && 조회수 === 0;
     if (!t6) fail++;
     console.log((t6 ? '  OK  ' : '  X   ') + '본인확인 표 없는 요청은 번호가 있어도 DB 조회 없이 막힌다 (' + res.code + ', 조회 ' + 조회수 + ')');
+  }
+  /* 본인확인 표 하나로 번호만 바꿔 가며 보내도 조회가 빈도 제한 밖에 남지 않는다 */
+  {
+    let 조회수 = 0, 막힘 = 0;
+    globalThis.fetch = async (url, opt = {}) => {
+      const u = String(url), m = (opt.method || 'GET').toUpperCase();
+      if (u.includes('client_req=eq.')) { 조회수++; return new Response('[]', { status:200 }); }
+      if (u.includes('/auth/v1/user')) return new Response(JSON.stringify({ id:'11111111-2222-3333-4444-555555555555' }), { status:200 });
+      if (m === 'POST') return new Response('', { status:201 });
+      return new Response('[]', { status:200 });
+    };
+    const 표 = signIdv({ name:'한상혁', phone:'01012345678', birth:'19850101', op:'SKT' });
+    let n = 0;
+    for (; n < 30; n++) {
+      const body = mk({ ...KINDS.home, reqId: 'rspam' + String(n).padStart(8, '0') }, 5);
+      body.idv_token = 표; body.elapsed = 9000; body.website = '';
+      const res = { code:0, body:null, setHeader(){}, status(c){ this.code=c; return this; }, json(b){ this.body=b; return this; } };
+      await handler({ method:'POST', headers:{ authorization:'Bearer ' + 'y'.repeat(40) }, socket:{ remoteAddress:'10.88.8.8' }, body }, res);
+      if (res.code === 429) 막힘++;
+    }
+    const t7 = 막힘 >= 20 && 조회수 <= 9;
+    if (!t7) fail++;
+    console.log((t7 ? '  OK  ' : '  X   ') + `한 IP 에서 번호만 바꿔 30번 보내면 대부분 막히고 조회도 끝없이 하지 않는다 (막힘 ${막힘}, 조회 ${조회수})`);
   }
   const 칸없음 = await 보내기('r-test-0002abcd', '칸없음');
   const t3 = 칸없음.code === 201 && sentRow && !('client_req' in sentRow);

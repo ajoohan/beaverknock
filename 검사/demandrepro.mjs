@@ -119,6 +119,7 @@ console.log((fail ? fail + '개 실패' : '네 유형 모두 이상 없음'));
     globalThis.fetch = async (url, opt = {}) => {
       const u = String(url), m = (opt.method || 'GET').toUpperCase();
       if (u.includes('/auth/v1/user')) return new Response(JSON.stringify({ id:'11111111-2222-3333-4444-555555555555', email:'a@b.c' }), { status:200 });
+      if (표상태 === '조회' && u.includes('bk_demand') && m === 'GET' && u.includes('client_req=eq.')) return new Response('[{"id":"d-already"}]', { status:200 });
       if (u.includes('bk_demand') && m === 'POST') {
         const row = JSON.parse(opt.body);
         if (표상태 === '칸없음' && 'client_req' in row)
@@ -145,6 +146,17 @@ console.log((fail ? fail + '개 실패' : '네 유형 모두 이상 없음'));
   const t2 = 두번째.code === 200 && 두번째.body && 두번째.body.already === true && 두번째.body.ok === true;
   if (!t2) fail++;
   console.log((t2 ? '  OK  ' : '  X   ') + '같은 번호로 다시 오면 "이미 받았다" 로 성공 답한다 - 중복 행·중복 알림 없음 (' + 두번째.code + ')');
+  const 조회 = await 보내기('r-test-0003abcd', '조회');
+  const t5 = 조회.code === 200 && 조회.body && 조회.body.already === true && sentRow === null;
+  if (!t5) fail++;
+  console.log((t5 ? '  OK  ' : '  X   ') + '이미 저장된 번호면 저장도 빈도 제한도 거치기 전에 "이미 받았다" 로 답한다 (' + 조회.code + ')');
+  {
+    const 서버 = fs.readFileSync(new URL(길.api('demand.js')), 'utf8');
+    const 먼저 = 서버.indexOf('const 요청번호 = ') > 0 && 서버.indexOf('const 요청번호 = ') < 서버.indexOf('burst.get(ip)')
+              && 서버.indexOf('const 요청번호 = ') < 서버.indexOf('WINDOW_MIN * 60_000');
+    if (!먼저) fail++;
+    console.log((먼저 ? '  OK  ' : '  X   ') + '이미 받은 전달인지를 빈도 제한(연타·10분)보다 먼저 본다');
+  }
   const 칸없음 = await 보내기('r-test-0002abcd', '칸없음');
   const t3 = 칸없음.code === 201 && sentRow && !('client_req' in sentRow);
   if (!t3) fail++;

@@ -7227,13 +7227,15 @@ function demandPayload(d, slotN){
 
     slots: slotN, slots_left: slotN,
     /* 같은 전달을 두 번 받지 않게 하는 번호 - 다시 누르면 같은 번호로 간다(서버·0029 가 막는다) */
-    client_req: d.reqId || null,
+    client_req: d.reqId || null,   /* saveDemand 가 내용 지문을 보고 정해 덮어쓴다 */
     source: location.hostname || 'local',
     user_agent: (navigator.userAgent || '').slice(0, 300),
   };
 }
 
 /* 저장은 화면을 막지 않는다 - 결과는 나중에 토스트로만 알린다 */
+/* 같은 내용인지 가리는 짧은 지문(djb2). 보안용이 아니다 - 바뀌었는지만 본다. */
+const 짧은서명 = t => { let h = 5381; for(let i = 0; i < t.length; i++) h = ((h << 5) + h + t.charCodeAt(i)) | 0; return (h >>> 0).toString(36) + ':' + t.length; };
 function saveDemand(d, slotN, 자리){
   /* 서버가 받지 않았다 - 이유가 무엇이든(본인확인·값·빈도·DB·통신) 한 길로 되돌린다.
      화면은 먼저 '접수되었습니다' 로 넘어가 있으므로 그 자리에 두면 손님은 전달된 줄 안다 -
@@ -7251,19 +7253,28 @@ function saveDemand(d, slotN, 자리){
     go(갈곳);
     toast(말);
   };
-  /* 이 조건을 처음 보낼 때 번호를 붙이고, 서버가 받았다고 할 때까지 그대로 둔다.
-     답을 못 받아 다시 누르면 같은 번호로 가서, 이미 저장된 것이면 서버가 '이미 받았다' 로 답한다. */
-  if(!d.reqId) d.reqId = 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2, 12);
   let body;
   try {
+    const 내용 = demandPayload(d, slotN);
+    /* 전달 번호 - 서버가 받았다고 할 때까지 같은 내용이면 같은 번호를 쓴다. 답을 못 받아 다시
+       누르면 같은 번호로 가서, 이미 저장된 것이면 서버가 '이미 받았다' 로 답한다(0029).
+       **내용이 바뀌었으면 새 번호** - 같은 번호로 가면 서버가 고친 내용을 버리고 처음 것을 남긴다.
+       본인확인 표·시각·브라우저 정보는 다시 받아도 조건이 같으므로 비교에서 뺀다. */
+    const { idv_token, verified_at, user_agent, client_req, ...조건 } = 내용;
+    const 서명 = 짧은서명(JSON.stringify(조건));
+    if(!d.reqId || d.reqSig !== 서명){
+      d.reqId = 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2, 12);
+      d.reqSig = 서명;
+    }
     body = JSON.stringify({
-      ...demandPayload(d, slotN),
+      ...내용,
+      client_req: d.reqId,
       website: trapValue(),              /* 함정칸 - 사람은 비워 둔다 */
       elapsed: Date.now() - FORM_T0,     /* 너무 빠른 제출은 서버가 막는다 */
     });
   } catch(e){ console.warn('조건 변환 실패', e); return 되돌리기('조건을 보내지 못했습니다 - 적은 조건은 그대로 있으니 다시 눌러 주세요'); }
   apiFetch('/api/demand', { method:'POST', body }).then(r=>{
-    if(r.ok){ S.saved = true; d.reqId = null; S.mineAt = 0; loadMine(true); return; }
+    if(r.ok){ S.saved = true; d.reqId = null; d.reqSig = null; S.mineAt = 0; loadMine(true); return; }
     return r.json().catch(()=>({})).then(j=>{
       console.warn('조건 저장 실패', r.status, j);
       /* 확인한 지 30분이 지나면 표가 만료된다. 확인했다고 표시해 둔 채로 두면 눌러도 계속

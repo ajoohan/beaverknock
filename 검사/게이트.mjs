@@ -630,7 +630,8 @@ ok((js.match(/'#\/ops\/live'/g) || []).length === 1 && /const OPS_HOME = '#\/ops
 /* ── 2026-10-13 손님 조건 전달: 서버가 본인확인을 요구했는데 화면은 '접수되었습니다' 에 머물렀다 ──
    saveDemand 를 실제로 돌린다. */
 {
-  const 몸 = 함수('function saveDemand(d, slotN, 자리){');
+  const 지문 = js.slice(js.indexOf('const 짧은서명 = '), js.indexOf('\n', js.indexOf('const 짧은서명 = ')));
+  const 몸 = 지문 + '\n' + 함수('function saveDemand(d, slotN, 자리){');
   const 돌리기 = async (답, 확인했었다 = true, o = {}) => {
     const S = {
       draft: { kind: 'apt', verified: 확인했었다, vstep: 'done', vat: '2026.10.13', name: '한', ...(o.draft || {}) },
@@ -641,8 +642,8 @@ ok((js.match(/'#\/ops\/live'/g) || []).length === 1 && /const OPS_HOME = '#\/ops
     const 판 = { S, 간곳: null, 알림: '', 바뀜: 0, 고침: null, 보낸번호: null };
     const f = new Function('S', 'apiFetch', 'demandPayload', 'trapValue', 'FORM_T0', 'loadMine', 'render', 'toast', 'idvMustBeLive', 'go', 'console', 'regMiss', 'goFix', 'setTimeout',
       `${몸}; return saveDemand;`);
-    const saveDemand = f(S, async () => ({ ok: 답.ok, status: 답.status, json: async () => 답.body }),
-      d => { 판.보낸번호 = d.reqId; return {}; }, () => '', Date.now(), () => {}, () => {}, t => { 판.알림 = t; }, () => { 판.바뀜++; },
+    const saveDemand = f(S, async (u, opt) => { 판.보낸번호 = JSON.parse(opt.body).client_req; return { ok: 답.ok, status: 답.status, json: async () => 답.body }; },
+      () => ({ ...(o.내용 || { dep: 1 }) }), () => '', Date.now(), () => {}, () => {}, t => { 판.알림 = t; }, () => { 판.바뀜++; },
       x => { 판.간곳 = x; }, { warn(){} }, () => o.빠짐 || null, m => { 판.고침 = m; }, fn => fn());
     saveDemand(S.draft, 5, { condId: 'c1', demandId: 'd1' });
     for(let i = 0; i < 5; i++) await new Promise(r => setTimeout(r, 0));
@@ -671,7 +672,7 @@ ok((js.match(/'#\/ops\/live'/g) || []).length === 1 && /const OPS_HOME = '#\/ops
   ok(빠름.간곳 === '#/contact', '너무 빠르다는 거절도 되돌린다 - 다시 누르면 된다');
   /* 통신이 끊긴 경우 */
   {
-    const 몸2 = 함수('function saveDemand(d, slotN, 자리){');
+    const 몸2 = 지문 + '\n' + 함수('function saveDemand(d, slotN, 자리){');
     const S = { draft: { kind: 'apt', verified: true }, conds: [{ id: 'c1' }], demands: [{ id: 'd1' }], props: [], matched: 1, inboxCond: 'c1' };
     let 간곳 = null, 알림 = '';
     new Function('S', 'apiFetch', 'demandPayload', 'trapValue', 'FORM_T0', 'loadMine', 'render', 'toast', 'idvMustBeLive', 'go', 'console',
@@ -687,10 +688,18 @@ ok((js.match(/'#\/ops\/live'/g) || []).length === 1 && /const OPS_HOME = '#\/ops
     const 실패 = await 돌리기({ ok: false, status: 502, body: {} });
     ok(/^r[a-z0-9]{8,}$/.test(실패.보낸번호 || ''), `처음 보낼 때 전달 번호를 붙인다 (${실패.보낸번호})`);
     ok(실패.S.draft.reqId === 실패.보낸번호, '실패하면 번호를 그대로 둔다 - 다시 누르면 같은 번호로 가서 서버가 중복을 막는다');
-    const 다시 = await 돌리기({ ok: true, status: 200, body: { ok: true, already: true } }, true, { draft: { reqId: 'rkeep12345' } });
-    ok(다시.보낸번호 === 'rkeep12345', '다시 누르면 같은 번호로 보낸다');
-    ok(!다시.간곳 && 다시.S.draft.reqId === null, "서버가 '이미 받았다' 고 해도 성공으로 받고 번호를 비운다 - 다음 조건은 새 번호");
-    ok(/client_req: d\.reqId \|\| null,/.test(js), '전달 내용에 번호가 실린다');
+    /* 같은 내용으로 다시 누르면 같은 번호 */
+    const 처음 = await 돌리기({ ok: false, status: 502, body: {} }, true, { 내용: { dep: 80 } });
+    const 다시 = await 돌리기({ ok: true, status: 200, body: { ok: true, already: true } }, true,
+      { 내용: { dep: 80, idv_token: '새표', verified_at: '다른시각' }, draft: { reqId: 처음.S.draft.reqId, reqSig: 처음.S.draft.reqSig } });
+    ok(다시.보낸번호 === 처음.보낸번호, '같은 조건으로 다시 누르면 같은 번호로 보낸다(본인확인을 다시 받아 표가 바뀌어도 같은 조건이다)');
+    ok(!다시.간곳 && 다시.S.draft.reqId === null && 다시.S.draft.reqSig === null,
+       "서버가 '이미 받았다' 고 해도 성공으로 받고 번호를 비운다 - 다음 조건은 새 번호");
+    /* 고친 뒤 다시 누르면 새 번호 - 같은 번호면 서버가 고친 내용을 버린다 */
+    const 고침 = await 돌리기({ ok: true, status: 201, body: { ok: true } }, true,
+      { 내용: { dep: 60 }, draft: { reqId: 처음.S.draft.reqId, reqSig: 처음.S.draft.reqSig } });
+    ok(고침.보낸번호 && 고침.보낸번호 !== 처음.보낸번호, `조건을 고친 뒤 다시 누르면 새 번호로 보낸다 - 고친 내용이 버려지지 않는다 (${처음.보낸번호} → ${고침.보낸번호})`);
+    ok(/client_req: d\.reqId,/.test(js), '전달 내용에 번호가 실린다');
   }
   /* ── 값이 모자라 거절되면(400) 그 칸이 있는 화면으로 ── */
   {

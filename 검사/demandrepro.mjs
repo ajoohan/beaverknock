@@ -152,10 +152,24 @@ console.log((fail ? fail + '개 실패' : '네 유형 모두 이상 없음'));
   console.log((t5 ? '  OK  ' : '  X   ') + '이미 저장된 번호면 저장도 빈도 제한도 거치기 전에 "이미 받았다" 로 답한다 (' + 조회.code + ')');
   {
     const 서버 = fs.readFileSync(new URL(길.api('demand.js')), 'utf8');
-    const 먼저 = 서버.indexOf('const 요청번호 = ') > 0 && 서버.indexOf('const 요청번호 = ') < 서버.indexOf('burst.get(ip)')
-              && 서버.indexOf('const 요청번호 = ') < 서버.indexOf('WINDOW_MIN * 60_000');
+    const 자리 = 서버.indexOf('const 요청번호 = ');
+    const 먼저 = 자리 > 0 && 자리 < 서버.indexOf('burst.get(ip)') && 자리 < 서버.indexOf('WINDOW_MIN * 60_000');
     if (!먼저) fail++;
     console.log((먼저 ? '  OK  ' : '  X   ') + '이미 받은 전달인지를 빈도 제한(연타·10분)보다 먼저 본다');
+    const 뒤 = 자리 > 서버.indexOf('readIdv(b.idv_token)') && 자리 > 서버.indexOf('if (bad) return');
+    if (!뒤) fail++;
+    console.log((뒤 ? '  OK  ' : '  X   ') + '다만 본인확인·값 검사 뒤에 본다 - 표 없는 가짜 요청이 빈도 제한 없이 DB 를 두드리지 못한다');
+  }
+  /* 표 없는 요청은 번호가 있어도 DB 조회까지 가지 않는다 */
+  {
+    let 조회수 = 0;
+    globalThis.fetch = async (url, opt = {}) => { if (String(url).includes('client_req=eq.')) 조회수++; return new Response('[]', { status:200 }); };
+    const res = { code:0, body:null, setHeader(){}, status(c){ this.code=c; return this; }, json(b){ this.body=b; return this; } };
+    await handler({ method:'POST', headers:{}, socket:{ remoteAddress:'10.77.1.1' },
+      body:{ elapsed:9999, website:'', client_req:'rforged12345', kind:'home', dongs:['미사1동'] } }, res);
+    const t6 = res.code === 401 && 조회수 === 0;
+    if (!t6) fail++;
+    console.log((t6 ? '  OK  ' : '  X   ') + '본인확인 표 없는 요청은 번호가 있어도 DB 조회 없이 막힌다 (' + res.code + ', 조회 ' + 조회수 + ')');
   }
   const 칸없음 = await 보내기('r-test-0002abcd', '칸없음');
   const t3 = 칸없음.code === 201 && sentRow && !('client_req' in sentRow);

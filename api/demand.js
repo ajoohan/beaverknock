@@ -184,22 +184,6 @@ export default async function handler(req, res) {
   const ip = clientIp(req);
   const now = Date.now();
 
-  /* ── 이미 받은 전달인가 (2026-10-13, 0029) ──
-     답을 못 받은 손님이 다시 누르면 같은 번호로 온다. 빈도 제한보다 **먼저** 본다 -
-     이미 저장된 것을 '잠시 후 다시' 로 막으면 손님은 또 누르고 또 막힌다.
-     번호는 무작위라 남의 것을 맞힐 수 없고, 답은 '받았다' 한 줄뿐이라 드러나는 것도 없다.
-     0029 전이면 조회가 실패한다 - 그때는 그냥 지나간다. */
-  const 요청번호 = /^[A-Za-z0-9_-]{8,64}$/.test(String(b.client_req || '')) ? String(b.client_req) : null;
-  if (요청번호) {
-    try {
-      const r0 = await fetch(`${BK_URL}/rest/v1/${TABLE}?select=id&client_req=eq.${encodeURIComponent(요청번호)}&limit=1`,
-        { headers: { apikey: BK_SECRET_KEY, Authorization: 'Bearer ' + BK_SECRET_KEY } });
-      if (r0.ok) {
-        const prev = await r0.json();
-        if (Array.isArray(prev) && prev.length) return res.status(200).json({ ok: true, already: true });
-      }
-    } catch { /* 조회가 안 되면 아래로 - 색인이 마지막으로 막는다 */ }
-  }
 
   /* ── 값 검사 — 화면을 우회해 들어오는 요청도 여기서 걸린다 ── */
   const kind = KINDS.includes(b.kind) ? b.kind : null;
@@ -224,6 +208,25 @@ export default async function handler(req, res) {
     (b.agree_third_party !== true || b.agree_multi_alert !== true) ? '필수 동의가 없습니다' :
     null;
   if (bad) return res.status(400).json({ error: bad });
+
+  /* ── 이미 받은 전달인가 (2026-10-13, 0029) ──
+     답을 못 받은 손님이 다시 누르면 같은 번호로 온다. 빈도 제한보다 **먼저** 본다 -
+     이미 저장된 것을 '잠시 후 다시' 로 막으면 손님은 또 누르고 또 막힌다.
+     다만 본인확인·값 검사 **뒤에** 본다 - 그 앞에 두면 표 없는 가짜 요청도 번호만 붙이면
+     빈도 제한 없이 DB 조회를 일으킨다. 진짜 재전송은 유효한 표와 같은 값을 들고 온다.
+     번호는 무작위라 남의 것을 맞힐 수 없고, 답은 '받았다' 한 줄뿐이라 드러나는 것도 없다.
+     0029 전이면 조회가 실패한다 - 그때는 그냥 지나간다. */
+  const 요청번호 = /^[A-Za-z0-9_-]{8,64}$/.test(String(b.client_req || '')) ? String(b.client_req) : null;
+  if (요청번호) {
+    try {
+      const r0 = await fetch(`${BK_URL}/rest/v1/${TABLE}?select=id&client_req=eq.${encodeURIComponent(요청번호)}&limit=1`,
+        { headers: { apikey: BK_SECRET_KEY, Authorization: 'Bearer ' + BK_SECRET_KEY } });
+      if (r0.ok) {
+        const prev = await r0.json();
+        if (Array.isArray(prev) && prev.length) return res.status(200).json({ ok: true, already: true });
+      }
+    } catch { /* 조회가 안 되면 아래로 - 색인이 마지막으로 막는다 */ }
+  }
 
   /* 빈도 제한은 값 검사를 통과한 뒤에 센다.
      오타로 몇 번 되돌아온 사람이 잠겨 버리면 안 된다 — 저장을 시도한 것만 센다. */

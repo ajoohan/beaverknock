@@ -217,7 +217,7 @@ export default async function handler(req, res) {
     });
 
     /* 내가 이미 보낸 조건은 표시해 준다 */
-    const mine = rows.length ? await myProposalTimes(chk.agent.id) : new Map();
+    const mine = rows.length ? await myProposalTimes(chk.agent.id, 가장오래된(rows)) : new Map();
 
     return res.status(200).json({
       ok: true,
@@ -262,17 +262,29 @@ export async function getDemands(q) {
    조건 id 를 전부 URL 에 싣지 않는다 - 200개면 7KB 가 넘어 414 로 잘린다.
    내가 보낸 것만 받아와서 여기서 맞춰본다. 시각은 '보낸 뒤에 손님이 고쳤나' 를 가리는 데 쓴다
    (2026-10-15 리뷰 - 고친 조건을 보고 제안한 중개사에게 '다시 확인' 을 띄우지 않게). */
-export async function myProposalTimes(agentId) {
+/* 최근 1000건만 읽으면 제안을 많이 보낸 중개사의 예전 제안이 '안 보낸 것' 이 됐다(2026-10-15 리뷰).
+   since(목록에 실린 조건 중 가장 오래된 것의 등록 시각)보다 앞선 제안은 그 조건들에 대한 것일 수 없으니
+   거기서 자르고, 남은 것은 쪽으로 나눠 끝까지 읽는다(한 쪽 1000건, 최대 10쪽). */
+const PROP_PAGE = 1000, PROP_PAGES = 10;
+export async function myProposalTimes(agentId, since = null) {
   const mine = new Map();
-  const pq = new URLSearchParams({
-    select: 'demand_id,created_at', agent_id: 'eq.' + agentId,
-    order: 'created_at.desc', limit: '1000',
-  });
-  const pr = await fetch(sbUrl('bk_proposal', pq.toString()), { headers: sbHeaders() });
-  /* 최신순이라 처음 본 것이 마지막 제안이다 */
-  if (pr.ok) for (const p of await pr.json()) if (!mine.has(p.demand_id)) mine.set(p.demand_id, p.created_at || null);
+  for (let 쪽 = 0; 쪽 < PROP_PAGES; 쪽++) {
+    const pq = new URLSearchParams({
+      select: 'demand_id,created_at', agent_id: 'eq.' + agentId,
+      order: 'created_at.desc', limit: String(PROP_PAGE), offset: String(쪽 * PROP_PAGE),
+    });
+    if (since) pq.set('created_at', 'gte.' + since);
+    const pr = await fetch(sbUrl('bk_proposal', pq.toString()), { headers: sbHeaders() });
+    if (!pr.ok) break;
+    const a = await pr.json();
+    /* 최신순이라 처음 본 것이 마지막 제안이다 */
+    for (const p of a) if (!mine.has(p.demand_id)) mine.set(p.demand_id, p.created_at || null);
+    if (a.length < PROP_PAGE) break;
+  }
   return mine;
 }
+/* 목록에 실린 조건 중 가장 오래된 등록 시각 */
+const 가장오래된 = rows => rows.reduce((m, d) => (d.created_at && (!m || d.created_at < m) ? d.created_at : m), null);
 
 /* ── 자격을 확인하기 전에 보이는 것 ──
    조건 전문에는 손님이 적은 사정과 메모가 들어 있어서 자격 없이 볼 것이 아니다.
@@ -398,7 +410,7 @@ async function readFitting(res, agent) {
       rows.push({ ...d, fitIds: fit.map(L => L.id), fitNames: fit.map(L => L.name) });
     }
 
-    const mine = rows.length ? await myProposalTimes(agent.id) : new Map();
+    const mine = rows.length ? await myProposalTimes(agent.id, 가장오래된(rows)) : new Map();
 
     return res.status(200).json({
       ok: true, agent: meAgent(agent),

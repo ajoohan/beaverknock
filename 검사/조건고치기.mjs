@@ -150,6 +150,13 @@ const 조건번호 = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
   for (let i = 0; i < 10; i++) await 고치기(조건번호, { memo: '남의 것 ' + i }, 'home', 더듬는사람);
   맞음 = true;
   ok((await 고치기(조건번호, { memo: 'x' }, 'home', 더듬는사람)).code === 429, '남의 조건(404)은 센다 - 번호를 더듬는 것은 막는다');
+  const 거절될값 = 'u-거절값';
+  패치답 = 400;
+  const 거절답 = await 고치기(조건번호, { memo: '제약 위반' }, 'home', 거절될값);
+  for (let i = 0; i < 9; i++) await 고치기(조건번호, { memo: '제약 위반 ' + i }, 'home', 거절될값);
+  패치답 = 200;
+  ok(거절답.code === 400 && (await 고치기(조건번호, { memo: 'x' }, 'home', 거절될값)).code === 429,
+     'DB 가 값을 거절한 것(4xx)은 센다 - 거절될 값으로 횟수 제한을 비켜 가지 못한다(2026-10-15 리뷰)');
 }
 
 /* ── ②-2 운영 기록 - 손님 수정은 따로 본다 ── */
@@ -174,13 +181,28 @@ const 조건번호 = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
     return new Response(JSON.stringify([
       { demand_id: 'd1', created_at: '2026-10-15T05:00:00Z' }, { demand_id: 'd2', created_at: '2026-10-14T01:00:00Z' },
       { demand_id: 'd1', created_at: '2026-10-13T01:00:00Z' }]), { status: 200 }); };
-  const m = await myProposalTimes('a1');
+  const m = await myProposalTimes('a1', '2026-10-01T00:00:00+00:00');
   ok(물음.includes('select=demand_id,created_at') && 물음.includes('agent_id=eq.a1') && 물음.includes('order=created_at.desc'),
      '내 제안을 최신순으로 시각과 함께 읽는다');
   ok(m.get('d1') === '2026-10-15T05:00:00Z' && m.get('d2') === '2026-10-14T01:00:00Z' && !m.has('d3'), '조건마다 마지막으로 보낸 시각을 든다');
+  ok(물음.includes('created_at=gte.2026-10-01T00:00:00+00:00'), '목록의 가장 오래된 조건보다 앞선 제안은 읽지 않는다 - 그 조건들에 대한 것일 수 없다');
+
+  /* 1000건을 넘어도 끝까지 (2026-10-15 리뷰) - 전에는 최근 1000건만 읽어 예전 제안이 '안 보낸 것' 이 됐다 */
+  const 쪽들 = [];
+  globalThis.fetch = async (url) => { const q = new URL(String(url)).searchParams; const off = +q.get('offset'); 쪽들.push(off);
+    const n = off === 0 ? 1000 : 3;
+    return new Response(JSON.stringify(Array.from({ length: n }, (_, i) => ({ demand_id: 'p' + (off + i), created_at: '2026-10-10T00:00:00Z' }))), { status: 200 }); };
+  const 많음 = await myProposalTimes('a1');
+  ok(쪽들.join() === '0,1000' && 많음.has('p1001') && 많음.size === 1003, `1000건이 넘으면 다음 쪽을 읽는다 (${쪽들.join()} · ${많음.size})`);
+  쪽들.length = 0;
+  globalThis.fetch = async (url) => { 쪽들.push(1);
+    return new Response(JSON.stringify(Array.from({ length: 1000 }, (_, i) => ({ demand_id: 'q' + 쪽들.length + '-' + i }))), { status: 200 }); };
+  await myProposalTimes('a1');
+  ok(쪽들.length === 10, '끝이 없어도 10쪽에서 멈춘다 - 목록 한 번에 DB 를 끝없이 부르지 않는다');
   const fs = await import('node:fs');
   const 목록서버 = fs.readFileSync(new URL(길.api('feed.js')), 'utf8');
   ok((목록서버.match(/mine: mine\.has\(d\.id\), mine_at: mine\.get\(d\.id\) \|\| null/g) || []).length === 2, '중개사 목록 두 곳이 제안 시각(mine_at)을 함께 보낸다');
+  ok((목록서버.match(/await myProposalTimes\([^)]*, 가장오래된\(rows\)\)/g) || []).length === 2, '두 곳 모두 목록의 가장 오래된 조건 시각으로 자른다');
 }
 
 /* ── ①-2 중복 색인에 막힌 재전송도 번호를 돌려준다 ── */
@@ -323,8 +345,35 @@ const 조건번호 = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
   const logWho = new Function(`${누가몸}; return logWho;`)();
   ok(logWho({ action: 'demand-edit', email: 'a@b.c' }) === '손님 a@b.c' && logWho({ action: 'demands', email: 'ops@x.y' }) === 'ops@x.y',
      '손님 조건 수정의 \'누가\' 는 손님이라고 밝힌다 - 운영자처럼 보이지 않게');
-  ok(/chip\('손님 조건 수정', LG\.only==='edit', 'edit'\)/.test(js) && /\{v:'edit', t:'손님 조건 수정'\}/.test(js),
-     '열람 기록에서 손님 조건 수정만 따로 골라 볼 수 있다');
+  const 거르기 = new Function(`${js.match(/const LG_ONLY = \[[^\]]*\];/)[0]}; return LG_ONLY;`)();
+  ok(거르기.some(o => o.v === 'edit' && o.t === '손님 조건 수정') && 거르기.find(o => o.v === '').t === '운영 기록' && !거르기.some(o => o.t === '전체'),
+     '열람 기록에서 손님 조건 수정만 따로 골라 볼 수 있고, 그것을 뺀 기본은 \'전체\' 가 아니라 \'운영 기록\' 이다');
+  ok(/\$\{LG_ONLY\.map\(o => chip\(o\.t, \(LG\.only\|\|''\)===o\.v, o\.v\)\)\.join\(''\)\}/.test(js) && /subs:LG_ONLY \}/.test(js),
+     '기록 탭의 칩과 옆 메뉴가 같은 거르기 목록을 쓴다 - 한 곳만 고쳐 어긋나지 않는다');
+  const 이름표 = new Function(`${js.match(/const LOG_KO = \{[\s\S]*?\};/)[0]}; return LOG_KO;`)();
+  ok(['demands', 'agents', 'listings', 'users', 'reports', 'stats'].every(k => /조회$/.test(이름표[k])),
+     `기록 이름표가 무엇을 했는지까지 말한다 - '손님 계정' 이 아니라 '손님 계정 조회' (${이름표.users})`);
+
+  /* 대시보드 '최근 움직임' 은 기록 탭의 거르기를 따르지 않는다 (2026-10-15 리뷰) */
+  {
+    const 기록몸 = 함수('function lgFetch(){') + '\n' + 함수('function lgRecentFetch(){');
+    const 판 = { 보냄: [] };
+    const LG = { rows: null, loading: false, only: 'edit', recent: null, recentLoading: false };
+    const 줄 = only => [{ action: only === 'edit' ? 'demand-edit' : 'demands', at: '2026-10-15T00:00:00Z' }];
+    const apiFetch = async (u, o) => { const b = JSON.parse(o.body); 판.보냄.push(b); return { ok: true, json: async () => ({ rows: 줄(b.only), at: 'x' }) }; };
+    const 돌림 = new Function('LG', 'OPS', 'apiFetch', 'render', `${기록몸}; return { lgFetch, lgRecentFetch };`)(LG, { ok: true, pass: 'p' }, apiFetch, () => {});
+    돌림.lgFetch(); await new Promise(r => setTimeout(r, 0)); await new Promise(r => setTimeout(r, 0));
+    ok(LG.rows && LG.rows[0].action === 'demand-edit' && LG.recent === null, '\'손님 조건 수정\' 으로 거른 기록은 최근 움직임에 쓰지 않는다');
+    돌림.lgRecentFetch(); await new Promise(r => setTimeout(r, 0)); await new Promise(r => setTimeout(r, 0));
+    ok(LG.recent && LG.recent[0].action === 'demands' && !판.보냄[1].only, '최근 움직임은 거르기 없이(운영 기록에서) 따로 불러온다');
+    LG.only = ''; LG.rows = null; LG.recent = null; 판.보냄.length = 0;
+    돌림.lgRecentFetch(); await new Promise(r => setTimeout(r, 0)); await new Promise(r => setTimeout(r, 0));
+    ok(판.보냄.length === 1 && LG.recent === LG.rows, '거르기가 없으면 같은 조회 한 번으로 둘 다 채운다');
+    LG.recent = null; 판.보냄.length = 0;
+    돌림.lgRecentFetch();
+    ok(판.보냄.length === 0 && LG.recent === LG.rows, '거르기 없는 기록이 이미 있으면 다시 부르지 않고 그것을 쓴다 - 뼈대만 계속 돌지 않게');
+  }
+  ok(/const rows = LG\.recent\.slice\(0, 7\);/.test(js) && /if\(!LG\.recent\) lgRecentFetch\(\);/.test(js), '대시보드는 최근 움직임을 따로 든 것(LG.recent)에서 그린다');
 
   /* 유형이 빈 예전 주거 조건 - 초안이 주거로 연다 (2026-10-15 리뷰) */
   const S3 = { draft: 적던것, conds: [{ id: 'old', kind: null, src: { id: 'old', kind: null, dongs: ['풍산동'], memo: '예전 조건' } }] };

@@ -286,7 +286,7 @@ export async function demandEdit(req, res, user, body) {
   }
   if (!Object.keys(patch).length) return res.status(400).json({ error: '고칠 내용이 없습니다' });
   /* 횟수는 DB 에 닿는 시도부터 센다. 잘못된 요청(400)은 DB 를 부르지 않으니 세지 않고,
-     DB 가 실패한(502) 시도는 되돌린다 - 다시 누른 손님이 429 를 받지 않게(2026-10-15 리뷰).
+     DB 쪽 장애(5xx·연결 실패)는 되돌린다 - 다시 누른 손님이 429 를 받지 않게(2026-10-15 리뷰).
      남의 조건(404)은 센다 - 번호를 더듬는 것도 막아야 한다. */
   최근.push(now); editHits.set(user.id, 최근);
   if (editHits.size > 5000) editHits.clear();
@@ -307,8 +307,11 @@ export async function demandEdit(req, res, user, body) {
       시각남김 = false; r = await 고치기(patch); t = r.ok ? '' : await r.text();
     }
     if (!r.ok) {
-      셈되돌리기();
       console.error('[my:demand-edit]', r.status, t.slice(0, 160));
+      /* DB 가 값을 거절한 것(4xx)은 센다 - 다시 눌러도 같은 답이고, 안 세면 거절될 값을 보내
+         횟수 제한 없이 DB 를 부를 수 있다(2026-10-15 리뷰). DB 쪽 장애(5xx)만 되돌린다. */
+      if (r.status < 500) return res.status(400).json({ error: '저장할 수 없는 값이 있습니다 - 고친 내용을 확인해 주세요' });
+      셈되돌리기();
       return res.status(502).json({ error: '고치지 못했습니다 - 잠시 뒤 다시 해 주세요' });
     }
     /* 고쳐진 행이 없다 = 내 조건이 아니거나, 유형이 다르거나, 이미 없다 */

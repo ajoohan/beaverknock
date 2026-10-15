@@ -162,8 +162,9 @@ body.mo .nav .items{display:none}
 body.mo .footlinks{gap:10px 16px!important}
 /* 바닥글 링크도 위 규칙 하나로 44px 이 된다. 어제 넣었던 덮개(::after)와
    줄 사이 30px 은 걷는다 - 덮개를 안 쓰니 벌려 둘 까닭이 없다. */
-/* 모바일에서 손가락으로 누르는 자리는 40px 이상(2026-10-15 UI 검수 - 30px 이었다) */
-body.mo .back{position:relative;display:inline-flex;align-items:center;min-height:40px}
+/* 보이는 상자는 30px 이지만 아래 덮개가 위아래 9px 씩 넓혀 누르는 자리는 약 48px 이다.
+   상자를 키우면 화면만 밀린다(2026-10-15 검수에서 상자만 재고 키웠다가 되돌림). */
+body.mo .back{position:relative}
 body.mo .back::after{content:"";position:absolute;left:0;right:0;top:-9px;bottom:-9px}
 
 /* 모든 변형이 같은 크기로 그려지도록 테두리를 항상 1.5px 잡아둔다 -
@@ -1080,10 +1081,12 @@ body.mo .vcard .vbtn{width:100%;margin-top:10px}
 .idvPick .btn{flex-direction:column;gap:3px;padding:12px 18px;min-height:56px}
 .idvPick .btn .t{font-size:15px;font-weight:700}
 .idvPick .btn .d{font-size:12px;font-weight:600;opacity:.82}
-/* '선택 해제' - 칩 줄 바로 아래의 작은 글 단추. 과녁은 32px(WCAG 2.5.8 최소 24) */
-.chip-clear{display:inline-flex;align-items:center;min-height:40px;margin-top:4px;padding:0 2px;
+/* '선택 해제' - 칩 줄 바로 아래의 작은 글 단추. 과녁은 PC 32px(WCAG 2.5.8 최소 24),
+   손가락으로 누르는 모바일은 40px(2026-10-15 UI 검수) */
+.chip-clear{display:inline-flex;align-items:center;min-height:32px;margin-top:4px;padding:0 2px;
   font-size:12.5px;font-weight:600;color:var(--n500);text-decoration:underline;text-underline-offset:3px;cursor:pointer}
 .chip-clear:hover{color:var(--ind)}
+body.mo .chip-clear{min-height:40px}
 .heroBand{width:100%;max-width:min(1760px,94vw);margin:0 auto;padding:0 clamp(32px,3.4vw,76px)}
 
 /* 파트너 카드 - 넓은 화면에서 가장 먼저 눈에 들어와야 하는 것 */
@@ -3162,8 +3165,9 @@ V['#/'] = () => `
     <!-- 모바일에는 원과 선을 놓을 자리가 없다. 대신 지금 걸음에 불이 들어오고
          ① 부터 ④ 까지 옮겨 붙는다 - 데스크톱과 같은 기계(.steps/.run)를 쓰고
          시간표도 같은 STEP_ONE 을 본다. 둘 중 하나만 그려지므로 부딪히지 않는다. -->
-    <!-- 가운뎃점은 뺀다. 알약이 생기면서 칸이 저절로 갈리는데 점까지 두면
-         375px 한 줄에 안 들어간다 - 두 줄이 되면 아래 버튼이 그만큼 밀린다. -->
+    <!-- 가운뎃점은 뺀다. 알약이 생기면서 칸이 저절로 갈린다.
+         넷은 375px 한 줄에 들어가지 않는다(11px 로도 두 줄) - 400px 이하에서는
+         CSS 가 둘씩 두 줄(2×2)로 고르게 놓는다. 한 줄로 되돌리면 '④' 만 홀로 떨어진다. -->
     <div class="steps mini" style="font-size:11px">
       ${['조건 등록','맞는 지역에만','맞으면 연락','직접 상담'].map((t,i)=>
         `<span class="ms" style="transition-delay:${(i*STEP_ONE).toFixed(2)}s">${'①②③④'[i]} ${t}</span>`).join('')}

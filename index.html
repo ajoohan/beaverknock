@@ -2792,6 +2792,8 @@ function condFromRow(d){
     lines:L.filter(Boolean), status:'active',
     slots:d.slots||5, slotsLeft:d.slots_left, at:agoText(d.created_at), expires:30,
     pct:0, memo:d.memo||'', missed:0,
+    /* 서버에서 온 원래 값 - '수정' 이 이 조건을 그대로 불러와 고치려면 있어야 한다(2026-10-15) */
+    src:d,
   };
 }
 
@@ -3856,15 +3858,42 @@ ${gDeal ? `<div data-req="dongs"><span class="lab">찾으시는 동네 <span cla
 </div>`;};
 
 /* ---------- D-06 상세 보강 ---------- */
-V['#/detail'] = () => { const d=S.draft, pct=detailPct(d); return `
+/* ── 걸어 둔 조건 고치기 (2026-10-15 리뷰) ──
+   전에는 상세 보강의 '저장' 이 메모리(그것도 목록의 첫 조건)만 바꾸고 서버에는 아무것도 보내지
+   않았다 - 덧붙인 상세는 중개사에게 한 번도 가지 않았다. 이제 서버(/api/my demand-edit)로 고친다.
+   고칠 수 있는 칸은 이 화면의 것뿐이다(지역·예산·유형은 이미 온 제안의 기준이라 두지 않는다). */
+const 상세칸 = d => NONHOME(d.kind)
+  ? ['memo', 'park_need', 'shop_note', ...(d.kind === 'shop' ? ['key_ok', 'sign_need'] : [])]
+  : ['memo', 'floor_bands', 'dir_want', 'age_band', 'household', 'elevator', 'loan_plan'];
+/* 칸 이름과 값 바꾸기는 전달할 때와 같은 것(demandPayload)을 쓴다 - 두 벌이면 어긋난다 */
+function 상세값(d){ const p = demandPayload(d, 5); return Object.fromEntries(상세칸(d).map(k => [k, p[k] ?? null])); }
+/* 서버에서 온 조건을 고칠 수 있는 초안으로 */
+function 조건초안(c){
+  const r = c.src || {};
+  return Object.assign(blankDraft(), {
+    kind: r.kind || c.kind, who: r.kind || c.kind, dongs: r.dongs || [], deal: r.deal || '',
+    dep: r.dep ?? '', rent: r.rent ?? '', biz: r.biz || '', areaMin: r.area_min ?? '', areaMax: r.area_max ?? '',
+    htype: r.htype || [], rooms: r.rooms || '', memo: r.memo || '',
+    hFloor: r.floor_bands || [], hDir: r.dir_want || [], hAge: r.age_band || '', house: r.household || '',
+    elev: r.elevator || '', loan: r.loan_plan || '', keyOk: r.key_ok || '', signNeed: r.sign_need || '',
+    parkNeed: r.park_need ?? '', shopNote: r.shop_note || '',
+  });
+}
+
+V['#/detail'] = () => { const d=S.draft, pct=detailPct(d);
+  /* 걸린 조건을 고치는 중인가 - 고치는 중이면 단추가 '고친 내용 저장' 이고 결과가 서버에 간다 */
+  const 고침 = !!(S.편집 || d.전달됨);
+  return `
 <div class="scr fade">
   ${mprog(100)}
   ${isMo()? `<div class="nav pad">${mobileBack('뒤로','#/my')}<span style="margin:0 auto">${logoLockup({h:25})}</span><span class="muted" style="font-size:12.5px">3/4</span></div>`:''}
   <div class="split">
     ${rail(4, NONHOME(d.kind) ? '자리를 보는 기준을<br>알려주시면 헛걸음이 줍니다' : '더 자세할수록<br>더 맞는 제안이 옵니다')}
     <div class="formcol"><div class="in">
-      <div><h1 class="t" style="font-size:${isMo()?21:25}px">조금만 더 알려주시겠어요?</h1>
-      <p class="sub">전부 <b style="color:var(--n900)">선택 항목</b>입니다. 건너뛰셔도 조건은 정상 전달됩니다.</p></div>
+      <div><h1 class="t" style="font-size:${isMo()?21:25}px">${고침 ? '걸어 둔 조건의 상세를 고칩니다' : '조금만 더 알려주시겠어요?'}</h1>
+      <p class="sub">${고침
+        ? `<b style="color:var(--n900)">${esc(draftTitle(d))}</b> · 저장하시면 중개사에게도 고친 내용이 보입니다. 지역·예산을 바꾸시려면 새 조건으로 걸어 주세요.`
+        : `전부 <b style="color:var(--n900)">선택 항목</b>입니다. 건너뛰셔도 조건은 정상 전달됩니다.`}</p></div>
 
       <div class="card pad" style="padding:16px 20px">
         <div style="display:flex;justify-content:space-between;margin-bottom:10px">
@@ -3919,8 +3948,8 @@ V['#/detail'] = () => { const d=S.draft, pct=detailPct(d); return `
     </div></div>
   </div>
   <div class="foot">
-    <button class="btn ghost" data-go="#/my">나중에 채울게요</button>
-    <button class="btn pri" data-act="detail-save">저장하기</button>
+    <button class="btn ghost" data-go="#/my">${고침 ? '그만두기' : '나중에 채울게요'}</button>
+    <button class="btn pri" data-act="detail-save" ${S.상세저장중 ? 'disabled' : ''}>${S.상세저장중 ? '저장하는 중…' : 고침 ? '고친 내용 저장' : '저장하기'}</button>
   </div>
 </div>`;};
 
@@ -5207,13 +5236,13 @@ function recapHTML(d, 머리){
 function 전달된연락처(d){ return `
 <div class="scr fade">
   ${mprog(100)}
-  ${isMo()? `<div class="nav pad">${mobileBack('뒤로','#/register')}<span style="margin:0 auto">${logoLockup({h:25})}</span><span class="muted" style="font-size:12.5px">4/4</span></div>`:''}
+  ${isMo()? `<div class="nav pad">${mobileBack('내 조건','#/my')}<span style="margin:0 auto">${logoLockup({h:25})}</span><span class="muted" style="font-size:12.5px">4/4</span></div>`:''}
   <div class="split">
     ${rail(3,'이미 전달된<br>조건입니다')}
     <div class="formcol"><div class="in">
       ${보류띠()}
       <div><h1 class="t" style="font-size:${isMo()?21:25}px">이미 전달된 조건입니다</h1>
-      <p class="sub">다시 보내면 같은 조건이 두 번 걸립니다. 걸어 두신 조건은 「내 조건」에서 보고 고치실 수 있습니다.</p></div>
+      <p class="sub">다시 보내면 같은 조건이 두 번 걸립니다. 걸어 두신 조건은 「내 조건」에서 보시고, 상세 내용은 <b style="color:var(--n900)">수정</b>으로 고치실 수 있습니다.</p></div>
       ${recapHTML(d, '이렇게 전달되었습니다')}
     </div></div>
   </div>
@@ -5402,7 +5431,7 @@ V['#/my'] = () => {
         <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
           <span style="font-size:12.5px;color:var(--n500)">등록 ${esc(c.at)} · 만료까지 ${c.expires}일</span>
           <div style="display:flex;gap:8px">
-            <button class="btn sec sm" data-go="#/detail">수정</button>
+            <button class="btn sec sm" data-act="cond-edit" data-v="${esc(c.id)}">수정</button>
             <button class="btn sec sm" data-act="pause" data-v="${c.id}">${c.status==='paused'?'재개':'일시중지'}</button>
             <button class="btn sec sm" data-act="close" data-v="${c.id}" style="color:var(--danger)">종료</button>
             <button class="btn sec sm" data-act="extend" data-v="${c.id}" ${c.expires>7?'disabled':''}>연장</button>
@@ -7455,9 +7484,15 @@ function saveDemand(d, slotN, 자리){
     /* 부른 쪽(submit)이 이 뒤에 완료 화면으로 넘어간다 - 지금 되돌리면 그 이동에 덮인다. 다 끝난 뒤에 되돌린다 */
     setTimeout(() => 되돌리기('조건을 보내지 못했습니다 - 적은 조건은 그대로 있으니 다시 눌러 주세요'), 0);
     return; }
+  d.보내는중 = true;                   /* 답이 오기 전에 '조건 더 채우기' 를 저장하면 기다리게 한다 */
   apiFetch('/api/demand', { method:'POST', body }).then(r=>{
     /* 전달됨 - 이 초안은 다시 '전달되지 않은 조건' 으로 맡겨지면 안 된다(맡기면 같은 조건이 두 번 간다) */
-    if(r.ok){ S.saved = true; d.전달됨 = true; d.reqId = null; d.reqSig = null; S.mineAt = 0; loadMine(true); return; }
+    if(r.ok) return r.json().catch(() => ({})).then(j => {
+      /* 서버가 돌려준 번호 - '조건 더 채우기' 가 방금 건 이 조건을 고칠 때 쓴다 */
+      d.보내는중 = false; d.서버id = j.id || null;
+      S.saved = true; d.전달됨 = true; d.reqId = null; d.reqSig = null; S.mineAt = 0; loadMine(true);
+    });
+    d.보내는중 = false;
     return r.json().catch(()=>({})).then(j=>{
       console.warn('조건 저장 실패', r.status, j);
       /* 확인한 지 30분이 지나면 표가 만료된다. 확인했다고 표시해 둔 채로 두면 눌러도 계속
@@ -7484,7 +7519,7 @@ function saveDemand(d, slotN, 자리){
       되돌리기(j.error ? `전달되지 않았습니다 - ${j.error}`
                        : '서버에 저장하지 못했습니다 - 적은 조건은 그대로 있으니 다시 눌러 주세요');
     });
-  }).catch(e=>{ console.warn('조건 저장 실패', e);
+  }).catch(e=>{ console.warn('조건 저장 실패', e); d.보내는중 = false;
     되돌리기('네트워크 문제로 전달되지 않았습니다 - 적은 조건은 그대로 있으니 다시 눌러 주세요'); });
 }
 
@@ -9217,6 +9252,9 @@ function render(){
      직후 동의를 먼저 해야 할 때)은 떠난 것이 아니다 - 비우면 방금 받은 본인확인까지 지워져
      한 번 더(요금도 한 번 더) 받아야 한다. 동의가 끝나면 가입 화면으로 돌아온다. */
   if(S.lastRoute === '#/partner/join' && h !== '#/partner/join' && h !== '#/agree') resetJoin();
+  /* 걸어 둔 조건을 고치던 상세 화면을 떠났다 - 그 조건을 내려놓고 적던 초안을 돌려놓는다(2026-10-15).
+     고치는 동안 S.draft 를 빌려 쓰므로, 그대로 두면 적던 새 조건 자리에 걸린 조건이 남는다. */
+  if(S.lastRoute === '#/detail' && h !== '#/detail' && S.편집){ S.draft = S.편집.전초안; S.편집 = null; }
   /* 로그인 화면을 로그인하지 않고 떠나면 '가려던 곳' 기록을 지운다 (2026-10-13).
      남겨 두면 다음 로그인이 엉뚱한 곳(예: 운영 로그인을 열었다 그냥 나간 뒤의 운영 화면)으로
      가고, 로그인 화면의 '들어와 계십니다' 판단도 틀어진다. 지키는 길:
@@ -9238,6 +9276,8 @@ function render(){
   }
   /* 딥링크 가드: 선행 단계를 건너뛴 진입을 앞 단계로 되돌린다 */
   if((h==='#/register'||h==='#/detail'||h==='#/contact') && !S.draft.kind){ location.replace('#/kind'); return; }
+  /* 이미 전달된 초안의 조건 등록 화면은 고쳐도 갈 곳이 없다 - '이미 전달된 조건' 화면으로(2026-10-15 리뷰) */
+  if(h==='#/register' && S.draft.전달됨){ location.replace('#/contact'); return; }
   /* 내 정보 영역은 로그인이 필요하다 */
   /* 지표 대시보드는 아직 예시 숫자다. 실데이터 화면의 암호를 통과하기 전에는 열지 않는다. */
   /* A-04 화면을 지웠다. 이 주소로 들어오면 운영 화면으로 보낸다 */
@@ -9487,7 +9527,7 @@ function restoreDraft(){
     const d = JSON.parse(kept);
     /* 이름·연락처는 되살리지 않는다 - 다른 사람이 로그인했을 수도 있다.
        본인확인은 그 계정으로 다시 받는 것이 맞다. */
-    Object.assign(S.draft, d, {name:'', phone:'', verified:false, vstep:'idle', birth:'', vat:'', vmethod:''});
+    Object.assign(S.draft, d, {name:'', phone:'', verified:false, vstep:'idle', birth:'', vat:'', vmethod:'', 보내는중:false});
     return true;
   }catch(e){ return false; }
 }
@@ -10335,8 +10375,9 @@ function refreshChecks(){
 function handle(a,v,el){
   const d=S.draft;
   switch(a){
-    case 'who': { d.who=v; d.kind=WHO[v].kind; go('#/register'); return true; }
-    case 'kind': d.kind=v; go('#/register'); return true;
+    /* 전달된 초안 위에 고르면 새 조건이다 - 전달된 것을 덮어 쓰지 않는다 */
+    case 'who': { const nd = d.전달됨 ? (S.draft = blankDraft()) : d; nd.who=v; nd.kind=WHO[v].kind; go('#/register'); return true; }
+    case 'kind': { const nd = d.전달됨 ? (S.draft = blankDraft()) : d; nd.kind=v; go('#/register'); return true; }
     case 'move-when':
       d.moveWhen = v;
       /* 날짜를 지정하지 않기로 했으면 골라둔 달도 함께 치운다 -
@@ -10751,12 +10792,38 @@ function handle(a,v,el){
       toast(fit.length ? `맞는 곳 ${fit.length}건을 바로 찾았습니다` : '조건이 전달되었습니다');
       return true; }
 
-    case 'detail-save': { const c=S.conds[0]; if(c){ c.pct=detailPct(S.draft); if(S.draft.memo) c.memo=S.draft.memo; }
-      toast('저장했습니다 · 더 자세할수록 맞는 제안이 옵니다'); go('#/my'); return true; }
+    /* 내 조건 카드의 '수정' - 누른 그 조건을 불러와 고친다. 적던 초안은 잠시 맡겨 두고(라우터가
+       상세 화면을 떠날 때 돌려놓는다), 그 자리에 이 조건을 놓는다. */
+    case 'cond-edit': {
+      const c = S.conds.find(x => x.id === v);
+      if(!c || !c.src){ toast(c && c.seed ? '예시 조건은 고칠 수 없습니다' : '아직 서버에 저장되지 않은 조건입니다 - 잠시 뒤 다시 눌러 주세요'); return true; }
+      if(!S.편집) S.편집 = { id: c.id, 전초안: S.draft }; else S.편집.id = c.id;
+      S.draft = 조건초안(c);
+      go('#/detail'); return true; }
+    /* 상세 저장 - 걸린 조건이면 서버에서 고친다. 전에는 메모리(목록의 첫 조건)만 바꾸고
+       '저장했습니다' 라고 했다(2026-10-15 리뷰). */
+    case 'detail-save': {
+      const 고칠id = S.편집 ? S.편집.id : (d.전달됨 ? d.서버id : null);
+      if(!고칠id){
+        if(d.보내는중){ toast('조건을 전달하는 중입니다 - 잠시 뒤 다시 눌러 주세요'); return true; }
+        if(d.전달됨){ toast('이 조건은 「내 조건」의 수정에서 고쳐 주세요'); go('#/my'); return true; }
+        toast('저장했습니다 · 조건을 전달할 때 함께 갑니다'); go(d.kind ? '#/contact' : '#/my'); return true;
+      }
+      if(S.상세저장중) return true;
+      S.상세저장중 = true; render();
+      apiFetch('/api/my', {method:'POST', body: JSON.stringify({what:'demand-edit', id: 고칠id, set: 상세값(d)})})
+        .then(r => r.json().catch(() => ({})).then(j => {
+          S.상세저장중 = false;
+          if(!r.ok){ render(); return toast(j.error || '고치지 못했습니다 - 잠시 뒤 다시 눌러 주세요'); }
+          S.mineAt = 0; go('#/my'); loadMine(true);
+          toast('고쳤습니다 · 중개사에게도 고친 내용이 보입니다');
+        }))
+        .catch(() => { S.상세저장중 = false; render(); toast('네트워크 문제로 고치지 못했습니다 - 잠시 뒤 다시 눌러 주세요'); });
+      return true; }
     case 'restart': S.draft=blankDraft(); go('#/kind'); return true;
     /* 전달된 조건과 같은 내용으로 새 조건을 건다 - 표시와 전달 번호만 떼어 새 초안으로 */
     case 'draft-again': {
-      const { 전달됨, reqId, reqSig, ...내용 } = S.draft;
+      const { 전달됨, reqId, reqSig, 서버id, 보내는중, ...내용 } = S.draft;
       S.draft = 내용;
       render();
       toast('새 조건으로 다시 거실 수 있습니다 - 확인하고 전달해 주세요');

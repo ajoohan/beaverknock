@@ -240,7 +240,8 @@ export default async function handler(req, res) {
       const r0 = await fetch(sb(`${TABLE}?select=id&client_req=eq.${encodeURIComponent(요청번호)}&limit=1`), { headers: H });
       if (r0.ok) {
         const prev = await r0.json();
-        if (Array.isArray(prev) && prev.length) return res.status(200).json({ ok: true, already: true });
+        /* 번호도 돌려준다 - 화면의 '조건 더 채우기' 가 이 조건을 고칠 수 있게(2026-10-15) */
+        if (Array.isArray(prev) && prev.length) return res.status(200).json({ ok: true, already: true, id: prev[0].id || null });
       }
     } catch { /* 조회가 안 되면 아래로 - 색인이 마지막으로 막는다 */ }
   }
@@ -342,10 +343,13 @@ export default async function handler(req, res) {
     ip_hash: iph,
   };
 
-  const insert = payload => fetch(sb(TABLE), {
-    method: 'POST', headers: { ...H, Prefer: 'return=minimal' }, body: JSON.stringify(payload),
+  /* 새 조건의 번호만 돌려받는다(2026-10-15). 화면의 '조건 더 채우기' 가 방금 건 조건을 고치려면
+     어느 행인지 알아야 한다 - 전에는 아무것도 돌려받지 않아 고칠 길이 없었다. */
+  const insert = payload => fetch(sb(`${TABLE}?select=id`), {
+    method: 'POST', headers: { ...H, Prefer: 'return=representation' }, body: JSON.stringify(payload),
   });
 
+  let 새번호 = null;
   try {
     let r = await insert(row);
     /* 표에 아직 없는 칸이 있으면 그 칸만 빼고 다시 넣는다.
@@ -379,6 +383,9 @@ export default async function handler(req, res) {
         });
       }
     }
+    /* 돌려받은 번호 - 못 읽어도 접수는 성공이다(그때는 '내 조건' 에서 고치면 된다) */
+    const 몸 = await r.json().catch(() => null);
+    새번호 = Array.isArray(몸) && 몸[0] ? 몸[0].id || null : null;
   } catch (e) {
     console.error('접수 저장 오류', e);
     return res.status(502).json({ error: 'DB에 닿지 못했습니다' });
@@ -405,5 +412,5 @@ export default async function handler(req, res) {
     link: '/#/ops/live',
   });
 
-  res.status(201).json({ ok: true, notified: sent && sent.ok ? 'ok' : (sent && sent.skipped) || 'unknown' });
+  res.status(201).json({ ok: true, id: 새번호, notified: sent && sent.ok ? 'ok' : (sent && sent.skipped) || 'unknown' });
 }

@@ -56,6 +56,11 @@ export default async function handler(req, res) {
     return res.status(200).json({ ok: true, consent: c.o, agent: a.o });
   }
 
+  /* 걸어 둔 조건의 상세를 고친다 (2026-10-15).
+     전에는 화면의 '저장했습니다' 가 메모리만 바꾸고 서버에는 아무것도 보내지 않았다 -
+     덧붙인 상세는 중개사에게 한 번도 가지 않았다. 함수 상한(12개)이 꽉 차 여기에 붙인다. */
+  if (body.what === 'demand-edit') return demandEdit(res, user, body);
+
   try {
     const dq = new URLSearchParams({
       select: '*', user_id: 'eq.' + user.id, order: 'created_at.desc', limit: '50',
@@ -107,6 +112,11 @@ export default async function handler(req, res) {
         dongs: d.dongs || [], deal: d.deal, dep: d.dep, rent: d.rent,
         biz: d.biz, area_min: d.area_min, area_max: d.area_max,
         htype: d.htype || [], rooms: d.rooms, memo: d.memo,
+        /* 상세 - '수정' 화면이 지금 값을 채워 보여 주려면 함께 와야 한다 */
+        floor_bands: d.floor_bands || [], dir_want: d.dir_want || [], age_band: d.age_band || null,
+        household: d.household || null, elevator: d.elevator || null, loan_plan: d.loan_plan || null,
+        key_ok: d.key_ok || null, sign_need: d.sign_need || null, park_need: d.park_need ?? null,
+        shop_note: d.shop_note || null,
         slots: d.slots, slots_left: d.slots_left,
         created_at: d.created_at,
       })),
@@ -225,4 +235,56 @@ async function consent(req, res, user, body) {
     return res.status(502).json({ error: '동의를 저장하지 못했습니다' });
   }
   return res.status(200).json({ ok: true, consent: row });
+}
+
+/* ── 걸어 둔 조건 고치기 ── {what:'demand-edit', id, set:{...}}
+   고칠 수 있는 것은 '상세 보강' 화면의 칸뿐이다. 지역·예산·유형처럼 중개사가 이미 보고 제안을
+   맞춰 온 기준은 여기서 바꾸지 않는다 - 바꾸면 이미 온 제안이 엉뚱한 조건에 걸린 것이 된다.
+   누구의 조건인지는 토큰의 사용자로만 정한다. 남의 번호를 보내도 user_id 가 달라 고쳐지지 않는다. */
+const EDIT_HOME = ['memo', 'floor_bands', 'dir_want', 'age_band', 'household', 'elevator', 'loan_plan'];
+const EDIT_SHOP = ['memo', 'park_need', 'shop_note'];
+const EDIT_SHOP_ONLY = ['key_ok', 'sign_need'];           /* 상가에만 있는 칸 */
+const EDIT_LIST = ['floor_bands', 'dir_want'];
+const EDIT_MAX = { memo: 1000, shop_note: 500, key_ok: 30, sign_need: 30 };
+export async function demandEdit(res, user, body) {
+  const id = String(body.id || '');
+  if (!/^[0-9a-f-]{8,64}$/i.test(id)) return res.status(400).json({ error: '어느 조건인지 알 수 없습니다' });
+  const set = body.set && typeof body.set === 'object' ? body.set : {};
+  try {
+    /* 먼저 내 조건인지, 어떤 유형인지 본다 - 유형마다 고칠 수 있는 칸이 다르다 */
+    const q = new URLSearchParams({ select: 'id,kind', id: 'eq.' + id, user_id: 'eq.' + user.id, limit: '1' });
+    const r0 = await fetch(sbUrl('bk_demand', q.toString()), { headers: sbHeaders() });
+    if (!r0.ok) return res.status(502).json({ error: '조건을 찾지 못했습니다' });
+    const [row] = await r0.json();
+    if (!row) return res.status(404).json({ error: '내 조건이 아니거나 이미 없어진 조건입니다' });
+    const home = !['shop', 'office', 'storage'].includes(row.kind);
+    const 칸 = home ? EDIT_HOME : [...EDIT_SHOP, ...(row.kind === 'shop' ? EDIT_SHOP_ONLY : [])];
+    const patch = {};
+    for (const k of 칸) {
+      if (!(k in set)) continue;
+      const v = set[k];
+      if (EDIT_LIST.includes(k)) {
+        patch[k] = Array.isArray(v) ? v.filter(x => typeof x === 'string' && x.trim()).slice(0, 20).map(x => x.trim().slice(0, 40)) : [];
+      } else if (k === 'park_need') {
+        const n = parseInt(v, 10);
+        patch[k] = Number.isFinite(n) && n >= 0 && n < 1000 ? n : null;
+      } else {
+        const s = String(v ?? '').trim();
+        patch[k] = s ? s.slice(0, EDIT_MAX[k] || 20) : null;
+      }
+    }
+    if (!Object.keys(patch).length) return res.status(400).json({ error: '고칠 내용이 없습니다' });
+    const pq = new URLSearchParams({ id: 'eq.' + id, user_id: 'eq.' + user.id });
+    const r = await fetch(sbUrl('bk_demand', pq.toString()), {
+      method: 'PATCH', headers: { ...sbHeaders(), Prefer: 'return=minimal' }, body: JSON.stringify(patch),
+    });
+    if (!r.ok) {
+      console.error('[my:demand-edit]', r.status, (await r.text()).slice(0, 160));
+      return res.status(502).json({ error: '고치지 못했습니다 - 잠시 뒤 다시 해 주세요' });
+    }
+    return res.status(200).json({ ok: true, id, set: patch });
+  } catch (e) {
+    console.error('[my:demand-edit]', e && e.message);
+    return res.status(502).json({ error: 'DB에 닿지 못했습니다' });
+  }
 }

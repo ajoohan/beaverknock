@@ -222,17 +222,29 @@ ok(/\$\{partnerDoor\('onDark'\)\}/.test(js), '첫 화면 파트너 칸이 그 �
   ok(!/font-size:11px/.test(js), '화면을 그리는 코드에는 11px 글자가 없다');
 
   /* 파트너 상단바 - 휴대폰 한 줄에 다 들어가야 한다. 실제 함수를 돌린다. */
-  const 몸 = js.match(/function navPartner\(active\)\{[\s\S]*?\n<\/div>`;\}/);
+  const 몸 = js.match(/function navPartner\(active, 탭있음 = true\)\{[\s\S]*?\n<\/div>`;\}/);
   ok(!!몸, 'navPartner 를 찾았다');
   if(몸){
-    const 그려 = mo => new Function('isMo', 'S', 'ownerSide', 'logoLockup', 'agentBadge', 'esc', 'navAuth',
-      `${몸[0]}; return navPartner('d');`)(() => mo,
+    const 그려 = (mo, 탭 = true) => new Function('isMo', 'S', 'ownerSide', 'logoLockup', 'agentBadge', 'esc', 'navAuth', '탭',
+      `${몸[0]}; return navPartner('d', 탭);`)(() => mo,
       { user: { id: 'u' }, agent: { office: '하남미사부동산', status: 'approved' } },
-      () => false, () => '', () => '<span class="badge">인증됨</span>', s => s, () => '');
-    const 폰 = 그려(true), 큰 = 그려(false);
+      () => false, () => '', () => '<span class="badge">인증됨</span>', s => s, () => '', 탭);
+    const 폰 = 그려(true), 큰 = 그려(false), 탭없는폰 = 그려(true, false);
     ok(!폰.includes('하남미사부동산') && !폰.includes('>내 정보<') && 폰.includes('로그아웃'),
        '휴대폰 파트너 상단바는 사무소 이름·내 정보를 빼고 로그아웃을 남긴다 (탭바에 설정이 있다)');
     ok(큰.includes('하남미사부동산') && 큰.includes('>내 정보<'), '넓은 화면에서는 사무소 이름과 내 정보가 그대로다');
+    ok(탭없는폰.includes('>내 정보<') && !탭없는폰.includes('하남미사부동산'),
+       '탭바를 그리지 않는 화면은 휴대폰에서도 내 정보를 남긴다 - 설정으로 갈 길이 없어지지 않게 (2026-10-15 리뷰)');
+  }
+  /* 탭바를 그리지 않는 파트너 화면은 그렇다고 말해야 하고, 그리는 화면은 기본값으로 둔다 */
+  const 화면몸 = 이름 => { const i = js.indexOf(이름 + ' = '); const 끝 = js.indexOf('\nV[', i + 10); return i < 0 ? '' : js.slice(i, 끝 > 0 ? 끝 : undefined); };
+  for(const 이름 of ["V['#/partner/demand']", 'V["#/partner/listing/new"]']){
+    const 화면 = 화면몸(이름);
+    ok(!!화면 && !/tabbar\(/.test(화면) && /navPartner\('[a-z]+', false\)/.test(화면), `${이름} 은 탭바가 없어 navPartner(…, false) 로 그린다`);
+  }
+  for(const 이름 of ["V['#/partner/demands']", "V['#/partner/proposals']"]){
+    const 화면 = 화면몸(이름);
+    ok(/tabbar\('[a-z]+','p'\)/.test(화면) && /navPartner\('[a-z]+'\)/.test(화면), `${이름} 은 탭바가 있어 기본값으로 그린다`);
   }
 
   /* 배지 옆 설명이 두 줄이 되면 배지까지 세로로 늘었다 */
@@ -250,16 +262,33 @@ ok(/\$\{partnerDoor\('onDark'\)\}/.test(js), '첫 화면 파트너 칸이 그 �
   ok(/body\.mo \.opsTools \.row \.inp\{flex:1 1 100%/.test(css), '휴대폰에서는 찾기 칸이 한 줄을 다 쓴다');
 
   /* 대시보드 날짜 축 - 사이가 점뿐이면 막대가 어느 날인지 셀 수 없다 */
-  const 축 = js.match(/<div class="axis">\$\{days\.map\(\(x,i\)=>\{([\s\S]*?)\}\)\.join\(''\)\}<\/div>/);
+  const 축 = js.match(/<div class="axis">\$\{\(\(\)=>\{([\s\S]*?)\}\)\(\)\}<\/div>/);
   ok(!!축, '날짜 축 코드를 찾았다');
   if(축){
-    const 축그려 = (mo, days) => new Function('isMo', 'esc', 'days', `return days.map((x,i)=>{${축[1]}}).join('');`)(() => mo, s => s, days);
+    const 축그려 = (mo, days) => new Function('isMo', 'esc', 'days', 축[1])(() => mo, s => s, days);
     const 날 = Array.from({ length: 14 }, (_, i) => ({ mon: 10, lab: String(i + 2) }));
     const 큰축 = 축그려(false, 날), 폰축 = 축그려(true, 날);
     ok(!큰축.includes('·') && 큰축.includes('<span>10/2</span>') && 큰축.includes('<span>9</span>') && 큰축.endsWith('<span>오늘</span>'),
        '넓은 화면 축은 날마다 날짜를 달고 끝은 오늘이다');
     ok((폰축.match(/<span><\/span>/g) || []).length === 7 && 폰축.endsWith('<span>오늘</span>'), '휴대폰 축은 하루 걸러 단다');
+    ok(폰축.includes('<span>10/3</span>'), '휴대폰에서도 보이는 첫 날짜에 월이 붙는다 (2026-10-15 리뷰)');
+    /* 9/25 ~ 10/8 - 10월 1일(i=6)이 휴대폰에서는 건너뛰는 칸이다(끝에서 하루 걸러 보인다) */
+    const 걸친 = Array.from({ length: 14 }, (_, i) => { const d = new Date(2026, 8, 25 + i); return { mon: d.getMonth() + 1, lab: String(d.getDate()) }; });
+    const 폰걸친 = 축그려(true, 걸친), 큰걸친 = 축그려(false, 걸친);
+    ok(폰걸친.includes('<span>9/26</span>') && 폰걸친.includes('<span>10/2</span>') && !폰걸친.includes('10/1'),
+       '달이 바뀐 날이 건너뛰어져도 다음에 보이는 날짜에 새 월이 붙는다');
+    ok(큰걸친.includes('<span>9/25</span>') && 큰걸친.includes('<span>10/1</span>') && 큰걸친.includes('<span>26</span>'),
+       '넓은 화면은 첫날과 달이 바뀐 날에 월을 붙인다');
   }
+
+  /* 운영 회원의 고르기 자리 - 넓히되 옆 배지를 덮지 않는다(간격 8px), 그리고 누구의 칸인지 이름이 있다 */
+  const 고르기 = css.match(/\.pickhit\{[^}]*margin:([^;]+);/);
+  const 여백 = 고르기 ? 고르기[1].trim().split(/\s+/).map(v => parseFloat(v)) : [];
+  ok(여백.length === 4 && (44 - 18) / 2 + 여백[1] <= 8,
+     `고르기 자리가 오른쪽으로 8px(옆 배지와의 간격)보다 더 나가지 않는다 (margin: ${고르기 && 고르기[1]})`);
+  const 고르기칸 = [...js.matchAll(/<label class="pickhit"><input type="checkbox" data-act="ag-pick"[^>]*>/g)].map(m => m[0]);
+  ok(고르기칸.length === 2 && 고르기칸.every(s => s.includes(`aria-label="\${esc(r.name||'이름 없는 신청')} 신청 고르기"`)),
+     `신청 줄 고르기 칸 두 곳에 누구의 칸인지 이름이 있다 (${고르기칸.length}곳)`);
 }
 
 console.log(`${ran - fail} 통과 / ${fail} 실패`);

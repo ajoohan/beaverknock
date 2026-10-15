@@ -534,8 +534,9 @@ ok(!/h==='#\/partner'\) loadMyProps|h==='#\/partner'\) loadListings/.test(js), '
     ok(판단({ user: 계정, afterLogin: '#/ops/live' }) === false, '운영 화면으로 가는 길이면 관리자 계정으로 들어오도록 양식');
     ok(판단({ user: 계정, afterLogin: '#/partner/demands' }) === true, '다른 곳으로 가는 길이면 카드');
     ok(/case 'login-continue': 로그인뒤로가기\(\); return true;/.test(js), '계속하기 는 가려던 곳으로 잇는다');
-    ok(/data-act="logout" data-v="login"/.test(로그인) && /location\.replace\(location\.pathname \+ \(v === 'login' \? '#\/login' : ''\)\)/.test(js),
-       '"다른 계정으로 들어가기" 는 로그아웃하고 로그인 화면으로 돌아온다');
+    /* 돌아오는 방법(주소를 바꾸고 새로 읽기)은 아래 2026-10-15 묶음이 본다 - 전에는 여기서
+       같은 주소로 replace 하는 줄을 그대로 요구해, 고장 난 길을 검사가 지키고 있었다 */
+    ok(/data-act="logout" data-v="login"/.test(로그인), '"다른 계정으로 들어가기" 단추가 로그아웃(login)을 부른다');
   }
 }
 
@@ -640,12 +641,15 @@ ok((js.match(/'#\/ops\/live'/g) || []).length === 1 && /const OPS_HOME = '#\/ops
       idvToken: 'tok', idv: {}, saved: true,
     };
     const 판 = { S, 간곳: null, 알림: '', 바뀜: 0, 고침: null, 보낸번호: null };
-    const f = new Function('S', 'apiFetch', 'demandPayload', 'trapValue', 'FORM_T0', 'loadMine', 'render', 'toast', 'idvMustBeLive', 'go', 'console', 'regMiss', 'goFix', 'setTimeout',
+    if(o.user) S.user = o.user;
+    판.보낸초안 = S.draft;
+    const f = new Function('S', 'apiFetch', 'demandPayload', 'trapValue', 'FORM_T0', 'loadMine', 'render', 'toast', 'idvMustBeLive', 'go', 'console', 'regMiss', 'goFix', 'setTimeout', 'blankDraft', '세션있음',
       `${몸}; return saveDemand;`);
-    const saveDemand = f(S, async (u, opt) => { 판.보낸번호 = JSON.parse(opt.body).client_req; return { ok: 답.ok, status: 답.status, json: async () => 답.body }; },
+    const saveDemand = f(S, async (u, opt) => { 판.보낸번호 = JSON.parse(opt.body).client_req; if(o.사이) o.사이(S); return { ok: 답.ok, status: 답.status, json: async () => 답.body }; },
       () => ({ ...(o.내용 || { dep: 1 }) }), () => '', Date.now(), () => {}, () => {}, t => { 판.알림 = t; }, () => { 판.바뀜++; },
-      x => { 판.간곳 = x; }, { warn(){} }, () => o.빠짐 || null, m => { 판.고침 = m; }, fn => fn());
-    saveDemand(S.draft, 5, { condId: 'c1', demandId: 'd1' });
+      x => { 판.간곳 = x; }, { warn(){} }, dd => { 판.빠짐본것 = dd; return o.빠짐 || null; }, m => { 판.고침 = m; }, fn => fn(),
+      () => ({ kind: '', dongs: [] }), () => !!o.세션);
+    saveDemand(S.draft, 5, { condId: 'c1', demandId: 'd1', 임시손님: !!o.임시손님 });
     for(let i = 0; i < 5; i++) await new Promise(r => setTimeout(r, 0));
     return 판;
   };
@@ -681,7 +685,68 @@ ok((js.match(/'#\/ops\/live'/g) || []).length === 1 && /const OPS_HOME = '#\/ops
     for(let i = 0; i < 5; i++) await new Promise(r => setTimeout(r, 0));
     ok(간곳 === '#/contact' && S.conds.length === 0 && /네트워크/.test(알림), '통신이 끊겨 실패해도 거두고 연락처 화면으로 되돌린다');
   }
-  ok(/saveDemand\(d, slotN, \{condId: id, demandId: nd\.id\}\);/.test(js), '전달 버튼은 거둘 자리를 함께 넘긴다');
+  ok(/const 임시손님 = !S\.user;\s*saveDemand\(d, slotN, \{condId: id, demandId: nd\.id, 임시손님\}\);/.test(js),
+     '전달 버튼은 거둘 자리와 「이번에 만든 본인확인 손님인가」 를 함께 넘긴다');
+  /* 임시손님 은 S.user 를 만들기 **전에** 정해야 한다 - 뒤에서 재면 늘 '로그인한 손님' 이 된다 */
+  {
+    const 제출 = js.slice(js.indexOf("case 'submit': {"), js.indexOf("case 'detail-save'"));
+    ok(제출.indexOf('const 임시손님 = !S.user;') > 0 && 제출.indexOf('const 임시손님 = !S.user;') < 제출.indexOf("if(!S.user) S.user = {method:'verify'"),
+       '임시손님 은 본인확인 손님 자리를 만들기 전에 잰다');
+  }
+
+  /* ── 2026-10-15 리뷰: 늦게 온 실패가 새로 적던 조건 화면을 빼앗았다 ── */
+  {
+    const 새조건 = await 돌리기({ ok: false, status: 502, body: { error: '막힘' } }, true,
+      { 사이: S => { S.draft = { kind: 'shop', name: '새 조건' }; } });
+    ok(새조건.간곳 === null && 새조건.S.draft.kind === 'shop', '다른 조건을 적는 중이면 화면을 옮기지 않고 그 초안도 건드리지 않는다');
+    ok(새조건.S.conds.map(c => c.id).join() === 'old' && /앞서 보낸 조건은 전달되지 않았습니다/.test(새조건.알림),
+       `보낸 조건은 거두고 전달되지 않았다고만 알린다 - "${새조건.알림}"`);
+    const 빈초안 = await 돌리기({ ok: false, status: 502, body: { error: '막힘' } }, true,
+      { 사이: S => { S.draft = { kind: '', dongs: [] }; } });
+    ok(빈초안.간곳 === '#/contact' && 빈초안.S.draft === 빈초안.보낸초안, '새 초안이 아직 비어 있으면 보낸 조건을 되살려 연락처 화면으로 데려간다');
+    const 값없음 = await 돌리기({ ok: false, status: 400, body: { error: '지역을 하나 이상 골라주세요' } }, true,
+      { 빠짐: { k: 'dongs', m: '동네를 하나 이상 선택해 주세요' }, 사이: S => { S.draft = { kind: 'office' }; } });
+    ok(값없음.빠짐본것 === 값없음.보낸초안, '빠진 칸은 보낸 조건에서 찾는다 - 지금 적는 새 초안이 아니다');
+    ok(값없음.간곳 === null && 값없음.고침 === null, '데려가지 않았으면 그 화면에서 칸을 찾아 깜빡이지 않는다');
+    const 제자리 = await 돌리기({ ok: false, status: 400, body: {} }, true, { 빠짐: { k: 'dongs', m: '동네' } });
+    ok(제자리.간곳 === '#/register' && 제자리.고침 && 제자리.고침.k === 'dongs', '같은 초안이면 전처럼 그 칸이 있는 화면으로 데려가 칸을 짚는다');
+  }
+
+  /* ── 2026-10-15 리뷰: 거절돼도 '본인확인 손님' 이 남아 로그인한 사람처럼 보였다 ── */
+  {
+    const 임시 = await 돌리기({ ok: false, status: 502, body: {} }, true, { 임시손님: true, user: { method: 'verify', name: '한' } });
+    ok(임시.S.user === null, '이번 전달로 만든 본인확인 손님은 거절되면 거둔다');
+    const 원래손님 = await 돌리기({ ok: false, status: 502, body: {} }, true, { 임시손님: false, user: { method: 'verify', name: '한' } });
+    ok(원래손님.S.user && 원래손님.S.user.name === '한', '전에 이미 있던 손님 표시는 건드리지 않는다');
+    const 계정 = await 돌리기({ ok: false, status: 502, body: {} }, true, { 임시손님: true, 세션: true, user: { method: 'verify', name: '한' } });
+    ok(계정.S.user && 계정.S.user.name === '한', '그 사이 로그인해 세션이 생겼으면 그대로 둔다');
+  }
+
+  /* ── 변환이 그 자리에서 실패하면 되돌림을 미룬다 - submit 이 뒤이어 완료 화면으로 넘어가 덮었다 ── */
+  {
+    const S = { draft: { kind: 'apt' }, conds: [{ id: 'c1' }], demands: [{ id: 'd1' }], props: [], matched: 1, inboxCond: 'c1' };
+    let 간곳 = null; const 예약 = [];
+    new Function('S', 'apiFetch', 'demandPayload', 'trapValue', 'FORM_T0', 'loadMine', 'render', 'toast', 'idvMustBeLive', 'go', 'console', 'regMiss', 'goFix', 'setTimeout', 'blankDraft', '세션있음',
+      `${몸}; return saveDemand;`)(S, async () => ({ ok: true }), () => { throw new Error('깨짐'); }, () => '', 0, () => {}, () => {},
+      () => {}, () => {}, x => { 간곳 = x; }, { warn(){} }, () => null, () => {}, fn => 예약.push(fn), () => ({}), () => false)(S.draft, 5, { condId: 'c1', demandId: 'd1' });
+    ok(간곳 === null && 예약.length === 1, '그 자리에서는 아무 데도 보내지 않고 되돌림을 예약한다');
+    간곳 = '#/done';                     /* submit 이 완료 화면으로 넘어갔다 */
+    예약[0]();
+    ok(간곳 === '#/contact' && S.conds.length === 0, '예약된 되돌림이 완료 화면 뒤에 돌아 연락처 화면으로 데려간다');
+  }
+
+  /* ── 2026-10-15 리뷰: '다른 계정으로 들어가기' 가 제자리 해시 이동이라 새로 읽히지 않았다 ── */
+  {
+    const 나가기 = js.slice(js.indexOf("case 'logout': {"), js.indexOf("/* ── 본인확인 ── */"));
+    ok(/if\(v === 'login'\)\{ history\.replaceState\(null, '', location\.pathname \+ '#\/login'\); location\.reload\(\); \}/.test(나가기),
+       '다른 계정으로 들어가기는 주소를 바꾼 뒤 직접 다시 읽는다');
+    ok(!/location\.replace\(location\.pathname \+ \(v === 'login'/.test(나가기), '같은 주소로 replace 하던 길은 없다');
+    /* 실제 동작: 같은 문서 안에서 이 두 줄이 새로 읽기를 부르는가 */
+    const 기록 = [];
+    const 위치 = { pathname: '/', reload: () => 기록.push('reload'), replace: u => 기록.push('replace ' + u) };
+    new Function('v', 'location', 'history', 나가기.match(/if\(v === 'login'\)[^\n]*\n\s*else[^\n]*/)[0])('login', 위치, { replaceState: (a, b, u) => 기록.push('주소 ' + u) });
+    ok(기록.join() === '주소 /#/login,reload', `로그인 화면 주소로 바꾸고 새로 읽는다 (${기록.join()})`);
+  }
 
   /* ── 같은 전달을 두 번 받지 않게 - 번호를 붙이고, 다시 누르면 같은 번호로 ── */
   {

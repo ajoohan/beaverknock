@@ -390,7 +390,9 @@ body.mo .opsTools .row .inp{flex:1 1 100%;max-width:none!important}
 /* 고르기 칸은 17px 이라 손가락으로 맞히기 어렵다 - 둘레를 44px 로 넓히되 바깥 여백을
    그만큼 되돌려 줄 배치는 그대로 둔다 */
 .pickhit{display:inline-flex;align-items:center;justify-content:center;flex:none;
-  min-width:44px;min-height:44px;margin:-13px;cursor:pointer}
+  min-width:44px;min-height:44px;margin:-13px -5px -13px -13px;cursor:pointer}
+/* 오른쪽은 8px 만 넘친다 - 옆 배지와의 간격(8px)까지만. 13px 를 다 넘기면 배지 왼쪽 끝을 누를 때
+   그 신청이 골라졌다(2026-10-15 리뷰) */
 /* 운영 화면도 휴대폰으로 연다 - 할 일 바로가기 알약과 크기 단위 토글도 손가락 자리를 준다 */
 body.mo .needBar .go{min-height:44px;padding:0 14px}
 body.mo .seg button{min-height:44px}
@@ -2584,7 +2586,9 @@ function agentBadge(){
   return b ? `<span class="badge ${b[0]}">${b[1]}</span>` : '';
 }
 
-function navPartner(active){
+/* 탭있음: 이 화면이 휴대폰에서 아래 탭바를 그리는가. 그리지 않는 화면(수요 상세·매물 등록)은
+   휴대폰에서도 '내 정보' 를 남긴다 - 빼면 설정으로 갈 길이 없다(2026-10-15 리뷰). */
+function navPartner(active, 탭있음 = true){
   const own = ownerSide();
   return `
 <div class="nav solid pad">
@@ -2602,7 +2606,7 @@ function navPartner(active){
          탭바의 '설정' 이 같은 곳으로 가므로 뺀다. -->
     ${S.agent && S.agent.office && !isMo() ? `<span>${esc(S.agent.office)}</span>` : ''}
     ${agentBadge()}
-    ${S.user?`${isMo() ? '' : `<a class="tapx" data-go="#/partner/settings" style="font-size:12.5px;color:var(--n500);cursor:pointer">내 정보</a>`}
+    ${S.user?`${isMo() && 탭있음 ? '' : `<a class="tapx" data-go="#/partner/settings" style="font-size:12.5px;color:var(--n500);cursor:pointer">내 정보</a>`}
       <a class="tapx" data-act="logout" style="font-size:12.5px;color:var(--n500);cursor:pointer">로그아웃</a>`
       : navAuth('partner')}
   </div>
@@ -4838,6 +4842,7 @@ function agentCards(rows){
       <div style="background:var(--white);padding:14px 16px;${AG.pick[r.id]?'box-shadow:inset 3px 0 0 var(--ind)':''}">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
           <label class="pickhit"><input type="checkbox" data-act="ag-pick" data-v="${esc(r.id)}" ${AG.pick[r.id]?'checked':''}
+            aria-label="${esc(r.name||'이름 없는 신청')} 신청 고르기"
             style="width:17px;height:17px;accent-color:var(--ind);cursor:pointer;flex:none"></label>
           <span class="badge ${st[0]}">${st[1]}</span>
           <span class="badge ${r.role==='agent'?'b-ok':r.role==='owner'?'b-ind':'b-warn'}">${AG_ROLE[r.role]||r.role}</span>
@@ -5042,6 +5047,7 @@ function agentPanel(){
             <tr style="border-top:1px solid var(--n100);${AG.pick[r.id]?'background:var(--ind50)':''}">
               <td style="padding:12px 0 12px 14px">
                 <label class="pickhit"><input type="checkbox" data-act="ag-pick" data-v="${esc(r.id)}" ${AG.pick[r.id]?'checked':''}
+            aria-label="${esc(r.name||'이름 없는 신청')} 신청 고르기"
                   style="width:17px;height:17px;accent-color:var(--ind);cursor:pointer"></label></td>
               <td style="padding:12px 14px;color:var(--n500)">${esc(String(r.created_at||'').replace('T',' ').slice(5,16))}</td>
               <td style="padding:12px 14px"><span class="badge ${(AG_STATUS[r.status||'new']||AG_STATUS.new)[0]}">${(AG_STATUS[r.status||'new']||AG_STATUS.new)[1]}</span></td>
@@ -5822,7 +5828,7 @@ V['#/partner/demands'] = () => {
 V['#/partner/demand'] = (id) => { const d=S.demands.find(x=>x.id===id); if(!d) return V['#/partner/demands']();
   return `
 <div class="scr fade" style="background:var(--n50)">
-  ${navPartner('d')}
+  ${navPartner('d', false)}
   <div class="pad" style="flex:1;padding-top:${isMo()?16:26}px;padding-bottom:24px;max-width:${isMo()?'none':'860px'};margin:0 auto;width:100%;display:flex;flex-direction:column;gap:14px">
     <div style="display:flex;justify-content:space-between;align-items:center">
       <a class="back" data-go="#/partner/demands">← 수요 목록</a>
@@ -6722,7 +6728,7 @@ V["#/partner/listing/new"] = () => {
   const req = listingOk(f);
   return `
 <div class="scr fade" style="background:var(--n50)">
-  ${navPartner('l')}
+  ${navPartner('l', false)}
   <div class="pad" style="flex:1;padding-top:${isMo()?18:28}px;padding-bottom:24px;max-width:${isMo()?'none':'780px'};margin:0 auto;width:100%;display:flex;flex-direction:column;gap:16px">
     <div style="display:flex;justify-content:space-between;align-items:center">
       <a class="back" data-go="#/partner/listings">← 내 물건</a></div>
@@ -7301,6 +7307,14 @@ function saveDemand(d, slotN, 자리){
      화면은 먼저 '접수되었습니다' 로 넘어가 있으므로 그 자리에 두면 손님은 전달된 줄 안다 -
      조건은 메모리에만 있다가 '내 조건' 을 다시 열면 사라진다(2026-10-13).
      먼저 그려 둔 이번 조건·수요·즉시 제안을 거두고, 적은 것은 그대로 둔 채 연락처 화면으로. */
+  /* 실패는 늦게 올 수 있다(통신이 느리면 수십 초). 그 사이 손님이 '+ 조건 등록' 으로 새 조건을
+     적기 시작했으면 S.draft 는 이미 다른 것이다(2026-10-15 리뷰) - 그 화면을 빼앗지 않는다.
+     새 초안이 아직 비어 있으면 보낸 조건을 되살려 그대로 데려간다. */
+  const 그자리 = () => {
+    if(S.draft === d) return true;
+    if(JSON.stringify(S.draft) === JSON.stringify(blankDraft())){ S.draft = d; return true; }
+    return false;
+  };
   const 되돌리기 = (말, 갈곳 = '#/contact') => {
     if(자리){
       S.conds   = S.conds.filter(c => c.id !== 자리.condId);
@@ -7308,10 +7322,18 @@ function saveDemand(d, slotN, 자리){
       S.props   = S.props.filter(p => p.cond !== 자리.condId);
       if(S.inboxCond === 자리.condId) S.inboxCond = null;
       S.matched = 0;
+      /* 보내면서 만들어 둔 '본인확인 손님' 자리도 거둔다 - 계정이 아니라 이번 전달의 표시였다 */
+      if(자리.임시손님 && S.user && S.user.method === 'verify' && !세션있음()) S.user = null;
     }
     S.saved = false;
+    if(!그자리()){
+      render();
+      toast('앞서 보낸 조건은 전달되지 않았습니다 - 지금 적는 조건을 마치신 뒤 다시 등록해 주세요');
+      return false;
+    }
     go(갈곳);
     toast(말);
+    return true;
   };
   let body;
   try {
@@ -7332,7 +7354,10 @@ function saveDemand(d, slotN, 자리){
       website: trapValue(),              /* 함정칸 - 사람은 비워 둔다 */
       elapsed: Date.now() - FORM_T0,     /* 너무 빠른 제출은 서버가 막는다 */
     });
-  } catch(e){ console.warn('조건 변환 실패', e); return 되돌리기('조건을 보내지 못했습니다 - 적은 조건은 그대로 있으니 다시 눌러 주세요'); }
+  } catch(e){ console.warn('조건 변환 실패', e);
+    /* 부른 쪽(submit)이 이 뒤에 완료 화면으로 넘어간다 - 지금 되돌리면 그 이동에 덮인다. 다 끝난 뒤에 되돌린다 */
+    setTimeout(() => 되돌리기('조건을 보내지 못했습니다 - 적은 조건은 그대로 있으니 다시 눌러 주세요'), 0);
+    return; }
   apiFetch('/api/demand', { method:'POST', body }).then(r=>{
     if(r.ok){ S.saved = true; d.reqId = null; d.reqSig = null; S.mineAt = 0; loadMine(true); return; }
     return r.json().catch(()=>({})).then(j=>{
@@ -7341,18 +7366,19 @@ function saveDemand(d, slotN, 자리){
          실패한다 - 상태를 되돌려 다시 받게 한다. 본인확인이 꺼진 줄 알던 화면이면 버튼
          화면으로 바꾼다(파트너 가입과 같은 처리). */
       if(j.need_idv){
-        const 받았었다 = !!(S.draft && S.draft.verified);
+        const 받았었다 = !!d.verified;
         S.idvToken=null; S.idv=null;
-        Object.assign(S.draft, {verified:false, vstep:'idle', vat:''});
+        Object.assign(d, {verified:false, vstep:'idle', vat:''});
         idvMustBeLive();
         return 되돌리기(받았었다 ? '본인확인이 만료되어 전달되지 않았습니다 - 다시 확인한 뒤 전달해 주세요'
                                  : '본인확인을 받아야 전달됩니다 - 확인한 뒤 다시 눌러 주세요');
       }
       /* 값이 모자라 거절됐으면(400) 연락처 화면에서는 고칠 수 없다 - 그 칸이 있는 화면으로 */
-      const 빠짐 = r.status === 400 ? regMiss(S.draft) : null;
+      const 빠짐 = r.status === 400 ? regMiss(d) : null;
       if(빠짐){
-        되돌리기(`전달되지 않았습니다 - ${빠짐.m}`, '#/register');
-        return setTimeout(() => goFix(빠짐), 350);
+        /* 다른 조건을 적는 중이라 데려가지 않았으면 그 화면에서 칸을 찾지 않는다 */
+        if(되돌리기(`전달되지 않았습니다 - ${빠짐.m}`, '#/register')) setTimeout(() => goFix(빠짐), 350);
+        return;
       }
       되돌리기(j.error ? `전달되지 않았습니다 - ${j.error}`
                        : '서버에 저장하지 못했습니다 - 적은 조건은 그대로 있으니 다시 눌러 주세요');
@@ -8286,11 +8312,15 @@ function dashFlow(days){
     </div>
     <!-- 처음과 끝만 숫자이고 사이는 점이라 '어느 날 막대인지' 를 셀 수가 없었다(2026-10-15).
          날마다 날짜를 단다 - 휴대폰은 하루 걸러, 끝은 '오늘', 처음과 달이 바뀌는 날은 월도 함께. -->
-    <div class="axis">${days.map((x,i)=>{
+    <!-- 월은 '보이는 첫 날짜' 와 '달이 바뀐 뒤 처음 보이는 날짜' 에 붙인다. 처음·1일에만 붙이면
+         휴대폰에서 그 칸이 건너뛰어질 때 월이 아예 안 보였다(2026-10-15 리뷰). -->
+    <div class="axis">${(()=>{ let 앞달 = null; return days.map((x,i)=>{
       const 끝 = i === days.length-1;
       const 건너뜀 = isMo() && !끝 && (days.length-1-i) % 2;
-      const 글 = 끝 ? '오늘' : (i===0 || x.lab==='1') ? `${x.mon}/${x.lab}` : x.lab;
-      return `<span>${건너뜀 ? '' : esc(글)}</span>`; }).join('')}</div>
+      if(건너뜀) return `<span></span>`;
+      const 글 = 끝 ? '오늘' : x.mon !== 앞달 ? `${x.mon}/${x.lab}` : x.lab;
+      앞달 = x.mon;
+      return `<span>${esc(글)}</span>`; }).join(''); })()}</div>
     ${OPS.rows && !OPS.rows.length ? `<p style="margin:12px 0 0;font-size:12.5px;color:var(--n500)">아직 접수된 조건이 없습니다.</p>` : ''}
   </div>`;
 }
@@ -10546,8 +10576,11 @@ function handle(a,v,el){
          '로그아웃했는데 앞사람 화면이 남아 있다' 는 일이 원천적으로 없어진다.
          인사는 다시 읽힌 뒤에 한다 - 이 창은 곧 사라진다. */
       try{ sessionStorage.setItem('bk.bye','1'); }catch(e){}
-      /* '다른 계정으로 들어가기' 는 로그인 화면으로 돌아온다 */
-      location.replace(location.pathname + (v === 'login' ? '#/login' : ''));
+      /* '다른 계정으로 들어가기' 는 로그인 화면으로 돌아온다. 이 단추는 로그인 화면에 있으므로
+         같은 주소로 replace 하면 해시만 같은 '제자리 이동' 이 되어 새로 읽히지 않았다(2026-10-15 리뷰) -
+         주소를 바꿔 둔 뒤 직접 다시 읽는다. */
+      if(v === 'login'){ history.replaceState(null, '', location.pathname + '#/login'); location.reload(); }
+      else location.replace(location.pathname);
       return true; }
 
     /* ── 본인확인 ── */
@@ -10594,7 +10627,9 @@ function handle(a,v,el){
                 ? [d.shopFloorFree, d.facFree].filter(Boolean)
                 : (d.musts&&d.musts.length?d.musts:[])).slice(0,3)};
       S.demands.unshift(nd);
-      saveDemand(d, slotN, {condId: id, demandId: nd.id});   /* 실제 저장 - 화면은 기다리지 않는다(거절되면 되돌린다) */
+      /* 로그인 안 한 손님은 이번 전달로 '본인확인 손님' 이 된다. 거절되면 그 자리도 거둔다 */
+      const 임시손님 = !S.user;
+      saveDemand(d, slotN, {condId: id, demandId: nd.id, 임시손님});   /* 실제 저장 - 화면은 기다리지 않는다(거절되면 되돌린다) */
 
       /* ── 즉시 매칭 ── 이미 등록된 물건 중 조건에 맞는 것을 바로 제안으로 전환 */
       const fit = listingsFor(nd).slice(0, slotN);

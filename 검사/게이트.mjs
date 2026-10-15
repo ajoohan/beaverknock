@@ -632,7 +632,11 @@ ok((js.match(/'#\/ops\/live'/g) || []).length === 1 && /const OPS_HOME = '#\/ops
    saveDemand 를 실제로 돌린다. */
 {
   const 지문 = js.slice(js.indexOf('const 짧은서명 = '), js.indexOf('\n', js.indexOf('const 짧은서명 = ')));
-  const 몸 = 지문 + '\n' + 함수('function saveDemand(d, slotN, 자리){');
+  /* 맡아 두기 도우미(목록·탭 저장소·띠 화면)도 실제 소스에서 그대로 꺼낸다 */
+  const 도우미 = js.slice(js.indexOf('const HELD_KEY = '), js.indexOf('function 보류띠(){'))
+    + js.slice(js.indexOf('const 띠화면 = '), js.indexOf('\n', js.indexOf('const 띠화면 = ')));
+  const 가짜저장소 = () => { const m = new Map(); return { m, getItem: k => m.has(k) ? m.get(k) : null, setItem: (k, v) => m.set(k, String(v)), removeItem: k => m.delete(k) }; };
+  const 몸 = 도우미 + '\n' + 지문 + '\n' + 함수('function saveDemand(d, slotN, 자리){');
   const 돌리기 = async (답, 확인했었다 = true, o = {}) => {
     const S = {
       draft: { kind: 'apt', verified: 확인했었다, vstep: 'done', vat: '2026.10.13', name: '한', ...(o.draft || {}) },
@@ -643,12 +647,14 @@ ok((js.match(/'#\/ops\/live'/g) || []).length === 1 && /const OPS_HOME = '#\/ops
     const 판 = { S, 간곳: null, 알림: '', 바뀜: 0, 고침: null, 보낸번호: null };
     if(o.user) S.user = o.user;
     판.보낸초안 = S.draft;
-    const f = new Function('S', 'apiFetch', 'demandPayload', 'trapValue', 'FORM_T0', 'loadMine', 'render', 'toast', 'idvMustBeLive', 'go', 'console', 'regMiss', 'goFix', 'setTimeout', 'blankDraft', '세션있음',
+    판.저장소 = o.저장소 || 가짜저장소();
+    const f = new Function('S', 'apiFetch', 'demandPayload', 'trapValue', 'FORM_T0', 'loadMine', 'render', 'toast', 'idvMustBeLive', 'go', 'console', 'regMiss', 'goFix', 'setTimeout', 'blankDraft', '세션있음', 'sessionStorage', 'location',
       `${몸}; return saveDemand;`);
     const saveDemand = f(S, async (u, opt) => { 판.보낸번호 = JSON.parse(opt.body).client_req; if(o.사이) o.사이(S); return { ok: 답.ok, status: 답.status, json: async () => 답.body }; },
       () => ({ ...(o.내용 || { dep: 1 }) }), () => '', Date.now(), () => {}, () => {}, t => { 판.알림 = t; }, () => { 판.바뀜++; },
       x => { 판.간곳 = x; }, { warn(){} }, dd => { 판.빠짐본것 = dd; return o.빠짐 || null; }, m => { 판.고침 = m; }, fn => fn(),
-      () => ({ kind: '', dongs: [] }), () => !!o.세션);
+      () => ({ kind: '', dongs: [] }), () => !!o.세션, 판.저장소, { hash: o.hash || '#/register' });
+    if(o.앞서맡김) S.보류목록 = [...o.앞서맡김];
     saveDemand(S.draft, 5, { condId: 'c1', demandId: 'd1' });
     for(let i = 0; i < 5; i++) await new Promise(r => setTimeout(r, 0));
     return 판;
@@ -704,10 +710,10 @@ ok((js.match(/'#\/ops\/live'/g) || []).length === 1 && /const OPS_HOME = '#\/ops
     ok(새조건.간곳 === null && 새조건.S.draft.kind === 'shop', '다른 조건을 적는 중이면 화면을 옮기지 않고 그 초안도 건드리지 않는다');
     ok(새조건.S.conds.map(c => c.id).join() === 'old' && /앞서 보낸 조건은 전달되지 않았습니다/.test(새조건.알림),
        `보낸 조건은 거두고 전달되지 않았다고 알린다 - "${새조건.알림}"`);
-    ok(새조건.S.보류초안 === 새조건.보낸초안, '보낸 조건은 버리지 않고 맡아 둔다 - 띠에서 이어 보낼 수 있다');
+    ok(새조건.S.보류목록.length === 1 && 새조건.S.보류목록[0] === 새조건.보낸초안, '보낸 조건은 버리지 않고 맡아 둔다 - 띠에서 이어 보낼 수 있다');
     const 빈초안 = await 돌리기({ ok: false, status: 502, body: { error: '막힘' } }, true,
       { 사이: S => { S.draft = { kind: '', dongs: [], mapLevel: 'hanam', mapView: 'list' }; } });
-    ok(빈초안.간곳 === '#/contact' && 빈초안.S.draft === 빈초안.보낸초안 && !빈초안.S.보류초안,
+    ok(빈초안.간곳 === '#/contact' && 빈초안.S.draft === 빈초안.보낸초안 && !(빈초안.S.보류목록 || []).length,
        '새 초안에 유형이 아직 없으면(보기 상태만 바뀌었어도) 보낸 조건을 되살려 연락처 화면으로 데려간다');
     const 값없음 = await 돌리기({ ok: false, status: 400, body: { error: '지역을 하나 이상 골라주세요' } }, true,
       { 빠짐: { k: 'dongs', m: '동네를 하나 이상 선택해 주세요' }, 사이: S => { S.draft = { kind: 'office' }; } });
@@ -726,29 +732,80 @@ ok((js.match(/'#\/ops\/live'/g) || []).length === 1 && /const OPS_HOME = '#\/ops
       { 내용: { dep: 1, idv_token: 'tok' }, 사이: S => { S.draft = { kind: 'shop', verified: true }; S.idvToken = '새표'; S.idv = { name: '한' }; } });
     ok(새표.S.idvToken === '새표' && 새표.S.idv && 새표.S.draft.verified === true,
        '그 사이 다시 받은 표는 남긴다 - 새 조건이 또 거절되지 않게');
-    ok(새표.보낸초안.verified === false && 새표.S.보류초안 === 새표.보낸초안, '만료된 것은 보낸 조건의 확인 표시뿐이다');
+    ok(새표.보낸초안.verified === false && 새표.S.보류목록[0] === 새표.보낸초안, '만료된 것은 보낸 조건의 확인 표시뿐이다');
   }
 
   /* ── 맡아 둔 조건의 띠와 '이어서 보내기' ── */
   {
-    const 띠몸 = 함수('function 보류띠(){');
-    const 띠 = S => new Function('S', 'esc', 'draftTitle', `${띠몸}; return 보류띠();`)(S, s => s, d => d.제목);
-    ok(띠({}) === '', '맡아 둔 조건이 없으면 띠를 그리지 않는다');
-    const 그림 = 띠({ 보류초안: { 제목: '미사동 · 월세' } });
+    const 띠몸 = 도우미 + '\n' + 함수('function 보류띠(){');
+    const 띠 = (S, 저장소 = 가짜저장소()) => new Function('S', 'esc', 'draftTitle', 'sessionStorage', `${띠몸}; return 보류띠();`)(S, s => s, d => d.제목, 저장소);
+    ok(띠({ 보류목록: [] }) === '', '맡아 둔 조건이 없으면 띠를 그리지 않는다');
+    const 그림 = 띠({ 보류목록: [{ 제목: '미사동 · 월세' }] });
     ok(/전달되지 않은 조건이 있습니다/.test(그림) && 그림.includes('미사동 · 월세') && /data-act="draft-swap"/.test(그림),
        '띠는 무엇이 남았는지 말하고 이어 보낼 단추를 낸다');
+    const 둘 = 띠({ 보류목록: [{ 제목: '미사동 · 월세' }, { 제목: '덕풍동 · 상가' }] });
+    ok(/전달되지 않은 조건이 2건 있습니다/.test(둘) && 둘.includes('미사동 · 월세') && 둘.includes('외 1건') && /첫 조건부터 이어서 보내기/.test(둘),
+       '여럿이면 몇 건인지와 첫 조건을 말한다');
     for(const v of ["V['#/kind'] = ", "V['#/register'] = ", "V['#/contact'] = ", "V['#/my'] = "]){
       const i = js.indexOf(v), 끝 = js.indexOf('\nV[', i + 5);
       ok(i > 0 && js.slice(i, 끝).includes('${보류띠()}'), `${v.slice(2, -4)} 화면에 띠가 있다`);
     }
-    const 바꾸기 = js.slice(js.indexOf("case 'draft-swap': {"), js.indexOf('return true; }', js.indexOf("case 'draft-swap': {")) + 'return true; }'.length);
-    const 돌려 = S => { const 판 = { 간곳: null }; new Function('S', 'go', 'toast', 'a', `switch(a){ ${바꾸기} }`)(S, x => { 판.간곳 = x; }, () => {}, 'draft-swap'); return 판; };
+    /* 안에도 'return true; }' 가 있다 - 마지막 알림 뒤의 것까지 자른다 */
+    const 바꾸기시작 = js.indexOf("case 'draft-swap': {");
+    const 바꾸기 = js.slice(바꾸기시작, js.indexOf('return true; }', js.indexOf("toast('앞서 적으신 조건입니다", 바꾸기시작)) + 'return true; }'.length);
+    const 돌려 = (S, 저장소 = 가짜저장소()) => { const 판 = { 간곳: null, 저장소 };
+      new Function('S', 'go', 'toast', 'a', 'sessionStorage', `${도우미}\nswitch(a){ ${바꾸기} }`)(S, x => { 판.간곳 = x; }, () => {}, 'draft-swap', 저장소); return 판; };
     const 앞 = { kind: 'home', 이름: '앞' }, 지금 = { kind: 'shop', 이름: '지금' };
-    const S1 = { 보류초안: 앞, draft: 지금 }; const 판1 = 돌려(S1);
-    ok(S1.draft === 앞 && S1.보류초안 === 지금 && 판1.간곳 === '#/contact', '바꾸면 앞 조건으로 연락처 화면에 가고, 지금 적던 것은 대신 맡는다');
-    const S2 = { 보류초안: 앞, draft: { kind: '' } }; 돌려(S2);
-    ok(S2.draft === 앞 && S2.보류초안 === null, '지금 초안이 비어 있으면 맡지 않는다 - 띠가 사라진다');
+    const S1 = { 보류목록: [앞], draft: 지금 }; const 판1 = 돌려(S1);
+    ok(S1.draft === 앞 && S1.보류목록.length === 1 && S1.보류목록[0] === 지금 && 판1.간곳 === '#/contact',
+       '바꾸면 앞 조건으로 연락처 화면에 가고, 지금 적던 것은 대신 맡는다');
+    ok(JSON.parse(판1.저장소.getItem('bk.held'))[0].이름 === '지금', '바꾼 뒤의 목록을 탭 저장소에도 적는다');
+    const S2 = { 보류목록: [앞], draft: { kind: '' } }; const 판2 = 돌려(S2);
+    ok(S2.draft === 앞 && S2.보류목록.length === 0 && 판2.저장소.getItem('bk.held') === null, '지금 초안이 비어 있으면 맡지 않는다 - 띠가 사라진다');
+    /* 2026-10-15 리뷰: 이미 전달된 초안을 맡으면 띠가 그것을 내밀고, 다시 보내면 두 번 저장된다 */
+    const 보낸것 = { kind: 'shop', 이름: '보낸 것', 전달됨: true };
+    const S3 = { 보류목록: [앞], draft: 보낸것 }; 돌려(S3);
+    ok(S3.draft === 앞 && S3.보류목록.length === 0, '이미 전달된 초안은 맡지 않는다 - 같은 조건이 두 번 가지 않게');
+    const 뒤 = { kind: 'office', 이름: '뒤' };
+    const S4 = { 보류목록: [앞, 뒤], draft: 지금 }; 돌려(S4);
+    ok(S4.draft === 앞 && S4.보류목록.map(x => x.이름).join() === '뒤,지금', '여럿이면 첫 것부터 꺼내고 지금 것은 맨 뒤에 맡는다');
   }
+
+  /* ── 2026-10-15 리뷰: 맡아 두는 자리가 하나라 두 번째 실패가 첫 조건을 덮었다 ── */
+  {
+    const 앞서 = { kind: 'home', 이름: '앞서 맡긴 것' };
+    const 둘째 = await 돌리기({ ok: false, status: 502, body: {} }, true,
+      { 앞서맡김: [앞서], 사이: S => { S.draft = { kind: 'shop', name: '셋째' }; } });
+    ok(둘째.S.보류목록.length === 2 && 둘째.S.보류목록[0] === 앞서 && 둘째.S.보류목록[1] === 둘째.보낸초안,
+       '두 번째 실패도 목록 뒤에 붙는다 - 앞서 맡긴 것을 덮지 않는다');
+    ok(JSON.parse(둘째.저장소.getItem('bk.held')).length === 2, '맡긴 목록은 탭 저장소에 적힌다 - 페이지를 떠났다 와도 남는다');
+    /* 저장소에서 되살린다(휴대폰 본인확인처럼 페이지째 돌아온 뒤) */
+    const 저장소 = 가짜저장소(); 저장소.setItem('bk.held', JSON.stringify([{ kind: 'home', 이름: '되살림' }]));
+    const 되살림 = new Function('S', 'sessionStorage', `${도우미}; return 맡긴목록();`)({}, 저장소);
+    ok(되살림.length === 1 && 되살림[0].이름 === '되살림', '새로 읽힌 페이지는 탭 저장소에서 맡긴 목록을 되살린다');
+    const 깨짐 = 가짜저장소(); 깨짐.setItem('bk.held', '{깨진');
+    ok(new Function('S', 'sessionStorage', `${도우미}; return 맡긴목록();`)({}, 깨짐).length === 0, '저장소 값이 깨져 있으면 빈 목록으로 시작한다');
+    const 나가기 = js.slice(js.indexOf("case 'logout': {"), js.indexOf("/* ── 본인확인 ── */"));
+    ok(/S\.보류목록 = \[\]; try\{ sessionStorage\.removeItem\(HELD_KEY\); \}catch\(e\)\{\}/.test(나가기),
+       '로그아웃하면 맡긴 목록도 지운다 - 이름·연락처가 들어 있다');
+  }
+
+  /* ── 2026-10-15 리뷰: 전달된 초안에 표시가 없어 '아직 안 보낸 것' 과 구별되지 않았다 ── */
+  {
+    const 성공 = await 돌리기({ ok: true, status: 200, body: {} });
+    ok(성공.보낸초안.전달됨 === true, '전달에 성공하면 그 초안에 전달됨 표시를 남긴다');
+    const 실패 = await 돌리기({ ok: false, status: 502, body: {} });
+    ok(!실패.보낸초안.전달됨, '실패하면 표시하지 않는다');
+  }
+
+  /* ── 2026-10-15 리뷰: '위의 띠' 를 가리키는 알림이 띠 없는 화면에서도 나왔다 ── */
+  {
+    const 띠있음 = await 돌리기({ ok: false, status: 502, body: {} }, true, { hash: '#/register', 사이: S => { S.draft = { kind: 'shop' }; } });
+    ok(/위의 띠에서/.test(띠있음.알림), `띠가 있는 화면에서는 위의 띠를 가리킨다 - "${띠있음.알림}"`);
+    const 띠없음 = await 돌리기({ ok: false, status: 502, body: {} }, true, { hash: '#/inbox', 사이: S => { S.draft = { kind: 'shop' }; } });
+    ok(/「내 조건」 화면의 띠에서/.test(띠없음.알림), `띠가 없는 화면에서는 띠가 있는 곳을 말한다 - "${띠없음.알림}"`);
+  }
+
 
   /* ── 2026-10-15 리뷰: 로그아웃 직후 새로 읽기가 서버 로그아웃 요청을 끊었다 ── */
   {

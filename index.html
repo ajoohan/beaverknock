@@ -7305,19 +7305,37 @@ function demandPayload(d, slotN){
 /* 전달되지 않고 맡아 둔 조건 (2026-10-15 리뷰).
    새 조건을 적는 중에 앞 조건의 실패가 늦게 오면, 화면은 빼앗지 않고 앞 조건을 여기 맡긴다.
    전에는 '다시 등록해 주세요' 라고만 하고 적어 둔 지역·예산·메모를 그대로 버렸다.
-   띠의 단추는 '바꾸기' 다 - 지금 적던 조건도 버리지 않고 대신 맡아 둔다. */
+   띠의 단추는 '바꾸기' 다 - 지금 적던 조건도 버리지 않고 대신 맡아 둔다.
+   ── 목록이다 ── 한 칸이면 두 번째 실패가 첫 조건을 말없이 덮었다.
+   ── 탭 저장소에 둔다 ── 메모리에만 두면 휴대폰 본인확인·소셜 로그인처럼 페이지를 떠났다
+   돌아오는 길에서 사라졌다. 적던 초안(keepDraft)과 같은 곳·같은 수명이다. 로그아웃하면 지운다. */
+const HELD_KEY = 'bk.held';
+const 맡긴목록 = () => {
+  if(!Array.isArray(S.보류목록)){
+    try{ const v = JSON.parse(sessionStorage.getItem(HELD_KEY) || '[]'); S.보류목록 = Array.isArray(v) ? v : []; }
+    catch(e){ S.보류목록 = []; }
+  }
+  return S.보류목록;
+};
+const 보류쓰기 = () => {
+  try{ const l = 맡긴목록(); l.length ? sessionStorage.setItem(HELD_KEY, JSON.stringify(l)) : sessionStorage.removeItem(HELD_KEY); }catch(e){}
+};
+const 맡기기 = d => { const l = 맡긴목록(); if(!l.includes(d)) l.push(d); 보류쓰기(); };
 function 보류띠(){
-  const b = S.보류초안;
-  if(!b) return '';
+  const l = 맡긴목록();
+  if(!l.length) return '';
   return `
       <div class="card pad" role="status" style="display:flex;align-items:center;gap:10px 14px;flex-wrap:wrap;
         border-color:var(--warnline);background:var(--warnbg);box-shadow:none">
-        <span style="flex:1;min-width:0;font-size:13.5px;line-height:1.6;color:var(--n900)">
-          <b style="display:block;font-weight:700">전달되지 않은 조건이 있습니다</b>
-          <span style="color:var(--n700)">${esc(draftTitle(b))}</span></span>
-        <button class="btn sec sm" data-act="draft-swap">그 조건 이어서 보내기</button>
+        <!-- 글 칸이 220px 아래로 좁아지면 단추가 아래 줄로 내려간다 - 휴대폰에서 글이 단추에 눌려 쪼개지지 않게 -->
+        <span style="flex:1 1 220px;min-width:0;font-size:13.5px;line-height:1.6;color:var(--n900)">
+          <b style="display:block;font-weight:700">전달되지 않은 조건이 ${l.length > 1 ? `${l.length}건 ` : ''}있습니다</b>
+          <span style="color:var(--n700)">${esc(draftTitle(l[0]))}${l.length > 1 ? ` <span style="white-space:nowrap">외 ${l.length - 1}건</span>` : ''}</span></span>
+        <button class="btn sec sm" data-act="draft-swap">${l.length > 1 ? '첫 조건부터 이어서 보내기' : '그 조건 이어서 보내기'}</button>
       </div>`;
 }
+/* 띠가 있는 화면 - 실패 알림이 '위의 띠' 를 가리켜도 되는 곳 */
+const 띠화면 = h => ['#/kind', '#/register', '#/contact', '#/my'].includes(h);
 
 /* 저장은 화면을 막지 않는다 - 결과는 나중에 토스트로만 알린다 */
 /* 같은 내용인지 가리는 짧은 지문(djb2). 보안용이 아니다 - 바뀌었는지만 본다. */
@@ -7348,9 +7366,10 @@ function saveDemand(d, slotN, 자리){
     S.saved = false;
     if(!그자리()){
       /* 적던 것은 버리지 않는다 - 맡아 두고, 화면 위 띠에서 언제든 바꿔 이어 보낼 수 있게 한다 */
-      S.보류초안 = d;
+      맡기기(d);
       render();
-      toast('앞서 보낸 조건은 전달되지 않았습니다 - 위의 띠에서 이어서 보내실 수 있습니다');
+      /* 띠가 없는 화면(제안함·완료 등)에서는 띠가 있는 곳을 말한다 */
+      toast(`앞서 보낸 조건은 전달되지 않았습니다 - ${띠화면(location.hash) ? '위의 띠' : '「내 조건」 화면의 띠'}에서 이어서 보내실 수 있습니다`);
       return false;
     }
     go(갈곳);
@@ -7382,7 +7401,8 @@ function saveDemand(d, slotN, 자리){
     setTimeout(() => 되돌리기('조건을 보내지 못했습니다 - 적은 조건은 그대로 있으니 다시 눌러 주세요'), 0);
     return; }
   apiFetch('/api/demand', { method:'POST', body }).then(r=>{
-    if(r.ok){ S.saved = true; d.reqId = null; d.reqSig = null; S.mineAt = 0; loadMine(true); return; }
+    /* 전달됨 - 이 초안은 다시 '전달되지 않은 조건' 으로 맡겨지면 안 된다(맡기면 같은 조건이 두 번 간다) */
+    if(r.ok){ S.saved = true; d.전달됨 = true; d.reqId = null; d.reqSig = null; S.mineAt = 0; loadMine(true); return; }
     return r.json().catch(()=>({})).then(j=>{
       console.warn('조건 저장 실패', r.status, j);
       /* 확인한 지 30분이 지나면 표가 만료된다. 확인했다고 표시해 둔 채로 두면 눌러도 계속
@@ -10583,6 +10603,8 @@ function handle(a,v,el){
       S.pw=''; S.pw2=''; S.signup=false;
       S.ag={terms:false,privacy:false,mkt:false}; S.consent=null; S.agBusy=false;
       try{ sessionStorage.removeItem('bk.ag'); }catch(e){}
+      /* 맡아 둔 '전달되지 않은 조건' 에도 이름·연락처가 들어 있다 - 다음 사람이 보면 안 된다 */
+      S.보류목록 = []; try{ sessionStorage.removeItem(HELD_KEY); }catch(e){}
       /* 이름과 연락처는 접수 초안에도 남는다. 서버에서 받아온 조건·제안·물건은
          그 사람의 것이다. 로그아웃한 화면은 처음 온 사람이 보는 화면과 같아야 한다 -
          예시로 되돌린다. 같은 브라우저를 다음 사람이 쓸 수 있다. */
@@ -10675,11 +10697,15 @@ function handle(a,v,el){
     case 'detail-save': { const c=S.conds[0]; if(c){ c.pct=detailPct(S.draft); if(S.draft.memo) c.memo=S.draft.memo; }
       toast('저장했습니다 · 더 자세할수록 맞는 제안이 옵니다'); go('#/my'); return true; }
     case 'restart': S.draft=blankDraft(); go('#/kind'); return true;
-    /* 맡아 둔(전달되지 않은) 조건과 지금 초안을 바꾼다. 지금 것이 비어 있지 않으면 대신 맡는다 */
+    /* 맡아 둔(전달되지 않은) 첫 조건과 지금 초안을 바꾼다. 지금 것이 아직 보내지 않은 조건이면 대신 맡는다 */
     case 'draft-swap': {
-      const 맡긴 = S.보류초안;
-      if(!맡긴) return true;
-      S.보류초안 = S.draft && S.draft.kind && S.draft !== 맡긴 ? S.draft : null;
+      const 목록 = 맡긴목록();
+      const 맡긴 = 목록.shift();
+      if(!맡긴){ 보류쓰기(); return true; }
+      /* 이미 전달된 초안(완료 화면에 남아 있는 것)은 맡지 않는다 - 맡으면 띠가 그것을
+         '전달되지 않은 조건' 으로 내밀고, 다시 보내면 같은 조건이 두 번 저장된다(2026-10-15 리뷰) */
+      if(S.draft && S.draft.kind && !S.draft.전달됨 && S.draft !== 맡긴) 목록.push(S.draft);
+      보류쓰기();
       S.draft = 맡긴;
       go('#/contact');                  /* 한 번 전달을 눌렀던 조건이라 유형·연락처까지 차 있다 */
       toast('앞서 적으신 조건입니다 - 확인하고 다시 전달해 주세요');

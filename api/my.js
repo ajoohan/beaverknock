@@ -8,6 +8,7 @@
 
 import { userFrom, sbHeaders, sbUrl } from './_auth.js';
 import { approvedAgent, meAgent } from './feed.js';
+import { logOps } from './_opslog.js';
 
 const KIND_KO = { home: '주거', shop: '상가', office: '오피스', storage: '창고' };
 
@@ -59,7 +60,7 @@ export default async function handler(req, res) {
   /* 걸어 둔 조건의 상세를 고친다 (2026-10-15).
      전에는 화면의 '저장했습니다' 가 메모리만 바꾸고 서버에는 아무것도 보내지 않았다 -
      덧붙인 상세는 중개사에게 한 번도 가지 않았다. 함수 상한(12개)이 꽉 차 여기에 붙인다. */
-  if (body.what === 'demand-edit') return demandEdit(res, user, body);
+  if (body.what === 'demand-edit') return demandEdit(req, res, user, body);
 
   try {
     const dq = new URLSearchParams({
@@ -246,43 +247,70 @@ const EDIT_SHOP = ['memo', 'park_need', 'shop_note'];
 const EDIT_SHOP_ONLY = ['key_ok', 'sign_need'];           /* 상가에만 있는 칸 */
 const EDIT_LIST = ['floor_bands', 'dir_want'];
 const EDIT_MAX = { memo: 1000, shop_note: 500, key_ok: 30, sign_need: 30 };
-export async function demandEdit(res, user, body) {
+/* 고치기 횟수 제한 - 한 계정이 1분에 EDIT_MAX_PER_MIN 번까지(2026-10-15 리뷰).
+   접수에는 빈도 제한이 있는데 고치기에는 없어, 스크립트가 메모를 끝없이 바꿀 수 있었다.
+   서버리스라 인스턴스마다 따로 센다 - 막으려는 것은 연타이지 정밀한 할당량이 아니다. */
+const EDIT_MAX_PER_MIN = 10;
+const editHits = new Map();
+const KINDS_OK = ['home', 'shop', 'office', 'storage'];
+export async function demandEdit(req, res, user, body) {
   const id = String(body.id || '');
   if (!/^[0-9a-f-]{8,64}$/i.test(id)) return res.status(400).json({ error: '어느 조건인지 알 수 없습니다' });
+  /* 유형은 화면이 알려 주고, 고칠 때 DB 에서 '그 유형인 내 조건' 으로 함께 거른다 -
+     유형을 묻는 조회를 따로 하지 않아도(2026-10-15 리뷰) 다른 유형의 칸이 들어갈 수 없다. */
+  const kind = KINDS_OK.includes(body.kind) ? body.kind : null;
+  if (!kind) return res.status(400).json({ error: '어떤 조건인지 알 수 없습니다' });
   const set = body.set && typeof body.set === 'object' ? body.set : {};
+
+  const now = Date.now();
+  const 최근 = (editHits.get(user.id) || []).filter(t => now - t < 60_000);
+  if (최근.length >= EDIT_MAX_PER_MIN) return res.status(429).json({ error: '너무 자주 고치셨습니다 - 잠시 뒤 다시 해 주세요' });
+  최근.push(now); editHits.set(user.id, 최근);
+  if (editHits.size > 5000) editHits.clear();
+
+  const home = kind === 'home';
+  const 칸 = home ? EDIT_HOME : [...EDIT_SHOP, ...(kind === 'shop' ? EDIT_SHOP_ONLY : [])];
+  const patch = {};
+  for (const k of 칸) {
+    if (!(k in set)) continue;
+    const v = set[k];
+    if (EDIT_LIST.includes(k)) {
+      patch[k] = Array.isArray(v) ? v.filter(x => typeof x === 'string' && x.trim()).slice(0, 20).map(x => x.trim().slice(0, 40)) : [];
+    } else if (k === 'park_need') {
+      const n = parseInt(v, 10);
+      patch[k] = Number.isFinite(n) && n >= 0 && n < 1000 ? n : null;
+    } else {
+      const s = String(v ?? '').trim();
+      patch[k] = s ? s.slice(0, EDIT_MAX[k] || 20) : null;
+    }
+  }
+  if (!Object.keys(patch).length) return res.status(400).json({ error: '고칠 내용이 없습니다' });
+  /* 언제 고쳤는지 - 중개사 화면이 '조건 고침' 을 띄운다(0030). 칸이 아직 없으면 빼고 고친다. */
+  const 고친시각 = new Date(now).toISOString();
   try {
-    /* 먼저 내 조건인지, 어떤 유형인지 본다 - 유형마다 고칠 수 있는 칸이 다르다 */
-    const q = new URLSearchParams({ select: 'id,kind', id: 'eq.' + id, user_id: 'eq.' + user.id, limit: '1' });
-    const r0 = await fetch(sbUrl('bk_demand', q.toString()), { headers: sbHeaders() });
-    if (!r0.ok) return res.status(502).json({ error: '조건을 찾지 못했습니다' });
-    const [row] = await r0.json();
-    if (!row) return res.status(404).json({ error: '내 조건이 아니거나 이미 없어진 조건입니다' });
-    const home = !['shop', 'office', 'storage'].includes(row.kind);
-    const 칸 = home ? EDIT_HOME : [...EDIT_SHOP, ...(row.kind === 'shop' ? EDIT_SHOP_ONLY : [])];
-    const patch = {};
-    for (const k of 칸) {
-      if (!(k in set)) continue;
-      const v = set[k];
-      if (EDIT_LIST.includes(k)) {
-        patch[k] = Array.isArray(v) ? v.filter(x => typeof x === 'string' && x.trim()).slice(0, 20).map(x => x.trim().slice(0, 40)) : [];
-      } else if (k === 'park_need') {
-        const n = parseInt(v, 10);
-        patch[k] = Number.isFinite(n) && n >= 0 && n < 1000 ? n : null;
-      } else {
-        const s = String(v ?? '').trim();
-        patch[k] = s ? s.slice(0, EDIT_MAX[k] || 20) : null;
+    const pq = new URLSearchParams({ id: 'eq.' + id, user_id: 'eq.' + user.id, select: 'id' });
+    /* 주거는 예전 행에 유형이 비어 있을 수 있다 - 비어 있어도 주거로 본다 */
+    if (home) pq.set('or', '(kind.eq.home,kind.is.null)'); else pq.set('kind', 'eq.' + kind);
+    const 고치기 = body => fetch(sbUrl('bk_demand', pq.toString()), {
+      method: 'PATCH', headers: { ...sbHeaders(), Prefer: 'return=representation' }, body: JSON.stringify(body),
+    });
+    let r = await 고치기({ ...patch, edited_at: 고친시각 });
+    let 시각남김 = true;
+    if (!r.ok) {
+      const t = await r.text();
+      if (/edited_at/.test(t) && /PGRST204|does not exist|42703/i.test(t)) { 시각남김 = false; r = await 고치기(patch); }
+      else { console.error('[my:demand-edit]', r.status, t.slice(0, 160)); return res.status(502).json({ error: '고치지 못했습니다 - 잠시 뒤 다시 해 주세요' }); }
+      if (!r.ok) {
+        console.error('[my:demand-edit]', r.status, (await r.text()).slice(0, 160));
+        return res.status(502).json({ error: '고치지 못했습니다 - 잠시 뒤 다시 해 주세요' });
       }
     }
-    if (!Object.keys(patch).length) return res.status(400).json({ error: '고칠 내용이 없습니다' });
-    const pq = new URLSearchParams({ id: 'eq.' + id, user_id: 'eq.' + user.id });
-    const r = await fetch(sbUrl('bk_demand', pq.toString()), {
-      method: 'PATCH', headers: { ...sbHeaders(), Prefer: 'return=minimal' }, body: JSON.stringify(patch),
-    });
-    if (!r.ok) {
-      console.error('[my:demand-edit]', r.status, (await r.text()).slice(0, 160));
-      return res.status(502).json({ error: '고치지 못했습니다 - 잠시 뒤 다시 해 주세요' });
-    }
-    return res.status(200).json({ ok: true, id, set: patch });
+    /* 고쳐진 행이 없다 = 내 조건이 아니거나, 유형이 다르거나, 이미 없다 */
+    const 고친행 = await r.json().catch(() => []);
+    if (!Array.isArray(고친행) || !고친행.length) return res.status(404).json({ error: '내 조건이 아니거나 이미 없어진 조건입니다' });
+    /* 운영 기록 - 중개사가 본 뒤 손님이 무엇을 언제 바꿨는지 운영자가 되짚을 수 있게 */
+    await logOps(req, user, { action: 'demand-edit', detail: `${id} · ${Object.keys(patch).join(',')}` });
+    return res.status(200).json({ ok: true, id, set: patch, edited_at: 시각남김 ? 고친시각 : null });
   } catch (e) {
     console.error('[my:demand-edit]', e && e.message);
     return res.status(502).json({ error: 'DB에 닿지 못했습니다' });

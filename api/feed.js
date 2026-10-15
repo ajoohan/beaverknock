@@ -193,7 +193,7 @@ export default async function handler(req, res) {
       select: 'id,created_at,kind,dongs,deal,dep,rent,biz,area_min,area_max,htype,rooms,musts,must_free,'
             + 'floor_avoid,household,elevator,loan_plan,open_when,shop_floor_free,facilities_free,'
             + 'area_bands,bath_want,floor_bands,dir_want,age_band,'
-            + 'key_ok,sign_need,park_need,shop_note,spec,memo,slots,slots_left',
+            + 'key_ok,sign_need,park_need,shop_note,spec,memo,slots,slots_left,edited_at',
       order: 'created_at.desc', limit: '200',
     });
     q.set('kind', `in.(${kinds.join(',')})`);
@@ -257,10 +257,15 @@ async function getDemands(q) {
   if (r.ok) return r;
   const t = await r.clone().text().catch(() => '');
   if (!/does not exist|PGRST204|42703/i.test(t)) return r;
-  if (!/area_bands|bath_want|floor_bands|dir_want|age_band/.test(t)) return r;
+  /* 고친 시각(0030)이 아직 없으면 그 칸만 빼고 다시 묻는다 - '조건 고침' 표시만 안 뜬다 */
+  const sel = String(q.get('select') || '');
+  let 새sel = sel;
+  if (/edited_at/.test(t)) 새sel = sel.replace(',edited_at', '');
+  else if (/area_bands|bath_want|floor_bands|dir_want|age_band/.test(t)) 새sel = sel.replace(BAND_COLS, '');
+  if (새sel === sel) return r;
   const q2 = new URLSearchParams(q);
-  q2.set('select', String(q.get('select') || '').replace(BAND_COLS, ''));
-  return fetch(sbUrl('bk_demand', q2.toString()), { headers: sbHeaders() });
+  q2.set('select', 새sel);
+  return getDemands(q2);           /* 둘 다 없으면 한 번 더 - 칸이 줄어드니 끝이 있다 */
 }
 
 /* ── 자격을 확인하기 전에 보이는 것 ──
@@ -269,7 +274,7 @@ async function getDemands(q) {
    이유가 안 생긴다 - 있다는 것까지만 보여준다.
    ※ 가리는 일은 반드시 서버가 한다. 화면에서 감추면 감춘 것이 아니다. */
 const SUMMARY_COLS = ['id','created_at','kind','dongs','deal','dep','rent',
-                      'htype','rooms','slots_left','open_when','area_bands'];
+                      'htype','rooms','slots_left','open_when','area_bands','edited_at'];
 function maskDemand(d) {
   const o = { locked: true };
   for (const k of SUMMARY_COLS) if (d[k] !== undefined) o[k] = d[k];
@@ -370,7 +375,7 @@ async function readFitting(res, agent) {
       select: 'id,created_at,kind,dongs,deal,dep,rent,biz,area_min,area_max,htype,rooms,musts,must_free,'
             + 'floor_avoid,household,elevator,loan_plan,open_when,shop_floor_free,facilities_free,'
             + 'area_bands,bath_want,floor_bands,dir_want,age_band,'
-            + 'key_ok,sign_need,park_need,shop_note,spec,memo,slots,slots_left',
+            + 'key_ok,sign_need,park_need,shop_note,spec,memo,slots,slots_left,edited_at',
       order: 'created_at.desc', limit: '200',
     });
     q.set('kind', `in.(${kinds.join(',')})`);

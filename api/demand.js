@@ -368,7 +368,14 @@ export default async function handler(req, res) {
       /* 같은 번호로 이미 받은 전달이다 - 처음 것이 저장돼 있으니 성공으로 답한다.
          알림은 다시 보내지 않는다(처음 접수 때 보냈다). */
       if (!r.ok && r.status === 409 && /bk_demand_client_req|client_req/.test(t)) {
-        return res.status(200).json({ ok: true, already: true });
+        /* 번호도 찾아 돌려준다 - 앞의 조회가 횟수 제한으로 건너뛰어진 경우다(2026-10-15 리뷰).
+           번호가 없으면 화면의 '조건 더 채우기' 가 방금 건 조건을 고칠 수 없다. 못 찾아도 성공이다. */
+        let 있던번호 = null;
+        try {
+          const r1 = await fetch(sb(`${TABLE}?select=id&client_req=eq.${encodeURIComponent(row.client_req)}&limit=1`), { headers: H });
+          if (r1.ok) { const a = await r1.json(); 있던번호 = Array.isArray(a) && a[0] ? a[0].id || null : null; }
+        } catch { /* 번호는 덤이다 */ }
+        return res.status(200).json({ ok: true, already: true, id: 있던번호 });
       }
       if (!r.ok) {
         /* 왜 거절당했는지 코드로 가려 사람 말로 돌려준다 - '저장하지 못했습니다'

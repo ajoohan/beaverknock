@@ -55,50 +55,112 @@ const 조건번호 = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
 {
   const { demandEdit } = await import(길.api('my.js'));
   let 기록 = [];
-  let 행 = { id: 조건번호, kind: 'home' }, 패치답 = 204;
+  /* 고칠 때 거른 결과 - 내 조건이고 유형이 맞으면 한 줄이 돌아온다 */
+  let 맞음 = true, 패치답 = 200, 시각칸 = true;
   globalThis.fetch = async (url, opt = {}) => {
     const u = decodeURIComponent(String(url)), m = (opt.method || 'GET').toUpperCase();
     기록.push({ u, m, body: opt.body ? JSON.parse(opt.body) : null });
-    if (m === 'GET') return new Response(JSON.stringify(행 ? [행] : []), { status: 200 });
-    if (m === 'PATCH') return new Response(패치답 === 204 ? null : '', { status: 패치답 });
-    return new Response('[]', { status: 200 });
+    if (m === 'PATCH') {
+      const b = JSON.parse(opt.body);
+      if (!시각칸 && 'edited_at' in b) return new Response(JSON.stringify({ code: 'PGRST204', message: "Could not find the 'edited_at' column of 'bk_demand' in the schema cache" }), { status: 400 });
+      if (패치답 !== 200) return new Response('{}', { status: 패치답 });
+      return new Response(JSON.stringify(맞음 ? [{ id: 조건번호 }] : []), { status: 200 });
+    }
+    return new Response('[]', { status: 201 });
   };
-  const 고치기 = async (id, set) => { 기록 = []; const res = 응답(); await demandEdit(res, { id: 사용자 }, { what: 'demand-edit', id, set }); return res; };
+  let 사람 = 0;   /* 횟수 제한이 다른 검사에 끼지 않게 검사마다 사용자를 바꾼다 */
+  const 고치기 = async (id, set, kind = 'home', 누구 = null) => { 기록 = []; const res = 응답();
+    await demandEdit({ headers: {}, socket: {} }, res, { id: 누구 || ('u-' + (++사람)), email: 'a@b.c' }, { what: 'demand-edit', id, kind, set }); return res; };
+  const 패치 = () => 기록.find(x => x.m === 'PATCH');
 
   const 이상한번호 = await 고치기('d1; drop', { memo: 'x' });
   ok(이상한번호.code === 400 && 기록.length === 0, '번호 모양이 이상하면 DB 를 부르지도 않는다');
+  const 유형없음 = await 고치기(조건번호, { memo: 'x' }, 'castle');
+  ok(유형없음.code === 400 && 기록.length === 0, '유형을 모르면 고치지 않는다');
 
-  행 = null;
-  const 남의것 = await 고치기(조건번호, { memo: '남의 조건 고치기' });
-  ok(남의것.code === 404 && !기록.some(x => x.m === 'PATCH'), '내 조건이 아니면(조회에 안 나오면) 고치지 않는다');
-  ok(기록[0] && 기록[0].u.includes('user_id=eq.' + 사용자) && 기록[0].u.includes('id=eq.' + 조건번호), '조회는 번호와 토큰의 사용자로 함께 거른다');
+  맞음 = false;
+  const 남의것 = await 고치기(조건번호, { memo: '남의 조건 고치기' }, 'home', 사용자);
+  ok(남의것.code === 404, '고쳐진 행이 없으면(내 것이 아니거나 유형이 다르면) 404 로 답한다');
+  ok(기록.filter(x => x.m === 'GET').length === 0 && 기록.filter(x => x.m === 'PATCH').length === 1,
+     'DB 는 한 번만 부른다 - 유형을 묻는 조회를 따로 하지 않는다(2026-10-15 리뷰)');
+  ok(패치() && 패치().u.includes('id=eq.' + 조건번호) && 패치().u.includes('user_id=eq.' + 사용자) && 패치().u.includes('select=id'),
+     '고칠 때 번호와 토큰의 사용자로 함께 거르고, 고쳐진 행을 돌려받아 확인한다');
+  ok(!기록.some(x => x.u.includes('bk_ops_log')), '고쳐지지 않았으면 운영 기록도 남기지 않는다');
 
-  행 = { id: 조건번호, kind: 'home' };
+  맞음 = true;
   const 주거 = await 고치기(조건번호, {
     memo: '  아이가 있어요  ', floor_bands: ['중층', '', 3, '고층'], dir_want: ['남'], age_band: '10년 이내',
     household: '3인', elevator: '있음', loan_plan: '있음',
     dep: 1, rent: 1, dongs: ['강남'], name: '바꾼 이름', phone: '01099999999', user_id: '남', key_ok: '괜찮습니다' });
-  const 패치 = 기록.find(x => x.m === 'PATCH');
-  ok(주거.code === 200 && 패치, '주거 조건을 고친다');
-  ok(패치 && 패치.u.includes('id=eq.' + 조건번호) && 패치.u.includes('user_id=eq.' + 사용자), '고칠 때도 번호와 사용자로 함께 거른다 - 남의 행에 닿지 않는다');
-  ok(패치 && Object.keys(패치.body).sort().join() === ['age_band', 'dir_want', 'elevator', 'floor_bands', 'household', 'loan_plan', 'memo'].sort().join(),
-     `주거는 상세 칸만 고친다 - 지역·예산·이름·연락처·주인·상가 칸은 무시 (${패치 && Object.keys(패치.body).join(',')})`);
-  ok(패치 && 패치.body.memo === '아이가 있어요' && 패치.body.floor_bands.join() === '중층,고층', '값은 다듬어서 넣는다(공백·빈 값·글자 아닌 것 걸러냄)');
+  ok(주거.code === 200 && 패치(), '주거 조건을 고친다');
+  ok(패치() && 패치().u.includes('or=(kind.eq.home,kind.is.null)'), '주거는 유형이 주거(또는 예전 행처럼 비어 있음)인 행만 고친다');
+  const 칸 = 패치() ? Object.keys(패치().body).filter(k => k !== 'edited_at').sort().join() : '';
+  ok(칸 === ['age_band', 'dir_want', 'elevator', 'floor_bands', 'household', 'loan_plan', 'memo'].sort().join(),
+     `주거는 상세 칸만 고친다 - 지역·예산·이름·연락처·주인·상가 칸은 무시 (${칸})`);
+  ok(패치() && 패치().body.memo === '아이가 있어요' && 패치().body.floor_bands.join() === '중층,고층', '값은 다듬어서 넣는다(공백·빈 값·글자 아닌 것 걸러냄)');
+  ok(패치() && /^\d{4}-\d\d-\d\dT/.test(패치().body.edited_at || '') && 주거.body.edited_at === 패치().body.edited_at,
+     '고친 시각을 함께 적고 돌려준다 - 중개사 화면이 \'조건 고침\' 을 띄운다');
+  const 기록줄 = 기록.find(x => x.u.includes('bk_ops_log'));
+  ok(기록줄 && 기록줄.body.action === 'demand-edit' && 기록줄.body.detail.includes(조건번호) && 기록줄.body.detail.includes('memo'),
+     '운영 기록에 무엇을 고쳤는지 남긴다 - 중개사가 본 뒤 바뀐 것을 운영자가 되짚을 수 있게');
 
-  행 = { id: 조건번호, kind: 'shop' };
-  await 고치기(조건번호, { memo: '코너', park_need: '2', shop_note: '1층', key_ok: '무권리만', sign_need: '상관없음', floor_bands: ['중층'] });
-  const 상가 = 기록.find(x => x.m === 'PATCH');
-  ok(상가 && 상가.body.park_need === 2 && 상가.body.key_ok === '무권리만' && !('floor_bands' in 상가.body), '상가는 상가 칸(권리금·간판 포함)만 고친다');
-  행 = { id: 조건번호, kind: 'office' };
-  await 고치기(조건번호, { memo: '역 근처', park_need: 'abc', key_ok: '무권리만' });
-  const 오피스 = 기록.find(x => x.m === 'PATCH');
-  ok(오피스 && !('key_ok' in 오피스.body) && 오피스.body.park_need === null, '오피스에는 권리금 칸이 없고, 숫자가 아닌 주차는 비운다');
+  await 고치기(조건번호, { memo: '코너', park_need: '2', shop_note: '1층', key_ok: '무권리만', sign_need: '상관없음', floor_bands: ['중층'] }, 'shop');
+  ok(패치() && 패치().u.includes('kind=eq.shop') && 패치().body.park_need === 2 && 패치().body.key_ok === '무권리만' && !('floor_bands' in 패치().body),
+     '상가는 유형이 상가인 행에서 상가 칸(권리금·간판 포함)만 고친다');
+  await 고치기(조건번호, { memo: '역 근처', park_need: 'abc', key_ok: '무권리만' }, 'office');
+  ok(패치() && !('key_ok' in 패치().body) && 패치().body.park_need === null, '오피스에는 권리금 칸이 없고, 숫자가 아닌 주차는 비운다');
 
   const 빈것 = await 고치기(조건번호, { dep: 5 });
-  ok(빈것.code === 400 && !기록.some(x => x.m === 'PATCH'), '고칠 수 있는 칸이 하나도 없으면 고치지 않는다');
+  ok(빈것.code === 400 && !패치(), '고칠 수 있는 칸이 하나도 없으면 고치지 않는다');
+
+  시각칸 = false;
+  const 칸없음 = await 고치기(조건번호, { memo: '0030 전' });
+  const 패치들 = 기록.filter(x => x.m === 'PATCH');
+  ok(칸없음.code === 200 && 패치들.length === 2 && !('edited_at' in 패치들[1].body) && 칸없음.body.edited_at === null,
+     '고친 시각 칸(0030)이 아직 없으면 그 칸만 빼고 고친다');
+  시각칸 = true;
+
   패치답 = 500;
   const 실패 = await 고치기(조건번호, { memo: 'x' });
-  ok(실패.code === 502, 'DB 가 거절하면 실패로 답한다 - 화면이 \'고쳤습니다\' 라고 하지 않게');
+  ok(실패.code === 502 && !기록.some(x => x.u.includes('bk_ops_log')), 'DB 가 거절하면 실패로 답한다 - 화면이 \'고쳤습니다\' 라고 하지 않게');
+  패치답 = 200;
+
+  /* 횟수 제한 - 한 계정 1분 10번 */
+  const 같은사람 = 'u-연타';
+  const 답들 = [];
+  for (let i = 0; i < 12; i++) 답들.push((await 고치기(조건번호, { memo: '연타 ' + i }, 'home', 같은사람)).code);
+  ok(답들.slice(0, 10).every(c => c === 200) && 답들.slice(10).every(c => c === 429), `한 계정은 1분에 10번까지만 고친다 (${답들.join(',')})`);
+  ok((await 고치기(조건번호, { memo: '다른 사람' }, 'home', 'u-다른')).code === 200, '다른 계정은 따로 센다');
+}
+
+/* ── ①-2 중복 색인에 막힌 재전송도 번호를 돌려준다 ── */
+{
+  const { signIdv } = await import(길.api('_idv.js'));
+  const { default: handler } = await import(길.api('demand.js'));
+  globalThis.fetch = async (url, opt = {}) => {
+    const u = String(url), m = (opt.method || 'GET').toUpperCase();
+    if (u.includes('/auth/v1/user')) return new Response(JSON.stringify({ id: 사용자, email: 'a@b.c' }), { status: 200 });
+    if (u.includes('bk_demand') && m === 'POST') return new Response(JSON.stringify({ code: '23505', message: 'duplicate key value violates unique constraint "bk_demand_client_req_idx"' }), { status: 409 });
+    /* 앞의 조회는 비어 있었다(조회 횟수 제한에 걸린 경우와 같다) - 409 뒤의 조회만 찾는다 */
+    if (u.includes('client_req=eq.') && 앞조회끝) return new Response(`[{"id":"${조건번호}"}]`, { status: 200 });
+    if (u.includes('client_req=eq.')) { 앞조회끝 = true; return new Response('[]', { status: 200 }); }
+    return new Response('[]', { status: 200 });
+  };
+  let 앞조회끝 = false;
+  const body = { kind: 'home', dongs: ['망월동'], deal: '월세', dep: 1000, rent: 70, name: '한', phone: '01012345678',
+    agree_third_party: true, agree_multi_alert: true, elapsed: 9000, website: '', client_req: 'r-test-409-0001',
+    idv_token: signIdv({ name: '한상혁', phone: '01012345678', birth: '19850101', op: 'SKT' }) };
+  const res = 응답();
+  await handler({ method: 'POST', headers: { authorization: 'Bearer ' + 'y'.repeat(40) }, socket: { remoteAddress: '10.8.1.1' }, body }, res);
+  ok(res.code === 200 && res.body.already === true && res.body.id === 조건번호, `중복 색인에 막힌 재전송도 그 조건의 번호를 찾아 돌려준다 (${res.body && res.body.id})`);
+}
+
+/* ── ①-3 중개사 목록이 고친 시각을 싣고, 칸이 없으면 물러선다 ── */
+{
+  const fs = await import('node:fs');
+  const 목록서버 = fs.readFileSync(new URL(길.api('feed.js')), 'utf8');
+  ok((목록서버.match(/slots,slots_left,edited_at'/g) || []).length === 2, '중개사 목록 두 곳이 고친 시각(edited_at)을 함께 읽는다');
+  ok(/if \(\/edited_at\/\.test\(t\)\) 새sel = sel\.replace\(',edited_at', ''\);/.test(목록서버), '0030 전이면 고친 시각만 빼고 다시 읽는다 - 목록이 통째로 실패하지 않는다');
 }
 
 /* ── ③ 화면 ── */
@@ -162,6 +224,25 @@ const 조건번호 = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
   ok(/if\(h==='#\/register' && S\.draft\.전달됨\)\{ location\.replace\('#\/contact'\); return; \}/.test(js), '전달된 초안의 조건 등록 화면은 \'이미 전달된 조건\' 화면으로 보낸다');
   ok(/mobileBack\('내 조건','#\/my'\)/.test(함수('function 전달된연락처(d){')), '\'이미 전달된 조건\' 화면의 휴대폰 뒤로는 내 조건으로 간다');
   ok(/case 'who': \{ const nd = d\.전달됨 \? \(S\.draft = blankDraft\(\)\) : d;/.test(js), '전달된 초안에서 유형을 고르면 새 초안으로 시작한다 - 전달된 것을 덮어 쓰지 않는다');
+
+  /* 고칠 때 유형을 함께 보낸다 - 서버가 그 유형인 내 조건만 고친다 */
+  ok(고친것.보냄 && 고친것.보냄.body.kind === 'home', '고칠 때 조건의 유형을 함께 보낸다');
+
+  /* 중개사 화면 - '조건 고침' */
+  const 고침몸 = js.slice(js.indexOf('const 고침시각 = t =>'), js.indexOf('\nfunction demandFromRow(d){'));
+  const { 고침표, 고침알림 } = new Function('esc', `${고침몸}; return { 고침표, 고침알림 };`)(s => s);
+  const 시각 = new Date(2026, 9, 15, 14, 5).toISOString();
+  ok(고침표({ edited: null }) === '' && 고침알림({ edited: null, mine: true }) === '', '고친 적 없으면 아무것도 붙이지 않는다');
+  ok(/조건 고침 · <span class="num">10\.15 14:05<\/span>/.test(고침표({ edited: 시각 })), '고친 조건에는 \'조건 고침\' 과 시각을 단다');
+  ok(고침알림({ edited: 시각, mine: false }) === '' && /다시 확인해 주세요/.test(고침알림({ edited: 시각, mine: true })),
+     '이미 제안한 조건이면 다시 확인하라는 안내를 붙인다');
+  const 변환 = 함수('function demandFromRow(d){');
+  ok(/edited: d\.edited_at \|\| null,/.test(변환), '서버의 고친 시각을 중개사 수요에 싣는다');
+  const 목록화면 = js.slice(js.indexOf("V['#/partner/demands'] = "), js.indexOf("V['#/partner/demand'] = "));
+  const 상세화면 = js.slice(js.indexOf("V['#/partner/demand'] = "), js.indexOf('\nV[', js.indexOf("V['#/partner/demand'] = ") + 5));
+  ok(/\$\{고침표\(d\)\}/.test(목록화면) && /\$\{고침알림\(d\)\}/.test(목록화면), '수요 목록 카드에 고침 표시와 안내가 있다');
+  ok(/\$\{고침표\(d\)\}/.test(상세화면) && /\$\{고침알림\(d\)\}/.test(상세화면), '수요 상세에도 있다');
+  ok((js.match(/'demand-edit':'손님 조건 수정'/g) || []).length === 2, '운영 화면의 기록 이름표 두 곳이 \'손님 조건 수정\' 을 안다');
 }
 
 console.log(`${ran - fail} 통과 / ${fail} 실패`);

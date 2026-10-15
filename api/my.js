@@ -258,15 +258,15 @@ export async function demandEdit(req, res, user, body) {
   if (!/^[0-9a-f-]{8,64}$/i.test(id)) return res.status(400).json({ error: '어느 조건인지 알 수 없습니다' });
   /* 유형은 화면이 알려 주고, 고칠 때 DB 에서 '그 유형인 내 조건' 으로 함께 거른다 -
      유형을 묻는 조회를 따로 하지 않아도(2026-10-15 리뷰) 다른 유형의 칸이 들어갈 수 없다. */
-  const kind = KINDS_OK.includes(body.kind) ? body.kind : null;
+  /* 유형이 비어 오면 주거다 - 예전 주거 행은 유형 칸이 비어 있다(2026-10-15 리뷰).
+     주거로 걸러도 DB 가 '주거이거나 비어 있는' 행만 고치므로 다른 유형에 닿지 않는다. */
+  const kind = body.kind == null || body.kind === '' ? 'home' : KINDS_OK.includes(body.kind) ? body.kind : null;
   if (!kind) return res.status(400).json({ error: '어떤 조건인지 알 수 없습니다' });
   const set = body.set && typeof body.set === 'object' ? body.set : {};
 
   const now = Date.now();
   const 최근 = (editHits.get(user.id) || []).filter(t => now - t < 60_000);
   if (최근.length >= EDIT_MAX_PER_MIN) return res.status(429).json({ error: '너무 자주 고치셨습니다 - 잠시 뒤 다시 해 주세요' });
-  최근.push(now); editHits.set(user.id, 최근);
-  if (editHits.size > 5000) editHits.clear();
 
   const home = kind === 'home';
   const 칸 = home ? EDIT_HOME : [...EDIT_SHOP, ...(kind === 'shop' ? EDIT_SHOP_ONLY : [])];
@@ -285,6 +285,12 @@ export async function demandEdit(req, res, user, body) {
     }
   }
   if (!Object.keys(patch).length) return res.status(400).json({ error: '고칠 내용이 없습니다' });
+  /* 횟수는 DB 에 닿는 시도부터 센다. 잘못된 요청(400)은 DB 를 부르지 않으니 세지 않고,
+     DB 가 실패한(502) 시도는 되돌린다 - 다시 누른 손님이 429 를 받지 않게(2026-10-15 리뷰).
+     남의 조건(404)은 센다 - 번호를 더듬는 것도 막아야 한다. */
+  최근.push(now); editHits.set(user.id, 최근);
+  if (editHits.size > 5000) editHits.clear();
+  const 셈되돌리기 = () => { const a = editHits.get(user.id); if (a && a.length) a.pop(); };
   /* 언제 고쳤는지 - 중개사 화면이 '조건 고침' 을 띄운다(0030). 칸이 아직 없으면 빼고 고친다. */
   const 고친시각 = new Date(now).toISOString();
   try {
@@ -296,14 +302,14 @@ export async function demandEdit(req, res, user, body) {
     });
     let r = await 고치기({ ...patch, edited_at: 고친시각 });
     let 시각남김 = true;
+    let t = r.ok ? '' : await r.text();
+    if (!r.ok && /edited_at/.test(t) && /PGRST204|does not exist|42703/i.test(t)) {
+      시각남김 = false; r = await 고치기(patch); t = r.ok ? '' : await r.text();
+    }
     if (!r.ok) {
-      const t = await r.text();
-      if (/edited_at/.test(t) && /PGRST204|does not exist|42703/i.test(t)) { 시각남김 = false; r = await 고치기(patch); }
-      else { console.error('[my:demand-edit]', r.status, t.slice(0, 160)); return res.status(502).json({ error: '고치지 못했습니다 - 잠시 뒤 다시 해 주세요' }); }
-      if (!r.ok) {
-        console.error('[my:demand-edit]', r.status, (await r.text()).slice(0, 160));
-        return res.status(502).json({ error: '고치지 못했습니다 - 잠시 뒤 다시 해 주세요' });
-      }
+      셈되돌리기();
+      console.error('[my:demand-edit]', r.status, t.slice(0, 160));
+      return res.status(502).json({ error: '고치지 못했습니다 - 잠시 뒤 다시 해 주세요' });
     }
     /* 고쳐진 행이 없다 = 내 조건이 아니거나, 유형이 다르거나, 이미 없다 */
     const 고친행 = await r.json().catch(() => []);
@@ -312,6 +318,7 @@ export async function demandEdit(req, res, user, body) {
     await logOps(req, user, { action: 'demand-edit', detail: `${id} · ${Object.keys(patch).join(',')}` });
     return res.status(200).json({ ok: true, id, set: patch, edited_at: 시각남김 ? 고친시각 : null });
   } catch (e) {
+    셈되돌리기();
     console.error('[my:demand-edit]', e && e.message);
     return res.status(502).json({ error: 'DB에 닿지 못했습니다' });
   }

@@ -2923,7 +2923,10 @@ const 고침시각 = t => { const x = new Date(t); return isNaN(x) ? '' :
   `${String(x.getMonth()+1).padStart(2,'0')}.${String(x.getDate()).padStart(2,'0')} ${String(x.getHours()).padStart(2,'0')}:${String(x.getMinutes()).padStart(2,'0')}`; };
 const 고침표 = d => d && d.edited
   ? `<span class="badge b-ind" title="손님이 조건을 고친 시각">조건 고침 · <span class="num">${esc(고침시각(d.edited))}</span></span>` : '';
-const 고침알림 = d => d && d.edited && d.mine
+/* 안내는 제안을 보낸 **뒤에** 고친 경우에만 (2026-10-15 리뷰). 고친 조건을 보고 제안한 중개사에게
+   '다시 확인해 주세요' 는 헛안내다. 제안 시각을 모르면(예전 서버) 안내하는 쪽으로 기운다. */
+const 제안뒤고침 = d => !d.mineAt || new Date(d.edited) > new Date(d.mineAt);
+const 고침알림 = d => d && d.edited && d.mine && 제안뒤고침(d)
   ? `<p role="note" style="margin:0;padding:10px 14px;border-radius:var(--r-md);background:var(--ind50);font-size:12.5px;line-height:1.6;color:var(--n700)">
       제안을 보내신 조건을 손님이 고쳤습니다 - 보내신 물건이 지금 조건에도 맞는지 다시 확인해 주세요.</p>` : '';
 function demandFromRow(d){
@@ -2969,6 +2972,8 @@ function demandFromRow(d){
     mine:!!d.mine, locked:!!d.locked,
     /* 손님이 걸어 둔 뒤 상세를 고쳤으면 그 시각(0030) - 중개사가 바뀐 줄 알게 '조건 고침' 을 띄운다 */
     edited: d.edited_at || null,
+    /* 이 중개사가 이 조건에 마지막으로 제안한 시각 - 그 뒤에 고쳤을 때만 '다시 확인' 을 띄운다 */
+    mineAt: d.mine_at || null,
     /* ── 매칭이 읽는 값은 **전부** 여기에 실려야 한다 ──
        matchStages 가 보는 것: dongs·deal·biz·depMax·rentMax·feeIncluded·rooms·
        musts·pyMin·pyMax·floors·htype·openWhen·parkNeed·hArea·hBath·hFloor·hDir·hAge.
@@ -3884,7 +3889,9 @@ function 상세값(d){ const p = demandPayload(d, 5); return Object.fromEntries(
 function 조건초안(c){
   const r = c.src || {};
   return Object.assign(blankDraft(), {
-    kind: r.kind || c.kind, who: r.kind || c.kind, dongs: r.dongs || [], deal: r.deal || '',
+    /* 예전 주거 행은 유형 칸이 비어 있다 - 비면 주거다. 비운 채 보내면 서버가 어떤 조건인지 몰라
+       저장이 막혔다(2026-10-15 리뷰). */
+    kind: r.kind || c.kind || 'home', who: r.kind || c.kind || 'home', dongs: r.dongs || [], deal: r.deal || '',
     dep: r.dep ?? '', rent: r.rent ?? '', biz: r.biz || '', areaMin: r.area_min ?? '', areaMax: r.area_max ?? '',
     htype: r.htype || [], rooms: r.rooms || '', memo: r.memo || '',
     hFloor: r.floor_bands || [], hDir: r.dir_want || [], hAge: r.age_band || '', house: r.household || '',
@@ -5875,11 +5882,11 @@ V['#/partner/demands'] = () => {
     <div style="display:grid;grid-template-columns:repeat(${isMo()?1:2},minmax(0,1fr));gap:16px">
       ${list.map(d=>`
       <div class="card pad fade" style="display:flex;flex-direction:column;gap:12px;${d.mine?'background:var(--n50);box-shadow:none':''}">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <span style="display:flex;align-items:center;gap:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+          <span style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
             <span style="font-size:13.5px;font-weight:700;color:var(--ind)">${d.kind==='home'?'주거':'상가'} · ${esc(d.deal)}</span>
             ${d.who&&WHO[d.who]&&d.who!=='home'?`<span class="badge b-mute" style="font-size:12px">${WHO[d.who].tag}</span>`:''}</span>
-          <span style="display:flex;align-items:center;gap:8px">
+          <span style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-left:auto">
             ${고침표(d)}${d.urgent?'<span class="badge b-warn">마감 임박</span>':''}
             <span style="font-size:12.5px;font-weight:700;color:var(--n700)">남은 슬롯 <span class="num">${d.slotsLeft}/5</span></span></span>
         </div>
@@ -5910,9 +5917,9 @@ V['#/partner/demand'] = (id) => { const d=S.demands.find(x=>x.id===id); if(!d) r
 <div class="scr fade" style="background:var(--n50)">
   ${navPartner('d', false)}
   <div class="pad" style="flex:1;padding-top:${isMo()?16:26}px;padding-bottom:24px;max-width:${isMo()?'none':'860px'};margin:0 auto;width:100%;display:flex;flex-direction:column;gap:14px">
-    <div style="display:flex;justify-content:space-between;align-items:center">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
       <a class="back" data-go="#/partner/demands">← 수요 목록</a>
-      <span style="display:flex;gap:8px;align-items:center">
+      <span style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-left:auto">
         ${고침표(d)}${d.urgent?'<span class="badge b-warn">마감 임박</span>':''}
         <span style="font-size:13.5px;font-weight:700;color:var(--n700)">남은 슬롯 <span class="num">${d.slotsLeft}/5</span></span></span>
     </div>
@@ -7716,11 +7723,6 @@ function lgFetch(){
     .catch(() => { LG.err = '네트워크 문제로 불러오지 못했습니다'; LG.loading = false; render(); });
 }
 
-const LG_ACT = { demands:'조건 조회', agents:'가입 신청 조회', 'agent-status':'상태 변경',
-  reports:'신고 조회', 'report-mark':'신고 처리', listings:'매물 조회', users:'손님 계정 조회',
-  stats:'지표 조회', 'mark-sent':'전달 표시', 'agent-delete':'가입 삭제',
-  'agent-del-preview':'삭제 전 확인', 'kakao-unlink':'카카오 연결 해제', 'idv-reject':'본인확인 거절',
-  'demand-edit':'손님 조건 수정' };
 
 /* 손님이 신고한 제안. 메일로도 가지만 무엇을 이미 처리했는지는 여기서 본다. */
 const RP = { rows:null, loading:false, err:'', at:'', note:'', only:'todo', busy:'' };
@@ -8076,7 +8078,7 @@ function logPanel(){
     `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; };
   return `
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px">
-      <div class="chips" style="gap:6px">${chip('전체', !LG.only, '')}${chip('연락처 열어본 것만', LG.only==='reveal', 'reveal')}</div>
+      <div class="chips" style="gap:6px">${chip('전체', !LG.only, '')}${chip('연락처 열어본 것만', LG.only==='reveal', 'reveal')}${chip('손님 조건 수정', LG.only==='edit', 'edit')}</div>
       <span style="margin-left:auto;font-size:12.5px;color:var(--n500)">${rows.length}건${LG.at?` · ${when(LG.at)} 기준`:''}</span>
       <button class="btn sec sm" data-act="lg-load">새로고침</button>
     </div>
@@ -8091,7 +8093,7 @@ function logPanel(){
         <tr style="border-top:1px solid var(--n100)${r.reveal?';background:var(--warnbg)':''}">
           <td class="num" style="padding:8px 10px;white-space:nowrap">${when(r.at)}</td>
           <td style="padding:8px 10px">${esc(logWho(r)||'(로그인 없음)')}</td>
-          <td style="padding:8px 10px">${esc(LG_ACT[r.action]||r.action)}</td>
+          <td style="padding:8px 10px">${esc(LOG_KO[r.action]||r.action)}</td>
           <td style="padding:8px 10px;font-weight:800;color:${r.reveal?'var(--warn)':'var(--n500)'}">${r.reveal?'열어봄':'가림'}</td>
           <td class="num" style="padding:8px 10px">${r.count==null?'-':r.count}</td>
           <td style="padding:8px 10px;color:var(--n500)">${esc(r.detail||'')}</td>
@@ -8332,7 +8334,7 @@ const OPS_MENU = [
     subs:[ {v:'todo', t:'미확인만'}, {v:'', t:'전체'} ] },
   { g:'기록' },
   { k:'log',     t:'열람 기록', n:()=>LG.rows && LG.rows.length,
-    subs:[ {v:'', t:'전체'}, {v:'reveal', t:'연락처 열어본 것'} ] },
+    subs:[ {v:'', t:'전체'}, {v:'reveal', t:'연락처 열어본 것'}, {v:'edit', t:'손님 조건 수정'} ] },
   { k:'setting', t:'설정' },
 ];
 /* 지금 어느 하위 항목에 있는지는 각 화면이 이미 들고 있다 - 두 벌로 두지 않는다 */
@@ -8502,14 +8504,18 @@ function dashProg(){
   </div>`;
 }
 
+/* 기록의 이름표 - 열람 기록 표와 대시보드 '최근 움직임' 이 함께 쓴다.
+   전에는 두 벌(LG_ACT · LOG_KO)이라 새 기록마다 두 곳에 넣어야 했다(2026-10-15 리뷰). */
 const LOG_KO = { demands:'조건 목록', agents:'가입 신청', listings:'매물', users:'손님 계정',
   reports:'신고', 'report-mark':'신고 처리', 'agent-status':'가입 상태 변경',
   'agent-delete':'가입 삭제', 'agent-del-preview':'삭제 전 확인',
   stats:'지표', 'mark-sent':'전달 표시', 'kakao-unlink':'카카오 연결 해제', 'idv-reject':'본인확인 거절',
   'demand-edit':'손님 조건 수정' };
 
-/* 웹훅은 사람이 부른 것이 아니다. '운영자' 로 적으면 누가 지웠는지를 잘못 말한다. */
-const logWho = r => r.email || r.who || (r.action === 'kakao-unlink' ? '카카오' : r.action === 'idv-reject' ? '본인확인 서버' : '');
+/* 웹훅은 사람이 부른 것이 아니다. '운영자' 로 적으면 누가 지웠는지를 잘못 말한다.
+   손님이 고친 조건도 운영자가 한 일이 아니다 - 메일 앞에 '손님' 을 붙인다. */
+const logWho = r => r.action === 'demand-edit' ? `손님 ${r.email || ''}`.trim()
+  : r.email || r.who || (r.action === 'kakao-unlink' ? '카카오' : r.action === 'idv-reject' ? '본인확인 서버' : '');
 
 function dashRecent(){
   if(LG.rows == null) return `<div class="card pad" style="padding-top:16px;padding-bottom:16px">

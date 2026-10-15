@@ -131,6 +131,56 @@ const 조건번호 = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
   for (let i = 0; i < 12; i++) 답들.push((await 고치기(조건번호, { memo: '연타 ' + i }, 'home', 같은사람)).code);
   ok(답들.slice(0, 10).every(c => c === 200) && 답들.slice(10).every(c => c === 429), `한 계정은 1분에 10번까지만 고친다 (${답들.join(',')})`);
   ok((await 고치기(조건번호, { memo: '다른 사람' }, 'home', 'u-다른')).code === 200, '다른 계정은 따로 센다');
+
+  /* 유형이 빈 예전 주거 조건 (2026-10-15 리뷰) - 화면이 유형 없이 보내도 주거로 고친다 */
+  const 유형빈것 = await 고치기(조건번호, { memo: '예전 조건' }, null);
+  ok(유형빈것.code === 200 && 패치() && 패치().u.includes('or=(kind.eq.home,kind.is.null)'),
+     '유형이 비어 오면 주거로 본다 - DB 는 주거이거나 비어 있는 행만 고친다');
+
+  /* 무엇을 세는가 (2026-10-15 리뷰) - DB 가 실패한 시도·잘못된 요청은 세지 않는다 */
+  const 셀사람 = 'u-셈';
+  패치답 = 500;
+  for (let i = 0; i < 10; i++) await 고치기(조건번호, { memo: '실패 ' + i }, 'home', 셀사람);
+  패치답 = 200;
+  for (let i = 0; i < 10; i++) await 고치기(조건번호, { dep: 1 }, 'home', 셀사람);
+  ok((await 고치기(조건번호, { memo: '이제 됨' }, 'home', 셀사람)).code === 200,
+     'DB 가 실패한 시도(502)와 고칠 칸 없는 요청(400)은 횟수에 들지 않는다 - 다시 누른 손님이 429 를 받지 않는다');
+  const 더듬는사람 = 'u-더듬';
+  맞음 = false;
+  for (let i = 0; i < 10; i++) await 고치기(조건번호, { memo: '남의 것 ' + i }, 'home', 더듬는사람);
+  맞음 = true;
+  ok((await 고치기(조건번호, { memo: 'x' }, 'home', 더듬는사람)).code === 429, '남의 조건(404)은 센다 - 번호를 더듬는 것은 막는다');
+}
+
+/* ── ②-2 운영 기록 - 손님 수정은 따로 본다 ── */
+{
+  const { readLog } = await import(길.api('demands.js'));
+  const 물음 = [];
+  globalThis.fetch = async (url) => { const u = decodeURIComponent(String(url)); 물음.push(u); return new Response('[]', { status: 200 }); };
+  const 읽기 = async only => { 물음.length = 0; const res = 응답(); await readLog({ headers: {} }, res, { only }, null); return 물음[0] || ''; };
+  const 전체 = await 읽기(undefined);
+  ok(전체.includes('action=neq.demand-edit'), '기록 \'전체\' 에는 손님 조건 수정이 섞이지 않는다 - 운영자 열람이 밀려나지 않게');
+  const 수정만 = await 읽기('edit');
+  ok(수정만.includes('action=eq.demand-edit'), '\'손님 조건 수정\' 을 고르면 그것만 본다');
+  const 열람만 = await 읽기('reveal');
+  ok(열람만.includes('reveal=is.true') && !열람만.includes('action='), '\'연락처 열어본 것만\' 은 그대로다');
+}
+
+/* ── ②-3 내가 보낸 제안의 시각 ── */
+{
+  const { myProposalTimes } = await import(길.api('feed.js'));
+  let 물음 = '';
+  globalThis.fetch = async (url) => { 물음 = decodeURIComponent(String(url));
+    return new Response(JSON.stringify([
+      { demand_id: 'd1', created_at: '2026-10-15T05:00:00Z' }, { demand_id: 'd2', created_at: '2026-10-14T01:00:00Z' },
+      { demand_id: 'd1', created_at: '2026-10-13T01:00:00Z' }]), { status: 200 }); };
+  const m = await myProposalTimes('a1');
+  ok(물음.includes('select=demand_id,created_at') && 물음.includes('agent_id=eq.a1') && 물음.includes('order=created_at.desc'),
+     '내 제안을 최신순으로 시각과 함께 읽는다');
+  ok(m.get('d1') === '2026-10-15T05:00:00Z' && m.get('d2') === '2026-10-14T01:00:00Z' && !m.has('d3'), '조건마다 마지막으로 보낸 시각을 든다');
+  const fs = await import('node:fs');
+  const 목록서버 = fs.readFileSync(new URL(길.api('feed.js')), 'utf8');
+  ok((목록서버.match(/mine: mine\.has\(d\.id\), mine_at: mine\.get\(d\.id\) \|\| null/g) || []).length === 2, '중개사 목록 두 곳이 제안 시각(mine_at)을 함께 보낸다');
 }
 
 /* ── ①-2 중복 색인에 막힌 재전송도 번호를 돌려준다 ── */
@@ -160,7 +210,30 @@ const 조건번호 = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
   const fs = await import('node:fs');
   const 목록서버 = fs.readFileSync(new URL(길.api('feed.js')), 'utf8');
   ok((목록서버.match(/slots,slots_left,edited_at'/g) || []).length === 2, '중개사 목록 두 곳이 고친 시각(edited_at)을 함께 읽는다');
-  ok(/if \(\/edited_at\/\.test\(t\)\) 새sel = sel\.replace\(',edited_at', ''\);/.test(목록서버), '0030 전이면 고친 시각만 빼고 다시 읽는다 - 목록이 통째로 실패하지 않는다');
+
+  /* 물러서기를 실제로 돌린다 (2026-10-15 리뷰 - 전에는 코드 글자만 봤다).
+     목록이 쓰는 select 를 소스에서 그대로 떼어 와서, 없는 칸을 DB 가 거절하는 흉내를 낸다. */
+  const { getDemands } = await import(길.api('feed.js'));
+  const 원select = eval(목록서버.match(/select: ('id,created_at,kind[\s\S]*?edited_at'),/)[1]);
+  const 돌려 = async 없는칸 => {
+    const 물음 = [];
+    globalThis.fetch = async url => {
+      const sel = new URL(String(url)).searchParams.get('select'); 물음.push(sel);
+      const 빠진 = 없는칸.find(k => sel.split(',').includes(k));
+      if (빠진) return new Response(JSON.stringify({ code: '42703', message: `column bk_demand.${빠진} does not exist` }), { status: 400 });
+      return new Response('[]', { status: 200 });
+    };
+    const r = await getDemands(new URLSearchParams({ select: 원select, limit: '200' }));
+    return { ok: r.ok, 물음 };
+  };
+  const 시각없음 = await 돌려(['edited_at']);
+  ok(시각없음.ok && 시각없음.물음.length === 2 && !시각없음.물음[1].includes('edited_at') && 시각없음.물음[1].includes('floor_bands'),
+     '0030 전이면 고친 시각만 빼고 다시 읽는다 - 목록이 통째로 실패하지 않는다');
+  const 둘다없음 = await 돌려(['edited_at', 'floor_bands']);
+  ok(둘다없음.ok && 둘다없음.물음.length === 3 && !둘다없음.물음[2].includes('edited_at') && !둘다없음.물음[2].includes('floor_bands') && 둘다없음.물음[2].includes('memo'),
+     '고친 시각도 밴드 칸도 없으면 둘 다 빼고 읽는다');
+  const 모르는칸 = await 돌려(['memo']);
+  ok(!모르는칸.ok && 모르는칸.물음.length === 1, '모르는 칸이 없다는 오류는 되묻지 않고 그대로 실패로 돌려준다 - 끝없이 돌지 않는다');
 }
 
 /* ── ③ 화면 ── */
@@ -242,7 +315,35 @@ const 조건번호 = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
   const 상세화면 = js.slice(js.indexOf("V['#/partner/demand'] = "), js.indexOf('\nV[', js.indexOf("V['#/partner/demand'] = ") + 5));
   ok(/\$\{고침표\(d\)\}/.test(목록화면) && /\$\{고침알림\(d\)\}/.test(목록화면), '수요 목록 카드에 고침 표시와 안내가 있다');
   ok(/\$\{고침표\(d\)\}/.test(상세화면) && /\$\{고침알림\(d\)\}/.test(상세화면), '수요 상세에도 있다');
-  ok((js.match(/'demand-edit':'손님 조건 수정'/g) || []).length === 2, '운영 화면의 기록 이름표 두 곳이 \'손님 조건 수정\' 을 안다');
+  ok((js.match(/'demand-edit':'손님 조건 수정'/g) || []).length === 1 && !/const LG_ACT\b|LG_ACT\[/.test(js),
+     '운영 기록 이름표는 한 벌이다 - 새 기록을 한 곳에만 넣어도 두 화면이 안다(2026-10-15 리뷰)');
+  ok(/\$\{esc\(LOG_KO\[r\.action\]\|\|r\.action\)\}/.test(js) && /\$\{esc\(LOG_KO\[r\.action\] \|\| r\.action \|\| '조회'\)\}/.test(js),
+     '열람 기록 표와 대시보드 최근 움직임이 같은 이름표를 쓴다');
+  const 누가몸 = js.slice(js.indexOf('const logWho = r =>'), js.indexOf('\n\nfunction dashRecent(){'));
+  const logWho = new Function(`${누가몸}; return logWho;`)();
+  ok(logWho({ action: 'demand-edit', email: 'a@b.c' }) === '손님 a@b.c' && logWho({ action: 'demands', email: 'ops@x.y' }) === 'ops@x.y',
+     '손님 조건 수정의 \'누가\' 는 손님이라고 밝힌다 - 운영자처럼 보이지 않게');
+  ok(/chip\('손님 조건 수정', LG\.only==='edit', 'edit'\)/.test(js) && /\{v:'edit', t:'손님 조건 수정'\}/.test(js),
+     '열람 기록에서 손님 조건 수정만 따로 골라 볼 수 있다');
+
+  /* 유형이 빈 예전 주거 조건 - 초안이 주거로 연다 (2026-10-15 리뷰) */
+  const S3 = { draft: 적던것, conds: [{ id: 'old', kind: null, src: { id: 'old', kind: null, dongs: ['풍산동'], memo: '예전 조건' } }] };
+  돌려(S3, 'old');
+  ok(S3.draft.kind === 'home' && S3.draft.who === 'home' && S3.draft.memo === '예전 조건', '유형이 빈 예전 조건은 주거로 연다 - 비운 채 보내 저장이 막히지 않게');
+  const 예전저장 = await 저장해({ 편집: { id: 'old' }, draft: S3.draft });
+  ok(예전저장.보냄 && 예전저장.보냄.body.kind === 'home', '그 조건을 고칠 때 유형을 주거로 보낸다');
+
+  /* '다시 확인' 은 제안한 **뒤에** 고친 경우만 */
+  const 앞 = new Date(2026, 9, 15, 13, 0).toISOString(), 뒤 = new Date(2026, 9, 15, 15, 0).toISOString();
+  ok(/다시 확인해 주세요/.test(고침알림({ edited: 시각, mine: true, mineAt: 앞 })), '제안한 뒤에 손님이 고쳤으면 다시 확인하라고 한다');
+  ok(고침알림({ edited: 시각, mine: true, mineAt: 뒤 }) === '', '고친 조건을 보고 제안했으면 안내하지 않는다 - 헛안내를 막는다');
+  ok(/mineAt: d\.mine_at \|\| null,/.test(변환), '서버의 제안 시각을 중개사 수요에 싣는다');
+
+  /* 수요 카드 머리줄은 접힌다 - 고침·마감 임박·업종·슬롯이 한 줄에 다 안 들어가는 휴대폰 */
+  const 머리줄 = 목록화면.slice(목록화면.indexOf('<div class="card pad fade"'), 목록화면.indexOf('${고침알림(d)}'));
+  ok((머리줄.match(/flex-wrap:wrap/g) || []).length >= 3, '수요 카드 머리줄과 양쪽 묶음이 좁으면 다음 줄로 접힌다');
+  const 상세머리 = 상세화면.slice(상세화면.indexOf('← 수요 목록') - 120, 상세화면.indexOf('${고침알림(d)}'));
+  ok((상세머리.match(/flex-wrap:wrap/g) || []).length >= 2, '수요 상세의 머리줄도 접힌다');
 }
 
 console.log(`${ran - fail} 통과 / ${fail} 실패`);

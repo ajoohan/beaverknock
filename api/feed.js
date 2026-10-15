@@ -217,17 +217,7 @@ export default async function handler(req, res) {
     });
 
     /* 내가 이미 보낸 조건은 표시해 준다 */
-    let mine = new Set();
-    if (rows.length) {
-      /* 조건 id 를 전부 URL 에 싣지 않는다 - 200개면 7KB 가 넘어 414 로 잘린다.
-         내가 보낸 것만 받아와서 여기서 맞춰본다. */
-      const pq = new URLSearchParams({
-        select: 'demand_id', agent_id: 'eq.' + chk.agent.id,
-        order: 'created_at.desc', limit: '1000',
-      });
-      const pr = await fetch(sbUrl('bk_proposal', pq.toString()), { headers: sbHeaders() });
-      if (pr.ok) for (const p of await pr.json()) mine.add(p.demand_id);
-    }
+    const mine = rows.length ? await myProposalTimes(chk.agent.id) : new Map();
 
     return res.status(200).json({
       ok: true,
@@ -239,7 +229,7 @@ export default async function handler(req, res) {
       need: chk.pending ? 'verify' : '',
       rows: rows.map(d => {
         const base = chk.pending ? maskDemand(d) : d;
-        return { ...base, kind_ko: KIND_KO[d.kind] || '주거', mine: mine.has(d.id) };
+        return { ...base, kind_ko: KIND_KO[d.kind] || '주거', mine: mine.has(d.id), mine_at: mine.get(d.id) || null };
       }),
     });
   } catch (e) {
@@ -252,7 +242,7 @@ export default async function handler(req, res) {
    물건 저장과 달리 조회는 조용히 물러설 자리가 없다. 한 번 더, 새 칸만 빼고 묻는다.
    이때는 손님이 건 밴드 조건이 안 실려 오므로 중개사 화면에서 그 줄만 비어 보인다. */
 const BAND_COLS = 'area_bands,bath_want,floor_bands,dir_want,age_band,';
-async function getDemands(q) {
+export async function getDemands(q) {
   let r = await fetch(sbUrl('bk_demand', q.toString()), { headers: sbHeaders() });
   if (r.ok) return r;
   const t = await r.clone().text().catch(() => '');
@@ -266,6 +256,22 @@ async function getDemands(q) {
   const q2 = new URLSearchParams(q);
   q2.set('select', 새sel);
   return getDemands(q2);           /* 둘 다 없으면 한 번 더 - 칸이 줄어드니 끝이 있다 */
+}
+
+/* 내가 보낸 제안 - 조건 번호 → 마지막으로 보낸 시각.
+   조건 id 를 전부 URL 에 싣지 않는다 - 200개면 7KB 가 넘어 414 로 잘린다.
+   내가 보낸 것만 받아와서 여기서 맞춰본다. 시각은 '보낸 뒤에 손님이 고쳤나' 를 가리는 데 쓴다
+   (2026-10-15 리뷰 - 고친 조건을 보고 제안한 중개사에게 '다시 확인' 을 띄우지 않게). */
+export async function myProposalTimes(agentId) {
+  const mine = new Map();
+  const pq = new URLSearchParams({
+    select: 'demand_id,created_at', agent_id: 'eq.' + agentId,
+    order: 'created_at.desc', limit: '1000',
+  });
+  const pr = await fetch(sbUrl('bk_proposal', pq.toString()), { headers: sbHeaders() });
+  /* 최신순이라 처음 본 것이 마지막 제안이다 */
+  if (pr.ok) for (const p of await pr.json()) if (!mine.has(p.demand_id)) mine.set(p.demand_id, p.created_at || null);
+  return mine;
 }
 
 /* ── 자격을 확인하기 전에 보이는 것 ──
@@ -392,14 +398,7 @@ async function readFitting(res, agent) {
       rows.push({ ...d, fitIds: fit.map(L => L.id), fitNames: fit.map(L => L.name) });
     }
 
-    let mine = new Set();
-    if (rows.length) {
-      const pq = new URLSearchParams({
-        select: 'demand_id', agent_id: 'eq.' + agent.id, order: 'created_at.desc', limit: '1000',
-      });
-      const pr = await fetch(sbUrl('bk_proposal', pq.toString()), { headers: sbHeaders() });
-      if (pr.ok) for (const p of await pr.json()) mine.add(p.demand_id);
-    }
+    const mine = rows.length ? await myProposalTimes(agent.id) : new Map();
 
     return res.status(200).json({
       ok: true, agent: meAgent(agent),
@@ -409,7 +408,7 @@ async function readFitting(res, agent) {
       need: chk.pending ? 'verify' : '',
       rows: rows.map(d => {
         const base = chk.pending ? maskDemand(d) : d;
-        return { ...base, kind_ko: KIND_KO[d.kind] || '주거', mine: mine.has(d.id) };
+        return { ...base, kind_ko: KIND_KO[d.kind] || '주거', mine: mine.has(d.id), mine_at: mine.get(d.id) || null };
       }),
     });
   } catch (e) {

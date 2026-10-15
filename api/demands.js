@@ -135,12 +135,16 @@ export default async function handler(req, res) {
 
 /* ── 운영 화면 열람 기록 ──
    남기기만 하고 아무도 안 보면 기록이 아니라 저장 공간이다. */
-async function readLog(req, res, p, opsUser) {
+export async function readLog(req, res, p, opsUser) {
   const limit = Math.min(parseInt(p.limit, 10) || 200, 1000);
   try {
     const q = new URLSearchParams({ select: '*', order: 'at.desc', limit: String(limit) });
     /* 연락처를 드러낸 조회만 따로 볼 수 있어야 한다 - 그게 이 표를 보는 이유다 */
     if (p.only === 'reveal') q.set('reveal', 'is.true');
+    /* 손님이 고친 조건(demand-edit)은 운영자가 한 일이 아니다 - 따로 본다(2026-10-15 리뷰).
+       섞어 두면 한 번에 읽는 줄 수 안에서 '누가 연락처를 열어 봤나' 가 손님 수정에 밀려난다. */
+    else if (p.only === 'edit') q.set('action', 'eq.demand-edit');
+    else q.set('action', 'neq.demand-edit');
     const r = await fetch(sbUrl('bk_ops_log', q.toString()), { headers: sbHeaders() });
     if (!r.ok) {
       const t = await r.text();

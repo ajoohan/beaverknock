@@ -649,7 +649,7 @@ ok((js.match(/'#\/ops\/live'/g) || []).length === 1 && /const OPS_HOME = '#\/ops
       () => ({ ...(o.내용 || { dep: 1 }) }), () => '', Date.now(), () => {}, () => {}, t => { 판.알림 = t; }, () => { 판.바뀜++; },
       x => { 판.간곳 = x; }, { warn(){} }, dd => { 판.빠짐본것 = dd; return o.빠짐 || null; }, m => { 판.고침 = m; }, fn => fn(),
       () => ({ kind: '', dongs: [] }), () => !!o.세션);
-    saveDemand(S.draft, 5, { condId: 'c1', demandId: 'd1', 임시손님: !!o.임시손님 });
+    saveDemand(S.draft, 5, { condId: 'c1', demandId: 'd1' });
     for(let i = 0; i < 5; i++) await new Promise(r => setTimeout(r, 0));
     return 판;
   };
@@ -685,13 +685,16 @@ ok((js.match(/'#\/ops\/live'/g) || []).length === 1 && /const OPS_HOME = '#\/ops
     for(let i = 0; i < 5; i++) await new Promise(r => setTimeout(r, 0));
     ok(간곳 === '#/contact' && S.conds.length === 0 && /네트워크/.test(알림), '통신이 끊겨 실패해도 거두고 연락처 화면으로 되돌린다');
   }
-  ok(/const 임시손님 = !S\.user;\s*saveDemand\(d, slotN, \{condId: id, demandId: nd\.id, 임시손님\}\);/.test(js),
-     '전달 버튼은 거둘 자리와 「이번에 만든 본인확인 손님인가」 를 함께 넘긴다');
-  /* 임시손님 은 S.user 를 만들기 **전에** 정해야 한다 - 뒤에서 재면 늘 '로그인한 손님' 이 된다 */
+  ok(/saveDemand\(d, slotN, \{condId: id, demandId: nd\.id\}\);/.test(js), '전달 버튼은 거둘 자리를 함께 넘긴다');
+  /* 2026-10-15 리뷰: 전달은 연락처 화면에서만 하고 그 화면은 로그인해야 열린다 - '본인확인 손님'
+     을 지어 넣던 길은 돌지 않았다. 걷었다. 다시 생기면 거절 때 거둘 곳이 없다. */
   {
     const 제출 = js.slice(js.indexOf("case 'submit': {"), js.indexOf("case 'detail-save'"));
-    ok(제출.indexOf('const 임시손님 = !S.user;') > 0 && 제출.indexOf('const 임시손님 = !S.user;') < 제출.indexOf("if(!S.user) S.user = {method:'verify'"),
-       '임시손님 은 본인확인 손님 자리를 만들기 전에 잰다');
+    ok(!/S\.user = \{method:'verify'/.test(js) && !/임시손님/.test(js), '전달 때 본인확인 손님 자리를 지어 넣지 않는다');
+    ok(/if\(S\.user && !S\.user\.name\) S\.user\.name = d\.name;/.test(제출), '계정에 이름이 없을 때만 이름을 채운다');
+    const 연락처 = js.slice(js.indexOf("V['#/contact'] = "), js.indexOf('\nV[', js.indexOf("V['#/contact'] = ") + 5));
+    ok(/<button[^>]*data-act="submit"/.test(연락처) && (js.match(/<button[^>]*data-act="submit"/g) || []).length === 1, '전달 단추는 연락처 화면에만 있다');
+    ok(/if\(h==='#\/contact' && 로그인전\(\)\)\{/.test(js), '연락처 화면은 로그인 전이면 열리지 않는다 - 그래서 전달 때 S.user 가 늘 있다');
   }
 
   /* ── 2026-10-15 리뷰: 늦게 온 실패가 새로 적던 조건 화면을 빼앗았다 ── */
@@ -700,27 +703,62 @@ ok((js.match(/'#\/ops\/live'/g) || []).length === 1 && /const OPS_HOME = '#\/ops
       { 사이: S => { S.draft = { kind: 'shop', name: '새 조건' }; } });
     ok(새조건.간곳 === null && 새조건.S.draft.kind === 'shop', '다른 조건을 적는 중이면 화면을 옮기지 않고 그 초안도 건드리지 않는다');
     ok(새조건.S.conds.map(c => c.id).join() === 'old' && /앞서 보낸 조건은 전달되지 않았습니다/.test(새조건.알림),
-       `보낸 조건은 거두고 전달되지 않았다고만 알린다 - "${새조건.알림}"`);
+       `보낸 조건은 거두고 전달되지 않았다고 알린다 - "${새조건.알림}"`);
+    ok(새조건.S.보류초안 === 새조건.보낸초안, '보낸 조건은 버리지 않고 맡아 둔다 - 띠에서 이어 보낼 수 있다');
     const 빈초안 = await 돌리기({ ok: false, status: 502, body: { error: '막힘' } }, true,
-      { 사이: S => { S.draft = { kind: '', dongs: [] }; } });
-    ok(빈초안.간곳 === '#/contact' && 빈초안.S.draft === 빈초안.보낸초안, '새 초안이 아직 비어 있으면 보낸 조건을 되살려 연락처 화면으로 데려간다');
+      { 사이: S => { S.draft = { kind: '', dongs: [], mapLevel: 'hanam', mapView: 'list' }; } });
+    ok(빈초안.간곳 === '#/contact' && 빈초안.S.draft === 빈초안.보낸초안 && !빈초안.S.보류초안,
+       '새 초안에 유형이 아직 없으면(보기 상태만 바뀌었어도) 보낸 조건을 되살려 연락처 화면으로 데려간다');
     const 값없음 = await 돌리기({ ok: false, status: 400, body: { error: '지역을 하나 이상 골라주세요' } }, true,
       { 빠짐: { k: 'dongs', m: '동네를 하나 이상 선택해 주세요' }, 사이: S => { S.draft = { kind: 'office' }; } });
     ok(값없음.빠짐본것 === 값없음.보낸초안, '빠진 칸은 보낸 조건에서 찾는다 - 지금 적는 새 초안이 아니다');
     ok(값없음.간곳 === null && 값없음.고침 === null, '데려가지 않았으면 그 화면에서 칸을 찾아 깜빡이지 않는다');
     const 제자리 = await 돌리기({ ok: false, status: 400, body: {} }, true, { 빠짐: { k: 'dongs', m: '동네' } });
     ok(제자리.간곳 === '#/register' && 제자리.고침 && 제자리.고침.k === 'dongs', '같은 초안이면 전처럼 그 칸이 있는 화면으로 데려가 칸을 짚는다');
+    ok(!/JSON\.stringify\(S\.draft\) === JSON\.stringify\(blankDraft\(\)\)/.test(js), '빈 초안을 초안 전체 문자열로 견주지 않는다');
   }
 
-  /* ── 2026-10-15 리뷰: 거절돼도 '본인확인 손님' 이 남아 로그인한 사람처럼 보였다 ── */
+  /* ── 2026-10-15 리뷰: 늦게 온 '본인확인 만료' 가 새 조건을 위해 다시 받은 표까지 지웠다 ── */
   {
-    const 임시 = await 돌리기({ ok: false, status: 502, body: {} }, true, { 임시손님: true, user: { method: 'verify', name: '한' } });
-    ok(임시.S.user === null, '이번 전달로 만든 본인확인 손님은 거절되면 거둔다');
-    const 원래손님 = await 돌리기({ ok: false, status: 502, body: {} }, true, { 임시손님: false, user: { method: 'verify', name: '한' } });
-    ok(원래손님.S.user && 원래손님.S.user.name === '한', '전에 이미 있던 손님 표시는 건드리지 않는다');
-    const 계정 = await 돌리기({ ok: false, status: 502, body: {} }, true, { 임시손님: true, 세션: true, user: { method: 'verify', name: '한' } });
-    ok(계정.S.user && 계정.S.user.name === '한', '그 사이 로그인해 세션이 생겼으면 그대로 둔다');
+    const 같은표 = await 돌리기({ ok: false, status: 401, body: { need_idv: true } }, true, { 내용: { dep: 1, idv_token: 'tok' } });
+    ok(같은표.S.idvToken === null && 같은표.S.idv === null, '보낸 표가 지금 표면 지운다 - 만료된 것이다');
+    const 새표 = await 돌리기({ ok: false, status: 401, body: { need_idv: true } }, true,
+      { 내용: { dep: 1, idv_token: 'tok' }, 사이: S => { S.draft = { kind: 'shop', verified: true }; S.idvToken = '새표'; S.idv = { name: '한' }; } });
+    ok(새표.S.idvToken === '새표' && 새표.S.idv && 새표.S.draft.verified === true,
+       '그 사이 다시 받은 표는 남긴다 - 새 조건이 또 거절되지 않게');
+    ok(새표.보낸초안.verified === false && 새표.S.보류초안 === 새표.보낸초안, '만료된 것은 보낸 조건의 확인 표시뿐이다');
   }
+
+  /* ── 맡아 둔 조건의 띠와 '이어서 보내기' ── */
+  {
+    const 띠몸 = 함수('function 보류띠(){');
+    const 띠 = S => new Function('S', 'esc', 'draftTitle', `${띠몸}; return 보류띠();`)(S, s => s, d => d.제목);
+    ok(띠({}) === '', '맡아 둔 조건이 없으면 띠를 그리지 않는다');
+    const 그림 = 띠({ 보류초안: { 제목: '미사동 · 월세' } });
+    ok(/전달되지 않은 조건이 있습니다/.test(그림) && 그림.includes('미사동 · 월세') && /data-act="draft-swap"/.test(그림),
+       '띠는 무엇이 남았는지 말하고 이어 보낼 단추를 낸다');
+    for(const v of ["V['#/kind'] = ", "V['#/register'] = ", "V['#/contact'] = ", "V['#/my'] = "]){
+      const i = js.indexOf(v), 끝 = js.indexOf('\nV[', i + 5);
+      ok(i > 0 && js.slice(i, 끝).includes('${보류띠()}'), `${v.slice(2, -4)} 화면에 띠가 있다`);
+    }
+    const 바꾸기 = js.slice(js.indexOf("case 'draft-swap': {"), js.indexOf('return true; }', js.indexOf("case 'draft-swap': {")) + 'return true; }'.length);
+    const 돌려 = S => { const 판 = { 간곳: null }; new Function('S', 'go', 'toast', 'a', `switch(a){ ${바꾸기} }`)(S, x => { 판.간곳 = x; }, () => {}, 'draft-swap'); return 판; };
+    const 앞 = { kind: 'home', 이름: '앞' }, 지금 = { kind: 'shop', 이름: '지금' };
+    const S1 = { 보류초안: 앞, draft: 지금 }; const 판1 = 돌려(S1);
+    ok(S1.draft === 앞 && S1.보류초안 === 지금 && 판1.간곳 === '#/contact', '바꾸면 앞 조건으로 연락처 화면에 가고, 지금 적던 것은 대신 맡는다');
+    const S2 = { 보류초안: 앞, draft: { kind: '' } }; 돌려(S2);
+    ok(S2.draft === 앞 && S2.보류초안 === null, '지금 초안이 비어 있으면 맡지 않는다 - 띠가 사라진다');
+  }
+
+  /* ── 2026-10-15 리뷰: 로그아웃 직후 새로 읽기가 서버 로그아웃 요청을 끊었다 ── */
+  {
+    const 몸 = 함수('function signOutRemote(){');
+    let 옵션 = null; const 저장 = { v: { access_token: 'a' }, get(){ return this.v; }, set(x){ this.v = x; } };
+    new Function('store', 'fetch', 'SB_URL', 'authHeaders', `${몸}; signOutRemote();`)(저장, (u, o) => { 옵션 = o; return Promise.resolve(); }, 'https://x', () => ({}));
+    ok(옵션 && 옵션.keepalive === true && 옵션.method === 'POST', '서버 로그아웃 요청은 페이지를 떠나도 끝까지 간다(keepalive)');
+    ok(저장.v === null, '브라우저의 세션은 먼저 지운다');
+  }
+
 
   /* ── 변환이 그 자리에서 실패하면 되돌림을 미룬다 - submit 이 뒤이어 완료 화면으로 넘어가 덮었다 ── */
   {

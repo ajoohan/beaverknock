@@ -2717,8 +2717,8 @@ const 로그인전 = () => !S.user && !계정확인중();
    로그인이 확인됐으면(상단바·동의 화면 이동) 다시 그린다. readAgent 가 이미 다시
    그렸으면 같은 계정이라 또 그리지 않는다 - 보고 있는 화면을 두 번 흔들지 않는다. */
 let 그린계정 = '';
-/* 본인확인만 마친 손님(S.user = {method:'verify', email:''}, id 없음)도 '로그아웃' 과
-   구분되어야 한다 - 방식까지 넣어 열쇠를 만든다 */
+/* id 없는 S.user(예전의 '본인확인 손님' 같은 것)도 '로그아웃' 과 구분되어야 한다 -
+   방식까지 넣어 열쇠를 만든다. 그 손님 자리는 2026-10-15 에 걷었지만 열쇠는 그대로 둔다. */
 const 지금계정 = () => S.user ? `${S.user.method || ''}:${S.user.id || S.user.email || S.user.name || '?'}` : '';
 /* 로그인이 끝난 뒤 가려던 곳으로 간다 - 읽고, 비우고, 간다를 한 자리에서.
    이메일 로그인·동의 저장·통신 복귀가 각자 적다가 '비우기만 하고 안 가는' 길이 생겼다. */
@@ -2733,8 +2733,7 @@ const OPS_HOME = '#/ops/live';
 /* 로그인 화면과 거기서 갈라지는 찾기 화면 - 이 안에서 오가는 동안은 '가려던 곳' 을 지킨다 */
 const 로그인길 = h => h === '#/login' || h === '#/find-id' || h === '#/reset-pw';
 /* 로그인 화면이 양식 대신 '들어와 계십니다' 를 보일 때 - 조건은 여기 한 곳.
-   · 계정 세션이 있어야 한다: 본인확인만 마친 손님(S.user = {method:'verify'})은 계정이
-     아니다 - 그분은 로그인 양식을 봐야 계정을 만들 수 있다.
+   · 계정 세션이 있어야 한다: 세션 없이 남은 S.user 는 계정이 아니다 - 로그인 양식을 봐야 한다.
    · 직접 로그인하거나(authBusy) 가입 동의를 저장하는(agBusy) 중이면 그쪽 화면이 맞다.
    · 운영 화면으로 가는 길이면 관리자 계정으로 다시 들어오는 경우가 많다 - 양식을 보인다. */
 const 로그인됨화면 = () => !!(S.user && 세션있음() && !S.authBusy && !S.agBusy && S.afterLogin !== OPS_HOME);
@@ -3631,6 +3630,7 @@ V['#/kind'] = () => `
   <div class="split">
     ${rail(1,'조건을 걸어두면<br>맞는 자리가 문을 두드립니다')}
     <div class="formcol"><div class="in">
+      ${보류띠()}
       <div><h1 class="t" style="font-size:${isMo()?21:25}px">어떤 곳을 찾으세요?</h1>
       <p class="sub">고르신 것에 따라 다음 질문이 달라집니다.</p></div>
       <div style="display:flex;flex-direction:column;gap:12px">
@@ -3674,6 +3674,7 @@ V['#/register'] = () => {
   <div class="split">
     ${rail(2, shop? w.rail : '조건을 걸어두면<br>맞는 물건이 문을 두드립니다')}
     <div class="formcol"><div class="in">
+      ${보류띠()}
       <div><h1 class="t" style="font-size:${isMo()?21:25}px">${shop? w.ask : '어떤 집을 찾으세요?'}</h1>
       <p class="sub">아는 것만 채우셔도 됩니다.
         <!-- inline-flex 로 묶으면 기준선이 점(글자 없는 i)에 잡혀 앞 문장보다 한 칸 내려앉았다 -
@@ -5188,6 +5189,7 @@ V['#/contact'] = () => { const d=S.draft; const ok = contactOk(d);
   <div class="split">
     ${rail(3,'거의 다 왔습니다.<br>본인확인만 하면 끝이에요')}
     <div class="formcol"><div class="in">
+      ${보류띠()}
       <div><h1 class="t" style="font-size:${isMo()?21:25}px">${S.idvCfg&&S.idvCfg.enabled?'본인확인만 하면 끝입니다':'연락처만 남기면 끝입니다'}</h1>
       <p class="sub">확인된 이름과 연락처로, <b style="color:var(--n900)">조건이 맞을 때만</b> 연락이 갑니다.</p></div>
 
@@ -5383,6 +5385,7 @@ V['#/my'] = () => {
       <h1 class="t" style="font-size:${isMo()?21:25}px;margin-top:8px">내 조건 <span style="color:var(--ind)">${S.conds.length}건</span></h1></div>
       <button class="btn sec sm" data-act="restart">+ 조건 등록</button>
     </div>
+    ${보류띠()}
     ${S.mineErr ? `<div class="card pad" style="border-color:var(--warnline);background:var(--warnbg);box-shadow:none;
       display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
       <span style="min-width:0"><b style="display:block;font-size:13.5px">${esc(S.mineErr)}</b>
@@ -7299,6 +7302,23 @@ function demandPayload(d, slotN){
   };
 }
 
+/* 전달되지 않고 맡아 둔 조건 (2026-10-15 리뷰).
+   새 조건을 적는 중에 앞 조건의 실패가 늦게 오면, 화면은 빼앗지 않고 앞 조건을 여기 맡긴다.
+   전에는 '다시 등록해 주세요' 라고만 하고 적어 둔 지역·예산·메모를 그대로 버렸다.
+   띠의 단추는 '바꾸기' 다 - 지금 적던 조건도 버리지 않고 대신 맡아 둔다. */
+function 보류띠(){
+  const b = S.보류초안;
+  if(!b) return '';
+  return `
+      <div class="card pad" role="status" style="display:flex;align-items:center;gap:10px 14px;flex-wrap:wrap;
+        border-color:var(--warnline);background:var(--warnbg);box-shadow:none">
+        <span style="flex:1;min-width:0;font-size:13.5px;line-height:1.6;color:var(--n900)">
+          <b style="display:block;font-weight:700">전달되지 않은 조건이 있습니다</b>
+          <span style="color:var(--n700)">${esc(draftTitle(b))}</span></span>
+        <button class="btn sec sm" data-act="draft-swap">그 조건 이어서 보내기</button>
+      </div>`;
+}
+
 /* 저장은 화면을 막지 않는다 - 결과는 나중에 토스트로만 알린다 */
 /* 같은 내용인지 가리는 짧은 지문(djb2). 보안용이 아니다 - 바뀌었는지만 본다. */
 const 짧은서명 = t => { let h = 5381; for(let i = 0; i < t.length; i++) h = ((h << 5) + h + t.charCodeAt(i)) | 0; return (h >>> 0).toString(36) + ':' + t.length; };
@@ -7309,10 +7329,12 @@ function saveDemand(d, slotN, 자리){
      먼저 그려 둔 이번 조건·수요·즉시 제안을 거두고, 적은 것은 그대로 둔 채 연락처 화면으로. */
   /* 실패는 늦게 올 수 있다(통신이 느리면 수십 초). 그 사이 손님이 '+ 조건 등록' 으로 새 조건을
      적기 시작했으면 S.draft 는 이미 다른 것이다(2026-10-15 리뷰) - 그 화면을 빼앗지 않는다.
-     새 초안이 아직 비어 있으면 보낸 조건을 되살려 그대로 데려간다. */
+     새 초안이 아직 비어 있으면(유형도 안 골랐으면) 보낸 조건을 되살려 그대로 데려간다.
+     '비었다' 는 유형으로만 본다 - 유형을 고르기 전에는 다른 칸을 채울 수 없고(라우터가 #/kind 로
+     돌려보낸다), 초안 전체를 빈 초안과 견주면 지도 단계 같은 보기 상태 하나에도 어긋났다. */
   const 그자리 = () => {
     if(S.draft === d) return true;
-    if(JSON.stringify(S.draft) === JSON.stringify(blankDraft())){ S.draft = d; return true; }
+    if(!S.draft || !S.draft.kind){ S.draft = d; return true; }
     return false;
   };
   const 되돌리기 = (말, 갈곳 = '#/contact') => {
@@ -7322,22 +7344,23 @@ function saveDemand(d, slotN, 자리){
       S.props   = S.props.filter(p => p.cond !== 자리.condId);
       if(S.inboxCond === 자리.condId) S.inboxCond = null;
       S.matched = 0;
-      /* 보내면서 만들어 둔 '본인확인 손님' 자리도 거둔다 - 계정이 아니라 이번 전달의 표시였다 */
-      if(자리.임시손님 && S.user && S.user.method === 'verify' && !세션있음()) S.user = null;
     }
     S.saved = false;
     if(!그자리()){
+      /* 적던 것은 버리지 않는다 - 맡아 두고, 화면 위 띠에서 언제든 바꿔 이어 보낼 수 있게 한다 */
+      S.보류초안 = d;
       render();
-      toast('앞서 보낸 조건은 전달되지 않았습니다 - 지금 적는 조건을 마치신 뒤 다시 등록해 주세요');
+      toast('앞서 보낸 조건은 전달되지 않았습니다 - 위의 띠에서 이어서 보내실 수 있습니다');
       return false;
     }
     go(갈곳);
     toast(말);
     return true;
   };
-  let body;
+  let body, 보낸표 = null;
   try {
     const 내용 = demandPayload(d, slotN);
+    보낸표 = 내용.idv_token || null;
     /* 전달 번호 - 서버가 받았다고 할 때까지 같은 내용이면 같은 번호를 쓴다. 답을 못 받아 다시
        누르면 같은 번호로 가서, 이미 저장된 것이면 서버가 '이미 받았다' 로 답한다(0029).
        **내용이 바뀌었으면 새 번호** - 같은 번호로 가면 서버가 고친 내용을 버리고 처음 것을 남긴다.
@@ -7367,7 +7390,10 @@ function saveDemand(d, slotN, 자리){
          화면으로 바꾼다(파트너 가입과 같은 처리). */
       if(j.need_idv){
         const 받았었다 = !!d.verified;
-        S.idvToken=null; S.idv=null;
+        /* 확인 표는 화면 전체에서 하나다. 그 사이 새 조건을 위해 다시 받은 표라면 지우지 않는다 -
+           지우면 '확인됨' 으로 보이는 새 조건이 또 거절되고 본인확인을 한 번 더(요금도) 받게 된다(2026-10-15 리뷰).
+           만료된 것은 이번에 보낸 표뿐이다. */
+        if(!S.idvToken || S.idvToken === 보낸표){ S.idvToken=null; S.idv=null; }
         Object.assign(d, {verified:false, vstep:'idle', vat:''});
         idvMustBeLive();
         return 되돌리기(받았었다 ? '본인확인이 만료되어 전달되지 않았습니다 - 다시 확인한 뒤 전달해 주세요'
@@ -9863,7 +9889,9 @@ function signOutRemote(){
   const sess = store.get();
   store.set(null);
   if(!sess || !sess.access_token) return;
-  fetch(`${SB_URL}/auth/v1/logout`, {method:'POST', headers: authHeaders(sess.access_token)}).catch(()=>{});
+  /* 부른 쪽은 곧바로 페이지를 떠난다(로그아웃은 새로 읽기로 끝난다). keepalive 가 없으면 떠나는 순간
+     이 요청이 취소되어 서버의 refresh token 이 폐기되지 않은 채 남았다(2026-10-15 리뷰) */
+  fetch(`${SB_URL}/auth/v1/logout`, {method:'POST', headers: authHeaders(sess.access_token), keepalive:true}).catch(()=>{});
 }
 
 /* 함정칸은 화면에만 있고 상태에는 없다 - 보낼 때 직접 읽는다.
@@ -10627,9 +10655,7 @@ function handle(a,v,el){
                 ? [d.shopFloorFree, d.facFree].filter(Boolean)
                 : (d.musts&&d.musts.length?d.musts:[])).slice(0,3)};
       S.demands.unshift(nd);
-      /* 로그인 안 한 손님은 이번 전달로 '본인확인 손님' 이 된다. 거절되면 그 자리도 거둔다 */
-      const 임시손님 = !S.user;
-      saveDemand(d, slotN, {condId: id, demandId: nd.id, 임시손님});   /* 실제 저장 - 화면은 기다리지 않는다(거절되면 되돌린다) */
+      saveDemand(d, slotN, {condId: id, demandId: nd.id});   /* 실제 저장 - 화면은 기다리지 않는다(거절되면 되돌린다) */
 
       /* ── 즉시 매칭 ── 이미 등록된 물건 중 조건에 맞는 것을 바로 제안으로 전환 */
       const fit = listingsFor(nd).slice(0, slotN);
@@ -10638,8 +10664,9 @@ function handle(a,v,el){
         nd.slotsLeft = Math.max(0, nd.slotsLeft - 1);
       });
       S.matched = fit.length;
-      if(!S.user) S.user = {method:'verify', label:'본인확인', name:d.name, email:''};
-      else if(!S.user.name) S.user.name = d.name;
+      /* 전달은 연락처 화면에서만 하고, 그 화면은 로그인해야 열린다 - 여기서 S.user 는 늘 있다.
+         전에는 없을 때 '본인확인 손님' 을 지어 넣었는데 돌지 않는 길이었다(2026-10-15 리뷰에서 걷음). */
+      if(S.user && !S.user.name) S.user.name = d.name;
       S.inboxCond = id; S.form = {};
       go('#/done');
       toast(fit.length ? `맞는 곳 ${fit.length}건을 바로 찾았습니다` : '조건이 전달되었습니다');
@@ -10648,6 +10675,15 @@ function handle(a,v,el){
     case 'detail-save': { const c=S.conds[0]; if(c){ c.pct=detailPct(S.draft); if(S.draft.memo) c.memo=S.draft.memo; }
       toast('저장했습니다 · 더 자세할수록 맞는 제안이 옵니다'); go('#/my'); return true; }
     case 'restart': S.draft=blankDraft(); go('#/kind'); return true;
+    /* 맡아 둔(전달되지 않은) 조건과 지금 초안을 바꾼다. 지금 것이 비어 있지 않으면 대신 맡는다 */
+    case 'draft-swap': {
+      const 맡긴 = S.보류초안;
+      if(!맡긴) return true;
+      S.보류초안 = S.draft && S.draft.kind && S.draft !== 맡긴 ? S.draft : null;
+      S.draft = 맡긴;
+      go('#/contact');                  /* 한 번 전달을 눌렀던 조건이라 유형·연락처까지 차 있다 */
+      toast('앞서 적으신 조건입니다 - 확인하고 다시 전달해 주세요');
+      return true; }
     case 'pick-cond': S.inboxCond=v; render(); return true;
 
     case 'pause': { const c=S.conds.find(x=>x.id===v); c.status = c.status==='paused'?'active':'paused';

@@ -682,7 +682,7 @@ ok((js.match(/'#\/ops\/live'/g) || []).length === 1 && /const OPS_HOME = '#\/ops
   ok(빠름.간곳 === '#/contact', '너무 빠르다는 거절도 되돌린다 - 다시 누르면 된다');
   /* 통신이 끊긴 경우 */
   {
-    const 몸2 = 지문 + '\n' + 함수('function saveDemand(d, slotN, 자리){');
+    const 몸2 = 도우미 + '\n' + 지문 + '\n' + 함수('function saveDemand(d, slotN, 자리){');
     const S = { draft: { kind: 'apt', verified: true }, conds: [{ id: 'c1' }], demands: [{ id: 'd1' }], props: [], matched: 1, inboxCond: 'c1' };
     let 간곳 = null, 알림 = '';
     new Function('S', 'apiFetch', 'demandPayload', 'trapValue', 'FORM_T0', 'loadMine', 'render', 'toast', 'idvMustBeLive', 'go', 'console',
@@ -818,8 +818,22 @@ ok((js.match(/'#\/ops\/live'/g) || []).length === 1 && /const OPS_HOME = '#\/ops
     const 제출 = js.slice(js.indexOf("case 'submit': {"), js.indexOf("case 'detail-save'"));
     ok(/^case 'submit': \{\s*\/\*[^*]*\*\/\s*if\(d\.전달됨\)\{ toast\([^)]*\); go\('#\/my'\); return true; \}/.test(제출),
        '전달 처리도 맨 앞에서 전달된 초안을 막는다 - 엔터 등 다른 길로 와도');
+    /* 2026-10-15 리뷰: 안내만 위에 얹고 양식은 그대로 두니 고친 것이 반영되는 줄 알았고,
+       맨 아래 꺼진 단추는 고장처럼 보였다 - 전달된 초안은 따로 그린다 */
+    ok(/V\['#\/contact'\] = \(\) => \{ const d=S\.draft; if\(d\.전달됨\) return 전달된연락처\(d\);/.test(js),
+       '전달된 초안이면 연락처 화면 대신 \'이미 전달된 조건\' 화면을 그린다');
+    const 전달화면몸 = 함수('function 전달된연락처(d){');
+    const 요약몸 = 함수('function recapHTML(d, 머리){');
+    const 화면 = new Function('isMo', 'mprog', 'mobileBack', 'logoLockup', 'rail', '보류띠', 'esc', 'draftTitle', 'draftSummary',
+      `${요약몸}\n${전달화면몸}; return 전달된연락처;`)(() => true, () => '', () => '', () => '', () => '', () => '', s => s, () => '망월동 · 월세', () => [['예산', '1,000 / 70']])
+      ({ kind: 'home', dongs: ['망월동'], memo: '반려견', 전달됨: true });
+    ok(/이미 전달된 조건입니다/.test(화면) && /이렇게 전달되었습니다/.test(화면) && 화면.includes('망월동') && 화면.includes('반려견'),
+       '무엇이 전달됐는지 요약으로 보여 준다');
+    ok(!/data-act="submit"/.test(화면) && !/data-act="(pref|times|agree|agree-all)"/.test(화면) && !/data-in=/.test(화면),
+       '고칠 칸과 전달 단추는 내지 않는다 - 고친 것이 반영되는 줄 알거나 꺼진 단추를 고장으로 여기지 않게');
+    ok(/data-act="draft-again"/.test(화면) && /data-go="#\/my"/.test(화면), '같은 내용으로 새로 걸기와 내 조건 보기를 낸다');
     const 연락처 = js.slice(js.indexOf("V['#/contact'] = "), js.indexOf('\nV[', js.indexOf("V['#/contact'] = ") + 5));
-    ok(/\$\{d\.전달됨 \? `[\s\S]*?이미 전달된 조건입니다[\s\S]*?data-act="draft-again"/.test(연락처), '연락처 화면이 이미 전달됐다고 말하고 새로 걸 길을 낸다');
+    ok(/\$\{recapHTML\(d, '이대로 전달됩니다'\)\}/.test(연락처) && !/<div class="recap">/.test(연락처), '연락처 화면도 같은 요약 함수를 쓴다 - 두 벌이 아니다');
     const 다시 = js.slice(js.indexOf("case 'draft-again': {"), js.indexOf('return true; }', js.indexOf("case 'draft-again': {")) + 'return true; }'.length);
     const S = { draft: { kind: 'home', dongs: ['망월동'], 전달됨: true, reqId: 'r1', reqSig: 'x' } };
     new Function('S', 'render', 'toast', 'a', `switch(a){ ${다시} }`)(S, () => {}, () => {}, 'draft-again');
@@ -843,6 +857,18 @@ ok((js.match(/'#\/ops\/live'/g) || []).length === 1 && /const OPS_HOME = '#\/ops
     const 띠 = S => new Function('S', 'esc', 'draftTitle', 'sessionStorage', `${띠몸}; return 보류띠();`)(S, s => s, () => '제목', 저장소2);
     ok(띠({}) === '' && /전달되지 않은 조건이/.test(띠({ user: { id: 'A' } })), '누구의 것인지 모를 때는 띠를 보이지 않고, 본인에게만 보인다');
   }
+
+  /* ── 2026-10-15 리뷰: 실패가 온 '지금' 의 계정을 적어, 그 사이 세션이 끝났으면 본인 것도 버려졌다 ── */
+  {
+    const 끊김 = await 돌리기({ ok: false, status: 502, body: {} }, true,
+      { user: { id: 'A' }, draft: { dongs: ['망월동'] }, 사이: S => { S.user = null; S.draft = { kind: 'shop', dongs: [] }; } });
+    ok(끊김.S.보류목록[0] && 끊김.S.보류목록[0].맡긴계정 === 'A', '보낼 때의 계정을 적는다 - 실패가 올 때 로그인이 풀려 있어도');
+    const 다시들어옴 = new Function('S', 'sessionStorage', `${도우미}; return 맡긴목록();`)({ user: { id: 'A' } }, 끊김.저장소);
+    ok(다시들어옴.length === 1, '같은 사람이 다시 들어오면 그대로 보인다');
+    ok(/const 보낸계정 = 계정키\(\);/.test(함수('function saveDemand(d, slotN, 자리){').split('\n').slice(0, 3).join('\n')), 'saveDemand 는 시작하자마자 계정을 잡는다');
+  }
+  /* 탭 저장소에 적는 곳은 하나 - 두 벌이면 한쪽만 고쳐 어긋난다 */
+  ok((js.match(/sessionStorage\.setItem\(HELD_KEY/g) || []).length === 1, '맡긴 목록을 저장소에 적는 코드는 한 곳(보류기록)뿐이다');
 
   /* ── 2026-10-15 리뷰: 저장소 값이 어긋나면 띠를 그리다 화면 넷이 통째로 죽었다 ── */
   {

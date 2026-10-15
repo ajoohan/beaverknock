@@ -5181,7 +5181,50 @@ function contactOk(d){
   return idvOn ? (base && d.verified) : (base && String(d.name||'').trim().length >= 2);
 }
 
-V['#/contact'] = () => { const d=S.draft; const ok = contactOk(d);
+/* '이대로 전달됩니다' 요약 - 연락처 화면과 '이미 전달된 조건' 화면이 같이 쓴다 */
+function recapHTML(d, 머리){
+  return `
+      <div class="recap">
+        <div class="rc-top">
+          <span class="rc-eb"><i></i>${esc(머리)}</span>
+          <b class="rc-ttl">${esc(draftTitle(d))}</b>
+        </div>
+        <div class="rc-body">
+          <div class="rc-row"><span class="rc-k">${d.kind==='shop'?'상권':'지역'}</span>
+            <span class="rc-v rc-tags">${(d.dongs.length?d.dongs:['서울·경기']).map(x=>`<span>${esc(x)}</span>`).join('')}</span></div>
+          ${draftSummary(d).map(([k,v])=>`<div class="rc-row${k==='예산'?' hi':''}"><span class="rc-k">${esc(k)}</span><span class="rc-v">${esc(v)}</span></div>`).join('')}
+        </div>
+        ${d.memo?`<div class="rc-memo">${esc(d.memo)}</div>`:''}
+        <div class="rc-note">본인확인된 <b style="color:var(--n700);font-weight:800">이름·연락처</b>가 연결하실 때 전달됩니다 ·
+          조건당 최대 <b style="color:var(--n700);font-weight:800">5곳</b>의 공인중개사사무소 · 3개월 후 자동 파기</div>
+      </div>
+`;
+}
+
+/* 이미 전달된 초안으로 연락처 화면에 왔다(완료 화면에서 뒤로 가기 등) - 2026-10-15 리뷰.
+   양식을 그대로 두면 고친 것이 걸린 조건에 반영되는 줄 알고, 맨 아래 꺼진 단추는 고장처럼 보였다.
+   고칠 칸은 내지 않고 '이렇게 전달되었다' 만 보여 준다. 같은 내용으로 또 걸려면 새로 걸기로. */
+function 전달된연락처(d){ return `
+<div class="scr fade">
+  ${mprog(100)}
+  ${isMo()? `<div class="nav pad">${mobileBack('뒤로','#/register')}<span style="margin:0 auto">${logoLockup({h:25})}</span><span class="muted" style="font-size:12.5px">4/4</span></div>`:''}
+  <div class="split">
+    ${rail(3,'이미 전달된<br>조건입니다')}
+    <div class="formcol"><div class="in">
+      ${보류띠()}
+      <div><h1 class="t" style="font-size:${isMo()?21:25}px">이미 전달된 조건입니다</h1>
+      <p class="sub">다시 보내면 같은 조건이 두 번 걸립니다. 걸어 두신 조건은 「내 조건」에서 보고 고치실 수 있습니다.</p></div>
+      ${recapHTML(d, '이렇게 전달되었습니다')}
+    </div></div>
+  </div>
+  <div class="foot">
+    <!-- 휴대폰에서는 '이 내용으로 새로 걸기' 가 두 줄로 접혀 짧게 쓴다 -->
+    <button class="btn sec" data-act="draft-again" style="white-space:nowrap">${isMo()?'새로 걸기':'이 내용으로 새로 걸기'}</button>
+    <button class="btn pri ${isMo()?'blk':''}" data-go="#/my">내 조건 보기</button>
+  </div>
+</div>`;}
+
+V['#/contact'] = () => { const d=S.draft; if(d.전달됨) return 전달된연락처(d); const ok = contactOk(d);
   /* 무엇을 마쳐야 다음이 열리는가. 본인확인이 붙어 있으면 확인,
      아직이면 이름과 연락처다 - 잠그는 기준과 접수 기준이 어긋나면 안 된다. */
   const idvOn = !!(S.idvCfg && S.idvCfg.enabled);
@@ -5194,13 +5237,6 @@ V['#/contact'] = () => { const d=S.draft; const ok = contactOk(d);
     ${rail(3,'거의 다 왔습니다.<br>본인확인만 하면 끝이에요')}
     <div class="formcol"><div class="in">
       ${보류띠()}
-      ${d.전달됨 ? `<div class="card pad" role="status" style="display:flex;align-items:center;gap:10px 14px;flex-wrap:wrap;
-        border-color:var(--okline);background:var(--okbg);box-shadow:none">
-        <span style="flex:1 1 220px;min-width:0;font-size:13.5px;line-height:1.6;color:var(--n900)">
-          <b style="display:block;font-weight:700">이미 전달된 조건입니다</b>
-          <span style="color:var(--n700)">다시 보내면 같은 조건이 두 번 걸립니다. 걸어 두신 조건은 「내 조건」에서 보실 수 있습니다.</span></span>
-        <button class="btn sec sm" data-act="draft-again">이 내용으로 새로 걸기</button>
-      </div>` : ''}
       <div><h1 class="t" style="font-size:${isMo()?21:25}px">${S.idvCfg&&S.idvCfg.enabled?'본인확인만 하면 끝입니다':'연락처만 남기면 끝입니다'}</h1>
       <p class="sub">확인된 이름과 연락처로, <b style="color:var(--n900)">조건이 맞을 때만</b> 연락이 갑니다.</p></div>
 
@@ -5262,20 +5298,7 @@ V['#/contact'] = () => { const d=S.draft; const ok = contactOk(d);
         <button class="lnk" data-act="agree-close" style="font-size:12.5px;font-weight:700;color:var(--n500);text-decoration:underline;text-underline-offset:2px">접기</button></div>` : ''}
       `}
 
-      <div class="recap">
-        <div class="rc-top">
-          <span class="rc-eb"><i></i>이대로 전달됩니다</span>
-          <b class="rc-ttl">${esc(draftTitle(d))}</b>
-        </div>
-        <div class="rc-body">
-          <div class="rc-row"><span class="rc-k">${d.kind==='shop'?'상권':'지역'}</span>
-            <span class="rc-v rc-tags">${(d.dongs.length?d.dongs:['서울·경기']).map(x=>`<span>${esc(x)}</span>`).join('')}</span></div>
-          ${draftSummary(d).map(([k,v])=>`<div class="rc-row${k==='예산'?' hi':''}"><span class="rc-k">${esc(k)}</span><span class="rc-v">${esc(v)}</span></div>`).join('')}
-        </div>
-        ${d.memo?`<div class="rc-memo">${esc(d.memo)}</div>`:''}
-        <div class="rc-note">본인확인된 <b style="color:var(--n700);font-weight:800">이름·연락처</b>가 연결하실 때 전달됩니다 ·
-          조건당 최대 <b style="color:var(--n700);font-weight:800">5곳</b>의 공인중개사사무소 · 3개월 후 자동 파기</div>
-      </div>
+      ${recapHTML(d, '이대로 전달됩니다')}
       </div>
     </div></div>
   </div>
@@ -7336,14 +7359,18 @@ const 맡긴목록 = () => {
   const 나 = 계정키();
   if(나 && S.보류목록.some(x => (x.맡긴계정 || '') !== 나)){
     S.보류목록 = S.보류목록.filter(x => (x.맡긴계정 || '') === 나);
-    try{ S.보류목록.length ? sessionStorage.setItem(HELD_KEY, JSON.stringify(S.보류목록)) : sessionStorage.removeItem(HELD_KEY); }catch(e){}
+    보류기록(S.보류목록);
   }
   return S.보류목록;
 };
-const 보류쓰기 = () => {
-  try{ const l = 맡긴목록(); l.length ? sessionStorage.setItem(HELD_KEY, JSON.stringify(l)) : sessionStorage.removeItem(HELD_KEY); }catch(e){}
-};
-const 맡기기 = d => { d.맡긴계정 = 계정키(); const l = 맡긴목록(); if(!l.includes(d)) l.push(d); 보류쓰기(); };
+/* 탭 저장소에 적는 곳은 여기 하나다 - 맡긴목록 안에서 보류쓰기를 부르면 서로를 부르게 된다 */
+function 보류기록(l){
+  try{ l.length ? sessionStorage.setItem(HELD_KEY, JSON.stringify(l)) : sessionStorage.removeItem(HELD_KEY); }catch(e){}
+}
+const 보류쓰기 = () => 보류기록(맡긴목록());
+/* 계정은 '보낼 때' 의 것을 적는다(2026-10-15 리뷰). 실패가 온 '지금' 의 계정을 적으면, 그 사이
+   세션이 끝나 S.user 가 비었을 때 빈 주인이 적혀 본인이 다시 들어와도 남의 것으로 버려졌다. */
+const 맡기기 = (d, 보낸계정) => { d.맡긴계정 = 보낸계정 || 계정키(); const l = 맡긴목록(); if(!l.includes(d)) l.push(d); 보류쓰기(); };
 function 보류띠(){
   /* 로그인 전(계정을 읽는 중 포함)에는 누구의 것인지 모르므로 보이지 않는다 */
   if(!계정키()) return '';
@@ -7368,6 +7395,7 @@ const 띠화면 = h => ['#/kind', '#/register', '#/contact', '#/my'].includes(h)
 /* 같은 내용인지 가리는 짧은 지문(djb2). 보안용이 아니다 - 바뀌었는지만 본다. */
 const 짧은서명 = t => { let h = 5381; for(let i = 0; i < t.length; i++) h = ((h << 5) + h + t.charCodeAt(i)) | 0; return (h >>> 0).toString(36) + ':' + t.length; };
 function saveDemand(d, slotN, 자리){
+  const 보낸계정 = 계정키();           /* 실패가 늦게 와도 누구의 조건인지 알 수 있게, 보낼 때 잡아 둔다 */
   /* 서버가 받지 않았다 - 이유가 무엇이든(본인확인·값·빈도·DB·통신) 한 길로 되돌린다.
      화면은 먼저 '접수되었습니다' 로 넘어가 있으므로 그 자리에 두면 손님은 전달된 줄 안다 -
      조건은 메모리에만 있다가 '내 조건' 을 다시 열면 사라진다(2026-10-13).
@@ -7393,7 +7421,7 @@ function saveDemand(d, slotN, 자리){
     S.saved = false;
     if(!그자리()){
       /* 적던 것은 버리지 않는다 - 맡아 두고, 화면 위 띠에서 언제든 바꿔 이어 보낼 수 있게 한다 */
-      맡기기(d);
+      맡기기(d, 보낸계정);
       render();
       /* 띠가 없는 화면(제안함·완료 등)에서는 띠가 있는 곳을 말한다 */
       toast(`앞서 보낸 조건은 전달되지 않았습니다 - ${띠화면(location.hash) ? '위의 띠' : '「내 조건」 화면의 띠'}에서 이어서 보내실 수 있습니다`);

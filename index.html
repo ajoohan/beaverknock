@@ -162,7 +162,8 @@ body.mo .nav .items{display:none}
 body.mo .footlinks{gap:10px 16px!important}
 /* 바닥글 링크도 위 규칙 하나로 44px 이 된다. 어제 넣었던 덮개(::after)와
    줄 사이 30px 은 걷는다 - 덮개를 안 쓰니 벌려 둘 까닭이 없다. */
-body.mo .back{position:relative}
+/* 모바일에서 손가락으로 누르는 자리는 40px 이상(2026-10-15 UI 검수 - 30px 이었다) */
+body.mo .back{position:relative;display:inline-flex;align-items:center;min-height:40px}
 body.mo .back::after{content:"";position:absolute;left:0;right:0;top:-9px;bottom:-9px}
 
 /* 모든 변형이 같은 크기로 그려지도록 테두리를 항상 1.5px 잡아둔다 -
@@ -395,7 +396,7 @@ svg.map text{pointer-events:none;user-select:none}
 
 /* 보는 방식은 둘 중 하나다 - 칩 두 개보다 하나로 붙은 토글이 '둘 중 하나' 를 말한다 */
 .seg{display:inline-flex;flex:none;background:var(--n100);border-radius:var(--r-full);padding:3px}
-.seg button{min-height:38px;padding:0 16px;border-radius:var(--r-full);
+.seg button{min-height:40px;padding:0 16px;border-radius:var(--r-full);
   font-size:12.5px;font-weight:700;color:var(--n500);cursor:pointer;white-space:nowrap}
 .seg button.on{background:var(--white);color:var(--ind);box-shadow:var(--sh0)}
 
@@ -1080,7 +1081,7 @@ body.mo .vcard .vbtn{width:100%;margin-top:10px}
 .idvPick .btn .t{font-size:15px;font-weight:700}
 .idvPick .btn .d{font-size:12px;font-weight:600;opacity:.82}
 /* '선택 해제' - 칩 줄 바로 아래의 작은 글 단추. 과녁은 32px(WCAG 2.5.8 최소 24) */
-.chip-clear{display:inline-flex;align-items:center;min-height:32px;margin-top:4px;padding:0 2px;
+.chip-clear{display:inline-flex;align-items:center;min-height:40px;margin-top:4px;padding:0 2px;
   font-size:12.5px;font-weight:600;color:var(--n500);text-decoration:underline;text-underline-offset:3px;cursor:pointer}
 .chip-clear:hover{color:var(--ind)}
 .heroBand{width:100%;max-width:min(1760px,94vw);margin:0 auto;padding:0 clamp(32px,3.4vw,76px)}
@@ -1152,14 +1153,18 @@ body.mo .vcard .vbtn{width:100%;margin-top:10px}
    굵기는 건드리지 않는다 - font-weight 는 전환되지 않아, .run 이 붙는 순간
    넷이 한꺼번에 굵어지면서 차례가 무너진다. 색과 바탕만 바꾼다.
    여백은 꺼져 있을 때도 그대로 둔다 - 켜질 때 줄이 밀리지 않게. */
-.steps.mini{position:static}
+.steps.mini{position:static;display:flex;justify-content:center;flex-wrap:wrap;gap:4px 5px}
+/* 375px 에서는 넷이 한 줄에 들어가지 않아 '④' 만 아래 줄에 홀로 떨어졌다(2026-10-15 UI 검수).
+   좁은 폰에서는 처음부터 둘씩 두 줄로 고르게 놓는다 - 높이는 같고 홀로 남는 줄이 없다. */
+@media (max-width:400px){ .steps.mini{display:grid;grid-template-columns:repeat(2,max-content);justify-content:center} }
 .steps.mini .ms{padding:3px 7px;border-radius:var(--r-full);background:transparent;
   color:var(--n500);font-weight:700;white-space:nowrap;
   transition:color .45s var(--e-out),background-color .45s var(--e-out)}
 /* --ind50 로는 흰 바 위에서 1.09:1 이라 알약이 켜진 티가 나지 않았다 - 글자색만
-   바뀌는 꼴이다. --ind200 은 1.51:1 로 보이고, 그 위의 글자는 6.02:1 로 읽힌다.
+   바뀌는 꼴이다. --ind200 은 1.51:1 로 보인다. 그 위 글자는 --ind 로는 4.29:1 이라
+   작은 글씨 기준(4.5)에 못 미쳤다(2026-10-15 UI 검수) - 한 단계 짙은 --ind700 으로.
    바로 아래 주 버튼이 짙은 남보라라, 알약까지 꽉 채우면 둘이 다툰다. */
-.steps.mini.run .ms{color:var(--ind);background:var(--ind200)}
+.steps.mini.run .ms{color:var(--ind700);background:var(--ind200)}
 
 /* 이미 채워진 걸 다시 그리는 자리 - 시간표 없이 바로 완성된 모습으로 */
 .steps.done .no,.steps.done .stt,.steps.done .sd,.steps.done .ms,
@@ -1280,7 +1285,7 @@ tbody tr.clickable:hover{background:var(--n50)}
 .recap .rc-body{padding:4px 24px}
 .recap .rc-row{display:flex;gap:16px;align-items:flex-start;padding:14px 0;border-top:1px solid var(--n100)}
 .recap .rc-row:first-child{border-top:none}
-.recap .rc-k{flex:none;width:64px;padding-top:3px;font-size:11px;font-weight:700;color:var(--n500)}
+.recap .rc-k{flex:none;width:64px;padding-top:3px;font-size:12px;font-weight:700;color:var(--n500)}
 .recap .rc-v{flex:1;min-width:0;font-size:16px;font-weight:700;line-height:1.6;color:var(--n900);word-break:keep-all}
 .recap .rc-k{padding-top:5px}
 body.mo .recap .rc-ttl{font-size:25px}
@@ -1303,7 +1308,9 @@ body.mo .recap .rc-v{font-size:15px}
 .donebar .t{flex:1;min-width:0;font-size:13.5px;line-height:1.5;color:var(--n700);word-break:keep-all}
 .donebar .t b{font-weight:700;color:var(--ok)}
 .donebar .lnk{flex:none;font-size:12.5px;font-weight:700;color:var(--n500);
-  text-decoration:underline;text-underline-offset:2px;white-space:nowrap}
+  text-decoration:underline;text-underline-offset:2px;white-space:nowrap;
+  /* 글자는 작아도 누르는 자리는 넉넉히 - 위아래로 늘리고 바깥 여백으로 되돌려 줄 높이는 그대로 */
+  padding:12px 6px;margin:-12px -6px}
 .donebar .lnk:hover{color:var(--n700)}
 body.mo .donebar{gap:8px;padding:10px 12px}
 body.mo .donebar .t{font-size:12.5px}
@@ -3157,7 +3164,7 @@ V['#/'] = () => `
          시간표도 같은 STEP_ONE 을 본다. 둘 중 하나만 그려지므로 부딪히지 않는다. -->
     <!-- 가운뎃점은 뺀다. 알약이 생기면서 칸이 저절로 갈리는데 점까지 두면
          375px 한 줄에 안 들어간다 - 두 줄이 되면 아래 버튼이 그만큼 밀린다. -->
-    <div class="steps mini" style="display:flex;justify-content:center;flex-wrap:wrap;gap:4px 5px;font-size:11px">
+    <div class="steps mini" style="font-size:11px">
       ${['조건 등록','맞는 지역에만','맞으면 연락','직접 상담'].map((t,i)=>
         `<span class="ms" style="transition-delay:${(i*STEP_ONE).toFixed(2)}s">${'①②③④'[i]} ${t}</span>`).join('')}
     </div>

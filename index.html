@@ -246,7 +246,7 @@ body.mo .chip{padding:12px 16px;font-size:13.5px;line-height:1.25}
 body.mo .scr .pad.opsPad{padding-left:16px;padding-right:16px}
 .opsNav{position:sticky;top:16px;display:flex;flex-direction:column;gap:2px;
   background:var(--white);border:1px solid var(--hair);border-radius:var(--r-md);padding:10px}
-.opsNav .grp{padding:12px 12px 6px;font-size:11px;font-weight:800;letter-spacing:.06em;color:var(--n500)}
+.opsNav .grp{padding:12px 12px 6px;font-size:12px;font-weight:800;letter-spacing:.06em;color:var(--n500)}
 .opsNav button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;
   padding:11px 12px;border-radius:var(--r-sm);font-size:13.5px;font-weight:700;color:var(--n700);
   transition:background var(--t-fast) ease,color var(--t-fast) ease}
@@ -267,7 +267,14 @@ body.mo .scr .pad.opsPad{padding-left:16px;padding-right:16px}
 .dash .row.k2{grid-template-columns:minmax(0,1.55fr) minmax(0,1fr)}
 @media (max-width:1180px){ .dash .row.k4{grid-template-columns:repeat(2,minmax(0,1fr))} }
 @media (max-width:1000px){ .dash .row.k2{grid-template-columns:minmax(0,1fr)} }
-@media (max-width:520px){ .dash .row.k4{grid-template-columns:minmax(0,1fr)} }
+/* 휴대폰에서도 둘씩 놓는다. 한 줄에 하나면 숫자 네 개를 보려고 화면 세 장을 내려야 했다
+   (2026-10-15). 설명 줄은 좁으면 접힌다. */
+@media (max-width:520px){
+  .dash .row.k4{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .dash .kpi{padding:14px 14px 0}
+  .dash .kpi .big{font-size:26px}
+  .dash .kpi .sub{flex-wrap:wrap;gap:2px 6px;font-size:12px}
+}
 
 /* 손이 필요한 일 - 없으면 조용해야 한다 */
 .needBar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;
@@ -317,8 +324,8 @@ body.mo .scr .pad.opsPad{padding-left:16px;padding-right:16px}
 .bars .col i.on{background:linear-gradient(180deg,var(--ind300),var(--ind))}
 .bars .col i + i{margin-bottom:2px}
 .axis{display:flex;gap:3px;margin-top:7px}
-.axis span{flex:1;min-width:0;text-align:center;font-size:10.5px;font-weight:700;color:var(--n500);
-  font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden}
+.axis span{flex:1;min-width:0;text-align:center;font-size:11px;font-weight:700;color:var(--n500);
+  font-variant-numeric:tabular-nums;white-space:nowrap;overflow:visible}
 
 /* 가로 진행 막대 */
 .prog{display:flex;flex-direction:column;gap:13px}
@@ -361,12 +368,35 @@ body.mo .scr .pad.opsPad{padding-left:16px;padding-right:16px}
   .opsNav{position:static;flex-direction:row;overflow-x:auto;padding:8px;gap:6px;
     -webkit-overflow-scrolling:touch}
   .opsNav .grp{display:none}
-  .opsNav button{width:auto;flex:none;white-space:nowrap;padding:10px 14px}
+  .opsNav button{width:auto;flex:none;white-space:nowrap;padding:10px 14px;min-height:44px}
   /* 가로로 누우면 세로선은 자리를 잡지 못한다 - 옆에 나란히 붙인다 */
   .opsSub{flex-direction:row;margin:0;padding-left:0;border-left:none;gap:4px}
-  .opsSub button{padding:10px 12px}
+  .opsSub button{padding:10px 12px;min-height:44px}
   .opsNav .car{display:none}
 }
+/* 운영 목록 위의 도구줄 - 윗줄은 거르기(이름표가 붙은 묶음), 아랫줄은 찾기와 동작 */
+.opsTools{display:flex;flex-direction:column;gap:10px;margin-bottom:14px}
+.opsTools .row{display:flex;flex-wrap:wrap;align-items:center;gap:8px 18px}
+.opsTools .row + .row{gap:8px}
+.opsTools .grp{display:flex;align-items:center;gap:10px;min-width:0}
+.opsTools .lb{flex:none;font-size:12px;font-weight:700;color:var(--n500)}
+.opsTools .sp{flex:1}
+body.mo .opsTools .grp{flex-wrap:wrap;gap:6px 10px}
+body.mo .opsTools .lb{width:100%}
+body.mo .opsTools .sp{display:none}
+/* 휴대폰에서는 찾기 칸이 한 줄을 다 쓰고, 그 아래에 동작 넷이 나란히 선다 -
+   칸 옆에 둘, 다음 줄에 하나 홀로 떨어지던 것을 막는다 */
+body.mo .opsTools .row .inp{flex:1 1 100%;max-width:none!important}
+/* 고르기 칸은 17px 이라 손가락으로 맞히기 어렵다 - 둘레를 44px 로 넓히되 바깥 여백을
+   그만큼 되돌려 줄 배치는 그대로 둔다 */
+.pickhit{display:inline-flex;align-items:center;justify-content:center;flex:none;
+  min-width:44px;min-height:44px;margin:-13px;cursor:pointer}
+/* 운영 화면도 휴대폰으로 연다 - 할 일 바로가기 알약과 크기 단위 토글도 손가락 자리를 준다 */
+body.mo .needBar .go{min-height:44px;padding:0 14px}
+body.mo .seg button{min-height:44px}
+body.mo .regbar .crumb{display:inline-flex;align-items:center;min-height:44px;padding:0 2px}
+/* 상단바 글자 링크('내 정보'·'로그아웃')는 글자 폭만큼만 눌렸다 - 좌우를 조금 넓힌다 */
+body.mo .nav .right .tapx{padding:0 6px;margin:0 -6px}
 
 .map{width:100%;height:auto;display:block;border-radius:var(--r-lg);background:#F2F5F7;
   border:1px solid var(--hair);box-shadow:var(--sh1)}
@@ -489,7 +519,7 @@ body.mo .card.pad{padding:16px}
    한 묶음으로 읽힌다 - 접히는 순간 세로 간격은 묶음 사이 간격이어야 한다. */
 body.mo .grid2.mo1{grid-template-columns:1fr;gap:30px}
 
-.badge{display:inline-block;border-radius:var(--r-full);padding:4px 12px;font-size:11px;font-weight:700;white-space:nowrap}
+.badge{display:inline-block;border-radius:var(--r-full);padding:4px 12px;font-size:12px;font-weight:700;white-space:nowrap}
 .b-ok{background:var(--okbg);color:var(--ok)} .b-warn{background:var(--warnbg);color:var(--warn)}
 /* 글자 링크는 눌리는 자리가 글자 높이(15px)뿐이라 손가락으로 맞히기 어렵다.
    보이는 모습은 그대로 두고 위아래 여백만 준다 - 줄 높이는 음수 마진으로 되돌린다. */
@@ -624,7 +654,7 @@ body.mo .modal .box{border-radius:var(--r-lg) var(--r-lg) 0 0;max-width:none}
 #app :focus-visible{outline-offset:3px}
 
 /* 마이크로 라벨 - 섹션 표식 */
-.sect{letter-spacing:.02em;font-size:11px}
+.sect{letter-spacing:.02em;font-size:12px}
 .eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:700;
   letter-spacing:.14em;text-transform:uppercase;color:var(--n500)}
 .eyebrow::before{content:"";width:14px;height:1.5px;background:var(--clay);border-radius:2px}
@@ -903,6 +933,11 @@ h1.t + .sub, .sub{font-size:15px;line-height:1.75;color:var(--n500)}
      maximum-scale 로 막는 방법도 있지만 그건 손가락으로 키우는 것까지 막는다.
      글자를 16px 로 올리는 쪽이 맞다 - 화면에서도 읽기 편해진다. */
   .inp, input, select, textarea{font-size:15px}
+  /* 그런데 값은 15px 이었다 - 주석만 16 이었다(2026-10-15 UI 품질 개선에서 발견).
+     게다가 제안·물건 양식의 촘촘한 칸은 인라인으로 13.5px 를 적어 둬서 아이폰에서
+     칸을 누를 때마다 화면이 커졌다. 손가락으로 쓰는 기기에서는 인라인까지 덮어 16px 로 둔다.
+     마우스로 쓰는 넓은 화면은 지금 크기 그대로다. */
+  @media (pointer:coarse){ .inp, input, select, textarea{font-size:16px!important} }
 .inp::placeholder{color:var(--ph)}
 
 /* ── 칩: 더 단단하게 ── */
@@ -910,7 +945,7 @@ h1.t + .sub, .sub{font-size:15px;line-height:1.75;color:var(--n500)}
 .chip.on{font-weight:700}
 
 /* ── 뱃지: 납작하게, 대문자 간격 ── */
-.badge{border-radius:var(--r-xs);padding:6px 10px;font-size:11px;letter-spacing:.01em}
+.badge{border-radius:var(--r-xs);padding:6px 10px;font-size:12px;letter-spacing:.01em}
 
 /* ── 구분선은 얇게, 대신 여백으로 나눈다 ── */
 .foot{border-top:1px solid var(--hair)}
@@ -940,9 +975,11 @@ h1.t + .sub, .sub{font-size:15px;line-height:1.75;color:var(--n500)}
 
 /* 손가락은 커서보다 굵다 - 폭이 좁아도 높이는 줄이지 않는다 */
 body.mo .btn{min-height:48px}
-body.mo .btn.sm{min-height:40px}
+/* 작은 버튼도 손가락 자리는 44px 이다(2026-10-15 UI 품질 개선) - 카드 안 '수정·일시중지·연장',
+   운영 화면의 '새로고침·CSV' 처럼 자주 누르는 것이 40px 이었다. 글자 크기는 그대로. */
+body.mo .btn.sm{min-height:44px}
+body.mo .btn.door,body.mo .btn.enter{min-height:44px}
 body.mo .btn.blk{min-height:54px}
-body.mo .btn.door,body.mo .btn.enter{min-height:40px}
 /* 전에는 38px 로 두고 보이지 않는 판을 덮어 '누를 자리' 만 44px 로 넓혔다.
    누르는 데는 문제가 없었지만, 같은 줄의 입력칸이 48px 인데 칩만 38px 이라
    눈에는 어긋나 보였다. 이제 보이는 높이 자체를 44px 로 맞춘다 -
@@ -1263,7 +1300,7 @@ tbody tr.clickable:hover{background:var(--n50)}
 .aclist button:last-child{border-bottom:none}
 .aclist button:hover,.aclist button.hi{background:var(--ind50)}
 .aclist button b{font-size:13.5px;font-weight:700;color:var(--n900);white-space:nowrap}
-.aclist button small{font-size:11px;color:var(--n500)}
+.aclist button small{font-size:12px;color:var(--n500)}
 .aclist .none{padding:14px 14px;font-size:12.5px;line-height:1.7;color:var(--n500)}
 
 /* 전달될 조건 - 이 화면의 결론이다. 문서처럼 세운다.
@@ -1279,7 +1316,7 @@ tbody tr.clickable:hover{background:var(--n50)}
 .recap .rc-top{padding:20px 24px 18px;border-bottom:1px solid var(--ind100);
   background:linear-gradient(180deg,var(--ind50) 0%,rgba(255,255,255,0) 100%)}
 /* 눈썹은 알림이다 - 알약으로 세워야 카드가 스스로를 소개한다 */
-.recap .rc-eb{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:800;
+.recap .rc-eb{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:800;
   letter-spacing:.06em;color:#fff;background:var(--ind);
   border-radius:var(--r-full);padding:5px 12px}
 .recap .rc-eb i{display:block;width:5px;height:5px;border-radius:var(--r-full);background:rgba(255,255,255,.85)}
@@ -1386,7 +1423,7 @@ body.mo #frame{box-shadow:var(--sh3)}
   backdrop-filter:saturate(1.6) blur(14px);border-top:1px solid var(--hair);
   padding:8px 6px calc(8px + env(safe-area-inset-bottom));flex:none}
 .tabbar a{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 0;
-  color:var(--n500);font-size:11px;font-weight:600;border-radius:var(--r-sm);transition:color .15s,background .15s}
+  color:var(--n500);font-size:12px;font-weight:600;border-radius:var(--r-sm);transition:color .15s,background .15s}
 .tabbar a svg{width:21px;height:21px}
 .tabbar a.on{color:var(--ind);font-weight:700}
 .tabbar a:active{background:var(--n50)}
@@ -2186,13 +2223,13 @@ const S = {
 /* ---------- 유틸 ---------- */
 /* 예시 데이터임을 항목마다 밝힌다. 실제로 등록·수신한 것에는 붙지 않는다. */
 const demoTag = (o, style='') => o && o.seed
-  ? `<span class="badge" style="background:var(--clay100);border:1px solid var(--clay200);color:var(--clay700);font-size:11px;font-weight:700;padding:2px 8px;${style}">예시</span>`
+  ? `<span class="badge" style="background:var(--clay100);border:1px solid var(--clay200);color:var(--clay700);font-size:12px;font-weight:700;padding:2px 8px;${style}">예시</span>`
   : '';
 
 /* 서버가 아직 모르는 조건. 화면에는 남겨두되 저장된 척은 하지 않는다.
    이 표시가 보이면 새로고침 뒤에 사라진다 - 그게 곧 '저장 안 됨' 이다. */
 const unsavedTag = c => c && c.unsaved
-  ? `<span class="badge b-warn" style="font-size:11px;vertical-align:middle;margin-left:4px">아직 저장 안 됨</span>`
+  ? `<span class="badge b-warn" style="font-size:12px;vertical-align:middle;margin-left:4px">아직 저장 안 됨</span>`
   : '';
 
 function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show');
@@ -2560,9 +2597,12 @@ function navPartner(active){
     <a data-go="#/partner/proposals" class="${active==='p'?'on':''}">내 제안</a>
   </div>
   <div class="right" style="gap:10px">
-    ${S.agent && S.agent.office ? `<span>${esc(S.agent.office)}</span>` : ''}
+    <!-- 휴대폰 한 줄에는 사무소 이름·배지·내 정보·로그아웃이 다 들어가지 않아 '로그아웃' 이
+         화면 밖으로 잘렸다(2026-10-15). 휴대폰에서는 사무소 이름을 빼고, '내 정보' 는 아래
+         탭바의 '설정' 이 같은 곳으로 가므로 뺀다. -->
+    ${S.agent && S.agent.office && !isMo() ? `<span>${esc(S.agent.office)}</span>` : ''}
     ${agentBadge()}
-    ${S.user?`<a class="tapx" data-go="#/partner/settings" style="font-size:12.5px;color:var(--n500);cursor:pointer">내 정보</a>
+    ${S.user?`${isMo() ? '' : `<a class="tapx" data-go="#/partner/settings" style="font-size:12.5px;color:var(--n500);cursor:pointer">내 정보</a>`}
       <a class="tapx" data-act="logout" style="font-size:12.5px;color:var(--n500);cursor:pointer">로그아웃</a>`
       : navAuth('partner')}
   </div>
@@ -2618,8 +2658,8 @@ function zonesHTML(zones, sel){
         <svg class="caret" viewBox="0 0 12 12" style="width:10px;height:10px;flex:none;transition:transform var(--t-fast) ease">
           <path d="M4 2.5 L8 6 L4 9.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         <span>${esc(z.t)}</span>
-        ${picked?`<span class="badge b-ind" style="padding:2px 8px;font-size:11px">${picked}</span>`:
-                 `<span style="font-size:11px;color:var(--n500);font-weight:700">${z.d.length}</span>`}
+        ${picked?`<span class="badge b-ind" style="padding:2px 8px;font-size:12px">${picked}</span>`:
+                 `<span style="font-size:12px;color:var(--n500);font-weight:700">${z.d.length}</span>`}
       </summary>
       <div style="padding-top:4px">${chipsHTML(z.d, sel, 'dong', true)}</div>
     </details>`;}).join('');}
@@ -3168,12 +3208,12 @@ V['#/'] = () => `
     <!-- 가운뎃점은 뺀다. 알약이 생기면서 칸이 저절로 갈린다.
          넷은 375px 한 줄에 들어가지 않는다(11px 로도 두 줄) - 400px 이하에서는
          CSS 가 둘씩 두 줄(2×2)로 고르게 놓는다. 한 줄로 되돌리면 '④' 만 홀로 떨어진다. -->
-    <div class="steps mini" style="font-size:11px">
+    <div class="steps mini" style="font-size:12px">
       ${['조건 등록','맞는 지역에만','맞으면 연락','직접 상담'].map((t,i)=>
         `<span class="ms" style="transition-delay:${(i*STEP_ONE).toFixed(2)}s">${'①②③④'[i]} ${t}</span>`).join('')}
     </div>
     <button class="btn pri blk" data-go="#/kind">내 조건 걸어두기</button>
-    <span style="text-align:center;font-size:11px;line-height:1.6;color:var(--n500)"><b style="color:var(--n700);font-weight:700">30초 간편가입</b><br>무료서비스</span>
+    <span style="text-align:center;font-size:12px;line-height:1.6;color:var(--n500)"><b style="color:var(--n700);font-weight:700">30초 간편가입</b><br>무료서비스</span>
   </div>
 
   <div style="flex:none;position:relative;z-index:3;background:var(--white);border-top:1px solid var(--n100);
@@ -3349,7 +3389,7 @@ function snsButton(x){ return `
     transition:filter .14s ease,box-shadow .14s ease">
     <span style="flex:none;display:flex">${x.ic}</span>${x.t}
     ${x.soon?`<span aria-label="${x.soon}" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);
-      font-size:11px;font-weight:700;letter-spacing:0;padding:4px 8px;border-radius:var(--r-full);white-space:nowrap;
+      font-size:12px;font-weight:700;letter-spacing:0;padding:4px 8px;border-radius:var(--r-full);white-space:nowrap;
       background:${x.fg==='#fff'?'rgba(255,255,255,.18)':'rgba(0,0,0,.10)'};color:${x.fg}">${x.soon}</span>`:''}
   </button>`;}
 
@@ -3496,7 +3536,7 @@ V['#/login'] = () => {
 
       <div style="display:flex;align-items:center;gap:12px;margin:2px 0">
         <i style="flex:1;height:1px;background:var(--hair)"></i>
-        <span style="font-size:11px;color:var(--n500)">${S.signup?'간편 가입':'간편 로그인'}</span>
+        <span style="font-size:12px;color:var(--n500)">${S.signup?'간편 가입':'간편 로그인'}</span>
         <i style="flex:1;height:1px;background:var(--hair)"></i>
       </div>
       <div style="display:flex;flex-direction:column;gap:8px">${SNS.filter(x=>!x.hide).map(snsButton).join('')}</div>
@@ -3595,8 +3635,8 @@ V['#/kind'] = () => `
           <span style="min-width:0">
             <span style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
               <b style="font-size:16px;font-weight:700;letter-spacing:-.03em">${w.t}</b>
-              <span class="badge ${k==='home'?'b-ind':'b-mute'}" style="font-size:11px">${w.tag}</span>
-              ${w.slots>5?`<span class="badge b-ok" style="font-size:11px">제안 ${w.slots}건</span>`:''}
+              <span class="badge ${k==='home'?'b-ind':'b-mute'}" style="font-size:12px">${w.tag}</span>
+              ${w.slots>5?`<span class="badge b-ok" style="font-size:12px">제안 ${w.slots}건</span>`:''}
             </span>
             <span style="font-size:13.5px;line-height:1.6;color:var(--n500)">${w.d}</span></span>
           <svg viewBox="0 0 24 24" style="width:21px;flex:none" fill="none" stroke="#4F52D1" stroke-width="2.2" stroke-linecap="round"><path d="M9 5 L16 12 L9 19"/></svg>
@@ -3632,9 +3672,9 @@ V['#/register'] = () => {
     <div class="formcol"><div class="in">
       <div><h1 class="t" style="font-size:${isMo()?21:25}px">${shop? w.ask : '어떤 집을 찾으세요?'}</h1>
       <p class="sub">아는 것만 채우셔도 됩니다.
-        <span style="display:inline-flex;align-items:center;gap:6px;vertical-align:-1px">
-          <i style="width:5px;height:5px;border-radius:var(--r-full);background:var(--ind);display:block"></i>
-          <b style="color:var(--n700)">표시만 필수입니다.</b></span></p></div>
+        <!-- inline-flex 로 묶으면 기준선이 점(글자 없는 i)에 잡혀 앞 문장보다 한 칸 내려앉았다 -
+             글줄 그대로 두고 점만 가운데로 세운다 -->
+        <span style="white-space:nowrap"><i style="display:inline-block;width:5px;height:5px;border-radius:var(--r-full);background:var(--ind);vertical-align:middle;margin:0 6px 0 2px"></i><b style="color:var(--n700)">표시만 필수입니다.</b></span></p></div>
 
       ${shop? `
       <div data-req="biz"><span class="lab">${w.what} <span class="req">*</span> <span class="opt">${w.whatOpt}</span></span>
@@ -3664,7 +3704,7 @@ V['#/register'] = () => {
             <div class="unit"><input class="inp" data-in="areaMin" inputmode="numeric" value="${esc(d.areaMin)}" placeholder="최소"><span>평(전용)</span></div>
             <div class="unit"><input class="inp" data-in="areaMax" inputmode="numeric" value="${esc(d.areaMax)}" placeholder="최대"><span>평(전용)</span></div>
           </div>
-          ${d.areaMin?`<span style="display:block;margin-top:6px;font-size:11px;font-weight:700;color:var(--ind)">전용 약 ${(d.areaMin*3.305785).toFixed(1)}${d.areaMax?`~${(d.areaMax*3.305785).toFixed(1)}`:''} ㎡</span>`:''}
+          ${d.areaMin?`<span style="display:block;margin-top:6px;font-size:12px;font-weight:700;color:var(--ind)">전용 약 ${(d.areaMin*3.305785).toFixed(1)}${d.areaMax?`~${(d.areaMax*3.305785).toFixed(1)}`:''} ㎡</span>`:''}
         </div>
         ${K==='shop' ? `
         <div><span class="lab">권리금 <span class="opt">감당 가능한 상한</span></span>
@@ -3824,7 +3864,7 @@ V['#/detail'] = () => { const d=S.draft, pct=detailPct(d); return `
       <div class="card pad" style="padding:16px 20px">
         <div style="display:flex;justify-content:space-between;margin-bottom:10px">
           <span data-pct style="font-size:13.5px;font-weight:700;color:var(--ind)">지금 ${pct}%</span>
-          <span style="font-size:11px;color:var(--n500)">${pct>=90?'충분합니다 · 제안 품질이 올라갑니다':'다 채우면 우선 매칭에 도움이 됩니다'}</span>
+          <span style="font-size:12px;color:var(--n500)">${pct>=90?'충분합니다 · 제안 품질이 올라갑니다':'다 채우면 우선 매칭에 도움이 됩니다'}</span>
         </div>
         <div class="gauge"><i style="width:${pct}%"></i></div>
       </div>
@@ -4134,7 +4174,7 @@ function movePicker(d){
           return `<button class="chip ${d.movePart===pt?'on':''}" data-act="move-part" data-v="${pt}" aria-pressed="${d.movePart===pt}"
             ${off?'disabled title="이미 지난 시기입니다"':''}
             style="padding:8px 16px${off?';opacity:.4;cursor:not-allowed':''}">${pt}<span
-              style="margin-left:6px;font-size:11px;font-weight:600;opacity:.6">${MOVE_RANGE[pt]}</span></button>`;
+              style="margin-left:6px;font-size:12px;font-weight:600;opacity:.6">${MOVE_RANGE[pt]}</span></button>`;
         }).join('')}</div>
         ${MOVE_PART.some(pt=>movePartPast(d.moveMonth, pt))
           ? '<span style="display:block;margin-top:7px;font-size:12.5px;color:var(--n500)">이미 지난 시기는 고를 수 없습니다.</span>' : ''}
@@ -4748,14 +4788,14 @@ function demandCards(rows){
         ? [r.biz, r.area_min?`전용 ${r.area_min}~${r.area_max||''}평`:'', r.shop_floor_free].filter(Boolean).join(' · ')
         : [(r.htype||[]).join('·'), r.rooms, r.when_text, (r.musts||[]).join('·')].filter(Boolean).join(' · ');
       return `
-      <div style="background:var(--white);padding:14px 16px;${sent?'opacity:.6;':''}">
+      <div style="background:var(--white);padding:14px 16px;${sent?'background:var(--n50);':''}">
         <div class="clickable" data-act="ops-open" data-v="${esc(r.id)}" style="cursor:pointer">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
-            ${fresh&&!sent?`<span class="badge" style="background:var(--ind);color:#fff;padding:2px 8px;font-size:11px">NEW</span>`:''}
+            ${fresh&&!sent?`<span class="badge" style="background:var(--ind);color:#fff;padding:2px 8px;font-size:12px">NEW</span>`:''}
             <span class="badge ${shop?'b-warn':'b-ok'}">${shop?'상가':'주거'}</span>
             ${sent?`<span class="badge b-mute">보냄</span>`:''}
             <span style="flex:1"></span>
-            <span style="font-size:11px;color:var(--n500)">${esc(String(r.created_at||'').replace('T',' ').slice(5,16))}</span>
+            <span style="font-size:12px;color:var(--n500)">${esc(String(r.created_at||'').replace('T',' ').slice(5,16))}</span>
           </div>
           <b style="display:block;font-size:15px;font-weight:700;letter-spacing:-.02em;margin-bottom:4px">
             ${esc((r.dongs||[]).join(' · ')||'-')}</b>
@@ -4797,20 +4837,20 @@ function agentCards(rows){
       return `
       <div style="background:var(--white);padding:14px 16px;${AG.pick[r.id]?'box-shadow:inset 3px 0 0 var(--ind)':''}">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
-          <input type="checkbox" data-act="ag-pick" data-v="${esc(r.id)}" ${AG.pick[r.id]?'checked':''}
-            style="width:17px;height:17px;accent-color:var(--ind);cursor:pointer;flex:none">
+          <label class="pickhit"><input type="checkbox" data-act="ag-pick" data-v="${esc(r.id)}" ${AG.pick[r.id]?'checked':''}
+            style="width:17px;height:17px;accent-color:var(--ind);cursor:pointer;flex:none"></label>
           <span class="badge ${st[0]}">${st[1]}</span>
           <span class="badge ${r.role==='agent'?'b-ok':r.role==='owner'?'b-ind':'b-warn'}">${AG_ROLE[r.role]||r.role}</span>
           ${r.owner_type&&r.owner_type!=='individual'?`<span class="badge b-warn">${esc(OWNER_KO[r.owner_type]||r.owner_type)}</span>`:''}
           <span style="flex:1"></span>
-          <span style="font-size:11px;color:var(--n500)">${esc(String(r.created_at||'').replace('T',' ').slice(5,16))}</span>
+          <span style="font-size:12px;color:var(--n500)">${esc(String(r.created_at||'').replace('T',' ').slice(5,16))}</span>
         </div>
         <b style="display:block;font-size:15px;font-weight:700;letter-spacing:-.02em">${esc(r.name||'')}</b>
         <span class="num" style="display:block;margin-top:2px;font-size:13.5px;color:var(--n700)">${esc(r.phone||'')}</span>
         ${(r.office||r.addr)?`<span style="display:block;margin-top:4px;font-size:12.5px;color:var(--n700)">${esc(r.office||r.addr)}</span>`:''}
         ${(r.reg_no||r.biz_no)?`<span style="display:flex;align-items:center;gap:6px;margin-top:4px">
           <span class="num" style="font-size:12.5px;color:var(--n500)">${esc(r.reg_no||r.biz_no)}</span>
-          ${r.role==='agent' ? `<span class="badge ${r.reg_verified?'b-ok':'b-warn'}" style="font-size:11px;padding:2px 8px">${r.reg_verified?'공공데이터 확인':'미확인 · 수동 확인 필요'}</span>` : ''}
+          ${r.role==='agent' ? `<span class="badge ${r.reg_verified?'b-ok':'b-warn'}" style="font-size:12px;padding:2px 8px">${r.reg_verified?'공공데이터 확인':'미확인 · 수동 확인 필요'}</span>` : ''}
         </span>`:''}
         ${r.email?`<span style="display:block;margin-top:2px;font-size:12.5px;color:var(--n500)">${esc(r.email)}</span>`:''}
         ${r.corp_name?`<span style="display:block;margin-top:6px;font-size:12.5px;color:var(--n700)">
@@ -4856,10 +4896,10 @@ function opsSummary(rows, agents){
 
   const tile = (label, val, sub, tone) => `
     <div class="card pad" style="padding:16px 18px">
-      <span style="display:block;font-size:11px;font-weight:700;color:var(--n500);margin-bottom:6px">${label}</span>
+      <span style="display:block;font-size:12px;font-weight:700;color:var(--n500);margin-bottom:6px">${label}</span>
       <b class="num countable" style="display:block;font-size:25px;font-weight:800;letter-spacing:-.03em;
         color:${tone||'var(--n900)'};line-height:1.1">${val}</b>
-      ${sub?`<span style="display:block;margin-top:6px;font-size:11px;color:var(--n500)">${sub}</span>`:''}
+      ${sub?`<span style="display:block;margin-top:6px;font-size:12px;color:var(--n500)">${sub}</span>`:''}
     </div>`;
 
   return `
@@ -4872,20 +4912,20 @@ function opsSummary(rows, agents){
 
   <div style="display:grid;grid-template-columns:${isMo()?'1fr':'1.1fr 1fr'};gap:10px;margin-bottom:14px">
     <div class="card pad" style="padding:16px 18px">
-      <span style="display:block;font-size:11px;font-weight:700;color:var(--n500);margin-bottom:12px">최근 7일 유입</span>
+      <span style="display:block;font-size:12px;font-weight:700;color:var(--n500);margin-bottom:12px">최근 7일 유입</span>
       <div style="display:flex;align-items:flex-end;gap:6px;height:74px">
         ${days.map((n,i)=>`
           <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px">
-            <span class="num" style="font-size:11px;font-weight:700;color:${n?'var(--ind)':'var(--n500)'}">${n}</span>
+            <span class="num" style="font-size:12px;font-weight:700;color:${n?'var(--ind)':'var(--n500)'}">${n}</span>
             <i class="growbar" style="display:block;width:100%;border-radius:4px 4px 0 0;
               background:${i===6?'var(--ind)':'var(--ind300)'};opacity:${n?1:.25};
               height:${Math.max(3, Math.round(n/peak*44))}px"></i>
-            <span style="font-size:11px;color:var(--n500)">${i===6?'오늘':(6-i)+'일'}</span>
+            <span style="font-size:12px;color:var(--n500)">${i===6?'오늘':(6-i)+'일'}</span>
           </div>`).join('')}
       </div>
     </div>
     <div class="card pad" style="padding:16px 18px">
-      <span style="display:block;font-size:11px;font-weight:700;color:var(--n500);margin-bottom:12px">많이 찾는 지역</span>
+      <span style="display:block;font-size:12px;font-weight:700;color:var(--n500);margin-bottom:12px">많이 찾는 지역</span>
       ${top.length ? `<div style="display:flex;flex-direction:column;gap:8px">
         ${top.map(([d,n])=>`
           <div style="display:flex;align-items:center;gap:10px">
@@ -4940,18 +4980,23 @@ function agentPanel(){
     </div>`;
 
   return `
-    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px">
-      <div class="chips" style="gap:6px">
-        ${chip('전체', !AG.role, 'ag-role','')}
-        ${chip('공인중개사', AG.role==='agent','ag-role','agent')}
-        ${chip('소유자', AG.role==='owner','ag-role','owner')}
-        ${chip('시행사', AG.role==='developer','ag-role','developer')}
+    <div class="opsTools">
+      <div class="row">
+        <div class="grp"><span class="lb">자격</span><div class="chips" style="gap:6px">
+          ${chip('전체', !AG.role, 'ag-role','')}
+          ${chip('공인중개사', AG.role==='agent','ag-role','agent')}
+          ${chip('소유자', AG.role==='owner','ag-role','owner')}
+          ${chip('시행사', AG.role==='developer','ag-role','developer')}
+        </div></div>
       </div>
-      <input class="inp" data-in="agQ" value="${esc(AG.q)}" placeholder="이름·상호·번호 찾기" autocomplete="off"
-        style="flex:1;min-width:150px;max-width:260px;padding:8px 12px;font-size:12.5px;height:auto">
-      ${chip(AG.reveal?'연락처 원문':'연락처 가림', AG.reveal, 'ag-reveal','')}
-      <button class="btn ghost sm" data-act="ag-load">새로고침</button>
-      <button class="btn sec sm" data-act="ag-csv">CSV 내려받기</button>
+      <div class="row">
+        <input class="inp" data-in="agQ" value="${esc(AG.q)}" placeholder="이름·상호·번호 찾기" autocomplete="off"
+          style="flex:1;min-width:150px;max-width:320px;padding:0 14px;min-height:44px;font-size:13.5px">
+        ${chip(AG.reveal?'연락처 원문':'연락처 가림', AG.reveal, 'ag-reveal','')}
+        <span class="sp"></span>
+        <button class="btn ghost sm" data-act="ag-load">새로고침</button>
+        <button class="btn sec sm" data-act="ag-csv">CSV 내려받기</button>
+      </div>
     </div>
 
     ${agentNeedCheck(all)}
@@ -4972,12 +5017,15 @@ function agentPanel(){
 
     <div class="card pad" style="padding:0;overflow:hidden">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--hair)">
-        ${rows.length ? `<label style="display:flex;align-items:center;gap:10px;cursor:pointer;flex:none">
+        <!-- 고르기 칸과 건수를 왼쪽에 함께 둔다 - 셋을 양끝 맞춤으로 흩으면 건수가 가운데에 떠 있었다 -->
+        <div style="display:flex;align-items:center;gap:14px;min-width:0">
+        ${rows.length ? `<label style="display:flex;align-items:center;gap:10px;cursor:pointer;flex:none;min-height:44px">
           <input type="checkbox" data-act="ag-pick-all" ${allPicked?'checked':''}
             style="width:17px;height:17px;accent-color:var(--ind);cursor:pointer">
           <span style="font-size:12.5px;font-weight:700;color:var(--n500)">전체</span></label>` : ''}
         <b style="font-size:15px;font-weight:700">${rows.length===all.length?`신청 ${all.length}건`:`${rows.length}건 / 전체 ${all.length}건`}</b>
-        <span style="font-size:11px;color:var(--n500)">${AG.at?esc(AG.at.replace('T',' ').slice(0,16)):''} 기준</span>
+        </div>
+        ${AG.at ? `<span style="font-size:12px;color:var(--n500)">${esc(AG.at.replace('T',' ').slice(0,16))} 기준</span>` : ''}
       </div>
       ${rows.length===0 ? `<div style="padding:40px 18px;text-align:center">
         <p style="margin:0 0 6px;font-size:15px;font-weight:700">${all.length?'조건에 맞는 신청이 없습니다':'아직 신청이 없습니다'}</p>
@@ -4988,29 +5036,29 @@ function agentPanel(){
           <thead><tr style="background:var(--n50)">
             <th style="width:38px;padding:10px 0 10px 14px"></th>
             ${['신청','상태','역할','성함','연락처','사무소 · 물건','등록번호 · 사업자','이메일'].map(h=>
-              `<th style="text-align:left;padding:10px 14px;font-size:11px;font-weight:700;color:var(--n500)">${h}</th>`).join('')}
+              `<th style="text-align:left;padding:10px 14px;font-size:12px;font-weight:700;color:var(--n500)">${h}</th>`).join('')}
           </tr></thead>
           <tbody>${rows.map(r=>`
             <tr style="border-top:1px solid var(--n100);${AG.pick[r.id]?'background:var(--ind50)':''}">
               <td style="padding:12px 0 12px 14px">
-                <input type="checkbox" data-act="ag-pick" data-v="${esc(r.id)}" ${AG.pick[r.id]?'checked':''}
-                  style="width:17px;height:17px;accent-color:var(--ind);cursor:pointer"></td>
+                <label class="pickhit"><input type="checkbox" data-act="ag-pick" data-v="${esc(r.id)}" ${AG.pick[r.id]?'checked':''}
+                  style="width:17px;height:17px;accent-color:var(--ind);cursor:pointer"></label></td>
               <td style="padding:12px 14px;color:var(--n500)">${esc(String(r.created_at||'').replace('T',' ').slice(5,16))}</td>
               <td style="padding:12px 14px"><span class="badge ${(AG_STATUS[r.status||'new']||AG_STATUS.new)[0]}">${(AG_STATUS[r.status||'new']||AG_STATUS.new)[1]}</span></td>
               <td style="padding:12px 14px"><span class="badge ${r.role==='agent'?'b-ok':r.role==='owner'?'b-ind':'b-warn'}">${AG_ROLE[r.role]||r.role}</span></td>
               <td style="padding:12px 14px;font-weight:700">${esc(r.name||'')}
-                ${r.user_id ? '' : `<span class="badge b-warn" style="margin-left:6px;font-size:11px;padding:2px 8px"
+                ${r.user_id ? '' : `<span class="badge b-warn" style="margin-left:6px;font-size:12px;padding:2px 8px"
                   title="계정에 이어지지 않은 신청입니다 - 승인돼도 수요 목록·제안을 쓸 수 없습니다">계정 없음</span>`}</td>
               <td style="padding:12px 14px" class="num">${esc(r.phone||'')}</td>
               <td style="padding:12px 14px">${esc(r.office||r.addr||'')}</td>
               <td style="padding:12px 14px">
                 <span class="num">${esc(r.reg_no||r.biz_no||'')}</span>
-                ${r.role==='agent'&&(r.reg_no||'') ? `<span class="badge ${r.reg_verified?'b-ok':'b-warn'}" style="margin-left:6px;font-size:11px;padding:2px 8px">${r.reg_verified?'확인':'미확인'}</span>` : ''}
+                ${r.role==='agent'&&(r.reg_no||'') ? `<span class="badge ${r.reg_verified?'b-ok':'b-warn'}" style="margin-left:6px;font-size:12px;padding:2px 8px">${r.reg_verified?'확인':'미확인'}</span>` : ''}
               </td>
               <td style="padding:12px 14px;color:var(--n500)">${esc(r.email||'')}</td>
             </tr>
             ${(r.phone && !/\*/.test(r.phone)) || r.email ? `
-            <tr><td colspan="9" style="padding:0 14px 10px">
+            <tr style="${AG.pick[r.id]?'background:var(--ind50)':''}"><td colspan="9" style="padding:0 14px 12px 52px">
               <div class="chips" style="gap:6px">
                 ${r.phone && !/\*/.test(r.phone) ? `<a href="tel:${esc(r.phone)}" class="chip" style="padding:6px 12px;font-size:12.5px">전화 걸기</a>` : ''}
                 ${r.email ? `<a href="mailto:${esc(r.email)}" class="chip" style="padding:6px 12px;font-size:12.5px">메일 쓰기</a>` : ''}
@@ -5108,7 +5156,7 @@ function verifyCard(d){
       <input class="inp" data-in="name" value="${esc(d.name)}" placeholder="예) 김민수" style="padding:12px 14px;font-size:13.5px"></div>
     <div style="margin-top:12px"><span class="lab" style="font-size:12.5px">휴대폰 번호 <span class="req">*</span></span>
       <input class="inp num" data-in="phone" inputmode="numeric" value="${esc(d.phone)}" placeholder="010-1234-5678" maxlength="13" style="padding:12px 14px;font-size:13.5px">
-      ${d.phone && !phoneOk(d.phone)?'<span style="display:block;margin-top:6px;font-size:11px;font-weight:700;color:var(--danger)">번호 형식을 확인해 주세요</span>':''}</div>
+      ${d.phone && !phoneOk(d.phone)?'<span style="display:block;margin-top:6px;font-size:12px;font-weight:700;color:var(--danger)">번호 형식을 확인해 주세요</span>':''}</div>
   </div>`;
 }
 
@@ -5289,7 +5337,7 @@ V['#/my'] = () => {
   const rows = S.conds.map(c=>{
     const cnt = S.props.filter(p=>p.cond===c.id && p.status!=='hidden').length;
     const st = {active:['b-ok','활성'],expiring:['b-warn',`만료임박 · ${c.expires}일`],paused:['b-mute','일시중지'],closed:['b-mute','종료'],expired:['b-mute','만료']}[c.status];
-    return `<div class="card ${c.status==='active'?'hi':''} pad fade" style="${c.status==='closed'?'opacity:.6':''}">
+    return `<div class="card ${c.status==='active'?'hi':''} pad fade" style="${c.status==='closed'?'background:var(--n50);box-shadow:none':''}">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
         <span class="badge ${st[0]}">${st[1]}</span>
         ${cnt? `<a class="tapx" data-go="#/inbox" data-cond="${c.id}" style="font-size:13.5px;font-weight:700;color:var(--ind)">제안 ${cnt}/${c.slots} 도착 →</a>`
@@ -5298,9 +5346,10 @@ V['#/my'] = () => {
       <b style="display:block;font-size:${isMo()?15:16}px;font-weight:700;letter-spacing:-.02em;margin-bottom:6px">${esc(c.title)} ${demoTag(c,'vertical-align:middle')}${unsavedTag(c)}</b>
       <div class="lines" style="margin-bottom:14px">${c.lines.map(esc).join('<br>')}</div>
       ${c.status!=='closed'? `
-        <div style="background:var(--n50);padding:12px 14px;margin-bottom:14px">
-          <div style="display:flex;justify-content:space-between;margin-bottom:8px">
-            <span style="font-size:11px;font-weight:700;color:var(--ind)">조건 입력 ${c.pct}%</span>
+        <div style="background:var(--n50);border-radius:var(--r-md);padding:4px 14px 14px;margin-bottom:14px">
+          <!-- 오른쪽 링크는 누를 자리가 44px 이라 키가 크다 - 가운데로 맞춰야 왼쪽 글과 한 줄에 선다 -->
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0 12px;margin-bottom:4px">
+            <span style="font-size:12px;font-weight:700;color:var(--ind)">조건 입력 ${c.pct}%</span>
             <a class="tapx" data-go="#/detail" style="font-size:12.5px;color:var(--n500);text-decoration:underline">더 채우면 맞는 제안이 옵니다</a>
           </div><div class="gauge" style="height:5px"><i style="width:${c.pct}%"></i></div>
         </div>
@@ -5368,28 +5417,28 @@ V['#/inbox'] = () => {
   const cond = S.conds.find(c=>c.id===S.inboxCond) || S.conds[0];
   const list = cond? S.props.filter(p=>p.cond===cond.id && p.status!=='hidden') : [];
   const card = p => `
-    <div class="card ${p.isNew?'hi':''} clickable fade" data-go="#/proposal/${p.id}" style="overflow:hidden;${p.read&&!p.isNew?'opacity:.85':''}">
+    <div class="card ${p.isNew?'hi':''} clickable fade" data-go="#/proposal/${p.id}" style="overflow:hidden;${p.read&&!p.isNew?'background:var(--n50);box-shadow:none':''}">
       <div style="height:${isMo()?128:150}px;background:${p.photos?'var(--ind100)':'var(--n100)'};display:flex;align-items:center;justify-content:center;position:relative">
         ${p.photos? `<svg viewBox="0 0 24 24" style="width:26px" fill="none" stroke="#6366D6" stroke-width="1.5"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.6"/><path d="M3 16 L9 11 L14 15 L17 13 L21 16"/></svg>`
-          : `<span style="font-size:11px;color:var(--n500)">사진 미첨부</span>`}
+          : `<span style="font-size:12px;color:var(--n500)">사진 미첨부</span>`}
         ${p.isNew? `<span class="badge b-ind" style="position:absolute;left:12px;top:12px;background:var(--ind);color:#fff">NEW</span>`
           : `<span class="badge b-mute" style="position:absolute;left:12px;top:12px">읽음</span>`}
-        ${p.photos? `<span style="position:absolute;right:12px;bottom:10px;background:rgba(21,22,58,.62);color:#fff;font-size:11px;font-weight:700;border-radius:var(--r-full);padding:4px 10px">사진 ${p.photos}장</span>`:''}
+        ${p.photos? `<span style="position:absolute;right:12px;bottom:10px;background:rgba(21,22,58,.62);color:#fff;font-size:12px;font-weight:700;border-radius:var(--r-full);padding:4px 10px">사진 ${p.photos}장</span>`:''}
       </div>
       <div style="padding:16px 18px;display:flex;flex-direction:column;gap:10px">
         <div><b style="display:block;font-size:15px;font-weight:700;letter-spacing:-.02em">${esc(p.title)} ${demoTag(p,'vertical-align:middle')}</b>
         <span class="num" style="font-size:13.5px;color:var(--n700)">${p.rent? `보증금 ${won(p.dep)} / 월 ${won(p.rent)}` : `전세 ${won(p.dep)}`} · 관리비 ${won(p.fee)}</span>
         <span style="display:block;font-size:12.5px;color:var(--n500)">${p.dong} · 전용 ${p.py}평 · ${p.floor} · 주차 ${esc(p.parking)}</span></div>
         <div style="border-top:1px solid var(--n100);padding-top:10px;display:flex;flex-direction:column;gap:6px">
-          ${p.diff.map(t=>`<div style="display:flex;gap:8px"><span class="badge b-warn" style="flex:none;font-size:11px;padding:2px 8px">다름</span><span style="font-size:12.5px;line-height:1.45;color:var(--n700)">${esc(t)}</span></div>`).join('')}
-          <div style="display:flex;gap:8px"><span class="badge b-ok" style="flex:none;font-size:11px;padding:2px 8px">일치</span><span style="font-size:12.5px;line-height:1.45;color:var(--n700)">${p.match.map(esc).join(' · ')}</span></div>
+          ${p.diff.map(t=>`<div style="display:flex;align-items:flex-start;gap:8px"><span class="badge b-warn" style="flex:none;font-size:12px;padding:2px 8px">다름</span><span style="font-size:12.5px;line-height:1.45;color:var(--n700)">${esc(t)}</span></div>`).join('')}
+          <div style="display:flex;align-items:flex-start;gap:8px"><span class="badge b-ok" style="flex:none;font-size:12px;padding:2px 8px">일치</span><span style="font-size:12.5px;line-height:1.45;color:var(--n700)">${p.match.map(esc).join(' · ')}</span></div>
         </div>
         ${p.status==='selected'&&p.contact&&p.contact.phone? `<div style="background:var(--okbg);padding:10px 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-          <span style="font-size:11px;font-weight:700;color:var(--ok)">연결됨</span>
+          <span style="font-size:12px;font-weight:700;color:var(--ok)">연결됨</span>
           <span class="num" style="font-size:13.5px;font-weight:700;color:var(--ok)">${esc(p.contact.phone)}</span>
           <span style="font-size:12.5px;color:var(--n700)">${esc(p.contact.office||p.contact.role||'')}</span></div>`:''}
         <div style="display:flex;justify-content:space-between;align-items:center">
-          <span style="font-size:11px;color:var(--n500)">${esc(p.agency.name)} · ${p.at}</span>
+          <span style="font-size:12px;color:var(--n500)">${esc(p.agency.name)} · ${p.at}</span>
           <span style="font-size:13.5px;font-weight:700;color:var(--ind)">자세히 →</span></div>
       </div>
     </div>`;
@@ -5414,7 +5463,7 @@ V['#/inbox'] = () => {
         return `<div class="card ${c.id===S.inboxCond?'hi':''} clickable" data-act="pick-cond" data-v="${c.id}" style="padding:16px 18px">
           <div style="display:flex;justify-content:space-between;margin-bottom:8px">
             <span class="badge ${c.status==='active'?'b-ok':c.status==='expiring'?'b-warn':'b-mute'}">${c.status==='active'?'활성':c.status==='expiring'?'만료임박':'종료'}</span>
-            <span style="font-size:11px;font-weight:700;color:${n?'var(--ind)':'var(--n500)'}">제안 ${n}/5</span></div>
+            <span style="font-size:12px;font-weight:700;color:${n?'var(--ind)':'var(--n500)'}">제안 ${n}/5</span></div>
           <b style="display:block;font-size:13.5px;font-weight:700;letter-spacing:-.02em;margin-bottom:4px">${esc(c.title)} ${demoTag(c,'vertical-align:middle')}${unsavedTag(c)}</b>
           <span style="font-size:12.5px;line-height:1.6;color:var(--n700)">${c.lines[0]?esc(c.lines[0]):''}</span></div>`;}).join('')}
       <div class="beaverbox" style="margin-top:auto;margin-bottom:24px">${beaverlyMini(56)}
@@ -5451,8 +5500,8 @@ V['#/proposal'] = (id) => { const p=S.props.find(x=>x.id===id); if(!p) return V[
   const info = `
     <div class="card pad">
       <span class="sect">내 조건과 비교</span>
-      ${p.diff.map(t=>`<div style="display:flex;gap:10px;margin-bottom:8px"><span class="badge b-warn" style="flex:none">다름</span><span style="font-size:13.5px;line-height:1.6;color:var(--n700)">${esc(t)}</span></div>`).join('')}
-      <div style="display:flex;gap:10px"><span class="badge b-ok" style="flex:none">일치</span><span style="font-size:13.5px;line-height:1.6;color:var(--n700)">${p.match.map(esc).join(' · ')}</span></div>
+      ${p.diff.map(t=>`<div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:8px"><span class="badge b-warn" style="flex:none">다름</span><span style="font-size:13.5px;line-height:1.6;color:var(--n700)">${esc(t)}</span></div>`).join('')}
+      <div style="display:flex;align-items:flex-start;gap:10px"><span class="badge b-ok" style="flex:none">일치</span><span style="font-size:13.5px;line-height:1.6;color:var(--n700)">${p.match.map(esc).join(' · ')}</span></div>
     </div>
     ${p.note ? `<div class="card pad">
       <span class="sect">매물 특징</span>
@@ -5480,7 +5529,7 @@ V['#/proposal'] = (id) => { const p=S.props.find(x=>x.id===id); if(!p) return V[
     <div style="flex:none;width:${isMo()?'100%':'520px'};display:flex;flex-direction:column;gap:12px">
       <div style="height:${isMo()?200:360}px;${isMo()?'':'border-radius:var(--r-lg);'}background:${p.photos?'var(--ind100)':'var(--n100)'};display:flex;align-items:center;justify-content:center;position:relative">
         ${p.photos? `<svg viewBox="0 0 24 24" style="width:38px" fill="none" stroke="#6366D6" stroke-width="1.4"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.6"/><path d="M3 16 L9 11 L14 15 L17 13 L21 16"/></svg>
-          <span style="position:absolute;right:14px;bottom:12px;background:rgba(21,22,58,.62);color:#fff;font-size:11px;font-weight:700;border-radius:var(--r-full);padding:4px 12px" class="num">1 / ${p.photos}</span>`
+          <span style="position:absolute;right:14px;bottom:12px;background:rgba(21,22,58,.62);color:#fff;font-size:12px;font-weight:700;border-radius:var(--r-full);padding:4px 12px" class="num">1 / ${p.photos}</span>`
         : `<span style="font-size:13.5px;color:var(--n500)">사진 미첨부</span>`}
       </div>
       ${isMo()?'':`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
@@ -5547,8 +5596,8 @@ V['#/connect'] = (id) => { const p=S.props.find(x=>x.id===id); if(!p) return V['
         <b style="display:block;font-size:16px;font-weight:700;letter-spacing:-.02em;margin-bottom:10px">${esc(ct.office||ct.name||'-')}</b>
         ${ct.phone?`<a class="num" href="tel:${esc(String(ct.phone).replace(/[^0-9+]/g,''))}" style="font-size:${isMo()?25:31}px;font-weight:800;letter-spacing:-.02em;color:var(--ind);text-decoration:none">${esc(ct.phone)}</a>`
                  :`<span style="font-size:13.5px;color:var(--n500)">연락처를 불러오지 못했습니다 - 제안함에서 다시 확인해 주세요</span>`}
-        ${ct.reg_no?`<span style="display:block;margin-top:10px;font-size:11px;color:var(--n500)">등록번호 ${esc(ct.reg_no)}</span>`:''}
-        ${ct.addr?`<span style="display:block;font-size:11px;color:var(--n500)">${esc(ct.addr)}</span>`:''}</div>
+        ${ct.reg_no?`<span style="display:block;margin-top:10px;font-size:12px;color:var(--n500)">등록번호 ${esc(ct.reg_no)}</span>`:''}
+        ${ct.addr?`<span style="display:block;font-size:12px;color:var(--n500)">${esc(ct.addr)}</span>`:''}</div>
       <p style="margin:0;font-size:13.5px;line-height:1.75;color:var(--n700);background:var(--n50);padding:14px 18px;text-align:left">
         이후 상담과 계약은 <b>중개사무소와 직접</b> 진행하시면 됩니다.<br class="mbr"> 저희는 거래에 관여하지 않으며 어떤 비용도 받지 않습니다.</p>
       <div style="display:flex;gap:10px;${isMo()?'flex-direction:column':''}">
@@ -5614,7 +5663,7 @@ V['#/relax'] = () => `
         ${[['1층 · 12~18평 · 월 180 이하','1건',false],['1층 · 12~18평 · 월 210까지','9건',true],['2층 이상도 받으면','16건',false]]
           .map(([l,n,hi],i)=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 0;${i<2?'border-bottom:1px solid var(--n100)':''}">
             <span style="font-size:13.5px;${hi?'font-weight:700;color:var(--ind)':'color:var(--n700)'}">${l}</span>
-            <span class="num" style="font-size:15px;font-weight:${hi?700:400};${hi?'color:var(--ind)':''}">${n}${hi?' <span class="badge b-ind" style="font-size:11px">여기</span>':''}</span></div>`).join('')}
+            <span class="num" style="font-size:15px;font-weight:${hi?700:400};${hi?'color:var(--ind)':''}">${n}${hi?' <span class="badge b-ind" style="font-size:12px">여기</span>':''}</span></div>`).join('')}
       </div>
       <p style="margin:0;font-size:12.5px;color:var(--n500)">국토교통부 실거래가 공개시스템 - 참고 지표이며 실제와 다를 수 있습니다.</p>
     </div>
@@ -5669,7 +5718,7 @@ V['#/partner'] = () => `
         <span style="font-size:12.5px;color:var(--navy300)">${d}</span></div>`).join('')}
     </div>
     <div style="flex:none;width:${isMo()?'100%':'350px'};background:var(--navy800);border:1px solid var(--navy600);padding:16px 24px">
-      <span style="display:block;font-size:11px;font-weight:700;color:var(--navy300);margin-bottom:8px">지금 쓰시는 방식과 비교하면</span>
+      <span style="display:block;font-size:12px;font-weight:700;color:var(--navy300);margin-bottom:8px">지금 쓰시는 방식과 비교하면</span>
       <span style="font-size:13.5px;line-height:1.75;color:var(--n100)">매물을 올려두고 연락이 오기를 기다리는 방식과 다릅니다.<br class="mbr"> 여기서는 <b style="color:var(--ind300)">수요가 확인된 손님에게만, 무료로</b> 보냅니다.</span>
     </div>
   </div>
@@ -5740,11 +5789,11 @@ V['#/partner/demands'] = () => {
       <a data-go="#/partner/settings" style="font-size:13.5px;font-weight:700;color:var(--ind)">활동 조건 넓히기 →</a></div>`) : ''}
     <div style="display:grid;grid-template-columns:repeat(${isMo()?1:2},minmax(0,1fr));gap:16px">
       ${list.map(d=>`
-      <div class="card pad fade" style="display:flex;flex-direction:column;gap:12px;${d.mine?'opacity:.78':''}">
+      <div class="card pad fade" style="display:flex;flex-direction:column;gap:12px;${d.mine?'background:var(--n50);box-shadow:none':''}">
         <div style="display:flex;justify-content:space-between;align-items:center">
           <span style="display:flex;align-items:center;gap:8px">
             <span style="font-size:13.5px;font-weight:700;color:var(--ind)">${d.kind==='home'?'주거':'상가'} · ${esc(d.deal)}</span>
-            ${d.who&&WHO[d.who]&&d.who!=='home'?`<span class="badge b-mute" style="font-size:11px">${WHO[d.who].tag}</span>`:''}</span>
+            ${d.who&&WHO[d.who]&&d.who!=='home'?`<span class="badge b-mute" style="font-size:12px">${WHO[d.who].tag}</span>`:''}</span>
           <span style="display:flex;align-items:center;gap:8px">
             ${d.urgent?'<span class="badge b-warn">마감 임박</span>':''}
             <span style="font-size:12.5px;font-weight:700;color:var(--n700)">남은 슬롯 <span class="num">${d.slotsLeft}/5</span></span></span>
@@ -5757,7 +5806,7 @@ V['#/partner/demands'] = () => {
         <div style="display:flex;justify-content:space-between;align-items:center;margin-top:auto;padding-top:2px">
           <span style="font-size:12.5px;color:var(--n500)">등록 ${esc(d.at)} · 입력 ${d.pct}%</span>
           ${d.locked? `<button class="btn pri sm" data-go="#/partner/verify">자격 인증하고 열기</button>`
-            : d.mine? `<button class="btn sm" data-go="#/partner/proposals" style="background:var(--n100);color:var(--n500)">제안함 · 열람됨</button>`
+            : d.mine? `<button class="btn sm" data-go="#/partner/proposals" style="background:var(--n100);color:var(--n700)">제안함 · 열람됨</button>`
             : d.slotsLeft===0? `<span class="btn sm" style="background:var(--n100);color:var(--n500)">제안 마감</span>`
             : `<button class="btn pri sm" data-go="#/partner/demand/${d.id}">자세히 보기</button>`}
         </div>
@@ -5875,10 +5924,10 @@ V['#/partner/propose'] = (id) => { const d=S.demands.find(x=>x.id===id); if(!d) 
           <div><span class="lab" style="font-size:12.5px">건물명</span><input class="inp" data-in="bname" value="${esc(g('bname'))}" placeholder="미사강변 ○○아파트" style="padding:12px 14px;font-size:13.5px"></div>
           <div><span class="lab" style="font-size:12.5px">${home?'공급면적':'계약면적'} <span style="color:var(--danger)">*</span></span>
             <div class="unit"><input class="inp num" data-in="areaSup" inputmode="decimal" value="${esc(g('areaSup'))}" placeholder="0" style="padding:12px 14px;font-size:13.5px"><span>㎡</span></div>
-            <span data-py="areaSup" style="display:block;margin-top:4px;font-size:11px;font-weight:700;color:var(--ind)">${+g('areaSup')>0?`${(+g('areaSup')/3.305785).toFixed(1)}평`:''}</span></div>
+            <span data-py="areaSup" style="display:block;margin-top:4px;font-size:12px;font-weight:700;color:var(--ind)">${+g('areaSup')>0?`${(+g('areaSup')/3.305785).toFixed(1)}평`:''}</span></div>
           <div><span class="lab" style="font-size:12.5px">전용면적</span>
             <div class="unit"><input class="inp num" data-in="area" inputmode="decimal" value="${esc(g('area'))}" placeholder="0" style="padding:12px 14px;font-size:13.5px"><span>㎡</span></div>
-            <span data-py="area" style="display:block;margin-top:4px;font-size:11px;font-weight:700;color:var(--n500)">${+g('area')>0?`${(+g('area')/3.305785).toFixed(1)}평`:''}</span></div>
+            <span data-py="area" style="display:block;margin-top:4px;font-size:12px;font-weight:700;color:var(--n500)">${+g('area')>0?`${(+g('area')/3.305785).toFixed(1)}평`:''}</span></div>
           <div><span class="lab" style="font-size:12.5px">${home?dealWords(d.deal).dep:'보증금'}</span><div class="unit"><input class="inp num" data-in="dep" inputmode="numeric" value="${esc(comma(g('dep')))}" placeholder="0" style="padding:12px 14px;font-size:13.5px"><span>원</span></div>${wonHint(g('dep'))}</div>
           ${!home||dealWords(d.deal).rent?`<div><span class="lab" style="font-size:12.5px">월세</span><div class="unit"><input class="inp num" data-in="rent" inputmode="numeric" value="${esc(comma(g('rent')))}" placeholder="0" style="padding:12px 14px;font-size:13.5px"><span>원</span></div>${wonHint(g('rent'))}</div>`:''}
           ${home ? `
@@ -5952,7 +6001,7 @@ V['#/partner/propose'] = (id) => { const d=S.demands.find(x=>x.id===id); if(!d) 
           <p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--n500)">발송 후 수정은 불가합니다 - 열람 전 회수만 가능합니다. 작성 내용은 30초마다 자동 저장됩니다.</p></div>
       </div>
       <button class="btn pri blk" data-act="send-proposal" data-v="${d.id}" ${S.timeLeft>0 ?'':'disabled'}>제안 보내기</button>
-      <span style="text-align:center;font-size:11px;color:var(--n500)">${S.timeLeft===0?'슬롯 예약이 만료됐습니다 - 수요 상세에서 다시 시도하세요':'즉시 전달됩니다 - 검증 대기 없음'}</span>
+      <span style="text-align:center;font-size:12px;color:var(--n500)">${S.timeLeft===0?'슬롯 예약이 만료됐습니다 - 수요 상세에서 다시 시도하세요':'즉시 전달됩니다 - 검증 대기 없음'}</span>
     </div>
   </div>
 </div>`;};
@@ -5973,14 +6022,14 @@ V['#/partner/proposals'] = () => {
     <h1 class="t" style="font-size:${isMo()?21:25}px;margin-top:8px">내 제안</h1></div>
     <div class="chips">${TABS.map(([k,l,st])=>`<button class="chip ${tab===k?'on':''}" data-act="ptab" data-v="${k}" aria-pressed="${tab===k}">${l} ${S.myprops.filter(p=>st.includes(p.status)).length}</button>`).join('')}</div>
     ${seedGate(S.mpReady, () => list.length? list.map(p=>{const b=badge(p); return `
-      <div class="card pad fade" style="${['expired','rejected','withdrawn'].includes(p.status)?'opacity:.8':''}">
+      <div class="card pad fade" style="${['expired','rejected','withdrawn'].includes(p.status)?'background:var(--n50);box-shadow:none':''}">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap">
           <b style="font-size:15px;font-weight:700;letter-spacing:-.02em">${esc(p.title)} ${demoTag(p,'vertical-align:middle')}</b>
           <span class="badge ${b[0]}">${esc(b[1])}</span></div>
         <span class="num" style="font-size:13.5px;color:var(--n700)">${esc(p.price)}</span>
         <span style="display:block;font-size:12.5px;color:var(--n500);margin-top:2px">손님 조건: ${esc(p.line)}</span>
         ${p.status==='selected'&&p.cphone? `<div style="margin-top:10px;background:var(--okbg);padding:12px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-          <span style="font-size:11px;font-weight:700;color:var(--ok)">손님 연락처</span>
+          <span style="font-size:12px;font-weight:700;color:var(--ok)">손님 연락처</span>
           <span class="num" style="font-size:16px;font-weight:700;color:var(--ok)">${esc(p.cphone)}</span>
           <span style="font-size:12.5px;color:var(--n700)">${esc(p.cust||'손님')}님이 연결에 동의하셨습니다 · 이 상담에만 사용해 주세요</span></div>`:''}
         ${p.reason? `<p style="margin:10px 0 0;background:var(--n50);padding:12px 16px;font-size:13.5px;line-height:1.6;color:var(--n700)">${esc(p.reason)}</p>`:''}
@@ -6249,7 +6298,7 @@ function verifyBody(){
         준공 전 물건은 등록할 수 없습니다. 준공 후 다시 신청해 주세요.</p>`:''}</div>
     <div style="margin-top:16px"><span class="lab">인증 서류</span>
       <button class="card clickable" style="width:100%;padding:24px;border-style:dashed;text-align:center;font-size:13.5px;font-weight:700;color:var(--n500)">
-        + 분양신고 수리 통보서 또는 입주자모집공고 승인서<br><span style="font-weight:500;font-size:11px">PDF · 이미지 · 10MB 이하</span></button></div>
+        + 분양신고 수리 통보서 또는 입주자모집공고 승인서<br><span style="font-weight:500;font-size:12px">PDF · 이미지 · 10MB 이하</span></button></div>
     <button class="btn pri blk" style="margin-top:18px" data-act="j-confirm" ${f.jDev && f.jDone==='준공 완료' ?'':'disabled'}>심사 요청하기</button>`;
   return body;
 }
@@ -6314,7 +6363,7 @@ V['#/partner/verify'] = () => `
   <div style="flex:1;display:flex;justify-content:center;padding:${isMo()?'20px 24px 30px':'32px 40px 40px'}">
     <div style="width:100%;max-width:560px;display:flex;flex-direction:column;gap:14px">
       ${isMo()?'':`<div style="display:flex;gap:8px;margin-bottom:6px">${steps.map((t,i)=>`
-        <span style="flex:1;padding:10px 0;text-align:center;font-size:11px;font-weight:${i+1===step?800:600};border-radius:var(--r-full);
+        <span style="flex:1;padding:10px 0;text-align:center;font-size:12px;font-weight:${i+1===step?800:600};border-radius:var(--r-full);
           background:${i+1===step?'var(--ind)':i+1<step?'var(--okbg)':'var(--n100)'};color:${i+1===step?'#fff':i+1<step?'var(--ok)':'var(--n500)'}">${t}</span>`).join('')}</div>`}
       ${body}
     </div>
@@ -6332,7 +6381,7 @@ V["#/partner/stats"] = () => {
   const tile = (k,v,sub,avg,main) => `<div class="card" style="padding:16px 18px;${main?'border-color:rgba(79,82,209,.4);background:rgba(245,245,252,.6)':''}">
     <span style="display:block;font-size:12.5px;font-weight:700;color:var(--n500)">${k}</span>
     <span class="num" style="font-size:25px;font-weight:800;letter-spacing:-.02em;${main?'color:var(--ind)':''}">${v}</span>
-    ${sub?`<span style="display:block;font-size:11px;font-weight:700;color:${avg==null?'var(--n500)':avg?'var(--ok)':'var(--warn)'}">${sub}</span>`:''}</div>`;
+    ${sub?`<span style="display:block;font-size:12px;font-weight:700;color:${avg==null?'var(--n500)':avg?'var(--ok)':'var(--warn)'}">${sub}</span>`:''}</div>`;
   return `
 <div class="scr fade" style="background:var(--n50)">
   ${navPartner('st')}
@@ -6454,7 +6503,7 @@ V["#/partner/settings"] = () => {
         ${sect('1','취급 유형','',
           `<div class="chips multi">${ASSET_KINDS.map(k=>{ const soon = ASSET_SOON.includes(k);
             return `<button class="chip ${sc.assets.includes(k)?'on':''}" data-act="sc-assets" data-v="${esc(k)}" aria-pressed="${sc.assets.includes(k)}"
-              style="padding:10px 16px;font-size:13.5px">${esc(k)}${soon?' <span style="opacity:.6;font-size:11px">· 준비 중</span>':''}</button>`;
+              style="padding:10px 16px;font-size:13.5px">${esc(k)}${soon?' <span style="opacity:.8;font-size:12px">· 준비 중</span>':''}</button>`;
           }).join('')}</div>`
           + `<div class="chips" style="margin-top:8px">${['토지','공장'].map(x=>
             /* var(--off) 는 흰 바탕에서 3.81:1 로 기준(4.5)에 못 미쳤다. 이건 꺼진
@@ -6481,7 +6530,7 @@ V["#/partner/settings"] = () => {
           `<div class="chips multi">${EXCLUDE_KINDS.map(k=>{
             const soon = EXCLUDE_SOON.includes(k);
             return `<button class="chip ${sc.excluded.includes(k)?'on':''}" data-act="sc-exclude" data-v="${esc(k)}" aria-pressed="${sc.excluded.includes(k)}"
-              style="padding:10px 16px;font-size:13.5px">${esc(k)}${soon?' <span style="opacity:.6;font-size:11px">· 준비 중</span>':''}</button>`;
+              style="padding:10px 16px;font-size:13.5px">${esc(k)}${soon?' <span style="opacity:.8;font-size:12px">· 준비 중</span>':''}</button>`;
           }).join('')}</div>`
           + (sc.excluded.length ? `<p style="margin:10px 0 0;padding:12px 16px;font-size:13.5px;font-weight:700;background:${drop?'var(--dangerbg)':'var(--warnbg)'};color:${drop?'var(--danger)':'var(--warn)'}">
               이 설정이면 대기 손님 ${base}건 → ${now}건이 됩니다${drop?' - 알림이 크게 줄어듭니다':''}</p>` : ''))}
@@ -6830,9 +6879,9 @@ V["#/partner/listing"] = (id) => {
       <div class="lines" style="font-size:13.5px">${d.lines.slice(0,2).map(esc).join('<br>')}</div>
       ${d.memo? `<p style="margin:0;background:var(--ind50);padding:10px 14px;font-size:13.5px;line-height:1.6;color:var(--ind700);font-style:italic">"${esc(d.memo.length>46?d.memo.slice(0,46)+'…':d.memo)}"</p>`:''}
       <div style="border-top:1px solid var(--hair);padding-top:10px;display:flex;flex-wrap:wrap;gap:6px">
-        ${st.slice(0,4).map(v=>`<span class="badge b-ok" style="font-size:11px">✓ ${v.k}${v.note?` · ${esc(v.note)}`:''}</span>`).join('')}
-        ${st[4].miss.length? `<span class="badge b-warn" style="font-size:11px">${esc(st[4].note)}</span>`
-          : `<span class="badge b-ok" style="font-size:11px">✓ 요청 항목 모두 충족</span>`}
+        ${st.slice(0,4).map(v=>`<span class="badge b-ok" style="font-size:12px">✓ ${v.k}${v.note?` · ${esc(v.note)}`:''}</span>`).join('')}
+        ${st[4].miss.length? `<span class="badge b-warn" style="font-size:12px">${esc(st[4].note)}</span>`
+          : `<span class="badge b-ok" style="font-size:12px">✓ 요청 항목 모두 충족</span>`}
       </div>
       <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:2px">
         <a class="tapx" data-go="#/partner/demand/${d.id}" style="font-size:13.5px;font-weight:700;color:var(--n500);text-decoration:underline">조건 전문 보기</a>
@@ -6874,7 +6923,7 @@ V["#/brand"] = () => {
     <div style="padding:${isMo()?"24px 18px":"32px 26px"};display:flex;align-items:center;justify-content:center;min-height:${isMo()?96:118}px;background:${bg||"var(--white)"}">${inner}</div>
     <div style="padding:12px 16px;border-top:1px solid var(--hair);background:var(--n50)">
       <b style="display:block;font-size:12.5px;font-weight:700">${t}</b>
-      <span style="font-size:11px;color:var(--n500);line-height:1.6">${sub}</span></div></div>`;
+      <span style="font-size:12px;color:var(--n500);line-height:1.6">${sub}</span></div></div>`;
   return `
 <div class="scr fade" style="background:var(--n50)">
   <div class="nav solid pad"><a data-go="#/" style="flex:none">${logoLockup({h:25,tag:!isMo()})}</a>
@@ -6914,7 +6963,7 @@ V["#/brand"] = () => {
           <div style="padding:${isMo()?"34px 20px":"46px 28px"};display:flex;align-items:center;justify-content:center;min-height:${isMo()?110:140}px">${fn({h:isMo()?36:46,m:"light"})}</div>
           <div style="padding:12px 18px;border-top:1px solid var(--hair);background:var(--n50)">
             <b style="display:block;font-size:13.5px;font-weight:700">${n}</b>
-            <span style="font-size:11px;color:var(--n500);line-height:1.6">${why}</span></div>
+            <span style="font-size:12px;color:var(--n500);line-height:1.6">${why}</span></div>
           <div style="display:flex;border-top:1px solid var(--hair)">
             <div style="flex:1;padding:16px 10px;display:flex;align-items:center;justify-content:center;background:var(--ind)">${fn({h:20,m:"dark"})}</div>
             <div style="flex:1;padding:16px 10px;display:flex;align-items:center;justify-content:center;background:var(--n100)">${fn({h:20,m:"mono"})}</div>
@@ -6925,10 +6974,10 @@ V["#/brand"] = () => {
       <div class="card" style="margin-top:14px;padding:0;overflow:hidden">
         <div style="padding:12px 18px;border-bottom:1px solid var(--hair);background:var(--n50)">
           <b style="font-size:12.5px;font-weight:700">헤더에 얹었을 때</b>
-          <span style="font-size:11px;color:var(--n500)"> - 실제로 가장 많이 보이는 크기입니다</span></div>
+          <span style="font-size:12px;color:var(--n500)"> - 실제로 가장 많이 보이는 크기입니다</span></div>
         ${[['D1',{}],['D2',{bw:.05,lw:.07,bl:.30}],['D5',{line:false,bw:.06,bl:.38}],['D6',{flat:true,bw:.06,lw:.085}]]
           .map(([n,op])=>`<div style="display:flex;align-items:center;gap:24px;padding:14px 20px;border-bottom:1px solid var(--hair)">
-            <span style="width:26px;font-size:11px;font-weight:700;color:var(--n500)">${n}</span>
+            <span style="width:26px;font-size:12px;font-weight:700;color:var(--n500)">${n}</span>
             ${wmDoor(24,"light",op)}
             <span style="margin-left:auto;display:flex;gap:14px;font-size:13.5px;color:var(--n500)">
               <span>내 조건</span><span>제안함</span></span>
@@ -6957,7 +7006,7 @@ V["#/brand"] = () => {
           <div style="padding:${isMo()?"38px 20px":"48px 24px"};display:flex;align-items:center;justify-content:center;min-height:${isMo()?116:146}px">${wmImpact(isMo()?36:42,"light",k)}</div>
           <div style="padding:12px 16px;border-top:1px solid var(--hair);background:var(--n50);min-height:74px">
             <b style="display:block;font-size:12.5px;font-weight:700">${n}</b>
-            <span style="font-size:11px;color:var(--n500);line-height:1.6">${why}</span></div>
+            <span style="font-size:12px;color:var(--n500);line-height:1.6">${why}</span></div>
           <div style="display:flex;border-top:1px solid var(--hair)">
             <div style="flex:1;padding:16px 8px;display:flex;align-items:center;justify-content:center;background:var(--ind)">${wmImpact(19,"dark",k)}</div>
             <div style="flex:1;padding:16px 8px;display:flex;align-items:center;justify-content:center;background:var(--n100)">${wmImpact(19,"mono",k)}</div>
@@ -6976,7 +7025,7 @@ V["#/brand"] = () => {
           <div style="padding:${isMo()?"26px 18px":"34px 22px"};display:flex;align-items:center;justify-content:center;min-height:${isMo()?86:104}px">${fn(isMo()?30:36,"light")}</div>
           <div style="padding:12px 16px;border-top:1px solid var(--hair);background:var(--n50)">
             <b style="display:block;font-size:12.5px;font-weight:700">${n}</b>
-            <span style="font-size:11px;color:var(--n500);line-height:1.6">${why}</span></div></div>`).join("")}
+            <span style="font-size:12px;color:var(--n500);line-height:1.6">${why}</span></div></div>`).join("")}
       </div>
       <div class="card pad" style="margin-top:14px">
         <span class="sect">표기 규칙 - 붙여쓰기 / 띄어쓰기</span>
@@ -7011,7 +7060,7 @@ V["#/brand"] = () => {
             </div>
             <div style="padding:12px 24px;border-top:1px solid var(--hair);background:var(--n50)">
               <b style="font-size:12.5px;font-weight:700">${n}</b>
-              <span style="font-size:11px;color:var(--n500)"> - ${why}</span></div>
+              <span style="font-size:12px;color:var(--n500)"> - ${why}</span></div>
           </div>`).join('')}
       </div>
 
@@ -7028,10 +7077,10 @@ V["#/brand"] = () => {
               <span style="flex:none;width:18px;height:18px;border-radius:50%;border:1.5px solid ${on?'var(--ind)':'var(--n300)'};background:${on?'var(--ind)':'transparent'};display:flex;align-items:center;justify-content:center">
                 ${on?'<i style="width:6px;height:6px;border-radius:50%;background:#fff"></i>':''}</span>
               <span style="flex:1"><b style="display:block;font-size:13.5px;font-weight:${on?800:600};color:${on?'var(--ind)':'var(--n900)'}">${esc(t)}</b>
-                ${i===0?`<span style="font-size:11px;color:var(--n500)">현재 적용본 · 「매물」을 쓰지 않아 표시·광고 논란을 피한다</span>`
-                      :i===1?`<span style="font-size:11px;color:var(--n500)">영역(부동산)을 밝힌다 - 처음 듣는 사람에게 더 친절</span>`
-                      :i===2?`<span style="font-size:11px;color:var(--n500)">브랜드 문장 그대로 - 가장 기억에 남는다</span>`
-                      :`<span style="font-size:11px;color:var(--n500)">동사형. 짧아서 헤더에 잘 맞는다</span>`}</span>
+                ${i===0?`<span style="font-size:12px;color:var(--n500)">현재 적용본 · 「매물」을 쓰지 않아 표시·광고 논란을 피한다</span>`
+                      :i===1?`<span style="font-size:12px;color:var(--n500)">영역(부동산)을 밝힌다 - 처음 듣는 사람에게 더 친절</span>`
+                      :i===2?`<span style="font-size:12px;color:var(--n500)">브랜드 문장 그대로 - 가장 기억에 남는다</span>`
+                      :`<span style="font-size:12px;color:var(--n500)">동사형. 짧아서 헤더에 잘 맞는다</span>`}</span>
             </button>`;}).join('')}
         </div>
       </div>
@@ -7056,7 +7105,7 @@ V["#/brand"] = () => {
         <div style="display:flex;align-items:center;justify-content:center;padding:12px 0">
           <span style="position:relative;display:inline-flex;padding:24px;border:1.4px dashed rgba(79,82,209,.4);border-radius:var(--r-sm)">
             ${logoLockup({h:30})}
-            <span style="position:absolute;left:7px;top:50%;transform:translateY(-50%);font-size:11px;font-weight:700;color:var(--ind)">글자높이</span>
+            <span style="position:absolute;left:7px;top:50%;transform:translateY(-50%);font-size:12px;font-weight:700;color:var(--ind)">글자높이</span>
           </span>
         </div>
         <p style="margin:6px 0 0;font-size:12.5px;line-height:1.6;color:var(--n500)">사방으로 <b style="color:var(--n900)">글자 높이만큼</b> 비웁니다. 잔향 도트도 여백 안에 포함됩니다.</p>
@@ -7627,7 +7676,7 @@ function listingPanel(){
               +r.area ? `전용 ${r.area}㎡` : +r.py ? `${r.py}평` : '-'}${
               +r.area_sup ? ` / ${r.area_sup}㎡` : ''}</td>
             <td class="num" style="padding:10px 12px;white-space:nowrap">보증금 ${(+r.dep||0).toLocaleString()}${r.rent?` / 월 ${r.rent}`:''}</td>
-            <td style="padding:10px 12px">${r.agent?`${esc(r.agent.office||r.agent.name||'-')}<br><span style="font-size:11px;color:var(--n500)">${esc(ROLE_KO2[r.agent.role]||'공인중개사')}${r.agent.status!=='approved'?` · ${esc(r.agent.status)}`:''}</span>`:'-'}</td>
+            <td style="padding:10px 12px">${r.agent?`${esc(r.agent.office||r.agent.name||'-')}<br><span style="font-size:12px;color:var(--n500)">${esc(ROLE_KO2[r.agent.role]||'공인중개사')}${r.agent.status!=='approved'?` · ${esc(r.agent.status)}`:''}</span>`:'-'}</td>
             <td style="padding:10px 12px">${r.status==='active'?'<span class="badge b-ok">올림</span>':'<span class="badge b-mute">내림</span>'}</td>
           </tr>`).join('')}</tbody>
       </table></div>`}`;
@@ -7993,23 +8042,28 @@ function demandPanel(){
     `<button class="chip ${on?'on':''}" data-act="${act}" data-v="${v}" style="padding:8px 14px;font-size:12.5px">${label}</button>`;
   return `
     ${opsSummary(all, AG.rows)}
-    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px">
-      <div class="chips" style="gap:6px">
-        ${chip('전체', !OPS.kind, 'ops-kind','')}${Object.entries(WHO).map(([k,w])=>chip(w.tag, OPS.kind===k,'ops-kind',k)).join('')}
+    <!-- 거르는 것(윗줄)과 하는 것(아랫줄)을 나눈다. 한 줄에 열네 개를 흘려 두면
+         'CSV 내려받기' 만 다음 줄에 홀로 떨어지고, 칩 묶음 사이의 가는 선은 보이지 않았다 -->
+    <div class="opsTools">
+      <div class="row">
+        <div class="grp"><span class="lb">유형</span><div class="chips" style="gap:6px">
+          ${chip('전체', !OPS.kind, 'ops-kind','')}${Object.entries(WHO).map(([k,w])=>chip(w.tag, OPS.kind===k,'ops-kind',k)).join('')}
+        </div></div>
+        <div class="grp"><span class="lb">기간</span><div class="chips" style="gap:6px">
+          ${chip('전체 기간', !OPS.days,'ops-days','0')}${chip('7일', OPS.days===7,'ops-days','7')}${chip('30일', OPS.days===30,'ops-days','30')}
+        </div></div>
+        <div class="grp"><span class="lb">상태</span><div class="chips" style="gap:6px">
+          ${chip('전체', !OPS.only,'ops-only','')}${chip('안 보낸 것', OPS.only==='todo','ops-only','todo')}${chip('새로 온 것', OPS.only==='new','ops-only','new')}
+        </div></div>
       </div>
-      <span style="width:1px;height:20px;background:var(--hair)"></span>
-      <div class="chips" style="gap:6px">
-        ${chip('전체 기간', !OPS.days,'ops-days','0')}${chip('7일', OPS.days===7,'ops-days','7')}${chip('30일', OPS.days===30,'ops-days','30')}
+      <div class="row">
+        <input class="inp" data-in="opsQ" value="${esc(OPS.q)}" placeholder="이름·지역·메모 찾기" autocomplete="off"
+          style="flex:1;min-width:150px;max-width:320px;padding:0 14px;min-height:44px;font-size:13.5px">
+        ${chip(OPS.reveal?'연락처 원문':'연락처 가림', OPS.reveal, 'ops-reveal','')}
+        <span class="sp"></span>
+        <button class="btn ghost sm" data-act="ops-load">새로고침</button>
+        <button class="btn sec sm" data-act="ops-csv">CSV 내려받기</button>
       </div>
-      <span style="width:1px;height:20px;background:var(--hair)"></span>
-      <div class="chips" style="gap:6px">
-        ${chip('전체', !OPS.only,'ops-only','')}${chip('안 보낸 것', OPS.only==='todo','ops-only','todo')}${chip('새로 온 것', OPS.only==='new','ops-only','new')}
-      </div>
-      <input class="inp" data-in="opsQ" value="${esc(OPS.q)}" placeholder="이름·지역·메모 찾기" autocomplete="off"
-        style="flex:1;min-width:150px;max-width:260px;padding:8px 12px;font-size:12.5px;height:auto">
-      ${chip(OPS.reveal?'연락처 원문':'연락처 가림', OPS.reveal, 'ops-reveal','')}
-      <button class="btn ghost sm" data-act="ops-load">새로고침</button>
-      <button class="btn sec sm" data-act="ops-csv">CSV 내려받기</button>
     </div>
 
     <div class="card pad" style="padding:0;overflow:hidden">
@@ -8020,7 +8074,7 @@ function demandPanel(){
             return todo ? `<span class="badge b-warn">아직 안 보낸 것 ${todo}건</span>` : `<span class="badge b-ok">전부 보냈습니다</span>`; })()}
         </div>
         <div style="display:flex;align-items:center;gap:10px">
-          <span style="font-size:11px;color:var(--n500)">${OPS.at?esc(OPS.at.replace('T',' ').slice(0,16)):''} 기준</span>
+          <span style="font-size:12px;color:var(--n500)">${OPS.at?esc(OPS.at.replace('T',' ').slice(0,16)):''} 기준</span>
           <button class="btn ghost sm" data-act="ops-seen">여기까지 확인함</button>
         </div>
       </div>
@@ -8032,7 +8086,7 @@ function demandPanel(){
         <table style="width:100%;border-collapse:collapse;font-size:13.5px;white-space:nowrap">
           <thead><tr style="background:var(--n50)">
             ${['접수','유형','이름','연락처','지역','예산','핵심 조건','확인'].map(h=>
-              `<th style="text-align:left;padding:10px 14px;font-size:11px;font-weight:700;color:var(--n500);letter-spacing:.02em">${h}</th>`).join('')}
+              `<th style="text-align:left;padding:10px 14px;font-size:12px;font-weight:700;color:var(--n500);letter-spacing:.02em">${h}</th>`).join('')}
           </tr></thead>
           <tbody>${rows.map(r=>{
             const shop = NONHOME(r.kind);
@@ -8049,9 +8103,9 @@ function demandPanel(){
             const fresh = new Date(r.created_at).getTime() > OPS.seen;
             const open = OPS.open === r.id;
             return `<tr class="clickable" data-act="ops-open" data-v="${esc(r.id)}"
-              style="border-top:1px solid var(--n100);cursor:pointer;${sent?'opacity:.55;':''}${open?'background:var(--ind50);':''}">
+              style="border-top:1px solid var(--n100);cursor:pointer;${open?'background:var(--ind50);':sent?'background:var(--n50);':''}">
               <td style="padding:12px 14px;color:var(--n500)">
-                ${fresh&&!sent?`<span class="badge b-ind" style="margin-right:6px;background:var(--ind);color:#fff;padding:2px 8px;font-size:11px">NEW</span>`:''}
+                ${fresh&&!sent?`<span class="badge b-ind" style="margin-right:6px;background:var(--ind);color:#fff;padding:2px 8px;font-size:12px">NEW</span>`:''}
                 ${esc(String(r.created_at||'').replace('T',' ').slice(5,16))}</td>
               <td style="padding:12px 14px"><span class="badge ${shop?'b-warn':'b-ok'}">${shop?'상가':'주거'}</span></td>
               <td style="padding:12px 14px;font-weight:700">${esc(r.name||'')}</td>
@@ -8069,7 +8123,7 @@ function demandPanel(){
                 <div style="flex:none;display:flex;flex-direction:column;gap:8px;min-width:150px">
                   <button class="btn pri sm" data-act="ops-copy" data-v="${esc(r.id)}">중개사에게 보낼 글 복사</button>
                   <button class="btn ${sent?'ghost':'sec'} sm" data-act="ops-sent" data-v="${esc(r.id)}">${sent?'보냄 취소':'보냈다고 표시'}</button>
-                  <span style="font-size:11px;line-height:1.7;color:var(--n500)">복사해서 해당 지역 중개사에게 그대로 보내시면 됩니다.</span>
+                  <span style="font-size:12px;line-height:1.7;color:var(--n500)">복사해서 해당 지역 중개사에게 그대로 보내시면 됩니다.</span>
                 </div>
               </div></td></tr>`
             : (r.memo?`<tr><td colspan="8" style="padding:0 14px 12px 14px">
@@ -8230,8 +8284,13 @@ function dashFlow(days){
         </div>`;
       }).join('')}
     </div>
-    <div class="axis">${days.map((x,i)=>
-      `<span>${(i===0||i===days.length-1||x.lab==='1')?esc(x.lab):'·'}</span>`).join('')}</div>
+    <!-- 처음과 끝만 숫자이고 사이는 점이라 '어느 날 막대인지' 를 셀 수가 없었다(2026-10-15).
+         날마다 날짜를 단다 - 휴대폰은 하루 걸러, 끝은 '오늘', 처음과 달이 바뀌는 날은 월도 함께. -->
+    <div class="axis">${days.map((x,i)=>{
+      const 끝 = i === days.length-1;
+      const 건너뜀 = isMo() && !끝 && (days.length-1-i) % 2;
+      const 글 = 끝 ? '오늘' : (i===0 || x.lab==='1') ? `${x.mon}/${x.lab}` : x.lab;
+      return `<span>${건너뜀 ? '' : esc(글)}</span>`; }).join('')}</div>
     ${OPS.rows && !OPS.rows.length ? `<p style="margin:12px 0 0;font-size:12.5px;color:var(--n500)">아직 접수된 조건이 없습니다.</p>` : ''}
   </div>`;
 }
@@ -8278,7 +8337,7 @@ function dashRecent(){
     <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:12px">
       <b style="font-size:13.5px;font-weight:700;color:var(--n900);letter-spacing:-.02em">최근 움직임</b>
       <button data-act="ops-tab" data-v="log"
-        style="border:none;background:none;padding:0;color:var(--ind);font-size:12.5px;font-weight:700;cursor:pointer">전체 기록 →</button>
+        style="border:none;background:none;padding:14px 6px;margin:-14px -6px;color:var(--ind);font-size:12.5px;font-weight:700;cursor:pointer">전체 기록 →</button>
     </div>
     ${rows.length ? `<div class="tl">${rows.map(r=>{
       const d = new Date(r.at);
@@ -8400,7 +8459,7 @@ function statsPanel(){
       .map(([k,v,sub])=>`<div class="card" style="padding:16px">
         <span style="display:block;font-size:12.5px;font-weight:700;color:var(--n500)">${k}</span>
         <span class="num" style="font-size:24px;font-weight:800;letter-spacing:-.02em">${v}</span>
-        ${sub?`<span style="display:block;margin-top:2px;font-size:11px;line-height:1.4;color:var(--n500)">${sub}</span>`:''}</div>`).join('')}
+        ${sub?`<span style="display:block;margin-top:2px;font-size:12px;line-height:1.4;color:var(--n500)">${sub}</span>`:''}</div>`).join('')}
   </div>
 
   <div class="card pad" style="margin-bottom:14px">
@@ -8493,7 +8552,7 @@ function opsGateScreen(){
     </div>
     <div style="display:flex;align-items:center;gap:12px;margin:14px 0">
       <i style="flex:1;height:1px;background:var(--hair)"></i>
-      <span style="font-size:11px;color:var(--n500)">또는</span>
+      <span style="font-size:12px;color:var(--n500)">또는</span>
       <i style="flex:1;height:1px;background:var(--hair)"></i>
     </div>
     ${google ? snsButton(google).replace('data-act="sns"', 'data-act="ops-sns"') : ''}

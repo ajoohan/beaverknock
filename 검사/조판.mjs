@@ -202,5 +202,65 @@ ok(!/#3D3F8F|#1F1D1A|#6E6859/i.test(메일), '알림 메일에 예전 색이 남
 ok(/if\(kind === 'onDark'\) return `<a class="btn partner"/.test(js), 'partnerDoor 가 짙은 칸용 흰 단추를 낸다');
 ok(/\$\{partnerDoor\('onDark'\)\}/.test(js), '첫 화면 파트너 칸이 그 단추를 쓴다');
 
+/* ── ⑧ 전 화면 UI 품질 개선 (2026-10-15) ──
+   재서 찾은 것들이다. 숫자 하나가 되돌아가면 눈으로는 한참 뒤에야 알아챈다. */
+{
+  /* 아이폰은 16px 미만 입력칸을 누르면 화면을 키운 채로 둔다. 주석만 16 이고 값은 15 였다. */
+  const 굵은손 = css.match(/@media \(pointer:coarse\)\{([^}]*\{[^}]*\})\s*\}/);
+  ok(!!굵은손 && /\.inp, input, select, textarea\{font-size:16px!important\}/.test(굵은손[1]),
+     '손가락 기기에서는 입력칸 글자가 16px 이다 (인라인 13.5px 까지 덮는다)');
+
+  /* 마지막에 걸린 규칙이 이긴다 - 44 를 적어 두고 아래에서 40 으로 되돌리던 줄이 있었다 */
+  const 마지막 = re => { const all = [...css.matchAll(re)]; return all.length ? all[all.length - 1][1] : null; };
+  ok(마지막(/body\.mo \.btn\.sm\{min-height:(\d+)px\}/g) === '44', '휴대폰의 작은 버튼은 44px 이다');
+  ok(마지막(/body\.mo \.btn\.door,body\.mo \.btn\.enter\{min-height:(\d+)px\}/g) === '44',
+     '휴대폰 상단바 로그인 단추도 44px 이다 (뒤에서 40 으로 덮지 않는다)');
+
+  /* 11px 은 영문 대문자 머리표·숫자 동그라미·차트 날짜 축에만 남긴다 */
+  const 열하나 = (html.match(/font-size:11px/g) || []).length;
+  ok(열하나 <= 6, `11px 글자는 영문 머리표·숫자 동그라미·날짜 축 여섯 곳뿐이다 (지금 ${열하나})`);
+  ok(!/font-size:11px/.test(js), '화면을 그리는 코드에는 11px 글자가 없다');
+
+  /* 파트너 상단바 - 휴대폰 한 줄에 다 들어가야 한다. 실제 함수를 돌린다. */
+  const 몸 = js.match(/function navPartner\(active\)\{[\s\S]*?\n<\/div>`;\}/);
+  ok(!!몸, 'navPartner 를 찾았다');
+  if(몸){
+    const 그려 = mo => new Function('isMo', 'S', 'ownerSide', 'logoLockup', 'agentBadge', 'esc', 'navAuth',
+      `${몸[0]}; return navPartner('d');`)(() => mo,
+      { user: { id: 'u' }, agent: { office: '하남미사부동산', status: 'approved' } },
+      () => false, () => '', () => '<span class="badge">인증됨</span>', s => s, () => '');
+    const 폰 = 그려(true), 큰 = 그려(false);
+    ok(!폰.includes('하남미사부동산') && !폰.includes('>내 정보<') && 폰.includes('로그아웃'),
+       '휴대폰 파트너 상단바는 사무소 이름·내 정보를 빼고 로그아웃을 남긴다 (탭바에 설정이 있다)');
+    ok(큰.includes('하남미사부동산') && 큰.includes('>내 정보<'), '넓은 화면에서는 사무소 이름과 내 정보가 그대로다');
+  }
+
+  /* 배지 옆 설명이 두 줄이 되면 배지까지 세로로 늘었다 */
+  const 다름줄 = [...js.matchAll(/<div style="display:flex;([^"]*)"><span class="badge (?:b-warn|b-ok)" style="flex:none/g)];
+  ok(다름줄.length === 4 && 다름줄.every(m => /align-items:flex-start/.test(m[1])),
+     `다름·일치 배지 줄 네 곳이 위로 맞춘다 - 설명이 길어도 배지가 늘지 않는다 (${다름줄.length}곳)`);
+
+  /* 읽음·보냄·종료 같은 '지난 것' 을 카드째 흐리게(opacity) 하면 안의 글자까지 4.5:1 아래로
+     떨어진다 - 3.07~4.26 이었다. 회색 바탕으로 가른다. (준비 중인 소셜 단추는 꺼진 것이라 예외) */
+  const 흐림 = [...js.matchAll(/\?'opacity:\.\d+;?'/g)].map(m => m[0]);
+  ok(흐림.length === 1 && 흐림[0] === "?'opacity:.62;'", `상태를 흐림으로 가르는 곳은 '준비 중' 단추 하나뿐이다 (${흐림.join(' ')})`);
+
+  /* 운영 목록 위 도구줄 - 거르기 줄과 동작 줄 */
+  ok((js.match(/<div class="opsTools">/g) || []).length === 2, '조건관리·회원관리가 같은 도구줄 틀을 쓴다');
+  ok(/body\.mo \.opsTools \.row \.inp\{flex:1 1 100%/.test(css), '휴대폰에서는 찾기 칸이 한 줄을 다 쓴다');
+
+  /* 대시보드 날짜 축 - 사이가 점뿐이면 막대가 어느 날인지 셀 수 없다 */
+  const 축 = js.match(/<div class="axis">\$\{days\.map\(\(x,i\)=>\{([\s\S]*?)\}\)\.join\(''\)\}<\/div>/);
+  ok(!!축, '날짜 축 코드를 찾았다');
+  if(축){
+    const 축그려 = (mo, days) => new Function('isMo', 'esc', 'days', `return days.map((x,i)=>{${축[1]}}).join('');`)(() => mo, s => s, days);
+    const 날 = Array.from({ length: 14 }, (_, i) => ({ mon: 10, lab: String(i + 2) }));
+    const 큰축 = 축그려(false, 날), 폰축 = 축그려(true, 날);
+    ok(!큰축.includes('·') && 큰축.includes('<span>10/2</span>') && 큰축.includes('<span>9</span>') && 큰축.endsWith('<span>오늘</span>'),
+       '넓은 화면 축은 날마다 날짜를 달고 끝은 오늘이다');
+    ok((폰축.match(/<span><\/span>/g) || []).length === 7 && 폰축.endsWith('<span>오늘</span>'), '휴대폰 축은 하루 걸러 단다');
+  }
+}
+
 console.log(`${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

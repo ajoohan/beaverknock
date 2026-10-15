@@ -740,10 +740,11 @@ ok((js.match(/'#\/ops\/live'/g) || []).length === 1 && /const OPS_HOME = '#\/ops
     const 띠몸 = 도우미 + '\n' + 함수('function 보류띠(){');
     const 띠 = (S, 저장소 = 가짜저장소()) => new Function('S', 'esc', 'draftTitle', 'sessionStorage', `${띠몸}; return 보류띠();`)(S, s => s, d => d.제목, 저장소);
     ok(띠({ 보류목록: [] }) === '', '맡아 둔 조건이 없으면 띠를 그리지 않는다');
-    const 그림 = 띠({ 보류목록: [{ 제목: '미사동 · 월세' }] });
+    const 내것 = 제목 => ({ kind: 'home', dongs: [], 제목, 맡긴계정: 'u1' });
+    const 그림 = 띠({ user: { id: 'u1' }, 보류목록: [내것('미사동 · 월세')] });
     ok(/전달되지 않은 조건이 있습니다/.test(그림) && 그림.includes('미사동 · 월세') && /data-act="draft-swap"/.test(그림),
        '띠는 무엇이 남았는지 말하고 이어 보낼 단추를 낸다');
-    const 둘 = 띠({ 보류목록: [{ 제목: '미사동 · 월세' }, { 제목: '덕풍동 · 상가' }] });
+    const 둘 = 띠({ user: { id: 'u1' }, 보류목록: [내것('미사동 · 월세'), 내것('덕풍동 · 상가')] });
     ok(/전달되지 않은 조건이 2건 있습니다/.test(둘) && 둘.includes('미사동 · 월세') && 둘.includes('외 1건') && /첫 조건부터 이어서 보내기/.test(둘),
        '여럿이면 몇 건인지와 첫 조건을 말한다');
     for(const v of ["V['#/kind'] = ", "V['#/register'] = ", "V['#/contact'] = ", "V['#/my'] = "]){
@@ -780,7 +781,7 @@ ok((js.match(/'#\/ops\/live'/g) || []).length === 1 && /const OPS_HOME = '#\/ops
        '두 번째 실패도 목록 뒤에 붙는다 - 앞서 맡긴 것을 덮지 않는다');
     ok(JSON.parse(둘째.저장소.getItem('bk.held')).length === 2, '맡긴 목록은 탭 저장소에 적힌다 - 페이지를 떠났다 와도 남는다');
     /* 저장소에서 되살린다(휴대폰 본인확인처럼 페이지째 돌아온 뒤) */
-    const 저장소 = 가짜저장소(); 저장소.setItem('bk.held', JSON.stringify([{ kind: 'home', 이름: '되살림' }]));
+    const 저장소 = 가짜저장소(); 저장소.setItem('bk.held', JSON.stringify([{ kind: 'home', dongs: ['망월동'], 이름: '되살림' }]));
     const 되살림 = new Function('S', 'sessionStorage', `${도우미}; return 맡긴목록();`)({}, 저장소);
     ok(되살림.length === 1 && 되살림[0].이름 === '되살림', '새로 읽힌 페이지는 탭 저장소에서 맡긴 목록을 되살린다');
     const 깨짐 = 가짜저장소(); 깨짐.setItem('bk.held', '{깨진');
@@ -806,6 +807,55 @@ ok((js.match(/'#\/ops\/live'/g) || []).length === 1 && /const OPS_HOME = '#\/ops
     ok(/「내 조건」 화면의 띠에서/.test(띠없음.알림), `띠가 없는 화면에서는 띠가 있는 곳을 말한다 - "${띠없음.알림}"`);
   }
 
+
+  /* ── 2026-10-15 리뷰: 완료 화면에서 뒤로 와 다시 누르면 같은 조건이 두 번 저장됐다 ── */
+  {
+    const 몸 = 함수('function contactOk(d){');
+    const 판정 = (d, idv = true) => new Function('S', 'phoneOk', `${몸}; return contactOk;`)({ idvCfg: { enabled: idv } }, () => true)(d);
+    const 다참 = { phone: '01012345678', a1: true, a2: true, verified: true, name: '한상혁' };
+    ok(판정(다참) === true && 판정({ ...다참, 전달됨: true }) === false, '전달된 초안이면 전달 단추가 열리지 않는다');
+    ok(판정({ ...다참, 전달됨: true }, false) === false, '본인확인이 꺼진 때도 마찬가지다');
+    const 제출 = js.slice(js.indexOf("case 'submit': {"), js.indexOf("case 'detail-save'"));
+    ok(/^case 'submit': \{\s*\/\*[^*]*\*\/\s*if\(d\.전달됨\)\{ toast\([^)]*\); go\('#\/my'\); return true; \}/.test(제출),
+       '전달 처리도 맨 앞에서 전달된 초안을 막는다 - 엔터 등 다른 길로 와도');
+    const 연락처 = js.slice(js.indexOf("V['#/contact'] = "), js.indexOf('\nV[', js.indexOf("V['#/contact'] = ") + 5));
+    ok(/\$\{d\.전달됨 \? `[\s\S]*?이미 전달된 조건입니다[\s\S]*?data-act="draft-again"/.test(연락처), '연락처 화면이 이미 전달됐다고 말하고 새로 걸 길을 낸다');
+    const 다시 = js.slice(js.indexOf("case 'draft-again': {"), js.indexOf('return true; }', js.indexOf("case 'draft-again': {")) + 'return true; }'.length);
+    const S = { draft: { kind: 'home', dongs: ['망월동'], 전달됨: true, reqId: 'r1', reqSig: 'x' } };
+    new Function('S', 'render', 'toast', 'a', `switch(a){ ${다시} }`)(S, () => {}, () => {}, 'draft-again');
+    ok(S.draft.kind === 'home' && S.draft.dongs[0] === '망월동' && !('전달됨' in S.draft) && !S.draft.reqId && !S.draft.reqSig,
+       '이 내용으로 새로 걸기는 내용은 두고 전달 표시와 번호만 뗀다 - 새 번호로 새 조건이 된다');
+  }
+
+  /* ── 2026-10-15 리뷰: 맡긴 조건이 계정이 바뀌어도 탭에 남아 다음 사람에게 보였다 ── */
+  {
+    const 도움 = (S, 저장소) => new Function('S', 'sessionStorage', `${도우미}; return { 맡긴목록, 맡기기, 계정키 };`)(S, 저장소);
+    const 저장소 = 가짜저장소();
+    const SA = { user: { id: 'A' } };
+    const d = { kind: 'home', dongs: ['망월동'], name: '앞사람', phone: '01011112222' };
+    도움(SA, 저장소).맡기기(d);
+    ok(d.맡긴계정 === 'A' && JSON.parse(저장소.getItem('bk.held'))[0].맡긴계정 === 'A', '맡길 때 누구의 것인지 적는다');
+    const SB = { user: { id: 'B' } };                       /* 같은 탭, 세션이 끝난 뒤 다른 사람 */
+    ok(도움(SB, 저장소).맡긴목록().length === 0 && 저장소.getItem('bk.held') === null, '다른 계정이 들어오면 앞사람의 맡긴 조건을 버린다');
+    const 저장소2 = 가짜저장소(); 도움({ user: { id: 'A' } }, 저장소2).맡기기({ kind: 'home', dongs: [] });
+    ok(도움({}, 저장소2).맡긴목록().length === 1 && 저장소2.getItem('bk.held') !== null, '계정을 읽는 중(S.user 없음)에는 버리지 않는다 - 내 것까지 사라지지 않게');
+    const 띠몸 = 도우미 + '\n' + 함수('function 보류띠(){');
+    const 띠 = S => new Function('S', 'esc', 'draftTitle', 'sessionStorage', `${띠몸}; return 보류띠();`)(S, s => s, () => '제목', 저장소2);
+    ok(띠({}) === '' && /전달되지 않은 조건이/.test(띠({ user: { id: 'A' } })), '누구의 것인지 모를 때는 띠를 보이지 않고, 본인에게만 보인다');
+  }
+
+  /* ── 2026-10-15 리뷰: 저장소 값이 어긋나면 띠를 그리다 화면 넷이 통째로 죽었다 ── */
+  {
+    const 저장소 = 가짜저장소();
+    저장소.setItem('bk.held', JSON.stringify([null, 3, 'x', { kind: '' }, { kind: 'home' }, { kind: 'home', dongs: '망월동' }, { kind: 'shop', dongs: ['덕풍동'] }]));
+    const l = new Function('S', 'sessionStorage', `${도우미}; return 맡긴목록();`)({}, 저장소);
+    ok(l.length === 1 && l[0].kind === 'shop', `초안 모양(유형·동 목록)이 아닌 것은 읽을 때 걸러낸다 (${l.length}개 남음)`);
+    const 띠몸 = 도우미 + '\n' + 함수('function 보류띠(){');
+    const 저장소2 = 가짜저장소(); 저장소2.setItem('bk.held', JSON.stringify([{ kind: 'home', dongs: [], 맡긴계정: 'A' }]));
+    let 그림 = null, 오류 = null;
+    try{ 그림 = new Function('S', 'esc', 'draftTitle', 'sessionStorage', `${띠몸}; return 보류띠();`)({ user: { id: 'A' } }, s => s, () => { throw new Error('모양'); }, 저장소2); }catch(e){ 오류 = e; }
+    ok(!오류 && /조건 1건/.test(그림 || ''), '제목을 만들다 실패해도 띠는 그려진다 - 화면이 죽지 않는다');
+  }
 
   /* ── 2026-10-15 리뷰: 로그아웃 직후 새로 읽기가 서버 로그아웃 요청을 끊었다 ── */
   {

@@ -5171,7 +5171,11 @@ function verifyCard(d){
 /* 접수해도 되는가.
    본인확인이 붙어 있으면 확인을 통과해야 하고, 아직이면 이름과 연락처면 된다.
    두 곳(화면과 버튼 잠금)이 서로 다른 기준을 쓰면 버튼만 열리거나 닫힌다. */
+/* 이미 전달된 초안은 다시 보낼 수 없다 - 완료 화면에서 뒤로 와 또 누르면 같은 조건이 새 번호로
+   한 번 더 저장되어 중개사에게 같은 손님이 두 번 갔다(2026-10-15 리뷰). 일부러 비슷한 조건을
+   또 걸려면 '이 내용으로 새로 걸기' 로 새 초안을 만든다. */
 function contactOk(d){
+  if(d.전달됨) return false;
   const base = phoneOk(d.phone) && d.a1 && d.a2;
   const idvOn = !!(S.idvCfg && S.idvCfg.enabled);
   return idvOn ? (base && d.verified) : (base && String(d.name||'').trim().length >= 2);
@@ -5190,6 +5194,13 @@ V['#/contact'] = () => { const d=S.draft; const ok = contactOk(d);
     ${rail(3,'거의 다 왔습니다.<br>본인확인만 하면 끝이에요')}
     <div class="formcol"><div class="in">
       ${보류띠()}
+      ${d.전달됨 ? `<div class="card pad" role="status" style="display:flex;align-items:center;gap:10px 14px;flex-wrap:wrap;
+        border-color:var(--okline);background:var(--okbg);box-shadow:none">
+        <span style="flex:1 1 220px;min-width:0;font-size:13.5px;line-height:1.6;color:var(--n900)">
+          <b style="display:block;font-weight:700">이미 전달된 조건입니다</b>
+          <span style="color:var(--n700)">다시 보내면 같은 조건이 두 번 걸립니다. 걸어 두신 조건은 「내 조건」에서 보실 수 있습니다.</span></span>
+        <button class="btn sec sm" data-act="draft-again">이 내용으로 새로 걸기</button>
+      </div>` : ''}
       <div><h1 class="t" style="font-size:${isMo()?21:25}px">${S.idvCfg&&S.idvCfg.enabled?'본인확인만 하면 끝입니다':'연락처만 남기면 끝입니다'}</h1>
       <p class="sub">확인된 이름과 연락처로, <b style="color:var(--n900)">조건이 맞을 때만</b> 연락이 갑니다.</p></div>
 
@@ -7310,27 +7321,43 @@ function demandPayload(d, slotN){
    ── 탭 저장소에 둔다 ── 메모리에만 두면 휴대폰 본인확인·소셜 로그인처럼 페이지를 떠났다
    돌아오는 길에서 사라졌다. 적던 초안(keepDraft)과 같은 곳·같은 수명이다. 로그아웃하면 지운다. */
 const HELD_KEY = 'bk.held';
+/* 누구의 조건인가 - 맡길 때 계정을 적어 두고, 다른 계정이 들어오면 버린다(2026-10-15 리뷰).
+   직접 로그아웃할 때만 지우면, 세션이 끝난 뒤 같은 탭에서 다른 사람이 로그인했을 때
+   앞사람의 이름·연락처·메모가 든 조건이 그 사람의 띠에 떴다. */
+const 계정키 = () => (S.user && (S.user.id || S.user.email)) || '';
+/* 저장소 값은 믿지 않는다 - 예전 판이 남긴 것·손상된 것이 섞이면 띠를 그리다 화면 넷이 통째로 죽는다 */
+const 초안같음 = x => !!x && typeof x === 'object' && typeof x.kind === 'string' && !!x.kind && Array.isArray(x.dongs);
 const 맡긴목록 = () => {
   if(!Array.isArray(S.보류목록)){
-    try{ const v = JSON.parse(sessionStorage.getItem(HELD_KEY) || '[]'); S.보류목록 = Array.isArray(v) ? v : []; }
+    try{ const v = JSON.parse(sessionStorage.getItem(HELD_KEY) || '[]'); S.보류목록 = Array.isArray(v) ? v.filter(초안같음) : []; }
     catch(e){ S.보류목록 = []; }
+  }
+  /* 계정이 확인된 뒤에만 가른다 - 계정을 읽는 중에 버리면 내 것까지 사라진다 */
+  const 나 = 계정키();
+  if(나 && S.보류목록.some(x => (x.맡긴계정 || '') !== 나)){
+    S.보류목록 = S.보류목록.filter(x => (x.맡긴계정 || '') === 나);
+    try{ S.보류목록.length ? sessionStorage.setItem(HELD_KEY, JSON.stringify(S.보류목록)) : sessionStorage.removeItem(HELD_KEY); }catch(e){}
   }
   return S.보류목록;
 };
 const 보류쓰기 = () => {
   try{ const l = 맡긴목록(); l.length ? sessionStorage.setItem(HELD_KEY, JSON.stringify(l)) : sessionStorage.removeItem(HELD_KEY); }catch(e){}
 };
-const 맡기기 = d => { const l = 맡긴목록(); if(!l.includes(d)) l.push(d); 보류쓰기(); };
+const 맡기기 = d => { d.맡긴계정 = 계정키(); const l = 맡긴목록(); if(!l.includes(d)) l.push(d); 보류쓰기(); };
 function 보류띠(){
+  /* 로그인 전(계정을 읽는 중 포함)에는 누구의 것인지 모르므로 보이지 않는다 */
+  if(!계정키()) return '';
   const l = 맡긴목록();
   if(!l.length) return '';
+  let 제목 = '조건 1건';
+  try{ 제목 = draftTitle(l[0]); }catch(e){}
   return `
       <div class="card pad" role="status" style="display:flex;align-items:center;gap:10px 14px;flex-wrap:wrap;
         border-color:var(--warnline);background:var(--warnbg);box-shadow:none">
         <!-- 글 칸이 220px 아래로 좁아지면 단추가 아래 줄로 내려간다 - 휴대폰에서 글이 단추에 눌려 쪼개지지 않게 -->
         <span style="flex:1 1 220px;min-width:0;font-size:13.5px;line-height:1.6;color:var(--n900)">
           <b style="display:block;font-weight:700">전달되지 않은 조건이 ${l.length > 1 ? `${l.length}건 ` : ''}있습니다</b>
-          <span style="color:var(--n700)">${esc(draftTitle(l[0]))}${l.length > 1 ? ` <span style="white-space:nowrap">외 ${l.length - 1}건</span>` : ''}</span></span>
+          <span style="color:var(--n700)">${esc(제목)}${l.length > 1 ? ` <span style="white-space:nowrap">외 ${l.length - 1}건</span>` : ''}</span></span>
         <button class="btn sec sm" data-act="draft-swap">${l.length > 1 ? '첫 조건부터 이어서 보내기' : '그 조건 이어서 보내기'}</button>
       </div>`;
 }
@@ -10647,6 +10674,8 @@ function handle(a,v,el){
       go('#/contact'); return true; }
 
     case 'submit': {
+      /* 단추가 꺼져 있어도(contactOk) 한 번 더 막는다 - 엔터·옛 화면 등 다른 길로 들어와도 두 번 가지 않게 */
+      if(d.전달됨){ toast('이미 전달된 조건입니다 - 「내 조건」에서 보실 수 있습니다'); go('#/my'); return true; }
       const id='c'+Date.now();
       const slotN = (WHO[d.who]||{}).slots || 5;
       S.conds.unshift({id, kind:d.kind, who:d.who, title:draftTitle(d), lines:draftLines(d), status:'active',
@@ -10697,6 +10726,13 @@ function handle(a,v,el){
     case 'detail-save': { const c=S.conds[0]; if(c){ c.pct=detailPct(S.draft); if(S.draft.memo) c.memo=S.draft.memo; }
       toast('저장했습니다 · 더 자세할수록 맞는 제안이 옵니다'); go('#/my'); return true; }
     case 'restart': S.draft=blankDraft(); go('#/kind'); return true;
+    /* 전달된 조건과 같은 내용으로 새 조건을 건다 - 표시와 전달 번호만 떼어 새 초안으로 */
+    case 'draft-again': {
+      const { 전달됨, reqId, reqSig, ...내용 } = S.draft;
+      S.draft = 내용;
+      render();
+      toast('새 조건으로 다시 거실 수 있습니다 - 확인하고 전달해 주세요');
+      return true; }
     /* 맡아 둔(전달되지 않은) 첫 조건과 지금 초안을 바꾼다. 지금 것이 아직 보내지 않은 조건이면 대신 맡는다 */
     case 'draft-swap': {
       const 목록 = 맡긴목록();

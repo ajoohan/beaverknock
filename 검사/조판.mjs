@@ -161,8 +161,27 @@ const 본문 = html.slice(html.lastIndexOf('</style>')).replace(/\/\*[\s\S]*?\*\
 const 그림씨 = 본문.match(/[\u{1F300}-\u{1FAFF}]/gu) || [];
 ok(그림씨.length === 0, `화면에 나가는 그림씨 ${그림씨.length}개 - 아이콘은 SVG 로 그린다`);
 ok(/const ICO = \(\(\) => \{/.test(js), '지도·사진 단추의 그림을 직접 그린다(ICO)');
-for(const k of ['locate','plus','minus','reset','photo'])
+for(const k of ['plus','minus','reset','photo'])
   ok(new RegExp(`${k}:\\s*s\\(`).test(js), `ICO.${k} 가 있다`);
+
+/* ── ④-2 위치는 쓰지 않는다 (2026-10-17) ──
+   '현재 위치로' 단추·파트너 '사무소 근처' 가 휴대폰 위치를 물었다. 위치정보법상 신고 대상인지
+   따져야 해서 통째로 걷었다 - 되살아나면 신고부터 확인해야 하니 여기서 막는다. */
+{
+  const 코드 = js.replace(/\/\*[\s\S]*?\*\//g, '');
+  ok(!/navigator\.geolocation|getCurrentPosition|watchPosition/.test(코드), '휴대폰 위치를 묻는 코드가 없다');
+  ok(!/data-act="geo"/.test(코드) && !/ICO\.locate|locate:\s*s\(/.test(코드) && !/detectRegion/.test(코드), '\'현재 위치로\' 단추와 그 그림·처리가 없다');
+  const 중심몸 = js.slice(js.indexOf('const 사무소중심 = addr =>'), js.indexOf('const GG_SI = ['));
+  const 목록 = js.slice(js.indexOf('const SEOUL_GU = ['), js.indexOf('const 사무소중심 = addr =>'))
+    + js.slice(js.indexOf('const GG_SI = ['), js.indexOf('];', js.indexOf('const GG_SI = [')) + 2);
+  const 사무소중심 = new Function(`${목록}\n${중심몸}\nreturn 사무소중심;`)();
+  ok(사무소중심('경기도 하남시 미사강변대로 220')?.t === '하남시' && 사무소중심('서울특별시 강남구 테헤란로 1')?.t === '강남구',
+     '파트너 \'사무소 근처 n km\' 는 사무소 주소에서 시·구를 찾는다');
+  ok(사무소중심('광주광역시 서구 상무대로 1') === null && 사무소중심('') === null && 사무소중심(null) === null,
+     '이름이 띄어쓰기 단위로 똑같아야 맞는다 - \'광주광역시\' 가 경기 \'광주시\' 로 잡히지 않는다');
+  ok(/const 중심 = 사무소중심\(S\.agent && S\.agent\.addr\);/.test(js) && /kmBetween\(x, 중심\) <= km/.test(js),
+     '사무소 근처 고르기가 위치 대신 사무소 주소 기준으로 거리를 잰다');
+}
 ok(/aria-label="\$\{찼다 \? /.test(js), '사진 칸은 몇 번째인지까지 낭독기에 말한다');
 
 /* ── ⑤ 누르는 것의 경계선 (2026-10-08) ──

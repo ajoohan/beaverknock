@@ -313,8 +313,12 @@ ok(/\$\{partnerDoor\('onDark'\)\}/.test(js), '첫 화면 파트너 칸이 그 �
   const 메뉴 = 꺼내('function userMenu(){');
   ok(/data-go="\$\{href\}"/.test(메뉴) && /줄\('#\/my', '내 조건'/.test(메뉴) && /줄\('#\/inbox', '받은 제안'/.test(메뉴) && /data-act="logout"/.test(메뉴),
      '내 이름 메뉴에 내 조건 · 받은 제안 · 로그아웃이 있다');
-  ok(/aria-haspopup="menu"/.test(메뉴) && /aria-expanded="\$\{S\.umenu\?'true':'false'\}"/.test(메뉴) && /\$\{계정표\(S\.user\.method\)\}/.test(메뉴),
-     '메뉴 단추는 펼침 상태를 낭독기에 알리고, 메뉴 머리에 로그인 길 라벨이 있다');
+  ok(/aria-controls="umenuPop" aria-expanded="\$\{S\.umenu\?'true':'false'\}"/.test(메뉴) && /id="umenuPop"/.test(메뉴) && /\$\{계정표\(S\.user\.method\)\}/.test(메뉴),
+     '메뉴 단추는 펼침 상태와 펼치는 곳을 낭독기에 알리고, 메뉴 머리에 로그인 길 라벨이 있다');
+  ok(!/<[^>]*role="menu/.test(메뉴) && /aria-current="page"/.test(메뉴),
+     'role="menu" 를 달지 않는다 - 화살표 키를 약속하지 않는 링크 묶음이다(2026-10-17 리뷰). 지금 화면은 aria-current 로');
+  ok(/function go\(hash\)\{[\s\S]{0,200}?S\.umenu = false;\s*\n\s*if\(location\.hash === hash\) return render\(\);/.test(js),
+     '같은 화면 항목을 눌러도 메뉴가 닫힌다 - go() 가 hashchange 없이 다시 그리기 전에 닫는다');
   ok(/\? userMenu\(\)/.test(js) && /return userMenu\(\);/.test(js) && /\$\{S\.user \? userMenu\(\) : navAuth\('guest'\)\}/.test(js),
      '손님 쪽 상단바 세 곳(첫 화면·손님 화면·제안 상세)이 같은 메뉴를 쓴다');
   ok(/S\.umenu = false; render\(\); opsAuto\(\);/.test(js) && /if\(!S\.umenu \|\| e\.target\.closest\('\.umenu'\)\) return;/.test(js) && /e\.key !== 'Escape' \|\| !S\.umenu/.test(js),

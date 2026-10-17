@@ -29,7 +29,10 @@ export const 휴대폰 = p => {
   return /^01[016789][0-9]{7,8}$/.test(n) ? n : null;
 };
 
-/* 솔라피 인증 머리 - API Secret 으로 (시각+소금) 을 서명한다. Secret 자체는 보내지 않는다 */
+/* 로그에 남기기 전에 전화번호처럼 보이는 숫자 열(9자리 이상, 하이픈 섞임 포함)을 가린다 */
+export const 가리기 = s => String(s || '').replace(/\d[\d-]{7,}\d/g, '***');
+
+/* 솔라피 인증 머리 -API Secret 으로 (시각+소금) 을 서명한다. Secret 자체는 보내지 않는다 */
 export function 솔라피머리(key, secret, now = new Date(), salt = crypto.randomBytes(16).toString('hex')) {
   const date = now.toISOString();
   const signature = crypto.createHmac('sha256', secret).update(date + salt).digest('hex');
@@ -42,11 +45,15 @@ export async function alimtalk({ to, template, vars }) {
     const key = process.env.SOLAPI_API_KEY, secret = process.env.SOLAPI_API_SECRET;
     const pfId = process.env.SOLAPI_PFID, templateId = template;
     if (!key || !secret || !pfId || !templateId) return { skipped: 'no key' };
+    /* 솔라피는 알림톡에도 등록된 발신번호(from)를 요구한다. 빠지면 모든 발송이 400 으로
+       거절되는데 겉으로는 '켜진' 것처럼 보인다 - 처음부터 건너뛰고 이유를 밝힌다(2026-10-17 리뷰) */
+    const from = String(process.env.SOLAPI_FROM || '').replace(/[^0-9]/g, '');
+    if (!from) return { skipped: 'no from' };
     const 번호 = 휴대폰(to);
     if (!번호) return { skipped: 'no phone' };
 
     const message = {
-      to: 번호,
+      to: 번호, from,
       kakaoOptions: {
         pfId, templateId,
         variables: Object.fromEntries(Object.entries(vars || {}).map(([k, v]) => [`#{${k}}`, String(v ?? '').slice(0, 60)])),
@@ -54,9 +61,6 @@ export async function alimtalk({ to, template, vars }) {
         disableSms: true,
       },
     };
-    const from = String(process.env.SOLAPI_FROM || '').replace(/[^0-9]/g, '');
-    if (from) message.from = from;
-
     const r = await withTimeout(fetch('https://api.solapi.com/messages/v4/send', {
       method: 'POST',
       headers: { Authorization: 솔라피머리(key, secret), 'Content-Type': 'application/json' },
@@ -65,8 +69,9 @@ export async function alimtalk({ to, template, vars }) {
     if (r && r.skipped) return r;
     if (r.ok) return { ok: true };
     const t = await r.text().catch(() => '');
-    /* 솔라피가 거절한 이유를 남긴다 - 템플릿 불일치인지 채널 미연동인지 갈린다. 번호는 남기지 않는다 */
-    console.error('[alimtalk]', r.status, t.slice(0, 160));
+    /* 솔라피가 거절한 이유를 남긴다 - 템플릿 불일치인지 채널 미연동인지 갈린다.
+       오류 본문이 받는 번호를 되비치기도 해서, 숫자 열은 가려서 남긴다(2026-10-17 리뷰) */
+    console.error('[alimtalk]', r.status, 가리기(t).slice(0, 160));
     return { skipped: `send failed ${r.status}` };
   } catch (e) {
     return { skipped: 'error', detail: e && e.message };

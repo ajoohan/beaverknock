@@ -24,6 +24,9 @@ const 놓기 = o => { for (const k of Object.keys(키들)) delete process.env[k]
   놓기(키들);
   ok((await alimtalk({ to: '01012345678', template: undefined, vars: {} })).skipped === 'no key' && 불림 === 0, '템플릿(심사 통과 ID)이 없으면 건너뛴다 - 심사 전에 키만 넣어도 아무것도 안 나간다');
   ok((await alimtalk({ to: '0212345678', template: 'KA01TPx', vars: {} })).skipped === 'no phone' && 불림 === 0, '휴대폰 번호가 아니면 보내지 않는다');
+  놓기({ ...키들, SOLAPI_FROM: '' });
+  ok((await alimtalk({ to: '01012345678', template: 'KA01TPx', vars: {} })).skipped === 'no from' && 불림 === 0,
+     '발신번호가 없으면 보내지 않고 이유(no from)를 남긴다 - 솔라피는 알림톡에도 발신번호를 요구한다(2026-10-17 리뷰)');
   ok(휴대폰('010-1234-5678') === '01012345678' && 휴대폰('011 234 5678') === '0112345678' && 휴대폰('070-4105-0678') === null && 휴대폰('') === null,
      '번호는 하이픈·공백을 걷고 휴대폰만 남긴다');
 }
@@ -53,9 +56,11 @@ const 놓기 = o => { for (const k of Object.keys(키들)) delete process.env[k]
 /* ── ③ 실패해도 던지지 않는다 ── */
 {
   놓기(키들);
-  globalThis.fetch = async () => new Response('{"errorCode":"ValidationError"}', { status: 400 });
-  const 원 = console.error; console.error = () => {};
+  globalThis.fetch = async () => new Response('{"errorCode":"ValidationError","errorMessage":"수신번호 010-1234-5678 / 01012345678 이(가) 올바르지 않습니다"}', { status: 400 });
+  const 원 = console.error; const 로그 = []; console.error = (...a) => 로그.push(a.join(' '));
   const r1 = await alimtalk({ to: '01012345678', template: 'T', vars: {} });
+  ok(로그.length === 1 && !/01012345678|010-1234-5678/.test(로그[0]) && /ValidationError/.test(로그[0]),
+     '거절 이유는 남기되 오류 본문에 되비친 휴대폰 번호는 가린다(2026-10-17 리뷰)');
   globalThis.fetch = async () => { throw new Error('network'); };
   const r2 = await alimtalk({ to: '01012345678', template: 'T', vars: {} });
   globalThis.fetch = () => new Promise(() => {});
@@ -80,6 +85,40 @@ const 놓기 = o => { for (const k of Object.keys(키들)) delete process.env[k]
      '처리방침 수탁사에 알림톡 발송(솔라피 주식회사 - 지금 이름)이 있다 - 휴대폰 번호가 넘어간다');
 }
 
+/* ── ④-2 제안 저장을 실제로 돌려, 솔라피로 무엇이 나가는지 본다 (2026-10-17 리뷰 - 전에는 호출 글자만 봤다) ── */
+{
+  process.env.BK_URL = 'https://fake.supabase.co';
+  process.env.BK_SECRET_KEY = 'x'.repeat(40);
+  process.env.RESEND_API_KEY = '';
+  놓기({ ...키들, SOLAPI_TPL_PROPOSAL: 'KA01TPproposal' });
+  let 톡 = null, 저장 = false;
+  globalThis.fetch = async (url, opt = {}) => {
+    const u = String(url), m = (opt.method || 'GET').toUpperCase();
+    if (u.includes('api.solapi.com')) { 톡 = JSON.parse(opt.body).message; return new Response('{}', { status: 200 }); }
+    if (u.includes('/auth/v1/user')) return new Response(JSON.stringify({ id: 'u-1', email: 'a@b.c' }), { status: 200 });
+    if (u.includes('/auth/v1/admin/users')) return new Response(JSON.stringify({ email: 'son@b.c' }), { status: 200 });
+    if (u.includes('bk_agent')) return new Response(JSON.stringify([{ id: 'a1', user_id: 'u-1', role: 'agent', status: 'approved',
+      office: '미사중앙공인중개사사무소', reg_no: '41450-2019-00217', scope_regions: ['하남시'], scope_kinds: ['home'], scope_set: true }]), { status: 200 });
+    if (u.includes('bk_demand') && m === 'PATCH') return new Response('[{"id":"d1"}]', { status: 200 });
+    if (u.includes('bk_demand')) return new Response(JSON.stringify([{ id: '11111111-2222-3333-4444-555555555555', kind: 'home', user_id: 'son-1',
+      slots: 5, slots_left: 5, dongs: ['미사1동'], deal: '월세', dep: 100000000, rent: 650000, name: '한상혁', phone: '010-2222-3333' }]), { status: 200 });
+    if (u.includes('bk_proposal') && m === 'POST') { 저장 = true; return new Response('[{"id":"p9"}]', { status: 201 }); }
+    return new Response('[]', { status: 200 });
+  };
+  const res = { code: 0, body: null, setHeader(){}, status(c){ this.code = c; return this; }, json(b){ this.body = b; return this; } };
+  const { default: prop } = await import(길.api('proposal.js'));
+  await prop({ method: 'POST', headers: { authorization: 'Bearer ' + 'y'.repeat(40) }, socket: { remoteAddress: '10.9.9.9' },
+    body: { demand_id: '11111111-2222-3333-4444-555555555555', addr: '경기도 하남시 미사강변대로 220', bname: '미사강변 ○○아파트',
+      dep: 100000000, rent: 650000, area: 59.94, rooms: '3', dir: '남동', dirBase: '거실', feeBasis: '3개월 평균', msg: '안녕하세요' } }, res);
+  ok(res.code === 201 && 저장, `제안이 저장된다 (${res.code})`);
+  const v = 톡 && 톡.kakaoOptions.variables;
+  ok(톡 && 톡.to === '01022223333' && 톡.kakaoOptions.templateId === 'KA01TPproposal',
+     '제안이 저장되면 그 조건을 건 손님의 휴대폰으로 \'새 제안\' 템플릿이 나간다');
+  ok(v && v['#{이름}'] === '한상혁' && v['#{지역}'] === '미사1동' && v['#{보낸곳}'] === '공인중개사' && v['#{남은자리}'] === '4' && /보증금/.test(v['#{가격}']),
+     `변수에 이름·지역·보낸 곳 자격·가격·남은 자리가 들어간다 (${v && JSON.stringify(v)})`);
+  ok(톡 && !JSON.stringify(톡).includes('미사중앙') && !JSON.stringify(톡).includes('미사강변대로'), '사무소 이름·소재지는 나가지 않는다');
+}
+
 /* ── ⑤ 사이트 뱃지 - 안 읽은 제안만 ── */
 {
   const js = 길.js(), css = 길.css();
@@ -93,8 +132,14 @@ const 놓기 = o => { for (const k of Object.keys(키들)) delete process.env[k]
   ok(/aria-label="\$\{esc\(who\)\} 님 메뉴\$\{새 \? ` · 새 제안 \$\{새\}건` : ''\}"/.test(js), '낭독기에도 새 제안 수를 읽어 준다');
   ok(/\$\{새제안표\(새\)\}/.test(js) && /제안함\$\{새제안표\(새제안수\(\)\)\}/.test(js) && /k==='inbox' \? 새제안표\(새제안수\(\)\)/.test(js),
      '내 이름 단추 · 제안함 탭 · 휴대폰 탭바 세 곳에 뜬다');
-  ok(/else if\(S\.user && !h\.startsWith\('#\/partner'\) && !h\.startsWith\('#\/ops'\)\) loadMine\(false\);/.test(js),
-     '첫 화면 같은 다른 손님 화면에서도 받아 둔다 - 들어와 보지 않아도 뱃지가 보인다');
+  ok(/else if\(S\.user && !consentNeeded\(\) && BADGE_ROUTES\.includes\(h\)\) loadMine\(false\);/.test(js),
+     '첫 화면·안내에서도 받아 둔다 - 들어와 보지 않아도 뱃지가 보인다(동의 전 계정은 빼고)');
+  const 화면들 = new Function(`${js.match(/const BADGE_ROUTES = \[[^\]]*\];/)[0]}; return BADGE_ROUTES;`)();
+  ok(화면들.includes('#/') && !['#/kind', '#/who', '#/register', '#/detail', '#/contact', '#/agree', '#/login'].some(h => 화면들.includes(h)),
+     `글을 적는 화면에서는 미리 받지 않는다 - 답이 와 다시 그리면 커서·한글 조합이 깨진다(2026-10-17 리뷰) (${화면들.join(' ')})`);
+  ok(/새제안표\(새, '새 제안'\)/.test(js) && !/class="nbadge num" style=/.test(js), '메뉴의 뱃지도 같은 함수로 그린다 - 99+ 규칙이 한 곳');
+  const { 새제안표: 표2 } = 만들기({});
+  ok(/aria-label="새 제안 3건"/.test(표2(3, '새 제안')) && /aria-hidden="true"/.test(표2(3)), '이름표를 주면 낭독기가 \'새 제안 3건\' 으로 읽고, 아니면 숨긴다');
   ok(/\.nbadge\{[^}]*background:var\(--danger\)/.test(css) && /\.nbadge\{[^}]*font-size:12px/.test(css), '뱃지는 빨강 · 12px');
 }
 

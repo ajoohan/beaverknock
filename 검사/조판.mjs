@@ -291,5 +291,37 @@ ok(/\$\{partnerDoor\('onDark'\)\}/.test(js), '첫 화면 파트너 칸이 그 �
      `신청 줄 고르기 칸 두 곳에 누구의 칸인지 이름이 있다 (${고르기칸.length}곳)`);
 }
 
+/* ── ⑨ 로그인 길 라벨 · 내 이름 메뉴 (2026-10-17) ──
+   회색 '카카오 계정' 글자만으로는 어느 길로 들어왔는지 한눈에 안 들어왔다 - 로그인 버튼과 같은 색·표시로.
+   '내 조건 확인' 은 첫 화면 메뉴(이용 안내·FAQ 옆)가 아니라 오른쪽 위 내 이름 아래로. */
+{
+  const 꺼내 = head => { const i = js.indexOf(head); let d = 0, j = i; for(; j < js.length; j++){ if(js[j] === '{') d++; else if(js[j] === '}'){ d--; if(d === 0) return js.slice(i, j + 1); } } return ''; };
+  /* SNS(버튼의 색·표시) 부터 계정표까지 - 라벨이 버튼과 같은 값을 쓰는지 실제 코드로 본다 */
+  const 표몸 = js.slice(js.indexOf('const SNS = ['), js.indexOf('\n}', js.indexOf('function 계정표(')) + 2);
+  const 계정표 = new Function('esc', `${표몸}\nreturn 계정표;`)(s => String(s));
+  ok(/background:#FEE500/.test(계정표('kakao')) && /카카오 계정/.test(계정표('kakao')) && /<svg/.test(계정표('kakao')),
+     '카카오로 들어왔으면 카카오 노랑과 말풍선 표시로 \'카카오 계정\'');
+  ok(/background:#03C75A/.test(계정표('naver')) && /background:#fff/.test(계정표('google')) && /#4285F4/.test(계정표('google')),
+     '네이버는 초록, Google 은 흰 바탕에 G 표시 - 로그인 버튼과 같은 색');
+  ok(/이메일 계정/.test(계정표('email')) && /var\(--n50\)/.test(계정표('email')) && 계정표('') === '',
+     '이메일은 브랜드가 없으니 중립색 · 모르면 아무것도 그리지 않는다');
+  ok(/\$\{계정표\(S\.user\.method\)\}/.test(js) && !/badge b-mute" style="flex:none">\$\{esc\(S\.user\.label/.test(js),
+     '내 조건의 계정 카드가 회색 글자 대신 라벨을 쓴다');
+
+  const 첫화면 = js.slice(js.indexOf("V['#/'] = () =>"), js.indexOf('<!-- 모바일: 세로'));
+  ok(!/내 조건 확인/.test(첫화면) && !/data-go="#\/my"/.test(첫화면), '첫 화면 메뉴에 \'내 조건 확인\' 이 없다 - 내 이름 아래로 옮겼다');
+  const 메뉴 = 꺼내('function userMenu(){');
+  ok(/data-go="\$\{href\}"/.test(메뉴) && /줄\('#\/my', '내 조건'/.test(메뉴) && /줄\('#\/inbox', '받은 제안'/.test(메뉴) && /data-act="logout"/.test(메뉴),
+     '내 이름 메뉴에 내 조건 · 받은 제안 · 로그아웃이 있다');
+  ok(/aria-haspopup="menu"/.test(메뉴) && /aria-expanded="\$\{S\.umenu\?'true':'false'\}"/.test(메뉴) && /\$\{계정표\(S\.user\.method\)\}/.test(메뉴),
+     '메뉴 단추는 펼침 상태를 낭독기에 알리고, 메뉴 머리에 로그인 길 라벨이 있다');
+  ok(/\? userMenu\(\)/.test(js) && /return userMenu\(\);/.test(js) && /\$\{S\.user \? userMenu\(\) : navAuth\('guest'\)\}/.test(js),
+     '손님 쪽 상단바 세 곳(첫 화면·손님 화면·제안 상세)이 같은 메뉴를 쓴다');
+  ok(/S\.umenu = false; render\(\); opsAuto\(\);/.test(js) && /if\(!S\.umenu \|\| e\.target\.closest\('\.umenu'\)\) return;/.test(js) && /e\.key !== 'Escape' \|\| !S\.umenu/.test(js),
+     '화면이 바뀌거나 바깥을 누르거나 Esc 를 누르면 닫힌다');
+  ok(/\.nav:has\(\.umenu\.open\)\{z-index:70!important\}/.test(css), '펼친 메뉴가 첫 화면 본문 뒤로 깔리지 않는다(같은 층 z-index 3)');
+  ok(/body\.mo \.umenu-btn/.test(css) && /\.umenu-btn\{[^}]*min-height:44px/.test(css), '메뉴 단추는 손가락 과녁 44px');
+}
+
 console.log(`${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

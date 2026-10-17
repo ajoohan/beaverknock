@@ -561,6 +561,16 @@ body.mo .umenu-btn{padding:5px 9px 5px 5px;gap:6px}
 .umenu-pop .it .ct{margin-left:auto;font-size:12px;font-weight:700;color:var(--n500)}
 .umenu-pop .sep{height:1px;background:var(--n100);margin:4px 6px}
 .umenu-pop .it.out{color:var(--n700)}
+/* 안 읽은 제안 수 (2026-10-17) - 내 이름 단추 · 메뉴의 '받은 제안' · 제안함 탭 · 휴대폰 탭바 */
+.nbadge{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 6px;
+  border-radius:10px;background:var(--danger);color:#fff;font-size:12px;font-weight:800;line-height:1;
+  font-variant-numeric:tabular-nums;letter-spacing:0}
+.umenu-btn{position:relative}
+.umenu-btn > .nbadge{position:absolute;top:-4px;left:24px;border:2px solid #fff;height:22px;min-width:22px}
+.umenu-pop .it .nbadge{margin-left:auto}
+.items .nbadge{margin-left:6px;vertical-align:1px}
+.tabbar a{position:relative}
+.tabbar .nbadge{position:absolute;top:2px;left:calc(50% + 3px);border:2px solid #fff;height:22px;min-width:22px}
 /* 글자 링크는 눌리는 자리가 글자 높이(15px)뿐이라 손가락으로 맞히기 어렵다.
    보이는 모습은 그대로 두고 위아래 여백만 준다 - 줄 높이는 음수 마진으로 되돌린다. */
 .sublinks a{padding:14px 8px;margin:-14px 0;display:inline-block}
@@ -2560,7 +2570,7 @@ function tabbar(active, role){
     const on = active===k;
     return `<a data-go="${href}" class="${on?'on':''}">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${on?2.2:1.8}" stroke-linecap="round" stroke-linejoin="round"><path d="${ico[k]}"/></svg>
-      <span>${label}</span></a>`;}).join('')}</nav>`;
+      <span>${label}</span>${k==='inbox' ? 새제안표(새제안수()) : ''}</a>`;}).join('')}</nav>`;
 }
 
 function navUser(active){ return `
@@ -2568,7 +2578,7 @@ function navUser(active){ return `
   <a data-go="#/" style="flex:none">${logoLockup({h:25,tag:!isMo()})}</a>
   <div class="items mid">
     <a data-go="#/my" class="${active==='my'?'on':''}">내 조건</a>
-    <a data-go="#/inbox" class="${active==='inbox'?'on':''}">제안함</a>
+    <a data-go="#/inbox" class="${active==='inbox'?'on':''}">제안함${새제안표(새제안수())}</a>
     ${isMo()?'':partnerDoor('link')}
   </div>
   <div class="right" style="gap:14px">
@@ -9082,18 +9092,23 @@ function navAuth(which){
 
 /* 오른쪽 위 내 이름 - 누르면 펼쳐진다 (2026-10-17).
    내 것(내 조건·받은 제안)과 로그아웃은 여기에 모은다. 휴대폰에서는 이름을 빼고 얼굴만 둔다. */
+/* 안 읽은 받은 제안 수 - 서버 상태가 'sent'(손님이 아직 안 연 것)인 것. 예시는 세지 않는다 */
+const 새제안수 = () => S.user ? (S.props || []).filter(p => p.isNew && !p.seed).length : 0;
+const 새제안표 = n => n > 0 ? `<span class="nbadge num" aria-hidden="true">${n > 99 ? '99+' : n}</span>` : '';
 function userMenu(){
   if(!S.user) return '';
+  const 새 = 새제안수();
   const who = String(S.user.name || S.user.email || '').split('@')[0] || '회원';
   const 지금 = S.route || location.hash;
-  const 줄 = (href, label, d, 수) => `<a class="it ${지금===href?'on':''}" role="menuitem" data-go="${href}">
+  const 줄 = (href, label, d, 수, 뱃지 = '') => `<a class="it ${지금===href?'on':''}" role="menuitem" data-go="${href}">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="${d}"/></svg>
-      ${label}${수 ? `<span class="ct num">${수}</span>` : ''}</a>`;
+      ${label}${뱃지 || (수 ? `<span class="ct num">${수}</span>` : '')}</a>`;
   const 조건수 = (S.conds || []).filter(c => !c.seed).length;
   return `<div class="umenu ${S.umenu?'open':''}">
     <button class="umenu-btn" data-act="umenu" aria-haspopup="menu" aria-expanded="${S.umenu?'true':'false'}"
-      aria-label="${esc(who)} 님 메뉴">
+      aria-label="${esc(who)} 님 메뉴${새 ? ` · 새 제안 ${새}건` : ''}">
       <span class="av">${esc(who.slice(0,1))}${S.user.avatar ? `<img src="${esc(S.user.avatar)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}</span>
+      ${새제안표(새)}
       ${isMo() ? '' : `<span class="nm">${esc(who)} 님</span>`}
       <svg class="car" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3.8 5 6.8 8 3.8"/></svg>
     </button>
@@ -9104,7 +9119,7 @@ function userMenu(){
         ${계정표(S.user.method)}
       </div>
       ${줄('#/my', '내 조건', 'M5 6 h14 M5 12 h14 M5 18 h9', 조건수)}
-      ${줄('#/inbox', '받은 제안', 'M3 12 h5 l2 3 h4 l2 -3 h5 M3 12 V7 a2 2 0 0 1 2 -2 h14 a2 2 0 0 1 2 2 v5 M3 12 v5 a2 2 0 0 0 2 2 h14 a2 2 0 0 0 2 -2 v-5')}
+      ${줄('#/inbox', '받은 제안', 'M3 12 h5 l2 3 h4 l2 -3 h5 M3 12 V7 a2 2 0 0 1 2 -2 h14 a2 2 0 0 1 2 2 v5 M3 12 v5 a2 2 0 0 0 2 2 h14 a2 2 0 0 0 2 -2 v-5', 0, 새 ? `<span class="nbadge num" style="margin-left:auto" aria-label="새 제안 ${새}건">${새 > 99 ? '99+' : 새}</span>` : '')}
       <div class="sep"></div>
       <button class="it out" role="menuitem" data-act="logout">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4 h3 a2 2 0 0 1 2 2 v12 a2 2 0 0 1 -2 2 h-3 M10 17 l5 -5 -5 -5 M15 12 H4"/></svg>
@@ -9605,6 +9620,9 @@ function render(){
   /* 대시보드는 한 화면에서 전부 보여준다 - 탭을 하나씩 열게 하지 않는다 */
   if(h===OPS_HOME && OPS.rows && (OPS.tab||'home')==='home') dashDoLoad();
   if(h==='#/my' || h==='#/inbox' || h.startsWith('#/proposal/')) loadMine(false);
+  /* 다른 손님 화면(첫 화면·안내 등)에서도 한 번 받아 둔다 - 오른쪽 위 '새 제안' 뱃지가 들어와 보지
+     않아도 보이게(2026-10-17). 20초 안에는 다시 묻지 않는다. 파트너·운영 화면은 제외 */
+  else if(S.user && !h.startsWith('#/partner') && !h.startsWith('#/ops')) loadMine(false);
   if(h==='#/partner/demands' || h.startsWith('#/partner/demand/')) loadFeed(false);
   /* '#/partner' 는 누구나 여는 안내 화면이고 내 제안·내 물건을 쓰지 않는다 (2026-10-09).
      거기서 부르면 로그인한 손님 계정도 방문마다 /api/feed 를 두 번 부르고 403 을 받았다. */

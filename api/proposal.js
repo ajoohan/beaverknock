@@ -11,6 +11,7 @@ import { userFrom, sbHeaders, sbUrl, emailOf } from './_auth.js';
 import { won } from './_notify.js';
 import { approvedAgent, anyFits, canBrowse, myListings } from './feed.js';
 import { notify } from './_notify.js';
+import { alimtalk } from './_kakao.js';
 
 const str = (v, max = 200) => { const s = String(v ?? '').trim(); return s ? s.slice(0, max) : null; };
 const int = v => { const n = parseInt(v, 10); return Number.isFinite(n) ? n : null; };
@@ -49,9 +50,10 @@ export default async function handler(req, res) {
   if (!addr) return res.status(400).json({ error: '소재지가 없습니다' });
 
   try {
-    /* 슬롯이 남았는지 본다. 조건 하나에 다섯 곳까지가 이 서비스의 약속이다. */
+    /* 슬롯이 남았는지 본다. 조건 하나에 다섯 곳까지가 이 서비스의 약속이다.
+       이름·휴대폰은 손님에게 알림톡을 보내는 데만 쓴다(응답에 싣지 않는다). */
     const dq = new URLSearchParams({
-      select: 'id,slots_left,user_id,kind,dongs,deal,dep,rent', id: 'eq.' + demandId, limit: '1' });
+      select: 'id,slots_left,user_id,kind,dongs,deal,dep,rent,name,phone', id: 'eq.' + demandId, limit: '1' });
     const dr = await fetch(sbUrl('bk_demand', dq.toString()), { headers: sbHeaders() });
     if (!dr.ok) return res.status(502).json({ error: '조건을 확인하지 못했습니다' });
     const d = (await dr.json())[0];
@@ -193,6 +195,19 @@ export default async function handler(req, res) {
         cta: '제안 보러 가기',
         note: '사진과 자세한 내용은 비버노크에서 확인하실 수 있습니다. 연락처는 연결을 누르시기 전까지 어느 쪽에도 넘어가지 않습니다.',
       })),
+      /* 카톡으로도 (2026-10-17). 메일과 같은 것만 담는다 - 사무소 이름·소재지·연락처는 없다.
+         변수 이름은 솔라피에 심사 넣은 템플릿의 #{…} 과 글자까지 같아야 한다(할일.md '알림톡 템플릿') */
+      alimtalk({
+        to: d.phone,
+        template: process.env.SOLAPI_TPL_PROPOSAL,
+        vars: {
+          이름: d.name || '고객',
+          지역: where,
+          보낸곳: ROLE_KO[chk.agent.role] || '공인중개사',
+          가격: price,
+          남은자리: String(seat.left),
+        },
+      }),
     ]);
 
     return res.status(201).json({ ok: true, id: saved.id, slots_left: seat.left });

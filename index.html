@@ -4113,10 +4113,16 @@ const SEOUL_GU = [
   {t:'강동구',lat:37.5401,lng:127.1438},
 ];
 /* 사무소 주소에서 기준 시·구 - '경기도 하남시 미사강변대로 220' → 하남시. 띄어쓰기 단위로 이름이
-   **똑같이** 있어야 맞는다('광주광역시' 가 경기 '광주시' 로 잡히지 않게). 서울 구가 먼저다. */
+   **똑같이** 있어야 맞는다('광주광역시' 가 경기 '광주시' 로 잡히지 않게).
+   맨 앞이 '서울…' 이면 서울 구에서만, '경기…' 면 경기 시에서만 찾는다(2026-10-17 리뷰) - '중구' 는
+   인천·부산·대구에도 있어서, 인천 중구 사무소가 서울 중구로 잡혔다. 앞에 시·도 없이 시·구 이름으로
+   시작하면(예전 행 '하남시 미사강변대로') 둘 다에서 찾고, 그 밖의 시·도면 찾지 않는다. */
 const 사무소중심 = addr => {
-  const 칸 = String(addr || '').split(/[\s,()]+/);
-  return [...SEOUL_GU, ...GG_SI].find(x => 칸.includes(x.t)) || null;
+  const 칸 = String(addr || '').split(/[\s,()]+/).filter(Boolean);
+  const 첫 = 칸[0] || '';
+  const 전부 = [...SEOUL_GU, ...GG_SI];
+  const 목록 = /^서울/.test(첫) ? SEOUL_GU : /^경기/.test(첫) ? GG_SI : 전부.some(x => x.t === 첫) ? 전부 : [];
+  return 목록.find(x => 칸.includes(x.t)) || null;
 };
 const GG_SI = [
   {t:'수원시',lat:37.2636,lng:127.0286},{t:'성남시',lat:37.4200,lng:127.1365},{t:'고양시',lat:37.6584,lng:126.8320},
@@ -6644,9 +6650,9 @@ V["#/partner/settings"] = () => {
                 style="font-size:12.5px;padding:8px 14px">${k}km 이내</button>`).join('')}
             </div>
             <span style="display:block;margin-top:8px;font-size:12.5px;color:var(--n500)">
-              ${사무소중심(S.agent && S.agent.addr)
-                ? `사무소 주소(${esc(사무소중심(S.agent.addr).t)}) 기준으로 고릅니다 · 고른 뒤 하나씩 더하거나 뺄 수 있습니다`
-                : '사무소 주소에서 시·구를 찾지 못하면 아래에서 직접 골라 주세요'}</span>
+              ${(중심 => 중심
+                ? `사무소 주소(${esc(중심.t)}) 기준으로 고릅니다 · 고른 뒤 하나씩 더하거나 뺄 수 있습니다`
+                : '사무소 주소에서 시·구를 찾지 못하면 아래에서 직접 골라 주세요')(사무소중심(S.agent && S.agent.addr))}</span>
           </div>`
           + zonesHTML(SCOPE_ZONES, sc.regions).replace(/data-act="dong"/g,'data-act="sc-region"')
           + (sc.regions.length ? `<p style="margin:10px 0 0;font-size:12.5px;color:var(--n500)">

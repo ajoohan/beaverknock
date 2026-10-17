@@ -76,7 +76,8 @@ const 놓기 = o => { for (const k of Object.keys(키들)) delete process.env[k]
      '알림톡에는 메일과 같은 것만 - 사무소 이름·소재지·연락처는 담지 않는다');
   ok(/await Promise\.all\(\[[\s\S]*alimtalk\(/.test(src), '메일과 나란히 보낸다 - 중개사를 더 세워 두지 않는다');
   const 처리방침 = fs.readFileSync(new URL('../privacy.html', import.meta.url), 'utf8');
-  ok(/솔라피/.test(처리방침) && /누리고/.test(처리방침) && /알림톡/.test(처리방침), '처리방침 수탁사에 알림톡 발송(솔라피·누리고)이 있다 - 휴대폰 번호가 넘어간다');
+  ok(/<dt>솔라피 주식회사<\/dt><dd>카카오 알림톡 발송/.test(처리방침) && !/누리고/.test(처리방침),
+     '처리방침 수탁사에 알림톡 발송(솔라피 주식회사 - 지금 이름)이 있다 - 휴대폰 번호가 넘어간다');
 }
 
 /* ── ⑤ 사이트 뱃지 - 안 읽은 제안만 ── */

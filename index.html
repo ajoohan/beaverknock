@@ -5405,7 +5405,7 @@ V['#/contact'] = () => { const d=S.draft; if(d.전달됨) return 전달된연락
 /* ---------- D-05 완료 ---------- */
 V['#/done'] = () => `
 <div class="scr fade">
-  <div class="nav pad"><a data-go="#/" style="flex:none">${logoLockup({h:25,tag:!isMo()})}</a><div class="right"><a class="tapx" data-go="#/my" style="font-weight:600">내 조건 확인</a></div></div>
+  <div class="nav pad"><a data-go="#/" style="flex:none">${logoLockup({h:25,tag:!isMo()})}</a><div class="right">${S.user ? userMenu() : `<a class="tapx" data-go="#/my" style="font-weight:600">내 조건 확인</a>`}</div></div>
   <div style="flex:1;display:flex;${isMo()?'flex-direction:column;':''}align-items:center;justify-content:center;gap:${isMo()?24:80}px;padding:${isMo()?'10px 26px 26px':'0 76px'}">
     <div style="position:relative;display:flex;align-items:center;justify-content:center;flex:none">
       <div style="position:absolute;width:${isMo()?240:400}px;height:${isMo()?240:400}px;border-radius:var(--r-full);background:rgba(246,246,255,.92)"></div>

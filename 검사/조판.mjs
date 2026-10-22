@@ -238,26 +238,61 @@ ok(어긋남.length === 0, `약관 화면의 색이 본 화면과 같다${어긋
 const 메일 = fs.readFileSync(new URL('../api/_notify.js', import.meta.url), 'utf8');
 ok(!/#3D3F8F|#1F1D1A|#6E6859/i.test(메일), '알림 메일에 예전 색이 남아 있지 않다');
 
-/* 메일 글꼴은 사이트와 같은 Pretendard, 못 부르면 본고딕 계열로 (2026-10-22) - 실제로 한 통 만들어 본다 */
+/* 메일 글꼴은 사이트와 같은 Pretendard, 못 부르면 본고딕 계열로 (2026-10-22) - 실제로 만들어 본다 */
 {
   const { notifyMany } = await import('../api/_notify.js');
-  const 옛키 = process.env.RESEND_API_KEY, 옛fetch = globalThis.fetch, 옛곳 = process.env.ALERT_SITE;
-  let 본문 = null;
-  process.env.RESEND_API_KEY = 'test'; process.env.ALERT_SITE = 'https://beaverknock.co.kr';
-  globalThis.fetch = async (u, o) => { 본문 = JSON.parse(o.body); return { ok: true }; };
-  try { await notifyMany({ headers: {} }, [{ subject: '글꼴', rows: [['지역', '강남구']], link: '/#/inbox', cta: '보기' }]); }
-  finally {
-    globalThis.fetch = 옛fetch;
-    if (옛키 === undefined) delete process.env.RESEND_API_KEY; else process.env.RESEND_API_KEY = 옛키;
-    if (옛곳 === undefined) delete process.env.ALERT_SITE; else process.env.ALERT_SITE = 옛곳;
-  }
-  const h = 본문 && 본문[0] && 본문[0].html || '';
-  ok(/@font-face\{font-family:"Pretendard Variable"[^}]*src:url\(https:\/\/beaverknock\.co\.kr\/fonts\/pretendard-variable\.woff2\)/.test(h),
-     '메일이 사이트의 Pretendard 파일을 부른다');
-  const 글꼴들 = [...h.matchAll(/font-family:([^;"]+(?:"[^"]*"[^;"]*)*);/g)].map(m => m[1]).filter(f => !/^"Pretendard Variable"$/.test(f));
+  /* 환경과 요청 머리를 바꿔 가며 한 통씩 만들어 본다. 보내지는 않는다 - fetch 를 가로챈다. */
+  const 만들어 = async (site, headers = {}) => {
+    const 옛키 = process.env.RESEND_API_KEY, 옛fetch = globalThis.fetch, 옛곳 = process.env.ALERT_SITE;
+    let 본문 = null;
+    process.env.RESEND_API_KEY = 'test';
+    if (site === undefined) delete process.env.ALERT_SITE; else process.env.ALERT_SITE = site;
+    globalThis.fetch = async (u, o) => { 본문 = JSON.parse(o.body); return { ok: true }; };
+    try { await notifyMany({ headers }, [{ subject: '글꼴', rows: [['지역', '강남구']], link: '/#/inbox', cta: '보기' }]); }
+    finally {
+      globalThis.fetch = 옛fetch;
+      if (옛키 === undefined) delete process.env.RESEND_API_KEY; else process.env.RESEND_API_KEY = 옛키;
+      if (옛곳 === undefined) delete process.env.ALERT_SITE; else process.env.ALERT_SITE = 옛곳;
+    }
+    return (본문 && 본문[0]) || {};
+  };
+  const 한통 = await 만들어('https://beaverknock.co.kr');
+  const h = 한통.html || '';
+  ok(/<!--\[if !mso\]><!--><style>@font-face\{font-family:"Pretendard Variable"[^}]*src:url\(https:\/\/beaverknock\.co\.kr\/fonts\/pretendard-variable\.woff2\)[^<]*<\/style><!--<!\[endif\]-->/.test(h),
+     '메일이 사이트의 Pretendard 파일을 부르고, 그 선언은 아웃룩에서 숨긴다');
+  ok(/<!--\[if mso\]><style>[^<]*font-family:'Malgun Gothic',sans-serif!important[^<]*<\/style><!\[endif\]-->/.test(h),
+     '아웃룩에는 맑은 고딕을 따로 못 박는다 (Times New Roman 으로 떨어지지 않게)');
+  /* 조건부 주석 안의 선언은 빼고, 글자 칸마다 붙은 목록만 센다 */
+  const 칸 = h.replace(/<!--\[if[\s\S]*?<!\[endif\]-->/g, '');
+  const 글꼴들 = [...칸.matchAll(/font-family:([^;"]+);/g)].map(m => m[1]);
   ok(글꼴들.length === 4 && 글꼴들.every(f => /^'Pretendard Variable'.*'Apple SD Gothic Neo'.*'Noto Sans KR'.*'Malgun Gothic',sans-serif$/.test(f)),
      `메일의 바탕·표 두 칸·단추 넷 다 Pretendard → 본고딕 계열 순서다 (${글꼴들.length}곳)`);
   ok(!/font-family:-apple-system/.test(h), '예전 글꼴 목록(-apple-system 먼저)이 남아 있지 않다');
+
+  /* 글자판은 직접 만든다 - 맡기면 <style> 속 글꼴 선언이 미리보기 첫 줄에 섞일 수 있다 */
+  const t = 한통.text || '';
+  ok(/^글꼴\n/.test(t) && t.includes('지역: 강남구') && t.includes('보기: https://beaverknock.co.kr/#/inbox'),
+     '메일에 글자판 본문이 있고, 제목·내용·링크가 들어 있다');
+  ok(!/[<>{}]|font-face/.test(t), '글자판에는 태그나 글꼴 선언이 섞이지 않는다');
+
+  /* 메일 속 주소는 ALERT_SITE 먼저, 없으면 도메인 모양의 host 만 */
+  const 주소 = m => ((m.html || '').match(/<a href="([^"]*)"/) || [])[1];
+  ok(주소(await 만들어('https://beaverknock.co.kr/')) === 'https://beaverknock.co.kr/#/inbox',
+     'ALERT_SITE 끝의 / 는 떼고 쓴다');
+  ok(주소(await 만들어(undefined, { 'x-forwarded-host': 'beaverknock.co.kr' })) === 'https://beaverknock.co.kr/#/inbox',
+     'ALERT_SITE 가 없으면 요청 host 를 쓴다');
+  const 나쁜 = await 만들어(undefined, { host: 'x.com)"><script>' });
+  ok(주소(나쁜) === 'https://beaverknock.co.kr/#/inbox' && !/x\.com\)/.test(나쁜.html || ''),
+     'host 가 도메인 모양이 아니면 버리고 기본 주소를 쓴다 (HTML·CSS 에 그대로 넣지 않는다)');
+  ok(주소(await 만들어('javascript:alert(1)', { host: 'beaverknock.co.kr' })) === 'https://beaverknock.co.kr/#/inbox',
+     'ALERT_SITE 가 주소 모양이 아니면 쓰지 않는다');
+}
+
+/* 로그인한 사람에게는 '30초 간편가입' 을 보이지 않는다 (2026-10-22) - 휴대폰·PC 두 곳 모두 */
+{
+  const 줄들 = html.split('\n').filter(l => l.includes('30초 간편가입</b>'));
+  ok(줄들.length === 2 && 줄들.every(l => /\$\{S\.user \? '' : `<span class="signupHint"[^`]*30초 간편가입[^`]*`\}/.test(l)),
+     `첫 화면의 '30초 간편가입' 두 곳 다 로그인 전에만 그린다 (${줄들.length}곳)`);
 }
 
 /* ── ⑦ 짙은 파트너 칸의 주 단추는 흰 단추다 ── */

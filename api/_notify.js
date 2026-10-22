@@ -30,11 +30,31 @@ const mask = p => {
  * 불러가도 되게 열려 있다). 웹 글꼴을 받아 주는 곳은 애플 메일·iOS 메일 정도이고, Gmail·네이버·
  * 아웃룩은 버린다. 그때는 같은 결의 본고딕 계열 - 애플은 Apple SD Gothic Neo, 안드로이드는
  * Noto Sans CJK(본고딕), 윈도우는 맑은 고딕 - 으로 넘어간다.
- * 표 칸과 단추에도 따로 적는다. 아웃룩은 표 안으로 글꼴을 물려주지 않는다. */
+ * 표 칸과 단추에도 따로 적는다. 아웃룩은 표 안으로 글꼴을 물려주지 않는다.
+ *
+ * 윈도우 아웃룩(워드 엔진)은 @font-face 로 선언된 글꼴을 만나면 목록의 다음 글꼴로 가지 않고
+ * Times New Roman 으로 떨어진다. 그래서 @font-face 는 아웃룩에서 숨기고([if !mso]),
+ * 아웃룩에는 맑은 고딕을 따로 못 박는다([if mso]). */
 const FONT = "'Pretendard Variable',Pretendard,-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo'," +
   "'Noto Sans KR','Noto Sans CJK KR','Source Han Sans KR','Malgun Gothic',sans-serif";
-const fontFace = host => '<style>@font-face{font-family:"Pretendard Variable";font-weight:45 920;font-style:normal;' +
-  `src:url(${host}/fonts/pretendard-variable.woff2) format("woff2")}</style>`;
+const fontFace = host =>
+  '<!--[if !mso]><!--><style>@font-face{font-family:"Pretendard Variable";font-weight:45 920;font-style:normal;' +
+  `src:url(${host}/fonts/pretendard-variable.woff2) format("woff2")}</style><!--<![endif]-->` +
+  "<!--[if mso]><style>body,div,table,td,h1,p,a{font-family:'Malgun Gothic',sans-serif!important}</style><![endif]-->";
+
+/* 메일 속 주소(단추 링크·글꼴 파일)의 앞부분. ALERT_SITE 를 먼저 본다.
+ * 없으면 요청 머리의 host 를 쓰되, 도메인 모양일 때만 받는다 - 머리값이 그대로 HTML·CSS 안에
+ * 들어가므로 따옴표·괄호·꺾쇠가 섞이면 메일이 깨진다. */
+const DOMAIN = /^[a-z0-9.-]+(:\d+)?$/i;
+function siteOf(req) {
+  const env = String(process.env.ALERT_SITE || '').trim().replace(/\/+$/, '');
+  if (/^https?:\/\//i.test(env) && DOMAIN.test(env.replace(/^https?:\/\//i, ''))) return env;
+  const h = String((req && req.headers && (req.headers['x-forwarded-host'] || req.headers.host)) || '')
+    .split(',')[0].trim();
+  return `https://${DOMAIN.test(h) ? h : 'beaverknock.co.kr'}`;
+}
+
+const NOTE = '연락처는 가려서 보냅니다. 전체 내용은 운영 화면에서 암호를 넣고 확인하세요.';
 
 const esc = s => String(s ?? '').replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 
@@ -51,8 +71,7 @@ export async function notify(req, opts) {
 function build(req, { subject, rows, link, to: toArg, cta, note }) {
   const to   = toArg || process.env.ALERT_TO || 'beaverknock@gmail.com';
   const from = process.env.ALERT_FROM || '비버노크 <noreply@rawpick.co.kr>';
-  const host = process.env.ALERT_SITE
-    || `https://${req.headers['x-forwarded-host'] || req.headers.host || 'beaverknockkorea.vercel.app'}`;
+  const host = siteOf(req);
 
   const body = rows.map(([k, v]) =>
     `<tr><td style="font-family:${FONT};padding:7px 14px 7px 0;color:#6B6A7D;font-size:13px;white-space:nowrap">${esc(k)}</td>` +
@@ -65,10 +84,15 @@ function build(req, { subject, rows, link, to: toArg, cta, note }) {
     <a href="${host}${link}" style="font-family:${FONT};display:inline-block;margin-top:22px;padding:12px 24px;border-radius:999px;
       background:#4F52D1;color:#fff;font-size:14px;font-weight:700;text-decoration:none">${esc(cta || '운영 화면에서 보기')}</a>
     <p style="margin:18px 0 0;font-size:11.5px;line-height:1.7;color:#6B6A7D">
-      ${esc(note || '연락처는 가려서 보냅니다. 전체 내용은 운영 화면에서 암호를 넣고 확인하세요.')}</p>
+      ${esc(note || NOTE)}</p>
   </div>`;
 
-  return { from, to: [to], subject: `[비버노크] ${subject}`, html };
+  /* 글자판도 직접 만든다. 맡겨 두면 HTML 에서 뽑아내는데, 그때 <style> 안의 글꼴 선언이
+     HTML 을 끈 메일 앱이나 잠금화면 미리보기 첫 줄에 섞여 나올 수 있다. */
+  const text = [subject, '', ...rows.map(([k, v]) => `${k}: ${v}`), '',
+    `${cta || '운영 화면에서 보기'}: ${host}${link}`, '', note || NOTE].join('\n');
+
+  return { from, to: [to], subject: `[비버노크] ${subject}`, html, text };
 }
 
 async function send(req, opts) {

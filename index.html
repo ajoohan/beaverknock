@@ -3281,7 +3281,9 @@ V['#/'] = () => `
         `<span class="ms" style="transition-delay:${(i*STEP_ONE).toFixed(2)}s">${'①②③④'[i]} ${t}</span>`).join('')}
     </div>
     <button class="btn pri blk" data-go="#/kind">내 조건 걸어두기</button>
-    <span style="text-align:center;font-size:12px;line-height:1.6;color:var(--n500)"><b style="color:var(--n700);font-weight:700">30초 간편가입</b><br>무료서비스</span>
+    <!-- 가입 권유는 아직 가입하지 않은 사람에게만. 로그인한 사람에게 '30초 간편가입' 을 보이면
+         다시 가입해야 하는지 헷갈린다 -->
+    ${S.user ? '' : `<span class="signupHint" style="text-align:center;font-size:12px;line-height:1.6;color:var(--n500)"><b style="color:var(--n700);font-weight:700">30초 간편가입</b><br>무료서비스</span>`}
   </div>
 
   <div style="flex:none;position:relative;z-index:3;background:var(--white);border-top:1px solid var(--n100);
@@ -3307,7 +3309,7 @@ V['#/'] = () => `
         원하는 집·가게의 조건을 남기면, 맞는 물건이 있는 공인중개사가 직접 연락합니다.</p>
       <div style="display:flex;align-items:center;gap:16px;margin-top:4px">
         <button class="btn pri" data-go="#/kind" style="box-shadow:var(--sh3)">내 조건 걸어두기</button>
-        <span style="font-size:13.5px;line-height:1.55;color:var(--n500)"><b style="color:var(--n700);font-weight:700">30초 간편가입</b><br>무료서비스</span>
+        ${S.user ? '' : `<span class="signupHint" style="font-size:13.5px;line-height:1.55;color:var(--n500)"><b style="color:var(--n700);font-weight:700">30초 간편가입</b><br>무료서비스</span>`}
       </div>
     </div>
     <div style="position:relative;height:100%;display:flex;align-items:flex-end;justify-content:center;min-height:0">

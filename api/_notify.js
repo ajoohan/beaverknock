@@ -44,17 +44,25 @@ const fontFace = host =>
 
 /* 메일 속 주소(단추 링크·글꼴 파일)의 앞부분. ALERT_SITE 를 먼저 본다.
  * 없으면 요청 머리의 host 를 쓰되, 도메인 모양일 때만 받는다 - 머리값이 그대로 HTML·CSS 안에
- * 들어가므로 따옴표·괄호·꺾쇠가 섞이면 메일이 깨진다. */
+ * 들어가므로 따옴표·괄호·꺾쇠가 섞이면 메일이 깨진다.
+ * ALERT_SITE 는 https:// 를 빼고 넣어도 받는다. 그래도 주소 모양이 아니면 버리되, 왜 버렸는지
+ * 로그에 한 번 남긴다 - 조용히 넘어가면 링크가 엉뚱한 주소로 나가도 설정 탓인 줄 모른다. */
 const DOMAIN = /^[a-z0-9.-]+(:\d+)?$/i;
+let 주소경고 = false;
 function siteOf(req) {
-  const env = String(process.env.ALERT_SITE || '').trim().replace(/\/+$/, '');
-  if (/^https?:\/\//i.test(env) && DOMAIN.test(env.replace(/^https?:\/\//i, ''))) return env;
+  const raw = String(process.env.ALERT_SITE || '').trim().replace(/\/+$/, '');
+  if (raw) {
+    const env = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+    if (DOMAIN.test(env.replace(/^https?:\/\//i, ''))) return env;
+    if (!주소경고) { 주소경고 = true; console.warn('[notify] ALERT_SITE 가 주소 모양이 아니라 쓰지 않습니다', raw.slice(0, 80)); }
+  }
   const h = String((req && req.headers && (req.headers['x-forwarded-host'] || req.headers.host)) || '')
     .split(',')[0].trim();
   return `https://${DOMAIN.test(h) ? h : 'beaverknock.co.kr'}`;
 }
 
 const NOTE = '연락처는 가려서 보냅니다. 전체 내용은 운영 화면에서 암호를 넣고 확인하세요.';
+const CTA = '운영 화면에서 보기';
 
 const esc = s => String(s ?? '').replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 
@@ -82,15 +90,16 @@ function build(req, { subject, rows, link, to: toArg, cta, note }) {
     <h1 style="margin:8px 0 18px;font-size:19px;font-weight:800;letter-spacing:-.02em;color:#1D1C2A">${esc(subject)}</h1>
     <table style="border-collapse:collapse;width:100%">${body}</table>
     <a href="${host}${link}" style="font-family:${FONT};display:inline-block;margin-top:22px;padding:12px 24px;border-radius:999px;
-      background:#4F52D1;color:#fff;font-size:14px;font-weight:700;text-decoration:none">${esc(cta || '운영 화면에서 보기')}</a>
+      background:#4F52D1;color:#fff;font-size:14px;font-weight:700;text-decoration:none">${esc(cta || CTA)}</a>
     <p style="margin:18px 0 0;font-size:11.5px;line-height:1.7;color:#6B6A7D">
       ${esc(note || NOTE)}</p>
   </div>`;
 
   /* 글자판도 직접 만든다. 맡겨 두면 HTML 에서 뽑아내는데, 그때 <style> 안의 글꼴 선언이
-     HTML 을 끈 메일 앱이나 잠금화면 미리보기 첫 줄에 섞여 나올 수 있다. */
-  const text = [subject, '', ...rows.map(([k, v]) => `${k}: ${v}`), '',
-    `${cta || '운영 화면에서 보기'}: ${host}${link}`, '', note || NOTE].join('\n');
+     HTML 을 끈 메일 앱이나 잠금화면 미리보기 첫 줄에 섞여 나올 수 있다.
+     빈 값은 HTML 쪽 esc() 와 같이 빈칸으로 - 'undefined' 가 찍히면 안 된다. */
+  const text = [subject, '', ...rows.map(([k, v]) => `${k ?? ''}: ${v ?? ''}`), '',
+    `${cta || CTA}: ${host}${link}`, '', note || NOTE].join('\n');
 
   return { from, to: [to], subject: `[비버노크] ${subject}`, html, text };
 }

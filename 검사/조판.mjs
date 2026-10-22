@@ -242,13 +242,14 @@ ok(!/#3D3F8F|#1F1D1A|#6E6859/i.test(메일), '알림 메일에 예전 색이 남
 {
   const { notifyMany } = await import('../api/_notify.js');
   /* 환경과 요청 머리를 바꿔 가며 한 통씩 만들어 본다. 보내지는 않는다 - fetch 를 가로챈다. */
-  const 만들어 = async (site, headers = {}) => {
+  const 기본한통 = { subject: '글꼴', rows: [['지역', '강남구']], link: '/#/inbox', cta: '보기' };
+  const 만들어 = async (site, headers = {}, 한통 = 기본한통) => {
     const 옛키 = process.env.RESEND_API_KEY, 옛fetch = globalThis.fetch, 옛곳 = process.env.ALERT_SITE;
     let 본문 = null;
     process.env.RESEND_API_KEY = 'test';
     if (site === undefined) delete process.env.ALERT_SITE; else process.env.ALERT_SITE = site;
     globalThis.fetch = async (u, o) => { 본문 = JSON.parse(o.body); return { ok: true }; };
-    try { await notifyMany({ headers }, [{ subject: '글꼴', rows: [['지역', '강남구']], link: '/#/inbox', cta: '보기' }]); }
+    try { await notifyMany({ headers }, [한통]); }
     finally {
       globalThis.fetch = 옛fetch;
       if (옛키 === undefined) delete process.env.RESEND_API_KEY; else process.env.RESEND_API_KEY = 옛키;
@@ -275,6 +276,13 @@ ok(!/#3D3F8F|#1F1D1A|#6E6859/i.test(메일), '알림 메일에 예전 색이 남
      '메일에 글자판 본문이 있고, 제목·내용·링크가 들어 있다');
   ok(!/[<>{}]|font-face/.test(t), '글자판에는 태그나 글꼴 선언이 섞이지 않는다');
 
+  /* 빈 값은 HTML 과 같이 빈칸으로. 단추 기본 문구도 두 본문이 같은 말을 한다 */
+  const 빈 = await 만들어('https://beaverknock.co.kr', {}, { subject: '빈값', rows: [['물건', undefined], ['사무소', null]], link: '/#/ops/live' });
+  ok(/\n물건: \n사무소: \n/.test(빈.text || '') && !/undefined|null/.test(빈.text || ''),
+     "글자판에 빈 값이 'undefined'·'null' 로 찍히지 않는다");
+  ok((빈.html || '').includes('>운영 화면에서 보기</a>') && (빈.text || '').includes('\n운영 화면에서 보기: https://beaverknock.co.kr/#/ops/live\n'),
+     '단추 문구를 안 주면 HTML·글자판 둘 다 같은 기본 문구를 쓴다');
+
   /* 메일 속 주소는 ALERT_SITE 먼저, 없으면 도메인 모양의 host 만 */
   const 주소 = m => ((m.html || '').match(/<a href="([^"]*)"/) || [])[1];
   ok(주소(await 만들어('https://beaverknock.co.kr/')) === 'https://beaverknock.co.kr/#/inbox',
@@ -284,15 +292,41 @@ ok(!/#3D3F8F|#1F1D1A|#6E6859/i.test(메일), '알림 메일에 예전 색이 남
   const 나쁜 = await 만들어(undefined, { host: 'x.com)"><script>' });
   ok(주소(나쁜) === 'https://beaverknock.co.kr/#/inbox' && !/x\.com\)/.test(나쁜.html || ''),
      'host 가 도메인 모양이 아니면 버리고 기본 주소를 쓴다 (HTML·CSS 에 그대로 넣지 않는다)');
-  ok(주소(await 만들어('javascript:alert(1)', { host: 'beaverknock.co.kr' })) === 'https://beaverknock.co.kr/#/inbox',
-     'ALERT_SITE 가 주소 모양이 아니면 쓰지 않는다');
+  ok(주소(await 만들어('beaverknock.co.kr', { host: 'x.vercel.app' })) === 'https://beaverknock.co.kr/#/inbox',
+     'ALERT_SITE 에 https:// 를 빼고 넣어도 받는다');
+  const 옛경고 = console.warn, 경고 = [];
+  console.warn = (...a) => 경고.push(a.join(' '));
+  let 버림;
+  try { 버림 = 주소(await 만들어('javascript:alert(1)', { host: 'beaverknock.co.kr' })); } finally { console.warn = 옛경고; }
+  ok(버림 === 'https://beaverknock.co.kr/#/inbox', 'ALERT_SITE 가 주소 모양이 아니면 쓰지 않는다');
+  ok(경고.length === 1 && /ALERT_SITE/.test(경고[0]), 'ALERT_SITE 를 버릴 때는 로그에 이유를 남긴다');
 }
 
-/* 로그인한 사람에게는 '30초 간편가입' 을 보이지 않는다 (2026-10-22) - 휴대폰·PC 두 곳 모두 */
+/* 로그인한 사람에게는 '30초 간편가입' 을 보이지 않는다 (2026-10-22) - 휴대폰·PC 두 곳 모두.
+   글자 모양이 아니라 첫 화면 템플릿을 통째로 꺼내 실제로 그려 본다. 화면이 부르는 다른 이름들
+   (로고·비버 그림·바닥글…)은 빈 글자를 돌려주는 가짜로 채운다 - 여기서 보는 건 문구 하나다. */
 {
-  const 줄들 = html.split('\n').filter(l => l.includes('30초 간편가입</b>'));
-  ok(줄들.length === 2 && 줄들.every(l => /\$\{S\.user \? '' : `<span class="signupHint"[^`]*30초 간편가입[^`]*`\}/.test(l)),
-     `첫 화면의 '30초 간편가입' 두 곳 다 로그인 전에만 그린다 (${줄들.length}곳)`);
+  const 머리 = "V['#/'] = () => ", 시작 = html.indexOf(머리), 끝 = html.indexOf('\n</div>`;', 시작);
+  const 몸 = html.slice(시작 + 머리.length, 끝 + '\n</div>`'.length);
+  const 첫화면 = (mo, user) => {
+    const 판 = { S: { user, agent: null }, isMo: () => mo };
+    /* 불러도(빈 글자) 배열처럼 써도(빈 배열) 글자로 끼워도(빈 글자) 되는 만능 가짜 */
+    const 만능 = new Proxy(() => '', {
+      get: (t, k) => k === Symbol.toPrimitive ? () => ''
+        : k in Array.prototype ? (k === 'join' ? () => '' : () => []) : 만능,
+    });
+    const 가짜 = new Proxy(판, {
+      has: (o, k) => k in o || !(k in globalThis),
+      get: (o, k) => k in o ? o[k] : (k === Symbol.unscopables ? undefined : 만능),
+    });
+    return new Function('판', `with(판){ return ${몸}; }`)(가짜);
+  };
+  const 결과 = [true, false].map(mo => {
+    const 전 = 첫화면(mo, null), 후 = 첫화면(mo, { name: '한상혁' });
+    return 전.includes('30초 간편가입</b>') && !후.includes('30초 간편가입</b>') && 후.includes('내 조건 걸어두기');
+  });
+  ok(시작 > 0 && 끝 > 시작 && 결과.every(Boolean),
+     `첫 화면을 그려 보면 '30초 간편가입' 은 로그인 전에만 나온다 (휴대폰 ${결과[0] ? '맞음' : '틀림'} · PC ${결과[1] ? '맞음' : '틀림'})`);
 }
 
 /* ── ⑦ 짙은 파트너 칸의 주 단추는 흰 단추다 ── */

@@ -26,6 +26,16 @@ const mask = p => {
   return n.length >= 10 ? n.replace(/^(01[016789])([0-9]{3,4})([0-9]{4})$/, '$1-****-$3') : n;
 };
 
+/* 글꼴은 사이트와 같은 Pretendard 다. 파일은 사이트의 것을 그대로 부른다(fonts/ 는 다른 곳에서
+ * 불러가도 되게 열려 있다). 웹 글꼴을 받아 주는 곳은 애플 메일·iOS 메일 정도이고, Gmail·네이버·
+ * 아웃룩은 버린다. 그때는 같은 결의 본고딕 계열 - 애플은 Apple SD Gothic Neo, 안드로이드는
+ * Noto Sans CJK(본고딕), 윈도우는 맑은 고딕 - 으로 넘어간다.
+ * 표 칸과 단추에도 따로 적는다. 아웃룩은 표 안으로 글꼴을 물려주지 않는다. */
+const FONT = "'Pretendard Variable',Pretendard,-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo'," +
+  "'Noto Sans KR','Noto Sans CJK KR','Source Han Sans KR','Malgun Gothic',sans-serif";
+const fontFace = host => '<style>@font-face{font-family:"Pretendard Variable";font-weight:45 920;font-style:normal;' +
+  `src:url(${host}/fonts/pretendard-variable.woff2) format("woff2")}</style>`;
+
 const esc = s => String(s ?? '').replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 
 /* 2.5초 안에 안 되면 포기한다. 접수를 붙잡아 두지 않는다. */
@@ -45,14 +55,14 @@ function build(req, { subject, rows, link, to: toArg, cta, note }) {
     || `https://${req.headers['x-forwarded-host'] || req.headers.host || 'beaverknockkorea.vercel.app'}`;
 
   const body = rows.map(([k, v]) =>
-    `<tr><td style="padding:7px 14px 7px 0;color:#6B6A7D;font-size:13px;white-space:nowrap">${esc(k)}</td>` +
-    `<td style="padding:7px 0;color:#1D1C2A;font-size:14px;font-weight:600">${esc(v)}</td></tr>`).join('');
+    `<tr><td style="font-family:${FONT};padding:7px 14px 7px 0;color:#6B6A7D;font-size:13px;white-space:nowrap">${esc(k)}</td>` +
+    `<td style="font-family:${FONT};padding:7px 0;color:#1D1C2A;font-size:14px;font-weight:600">${esc(v)}</td></tr>`).join('');
 
-  const html = `<div style="font-family:-apple-system,'Malgun Gothic',sans-serif;max-width:520px;margin:0 auto;padding:26px 22px">
+  const html = `${fontFace(host)}<div style="font-family:${FONT};max-width:520px;margin:0 auto;padding:26px 22px">
     <div style="font-size:12px;font-weight:800;letter-spacing:.08em;color:#4F52D1">BEAVER KNOCK</div>
     <h1 style="margin:8px 0 18px;font-size:19px;font-weight:800;letter-spacing:-.02em;color:#1D1C2A">${esc(subject)}</h1>
     <table style="border-collapse:collapse;width:100%">${body}</table>
-    <a href="${host}${link}" style="display:inline-block;margin-top:22px;padding:12px 24px;border-radius:999px;
+    <a href="${host}${link}" style="font-family:${FONT};display:inline-block;margin-top:22px;padding:12px 24px;border-radius:999px;
       background:#4F52D1;color:#fff;font-size:14px;font-weight:700;text-decoration:none">${esc(cta || '운영 화면에서 보기')}</a>
     <p style="margin:18px 0 0;font-size:11.5px;line-height:1.7;color:#6B6A7D">
       ${esc(note || '연락처는 가려서 보냅니다. 전체 내용은 운영 화면에서 암호를 넣고 확인하세요.')}</p>

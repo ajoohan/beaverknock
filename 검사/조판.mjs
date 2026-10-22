@@ -238,6 +238,28 @@ ok(어긋남.length === 0, `약관 화면의 색이 본 화면과 같다${어긋
 const 메일 = fs.readFileSync(new URL('../api/_notify.js', import.meta.url), 'utf8');
 ok(!/#3D3F8F|#1F1D1A|#6E6859/i.test(메일), '알림 메일에 예전 색이 남아 있지 않다');
 
+/* 메일 글꼴은 사이트와 같은 Pretendard, 못 부르면 본고딕 계열로 (2026-10-22) - 실제로 한 통 만들어 본다 */
+{
+  const { notifyMany } = await import('../api/_notify.js');
+  const 옛키 = process.env.RESEND_API_KEY, 옛fetch = globalThis.fetch, 옛곳 = process.env.ALERT_SITE;
+  let 본문 = null;
+  process.env.RESEND_API_KEY = 'test'; process.env.ALERT_SITE = 'https://beaverknock.co.kr';
+  globalThis.fetch = async (u, o) => { 본문 = JSON.parse(o.body); return { ok: true }; };
+  try { await notifyMany({ headers: {} }, [{ subject: '글꼴', rows: [['지역', '강남구']], link: '/#/inbox', cta: '보기' }]); }
+  finally {
+    globalThis.fetch = 옛fetch;
+    if (옛키 === undefined) delete process.env.RESEND_API_KEY; else process.env.RESEND_API_KEY = 옛키;
+    if (옛곳 === undefined) delete process.env.ALERT_SITE; else process.env.ALERT_SITE = 옛곳;
+  }
+  const h = 본문 && 본문[0] && 본문[0].html || '';
+  ok(/@font-face\{font-family:"Pretendard Variable"[^}]*src:url\(https:\/\/beaverknock\.co\.kr\/fonts\/pretendard-variable\.woff2\)/.test(h),
+     '메일이 사이트의 Pretendard 파일을 부른다');
+  const 글꼴들 = [...h.matchAll(/font-family:([^;"]+(?:"[^"]*"[^;"]*)*);/g)].map(m => m[1]).filter(f => !/^"Pretendard Variable"$/.test(f));
+  ok(글꼴들.length === 4 && 글꼴들.every(f => /^'Pretendard Variable'.*'Apple SD Gothic Neo'.*'Noto Sans KR'.*'Malgun Gothic',sans-serif$/.test(f)),
+     `메일의 바탕·표 두 칸·단추 넷 다 Pretendard → 본고딕 계열 순서다 (${글꼴들.length}곳)`);
+  ok(!/font-family:-apple-system/.test(h), '예전 글꼴 목록(-apple-system 먼저)이 남아 있지 않다');
+}
+
 /* ── ⑦ 짙은 파트너 칸의 주 단추는 흰 단추다 ── */
 ok(/if\(kind === 'onDark'\) return `<a class="btn partner"/.test(js), 'partnerDoor 가 짙은 칸용 흰 단추를 낸다');
 ok(/\$\{partnerDoor\('onDark'\)\}/.test(js), '첫 화면 파트너 칸이 그 단추를 쓴다');

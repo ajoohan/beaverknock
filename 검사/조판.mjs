@@ -243,13 +243,13 @@ ok(!/#3D3F8F|#1F1D1A|#6E6859/i.test(메일), '알림 메일에 예전 색이 남
   const { notifyMany } = await import('../api/_notify.js');
   /* 환경과 요청 머리를 바꿔 가며 한 통씩 만들어 본다. 보내지는 않는다 - fetch 를 가로챈다. */
   const 기본한통 = { subject: '글꼴', rows: [['지역', '강남구']], link: '/#/inbox', cta: '보기' };
-  const 만들어 = async (site, headers = {}, 한통 = 기본한통) => {
+  const 만들어 = async (site, headers = {}, 한통 = 기본한통, 보내기 = notifyMany) => {
     const 옛키 = process.env.RESEND_API_KEY, 옛fetch = globalThis.fetch, 옛곳 = process.env.ALERT_SITE;
     let 본문 = null;
     process.env.RESEND_API_KEY = 'test';
     if (site === undefined) delete process.env.ALERT_SITE; else process.env.ALERT_SITE = site;
     globalThis.fetch = async (u, o) => { 본문 = JSON.parse(o.body); return { ok: true }; };
-    try { await notifyMany({ headers }, [한통]); }
+    try { await 보내기({ headers }, [한통]); }
     finally {
       globalThis.fetch = 옛fetch;
       if (옛키 === undefined) delete process.env.RESEND_API_KEY; else process.env.RESEND_API_KEY = 옛키;
@@ -294,20 +294,30 @@ ok(!/#3D3F8F|#1F1D1A|#6E6859/i.test(메일), '알림 메일에 예전 색이 남
      'host 가 도메인 모양이 아니면 버리고 기본 주소를 쓴다 (HTML·CSS 에 그대로 넣지 않는다)');
   ok(주소(await 만들어('beaverknock.co.kr', { host: 'x.vercel.app' })) === 'https://beaverknock.co.kr/#/inbox',
      'ALERT_SITE 에 https:// 를 빼고 넣어도 받는다');
+  /* 경고는 인스턴스마다 한 번이다(모듈 안의 표시). 앞의 검사들과 표시를 나눠 쓰지 않게
+     모듈을 새로 불러온다 - 주소 뒤 ?꼬리 가 다르면 node 는 다른 모듈로 읽는다. */
+  const { notifyMany: 새로보내기 } = await import('../api/_notify.js?경고검사');
   const 옛경고 = console.warn, 경고 = [];
   console.warn = (...a) => 경고.push(a.join(' '));
-  let 버림;
-  try { 버림 = 주소(await 만들어('javascript:alert(1)', { host: 'beaverknock.co.kr' })); } finally { console.warn = 옛경고; }
-  ok(버림 === 'https://beaverknock.co.kr/#/inbox', 'ALERT_SITE 가 주소 모양이 아니면 쓰지 않는다');
-  ok(경고.length === 1 && /ALERT_SITE/.test(경고[0]), 'ALERT_SITE 를 버릴 때는 로그에 이유를 남긴다');
+  let 버림, 또;
+  try {
+    버림 = 주소(await 만들어('javascript:alert(1)', { host: 'beaverknock.co.kr' }, 기본한통, 새로보내기));
+    또 = 주소(await 만들어('javascript:alert(1)', { host: 'beaverknock.co.kr' }, 기본한통, 새로보내기));
+  } finally { console.warn = 옛경고; }
+  ok(버림 === 'https://beaverknock.co.kr/#/inbox' && 또 === 버림, 'ALERT_SITE 가 주소 모양이 아니면 쓰지 않는다');
+  ok(경고.length === 1 && /ALERT_SITE/.test(경고[0]),
+     `ALERT_SITE 를 버릴 때는 로그에 이유를 남기고, 같은 인스턴스에선 한 번만 남긴다 (${경고.length}번)`);
 }
 
 /* 로그인한 사람에게는 '30초 간편가입' 을 보이지 않는다 (2026-10-22) - 휴대폰·PC 두 곳 모두.
    글자 모양이 아니라 첫 화면 템플릿을 통째로 꺼내 실제로 그려 본다. 화면이 부르는 다른 이름들
-   (로고·비버 그림·바닥글…)은 빈 글자를 돌려주는 가짜로 채운다 - 여기서 보는 건 문구 하나다. */
+   (로고·비버 그림·바닥글…)은 빈 글자를 돌려주는 가짜로 채운다 - 여기서 보는 건 문구 하나다.
+   가짜는 소스에 실제로 선언된 이름에만 준다. 아무 이름에나 주면 화면 코드의 오타(없는 함수)
+   까지 덮어서, 실제로는 하얀 화면인데 검사는 통과한다. */
 {
   const 머리 = "V['#/'] = () => ", 시작 = html.indexOf(머리), 끝 = html.indexOf('\n</div>`;', 시작);
   const 몸 = html.slice(시작 + 머리.length, 끝 + '\n</div>`'.length);
+  const 선언 = new Set([...js.matchAll(/(?:\bfunction\s+|\b(?:const|let|var)\s+)([A-Za-z_$가-힣][\w$가-힣]*)/g)].map(m => m[1]));
   const 첫화면 = (mo, user) => {
     const 판 = { S: { user, agent: null }, isMo: () => mo };
     /* 불러도(빈 글자) 배열처럼 써도(빈 배열) 글자로 끼워도(빈 글자) 되는 만능 가짜 */
@@ -316,17 +326,30 @@ ok(!/#3D3F8F|#1F1D1A|#6E6859/i.test(메일), '알림 메일에 예전 색이 남
         : k in Array.prototype ? (k === 'join' ? () => '' : () => []) : 만능,
     });
     const 가짜 = new Proxy(판, {
-      has: (o, k) => k in o || !(k in globalThis),
+      has: (o, k) => k in o || (선언.has(k) && !(k in globalThis)),
       get: (o, k) => k in o ? o[k] : (k === Symbol.unscopables ? undefined : 만능),
     });
     return new Function('판', `with(판){ return ${몸}; }`)(가짜);
   };
+  let 오류 = '';
   const 결과 = [true, false].map(mo => {
-    const 전 = 첫화면(mo, null), 후 = 첫화면(mo, { name: '한상혁' });
-    return 전.includes('30초 간편가입</b>') && !후.includes('30초 간편가입</b>') && 후.includes('내 조건 걸어두기');
+    try {
+      const 전 = 첫화면(mo, null), 후 = 첫화면(mo, { name: '한상혁' });
+      return 전.includes('30초 간편가입</b>') && !후.includes('30초 간편가입</b>') && 후.includes('내 조건 걸어두기');
+    } catch (e) { 오류 = e.message; return false; }
   });
   ok(시작 > 0 && 끝 > 시작 && 결과.every(Boolean),
-     `첫 화면을 그려 보면 '30초 간편가입' 은 로그인 전에만 나온다 (휴대폰 ${결과[0] ? '맞음' : '틀림'} · PC ${결과[1] ? '맞음' : '틀림'})`);
+     `첫 화면을 그려 보면 '30초 간편가입' 은 로그인 전에만 나온다 (휴대폰 ${결과[0] ? '맞음' : '틀림'} · PC ${결과[1] ? '맞음' : '틀림'})${오류 ? ' - ' + 오류 : ''}`);
+
+  /* 응답 머리 - 다른 사이트가 이 화면을 틀 안에 넣지 못하게 (2026-10-22, 클릭재킹 막기) */
+  const 설정 = JSON.parse(fs.readFileSync(new URL('../vercel.json', import.meta.url), 'utf8'));
+  const 전부 = (설정.headers || []).find(h => h.source === '/(.*)');
+  const 머리값 = k => ((전부 && 전부.headers) || []).find(h => h.key.toLowerCase() === k.toLowerCase())?.value;
+  ok(머리값('X-Frame-Options') === 'DENY' && /frame-ancestors 'none'/.test(머리값('Content-Security-Policy') || ''),
+     '모든 주소가 다른 사이트의 틀 안에 들어가는 것을 막는다 (X-Frame-Options · frame-ancestors)');
+  ok(머리값('X-Content-Type-Options') === 'nosniff' && 머리값('Referrer-Policy') === 'strict-origin-when-cross-origin',
+     '파일 종류 추측 금지(nosniff)와 링크 출처 제한(Referrer-Policy)도 모든 주소에 붙는다');
+  ok(!/<iframe/i.test(html), '사이트 스스로도 화면을 틀 안에 넣지 않는다 (DENY 와 부딪히지 않는다)');
 }
 
 /* ── ⑦ 짙은 파트너 칸의 주 단추는 흰 단추다 ── */

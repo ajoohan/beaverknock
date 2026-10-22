@@ -317,7 +317,15 @@ ok(!/#3D3F8F|#1F1D1A|#6E6859/i.test(메일), '알림 메일에 예전 색이 남
 {
   const 머리 = "V['#/'] = () => ", 시작 = html.indexOf(머리), 끝 = html.indexOf('\n</div>`;', 시작);
   const 몸 = html.slice(시작 + 머리.length, 끝 + '\n</div>`'.length);
-  const 선언 = new Set([...js.matchAll(/(?:\bfunction\s+|\b(?:const|let|var)\s+)([A-Za-z_$가-힣][\w$가-힣]*)/g)].map(m => m[1]));
+  /* 맨 바깥(줄 맨 앞)에서 선언된 이름만 모은다. 함수 안의 짧은 지역 이름(d, r …)까지 넣으면
+     첫 화면이 그 이름을 잘못 불러도 가짜로 채워져 넘어간다. 구조분해(const {a, b} =)도 넣는다. */
+  const 이름 = '[A-Za-z_$가-힣][\\w$가-힣]*';
+  const 선언 = new Set([
+    ...[...js.matchAll(new RegExp(`^(?:async\\s+)?function\\s*\\*?\\s*(${이름})`, 'gm'))].map(m => m[1]),
+    ...[...js.matchAll(new RegExp(`^(?:const|let|var)\\s+(${이름})`, 'gm'))].map(m => m[1]),
+    ...[...js.matchAll(/^(?:const|let|var)\s*[{[]([^}\]]*)[}\]]/gm)]
+      .flatMap(m => m[1].split(',').map(s => s.replace(/^\s*\.\.\./, '').split(':').pop().split('=')[0].trim()).filter(Boolean)),
+  ]);
   const 첫화면 = (mo, user) => {
     const 판 = { S: { user, agent: null }, isMo: () => mo };
     /* 불러도(빈 글자) 배열처럼 써도(빈 배열) 글자로 끼워도(빈 글자) 되는 만능 가짜 */
@@ -349,7 +357,10 @@ ok(!/#3D3F8F|#1F1D1A|#6E6859/i.test(메일), '알림 메일에 예전 색이 남
      '모든 주소가 다른 사이트의 틀 안에 들어가는 것을 막는다 (X-Frame-Options · frame-ancestors)');
   ok(머리값('X-Content-Type-Options') === 'nosniff' && 머리값('Referrer-Policy') === 'strict-origin-when-cross-origin',
      '파일 종류 추측 금지(nosniff)와 링크 출처 제한(Referrer-Policy)도 모든 주소에 붙는다');
-  ok(!/<iframe/i.test(html), '사이트 스스로도 화면을 틀 안에 넣지 않는다 (DENY 와 부딪히지 않는다)');
+  /* 글자로 쓴 <iframe 만이 아니라 코드로 만드는 틀(createElement('iframe'))도 찾는다.
+     본인확인 창(포트원)이 띄우는 틀은 포트원 화면을 담는 것이라 여기 해당하지 않는다 - 그건 우리 소스에 없다. */
+  ok(!/<iframe|createElement\(\s*['"`]i?frame['"`]|\.innerHTML\s*[+]?=\s*['"`][^'"`]*<i?frame/i.test(html),
+     '사이트 스스로도 화면을 틀 안에 넣지 않는다 - 글자로도 코드로도 (DENY 와 부딪히지 않는다)');
 }
 
 /* ── ⑦ 짙은 파트너 칸의 주 단추는 흰 단추다 ── */

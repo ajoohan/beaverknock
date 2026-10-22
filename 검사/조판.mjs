@@ -320,9 +320,26 @@ ok(!/#3D3F8F|#1F1D1A|#6E6859/i.test(메일), '알림 메일에 예전 색이 남
   /* 맨 바깥(줄 맨 앞)에서 선언된 이름만 모은다. 함수 안의 짧은 지역 이름(d, r …)까지 넣으면
      첫 화면이 그 이름을 잘못 불러도 가짜로 채워져 넘어간다. 구조분해(const {a, b} =)도 넣는다. */
   const 이름 = '[A-Za-z_$가-힣][\\w$가-힣]*';
+  /* 'const a = 1, b = f(x, y);' 처럼 한 줄에 여럿을 선언하면 둘째부터도 모은다.
+     괄호·따옴표 안의 쉼표는 건너뛰고, 바깥 쉼표에서만 나눈다. */
+  const 한줄이름들 = 줄 => {
+    const 조각 = []; let 깊이 = 0, 따옴 = null, 시작 = 0;
+    for (let i = 0; i < 줄.length; i++) {
+      const c = 줄[i];
+      if (따옴) { if (c === '\\') i++; else if (c === 따옴) 따옴 = null; continue; }
+      if (c === '"' || c === "'" || c === '`') 따옴 = c;
+      else if ('([{'.includes(c)) 깊이++;
+      else if (')]}'.includes(c)) 깊이--;
+      else if (깊이 === 0 && (c === ',' || c === ';')) { 조각.push(줄.slice(시작, i)); 시작 = i + 1; if (c === ';') break; }
+    }
+    if (시작 < 줄.length && 깊이 === 0 && !따옴) 조각.push(줄.slice(시작));
+    return 조각.map(p => (p.trim().match(new RegExp(`^(${이름})\\s*(?:=|$)`)) || [])[1]).filter(Boolean);
+  };
   const 선언 = new Set([
     ...[...js.matchAll(new RegExp(`^(?:async\\s+)?function\\s*\\*?\\s*(${이름})`, 'gm'))].map(m => m[1]),
+    /* 첫 이름은 따로도 잡는다 - 줄 안의 정규식(/'/ 같은)에 나누기가 엇나가도 첫 이름은 남게 */
     ...[...js.matchAll(new RegExp(`^(?:const|let|var)\\s+(${이름})`, 'gm'))].map(m => m[1]),
+    ...[...js.matchAll(/^(?:const|let|var)\s+([^\n]*)/gm)].flatMap(m => 한줄이름들(m[1])),
     ...[...js.matchAll(/^(?:const|let|var)\s*[{[]([^}\]]*)[}\]]/gm)]
       .flatMap(m => m[1].split(',').map(s => s.replace(/^\s*\.\.\./, '').split(':').pop().split('=')[0].trim()).filter(Boolean)),
   ]);

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 비버노크 - 화면은 한 주소(/) 안의 # 경로라 검색엔진이 따로 가져갈 주소는 셋이다 -->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://beaverknock.co.kr/</loc><lastmod>2026-10-29</lastmod><changefreq>weekly</changefreq><priority>1.0</priority></url>
+  <url><loc>https://beaverknock.co.kr/terms</loc><lastmod>2026-10-29</lastmod><changefreq>monthly</changefreq><priority>0.3</priority></url>
+  <url><loc>https://beaverknock.co.kr/privacy</loc><lastmod>2026-10-29</lastmod><changefreq>monthly</changefreq><priority>0.3</priority></url>
+</urlset>

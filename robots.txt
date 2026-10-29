@@ -1,0 +1,8 @@
+# 비버노크 (2026-10-29)
+# 지금은 정식 오픈 전이라 화면마다 'X-Robots-Tag: noindex' 를 붙여 검색에 올리지 않는다(vercel.json).
+# 여기서 막지 않는 까닭: Disallow 로 막으면 검색엔진이 noindex 를 읽지 못해 주소만 검색에 걸릴 수 있다.
+# 오픈할 때 vercel.json 의 X-Robots-Tag 줄만 풀면 아래 sitemap 으로 바로 알려진다.
+User-agent: *
+Disallow: /api/
+
+Sitemap: https://beaverknock.co.kr/sitemap.xml

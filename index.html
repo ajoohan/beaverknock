@@ -1714,6 +1714,119 @@ body.mo .rp-l{grid-column:1/-1}
   html.printing-ct #ctPrint{display:block}
   html.printing-ct, html.printing-ct body{background:#fff!important;height:auto!important;overflow:visible!important}
 }
+
+/* ── 대시보드 틀 (2026-10-29 대표님 시안) ── 넓은 화면만. 휴대폰은 위 머리 + 아래 탭 */
+:root{--dzbg:#F3F3FA;--dzside:var(--ind);--dzsh:0 14px 34px -20px rgba(36,32,110,.30)}
+body:not(.mo) .dz-scr, body:not(.mo) .scr:has(> .psb){display:grid;grid-template-columns:256px minmax(0,1fr);
+  grid-auto-rows:min-content;align-items:start;background:var(--dzbg)!important;min-height:100%}
+body:not(.mo) .dz-scr > :not(.dz-side), body:not(.mo) .scr:has(> .psb) > :not(.psb){grid-column:2;min-width:0}
+.dz-side{grid-column:1;grid-row:1 / span 60;position:sticky;top:16px;margin:16px 0 16px 16px;height:calc(100vh - 32px);
+  display:flex;flex-direction:column;gap:2px;padding:22px 14px 16px;border-radius:26px;background:var(--dzside);color:#fff;
+  overflow-y:auto;box-shadow:0 22px 44px -26px rgba(36,32,110,.55)}
+.dz-logo{display:flex;align-items:center;gap:8px;padding:2px 10px 22px}
+.dz-tag{font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;background:rgba(255,255,255,.18)}
+.dz-menu{display:flex;flex-direction:column;gap:3px}
+.dz-side .grp{display:block;padding:14px 12px 6px;font-size:12px;font-weight:700;letter-spacing:.06em;color:rgba(255,255,255,.62)}
+.dz-menu > a, .dz-menu > button, .dz-foot > a{display:flex;align-items:center;gap:12px;width:100%;min-height:44px;padding:10px 12px;
+  border:none;border-radius:14px;background:transparent;color:rgba(255,255,255,.86);font:inherit;font-size:14px;font-weight:600;
+  text-align:left;cursor:pointer;transition:background var(--t-fast) ease,color var(--t-fast) ease}
+.dz-menu > a:hover, .dz-menu > button:hover, .dz-foot > a:hover{background:rgba(255,255,255,.12);color:#fff}
+.dz-menu > a.on, .dz-menu > button.on{background:#fff;color:var(--ind);font-weight:700;box-shadow:0 8px 18px -10px rgba(20,18,60,.45)}
+.dz-menu .cnt{margin-left:auto;min-width:24px;padding:1px 8px;border-radius:999px;font-size:12px;font-weight:700;text-align:center;
+  background:rgba(255,255,255,.18);color:#fff;font-variant-numeric:tabular-nums}
+.dz-menu .on .cnt{background:var(--ind50);color:var(--ind)}
+.dz-menu .opsSub{display:flex;flex-direction:column;gap:2px;margin:2px 0 6px 22px;padding-left:10px;border-left:1px solid rgba(255,255,255,.25)}
+.dz-menu .opsSub button{min-height:40px;padding:8px 10px;border:none;border-radius:10px;background:transparent;color:rgba(255,255,255,.78);
+  font:inherit;font-size:13px;font-weight:600;text-align:left;cursor:pointer}
+.dz-menu .opsSub button:hover{background:rgba(255,255,255,.12);color:#fff}
+.dz-menu .opsSub button.on{background:rgba(255,255,255,.2);color:#fff;font-weight:700}
+.dz-foot{margin-top:auto;display:flex;flex-direction:column;gap:2px;padding-top:14px;border-top:1px solid rgba(255,255,255,.2)}
+.dz-office{display:block;padding:4px 12px 8px;font-size:12.5px;font-weight:600;color:rgba(255,255,255,.72);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dz-side :focus-visible{outline:2px solid #fff;outline-offset:2px}
+.ptop{display:flex;justify-content:flex-end;align-items:center;gap:12px;padding:20px 28px 0;min-height:44px}
+.dz-main{padding-top:26px!important;padding-bottom:32px!important;width:100%;max-width:1320px}
+.dz-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:22px}
+.dz-h1{margin:0;font-size:28px;font-weight:800;letter-spacing:-.035em;color:var(--n900);text-wrap:balance}
+.dz-date{margin:6px 0 0;font-size:13.5px;color:var(--n500)}
+.dz-hr{display:flex;align-items:center;gap:12px;font-size:12.5px;color:var(--n500)}
+.dz-grid{display:grid;grid-template-columns:minmax(0,1fr) 304px;gap:22px;align-items:start}
+.dz-col{display:flex;flex-direction:column;gap:18px;min-width:0}
+.dz-aside{display:flex;flex-direction:column;gap:18px;position:sticky;top:16px}
+.dz-card{position:relative;background:var(--white);border:1px solid rgba(79,82,209,.07);border-radius:22px;padding:20px 22px;box-shadow:var(--dzsh);min-width:0}
+.dz-k4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+.dz-kpi{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;text-align:left;font:inherit;color:inherit;cursor:pointer;overflow:hidden;
+  transition:transform var(--t-fast) ease,box-shadow var(--t-fast) ease}
+div.dz-kpi{cursor:default}
+button.dz-kpi:hover{transform:translateY(-2px);box-shadow:0 20px 40px -22px rgba(36,32,110,.38)}
+.dz-kt{display:flex;justify-content:space-between;align-items:center;width:100%;margin-bottom:14px}
+.dz-ic{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:14px;background:var(--ind50);color:var(--ind)}
+.dz-big{font-size:30px;font-weight:800;letter-spacing:-.04em;line-height:1.1;color:var(--n900)}
+.dz-lab{font-size:13.5px;font-weight:600;color:var(--n700)}
+.dz-sub{font-size:12.5px;color:var(--n500);margin-top:2px}
+.dz-kpi .spark{display:block;width:100%;height:34px;margin-top:10px}
+.dz-pill{display:inline-flex;align-items:center;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:700;background:var(--n100);color:var(--n700);font-variant-numeric:tabular-nums;white-space:nowrap}
+.dz-pill.up{background:var(--okbg);color:var(--ok)}
+.dz-pill.dn{background:var(--dangerbg);color:var(--danger)}
+.dz-r2{display:grid;grid-template-columns:minmax(0,.62fr) minmax(0,1.6fr);gap:16px;align-items:stretch}
+.dz-stack{display:flex;flex-direction:column;gap:16px}
+.dz-stack .dz-kpi{flex:1}
+.dz-chh{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.dz-ct{font-size:15px;font-weight:800;letter-spacing:-.02em;color:var(--n900)}
+.dz-cs{margin-left:auto;font-size:12.5px;color:var(--n500)}
+.dz-leg{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:var(--n500)}
+.dz-leg i{display:inline-block;width:10px;height:3px;border-radius:2px;margin-left:8px}
+.dz-leg i.a, .dz-chart .dz-chh span i[style*="--ind)"]{background:var(--ind)}
+.dz-leg i.b{background:var(--n900)}
+.dz-lw{position:relative;padding-left:34px}
+.dz-yl{position:absolute;left:0;top:0;bottom:0;width:28px}
+.dz-yl span{position:absolute;right:0;transform:translateY(-50%);font-size:12px;color:var(--n500);font-variant-numeric:tabular-nums}
+.dz-chart .axis{padding-left:34px}
+.dz-line{display:block;width:100%;height:190px}
+.dz-line .g{stroke:var(--n100);stroke-width:1}
+.dz-line .ln{fill:none;stroke-width:2.6;stroke-linecap:round;vector-effect:non-scaling-stroke}
+.dz-line .ln.a{stroke:var(--ind)} .dz-line .ln.b{stroke:var(--n900);opacity:.75}
+.dz-line .pt{stroke:#fff;stroke-width:2;vector-effect:non-scaling-stroke} .dz-line .pt.a{fill:var(--ind)} .dz-line .pt.b{fill:var(--n900)}
+.dz-chart .axis{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);margin-top:6px;font-size:12px;color:var(--n500);text-align:center}
+.dz-more{margin-left:auto;font-size:13px;font-weight:700;color:var(--ind);cursor:pointer;padding:10px 4px;margin-top:-10px;margin-bottom:-10px}
+.dz-row{display:grid;grid-template-columns:40px minmax(0,1fr) auto;gap:14px;align-items:center;padding:12px 8px;border-radius:14px;cursor:pointer}
+.dz-row:hover{background:var(--n50)}
+.dz-av{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:50%;background:var(--ind50);color:var(--ind)}
+.dz-rt{display:flex;flex-direction:column;gap:2px;min-width:0}
+.dz-rt b{font-size:14px;font-weight:700;color:var(--n900);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dz-rt span{font-size:12.5px;color:var(--n500);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dz-rw{font-size:12.5px;color:var(--n500);white-space:nowrap}
+.dz-status .dz-st{display:block;margin-top:4px;font-size:13.5px;color:var(--n700)}
+.dz-trk{height:10px;margin:14px 0 12px;border-radius:999px;background:var(--n100);overflow:hidden}
+.dz-trk i{display:block;height:100%;border-radius:999px;background:var(--ind)}
+.dz-sn{margin:0 0 14px;font-size:12.5px;line-height:1.6;color:var(--n500)}
+.dz-todo{display:flex;flex-direction:column;gap:4px}
+.dz-todo .dz-ct{margin-bottom:8px}
+.dz-ti{display:grid;grid-template-columns:38px minmax(0,1fr) auto;gap:12px;align-items:center;width:100%;min-height:52px;padding:8px 6px;
+  border:none;border-radius:14px;background:transparent;font:inherit;text-align:left;cursor:pointer}
+.dz-ti:hover{background:var(--n50)}
+.dz-tic{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:12px;background:var(--n50);color:var(--ind)}
+.dz-tt{display:flex;flex-direction:column;gap:2px;min-width:0}
+.dz-tt b{font-size:13.5px;font-weight:700;color:var(--n900)}
+.dz-tt span{font-size:12px;line-height:1.45;color:var(--n500)}
+.dz-tn{min-width:28px;padding:2px 9px;border-radius:999px;background:var(--dangerbg);color:var(--danger);font-size:12.5px;font-weight:800;text-align:center}
+.dz-calm{margin:4px 0 0;font-size:13px;line-height:1.6;color:var(--n500)}
+.dz-fine{margin:0;font-size:12.5px;line-height:1.7;color:var(--n500)}
+.dz-prog .prog{display:flex;flex-direction:column;gap:14px}
+@media (max-width:1320px){ .dz-grid{grid-template-columns:minmax(0,1fr)} .dz-aside{position:static;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))} }
+@media (max-width:1180px){ .dz-k4{grid-template-columns:repeat(2,minmax(0,1fr))} .dz-r2{grid-template-columns:minmax(0,1fr)} .dz-stack{flex-direction:row} }
+@media (max-width:1000px){ body:not(.mo) .dz-scr, body:not(.mo) .scr:has(> .psb){grid-template-columns:220px minmax(0,1fr)} }
+body.mo .dz-main{padding-top:18px!important}
+body.mo .dz-h1{font-size:22px}
+body.mo .dz-grid, body.mo .dz-aside{display:flex;flex-direction:column;gap:14px}
+body.mo .dz-k4{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+body.mo .dz-card{padding:16px;border-radius:18px}
+body.mo .dz-big{font-size:24px}
+body.mo .dz-ic{width:38px;height:38px;border-radius:12px}
+body.mo .dz-kt{margin-bottom:10px}
+body.mo .dz-r2{display:flex;flex-direction:column;gap:10px}
+body.mo .dz-stack{flex-direction:row;gap:10px}
+body.mo .dz-stack .dz-kpi{flex:1 1 0}
+body.mo .dz-kpi .dz-sub{display:none}
 </style>
 </head>
 <body class="pc">
@@ -2649,13 +2762,15 @@ const ICON_PHOTO = `<svg viewBox="0 0 24 24" fill="none" stroke="#6366D6" stroke
 function tabbar(active, role){
   if(!isMo()) return '';
   const items = role==='p'
-    ? [['#/partner/demands','수요','d'],['#/partner/listings','내 물건','l'],['#/partner/proposals','내 제안','p'],...(ownerSide()?[]:[['#/partner/contracts','계약서','ct']]),['#/partner/settings','설정','s']]
+    /* 맨 앞은 대시보드(홈). 다섯 칸을 넘지 않게 중개사는 '내 물건' 을 홈 카드로 보내고, 소유자는 계약서가 없다 */
+    ? [['#/partner/home','홈','h'],['#/partner/demands',ownerSide()?'맞는 손님':'수요','d'],...(ownerSide()?[['#/partner/listings','내 물건','l']]:[]),['#/partner/proposals','내 제안','p'],...(ownerSide()?[]:[['#/partner/contracts','계약서','ct']]),['#/partner/settings','설정','s']]
     : [['#/','홈','home'],['#/my','내 조건','my'],['#/inbox','제안함','inbox']];
   const ico = {
     home:'M4 11 L12 4 L20 11 M6.5 9.5 V19 h11 V9.5',
     my:'M5 5 h14 M5 12 h14 M5 19 h9',
     inbox:'M3 12 h5 l2 3 h4 l2 -3 h5 M3 12 V7 a2 2 0 0 1 2 -2 h14 a2 2 0 0 1 2 2 v5 M3 12 v5 a2 2 0 0 0 2 2 h14 a2 2 0 0 0 2 -2 v-5',
     ct:'M6 3 h9 l4 4 v14 H6 Z M9 11 h7 M9 15 h7 M9 19 h4',
+    h:'M4 4 h7 v7 H4 Z M13 4 h7 v7 h-7 Z M4 13 h7 v7 H4 Z M13 13 h7 v7 h-7 Z',
     d:'M4 6 h16 M4 12 h16 M4 18 h10', p:'M5 4 h9 l5 5 v11 H5 Z M14 4 v5 h5',
     l:'M4 11 L12 4 L20 11 M6.5 9.5 V19 h11 V9.5 M10 19 v-5 h4 v5',
     s:'M12 15.5 a3.5 3.5 0 1 0 0 -7 a3.5 3.5 0 0 0 0 7 M12 2 v3 M12 19 v3 M2 12 h3 M19 12 h3 M5 5 l2 2 M17 17 l2 2 M19 5 l-2 2 M7 17 l-2 2'
@@ -2700,7 +2815,7 @@ const ownerSide = () => !!(S.agent && S.agent.role && S.agent.role !== 'agent');
 function partnerDoor(kind){
   if(!S.agent) return '';
   const 열림 = S.agent.status === 'approved';
-  const 곳 = 열림 ? '#/partner/demands' : '#/partner/verify';
+  const 곳 = 열림 ? '#/partner/home' : '#/partner/verify';
   const 말 = 열림 ? (ownerSide() ? '내 물건' : '파트너 화면') : '자격 확인';
   /* 짙은 파트너 칸 안에서는 그 칸의 주 단추(흰색)와 같은 모양이어야 한다.
      연한 알약(door sm)을 쓰면 옆의 '안내 다시 보기' 보다 작고 흐려서 위계가 뒤집혔다. */
@@ -2731,9 +2846,11 @@ function agentBadge(){
    휴대폰에서도 '내 정보' 를 남긴다 - 빼면 설정으로 갈 길이 없다(2026-10-15 리뷰). */
 function navPartner(active, 탭있음 = true){
   const own = ownerSide();
+  /* 넓은 화면은 왼쪽 세로 메뉴(2026-10-29 대표님 시안) - 사무소 이름·내 정보는 메뉴 아래에 있다 */
+  if(!isMo()) return 파트너옆(active);
   return `
 <div class="nav solid pad">
-  <a data-go="#/partner" style="flex:none">${logoLockup({h:25,partner:true,tag:!isMo()})}</a>
+  <a data-go="${S.agent ? '#/partner/home' : '#/partner'}" style="flex:none">${logoLockup({h:25,partner:true,tag:!isMo()})}</a>
   <div class="items mid">
     <a data-go="#/partner/demands" class="${active==='d'?'on':''}">${own?'맞는 손님':'수요 목록'}</a>
     <a data-go="#/partner/listings" class="${active==='l'?'on':''}">내 물건</a>
@@ -3010,6 +3127,7 @@ function myPropFromRow(x){
     status: MP_STATUS[x.status] || x.status,
     at: agoText(x.created_at),
     cust: x.cust || undefined, cphone: x.cphone || undefined,
+    createdAt: x.created_at || null,
     raw: { addr: x.addr || '', bname: x.bname || '', dep: +x.dep || 0, rent: +x.rent || 0, fee: +x.fee || 0,
            kind: x.kind || '', deal: x.deal || '' },
     reason: x.status==='reported' ? `손님이 신고했습니다${x.report_type?` · ${x.report_type}`:''}`
@@ -8624,24 +8742,15 @@ function dashFlow(days){
   const lst = LS2.rows ? dashSeries(LS2.rows, days, 'created_at') : days.map(()=>0);
   const max = Math.max(1, ...days.map((_,i)=>dem[i]+lst[i]));
   const tot = dem.reduce((a,b)=>a+b,0), tot2 = lst.reduce((a,b)=>a+b,0);
-  return `<div class="card pad" style="padding-top:16px;padding-bottom:16px">
-    <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:12px">
-      <b style="font-size:13.5px;font-weight:700;color:var(--n900);letter-spacing:-.02em">최근 ${DASH_DAYS}일 흐름</b>
+  return `<div class="dz-card dz-chart">
+    <div class="dz-chh">
+      <b class="dz-ct">최근 ${DASH_DAYS}일 흐름</b>
       <span style="display:flex;gap:12px;font-size:12.5px;font-weight:700;color:var(--n500)">
         <span><i style="display:inline-block;width:9px;height:9px;border-radius:2px;background:var(--ind);vertical-align:-1px;margin-right:5px"></i>조건 ${tot}</span>
         <span><i style="display:inline-block;width:9px;height:9px;border-radius:2px;background:var(--ind200);vertical-align:-1px;margin-right:5px"></i>매물 ${tot2}</span>
       </span>
     </div>
-    <div class="bars">
-      ${days.map((x,i)=>{
-        const a = dem[i], b = lst[i];
-        const t = (a+b) ? `${x.mon}/${x.lab} · 조건 ${a} · 매물 ${b}` : `${x.mon}/${x.lab} · 없음`;
-        return `<div class="col" title="${esc(t)}">
-          ${b ? `<i style="height:${(b/max*100).toFixed(1)}%"></i>` : ''}
-          ${a ? `<i class="on" style="height:${(a/max*100).toFixed(1)}%"></i>` : ''}
-        </div>`;
-      }).join('')}
-    </div>
+    ${dzLine([{ name:'조건', v:dem }, { name:'매물', v:lst }])}
     <!-- 처음과 끝만 숫자이고 사이는 점이라 '어느 날 막대인지' 를 셀 수가 없었다(2026-10-15).
          날마다 날짜를 단다 - 휴대폰은 하루 걸러, 끝은 '오늘', 처음과 달이 바뀌는 날은 월도 함께. -->
     <!-- 월은 '보이는 첫 날짜' 와 '달이 바뀐 뒤 처음 보이는 날짜' 에 붙인다. 처음·1일에만 붙이면
@@ -8672,8 +8781,8 @@ function dashProg(){
   const appr = AG.rows ? AG.rows.filter(r=>r.status==='approved').length : null;
   const back = US.rows ? US.rows.filter(u=>u.last_sign_in_at &&
     new Date(u.last_sign_in_at) - new Date(u.created_at) > 6e4).length : null;
-  return `<div class="card pad" style="padding-top:16px;padding-bottom:16px">
-    <b style="display:block;font-size:13.5px;font-weight:700;color:var(--n900);letter-spacing:-.02em;margin-bottom:14px">처리 현황</b>
+  return `<div class="dz-card dz-prog">
+    <b class="dz-ct" style="display:block;margin-bottom:14px">처리 현황</b>
     <div class="prog">
       ${row('제안 보낸 조건', sent, OPS.rows ? OPS.rows.length : null, '', '전달 여부는 이 브라우저에만 남습니다')}
       ${row('승인한 공급자', appr, AG.rows && AG.rows.length, 'ok')}
@@ -8697,13 +8806,13 @@ const logWho = r => r.action === 'demand-edit' ? `손님 ${r.email || ''}`.trim(
   : r.email || r.who || (r.action === 'kakao-unlink' ? '카카오' : r.action === 'idv-reject' ? '본인확인 서버' : '');
 
 function dashRecent(){
-  if(LG.recent == null) return `<div class="card pad" style="padding-top:16px;padding-bottom:16px">
+  if(LG.recent == null) return `<div class="dz-card dz-recent">
     <b style="display:block;font-size:13.5px;font-weight:700;color:var(--n900);margin-bottom:12px">최근 움직임</b>
     ${[0,1,2,3].map(()=>`<span class="sk" style="height:14px;margin-bottom:10px"></span>`).join('')}</div>`;
   const rows = LG.recent.slice(0, 7);
-  return `<div class="card pad" style="padding-top:16px;padding-bottom:16px">
-    <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:12px">
-      <b style="font-size:13.5px;font-weight:700;color:var(--n900);letter-spacing:-.02em">최근 움직임</b>
+  return `<div class="dz-card dz-recent">
+    <div class="dz-chh">
+      <b class="dz-ct">최근 움직임</b>
       <button data-act="ops-tab" data-v="log"
         style="border:none;background:none;padding:14px 6px;margin:-14px -6px;color:var(--ind);font-size:12.5px;font-weight:700;cursor:pointer">전체 기록 →</button>
     </div>
@@ -8738,34 +8847,41 @@ function opsHomePanel(){
   const sig = [OPS.rows&&OPS.rows.length, AG.rows&&AG.rows.length, LS2.rows&&LS2.rows.length,
                US.rows&&US.rows.length, LG.recent&&LG.recent.length].join('|');
 
-  return `<div class="dash" id="opsDash" data-sig="${esc(sig)}">
-    <div class="needBar ${need.length?'hot':''}">
-      ${loading ? '' : `<span class="dot"></span>`}
-      ${loading ? bkLoader(22) : `<b>${need.length ? '지금 손이 필요한 일' : '지금 손댈 일은 없습니다'}</b>`}
-      ${need.map(x=>`<button class="go" data-act="ops-tab" data-v="${x.go}">
-        ${esc(x.t)} <span class="n">${x.n}</span></button>`).join('')}
-      ${!loading && !need.length ? `<span class="calm">가입 승인 · 신고 · 조건 전달이 모두 끝나 있습니다.</span>` : ''}
-      <span style="flex:1"></span>
-      <button class="go" data-act="ops-reload" style="border-color:var(--n200);color:var(--n700)">전체 새로고침</button>
-    </div>
+  /* 숫자 카드 - 지난 7일과 그 앞 7일을 견준 증감 알약, 아래에 14일 작은 선 */
+  const kp = (cap, rows, go, key, ico) => {
+    if(rows == null) return dzKpi({ ico, cap, v:null });
+    const vals = dashSeries(rows, days, 'created_at');
+    return dzKpi({ ico, cap, v: rows.length, act:'ops-tab', v2: go, pill: dzPill(dashDelta(vals).d),
+      sub:'지난 7일 · 그 앞 7일 대비', extra: dashSpark(vals, 'sp'+key) });
+  };
+  const 할일 = need.map(x => ({ t:x.t, s:'눌러서 그 목록으로', n:x.n, act:'ops-tab', v:x.go,
+    ico: x.go === 'member' ? 'users' : x.go === 'report' ? 'flag' : 'send' }));
 
-    <div class="row k4">
-      ${dashKpi({cap:'걸린 조건',   rows:OPS.rows, days, go:'demand',  key:'d'})}
-      ${dashKpi({cap:'공급자 신청', rows:AG.rows,  days, go:'member',  key:'a'})}
-      ${dashKpi({cap:'올라온 매물', rows:LS2.rows, days, go:'listing', key:'l'})}
-      ${dashKpi({cap:'손님 계정',   rows:US.rows,  days, go:'member',  key:'u'})}
+  return `<div class="dz-grid" id="opsDash" data-sig="${esc(sig)}">
+    <div class="dz-col">
+      <div class="dz-k4">
+        ${kp('걸린 조건',   OPS.rows, 'demand',  'd', 'list')}
+        ${kp('공급자 신청', AG.rows,  'member',  'a', 'users')}
+        ${kp('올라온 매물', LS2.rows, 'listing', 'l', 'building')}
+        ${kp('손님 계정',   US.rows,  'member',  'u', 'user')}
+      </div>
+      <div class="dz-r2">
+        <div class="dz-stack">
+          ${dzKpi({ ico:'flag', cap:'미확인 신고', v: todo, act:'ops-tab', v2:'report',
+              pill: todo ? '<span class="dz-pill dn">확인 필요</span>' : '' })}
+          ${dzKpi({ ico:'send', cap:'제안 안 보낸 조건', v: OPS.rows ? un : null, act:'ops-tab', v2:'demand',
+              pill: un ? '<span class="dz-pill dn">전달 필요</span>' : '' })}
+        </div>
+        ${dashFlow(days)}
+      </div>
+      ${dashRecent()}
+      <p class="dz-fine">손님 계정은 한 쪽(50개)까지만 세어 실제보다 적을 수 있습니다.
+        아직 못 받아온 값은 0 이 아니라 회색 띠로 둡니다 - 없는 것을 없다고 단정하지 않기 위해서입니다.</p>
     </div>
-
-    <div class="row k2">
-      ${dashFlow(days)}
+    <aside class="dz-aside">
       ${dashProg()}
-    </div>
-
-    ${dashRecent()}
-
-    <p style="margin:2px 0 0;font-size:12.5px;line-height:1.7;color:var(--n500)">
-      손님 계정은 한 쪽(50개)까지만 세어 실제보다 적을 수 있습니다.
-      아직 못 받아온 값은 0 이 아니라 회색 띠로 둡니다 - 없는 것을 없다고 단정하지 않기 위해서입니다.</p>
+      ${dzTodo(loading ? [] : 할일, loading ? '불러오는 중입니다…' : '가입 승인 · 신고 · 조건 전달이 모두 끝나 있습니다.')}
+    </aside>
   </div>`;
 }
 
@@ -8957,47 +9073,65 @@ function opsGateScreen(){
       지금 <b style="color:var(--n700)">${esc(S.user.email||S.user.name||'로그인됨')}</b> 으로 로그인해 계십니다.</p>`);
 }
 
+const OPS_ICO = { home:'home', stats:'chart', member:'users', demand:'list', listing:'building', report:'flag', log:'clock', setting:'gear' };
 V[OPS_HOME] = () => {
   if(!OPS.rows) return opsGateScreen();
 
   const tab = OPS.tab || 'home';
-  return `
+  const 메뉴 = OPS_MENU.map(m => m.g
+    ? `<span class="grp">${esc(m.g)}</span>`
+    : (()=>{ const c = m.n ? m.n() : null, here = tab===m.k;
+        const now = opsSubNow(m.k);
+        return `<button class="${here?'on':''}" data-act="ops-tab" data-v="${m.k}" ${here?'aria-current="page"':''}>
+          ${isMo() ? (m.subs?`<i class="car ${here?'open':''}"></i>`:'') : dzIco(OPS_ICO[m.k])}<span>${esc(m.t)}</span>
+          ${c!=null?`<span class="cnt">${c}</span>`:''}</button>
+        ${here && m.subs ? `<div class="opsSub">${m.subs.map(sb=>`
+          <button class="${now===sb.v?'on':''}" data-act="ops-sub" data-v="${m.k}|${sb.v}">${esc(sb.t)}</button>`).join('')}</div>` : ''}`;
+      })()).join('');
+  const 시험 = OPS.openUntil ? `<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+      margin-bottom:14px;padding:12px 16px;border-radius:var(--r-lg);
+      background:var(--warnbg);border:1px solid var(--warnline)">
+      <b style="font-size:13.5px;font-weight:700;color:var(--warn)">시험 기간 · 문이 열려 있습니다</b>
+      <span style="font-size:12.5px;line-height:1.6;color:var(--warn)">
+        ${esc(opsLinkWhen(OPS.openUntil))} 까지는 <b>로그인한 계정이면 누구나</b> 접근 암호만으로 들어옵니다.
+        그 뒤에는 서버가 스스로 닫습니다.${OPS.guest?' 지금 계정은 <b>운영자 명단 밖</b>입니다.':''}</span>
+    </div>` : '';
+  const 기준 = OPS.at ? `${esc(String(OPS.at).slice(0,16).replace('T',' '))} 기준` : '';
+  /* 대시보드는 인사말로 연다(시안). 다른 탭은 무엇을 보는지가 먼저다 */
+  const 머리 = tab === 'home' ? (() => { const { 인사, 날 } = dzHello(S.user && S.user.name);
+      return `<div class="dz-head"><div><h1 class="dz-h1">${esc(인사)}!</h1><p class="dz-date">${esc(날)} · 운영 대시보드</p></div>
+        <div class="dz-hr"><span>${기준}</span><button class="btn sec sm" data-act="ops-reload">전체 새로고침</button></div></div>`; })()
+    : `<div class="opsHead">
+        <div><span class="eyebrow">OPERATIONS</span>
+          <h1 class="t" style="font-size:${isMo()?21:25}px;margin-top:6px">${esc(OPS_TITLE[tab]||'운영 화면')}</h1></div>
+        <span style="font-size:12.5px;color:var(--n500)">${기준}</span>
+      </div>`;
+
+  /* 휴대폰 - 위 머리 + 가로로 미는 메뉴(지금 그대로) */
+  if(isMo()) return `
 <div class="scr fade" style="background:var(--n50)">
   <div class="nav solid pad opsPad"><a data-go="#/" style="flex:none">${logoLockup({h:25})}</a>
     <div class="items"><a class="on">운영</a></div>
     <div class="right"><a class="tapx" data-go="#/" style="font-size:13.5px;font-weight:600;color:var(--n700)">사이트로</a></div></div>
-  <div class="pad opsPad" style="flex:1;padding-top:${isMo()?16:24}px;padding-bottom:28px;width:100%">
+  <div class="pad opsPad" style="flex:1;padding-top:16px;padding-bottom:28px;width:100%">
     <div class="opsWrap">
-      <aside class="opsNav">
-        ${OPS_MENU.map(m => m.g
-          ? `<span class="grp">${esc(m.g)}</span>`
-          : (()=>{ const c = m.n ? m.n() : null, here = tab===m.k;
-              const now = opsSubNow(m.k);
-              return `<button class="${here?'on':''}" data-act="ops-tab" data-v="${m.k}">
-                ${m.subs?`<i class="car ${here?'open':''}"></i>`:''}${esc(m.t)}
-                ${c!=null?`<span class="cnt">${c}</span>`:''}</button>
-              ${here && m.subs ? `<div class="opsSub">${m.subs.map(sb=>`
-                <button class="${now===sb.v?'on':''}" data-act="ops-sub" data-v="${m.k}|${sb.v}">${esc(sb.t)}</button>`).join('')}</div>` : ''}`;
-            })()).join('')}
-      </aside>
-      <main style="min-width:0">
-        ${OPS.openUntil ? `<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;
-          margin-bottom:14px;padding:12px 16px;border-radius:var(--r-lg);
-          background:var(--warnbg);border:1px solid var(--warnline)">
-          <b style="font-size:13.5px;font-weight:700;color:var(--warn)">시험 기간 · 문이 열려 있습니다</b>
-          <span style="font-size:12.5px;line-height:1.6;color:var(--warn)">
-            ${esc(opsLinkWhen(OPS.openUntil))} 까지는 <b>로그인한 계정이면 누구나</b> 접근 암호만으로 들어옵니다.
-            그 뒤에는 서버가 스스로 닫습니다.${OPS.guest?' 지금 계정은 <b>운영자 명단 밖</b>입니다.':''}</span>
-        </div>` : ''}
-        <div class="opsHead">
-          <div><span class="eyebrow">OPERATIONS</span>
-            <h1 class="t" style="font-size:${isMo()?21:25}px;margin-top:6px">${esc(OPS_TITLE[tab]||'운영 화면')}</h1></div>
-          <span style="font-size:12.5px;color:var(--n500)">${OPS.at?`${esc(String(OPS.at).slice(0,16).replace('T',' '))} 기준`:''}</span>
-        </div>
-        ${opsPanel()}
-      </main>
+      <aside class="opsNav">${메뉴}</aside>
+      <main style="min-width:0">${시험}${머리}${opsPanel()}</main>
     </div>
   </div>
+</div>`;
+
+  return `
+<div class="scr fade dz-scr">
+  <aside class="dz-side opsSide" aria-label="운영 메뉴">
+    <a data-go="#/" class="dz-logo">${logoLockup({h:23, mode:'dark'})}<span class="dz-tag">운영</span></a>
+    <nav class="dz-menu">${메뉴}</nav>
+    <div class="dz-foot">
+      ${S.user ? `<span class="dz-office">${esc(S.user.email || S.user.name || '')}</span>` : ''}
+      <a data-go="#/">${dzIco('site')}<span>사이트로</span></a>
+    </div>
+  </aside>
+  <main class="pad dz-main">${시험}${머리}${opsPanel()}</main>
 </div>`;
 };
 
@@ -9485,6 +9619,202 @@ const 적는중 = () => {
   const a = document.activeElement;
   return !!(a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA') && a.closest && a.closest('#app'));
 };
+
+/* ══════════ 대시보드 틀 (2026-10-29 · 대표님 시안: 왼쪽 보라 세로 메뉴 · 인사말 · 아이콘 카드 · 선 그래프 · 오른쪽 할 일) ══════════
+   운영자·중개사 화면이 같은 틀을 쓴다. 넓은 화면(PC)에서만 왼쪽 메뉴를 세운다 - 휴대폰은 지금처럼
+   위 머리 + 아래 탭(중개사) / 가로로 미는 메뉴(운영자)다. 휴대폰에서 세로 메뉴는 화면 폭을 다 먹는다. */
+const DZ_ICO = {
+  home:'M4 11 L12 4 L20 11 M6.5 9.5 V19 h11 V9.5',
+  chart:'M4 19 V5 M4 19 H20 M8 15 l3.5 -4 3 2.5 L19 8',
+  users:'M9 11 a3.5 3.5 0 1 0 0 -7 a3.5 3.5 0 0 0 0 7 M2.5 20 c.8 -3.6 3.4 -5.5 6.5 -5.5 s5.7 1.9 6.5 5.5 M16 4.6 a3.3 3.3 0 0 1 0 6.3 M18.5 14.8 c1.6 .8 2.6 2.5 3 5.2',
+  list:'M8 6 h12 M8 12 h12 M8 18 h12 M4 6 h.01 M4 12 h.01 M4 18 h.01',
+  building:'M4 21 V6 l8 -3 v18 M12 21 h8 V10 l-8 -3 M7.5 9 v.01 M7.5 13 v.01 M7.5 17 v.01 M16 13 v.01 M16 17 v.01',
+  flag:'M5 21 V4 M5 4 h11 l-2 4 l2 4 H5',
+  clock:'M12 21 a9 9 0 1 0 0 -18 a9 9 0 0 0 0 18 M12 7 v5 l3.5 2',
+  gear:'M12 15.5 a3.5 3.5 0 1 0 0 -7 a3.5 3.5 0 0 0 0 7 M12 2 v3 M12 19 v3 M2 12 h3 M19 12 h3 M5 5 l2 2 M17 17 l2 2 M19 5 l-2 2 M7 17 l-2 2',
+  send:'M21 3 L10 14 M21 3 l-6.5 18 -4.5 -7 -7 -4.5 Z',
+  doc:'M6 3 h9 l4 4 v14 H6 Z M9 11 h7 M9 15 h7 M9 19 h4',
+  map:'M9 4 L3 6.5 V20 l6 -2.5 6 2.5 6 -2.5 V4 l-6 2.5 Z M9 4 v13.5 M15 6.5 V20',
+  user:'M12 12 a4 4 0 1 0 0 -8 a4 4 0 0 0 0 8 M4 21 c1 -4.2 4.2 -6.5 8 -6.5 s7 2.3 8 6.5',
+  out:'M15 4 h4 v16 h-4 M10 17 l5 -5 -5 -5 M15 12 H4',
+  site:'M12 21 a9 9 0 1 0 0 -18 a9 9 0 0 0 0 18 M3 12 h18 M12 3 c2.6 2.7 3.8 5.7 3.8 9 s-1.2 6.3 -3.8 9 c-2.6 -2.7 -3.8 -5.7 -3.8 -9 s1.2 -6.3 3.8 -9',
+  check:'M5 12.5 l4.5 4.5 L19 7.5',
+  eye:'M2.5 12 s3.5 -6.5 9.5 -6.5 9.5 6.5 9.5 6.5 -3.5 6.5 -9.5 6.5 S2.5 12 2.5 12 Z M12 14.5 a2.5 2.5 0 1 0 0 -5 a2.5 2.5 0 0 0 0 5',
+  link:'M10 14 a4 4 0 0 0 5.7 0 l3 -3 a4 4 0 0 0 -5.7 -5.7 l-1 1 M14 10 a4 4 0 0 0 -5.7 0 l-3 3 a4 4 0 0 0 5.7 5.7 l1 -1',
+};
+const dzIco = (k, s = 20) => `<svg class="dz-i" viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="currentColor"
+  stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${DZ_ICO[k] || DZ_ICO.list}"/></svg>`;
+
+/* 인사말 - 시간에 따라. 이름이 없으면 이름 없이 */
+function dzHello(name){
+  const h = new Date().getHours();
+  const 인사 = h < 5 ? '늦은 밤이에요' : h < 11 ? '좋은 아침이에요' : h < 17 ? '좋은 오후예요' : '좋은 저녁이에요';
+  const 날 = new Date().toLocaleDateString('ko-KR', { month:'long', day:'numeric', weekday:'long' });
+  return { 인사: name ? `${인사}, ${name}님` : 인사, 날 };
+}
+
+/* 증감 알약 - 색만으로 말하지 않는다(▲▼ 와 숫자를 함께) */
+const dzPill = (d, 단위 = '') => d > 0 ? `<span class="dz-pill up">▲ ${d}${단위}</span>`
+  : d < 0 ? `<span class="dz-pill dn">▼ ${-d}${단위}</span>` : `<span class="dz-pill">= 0${단위}</span>`;
+
+/* 숫자 카드 - 아이콘 · 큰 숫자 · 이름 · (증감) */
+function dzKpi(o){
+  const 속 = `
+    <span class="dz-kt"><span class="dz-ic">${dzIco(o.ico, 21)}</span>${o.pill || ''}</span>
+    ${o.v == null ? `<span class="sk" style="width:70px;height:30px;margin-top:14px"></span>`
+                  : `<b class="dz-big num">${typeof o.v === 'number' ? o.v.toLocaleString('ko-KR') : esc(String(o.v))}</b>`}
+    <span class="dz-lab">${esc(o.cap)}</span>
+    ${o.sub ? `<span class="dz-sub">${o.sub}</span>` : ''}${o.extra || ''}`;
+  return o.act || o.go
+    ? `<button type="button" class="dz-card dz-kpi" ${o.act ? `data-act="${o.act}" data-v="${esc(o.v2 || '')}"` : `data-go="${o.go}"`} aria-label="${esc(o.cap)} ${o.v == null ? '불러오는 중' : o.v}">${속}</button>`
+    : `<div class="dz-card dz-kpi">${속}</div>`;
+}
+
+/* 선 그래프 - 두 줄까지. 점과 점 사이를 부드럽게(Catmull-Rom → 베지어). 값이 모두 0 이면 바닥에 깐다 */
+function dzLine(series, w = 640, h = 180){
+  const all = series.flatMap(s => s.v), max = Math.max(1, ...all);
+  const n = Math.max(2, (series[0] || { v: [] }).v.length);
+  const x = i => 8 + i * (w - 16) / (n - 1), y = v => h - 14 - v / max * (h - 30);
+  /* 조절점의 높이는 두 점 사이로 묶는다 - 그대로 두면 0 과 2 사이에서 곡선이 바닥선 아래로 튀었다 */
+  const 사이 = (v, a, b) => Math.min(Math.max(a, b), Math.max(Math.min(a, b), v));
+  const 길 = v => { const p = v.map((t, i) => [x(i), y(t)]); let d = `M${p[0][0].toFixed(1)} ${p[0][1].toFixed(1)}`;
+    for(let i = 0; i < p.length - 1; i++){ const a = p[i - 1] || p[i], b = p[i], c = p[i + 1], e = p[i + 2] || c;
+      const y1 = 사이(b[1] + (c[1] - a[1]) / 6, b[1], c[1]), y2 = 사이(c[1] - (e[1] - b[1]) / 6, b[1], c[1]);
+      d += ` C${(b[0] + (c[0] - a[0]) / 6).toFixed(1)} ${y1.toFixed(1)} ${(c[0] - (e[0] - b[0]) / 6).toFixed(1)} ${y2.toFixed(1)} ${c[0].toFixed(1)} ${c[1].toFixed(1)}`; }
+    return d; };
+  const 눈금 = [...new Set([0, .5, 1].map(f => Math.round(max * f)))];
+  /* 세로 눈금 숫자는 HTML 로 단다 - SVG 를 늘려 그리므로 안에 글자를 넣으면 찌그러진다.
+     숫자가 없으면 1건 → 2건이 크게 뛴 것처럼 보였다 */
+  return `<div class="dz-lw"><div class="dz-yl" aria-hidden="true">${눈금.slice().reverse().map(v =>
+    `<span style="top:${(y(v) / h * 100).toFixed(1)}%">${v}</span>`).join('')}</div><svg class="dz-line" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" role="img" aria-label="${esc(series.map(s => `${s.name} ${s.v.reduce((a,b)=>a+b,0)}건`).join(', '))}">
+    ${눈금.map(v => `<line x1="0" x2="${w}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}" class="g"/>`).join('')}
+    ${series.map((s, k) => `<path d="${길(s.v)}" class="ln ${k ? 'b' : 'a'}"/>
+      <circle cx="${x(s.v.length - 1).toFixed(1)}" cy="${y(s.v[s.v.length - 1]).toFixed(1)}" r="4" class="pt ${k ? 'b' : 'a'}"/>`).join('')}
+  </svg></div>`;
+}
+
+/* 오른쪽 칸 - 할 일 목록과 상태 카드 */
+function dzTodo(items, 빈말){
+  return `<div class="dz-card dz-todo"><b class="dz-ct">할 일</b>
+    ${items.length ? items.map(t => `<button type="button" class="dz-ti" ${t.act ? `data-act="${t.act}" data-v="${esc(t.v || '')}"` : `data-go="${t.go}"`}>
+      <span class="dz-tic">${dzIco(t.ico || 'check', 18)}</span>
+      <span class="dz-tt"><b>${esc(t.t)}</b><span>${esc(t.s || '')}</span></span>
+      ${t.n != null ? `<span class="dz-tn num">${t.n}</span>` : ''}</button>`).join('')
+    : `<p class="dz-calm">${esc(빈말 || '지금 손댈 일은 없습니다.')}</p>`}</div>`;
+}
+function dzStatus(o){
+  return `<div class="dz-card dz-status">
+    <b class="dz-ct">${esc(o.t)}</b><span class="dz-st">${esc(o.state)}</span>
+    <div class="dz-trk"><i style="width:${Math.max(0, Math.min(100, o.pct))}%"></i></div>
+    ${o.note ? `<p class="dz-sn">${o.note}</p>` : ''}
+    ${o.btn ? `<button type="button" class="btn pri blk" ${o.act ? `data-act="${o.act}" data-v="${esc(o.v || '')}"` : `data-go="${o.go}"`}>${esc(o.btn)}</button>` : ''}
+  </div>`;
+}
+
+/* ── 중개사 왼쪽 메뉴 (PC) ── navPartner 가 넓은 화면에서 이것을 낸다 */
+function 파트너옆(active){
+  const own = ownerSide();
+  const 항목 = [
+    ['#/partner/home', '대시보드', 'home', 'h'],
+    ['#/partner/demands', own ? '맞는 손님' : '수요 목록', 'users', 'd'],
+    ['#/partner/listings', '내 물건', 'building', 'l'],
+    ['#/partner/proposals', '내 제안', 'send', 'p'],
+    ...(own ? [] : [['#/partner/contracts', '계약서', 'doc', 'ct']]),
+    ['#/partner/stats', '성과', 'chart', 'st'],
+    ...(own ? [] : [['#/partner/settings', '활동 설정', 'map', 's']]),
+  ];
+  return `<aside class="dz-side psb" aria-label="파트너 메뉴">
+    <a data-go="#/partner/home" class="dz-logo">${logoLockup({h:23, partner:true, mode:'dark'})}</a>
+    <nav class="dz-menu">${항목.map(([h, t, i, k]) =>
+      `<a data-go="${h}" class="${active===k?'on':''}" ${active===k?'aria-current="page"':''}>${dzIco(i)}<span>${t}</span></a>`).join('')}</nav>
+    <div class="dz-foot">
+      ${S.agent && S.agent.office ? `<span class="dz-office">${esc(S.agent.office)}</span>` : ''}
+      ${S.user ? `<a data-go="#/partner/settings">${dzIco('user')}<span>내 정보</span></a>
+        <a data-act="logout">${dzIco('out')}<span>로그아웃</span></a>` : ''}
+      <a data-go="#/">${dzIco('site')}<span>사이트로</span></a>
+    </div>
+  </aside>
+  <div class="ptop">${agentBadge()}${S.user ? '' : navAuth('partner')}</div>`;
+}
+
+/* ── 중개사 대시보드 ── */
+V['#/partner/home'] = () => {
+  const 이름 = (S.agent && S.agent.name) || (S.user && S.user.name) || '';
+  const { 인사, 날 } = dzHello(이름);
+  const props = S.myprops || [], 수요 = S.demands || [], 물건 = S.listings || [];
+  const 진짜 = props.filter(p => !p.seed);
+  const 열람 = 진짜.filter(p => ['viewed','selected'].includes(p.status)).length;
+  const 연결 = 진짜.filter(p => p.status === 'selected');
+  const 안읽힘 = 진짜.filter(p => p.status === 'sent').length;
+  const 계약 = CT.list || [];
+  const 작성중 = 계약.filter(r => r.status === 'draft').length, 날인 = 계약.filter(r => r.status === 'sealed').length;
+  const 계약없는연결 = 연결.filter(p => !계약.some(r => r.proposal_id === p.id)).length;
+
+  /* 최근 14일 보낸 제안 · 열람 - 날마다 센다 */
+  const 오늘 = new Date(); 오늘.setHours(0,0,0,0);
+  const days = Array.from({ length: 14 }, (_, i) => { const d = new Date(오늘); d.setDate(d.getDate() - 13 + i);
+    return { t: d.getTime(), mon: d.getMonth() + 1, lab: String(d.getDate()) }; });
+  const 날짜칸 = iso => { if(!iso) return -1; const d = new Date(iso); d.setHours(0,0,0,0); return days.findIndex(x => x.t === d.getTime()); };
+  const 보냄 = days.map(() => 0), 열림 = days.map(() => 0);
+  진짜.forEach(p => { const i = 날짜칸(p.createdAt); if(i >= 0){ 보냄[i]++; if(['viewed','selected'].includes(p.status)) 열림[i]++; } });
+  const 앞7 = 보냄.slice(0, 7).reduce((a,b)=>a+b,0), 뒤7 = 보냄.slice(7).reduce((a,b)=>a+b,0);
+
+  const 할일 = [
+    !S.agent || S.agent.status !== 'approved' ? { t:'자격 확인 마치기', s:'등록번호를 확인하면 손님 조건 전문이 열립니다', ico:'check', go:'#/partner/verify' } : null,
+    안읽힘 ? { t:'아직 안 열린 제안', s:'손님이 보기 전입니다 - 조건을 다시 보세요', n:안읽힘, ico:'eye', go:'#/partner/proposals' } : null,
+    계약없는연결 ? { t:'연결된 손님 계약서', s:'연결됐는데 계약서를 아직 안 만들었습니다', n:계약없는연결, ico:'doc', go:'#/partner/proposals' } : null,
+    작성중 ? { t:'작성 중인 계약서', s:'날인받았으면 날인본으로 확정하세요', n:작성중, ico:'doc', go:'#/partner/contracts' } : null,
+    !물건.length ? { t:'물건 올려두기', s:'올려두면 맞는 손님과 바로 대조합니다', ico:'building', go:'#/partner/listing/new' } : null,
+  ].filter(Boolean);
+  const 승인 = S.agent && S.agent.status === 'approved';
+
+  return `
+<div class="scr fade dz-scr">
+  ${navPartner('h')}
+  <div class="pad dz-main">
+    <div class="dz-head"><div><h1 class="dz-h1">${esc(인사)}!</h1><p class="dz-date">${esc(날)}</p></div></div>
+    <div class="dz-grid">
+      <div class="dz-col">
+        <div class="dz-k4">
+          ${dzKpi({ ico:'users', cap: ownerSide() ? '맞는 손님' : '내 지역에 걸린 조건', v: S.feedAt ? 수요.length : null, go:'#/partner/demands' })}
+          ${dzKpi({ ico:'send', cap:'보낸 제안', v: 진짜.length, go:'#/partner/proposals', pill: dzPill(뒤7 - 앞7), sub:'지난 7일 · 그 앞 7일 대비' })}
+          ${dzKpi({ ico:'link', cap:'연결된 손님', v: 연결.length, go:'#/partner/proposals', sub: 진짜.length ? `열람 ${열람}건` : '' })}
+          ${ownerSide() ? dzKpi({ ico:'building', cap:'올려둔 물건', v: 물건.length, go:'#/partner/listings' })
+            : dzKpi({ ico:'doc', cap:'계약서', v: CT.list ? 계약.length : null, go:'#/partner/contracts', sub: CT.list ? `날인본 ${날인} · 작성 중 ${작성중}` : '' })}
+        </div>
+        <div class="dz-r2">
+          <div class="dz-stack">
+            ${dzKpi({ ico:'building', cap:'올려둔 물건', v: 물건.length, go:'#/partner/listings', sub:'맞는 손님과 늘 대조합니다' })}
+            ${dzKpi({ ico:'eye', cap:'열람률', v: 진짜.length ? `${Math.round(열람 / 진짜.length * 100)}%` : '-', go:'#/partner/stats', sub:'보낸 제안 중 손님이 연 비율' })}
+          </div>
+          <div class="dz-card dz-chart">
+            <div class="dz-chh"><b class="dz-ct">제안 흐름</b><span class="dz-leg"><i class="a"></i>보낸 제안 ${보냄.reduce((a,b)=>a+b,0)}<i class="b"></i>열람 ${열림.reduce((a,b)=>a+b,0)}</span><span class="dz-cs">최근 14일</span></div>
+            ${dzLine([{ name:'보낸 제안', v:보냄 }, { name:'열람', v:열림 }])}
+            <div class="axis">${days.map((x, i) => `<span>${i === 13 ? '오늘' : i === 0 || x.lab === '1' ? `${x.mon}/${x.lab}` : (i % 2 ? '' : x.lab)}</span>`).join('')}</div>
+          </div>
+        </div>
+        <div class="dz-card dz-recent">
+          <div class="dz-chh"><b class="dz-ct">새로 걸린 조건</b><a class="dz-more" data-go="#/partner/demands">전체 보기 →</a></div>
+          ${수요.length ? 수요.slice(0, 6).map(d => `<a class="dz-row" data-go="#/partner/demand/${esc(d.id)}">
+            <span class="dz-av">${dzIco(NONHOME(d.kind) ? 'building' : 'home', 18)}</span>
+            <span class="dz-rt"><b>${esc(d.region)}</b><span>${esc(d.deal || '')} · ${esc((d.lines || [])[0] || '')}</span></span>
+            <span class="dz-rw">${esc(d.at || '')}</span></a>`).join('')
+          : `<p class="dz-calm">${!S.feedAt ? '불러오는 중입니다…' : '아직 내 지역에 걸린 조건이 없습니다. 활동 지역을 넓히면 더 보입니다.'}</p>`}
+        </div>
+      </div>
+      <aside class="dz-aside">
+        ${dzStatus(승인
+          ? { t:'자격 확인', state:'확인 완료', pct:100, note:'손님 조건 전문과 연락 연결을 모두 쓸 수 있습니다.' }
+          : { t:'자격 확인', state: S.agent ? '확인 중' : '가입 전', pct: S.agent ? 55 : 10,
+              note:'등록번호를 공공데이터로 확인하면 손님 조건 전문이 열립니다.', btn:'자격 확인하기', go:'#/partner/verify' })}
+        ${dzTodo(할일, '지금 손댈 일은 없습니다. 새 조건이 오면 알려 드립니다.')}
+      </aside>
+    </div>
+  </div>
+  ${tabbar('h','p')}
+</div>`;
+};
+
 /* ══════════ 계약서 (2026-10-29) ══════════
    중개사가 양식을 골라 고치고, 기본 정보를 채워 바로 **인쇄**한다. 만나서 수기·날인하는 것이
    지금 현실이라 전자서명은 하지 않는다(대표님 10/29). 날인받은 판은 '날인본' 으로 확정해 잠근다 -
@@ -9706,7 +10036,7 @@ function ctLoadList(force){
     CT.need = j.need || '';
     CT.err = ok ? '' : (j.error || '목록을 불러오지 못했습니다');
     CT.list = ok ? (j.rows || []) : [];
-    if(S.route === '#/partner/contracts' || S.route.startsWith('#/partner/contract/')) render();
+    if(S.route === '#/partner/contracts' || S.route === '#/partner/home' || S.route.startsWith('#/partner/contract/')) render();
   }).catch(() => { CT.loading = false; CT.list = []; CT.err = '네트워크 문제로 불러오지 못했습니다'; render(); });
 }
 function ctOpen(id){
@@ -10828,6 +11158,8 @@ function render(){
      한글 조합이 깨진다. 동의 전 계정도 부르지 않는다(거절 답이 '불러오지 못했다' 로 남는다). */
   else if(S.user && !consentNeeded() && BADGE_ROUTES.includes(h)) loadMine(false);
   if(h==='#/partner/demands' || h.startsWith('#/partner/demand/')) loadFeed(false);
+  /* 중개사 대시보드는 한 화면에서 다 보여준다 - 수요·내 제안·내 물건·계약서를 함께 받는다 */
+  if(h==='#/partner/home'){ loadFeed(false); loadMyProps(false); loadListings(false); ctLoadList(); }
   /* '#/partner' 는 누구나 여는 안내 화면이고 내 제안·내 물건을 쓰지 않는다 (2026-10-09).
      거기서 부르면 로그인한 손님 계정도 방문마다 /api/feed 를 두 번 부르고 403 을 받았다. */
   if(h==='#/partner/proposals' || h==='#/partner/stats') loadMyProps(false);

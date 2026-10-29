@@ -407,8 +407,11 @@ ok(/\$\{partnerDoor\('onDark'\)\}/.test(js), '첫 화면 파트너 칸이 그 �
   const 몸 = js.match(/function navPartner\(active, 탭있음 = true\)\{[\s\S]*?\n<\/div>`;\}/);
   ok(!!몸, 'navPartner 를 찾았다');
   if(몸){
+    /* 넓은 화면은 왼쪽 세로 메뉴(파트너옆, 2026-10-29)를 낸다 - 그 함수와 아이콘도 함께 꺼낸다 */
+    const 아이콘 = js.slice(js.indexOf('const DZ_ICO = {'), js.indexOf('/* 인사말 - 시간에 따라'));
+    const 옆 = js.slice(js.indexOf('function 파트너옆(active){'), js.indexOf('/* ── 중개사 대시보드 ── */'));
     const 그려 = (mo, 탭 = true) => new Function('isMo', 'S', 'ownerSide', 'logoLockup', 'agentBadge', 'esc', 'navAuth', '탭',
-      `${몸[0]}; return navPartner('d', 탭);`)(() => mo,
+      `${아이콘}\n${옆}\n${몸[0]}; return navPartner('d', 탭);`)(() => mo,
       { user: { id: 'u' }, agent: { office: '하남미사부동산', status: 'approved' } },
       () => false, () => '', () => '<span class="badge">인증됨</span>', s => s, () => '', 탭);
     const 폰 = 그려(true), 큰 = 그려(false), 탭없는폰 = 그려(true, false);

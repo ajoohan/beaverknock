@@ -226,7 +226,9 @@ body.mo .back::after{content:"";position:absolute;left:0;right:0;top:-9px;bottom
 /* 크기는 아래 '버튼 크기는 셋뿐이다' 에서 한 번에 정한다 - 여기 두면 두 곳이 된다 */
 /* 꺼진 버튼도 '무엇이 켜질지' 는 읽혀야 한다. #C9C4BB 는 이 바탕에서 1.49:1 -
    눌리지 않는 것이 아니라 아예 안 보였다. 3.3:1 로 올린다. */
-.btn[disabled]{background:var(--n100)!important;color:var(--off)!important;box-shadow:none!important;cursor:not-allowed;border-color:var(--n100)!important}
+.btn.tool{background:var(--white);border-color:var(--n300);color:var(--n900)}
+.btn.tool:hover{background:var(--ind50);border-color:var(--ind300);color:var(--ind700)}
+.btn[disabled]{background:var(--n100)!important;color:var(--n500)!important;box-shadow:none!important;cursor:not-allowed;border-color:var(--n100)!important}
 
 .chip{border:1.5px solid var(--edge);background:var(--white);color:var(--n700);border-radius:var(--r-full);
   padding:10px 16px;font-size:13.5px;transition:all .12s}
@@ -1707,6 +1709,70 @@ body.mo .rp-l{grid-column:1/-1}
 .ctdoc td.sign{height:34px}
 .ctdoc .ct-foot{margin-top:10px;font-size:8.5pt;color:#666}
 .ctdoc tr,.ctdoc .ct-art{break-inside:avoid}
+/* ── PC 작성 화면 - 입력 판 | 책상 위 A4 (2026-10-29, Lounge 계약서 구성) ── */
+.ctx-scr .ptop{padding:8px 16px 0;min-height:32px}
+.ctx{display:flex;flex-direction:column;gap:8px;height:calc(100vh - 40px);min-height:560px;padding:0 16px 12px;box-sizing:border-box}
+.ctx-head{display:flex;align-items:center;gap:6px 12px;flex-wrap:wrap;margin-top:-28px;padding-right:120px}
+.ctx-h1{margin:0;font-size:20px;font-weight:800;letter-spacing:-.03em;color:var(--n900)}
+.ctx-sub{font-size:12.5px;color:var(--n500)}
+.ctx-body{flex:1 1 auto;min-height:0;display:grid;grid-template-columns:minmax(420px,500px) minmax(0,1fr);gap:12px}
+.ctx-side,.ctx-view{min-height:0;display:flex;flex-direction:column;background:var(--white);border:1px solid var(--n200);border-radius:12px;box-shadow:var(--sh0);overflow:hidden}
+.ctx-tabs{display:flex;gap:4px;margin:8px 12px 0;padding:3px;border-radius:10px;background:var(--n100)}
+.ctx-tabs button{flex:1;min-height:30px;border:none;border-radius:8px;background:transparent;font:inherit;font-size:13px;font-weight:700;color:var(--n700);cursor:pointer}
+.ctx-tabs button.on{background:var(--white);color:var(--ind700);box-shadow:var(--sh0)}
+.ctx-scroll{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:0 14px}
+/* 입력 판 안에서는 카드를 쌓지 않는다 - 구획은 가는 선으로, 위아래 같은 박자 */
+.ctx-side .ct-sec{padding:10px 0;gap:6px;background:none;border:0;border-radius:0;box-shadow:none}
+.ctx-side .ct-sec + .ct-sec{border-top:1px solid var(--n100)}
+.ctx-side .ct-sec h2{font-size:13.5px}
+.ctx-side .ct-sec h2 .sub{font-size:11.5px!important}
+.ctx-side .ct-grid{grid-template-columns:repeat(12,minmax(0,1fr));gap:6px 8px}
+.ctx-side .ct-grid > .ct-f{grid-column:span 6}
+.ctx-side .ct-grid > .w2{grid-column:span 2} .ctx-side .ct-grid > .w3{grid-column:span 3} .ctx-side .ct-grid > .w4{grid-column:span 4}
+.ctx-side .ct-grid > .w5{grid-column:span 5} .ctx-side .ct-grid > .w6{grid-column:span 6} .ctx-side .ct-grid > :is(.w12,.wide,.ex-pick,.ex-enote,p){grid-column:1/-1}
+/* 확인·설명서 - 항목 이름 | 입력 두 단(세로로 길어지지 않게) */
+.ctx-side .ex-row{display:grid;grid-template-columns:96px minmax(0,1fr);gap:4px 10px;padding:6px 0;align-items:start}
+.ctx-side .ex-row > .ct-grid:only-child{grid-column:1/-1}
+.ctx-side .ex-rl{font-size:12px;line-height:1.45;padding-top:6px;word-break:keep-all}
+.ctx-side .ex-pick{gap:4px}
+.ctx-side .ex-enote{font-size:11.5px;line-height:1.5}
+.ctx-side .ex-eg{margin:12px 0 0;font-size:14.5px}
+.ctx-side .ct-sec > .sub{font-size:12px}
+.ctx-side .ct-f{gap:2px}
+.ctx-side .lab{font-size:11.5px;line-height:1.4}
+.ctx-side .ct-f .lab{font-size:11.5px;font-weight:600;color:var(--n700);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ctx-side .inp{min-height:32px;height:32px;padding:0 8px;font-size:13px;border-radius:7px;min-width:0;width:100%;box-sizing:border-box;background:var(--white)}
+.ctx-side .inp:not(:placeholder-shown){background:var(--white)}
+.ctx-side .inp:disabled{background:var(--n50);color:var(--n700)}
+.ctx-side .btn.sm{min-height:32px;padding:0 12px;font-size:12.5px}
+.ctx-side textarea.inp{height:auto;padding:6px 8px;line-height:1.55;font-size:12.5px}
+.ctx-side input[type=date].inp{padding-right:4px}
+.ctx-side .ct-won{font-size:11.5px;min-height:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ctx-side .ct-clause{padding:6px 0;gap:4px}
+.ctx-side .ct-clause label{font-size:13px!important}
+.ctx-side .ct-addr{padding:6px 10px;gap:1px}
+.ctx-side .ct-addr b{font-size:13.5px}
+.ctx-side .ct-addr button{margin-top:0}
+.ctx-side .chip{min-height:28px;padding:0 10px;font-size:12.5px}
+.ctx-side .chips,.ctx-side .ct-lib{gap:6px}
+.ctx-side > .ctx-scroll > .tapx{margin:4px 0 16px}
+.ctx-act{display:flex;align-items:center;gap:8px;padding:8px 12px;border-top:1px solid var(--n200);background:var(--white)}
+.ctx-st{flex:1 1 auto;min-width:0;font-size:12.5px;font-weight:600;color:var(--n500);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ctx-st.warn{color:var(--warn)} .ctx-st.ok{color:var(--ok)}
+.ctx-btns{display:flex;gap:8px;flex:none}
+.ctx-vh{display:flex;align-items:center;gap:6px 10px;flex-wrap:wrap;min-height:46px;padding:6px 12px;border-bottom:1px solid var(--n200)}
+.ctx-vh b{font-size:14px;color:var(--n900)}
+.ctx-vn{font-size:12px;color:var(--n500)}
+.ctx-tools{display:flex;gap:8px;margin-left:auto}
+.ctx-desk{flex:1 1 auto;min-height:0;overflow:auto;padding:16px;background:var(--n100)}
+.ctx-desk .ct-sheet{margin:0 auto;box-shadow:0 1px 2px rgba(29,28,42,.08),0 8px 24px -12px rgba(29,28,42,.25)}
+/* 좁은 데스크톱 - 두 단이 비좁으면 위아래로(판은 제 키대로, 미리보기는 아래) */
+@media (max-width:1099px){
+  .ctx{height:auto}
+  .ctx-body{grid-template-columns:minmax(0,1fr)}
+  .ctx-scroll{overflow:visible}
+  .ctx-desk{max-height:80vh}
+}
 #ctPrint{display:none}
 @media print{
   @page{size:A4;margin:14mm 13mm}
@@ -1717,31 +1783,31 @@ body.mo .rp-l{grid-column:1/-1}
 
 /* ── 대시보드 틀 (2026-10-29 대표님 시안) ── 넓은 화면만. 휴대폰은 위 머리 + 아래 탭 */
 :root{--dzbg:#F3F3FA;--dzside:var(--ind);--dzsh:0 14px 34px -20px rgba(36,32,110,.30)}
-body:not(.mo) .dz-scr, body:not(.mo) .scr:has(> .psb){display:grid;grid-template-columns:256px minmax(0,1fr);
+body:not(.mo) .dz-scr, body:not(.mo) .scr:has(> .psb){display:grid;grid-template-columns:200px minmax(0,1fr);
   grid-auto-rows:min-content;align-items:start;background:var(--dzbg)!important;min-height:100%}
 body:not(.mo) .dz-scr > :not(.dz-side), body:not(.mo) .scr:has(> .psb) > :not(.psb){grid-column:2;min-width:0}
-.dz-side{grid-column:1;grid-row:1 / span 60;position:sticky;top:16px;margin:16px 0 16px 16px;height:calc(100vh - 32px);
-  display:flex;flex-direction:column;gap:2px;padding:22px 14px 16px;border-radius:26px;background:var(--dzside);color:#fff;
+.dz-side{grid-column:1;grid-row:1 / span 60;position:sticky;top:12px;margin:12px 0 12px 12px;height:calc(100vh - 24px);
+  display:flex;flex-direction:column;gap:2px;padding:18px 8px 12px;border-radius:22px;background:var(--dzside);color:#fff;
   overflow-y:auto;box-shadow:0 22px 44px -26px rgba(36,32,110,.55)}
-.dz-logo{display:flex;align-items:center;gap:8px;padding:2px 10px 22px}
+.dz-logo{display:flex;align-items:center;gap:8px;padding:2px 8px 18px}
 .dz-tag{font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;background:rgba(255,255,255,.18)}
 .dz-menu{display:flex;flex-direction:column;gap:3px}
-.dz-side .grp{display:block;padding:14px 12px 6px;font-size:12px;font-weight:700;letter-spacing:.06em;color:rgba(255,255,255,.62)}
-.dz-menu > a, .dz-menu > button, .dz-foot > a{display:flex;align-items:center;gap:12px;width:100%;min-height:44px;padding:10px 12px;
-  border:none;border-radius:14px;background:transparent;color:rgba(255,255,255,.86);font:inherit;font-size:14px;font-weight:600;
+.dz-side .grp{display:block;padding:14px 10px 6px;font-size:12px;font-weight:700;letter-spacing:.06em;color:rgba(255,255,255,.8)}
+.dz-menu > a, .dz-menu > button, .dz-foot > a{display:flex;align-items:center;gap:10px;width:100%;min-height:42px;padding:9px 10px;
+  border:none;border-radius:12px;background:transparent;color:rgba(255,255,255,.9);font:inherit;font-size:13.5px;font-weight:600;
   text-align:left;cursor:pointer;transition:background var(--t-fast) ease,color var(--t-fast) ease}
 .dz-menu > a:hover, .dz-menu > button:hover, .dz-foot > a:hover{background:rgba(255,255,255,.12);color:#fff}
 .dz-menu > a.on, .dz-menu > button.on{background:#fff;color:var(--ind);font-weight:700;box-shadow:0 8px 18px -10px rgba(20,18,60,.45)}
 .dz-menu .cnt{margin-left:auto;min-width:24px;padding:1px 8px;border-radius:999px;font-size:12px;font-weight:700;text-align:center;
   background:rgba(255,255,255,.18);color:#fff;font-variant-numeric:tabular-nums}
 .dz-menu .on .cnt{background:var(--ind50);color:var(--ind)}
-.dz-menu .opsSub{display:flex;flex-direction:column;gap:2px;margin:2px 0 6px 22px;padding-left:10px;border-left:1px solid rgba(255,255,255,.25)}
+.dz-menu .opsSub{display:flex;flex-direction:column;gap:2px;margin:2px 0 6px 16px;padding-left:8px;border-left:1px solid rgba(255,255,255,.25)}
 .dz-menu .opsSub button{min-height:40px;padding:8px 10px;border:none;border-radius:10px;background:transparent;color:rgba(255,255,255,.78);
   font:inherit;font-size:13px;font-weight:600;text-align:left;cursor:pointer}
 .dz-menu .opsSub button:hover{background:rgba(255,255,255,.12);color:#fff}
 .dz-menu .opsSub button.on{background:rgba(255,255,255,.2);color:#fff;font-weight:700}
 .dz-foot{margin-top:auto;display:flex;flex-direction:column;gap:2px;padding-top:14px;border-top:1px solid rgba(255,255,255,.2)}
-.dz-office{display:block;padding:4px 12px 8px;font-size:12.5px;font-weight:600;color:rgba(255,255,255,.72);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dz-office{display:block;padding:4px 10px 8px;font-size:12.5px;font-weight:600;color:rgba(255,255,255,.85);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .dz-side :focus-visible{outline:2px solid #fff;outline-offset:2px}
 .ptop{display:flex;justify-content:flex-end;align-items:center;gap:12px;padding:20px 28px 0;min-height:44px}
 .dz-main{padding-top:26px!important;padding-bottom:32px!important;width:100%;max-width:1320px}
@@ -10245,7 +10311,9 @@ const ctIn = (path, label, opt = {}) => {
   const 잠김 = CT.row && CT.row.status === 'sealed';
   const money = opt.money;
   const val = money ? ((+v||0) ? comma(String(+v)) : '') : (v ?? '');
-  return `<label class="ct-f${opt.wide?' wide':''}"><span class="lab">${label}</span>
+  /* w: PC 입력 판(12칸 격자)에서 차지하는 칸 수 - 값 길이만큼만 준다(날짜·면적은 좁게, 주소는 한 줄) */
+  const w = opt.w || (opt.wide ? 12 : money || opt.type === 'date' ? 4 : 6);
+  return `<label class="ct-f${opt.wide?' wide':''} w${w}"><span class="lab">${label}</span>
     <input class="inp" ${money?'inputmode="numeric"':''} type="${opt.type||'text'}" data-in="${money?'ct$':'ct'}:${path}"
       value="${esc(String(val))}" ${opt.ph?`placeholder="${esc(opt.ph)}"`:''} ${잠김?'disabled':''} autocomplete="off">
     ${money ? `<span class="ct-won" data-ctwon="${path}">${esc(한글금액(v) ? `금 ${한글금액(v)}원정` : '')}</span>` : ''}</label>`;
@@ -10265,6 +10333,19 @@ V['#/partner/contract'] = (id) => {
   const [aKey, aKo] = F.a || [], [bKey, bKo] = F.b || [];   /* 확인·설명서에는 없다 */
   const 잠김 = CT.row && CT.row.status === 'sealed';
   const 미리 = CT.mode === 'preview';
+  /* PC - 입력 판 | 미리보기 (Lounge 계약서 구성). 미리보기 단추 없이 늘 보인다 */
+  if(!isMo()){
+    const 신고면 = CT.mode === 'report' && ['sale','home-lease'].includes(doc.form);
+    const 판 = 신고면 ? ctReportSide(doc) : F.explain ? exEditor(doc) : ctFormHTML(doc);
+    /* 다시 그려도 판·책상의 스크롤 자리를 지킨다(칩 하나 눌렀다고 맨 위로 튀지 않게) */
+    const 키 = (CT.id || 'new') + '|' + CT.mode, 앞판 = document.querySelector('#app .ctx-scroll'), 앞책상 = document.getElementById('ctDesk');
+    const 자리 = CT.스크롤키 === 키 ? [앞판 ? 앞판.scrollTop : 0, 앞책상 ? 앞책상.scrollTop : 0] : [0, 0];
+    CT.스크롤키 = 키;
+    /* render 가 화면을 바꾼 직후에 돈다(가려진 창에서는 requestAnimationFrame 이 멈춰 있을 수 있다) */
+    setTimeout(() => { ctFit(); const p = document.querySelector('#app .ctx-scroll'), d = document.getElementById('ctDesk');
+      if(p) p.scrollTop = 자리[0]; if(d) d.scrollTop = 자리[1]; });
+    return ctDeskShell(doc, 판, 신고면);
+  }
   const bar = `
     <div class="ct-bar noprint">
       <a class="back" data-go="#/partner/contracts">← 계약서 목록</a>
@@ -10315,6 +10396,26 @@ V['#/partner/contract'] = (id) => {
          <button class="btn pri" data-act="ct-reported" data-v="on" style="align-self:flex-start">신고 마침으로 표시</button>`}</div>` : ''}
   </div>
 </div>`;
+  return `
+<div class="scr fade" style="background:var(--n50)">
+  ${navPartner('ct', false)}
+  <div class="pad" style="flex:1;padding-top:16px;padding-bottom:32px;width:100%;max-width:880px;margin:0 auto;display:flex;flex-direction:column;gap:14px">
+    ${bar}
+    <h1 class="t" style="font-size:${isMo()?20:24}px">${esc(F.ko)}</h1>
+    <p class="sub measure" style="margin-top:-6px">비워 둔 칸은 인쇄할 때 밑줄 빈칸으로 나갑니다. 주민등록번호·계좌번호는 여기에 적지 마세요 - 만나서 손으로 적습니다.</p>
+    ${ctFormHTML(doc)}
+  </div>
+</div>`;
+};
+
+/* 계약서 입력 구획 - 휴대폰(카드를 쌓는다)과 PC 입력 판(가는 선으로 나눈 한 판)이 같은 표를 쓴다.
+   PC 는 12칸 격자에 칸마다 값 길이만큼의 폭(w)을 준다 - 날짜·면적은 좁게, 주소·조항은 한 줄 */
+function ctFormHTML(doc){
+  const D = doc.deal, P = doc.property;
+  const F = CT_FORMS[doc.form] || CT_FORMS['home-lease'];
+  const 상가 = doc.form === 'shop-lease', 매매 = !F.lease;
+  const [aKey, aKo] = F.a || [], [bKey, bKo] = F.b || [];
+  const 잠김 = CT.row && CT.row.status === 'sealed';
   const 조항 = doc.clauses.map((c, i) => `
     <div class="ct-clause ${c.on?'':'off'}">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
@@ -10328,15 +10429,9 @@ V['#/partner/contract'] = (id) => {
     <div class="ct-clause"><div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:13.5px">${i+1}.</b>
       ${잠김?'':`<button class="tapx" data-act="ct-sp-del" data-v="${i}" style="font-size:12.5px;color:var(--danger)">빼기</button>`}</div>
       <textarea class="inp" rows="3" data-in="cts:${i}" ${잠김?'disabled':''}>${esc(s)}</textarea></div>`).join('');
-
+  const 사람 = (k, ko) => ctIn(`parties.${k}.name`,`${ko} 성명`,{w:3}) + ctIn(`parties.${k}.phone`,`${ko} 전화`,{w:3,ph:'010-0000-0000'})
+    + ctIn(`parties.${k}.addr`,`${ko} 주소`,{w:6});
   return `
-<div class="scr fade" style="background:var(--n50)">
-  ${navPartner('ct', false)}
-  <div class="pad" style="flex:1;padding-top:16px;padding-bottom:32px;width:100%;max-width:880px;margin:0 auto;display:flex;flex-direction:column;gap:14px">
-    ${bar}
-    <h1 class="t" style="font-size:${isMo()?20:24}px">${esc(F.ko)}</h1>
-    <p class="sub measure" style="margin-top:-6px">비워 둔 칸은 인쇄할 때 밑줄 빈칸으로 나갑니다. 주민등록번호·계좌번호는 여기에 적지 마세요 - 만나서 손으로 적습니다.</p>
-
     ${F.lease ? `<div class="card pad ct-sec"><h2>계약 종류</h2>
       ${chipsHTML(Object.values(CT_KIND), CT_KIND[doc.kind] || CT_KIND.new, 'ct-kind', false)}</div>` : ''}
 
@@ -10350,14 +10445,15 @@ V['#/partner/contract'] = (id) => {
           + (ADDR.for === 'ct-addr' && ((ADDR.rows && !ADDR.rows.length) || ADDR.off)
              ? `<div style="margin-top:10px">${ctIn('property.road','소재지 직접 적기',{wide:true, ph:'찾지 못했을 때만 - 예: 경기도 하남시 …'})}</div>` : '')}</div>
       <div class="ct-grid">
-        ${F.lease ? ctIn('property.part','임차할 부분',{ph: 상가?'예: 1층 101호 전부':'예: 302호 전부'}) + ctIn('property.partArea','임차할 부분 면적(㎡)',{ph:'예: 59.92'}) : ''}
-        ${상가 ? ctIn('property.use','용도(업종)',{ph:'예: 일반음식점(카페)'}) : ''}
-        ${ctIn('property.landCat','토지 지목',{ph:'예: 대'})}
-        ${ctIn('property.landArea','토지 면적(㎡)')}
-        ${매매 ? ctIn('property.landRight','대지권 종류·비율',{ph:'예: 소유권대지권 12345.6분의 45.67'}) : ''}
-        ${ctIn('property.bldStruct','건물 구조',{ph:'예: 철근콘크리트조'})}
-        ${ctIn('property.bldUse','건물 용도',{ph: 상가?'예: 제1종 근린생활시설':'예: 공동주택(아파트)'})}
-        ${ctIn('property.bldArea','건물 면적(㎡)')}
+        ${F.lease ? ctIn('property.part','임차할 부분',{w:6, ph: 상가?'예: 1층 101호 전부':'예: 302호 전부'}) + ctIn('property.partArea','그 면적(㎡)',{w:3, ph:'예: 59.92'}) : ''}
+        ${/* 줄마다 12칸이 꽉 차게 - 주택 임대 6·3·3 / 3·3·3·3, 상가 임대 6·3·3 / 2·2·3·3·2, 매매 3·3·6 / 4·4·4 */''}
+        ${상가 ? ctIn('property.use','용도(업종)',{w:3, ph:'예: 카페'}) : ''}
+        ${ctIn('property.landCat','토지 지목',{w: 상가?2:3, ph:'예: 대'})}
+        ${ctIn('property.landArea','토지 면적(㎡)',{w: 상가?2:3})}
+        ${매매 ? ctIn('property.landRight','대지권 종류·비율',{w:6, ph:'예: 소유권대지권 12345.6분의 45.67'}) : ''}
+        ${ctIn('property.bldStruct','건물 구조',{w: 매매?4:3, ph:'예: 철근콘크리트조'})}
+        ${ctIn('property.bldUse','건물 용도',{w: 매매?4:3, ph: 상가?'예: 근린생활시설':'예: 아파트'})}
+        ${ctIn('property.bldArea','건물 면적(㎡)',{w: 매매?4:상가?2:3})}
       </div></div>
 
     <div class="card pad ct-sec"><h2>${매매?'매매대금':'보증금과 차임'}</h2>
@@ -10365,21 +10461,30 @@ V['#/partner/contract'] = (id) => {
       <div class="ct-grid">
         ${매매 ? ctIn('deal.price','매매대금(원)',{money:true}) : ctIn('deal.deposit','보증금(원)',{money:true})}
         ${ctIn('deal.down','계약금(원)',{money:true})}
-        ${ctIn('deal.mid','중도금(원) - 없으면 비움',{money:true})}
+        ${ctIn('deal.mid','중도금(원)',{money:true, ph:'없으면 비움'})}
         ${+D.mid ? ctIn('deal.midDate','중도금 지급일',{type:'date'}) : ''}
-        <label class="ct-f"><span class="lab">잔금(원) - 자동 계산</span><input class="inp" value="${esc(ctBalance(D)?comma(String(ctBalance(D))):'')}" disabled data-ctbal>
+        <label class="ct-f w4"><span class="lab">잔금(원) · 자동 계산</span><input class="inp" value="${esc(ctBalance(D)?comma(String(ctBalance(D))):'')}" disabled data-ctbal>
           <span class="ct-won" data-ctbalwon>${esc(한글금액(ctBalance(D))?`금 ${한글금액(ctBalance(D))}원정`:'')}</span></label>
         ${ctIn('deal.balanceDate','잔금 지급일',{type:'date'})}
-        ${D.type==='monthly' ? ctIn('deal.rent','월 차임(원)',{money:true}) + ctIn('deal.rentDay','차임 지급일(매월 며칠)',{ph:'예: 25'}) : ''}
-        ${F.lease ? ctIn('deal.fee','관리비 정액(원) - 없으면 비움',{money:true}) : ''}
+        ${D.type==='monthly' ? ctIn('deal.rent','월 차임(원)',{money:true}) + ctIn('deal.rentDay','차임 지급일',{w:2, ph:'매월 25'}) : ''}
+        ${F.lease ? ctIn('deal.fee','관리비 정액(원)',{money:true, ph:'없으면 비움'}) : ''}
       </div>
       ${상가 ? `<div><span class="lab">차임의 부가가치세</span>${chipsHTML(['별도','포함'], D.vat||'별도', 'ct-vat', false)}</div>` : ''}</div>
 
-    <div class="card pad ct-sec"><h2>${매매?'인도와 계약일':'임대차기간'}</h2>
+    <div class="card pad ct-sec"><h2>${매매?'인도와 계약일':'임대차기간'}${매매?' <span class="sub" style="font-weight:500;font-size:12.5px">인도일을 비우면 잔금일에 인도합니다</span>':''}</h2>
       <div class="ct-grid">
-        ${매매 ? ctIn('period.handover','인도일(비우면 잔금일)',{type:'date'})
+        ${매매 ? ctIn('period.handover','인도일',{type:'date'})
                : ctIn('period.handover','인도일(입주일)',{type:'date'}) + ctIn('period.to','종료일',{type:'date'})}
         ${ctIn('contractDate','계약일',{type:'date'})}
+      </div></div>
+
+    <div class="card pad ct-sec"><h2>당사자 <span class="sub" style="font-weight:500;font-size:12.5px">비워 두면 손으로 적을 칸이 인쇄됩니다</span></h2>
+      <div class="ct-grid">${사람(aKey, aKo)}${사람(bKey, bKo)}</div></div>
+
+    <div class="card pad ct-sec"><h2>개업공인중개사 <span class="sub" style="font-weight:500;font-size:12.5px">가입 때 적은 값으로 채웠습니다</span></h2>
+      <div class="ct-grid">
+        ${ctIn('broker.office','사무소 명칭',{w:6})}${ctIn('broker.rep','대표',{w:3})}${ctIn('broker.regNo','등록번호',{w:3})}
+        ${ctIn('broker.phone','전화',{w:3})}${ctIn('broker.staff','소속공인중개사',{w:3})}${ctIn('broker.addr','사무소 소재지',{w:6})}
       </div></div>
 
     <div class="card pad ct-sec"><h2>조항 <span class="sub" style="font-weight:500;font-size:12.5px">빼면 뒤 번호가 당겨집니다</span></h2>${조항}</div>
@@ -10389,22 +10494,83 @@ V['#/partner/contract'] = (id) => {
       ${잠김 ? '' : `<div class="ct-lib">${F.specials.map(([t],i)=>`<button class="chip" data-act="ct-sp-add" data-v="${i}">+ ${esc(t)}</button>`).join('')}
         <button class="chip" data-act="ct-sp-add" data-v="">+ 빈 특약</button></div>`}</div>
 
-    <div class="card pad ct-sec"><h2>당사자 <span class="sub" style="font-weight:500;font-size:12.5px">비워 두면 손으로 적을 칸이 인쇄됩니다</span></h2>
-      <div class="ct-grid">
-        ${ctIn(`parties.${aKey}.name`,`${aKo} 성명`)}${ctIn(`parties.${aKey}.phone`,`${aKo} 전화`)}${ctIn(`parties.${aKey}.addr`,`${aKo} 주소`,{wide:true})}
-        ${ctIn(`parties.${bKey}.name`,`${bKo} 성명`)}${ctIn(`parties.${bKey}.phone`,`${bKo} 전화`)}${ctIn(`parties.${bKey}.addr`,`${bKo} 주소`,{wide:true})}
-      </div></div>
+    ${잠김||!CT.id ? '' : `<button class="tapx" data-act="ct-del" style="align-self:flex-start;font-size:12.5px;color:var(--danger)">이 계약서 지우기</button>`}`;
+}
 
-    <div class="card pad ct-sec"><h2>개업공인중개사 <span class="sub" style="font-weight:500;font-size:12.5px">가입 때 적은 값으로 채웠습니다</span></h2>
-      <div class="ct-grid">
-        ${ctIn('broker.office','사무소 명칭')}${ctIn('broker.rep','대표')}${ctIn('broker.regNo','등록번호')}
-        ${ctIn('broker.phone','전화')}${ctIn('broker.addr','사무소 소재지',{wide:true})}${ctIn('broker.staff','소속공인중개사')}
-      </div></div>
-
-    ${잠김||!CT.id ? '' : `<button class="tapx" data-act="ct-del" style="align-self:flex-start;font-size:12.5px;color:var(--danger)">이 계약서 지우기</button>`}
+/* ── PC 작성 화면 (2026-10-29 대표님: Lounge 계약서처럼) ──
+   왼쪽 입력 판(판 안에서만 내려가고 맨 아래 저장·확정 줄이 붙는다) | 오른쪽 책상 위 A4 미리보기.
+   미리보기는 늘 떠 있고 칸을 고치는 대로 다시 그린다(ctPvRefresh). 휴대폰은 위 화면 그대로 */
+function ctDeskShell(doc, side, 신고면){
+  const F = CT_FORMS[doc.form] || CT_FORMS['home-lease'];
+  const 잠김 = CT.row && CT.row.status === 'sealed';
+  const 신고있음 = ['sale','home-lease'].includes(doc.form);
+  const 이름 = F.explain ? (EX_FORMS[doc.form] || EX_FORMS['explain-home']).h1 : F.ko;
+  const 상태 = 잠김
+    ? `<span class="ctx-st ok">날인본 · ${esc(String(CT.row.sealed_at||'').slice(0,16).replace('T',' '))} 확정 · 지문 ${esc(String(CT.row.sha256||'').slice(0,12))}…</span>`
+    : CT.saving ? `<span class="ctx-st">저장 중…</span>`
+    : CT.dirty || !CT.id ? `<span class="ctx-st warn">저장하지 않은 고침이 있습니다</span>` : `<span class="ctx-st">저장됨</span>`;
+  return `
+<div class="scr fade ctx-scr">
+  ${navPartner('ct', false)}
+  <div class="ctx">
+    <div class="ctx-head">
+      <a class="back" data-go="#/partner/contracts">← 계약서 목록</a>
+      <h1 class="ctx-h1">${esc(이름)}</h1>
+      <span class="badge ${잠김?'b-ok':'b-warn'}">${잠김?'날인본':'작성 중'}</span>
+      ${!잠김 && !F.explain ? `<span class="ctx-sub">비워 둔 칸은 밑줄 빈칸으로 인쇄됩니다 · 주민등록번호·계좌번호는 적지 않습니다</span>` : ''}
+    </div>
+    <div class="ctx-body">
+      <section class="ctx-side" aria-label="입력">
+        ${신고있음 ? `<div class="ctx-tabs" role="tablist">
+          <button type="button" role="tab" aria-selected="${!신고면}" class="${신고면?'':'on'}" data-act="ct-edit">입력</button>
+          <button type="button" role="tab" aria-selected="${신고면}" class="${신고면?'on':''}" data-act="ct-report">신고 도우미</button></div>` : ''}
+        <div class="ctx-scroll">${side}</div>
+        <div class="ctx-act">
+          ${상태}
+          <div class="ctx-btns">${잠김
+            ? `<button class="btn pri sm" data-act="ct-revise">고쳐서 새 판 만들기</button>`
+            : `<button class="btn tool sm" data-act="ct-save" ${CT.saving?'disabled':''}>${CT.saving?'저장 중…':'저장'}</button>
+               <button class="btn pri sm" data-act="ct-seal" ${CT.saving?'disabled':''}>날인본으로 확정</button>`}</div>
+        </div>
+      </section>
+      <section class="ctx-view" aria-label="미리보기">
+        <div class="ctx-vh">
+          <b>미리보기</b><span class="ctx-vn">인쇄되는 모양 그대로 · 고치면 바로 바뀝니다</span>
+          <span class="ctx-tools">
+            ${F.explain ? '' : `<button class="btn tool sm" data-act="ct-explain">확인·설명서 만들기</button>`}
+            <button class="btn tool sm" data-act="ct-print">인쇄</button>
+          </span>
+        </div>
+        <div class="ctx-desk" id="ctDesk"><div class="ct-sheet" id="ctPv">${ctDocHTML(doc)}</div></div>
+      </section>
+    </div>
   </div>
 </div>`;
-};
+}
+/* 신고 도우미 - PC 입력 판 안 */
+function ctReportSide(doc){
+  const 잠김 = CT.row && CT.row.status === 'sealed';
+  return `${잠김 ? '' : `<p class="ct-note" style="background:var(--warnbg,#FFF4E5)">아직 날인본이 아닙니다. 날인받은 뒤 '날인본으로 확정' 하고 그 판으로 신고하세요 - 신고한 내용과 계약서가 달라지면 안 됩니다.</p>`}
+    ${rpHTML(doc)}
+    ${잠김 ? `<div class="card pad ct-sec"><h2>신고 마침</h2>${CT.row.reported_at
+      ? `<p class="sub" style="margin:0"><b style="color:var(--ok)">${esc(String(CT.row.reported_at).slice(0,10))}</b> 에 신고 마침으로 표시했습니다. 기한 알림 메일이 멈췄습니다.</p>
+         <button class="btn tool sm" data-act="ct-reported" data-v="off" style="align-self:flex-start">표시 취소</button>`
+      : `<p class="sub" style="margin:0">부동산거래관리시스템에서 신고를 마쳤으면 눌러 주세요. 기한 7·3·1일 전과 당일 아침에 가는 알림 메일이 멈춥니다.</p>
+         <button class="btn pri sm" data-act="ct-reported" data-v="on" style="align-self:flex-start">신고 마침으로 표시</button>`}</div>` : ''}`;
+}
+/* 미리보기 다시 그리기 - 글자마다 하지 않고 잠깐 멈췄을 때 한 번 */
+let ctPvT = 0;
+function ctPvRefresh(){
+  clearTimeout(ctPvT);
+  ctPvT = setTimeout(() => { const pv = document.getElementById('ctPv'); if(pv && CT.doc) pv.innerHTML = ctDocHTML(CT.doc); }, 150);
+}
+/* A4(794px) 종이를 책상 폭에 맞춰 줄인다 - 실제 크기보다 키우지 않는다 */
+function ctFit(){
+  const d = document.getElementById('ctDesk'), s = document.getElementById('ctPv');
+  if(!d || !s) return;
+  s.style.zoom = String(Math.min(1, Math.max(.4, (d.clientWidth - 32) / 794)));
+}
+addEventListener('resize', () => ctFit());
 
 
 /* ══════════ 중개대상물 확인·설명서 [Ⅰ]~[Ⅳ] (2026-10-29) ══════════
@@ -10762,7 +10928,7 @@ function exEditPart(doc, p){
   if(p.t === 'money') return ctIn(p.k, (p.pre || '금액').replace(/:\s*$/,'') + '(원)', { money:true });
   if(p.t === 'area'){
     const 잠김 = CT.row && CT.row.status === 'sealed';
-    return `<label class="ct-f wide"><span class="lab">내용</span><textarea class="inp" rows="3" data-in="ct:${p.k}" ${잠김?'disabled':''}>${esc(v || '')}</textarea></label>`;
+    return `<label class="ct-f wide w12"><span class="lab">내용</span><textarea class="inp" rows="3" data-in="ct:${p.k}" ${잠김?'disabled':''}>${esc(v || '')}</textarea></label>`;
   }
   if(p.t === 'note') return `<p class="ex-enote">${esc(p.s)}</p>`;
   if(p.t === 'sign') return '';
@@ -10919,7 +11085,8 @@ function rpHTML(doc){
 }
 
 /* 계약서 입력 - 글자마다 다시 그리지 않는다(칸이 교체돼 두 번째 글자가 안 들어간다). 값만 담고 표시만 바꾼다 */
-function ctDirty(){ CT.dirty = true; CT.rev = (CT.rev || 0) + 1; const b = $('#app [data-act="ct-save"]'); if(b && !CT.saving) b.textContent = '저장 ●'; }
+function ctDirty(){ CT.dirty = true; CT.rev = (CT.rev || 0) + 1; ctPvRefresh(); const b = $('#app [data-act="ct-save"]'); if(b && !CT.saving) b.textContent = '저장 ●';
+  const st = $('#app .ctx-st'); if(st && !CT.saving){ st.className = 'ctx-st warn'; st.textContent = '저장하지 않은 고침이 있습니다'; } }
 function ct잔금표시(){
   const n = ctBalance(CT.doc.deal);
   const a = $('#app [data-ctbal]'); if(a) a.value = n ? comma(String(n)) : '';

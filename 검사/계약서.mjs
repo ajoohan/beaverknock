@@ -510,6 +510,21 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
      '고칠 때마다 판 번호가 오른다(글자·주소 검색 모두)');
   ok(/h==='#\/partner\/proposals' && S\.agent && !ownerSide\(\)\) ctLoadList\(\)/.test(js) && /if\(!CT\.list\) await ctLoadList\(true\);/.test(js),
      '제안 화면에서도 계약서 목록을 받고, 모르면 받아 본 뒤에 만든다');
+  /* 2026-10-29 대표님: Lounge 계약서처럼 - 왼쪽 입력 판 | 오른쪽 책상 위 A4, 칸은 값 길이만큼, 빽빽하게 */
+  ok(/if\(!isMo\(\)\)\{\s*const 신고면[\s\S]{0,200}const 판 = 신고면 \? ctReportSide\(doc\) : F\.explain \? exEditor\(doc\) : ctFormHTML\(doc\);/.test(js)
+     && /return ctDeskShell\(doc, 판, 신고면\);/.test(js) && /\$\{ctFormHTML\(doc\)\}/.test(js),
+     'PC 는 입력 판 | 미리보기 한 화면(계약서·확인·설명서·신고 도우미 모두), 휴대폰은 같은 입력 구획을 카드로 쌓는다');
+  ok(/<div class="ctx-desk" id="ctDesk"><div class="ct-sheet" id="ctPv">\$\{ctDocHTML\(doc\)\}<\/div><\/div>/.test(js)
+     && /function ctDirty\(\)\{ CT\.dirty = true; CT\.rev = \(CT\.rev \|\| 0\) \+ 1; ctPvRefresh\(\);/.test(js),
+     '미리보기는 늘 떠 있고, 칸을 고칠 때마다(잠깐 멈추면) 다시 그린다');
+  ok(/\.ctx-body\{[^}]*grid-template-columns:minmax\(420px,500px\) minmax\(0,1fr\)/.test(css) && /\.ctx-scroll\{[^}]*overflow-y:auto/.test(css)
+     && /\.ctx-side \.ct-grid\{grid-template-columns:repeat\(12,minmax\(0,1fr\)\)/.test(css) && /const w = opt\.w \|\| \(opt\.wide \? 12 : money \|\| opt\.type === 'date' \? 4 : 6\);/.test(js),
+     '입력 판은 고정 폭·안에서만 내려가고, 칸은 12칸 격자에서 값 길이만큼(금액·날짜 4칸, 주소 12칸)');
+  ok(/\.ctx-side \.inp\{min-height:32px;height:32px/.test(css) && /\.ctx-side \.ct-sec\{padding:10px 0;gap:6px;/.test(css), '빽빽하게 - 칸 키 32px · 구획 위아래 10px');
+  ok(/\.ctx-side \.ct-grid > :is\(\.w12,\.wide,\.ex-pick,\.ex-enote,p\)\{grid-column:1\/-1\}/.test(css) && /class="ct-f wide w12"><span class="lab">내용<\/span><textarea/.test(js),
+     '긴 글 칸(확인·설명서 내용)은 판 폭을 다 쓴다 - 6칸으로 좁아지지 않게');
+  ok(/\.btn\.tool\{background:var\(--white\);border-color:var\(--n300\);color:var\(--n900\)\}/.test(css) && /\.btn\[disabled\]\{[^}]*color:var\(--n500\)!important/.test(css),
+     '단추 가독성 - 도구 단추는 흰 면·진한 글자(주 동작 보라와 갈림), 막힌 단추 글자는 n500(4.5:1)');
   ok(/data-act="ct-reload">다시 불러오기/.test(js) && /case 'ct-reload': ctLoadList\(true\)/.test(js), '목록을 못 불러오면 "다시 불러오기" 가 있다');
   ok(/const 열람 = 진짜\.filter\(열람됨\)/.test(js) && /const viewed = P\.filter\(열람됨\)/.test(js) && /const 열람됨 = p => \['viewed','selected','rejected'\]/.test(js),
      '대시보드와 성과 화면이 같은 셈으로 열람을 센다(관심 없음도 연 것)');

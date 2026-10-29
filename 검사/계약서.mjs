@@ -530,6 +530,14 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
   ok(/body:not\(\.mo\) \.ctx-scr \.ptop\{display:none\}/.test(css) && /body:not\(\.mo\) \.ctx-scr\{height:100vh;height:100dvh;overflow:hidden\}/.test(css)
      && /\.ctx\{[^}]*height:100dvh;/.test(css) && !/\.ctx\{[^}]*min-height:560px/.test(css) && !/margin-top:-28px/.test(css) && /<span class="ctx-badge">\$\{agentBadge\(\)\}<\/span>/.test(js),
      'PC 계약서 화면은 창 높이에 딱 맞는다(최소 높이·음수 여백 없음) - 바깥 스크롤로 미리보기 머리가 잘리지 않는다');
+  /* 미리보기 - 상자 한 겹(바깥 흰 카드 없음), 도구 줄 단추가 줄 높이 안에(40px 단추가 46px 줄에서 잘려 보였다) */
+  ok(/\.ctx-scr \.ctx-view\{gap:6px;background:transparent;border:0;border-radius:0;box-shadow:none;overflow:visible\}/.test(css)
+     && /\.ctx-vh\{display:flex;align-items:center;gap:10px;flex-wrap:nowrap;min-height:30px;padding:0 2px\}/.test(css) && /\.ctx-vh \.btn\.sm\{min-height:30px;/.test(css)
+     && /\.ctx-vn\{[^}]*text-overflow:ellipsis\}/.test(css) && /\.ctx-desk \.ct-sheet\{margin:0 auto;padding:36px 40px;/.test(css),
+     '미리보기는 책상 위 종이 한 장 · 도구 줄은 한 줄(설명이 먼저 줄어든다) · 화면용 종이 여백을 줄였다');
+  /* 고른 칩에 마우스를 올리면 글자가 사라졌다 - hover 규칙이 .chip.on 을 이겨 옅은 바탕 + 흰 글자 */
+  ok(/\.chip\.on:not\(:disabled\):hover\{background:var\(--ind700\);border-color:var\(--ind700\);color:#fff\}/.test(css)
+     && css.indexOf('.chip.on:not(:disabled):hover') > css.indexOf('.chip:not(:disabled):hover'), '고른 칩은 마우스를 올려도 진한 보라 + 흰 글자 (뒤에 적어 이긴다)');
   /* 2026-10-29 리뷰 2차 */
   ok(/CT\.dirty = false; CT\.doc = null; CT\.id = null; CT\.row = null;/.test(js), '나가기를 고르면 버린 고침을 메모리에서도 버린다 - 다시 열면 서버 판');
   ok(/case 'ct-kind': if\(CT\.doc && !ctSealed\(\)\)/.test(js) && /case 'ct-vat': if\(CT\.doc && !ctSealed\(\)\)/.test(js) && /case 'ct-deal': if\(CT\.doc && !ctSealed\(\)\)/.test(js)

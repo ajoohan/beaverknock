@@ -55,7 +55,7 @@ const M = new Function('esc', `${js.slice(시작, 끝)}\nreturn { dzLine, dzPill
      '메뉴 위 작은 글자(꼬리표·묶음 이름·건수·하위 메뉴·로고 옆 파트너)는 4.5:1 을 넘는다');
   ok(/body\.mo \.dz-more::after\{content:"";position:absolute;left:-6px;right:-6px;top:-5px;bottom:-5px\}/.test(css), "휴대폰 '전체 보기' 는 덮개로 누르는 자리를 44px 로");
   ok(/@media \(max-width:420px\)\{ body\.mo \.footlinks\{display:grid!important;grid-template-columns:repeat\(3,max-content\)/.test(css)
-     && /<span class="nw">사업자등록번호 \$\{esc\(CORP\.no\)\}<\/span>/.test(js) && /\.nw\{white-space:nowrap\}/.test(css),
+     && /<span class="nw">사업자등록번호 \$\{esc\(CORP\.no\)\} ·<\/span>/.test(js) && /\.nw\{white-space:nowrap\}/.test(css),
      '휴대폰 바닥 - 링크는 셋씩 두 줄, 사업자 정보는 항목마다 끊기지 않는다');
   const 운 = js.slice(js.indexOf('V[OPS_HOME] = () => {'), js.indexOf('\n};\n', js.indexOf('V[OPS_HOME] = () => {')));
   ok(/if\(isMo\(\)\) return `[\s\S]*<aside class="opsNav">\$\{메뉴\}<\/aside>/.test(운) && /<aside class="dz-side opsSide" aria-label="운영 메뉴">/.test(운),

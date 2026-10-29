@@ -161,7 +161,7 @@ body.mo .nav .items{display:none}
    위아래 줄이 1px 를 남기고 안 겹친다. 그래야 44px 에 닿는다.
    여기서는 기본 규칙(±14.5px)을 그대로 쓰면 되므로 따로 덮지 않는다. */
 body.mo .footlinks{gap:10px 16px!important}
-@media (max-width:420px){ body.mo .footlinks{display:grid!important;grid-template-columns:repeat(3,max-content);justify-content:space-between} }
+@media (max-width:420px){ body.mo .footlinks{display:grid!important;grid-template-columns:repeat(3,minmax(0,max-content));justify-content:space-between} }
 /* 바닥글 링크도 위 규칙 하나로 44px 이 된다. 어제 넣었던 덮개(::after)와
    줄 사이 30px 은 걷는다 - 덮개를 안 쓰니 벌려 둘 까닭이 없다. */
 /* 보이는 상자는 30px 이지만 아래 덮개가 위아래 9px 씩 넓혀 누르는 자리는 약 48px 이다.
@@ -238,7 +238,8 @@ body.mo .back::after{content:"";position:absolute;left:0;right:0;top:-9px;bottom
 .chip:not(:disabled):hover{border-color:var(--ind);background:var(--ind50)}
 .chip.on{background:var(--ind);border-color:var(--ind);color:#fff;font-weight:700}
 /* 고른 칩에 마우스를 올려도 글자가 보이게 - 위 hover 규칙(:not(:disabled) 까지 세 칸)이 .chip.on 을 이겨 옅은 바탕에 흰 글자가 됐다(2026-10-29 대표님) */
-.chip.on:not(:disabled):hover{background:var(--ind700);border-color:var(--ind700);color:#fff}
+@media (hover:hover){ .chip.on:not(:disabled):hover{background:var(--ind700);border-color:var(--ind700);color:#fff} }
+@media (hover:none){ .chip.on:not(:disabled):hover{background:var(--ind);border-color:var(--ind);color:#fff} }
 body.mo .chip{padding:12px 16px;font-size:13.5px;line-height:1.25}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
 /* ── 운영 화면 ──
@@ -1573,7 +1574,8 @@ h1.t[style*="font-size:31"],h1.t[style*="font-size:40"],h1.t[style*="font-size:5
 p,li,dd,.sub,.lines,.opt{line-break:strict;overflow-wrap:break-word}
 /* 문단의 기본 줄간격 - 따로 적지 않은 문단이 브라우저 기본(약 1.2)으로 그려져 두 줄이 되면 빽빽했다(2026-10-29 진단).
    :where() 로 걸어 우선순위가 0 이다 - 이미 줄간격을 적은 규칙·인라인은 하나도 바꾸지 않고 빈 곳만 채운다 */
-:where(#app) :where(p,li,dd,blockquote){line-height:1.65}
+/* 클래스를 가진 문단(큰 숫자 p.num · 날짜 줄 등)은 제 줄간격을 물려받게 두고, 계약서·확인·설명서 문서는 인쇄와 같은 1.6 을 지킨다(2026-10-29 리뷰) */
+:where(#app) :where(p,li,dd,blockquote):where(:not([class])):where(:not(:is(.ctdoc,.exdoc) *)){line-height:1.65}
 
 /* 어두운 배경 위에서는 강조색을 밝은 쪽으로 바꿔 끼운다.
    ind300 은 흰 바탕에서 쓰라고 만든 값이라 네이비 위에서는 3.35:1 까지 떨어진다. */
@@ -1646,7 +1648,7 @@ body.mo .ct-long{display:none}
 .rp-l{font-size:13px;font-weight:700;color:var(--n700)}
 .rp-v{font-size:14px;color:var(--n900);word-break:break-all}
 /* #app * 의 keep-all 이 위 break-all 을 이겨 띄어쓰기 없는 긴 값(특약·번호)이 칸을 1000px 넘게 밀었다 */
-#app .rp-v{word-break:break-all;overflow-wrap:anywhere;min-width:0}
+#app .rp-v{overflow-wrap:anywhere;min-width:0}
 .rp-v.none{color:var(--n500);font-size:12.5px}
 .rp-n{grid-column:1/-1;font-size:12px;color:var(--n500)}
 body.mo .rp-row{grid-template-columns:1fr auto}
@@ -1790,7 +1792,7 @@ body:not(.mo) .ctx-scr{height:100vh;height:100dvh;overflow:hidden}
 .ctx-vh .btn.sm{min-height:30px;padding:0 12px;font-size:12.5px}
 .ctx-desk{flex:1 1 auto;min-height:0;overflow:auto;padding:12px;background:var(--n100);border:1px solid var(--n200);border-radius:12px}
 /* 화면용 종이 여백만 줄인다(인쇄는 @page 여백을 따로 쓴다) - 같은 폭에서 글이 더 크게 보인다 */
-.ctx-desk .ct-sheet{margin:0 auto;padding:36px 40px;min-height:0;box-shadow:0 1px 3px rgba(29,28,42,.12)}
+.ctx-desk .ct-sheet{margin:0 auto;padding:36px 50px;min-height:0;box-shadow:0 1px 3px rgba(29,28,42,.12)}
 /* 좁은 데스크톱 - 두 단이 비좁으면 위아래로(판은 제 키대로, 미리보기는 아래) */
 @media (max-width:1099px){
   body:not(.mo) .ctx-scr{height:auto;overflow:visible}
@@ -3116,8 +3118,9 @@ const 지금계정 = () => S.user ? `${S.user.method || ''}:${S.user.id || S.use
 function 로그인뒤로가기(){
   /* 갈 곳을 정하지 않고 들어왔으면(메인의 '로그인') 손님 화면으로 가되, 파트너 계정으로 확인되면
      readAgent 가 대시보드로 옮긴다 - 파트너가 손님 화면에 떨어져 길을 찾지 않게(2026-10-29 대표님) */
-  S.기본으로들어옴 = !S.afterLogin && !S.agentKnown;   /* 이미 파트너인지 알면 바로 고른다 */
-  const to = S.afterLogin || (S.agent ? '#/partner/home' : '#/my');
+  const 기본 = !S.afterLogin || S.afterLogin === '#/';      /* 메인의 '손님 로그인' 은 갈 곳을 첫 화면으로 담는다 */
+  S.기본으로들어옴 = 기본 && !S.agentKnown;                 /* 이미 파트너인지 알면 바로 고른다 */
+  const to = 기본 && S.agent ? '#/partner/home' : (S.afterLogin || '#/my');
   S.afterLogin = null;
   go(to);
 }
@@ -3918,7 +3921,7 @@ V['#/login'] = () => {
           : '다시 오셨네요'}</h1>
         <p style="margin:0;font-size:13.5px;line-height:1.75;color:var(--n700);max-width:32ch">
           ${(asPartner && toJoin) ? '카카오·네이버·구글로도 됩니다. 계정을 만드시면 바로 파트너 가입으로 이어집니다.'
-            : asPartner ? '가입하실 때 쓰신 계정으로 들어오시면 맞는 손님 목록으로 이어집니다.'
+            : asPartner ? '가입하실 때 쓰신 계정으로 들어오시면 파트너 대시보드로 이어집니다.'
             : toKind ? '로그인하시면 바로 조건 등록으로 이어집니다.'
             : toMine ? '처음이시라면 아래에서 시작하시면 됩니다.'
             : S.signup ? '계정을 만들면 걸어둔 조건과 받은 제안이 그대로 남습니다.'
@@ -11485,7 +11488,7 @@ function render(){
     S.loginAs='partner'; S.afterLogin='#/partner/join'; location.replace('#/login'); return;
   }
   /* 이미 신청한 계정은 가입 화면을 다시 걸을 이유가 없다 - 계정당 하나뿐이다.
-     자격이 남았으면 그 자리로, 다 됐으면 수요 목록으로 보낸다. */
+     자격이 남았으면 그 자리로, 다 됐으면 대시보드로 보낸다. */
   /* 'already' 도 남긴다 - 방금 낸 신청이 왜 반영되지 않았는지 읽어야 한다 */
   if(h==='#/partner/join' && S.agent && !['ok','sending','already'].includes(S.form.jSent)){
     location.replace(S.agent.status === 'approved' ? '#/partner/home' : '#/partner/verify'); return;
@@ -11964,7 +11967,7 @@ function readAuthRedirect(){
   let back = '';
   try{ back = sessionStorage.getItem('bk.after') || ''; sessionStorage.removeItem('bk.after'); }catch(e){}
   /* 갈 곳 없이 들어왔으면 손님 화면으로 가되 파트너로 확인되면 대시보드로(로그인뒤로가기 와 같은 규칙) */
-  if(!back){ back = '#/my'; S.기본으로들어옴 = true; }
+  if(!back || back === '#/'){ back = back || '#/my'; S.기본으로들어옴 = true; }
   restoreDraft();          /* 나가기 전에 적어둔 조건을 그대로 이어 받는다 */
 
   if(err){
@@ -11987,7 +11990,9 @@ function readAuthRedirect(){
   render();
   hydrate(sess).then(ok => {
     S.authBusy = false;
-    if(ok && S.기본으로들어옴 && S.agent){ back = '#/partner/home'; S.기본으로들어옴 = false; }
+    /* 끝에서 늘 내린다 - 손님 계정이 소셜로 들어온 뒤에도 표시가 남아, 나중에 계정을 다시 읽으면 엉뚱하게 옮기지 않게 */
+    if(ok && S.기본으로들어옴 && S.agent) back = '#/partner/home';
+    S.기본으로들어옴 = false;
     location.replace(location.pathname + (ok ? back : '#/login'));
     render();
     toast(ok ? `${(S.user&&S.user.label)||'계정'} 계정으로 로그인했습니다`
@@ -12080,8 +12085,8 @@ async function readAgent(미리){
   if(S.기본으로들어옴 && S.agentKnown){
     const 지금 = location.hash || '';
     /* 손님 화면에 도착한 뒤면 여기서 옮기고, 소셜 로그인 왕복 중(주소 비어 있음)이면 그 끝에서 옮긴다 */
-    if(지금 === '#/my'){ S.기본으로들어옴 = false; if(S.agent){ location.replace('#/partner/home'); return; } }
-    else if(지금 && 지금 !== '#/') S.기본으로들어옴 = false;
+    if(지금 === '#/my' || 지금 === '#/'){ S.기본으로들어옴 = false; if(S.agent){ location.replace('#/partner/home'); return; } }
+    else if(지금) S.기본으로들어옴 = false;
   }
   /* 첫 그림이 이미 나간 뒤에 답이 올 수 있다 - boot 이 1.2초에서 끊고 그리기
      때문이다. 그때 다시 그리지 않으면 파트너로 가는 문이 **다음에 어디를

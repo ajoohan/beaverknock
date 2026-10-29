@@ -3,6 +3,7 @@
    ① 선 그래프는 점 사이를 곡선으로 잇는다. 그대로 두면 0 과 2 사이에서 곡선이 바닥선 아래로 튀었다.
    ② 세로 메뉴는 넓은 화면에서만 선다. 휴대폰에서 세로 메뉴는 화면 폭을 다 먹는다 - 위 머리 + 아래 탭이다.
    ③ 대시보드는 한 화면에서 다 보여준다 - 들어오면 필요한 것을 함께 받는다. */
+import fs from 'node:fs';
 import * as 길 from './길.mjs';
 
 let ran = 0, fail = 0;
@@ -62,10 +63,16 @@ const M = new Function('esc', `${js.slice(시작, 끝)}\nreturn { dzLine, dzPill
     ok(!/저장 ●/.test(js) && /<span class="dirty-dot" aria-hidden="true"><\/span>저장/.test(js), "저장할 것이 있으면 점(도형) - '●' 글자가 아니다");
     ok(!/inset 3px 0 0 (#fff|var\(--ind\))/.test(css + js) && !/border-left:2\.5px solid var\(--ind300\)/.test(css), '옆 줄무늬 강조 없음 - 상태는 바탕색으로');
   }
+  /* 리뷰 3차 */
+  ok(/if\(!back \|\| back === '#\/'\)\{ back = back \|\| '#\/my'; S\.기본으로들어옴 = true; \}/.test(js), "메인의 '손님 로그인'(갈 곳 = 첫 화면)으로 소셜 로그인해도 파트너는 대시보드로");
+  ok(/@media \(hover:hover\)\{ \.chip\.on:not\(:disabled\):hover\{background:var\(--ind700\)/.test(css) && /@media \(hover:none\)\{ \.chip\.on:not\(:disabled\):hover\{background:var\(--ind\);/.test(css),
+     '고른 칩 hover 색은 마우스 기기에만 - 터치에서는 고른 색 그대로(옅은 바탕 + 흰 글자로도 안 간다)');
+  ok(!/맞는 손님 목록으로 이어집니다/.test(js) && /파트너 대시보드로 이어집니다/.test(js), '파트너 로그인 안내가 실제로 가는 곳(대시보드)을 말한다');
+  ok(/^\*\.sql$/m.test(fs.readFileSync(new URL('../.vercelignore', import.meta.url), 'utf8')), '개발용 SQL 은 배포에서 뺀다(.vercelignore)');
   /* 파트너는 로그인하면 바로 대시보드로 (2026-10-29 대표님) */
-  ok(/S\.afterLogin = v === 'partner' \? '#\/partner\/home'/.test(js) && /const to = S\.afterLogin \|\| \(S\.agent \? '#\/partner\/home' : '#\/my'\);/.test(js)
-     && /if\(지금 === '#\/my'\)\{ S\.기본으로들어옴 = false; if\(S\.agent\)\{ location\.replace\('#\/partner\/home'\); return; \} \}/.test(js)
-     && /if\(ok && S\.기본으로들어옴 && S\.agent\)\{ back = '#\/partner\/home';/.test(js) && /sessionStorage\.setItem\('bk\.after', S\.afterLogin \|\| ''\)/.test(js),
+  ok(/S\.afterLogin = v === 'partner' \? '#\/partner\/home'/.test(js) && /const to = 기본 && S\.agent \? '#\/partner\/home' : \(S\.afterLogin \|\| '#\/my'\);/.test(js) && /const 기본 = !S\.afterLogin \|\| S\.afterLogin === '#\/';/.test(js)
+     && /if\(지금 === '#\/my' \|\| 지금 === '#\/'\)\{ S\.기본으로들어옴 = false; if\(S\.agent\)\{ location\.replace\('#\/partner\/home'\); return; \} \}/.test(js)
+     && /if\(ok && S\.기본으로들어옴 && S\.agent\) back = '#\/partner\/home';\s*S\.기본으로들어옴 = false;/.test(js) && /sessionStorage\.setItem\('bk\.after', S\.afterLogin \|\| ''\)/.test(js),
      '파트너 로그인 단추·그냥 로그인·소셜 로그인 모두, 파트너 계정이면 대시보드로 들어간다');
   ok(/'#\/partner\/home' : '#\/partner\/verify'\); return;/.test(js) && /S\.agent\.status === 'approved'\)\{\s*location\.replace\('#\/partner\/home'\)/.test(js),
      '이미 승인된 파트너가 가입·자격 화면에 오면 대시보드로');
@@ -78,7 +85,7 @@ const M = new Function('esc', `${js.slice(시작, 끝)}\nreturn { dzLine, dzPill
      && /\.seg\{[^}]*border-radius:var\(--r-btn\)/.test(css) && /\.seg button\{[^}]*border-radius:var\(--r-ctl\)/.test(css),
      '단추 10px · 칩·탭 단추 8px (알약 999px 아님)');
   ok(/body\.mo \.dz-more::after\{content:"";position:absolute;left:-6px;right:-6px;top:-5px;bottom:-5px\}/.test(css), "휴대폰 '전체 보기' 는 덮개로 누르는 자리를 44px 로");
-  ok(/@media \(max-width:420px\)\{ body\.mo \.footlinks\{display:grid!important;grid-template-columns:repeat\(3,max-content\)/.test(css)
+  ok(/@media \(max-width:420px\)\{ body\.mo \.footlinks\{display:grid!important;grid-template-columns:repeat\(3,minmax\(0,max-content\)\)/.test(css)
      && /<span class="nw">사업자등록번호 \$\{esc\(CORP\.no\)\} ·<\/span>/.test(js) && /\.nw\{white-space:nowrap\}/.test(css),
      '휴대폰 바닥 - 링크는 셋씩 두 줄, 사업자 정보는 항목마다 끊기지 않는다');
   const 운 = js.slice(js.indexOf('V[OPS_HOME] = () => {'), js.indexOf('\n};\n', js.indexOf('V[OPS_HOME] = () => {')));

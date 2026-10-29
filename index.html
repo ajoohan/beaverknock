@@ -1809,14 +1809,14 @@ body:not(.mo) .dz-scr, body:not(.mo) .scr:has(> .psb){display:grid;grid-template
   grid-auto-rows:min-content;align-items:start;background:var(--dzbg)!important;min-height:100%}
 body:not(.mo) .dz-scr > :not(.dz-side), body:not(.mo) .scr:has(> .psb) > :not(.psb){grid-column:2;min-width:0}
 .dz-side{grid-column:1;grid-row:1 / span 60;position:sticky;top:12px;margin:12px 0 12px 12px;height:calc(100vh - 24px);
-  display:flex;flex-direction:column;gap:2px;padding:18px 8px 12px;border-radius:22px;background:var(--dzside);color:#fff;
+  display:flex;flex-direction:column;gap:2px;padding:18px 8px 12px;border-radius:16px;background:var(--dzside);color:#fff;
   overflow-y:auto;box-shadow:0 22px 44px -26px rgba(36,32,110,.55)}
 .dz-logo{display:flex;align-items:center;gap:8px;padding:2px 8px 18px}
 .dz-tag{font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;background:rgba(255,255,255,.12);color:#fff}
 .dz-menu{display:flex;flex-direction:column;gap:3px}
 .dz-side .grp{display:block;padding:14px 10px 6px;font-size:12px;font-weight:700;letter-spacing:.06em;color:rgba(255,255,255,.92)}
 .dz-menu > a, .dz-menu > button, .dz-foot > a{display:flex;align-items:center;gap:10px;width:100%;min-height:42px;padding:9px 10px;
-  border:none;border-radius:12px;background:transparent;color:rgba(255,255,255,.9);font:inherit;font-size:13.5px;font-weight:600;
+  border:none;border-radius:8px;background:transparent;color:rgba(255,255,255,.9);font:inherit;font-size:13.5px;font-weight:600;
   text-align:left;cursor:pointer;transition:background var(--t-fast) ease,color var(--t-fast) ease}
 .dz-menu > a:hover, .dz-menu > button:hover, .dz-foot > a:hover{background:rgba(255,255,255,.12);color:#fff}
 .dz-menu > a.on, .dz-menu > button.on{background:#fff;color:var(--ind);font-weight:700;box-shadow:0 8px 18px -10px rgba(20,18,60,.45)}
@@ -1824,7 +1824,7 @@ body:not(.mo) .dz-scr > :not(.dz-side), body:not(.mo) .scr:has(> .psb) > :not(.p
   background:rgba(255,255,255,.12);color:#fff;font-variant-numeric:tabular-nums}
 .dz-menu .on .cnt{background:var(--ind50);color:var(--ind)}
 .dz-menu .opsSub{display:flex;flex-direction:column;gap:2px;margin:2px 0 6px 16px;padding-left:8px;border-left:1px solid rgba(255,255,255,.25)}
-.dz-menu .opsSub button{min-height:40px;padding:8px 10px;border:none;border-radius:10px;background:transparent;color:rgba(255,255,255,.94);
+.dz-menu .opsSub button{min-height:40px;padding:8px 10px;border:none;border-radius:6px;background:transparent;color:rgba(255,255,255,.94);
   font:inherit;font-size:13px;font-weight:600;text-align:left;cursor:pointer}
 .dz-menu .opsSub button:hover{background:rgba(255,255,255,.12);color:#fff}
 .dz-menu .opsSub button.on{background:rgba(255,255,255,.1);color:#fff;font-weight:700;box-shadow:inset 3px 0 0 #fff}
@@ -1840,14 +1840,14 @@ body:not(.mo) .dz-scr > :not(.dz-side), body:not(.mo) .scr:has(> .psb) > :not(.p
 .dz-grid{display:grid;grid-template-columns:minmax(0,1fr) 304px;gap:22px;align-items:start}
 .dz-col{display:flex;flex-direction:column;gap:18px;min-width:0}
 .dz-aside{display:flex;flex-direction:column;gap:18px;position:sticky;top:16px}
-.dz-card{position:relative;background:var(--white);border:1px solid rgba(79,82,209,.07);border-radius:22px;padding:20px 22px;box-shadow:var(--dzsh);min-width:0}
+.dz-card{position:relative;background:var(--white);border:1px solid rgba(79,82,209,.07);border-radius:14px;padding:20px 22px;box-shadow:var(--dzsh);min-width:0}
 .dz-k4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
 .dz-kpi{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;text-align:left;font:inherit;color:inherit;cursor:pointer;overflow:hidden;
   transition:transform var(--t-fast) ease,box-shadow var(--t-fast) ease}
 div.dz-kpi{cursor:default}
 button.dz-kpi:hover{transform:translateY(-2px);box-shadow:0 20px 40px -22px rgba(36,32,110,.38)}
 .dz-kt{display:flex;justify-content:space-between;align-items:center;width:100%;margin-bottom:14px}
-.dz-ic{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:14px;background:var(--ind50);color:var(--ind)}
+.dz-ic{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:10px;background:var(--ind50);color:var(--ind)}
 .dz-big{font-size:30px;font-weight:800;letter-spacing:-.04em;line-height:1.1;color:var(--n900)}
 .dz-lab{font-size:13.5px;font-weight:600;color:var(--n700)}
 .dz-sub{font-size:12.5px;color:var(--n500);margin-top:2px}
@@ -1878,7 +1878,7 @@ button.dz-kpi:hover{transform:translateY(-2px);box-shadow:0 20px 40px -22px rgba
 body.mo .dz-more{position:relative}
 body.mo .dz-more::after{content:"";position:absolute;left:-6px;right:-6px;top:-5px;bottom:-5px}
 .dz-more{margin-left:auto;font-size:13px;font-weight:700;color:var(--ind);cursor:pointer;padding:10px 4px;margin-top:-10px;margin-bottom:-10px}
-.dz-row{display:grid;grid-template-columns:40px minmax(0,1fr) auto;gap:14px;align-items:center;padding:12px 8px;border-radius:14px;cursor:pointer}
+.dz-row{display:grid;grid-template-columns:40px minmax(0,1fr) auto;gap:14px;align-items:center;padding:12px 8px;border-radius:8px;cursor:pointer}
 .dz-row:hover{background:var(--n50)}
 .dz-av{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:50%;background:var(--ind50);color:var(--ind)}
 .dz-rt{display:flex;flex-direction:column;gap:2px;min-width:0}
@@ -1892,9 +1892,9 @@ body.mo .dz-more::after{content:"";position:absolute;left:-6px;right:-6px;top:-5
 .dz-todo{display:flex;flex-direction:column;gap:4px}
 .dz-todo .dz-ct{margin-bottom:8px}
 .dz-ti{display:grid;grid-template-columns:38px minmax(0,1fr) auto;gap:12px;align-items:center;width:100%;min-height:52px;padding:8px 6px;
-  border:none;border-radius:14px;background:transparent;font:inherit;text-align:left;cursor:pointer}
+  border:none;border-radius:8px;background:transparent;font:inherit;text-align:left;cursor:pointer}
 .dz-ti:hover{background:var(--n50)}
-.dz-tic{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:12px;background:var(--n50);color:var(--ind)}
+.dz-tic{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:8px;background:var(--n50);color:var(--ind)}
 .dz-tt{display:flex;flex-direction:column;gap:2px;min-width:0}
 .dz-tt b{font-size:13.5px;font-weight:700;color:var(--n900)}
 .dz-tt span{font-size:12px;line-height:1.45;color:var(--n500)}
@@ -3074,7 +3074,10 @@ const 지금계정 = () => S.user ? `${S.user.method || ''}:${S.user.id || S.use
 /* 로그인이 끝난 뒤 가려던 곳으로 간다 - 읽고, 비우고, 간다를 한 자리에서.
    이메일 로그인·동의 저장·통신 복귀가 각자 적다가 '비우기만 하고 안 가는' 길이 생겼다. */
 function 로그인뒤로가기(){
-  const to = S.afterLogin || '#/my';
+  /* 갈 곳을 정하지 않고 들어왔으면(메인의 '로그인') 손님 화면으로 가되, 파트너 계정으로 확인되면
+     readAgent 가 대시보드로 옮긴다 - 파트너가 손님 화면에 떨어져 길을 찾지 않게(2026-10-29 대표님) */
+  S.기본으로들어옴 = !S.afterLogin && !S.agentKnown;   /* 이미 파트너인지 알면 바로 고른다 */
+  const to = S.afterLogin || (S.agent ? '#/partner/home' : '#/my');
   S.afterLogin = null;
   go(to);
 }
@@ -11271,7 +11274,7 @@ function render(){
      자격이 남았으면 그 자리로, 다 됐으면 수요 목록으로 보낸다. */
   /* 'already' 도 남긴다 - 방금 낸 신청이 왜 반영되지 않았는지 읽어야 한다 */
   if(h==='#/partner/join' && S.agent && !['ok','sending','already'].includes(S.form.jSent)){
-    location.replace(S.agent.status === 'approved' ? '#/partner/demands' : '#/partner/verify'); return;
+    location.replace(S.agent.status === 'approved' ? '#/partner/home' : '#/partner/verify'); return;
   }
   /* 파트너 화면(수요 목록·내 물건·설정·성과·내 제안·자격)은 파트너만 쓴다.
      2026-10-12 - 가입 전 계정이 '파트너 시작하기' 로그인 뒤 #/partner/demands 로
@@ -11297,7 +11300,7 @@ function render(){
     location.replace('#/partner/verify'); return;
   }
   if(h === '#/partner/verify' && S.agent && S.agent.status === 'approved'){
-    location.replace('#/partner/demands'); return;
+    location.replace('#/partner/home'); return;
   }
   if(h.startsWith('#/partner/propose/') && S.timeLeft<=0){ S.timeLeft = 900; }
   /* 본인확인 여부로 모양이 갈리는 화면 - 설정이 없거나 오래됐으면 다시 묻는다 */
@@ -11707,7 +11710,7 @@ function oauthStart(provider){
     toast('로컬 파일에서는 소셜 로그인이 되지 않습니다'); return;
   }
   /* 어디로 돌아와야 하는지 남겨둔다 - 돌아오면 주소가 갈아끼워져 있다 */
-  try{ sessionStorage.setItem('bk.after', S.afterLogin || '#/my'); }catch(e){}
+  try{ sessionStorage.setItem('bk.after', S.afterLogin || ''); }catch(e){}
   keepDraft();                         /* 적어둔 조건도 함께 - 돌아와서 이어 적는다 */
   /* 네이버는 Supabase 가 기본 제공하지 않는다 - 인증 왕복을 우리 서버 함수가 돈다.
      돌아오는 주소 모양은 같으므로 받는 쪽 코드는 하나로 둔다. */
@@ -11744,8 +11747,10 @@ function readAuthRedirect(){
   if(!/(^|&)(access_token|error)=/.test(raw)) return false;
   const q = new URLSearchParams(raw);
   const err = q.get('error_description') || q.get('error');
-  let back = '#/my';
-  try{ back = sessionStorage.getItem('bk.after') || '#/my'; sessionStorage.removeItem('bk.after'); }catch(e){}
+  let back = '';
+  try{ back = sessionStorage.getItem('bk.after') || ''; sessionStorage.removeItem('bk.after'); }catch(e){}
+  /* 갈 곳 없이 들어왔으면 손님 화면으로 가되 파트너로 확인되면 대시보드로(로그인뒤로가기 와 같은 규칙) */
+  if(!back){ back = '#/my'; S.기본으로들어옴 = true; }
   restoreDraft();          /* 나가기 전에 적어둔 조건을 그대로 이어 받는다 */
 
   if(err){
@@ -11768,6 +11773,7 @@ function readAuthRedirect(){
   render();
   hydrate(sess).then(ok => {
     S.authBusy = false;
+    if(ok && S.기본으로들어옴 && S.agent){ back = '#/partner/home'; S.기본으로들어옴 = false; }
     location.replace(location.pathname + (ok ? back : '#/login'));
     render();
     toast(ok ? `${(S.user&&S.user.label)||'계정'} 계정으로 로그인했습니다`
@@ -11857,6 +11863,12 @@ async function readAgent(미리){
     S.agent = (ok && j.agent) || null;
     S.agentKnown = !!ok;
   }catch(e){ S.agent = null; S.agentKnown = false; }   /* 못 물었으면 '모름' - '아님' 으로 단정하면 파트너가 가입으로 튕긴다 */
+  if(S.기본으로들어옴 && S.agentKnown){
+    const 지금 = location.hash || '';
+    /* 손님 화면에 도착한 뒤면 여기서 옮기고, 소셜 로그인 왕복 중(주소 비어 있음)이면 그 끝에서 옮긴다 */
+    if(지금 === '#/my'){ S.기본으로들어옴 = false; if(S.agent){ location.replace('#/partner/home'); return; } }
+    else if(지금 && 지금 !== '#/') S.기본으로들어옴 = false;
+  }
   /* 첫 그림이 이미 나간 뒤에 답이 올 수 있다 - boot 이 1.2초에서 끊고 그리기
      때문이다. 그때 다시 그리지 않으면 파트너로 가는 문이 **다음에 어디를
      누를 때까지** 안 보인다. 답이 달라졌을 때만 다시 그린다. */
@@ -12354,7 +12366,7 @@ function handle(a,v,el){
          손님 화면으로 떨어뜨리면 또 길을 찾아야 한다. */
       S.loginAs = v === 'partner' ? 'partner' : 'guest';
       S.signup = false;
-      S.afterLogin = v === 'partner' ? '#/partner/demands'
+      S.afterLogin = v === 'partner' ? '#/partner/home'
         : (location.hash && location.hash !== '#/partner' ? location.hash : '#/');
       go('#/login'); return true; }
     case 'ops-login':  S.afterLogin = OPS_HOME; go('#/login'); return true;

@@ -53,6 +53,16 @@ const M = new Function('esc', `${js.slice(시작, 끝)}\nreturn { dzLine, dzPill
      && /\.opsSub button\{[^}]*color:rgba\(255,255,255,\.94\)/.test(css) && /\.opsSub button\.on\{background:rgba\(255,255,255,\.1\);color:#fff;font-weight:700;box-shadow:inset 3px 0 0 #fff\}/.test(css)
      && /color:\$\{m==="dark" \? "rgba\(255,255,255,\.9\)" : sub\}">파트너/.test(js),
      '메뉴 위 작은 글자(꼬리표·묶음 이름·건수·하위 메뉴·로고 옆 파트너)는 4.5:1 을 넘는다');
+  /* 파트너는 로그인하면 바로 대시보드로 (2026-10-29 대표님) */
+  ok(/S\.afterLogin = v === 'partner' \? '#\/partner\/home'/.test(js) && /const to = S\.afterLogin \|\| \(S\.agent \? '#\/partner\/home' : '#\/my'\);/.test(js)
+     && /if\(지금 === '#\/my'\)\{ S\.기본으로들어옴 = false; if\(S\.agent\)\{ location\.replace\('#\/partner\/home'\); return; \} \}/.test(js)
+     && /if\(ok && S\.기본으로들어옴 && S\.agent\)\{ back = '#\/partner\/home';/.test(js) && /sessionStorage\.setItem\('bk\.after', S\.afterLogin \|\| ''\)/.test(js),
+     '파트너 로그인 단추·그냥 로그인·소셜 로그인 모두, 파트너 계정이면 대시보드로 들어간다');
+  ok(/'#\/partner\/home' : '#\/partner\/verify'\); return;/.test(js) && /S\.agent\.status === 'approved'\)\{\s*location\.replace\('#\/partner\/home'\)/.test(js),
+     '이미 승인된 파트너가 가입·자격 화면에 오면 대시보드로');
+  /* 대시보드도 덜 둥글게 */
+  ok(/\.dz-card\{[^}]*border-radius:14px/.test(css) && /padding:18px 8px 12px;border-radius:16px;/.test(css) && /\.dz-ic\{[^}]*border-radius:10px/.test(css),
+     '대시보드 카드 14px · 메뉴 판 16px · 아이콘 칸 10px');
   /* 단추가 너무 둥글다(2026-10-29 대표님) - 누르는 것은 각진 둥근 모서리, 알약은 상태 꼬리표에만 */
   ok(/--r-btn:10px; --r-ctl:8px;/.test(css) && /\.btn\{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:var\(--r-btn\);/.test(css)
      && /\.chip\{border:1\.5px solid var\(--edge\);background:var\(--white\);color:var\(--n700\);border-radius:var\(--r-ctl\);/.test(css)

@@ -512,8 +512,9 @@ ok(!/h==='#\/partner'\) loadMyProps|h==='#\/partner'\) loadListings/.test(js), '
     ok(/  S\.lastRoute = h;\n  그린계정 = 지금계정\(\);/.test(몸), '끝까지 그린 길은 누구로 그렸는지 적는다');
   }
   /* 로그인 뒤 이동은 한 곳 - 세 군데가 각자 적다가 '비우기만 하고 안 가는' 길이 생겼다 */
-  ok((js.match(/S\.afterLogin \|\| '#\/my'/g) || []).length === 2
-     && /function 로그인뒤로가기\(\)\{\s*const to = S\.afterLogin \|\| '#\/my';\s*S\.afterLogin = null;\s*go\(to\);/.test(js),
+  /* 2026-10-29: 갈 곳이 없으면 파트너는 대시보드로 - 소셜 로그인은 빈 값을 담아 돌아와서 같은 규칙을 탄다 */
+  ok((js.match(/S\.afterLogin \|\| /g) || []).length === 2 && /sessionStorage\.setItem\('bk\.after', S\.afterLogin \|\| ''\)/.test(js)
+     && /function 로그인뒤로가기\(\)\{[\s\S]{0,300}const to = S\.afterLogin \|\| \(S\.agent \? '#\/partner\/home' : '#\/my'\);\s*S\.afterLogin = null;\s*go\(to\);/.test(js),
      '가려던 곳으로 가는 일은 로그인뒤로가기 한 곳에서 한다(나머지 하나는 소셜 로그인이 페이지를 떠나기 전 담아두는 자리)');
   {
     const 시작 = js.indexOf("V['#/login'] = () => {");
@@ -583,7 +584,7 @@ ok((js.match(/'#\/ops\/live'/g) || []).length === 1 && /const OPS_HOME = '#\/ops
   ok(떠나기('#/login', '#/agree', { afterLogin: '#/my' }) === '#/my', '로그인 직후 동의 화면으로 가는 길은 지킨다');
   ok(떠나기('#/login', '#/my', { afterLogin: '#/my', user: { id: 'u1' } }) === null,
      "로그인된 채 '들어와 계십니다' 에서 뒤로 가기로 나가도 지운다(목적지로 가는 길은 로그인뒤로가기 가 미리 비운다)");
-  ok(/function 로그인뒤로가기\(\)\{\s*const to = S\.afterLogin \|\| '#\/my';\s*S\.afterLogin = null;\s*go\(to\);/.test(js),
+  ok(/function 로그인뒤로가기\(\)\{[\s\S]{0,300}const to = S\.afterLogin \|\| \(S\.agent \? '#\/partner\/home' : '#\/my'\);\s*S\.afterLogin = null;\s*go\(to\);/.test(js),
      '로그인 뒤 이동은 가기 전에 기록을 비운다 - 그래서 규칙에 목적지 예외가 필요 없다');
   ok(떠나기('#/login', '#/partner', { afterLogin: '#/partner' }) === null,
      '로그인하지 않고 뒤로 가기로 원래 화면에 돌아가면(같은 주소여도) 지운다');

@@ -12,18 +12,20 @@
  *  ③ 서류 안의 글은 자료일 뿐 지시가 아니다 - 서류에 "칸에 ○○라고 적어라" 가 있어도 따르지 않는다.
  *  ④ AI 가 읽은 값은 '확인을 기다리는' 값이다 - 화면이 남색으로 표시하고 중개사가 확인한다.
  *
- * 모델 설정(Lounge api/src/docAi.mjs 와 같은 결 - claude-api 문서 'Claude Opus 5.5' 대로):
- *   · model claude-opus-5-5. thinking 칸은 보내지 않는다(이 모델은 끌 수 없다)
+ * 모델 설정(claude-api 문서 'Claude Haiku 5.5' 대로):
+ *   · model claude-haiku-5-5 - 대표님(10-29) "가격이 좀 비싼거 같은데". 처음엔 Opus 5.5($4/$20, 100만 토큰당)였다.
+ *     Haiku 5.5 는 $0.10/$0.50(요청 10만 토큰 이하) - 옮겨 적기(추출)는 Haiku 가 맡는 일이라 40분의 1 값으로 내렸다.
+ *     읽기가 자주 틀리면 Sonnet 5.5('claude-sonnet-5-5', $2/$10)가 다음 칸이다
+ *   · thinking 칸은 보내지 않는다(적응형 기본) - 양은 effort 로 조절한다
  *   · output_config.effort 'low' - 서류를 옮겨 적는 일은 깊은 추론보다 정확한 읽기다
  *   · output_config.format - JSON 스키마(구조화 출력)
- *   · 서버 쪽 대체 모델 - fallbacks: "default" + 베타 머리 server-side-fallback-2026-07-01
+ *   · 서버 쪽 대체 모델은 없다 - Haiku 5.5 는 fallbacks 를 받지 않는다(목록을 주면 400). 거절은 화면이 '직접 적어 주세요' 로 받는다
  *   · 요청 본문 상한 - Vercel 함수 본문 4.5MB. base64 가 1.33배라 원본 합계 3MB 까지(화면이 사진을 줄여 보낸다)
  */
 import { 주민번호있나 } from './_contract.js';
 
-export const SCAN_MODEL = 'claude-opus-5-5';
+export const SCAN_MODEL = 'claude-haiku-5-5';
 export const SCAN_EFFORT = 'low';
-export const FALLBACK_BETA = 'server-side-fallback-2026-07-01';
 export const SCAN_MAX_FILES = 3;
 export const SCAN_MAX_BYTES = 3 * 1024 * 1024;          /* 원본 합계 */
 export const SCAN_MAX_PDF_PAGES = 20;
@@ -147,8 +149,6 @@ export function scanRequest(blocks) {
   return {
     model: SCAN_MODEL,
     max_tokens: 16000,
-    betas: [FALLBACK_BETA],
-    fallbacks: 'default',
     output_config: { effort: SCAN_EFFORT, format: { type: 'json_schema', schema: SCAN_SCHEMA } },
     system: SCAN_SYSTEM,
     messages: [{ role: 'user', content: [...blocks, { type: 'text', text: SCAN_TEXT }] }],
@@ -219,11 +219,11 @@ export async function scanDocs(files) {
   const { client, A } = await 클라이언트();
   let res;
   try {
-    res = await client.beta.messages.create(scanRequest(blocks), { timeout: TIMEOUT_MS, maxRetries: 1 });
+    res = await client.messages.create(scanRequest(blocks), { timeout: TIMEOUT_MS, maxRetries: 1 });
   } catch (e) {
     throw 오류(e, A);
   }
-  /* 거절은 HTTP 200 으로 온다 - 내용을 읽기 전에 stop_reason 부터. 대체 모델까지 거절했으면 여기로 온다 */
+  /* 거절은 HTTP 200 으로 온다 - 내용을 읽기 전에 stop_reason 부터 */
   if (res && res.stop_reason === 'refusal') throw new ScanError('refused', 422);
   if (res && res.stop_reason === 'max_tokens') throw new ScanError('too_long', 422);
   const 글 = ((res && res.content) || []).filter(b => b && b.type === 'text').map(b => b.text).join('');

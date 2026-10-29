@@ -20,7 +20,7 @@ import crypto from 'node:crypto';
 import { sbHeaders, sbUrl } from './_auth.js';
 
 /* 주택임대차 · 상가건물 임대차 · 부동산 매매 · 중개대상물 확인·설명서(주거용) (화면의 CT_FORMS 와 같은 이름) */
-export const CT_FORMS = ['home-lease', 'shop-lease', 'sale', 'explain-home'];
+export const CT_FORMS = ['home-lease', 'shop-lease', 'sale', 'explain-home', 'explain-biz', 'explain-land', 'explain-etc'];
 export const CT_SCHEMA = 'bk-contract/1';
 const CT_MAX = 64 * 1024;                     /* 계약서 한 장 - 조항·특약을 넉넉히 적어도 이 안이다 */
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

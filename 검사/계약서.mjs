@@ -109,13 +109,13 @@ const html = 길.html(), js = 길.js(), css = 길.css();
 const 시작 = js.indexOf('/* ══════════ 계약서 (2026-10-29)'), 끝 = js.indexOf('/* ── 화면: 목록 ── */');
 const 몸 = js.slice(시작, 끝);
 /* 확인·설명서 모듈 - 표(EX_SPEC)와 그리기. 작성 화면 함수(exChips 아래)는 빼고 꺼낸다 */
-const 확시작 = js.indexOf('/* ══════════ 중개대상물 확인·설명서[Ⅰ]'), 확끝 = js.indexOf('/* ── 작성 화면 ── 같은 표에서 칸을 만든다 */');
+const 확시작 = js.indexOf('/* ══════════ 중개대상물 확인·설명서 [Ⅰ]~[Ⅳ]'), 확끝 = js.indexOf('/* ── 작성 화면 ── 같은 표에서 칸을 만든다 */');
 const 확몸 = js.slice(확시작, 확끝);
 const 신시작 = js.indexOf('/* ══════════ 거래신고 도우미'), 신끝 = js.indexOf('/* 계약서 입력 - 글자마다');
 const 신몸 = js.slice(신시작, 신끝);
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const 모듈 = new Function('S', 'esc', 'apiFetch', '세션있음', 'render', 'toast',
-  `${몸}\n${확몸}\n${신몸}\nreturn { rpItems, rp기한, rp대상, rpHTML, RP_직접, 한글금액, 금액글, ctNewDoc, ctDocHTML, ctBalance, CT_HOME_CLAUSES, CT_SPECIALS, CT_FORMS, exNewDoc, exDocHTML, EX_SPEC };`);
+  `${몸}\n${확몸}\n${신몸}\nreturn { rpItems, rp기한, rp대상, rpHTML, RP_직접, 한글금액, 금액글, ctNewDoc, ctDocHTML, ctBalance, CT_HOME_CLAUSES, CT_SPECIALS, CT_FORMS, exNewDoc, exDocHTML, EX_SPEC, EX_FORMS, exFormFor };`);
 const S = { agent: { office: '비버공인중개사사무소', name: '한상혁', reg_no: '41450-2024-00001', addr: '하남시 미사대로 550', phone: '031-000-0000' } };
 const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
 {
@@ -233,7 +233,7 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
   e.ex.violation = '적법'; e.ex.nimby = '있음'; e.ex.nimbyWhat = '변전소 600m'; e.ex.fee = 3000000; e.ex.cost = 50000;
   e.parties.a.birth = '1970-01-01';
   const h = M.ctDocHTML(e);
-  ok(/별지 제20호서식\] &lt;개정 2024\. 7\. 2\.&gt;/.test(h) && /중개대상물 확인ㆍ설명서\[Ⅰ\] \(주거용 건축물\)/.test(h), '머리에 서식 근거와 개정일이 찍힌다');
+  ok(/별지 제20호서식\] &lt;개정 2026\. 8\. 11\.&gt;/.test(h) && /중개대상물 확인ㆍ설명서\[Ⅰ\] \(주거용 건축물\)/.test(h), '머리에 서식 근거와 개정일이 찍힌다');
   ok(/\[√\]공동주택/.test(h) && /\[&nbsp;&nbsp;\]단독주택/.test(h) && /\[√\]매매ㆍ교환/.test(h), '고른 것은 [√], 안 고른 것은 [ ]');
   ok(/\[√\]그 밖의 자료 \(관리비 고지서\)/.test(h) && /\[√\]있음 \(종류 및 위치: 변전소 600m\)/.test(h), '고른 선택지 뒤 글칸이 붙는다 (그 밖의 자료 · 종류 및 위치)');
   ok(/3,050,000 원/.test(h), '⑮ 계 = 중개보수 + 실비');
@@ -243,6 +243,41 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
   ok(C.docCheck('explain-home', { schema: 'bk-contract/1', form: 'explain-home', property: {}, parties: { a: { birth: '700101' } } }) === null,
      '서버가 확인·설명서를 받는다 · 생년월일 6자리는 막지 않는다');
   ok(/case 'ct-explain':[\s\S]{0,200}계약서를 먼저 저장해 주세요/.test(js), '계약서에서 확인·설명서로 갈 때 저장 안 한 고침이 있으면 먼저 저장하게 한다');
+
+  /* 2026. 8. 11. 개정 - 신탁원부 · 신탁등기 · 공동담보 · 공동관리비 · 사용량 확인 비목 · 갱신요구권이 ② 로 */
+  const 권리 = M.EX_SPEC.find(s => s.h === '② 권리관계'), 임대 = M.EX_SPEC.find(s => s.h === '④ 임대차 확인사항');
+  ok(값들.includes('"신탁원부"') && 값들.includes('"공부(公簿)상 지목"'), '[Ⅰ] 2026. 8. 11.: 근거자료에 신탁원부 · "공부(公簿)상 지목"');
+  ok(권리.rows.map(r => r.l).join('|').includes('신탁등기 여부|공동담보 여부|계약갱신 요구권 행사 여부')
+     && JSON.stringify(권리).includes('서류 확인(첨부)') && !JSON.stringify(임대).includes('계약갱신'),
+     '[Ⅰ] 2026. 8. 11.: ② 에 신탁등기·공동담보·계약갱신요구권(서류 확인) - ④ 에서는 빠졌다');
+  ok(값들.includes('공동관리비 금액: 총') && 값들.includes('사용량 또는 비용 확인가능 비목:'), '[Ⅰ] 2026. 8. 11.: ⑥ 공동관리비 · 사용량 확인 비목');
+
+  /* [Ⅱ] [Ⅲ] [Ⅳ] - 번호가 빠짐없이 차례대로 · 서식마다 다른 칸 */
+  const 끝번호 = { 'explain-biz': '⑪', 'explain-land': '⑨', 'explain-etc': '⑧' };
+  for (const [k, n] of Object.entries(끝번호)) {
+    const E = M.EX_FORMS[k], 머 = E.spec.filter(s => s.h).map(s => s.h[0]).filter(c => 번호.includes(c));
+    ok(머.join('') === 번호.slice(0, 번호.indexOf(n) + 1).join(''), `${E.h1}: 항목 ①~${n} 차례대로 (${머.join('')})`);
+    ok(E.spec.filter(s => s.g).length === 3 && /별지 제20호의[234]서식\] <개정 20(21\. 12\. 31|20\. 10\. 27)\.>/.test(E.law), `${E.h1}: Ⅰ·Ⅱ·Ⅲ 묶음 · 서식 번호와 개정일`);
+  }
+  const 비 = JSON.stringify(M.EX_FORMS['explain-biz'].spec), 토 = JSON.stringify(M.EX_FORMS['explain-land'].spec), 입 = JSON.stringify(M.EX_FORMS['explain-etc'].spec);
+  ok(비.includes('소방 · 소화전') && 비.includes('소방 · 비상벨') && !비.includes('단독경보형') && !비.includes('지역난방') && 비.includes('⑩ 벽면 및 바닥면') && !비.includes('도배'),
+     '[Ⅱ] 비주거용: 소방은 소화전·비상벨 · 지역난방 없음 · 벽면 및 바닥면(도배 없음)');
+  ok(비.includes('해당사항 없음') && 비.includes('확인(확인서류 첨부)') && !비.includes('교육시설') && !비.includes('신탁원부'), '[Ⅱ] 민간임대 해당사항 없음 · 갱신요구권 · 교육시설 없음 · 신탁원부 없음');
+  ok(!토.includes('건축물 ·') && 토.includes('비선호시설') && 토.includes('1천분의 9 이내에서 중개의뢰인과 개업공인중개사가 서로 협의하여 결정하며,') && 토.includes('※ 재산세는 6월 1일'),
+     '[Ⅲ] 토지: 건축물 칸 없음 · 비선호시설 · 중개보수 1천분의 9 안내 · 재산세 안내');
+  ok(입.includes('"입목","광업재단","공장재단"') && 입.includes('③ 재단목록 또는 입목의 생육상태') && 입.includes('④ 그 밖의 참고사항') && 입.includes('결정하며 부가가치세'),
+     '[Ⅳ] 입목·재단: 대상물 종별 · 재단목록/생육상태 · 그 밖의 참고사항 · 안내문(쉼표 없음, 원문대로)');
+  ok(M.EX_FORMS['explain-biz'].kinds.map(k => k[2].join('/')).join(' | ') === '업무용/상업용/공업용 | 매매ㆍ교환/임대/그 밖의 경우',
+     '[Ⅱ] 머리 선택지: 업무용·상업용·공업용 / 매매ㆍ교환·임대·그 밖의 경우');
+
+  /* 계약서에서 만들면 알맞은 서식으로 */
+  ok(M.exFormFor({ form: 'shop-lease' }) === 'explain-biz' && M.exFormFor({ form: 'home-lease' }) === 'explain-home'
+     && M.exFormFor({ form: 'sale', property: { bldUse: '아파트' } }) === 'explain-home' && M.exFormFor({ form: 'sale', property: { bldUse: '제1종 근린생활시설' } }) === 'explain-biz'
+     && M.exFormFor({ form: 'sale', property: { landCat: '전', landArea: '300' } }) === 'explain-land',
+     '계약서에서: 상가 → 비주거용 · 주택 → 주거용 · 매매는 건물 용도로 · 건물 없으면 토지');
+  const 상 = M.ctDocHTML(M.exNewDoc({ ...M.ctNewDoc('shop-lease'), __id: 'x' }));
+  ok(/중개대상물 확인ㆍ설명서\[Ⅱ\] \(비주거용 건축물\)/.test(상) && /\[√\]상업용/.test(상) && /\[√\]임대/.test(상) && !/주택 유형/.test(상), '상가 계약서에서 만든 비주거용 - 상업용·임대에 표시');
+  ok(/case 'ex-form': if\(CT\.doc && EX_FORMS\[v\] && !\(CT\.row && CT\.row\.status === 'sealed'\)\)/.test(js), '서식 바꾸기는 날인본에서 막는다');
 }
 
 /* ── 거래신고 도우미 (2단계) - 별지 제1호서식(2026. 2. 6.) · 별지 제5호의2서식(2023. 12. 29.) ── */

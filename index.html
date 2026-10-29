@@ -9644,6 +9644,9 @@ const CT_FORMS = {
     foot:'부동산 매매계약서의 일반적인 항목을 따라' },
   /* 법정 서식 - 조항·특약이 없다. 그리기와 작성 화면은 EX_SPEC 이 맡는다(아래) */
   'explain-home': { ko:'중개대상물 확인·설명서(주거용)', explain:true, clauses:[], specials:[] },
+  'explain-biz':  { ko:'중개대상물 확인·설명서(비주거용)', explain:true, clauses:[], specials:[] },
+  'explain-land': { ko:'중개대상물 확인·설명서(토지)', explain:true, clauses:[], specials:[] },
+  'explain-etc':  { ko:'중개대상물 확인·설명서(입목·광업재단·공장재단)', explain:true, clauses:[], specials:[] },
 };
 const CT_FORM_KO = Object.fromEntries(Object.entries(CT_FORMS).map(([k, f]) => [k, f.ko]));
 /* 예전 이름 - 주택 특약 모음 */
@@ -9652,7 +9655,7 @@ const CT_SPECIALS = CT_HOME_SPECIALS;
 /* 새 계약서 한 장. 중개사무소 칸은 가입 때 받은 값으로 채운다 */
 function ctNewDoc(form, from){
   const F = CT_FORMS[form] || CT_FORMS['home-lease'];
-  if(F.explain) return exNewDoc(from);
+  if(F.explain) return exNewDoc(from, form);
   const a = S.agent || {};
   const p = (from && from.property) || {};
   const d = (from && from.deal) || {};
@@ -9855,8 +9858,9 @@ V['#/partner/contracts'] = () => {
   <div class="pad" style="flex:1;padding-top:${isMo()?18:28}px;padding-bottom:24px;max-width:${isMo()?'none':'880px'};margin:0 auto;width:100%;display:flex;flex-direction:column;gap:16px">
     <div><h1 class="t" style="font-size:${isMo()?21:25}px">계약서</h1>
       <p class="sub measure">양식을 골라 고치고, 기본 정보를 채워 바로 인쇄하세요. 주민등록번호·계좌·서명 칸은 비워서 인쇄되니 만나서 손으로 적으시면 됩니다.</p></div>
-    <div class="ct-forms">${Object.entries(CT_FORMS).map(([k, f]) =>
-      `<button class="btn ${k==='home-lease'?'pri':'sec'}" data-act="ct-new" data-v="${k}">새 ${esc(f.ko)}</button>`).join('')}</div>
+    <div class="ct-forms">${Object.entries(CT_FORMS).filter(([, f]) => !f.explain).map(([k, f]) =>
+      `<button class="btn ${k==='home-lease'?'pri':'sec'}" data-act="ct-new" data-v="${k}">새 ${esc(f.ko)}</button>`).join('')}
+      <button class="btn sec" data-act="ct-new" data-v="explain-home">새 중개대상물 확인·설명서</button></div>
     ${CT.need ? `<div class="card pad"><b>계약서 기능을 준비 중입니다.</b><p class="sub" style="margin:6px 0 0">곧 열립니다 - 잠시 뒤 다시 들어와 주세요.</p></div>`
     : CT.loading && !CT.list ? `<div class="card pad"><p class="sub" style="margin:0">불러오는 중입니다…</p></div>`
     : CT.err ? `<div class="card pad"><p class="sub" style="margin:0">${esc(CT.err)}</p></div>`
@@ -9930,8 +9934,8 @@ V['#/partner/contract'] = (id) => {
   ${navPartner('ct', false)}
   <div class="pad" style="flex:1;padding-top:16px;padding-bottom:32px;width:100%;max-width:880px;margin:0 auto;display:flex;flex-direction:column;gap:14px">
     ${bar}
-    <h1 class="t" style="font-size:${isMo()?20:24}px">중개대상물 확인ㆍ설명서[Ⅰ] (주거용 건축물)</h1>
-    <p class="sub measure" style="margin-top:-6px">공인중개사법 시행규칙 별지 제20호서식(2024. 7. 2. 개정)의 항목 그대로입니다. 비워 둔 칸은 빈칸으로 인쇄됩니다.</p>
+    <h1 class="t" style="font-size:${isMo()?20:24}px">${esc((EX_FORMS[doc.form] || EX_FORMS['explain-home']).h1)}</h1>
+    <p class="sub measure" style="margin-top:-6px">공인중개사법 시행규칙 ${esc((EX_FORMS[doc.form] || EX_FORMS['explain-home']).law)} 의 항목 그대로입니다. 비워 둔 칸은 빈칸으로 인쇄됩니다.</p>
     ${exEditor(doc)}
     ${잠김||!CT.id ? '' : `<button class="tapx" data-act="ct-del" style="align-self:flex-start;font-size:12.5px;color:var(--danger)">이 확인·설명서 지우기</button>`}
   </div>
@@ -10037,67 +10041,138 @@ V['#/partner/contract'] = (id) => {
 };
 
 
-/* ══════════ 중개대상물 확인·설명서[Ⅰ] 주거용 건축물 (2026-10-29) ══════════
-   공인중개사법 시행규칙 별지 제20호서식 <개정 2024. 7. 2.> 을 그대로 옮긴다(국가법령정보센터 원문 대조).
-   계약서와 달리 **법정 서식**이라 항목 ①~⑮ 와 칸·선택지를 서식 그대로 둔다 - 빼거나 고칠 수 없다.
+/* ══════════ 중개대상물 확인·설명서 [Ⅰ]~[Ⅳ] (2026-10-29) ══════════
+   공인중개사법 시행규칙 별지 서식 넷을 그대로 옮긴다(국가법령정보센터 원문 PDF 대조, 2026-10-29 현행).
+     [Ⅰ] 주거용 건축물           별지 제20호서식     <개정 2026. 8. 11.>
+     [Ⅱ] 비주거용 건축물         별지 제20호의2서식  <개정 2021. 12. 31.>
+     [Ⅲ] 토지                    별지 제20호의3서식  <개정 2020. 10. 27.>
+     [Ⅳ] 입목·광업재단·공장재단  별지 제20호의4서식  <개정 2020. 10. 27.>
+   ⚠ 처음에는 [Ⅰ] 을 2024. 7. 2. 판으로 만들었다 - 검색이 옛 파일을 가리켰다. 2026. 8. 11. 개정으로
+      신탁원부·신탁등기·공동담보·공동관리비·사용량 확인 비목이 생기고 계약갱신요구권이 ② 로 옮겼다.
+      서식이 또 바뀌면 law.go.kr 의 그 서식 페이지(pdfFlSeq)에서 원문을 받아 다시 맞춘다.
+   계약서와 달리 **법정 서식**이라 항목과 칸·선택지를 서식 그대로 둔다 - 빼거나 고칠 수 없다.
    ⚠ 서식의 당사자 칸은 주민등록번호가 아니라 '생년월일' 이다. 주민번호는 여기에도 없다.
 
-   칸이 아주 많다. 하나씩 손으로 짜지 않고 EX_SPEC 표 하나에 적고, 작성 화면과 인쇄 문서를 둘 다
-   이 표에서 만든다 - 화면과 인쇄본이 어긋날 수 없게.
+   칸이 아주 많다. 하나씩 손으로 짜지 않고 서식마다 표(spec) 하나에 적고, 작성 화면과 인쇄 문서를 둘 다
+   이 표에서 만든다 - 화면과 인쇄본이 어긋날 수 없게. 서식들이 같이 쓰는 칸은 아래 '조각' 함수로 만든다.
    칸 종류: one 하나 고름 · many 여럿 고름 · text 글 · money 금액 · area 여러 줄 글 · note 고정 안내 · sign 서명란
    x 는 '그 선택지를 고르면 뒤에 붙는 글칸' 이다 - 예) 있음 (위치: ____ ) */
-const EX_HOUSE = ['단독주택','공동주택','주거용 오피스텔'];
-const EX_DEAL = ['매매ㆍ교환','임대'];
 const 탈것 = ['도보','차량'];
+const EX_유의 = 등본 => ({ h:'유의사항', rows:[
+  { l:'개업공인중개사의 확인ㆍ설명 의무', p:[{ t:'note', s:`개업공인중개사는 중개대상물에 관한 권리를 취득하려는 중개의뢰인에게 성실ㆍ정확하게 설명하고, ${등본}, 등기사항증명서 등 설명의 근거자료를 제시해야 합니다.` }] },
+  { l:'실제 거래가격 신고', p:[{ t:'note', s:'「부동산 거래신고 등에 관한 법률」 제3조 및 같은 법 시행령 별표 1 제1호마목에 따른 실제 거래가격은 매수인이 매수한 부동산을 양도하는 경우 「소득세법」 제97조제1항 및 제7항과 같은 법 시행령 제163조제11항제2호에 따라 취득 당시의 실제 거래가액으로 보아 양도차익이 계산될 수 있음을 유의하시기 바랍니다.' }] },
+]});
+const EX_자료 = docs => ({ h:'확인ㆍ설명 자료', rows:[
+  { l:'확인ㆍ설명 근거자료 등', p:[{ t:'many', k:'ex.docs', o:docs, x:{'그 밖의 자료':['ex.docsEtc','']} }] },
+  { l:'대상물건의 상태에 관한 자료요구 사항', p:[{ t:'area', k:'ex.askState' }] },
+]});
+const EX_DOCS7 = ['등기권리증','등기사항증명서','토지대장','건축물대장','지적도','임야도','토지이용계획확인서','그 밖의 자료'];
+const EX_토지칸 = 공부 => [
+  { l:'토지 · 소재지', p:[{ t:'addr' }] },
+  { l:'토지 · 면적(㎡)', p:[{ t:'text', k:'property.landArea', w:90 }] },
+  { l:'토지 · 지목', p:[{ t:'text', k:'property.landCat', pre:공부, w:80 }, { t:'text', k:'ex.landUseReal', pre:'실제 이용 상태', w:100 }] },
+];
+const EX_건물칸 = [
+  { l:'건축물 · 전용면적(㎡)', p:[{ t:'text', k:'property.bldArea', w:80 }] },
+  { l:'건축물 · 대지지분(㎡)', p:[{ t:'text', k:'ex.landShare', w:80 }] },
+  { l:'건축물 · 준공년도(증개축년도)', p:[{ t:'text', k:'ex.builtYear', w:90 }] },
+  { l:'건축물 · 용도', p:[{ t:'text', k:'property.bldUse', pre:'건축물대장상 용도', w:110 }, { t:'text', k:'ex.useReal', pre:'실제 용도', w:100 }] },
+  { l:'건축물 · 구조', p:[{ t:'text', k:'property.bldStruct', w:140 }] },
+  { l:'건축물 · 방향', p:[{ t:'text', k:'ex.dir', w:70 }, { t:'text', k:'ex.dirBase', pre:'(기준:', suf:')', w:110 }] },
+  { l:'건축물 · 내진설계 적용여부', p:[{ t:'text', k:'ex.seismic', w:80 }, { t:'text', k:'ex.seismicLevel', pre:'내진능력', w:80 }] },
+  { l:'건축물 · 건축물대장상 위반건축물 여부', p:[{ t:'one', k:'ex.violation', o:['위반','적법'] }, { t:'text', k:'ex.violationNote', pre:'위반내용', w:160 }] },
+];
+const EX_등기 = 건물 => [
+  { l:'등기부 기재사항 · 소유권에 관한 사항 (토지)', p:[{ t:'area', k:'ex.ownLand' }] },
+  ...(건물 ? [{ l:'등기부 기재사항 · 소유권에 관한 사항 (건축물)', p:[{ t:'area', k:'ex.ownBld' }] }] : []),
+  { l:'등기부 기재사항 · 소유권 외의 권리사항 (토지)', p:[{ t:'area', k:'ex.etcLand' }] },
+  ...(건물 ? [{ l:'등기부 기재사항 · 소유권 외의 권리사항 (건축물)', p:[{ t:'area', k:'ex.etcBld' }] }] : []),
+];
+const EX_민간 = 없음 => ({ l:'민간임대 등록여부', p:[{ t:'one', k:'ex.private', o:['등록 - 장기일반민간임대주택','등록 - 공공지원민간임대주택','등록 - 그 밖의 유형','미등록', ...(없음 ? ['해당사항 없음'] : [])],
+  x:{'등록 - 그 밖의 유형':['ex.privateEtc','']} }, { t:'text', k:'ex.privateTerm', pre:'임대의무기간', w:70 }, { t:'text', k:'ex.privateStart', pre:'임대개시일', w:80 }] });
+const EX_이용 = 번 => ({ h:`${번} 토지이용계획, 공법상 이용제한 및 거래규제에 관한 사항(토지)`, rows:[
+  { l:'지역ㆍ지구 · 용도지역', p:[{ t:'text', k:'ex.zone', w:140 }] },
+  { l:'지역ㆍ지구 · 용도지구', p:[{ t:'text', k:'ex.district', w:140 }] },
+  { l:'지역ㆍ지구 · 용도구역', p:[{ t:'text', k:'ex.area', w:140 }] },
+  { l:'건폐율 상한 · 용적률 상한', p:[{ t:'text', k:'ex.bcr', pre:'건폐율 상한', suf:'%', w:50 }, { t:'text', k:'ex.far', pre:'용적률 상한', suf:'%', w:50 }] },
+  { l:'도시ㆍ군계획시설', p:[{ t:'text', k:'ex.facility', w:180 }] },
+  { l:'허가·신고 구역 여부', p:[{ t:'many', k:'ex.permitZone', o:['토지거래허가구역'] }] },
+  { l:'투기지역 여부', p:[{ t:'many', k:'ex.spec', o:['토지투기지역','주택투기지역','투기과열지구'] }] },
+  { l:'지구단위계획구역, 그 밖의 도시ㆍ군관리계획', p:[{ t:'text', k:'ex.plan', w:200 }] },
+  { l:'그 밖의 이용제한 및 거래규제사항', p:[{ t:'area', k:'ex.restrict' }] },
+]});
+const EX_교통 = [['버스','bus','정류장'],['지하철','subway','역']].map(([l,k,끝]) =>
+  ({ l:`대중교통 · ${l}`, p:[{ t:'text', k:`ex.${k}`, pre:'(', suf:`) ${끝},`, w:90 }, { t:'one', k:`ex.${k}By`, o:탈것, pre:'소요시간:' }, { t:'text', k:`ex.${k}Min`, pre:'약', suf:'분', w:30 }] }));
+const EX_입지 = (번, 주차, 학교) => ({ h:`${번} 입지조건`, rows:[
+  { l:'도로와의 관계', p:[{ t:'text', k:'ex.roadW', pre:'(', w:40 }, { t:'text', k:'ex.roadL', pre:'m ×', suf:'m )도로에 접함', w:40 }, { t:'one', k:'ex.roadPave', o:['포장','비포장'] }] },
+  { l:'접근성', p:[{ t:'one', k:'ex.access', o:['용이함','불편함'] }] },
+  ...EX_교통,
+  ...(주차 ? [{ l:'주차장', p:[{ t:'one', k:'ex.parking', o:['없음','전용주차시설','공동주차시설','그 밖의 주차시설'], x:{'그 밖의 주차시설':['ex.parkingEtc','']} }] }] : []),
+  ...(학교 ? [['초등학교','elem'],['중학교','mid'],['고등학교','high']].map(([l,k]) =>
+    ({ l:`교육시설 · ${l}`, p:[{ t:'text', k:`ex.${k}`, pre:'(', suf:') 학교,', w:90 }, { t:'one', k:`ex.${k}By`, o:탈것, pre:'소요시간:' }, { t:'text', k:`ex.${k}Min`, pre:'약', suf:'분', w:30 }] })) : []),
+]});
+const EX_비선호 = 번 => ({ h:`${번} 비선호시설(1km이내)`, rows:[ { l:'', p:[{ t:'one', k:'ex.nimby', o:['없음','있음'], x:{'있음':['ex.nimbyWhat','종류 및 위치:']} }] } ]});
+const EX_금액 = 번 => ({ h:`${번} 거래예정금액 등`, rows:[
+  { l:'거래예정금액', p:[{ t:'money', k:'ex.price', suf:'원' }] },
+  { l:'개별공시지가(㎡당)', p:[{ t:'money', k:'ex.landPrice', suf:'원' }] },
+  { l:'건물(주택)공시가격', p:[{ t:'money', k:'ex.housePrice', suf:'원' }] },
+]});
+const EX_조세 = (번, 안내) => ({ h:`${번} 취득 시 부담할 조세의 종류 및 세율`, rows:[
+  { l:'', p:[{ t:'text', k:'ex.taxAcq', pre:'취득세', suf:'%', w:40 }, { t:'text', k:'ex.taxFarm', pre:'농어촌특별세', suf:'%', w:40 }, { t:'text', k:'ex.taxEdu', pre:'지방교육세', suf:'%', w:40 }, { t:'note', s:안내 }] },
+]});
+const EX_실제 = 번 => ({ h:`${번} 실제 권리관계 또는 공시되지 않은 물건의 권리 사항`, rows:[ { l:'', p:[{ t:'area', k:'ex.realRight' }] } ]});
+const EX_있음위치 = (l, k) => ({ l, p:[{ t:'one', k, o:['없음','있음'], x:{'있음':[k + 'At','위치:']} }] });
+const EX_시설 = (번, 주거) => ({ h:`${번} 내부ㆍ외부 시설물의 상태(건축물)`, rows:[
+  EX_있음위치('수도 · 파손 여부', 'ex.waterBroken'),
+  { l:'수도 · 용수량', p:[{ t:'one', k:'ex.waterQty', o:['정상','부족함'], x:{'부족함':['ex.waterQtyAt','위치:']} }] },
+  { l:'전기 · 공급상태', p:[{ t:'one', k:'ex.elec', o:['정상','교체 필요'], x:{'교체 필요':['ex.elecAt','교체할 부분:']} }] },
+  { l:'가스(취사용) · 공급방식', p:[{ t:'one', k:'ex.gas', o:['도시가스','그 밖의 방식'], x:{'그 밖의 방식':['ex.gasEtc','']} }] },
+  ...(주거 ? [{ l:'소방 · 단독경보형감지기', p:[{ t:'one', k:'ex.smoke', o:['없음','있음'], x:{'있음':['ex.smokeQty','수량:']} },
+      { t:'note', s:'※ 「소방시설 설치 및 관리에 관한 법률」 제10조 및 같은 법 시행령 제10조에 따른 주택용 소방시설로서 아파트(주택으로 사용하는 층수가 5개층 이상인 주택을 말한다)를 제외한 주택의 경우만 적습니다.' }] }]
+    : [EX_있음위치('소방 · 소화전', 'ex.hydrant'), EX_있음위치('소방 · 비상벨', 'ex.alarm')]),
+  { l:'난방방식 및 연료공급 · 공급방식', p:[{ t:'one', k:'ex.heatSupply', o: 주거 ? ['중앙공급','개별공급','지역난방'] : ['중앙공급','개별공급'] }] },
+  { l:'난방방식 및 연료공급 · 시설작동', p:[{ t:'one', k:'ex.heatWork', o:['정상','수선 필요'], x:{'수선 필요':['ex.heatWorkAt','']} },
+    { t:'text', k:'ex.heatAge', pre:'※ 개별 공급인 경우 사용연한 (', suf:')', w:50 }, { t:'many', k:'ex.heatAgeUnknown', o:['확인불가'] }] },
+  { l:'난방방식 및 연료공급 · 종류', p:[{ t:'one', k:'ex.heatFuel', o:['도시가스','기름','프로판가스','연탄','그 밖의 종류'], x:{'그 밖의 종류':['ex.heatFuelEtc','']} }] },
+  { l:'승강기', p:[{ t:'one', k:'ex.elev', o:['있음(양호)','있음(불량)','없음'] }] },
+  { l:'배수', p:[{ t:'one', k:'ex.drain', o:['정상','수선 필요'], x:{'수선 필요':['ex.drainAt','']} }] },
+  { l:'그 밖의 시설물', p:[{ t:'text', k:'ex.etcFacility', w:220, ph: 주거 ? '예: 가정자동화(홈네트워크) 설치' : '상업용은 오수정화시설용량, 공업용은 전기용량·오수정화시설용량·용수시설' }] },
+]});
+const EX_벽면 = (번, 도배) => ({ h:`${번} ${도배 ? '벽면ㆍ바닥면 및 도배 상태' : '벽면 및 바닥면'}`, rows:[
+  EX_있음위치('벽면 · 균열', 'ex.crack'), EX_있음위치('벽면 · 누수', 'ex.leak'),
+  { l:'바닥면', p:[{ t:'one', k:'ex.floor', o:['깨끗함','보통임','수리 필요'], x:{'수리 필요':['ex.floorAt','위치:']} }] },
+  ...(도배 ? [{ l:'도배', p:[{ t:'one', k:'ex.paper', o:['깨끗함','보통임','도배 필요'] }] }] : []),
+]});
+const EX_보수 = (번, 안내) => ({ h:`${번} 중개보수 및 실비의 금액과 산출내역`, rows:[
+  { l:'중개보수', p:[{ t:'money', k:'ex.fee', suf:'원' }] },
+  { l:'실비', p:[{ t:'money', k:'ex.cost', suf:'원' }] },
+  { l:'계', p:[{ t:'sum' }] },
+  { l:'지급시기', p:[{ t:'text', k:'ex.payWhen', w:160 }] },
+  { l:'산출내역', p:[{ t:'text', k:'ex.feeCalc', pre:'중개보수:', w:220 }, { t:'text', k:'ex.costCalc', pre:'실 비:', w:200 }, ...(안내 ? [{ t:'note', s:안내 }] : [])] },
+]});
+const EX_G = ['Ⅰ. 개업공인중개사 기본 확인사항', 'Ⅱ. 개업공인중개사 세부 확인사항', 'Ⅲ. 중개보수 등에 관한 사항'].map(g => ({ g }));
+const 재산세종부세 = '※ 재산세와 종합부동산세는 6월 1일 기준으로 대상물건 소유자가 납세의무를 부담합니다.';
+const 천분의9 = 쉼표 => `※ 중개보수는 거래금액의 1천분의 9 이내에서 중개의뢰인과 개업공인중개사가 서로 협의하여 결정하며${쉼표 ? ',' : ''} 부가가치세는 별도로 부과될 수 있습니다.`;
+
+/* [Ⅰ] 주거용 건축물 <개정 2026. 8. 11.> */
 const EX_SPEC = [
-  { h:'확인ㆍ설명 자료', rows:[
-    { l:'확인ㆍ설명 근거자료 등', p:[{ t:'many', k:'ex.docs', o:['등기권리증','등기사항증명서','토지대장','건축물대장','지적도','임야도',
-      '토지이용계획확인서','확정일자 부여현황','전입세대확인서','국세납세증명서','지방세납세증명서','그 밖의 자료'], x:{'그 밖의 자료':['ex.docsEtc','']} }] },
-    { l:'대상물건의 상태에 관한 자료요구 사항', p:[{ t:'area', k:'ex.askState' }] },
+  EX_자료(['등기권리증','등기사항증명서','신탁원부','토지대장','건축물대장','지적도','임야도','토지이용계획확인서',
+    '확정일자 부여현황','전입세대확인서','국세납세증명서','지방세납세증명서','그 밖의 자료']),
+  EX_유의('토지대장 등본'),
+  EX_G[0],
+  { h:'① 대상물건의 표시', rows:[ ...EX_토지칸('공부(公簿)상 지목'), ...EX_건물칸 ] },
+  { h:'② 권리관계', rows:[ ...EX_등기(true),
+    { l:'신탁등기 여부', p:[{ t:'many', k:'ex.trust', o:['확인','유효한 임대차계약 여부 등 주요내용 설명','해당 없음'] }] },
+    { l:'공동담보 여부', p:[{ t:'many', k:'ex.jointMortgage', o:['확인','공동담보 목록 등 선순위권리관계 설명','해당 없음'] }] },
+    { l:'계약갱신 요구권 행사 여부', p:[{ t:'one', k:'ex.renewRight', o:['서류 확인(첨부)','서류 미확인','해당 없음'] }] },
   ]},
-  { h:'유의사항', rows:[
-    { l:'개업공인중개사의 확인ㆍ설명 의무', p:[{ t:'note', s:'개업공인중개사는 중개대상물에 관한 권리를 취득하려는 중개의뢰인에게 성실ㆍ정확하게 설명하고, 토지대장 등본, 등기사항증명서 등 설명의 근거자료를 제시해야 합니다.' }] },
-    { l:'실제 거래가격 신고', p:[{ t:'note', s:'「부동산 거래신고 등에 관한 법률」 제3조 및 같은 법 시행령 별표 1 제1호마목에 따른 실제 거래가격은 매수인이 매수한 부동산을 양도하는 경우 「소득세법」 제97조제1항 및 제7항과 같은 법 시행령 제163조제11항제2호에 따라 취득 당시의 실제 거래가액으로 보아 양도차익이 계산될 수 있음을 유의하시기 바랍니다.' }] },
-  ]},
-  { g:'Ⅰ. 개업공인중개사 기본 확인사항' },
-  { h:'① 대상물건의 표시', rows:[
-    { l:'토지 · 소재지', p:[{ t:'addr' }] },
-    { l:'토지 · 면적(㎡)', p:[{ t:'text', k:'property.landArea', w:90 }] },
-    { l:'토지 · 지목', p:[{ t:'text', k:'property.landCat', pre:'공부상 지목', w:80 }, { t:'text', k:'ex.landUseReal', pre:'실제 이용 상태', w:100 }] },
-    { l:'건축물 · 전용면적(㎡)', p:[{ t:'text', k:'property.bldArea', w:80 }] },
-    { l:'건축물 · 대지지분(㎡)', p:[{ t:'text', k:'ex.landShare', w:80 }] },
-    { l:'건축물 · 준공년도(증개축년도)', p:[{ t:'text', k:'ex.builtYear', w:90 }] },
-    { l:'건축물 · 용도', p:[{ t:'text', k:'property.bldUse', pre:'건축물대장상 용도', w:110 }, { t:'text', k:'ex.useReal', pre:'실제 용도', w:100 }] },
-    { l:'건축물 · 구조', p:[{ t:'text', k:'property.bldStruct', w:140 }] },
-    { l:'건축물 · 방향', p:[{ t:'text', k:'ex.dir', w:70 }, { t:'text', k:'ex.dirBase', pre:'(기준:', suf:')', w:110 }] },
-    { l:'건축물 · 내진설계 적용여부', p:[{ t:'text', k:'ex.seismic', w:80 }, { t:'text', k:'ex.seismicLevel', pre:'내진능력', w:80 }] },
-    { l:'건축물 · 건축물대장상 위반건축물 여부', p:[{ t:'one', k:'ex.violation', o:['위반','적법'] }, { t:'text', k:'ex.violationNote', pre:'위반내용', w:160 }] },
-  ]},
-  { h:'② 권리관계', rows:[
-    { l:'등기부 기재사항 · 소유권에 관한 사항 (토지)', p:[{ t:'area', k:'ex.ownLand' }] },
-    { l:'등기부 기재사항 · 소유권에 관한 사항 (건축물)', p:[{ t:'area', k:'ex.ownBld' }] },
-    { l:'등기부 기재사항 · 소유권 외의 권리사항 (토지)', p:[{ t:'area', k:'ex.etcLand' }] },
-    { l:'등기부 기재사항 · 소유권 외의 권리사항 (건축물)', p:[{ t:'area', k:'ex.etcBld' }] },
-  ]},
-  { h:'③ 토지이용계획, 공법상 이용제한 및 거래규제에 관한 사항(토지)', rows:[
-    { l:'지역ㆍ지구 · 용도지역', p:[{ t:'text', k:'ex.zone', w:140 }] },
-    { l:'지역ㆍ지구 · 용도지구', p:[{ t:'text', k:'ex.district', w:140 }] },
-    { l:'지역ㆍ지구 · 용도구역', p:[{ t:'text', k:'ex.area', w:140 }] },
-    { l:'건폐율 상한 · 용적률 상한', p:[{ t:'text', k:'ex.bcr', pre:'건폐율 상한', suf:'%', w:50 }, { t:'text', k:'ex.far', pre:'용적률 상한', suf:'%', w:50 }] },
-    { l:'도시ㆍ군계획시설', p:[{ t:'text', k:'ex.facility', w:180 }] },
-    { l:'허가·신고 구역 여부', p:[{ t:'many', k:'ex.permitZone', o:['토지거래허가구역'] }] },
-    { l:'투기지역 여부', p:[{ t:'many', k:'ex.spec', o:['토지투기지역','주택투기지역','투기과열지구'] }] },
-    { l:'지구단위계획구역, 그 밖의 도시ㆍ군관리계획', p:[{ t:'text', k:'ex.plan', w:200 }] },
-    { l:'그 밖의 이용제한 및 거래규제사항', p:[{ t:'area', k:'ex.restrict' }] },
-  ]},
+  EX_이용('③'),
   { h:'④ 임대차 확인사항', rows:[
     { l:'확정일자 부여현황 정보', p:[{ t:'many', k:'ex.fixInfo', o:['임대인 자료 제출','열람 동의','임차인 권리 설명'] }] },
     { l:'국세 및 지방세 체납정보', p:[{ t:'many', k:'ex.taxInfo', o:['임대인 자료 제출','열람 동의','임차인 권리 설명'] }] },
     { l:'전입세대 확인서', p:[{ t:'one', k:'ex.moveIn', o:['확인(확인서류 첨부)','미확인(열람ㆍ교부 신청방법 설명)','해당 없음'] }] },
     { l:'최우선변제금', p:[{ t:'text', k:'ex.smallRange', pre:'소액임차인범위:', suf:'만원 이하', w:60 }, { t:'text', k:'ex.smallAmt', pre:'최우선변제금액:', suf:'만원 이하', w:60 }] },
-    { l:'민간임대 등록여부', p:[{ t:'one', k:'ex.private', o:['등록 - 장기일반민간임대주택','등록 - 공공지원민간임대주택','등록 - 그 밖의 유형','미등록'], x:{'등록 - 그 밖의 유형':['ex.privateEtc','']} },
-      { t:'many', k:'ex.privateGuar', o:['임대보증금 보증 설명'] }, { t:'text', k:'ex.privateTerm', pre:'임대의무기간', w:70 }, { t:'text', k:'ex.privateStart', pre:'임대개시일', w:80 }] },
-    { l:'계약갱신 요구권 행사 여부', p:[{ t:'one', k:'ex.renewRight', o:['확인(확인서류 첨부)','미확인','해당 없음'] }] },
+    { ...EX_민간(false), p:[...EX_민간(false).p.slice(0, 1), { t:'many', k:'ex.privateGuar', o:['임대보증금 보증 설명'] }, ...EX_민간(false).p.slice(1)] },
     { l:'설명 확인', p:[{ t:'note', s:'개업공인중개사가 “④ 임대차 확인사항”을 임대인 및 임차인에게 설명하였음을 확인함' },
       { t:'sign', s:'임대인' }, { t:'sign', s:'임차인' }, { t:'sign', s:'개업공인중개사' }, { t:'sign', s:'개업공인중개사' }] },
     { l:'', p:[{ t:'note', s:'※ 민간임대주택의 임대사업자는 「민간임대주택에 관한 특별법」 제49조에 따라 임대보증금에 대한 보증에 가입해야 합니다.' },
@@ -10105,57 +10180,18 @@ const EX_SPEC = [
       { t:'note', s:'※ 임대차 계약 후 「부동산 거래신고 등에 관한 법률」 제6조의2에 따라 30일 이내 신고해야 합니다(신고 시 확정일자 자동부여).' },
       { t:'note', s:'※ 최우선변제금은 근저당권 등 선순위 담보물권 설정 당시의 소액임차인범위 및 최우선변제금액을 기준으로 합니다.' }] },
   ]},
-  { h:'⑤ 입지조건', rows:[
-    { l:'도로와의 관계', p:[{ t:'text', k:'ex.roadW', pre:'(', w:40 }, { t:'text', k:'ex.roadL', pre:'m ×', suf:'m )도로에 접함', w:40 }, { t:'one', k:'ex.roadPave', o:['포장','비포장'] }] },
-    { l:'접근성', p:[{ t:'one', k:'ex.access', o:['용이함','불편함'] }] },
-    ...[['버스','bus','정류장'],['지하철','subway','역']].map(([l,k,끝]) =>
-      ({ l:`대중교통 · ${l}`, p:[{ t:'text', k:`ex.${k}`, pre:'(', suf:`) ${끝},`, w:90 }, { t:'one', k:`ex.${k}By`, o:탈것, pre:'소요시간:' }, { t:'text', k:`ex.${k}Min`, pre:'약', suf:'분', w:30 }] })),
-    { l:'주차장', p:[{ t:'one', k:'ex.parking', o:['없음','전용주차시설','공동주차시설','그 밖의 주차시설'], x:{'그 밖의 주차시설':['ex.parkingEtc','']} }] },
-    ...[['초등학교','elem'],['중학교','mid'],['고등학교','high']].map(([l,k]) =>
-      ({ l:`교육시설 · ${l}`, p:[{ t:'text', k:`ex.${k}`, pre:'(', suf:') 학교,', w:90 }, { t:'one', k:`ex.${k}By`, o:탈것, pre:'소요시간:' }, { t:'text', k:`ex.${k}Min`, pre:'약', suf:'분', w:30 }] })),
-  ]},
+  EX_입지('⑤', true, true),
   { h:'⑥ 관리에 관한 사항', rows:[
     { l:'경비실', p:[{ t:'one', k:'ex.guard', o:['있음','없음'] }] },
     { l:'관리주체', p:[{ t:'one', k:'ex.mgr', o:['위탁관리','자체관리','그 밖의 유형'] }] },
-    { l:'관리비', p:[{ t:'money', k:'ex.feeTotal', pre:'관리비 금액: 총', suf:'원' },
+    { l:'관리비', p:[{ t:'money', k:'ex.feeTotal', pre:'관리비 금액: 총', suf:'원' }, { t:'money', k:'ex.feeShared', pre:'공동관리비 금액: 총', suf:'원' },
       { t:'many', k:'ex.feeItems', pre:'관리비 포함 비목:', o:['전기료','수도료','가스사용료','난방비','인터넷 사용료','TV 수신료','그 밖의 비목'], x:{'그 밖의 비목':['ex.feeItemsEtc','']} },
+      { t:'many', k:'ex.feeUsage', pre:'사용량 또는 비용 확인가능 비목:', o:['전기료','수도료','가스사용료','난방비','인터넷 사용료','TV 수신료','그 밖의 비목'], x:{'그 밖의 비목':['ex.feeUsageEtc','']} },
       { t:'one', k:'ex.feeWay', pre:'관리비 부과방식:', o:['임대인이 직접 부과','관리규약에 따라 부과','그 밖의 부과 방식'], x:{'그 밖의 부과 방식':['ex.feeWayEtc','']} }] },
   ]},
-  { h:'⑦ 비선호시설(1km이내)', rows:[
-    { l:'', p:[{ t:'one', k:'ex.nimby', o:['없음','있음'], x:{'있음':['ex.nimbyWhat','종류 및 위치:']} }] },
-  ]},
-  { h:'⑧ 거래예정금액 등', rows:[
-    { l:'거래예정금액', p:[{ t:'money', k:'ex.price', suf:'원' }] },
-    { l:'개별공시지가(㎡당)', p:[{ t:'money', k:'ex.landPrice', suf:'원' }] },
-    { l:'건물(주택)공시가격', p:[{ t:'money', k:'ex.housePrice', suf:'원' }] },
-  ]},
-  { h:'⑨ 취득 시 부담할 조세의 종류 및 세율', rows:[
-    { l:'', p:[{ t:'text', k:'ex.taxAcq', pre:'취득세', suf:'%', w:40 }, { t:'text', k:'ex.taxFarm', pre:'농어촌특별세', suf:'%', w:40 }, { t:'text', k:'ex.taxEdu', pre:'지방교육세', suf:'%', w:40 },
-      { t:'note', s:'※ 재산세와 종합부동산세는 6월 1일 기준으로 대상물건 소유자가 납세의무를 부담합니다.' }] },
-  ]},
-  { g:'Ⅱ. 개업공인중개사 세부 확인사항' },
-  { h:'⑩ 실제 권리관계 또는 공시되지 않은 물건의 권리 사항', rows:[ { l:'', p:[{ t:'area', k:'ex.realRight' }] } ]},
-  { h:'⑪ 내부ㆍ외부 시설물의 상태(건축물)', rows:[
-    { l:'수도 · 파손 여부', p:[{ t:'one', k:'ex.waterBroken', o:['없음','있음'], x:{'있음':['ex.waterBrokenAt','위치:']} }] },
-    { l:'수도 · 용수량', p:[{ t:'one', k:'ex.waterQty', o:['정상','부족함'], x:{'부족함':['ex.waterQtyAt','위치:']} }] },
-    { l:'전기 · 공급상태', p:[{ t:'one', k:'ex.elec', o:['정상','교체 필요'], x:{'교체 필요':['ex.elecAt','교체할 부분:']} }] },
-    { l:'가스(취사용) · 공급방식', p:[{ t:'one', k:'ex.gas', o:['도시가스','그 밖의 방식'], x:{'그 밖의 방식':['ex.gasEtc','']} }] },
-    { l:'소방 · 단독경보형감지기', p:[{ t:'one', k:'ex.smoke', o:['없음','있음'], x:{'있음':['ex.smokeQty','수량:']} },
-      { t:'note', s:'※ 「소방시설 설치 및 관리에 관한 법률」 제10조 및 같은 법 시행령 제10조에 따른 주택용 소방시설로서 아파트(주택으로 사용하는 층수가 5개층 이상인 주택을 말한다)를 제외한 주택의 경우만 적습니다.' }] },
-    { l:'난방방식 및 연료공급 · 공급방식', p:[{ t:'one', k:'ex.heatSupply', o:['중앙공급','개별공급','지역난방'] }] },
-    { l:'난방방식 및 연료공급 · 시설작동', p:[{ t:'one', k:'ex.heatWork', o:['정상','수선 필요'], x:{'수선 필요':['ex.heatWorkAt','']} },
-      { t:'text', k:'ex.heatAge', pre:'※ 개별 공급인 경우 사용연한 (', suf:')', w:50 }, { t:'many', k:'ex.heatAgeUnknown', o:['확인불가'] }] },
-    { l:'난방방식 및 연료공급 · 종류', p:[{ t:'one', k:'ex.heatFuel', o:['도시가스','기름','프로판가스','연탄','그 밖의 종류'], x:{'그 밖의 종류':['ex.heatFuelEtc','']} }] },
-    { l:'승강기', p:[{ t:'one', k:'ex.elev', o:['있음(양호)','있음(불량)','없음'] }] },
-    { l:'배수', p:[{ t:'one', k:'ex.drain', o:['정상','수선 필요'], x:{'수선 필요':['ex.drainAt','']} }] },
-    { l:'그 밖의 시설물', p:[{ t:'text', k:'ex.etcFacility', w:220, ph:'예: 가정자동화(홈네트워크) 설치' }] },
-  ]},
-  { h:'⑫ 벽면ㆍ바닥면 및 도배 상태', rows:[
-    { l:'벽면 · 균열', p:[{ t:'one', k:'ex.crack', o:['없음','있음'], x:{'있음':['ex.crackAt','위치:']} }] },
-    { l:'벽면 · 누수', p:[{ t:'one', k:'ex.leak', o:['없음','있음'], x:{'있음':['ex.leakAt','위치:']} }] },
-    { l:'바닥면', p:[{ t:'one', k:'ex.floor', o:['깨끗함','보통임','수리 필요'], x:{'수리 필요':['ex.floorAt','위치:']} }] },
-    { l:'도배', p:[{ t:'one', k:'ex.paper', o:['깨끗함','보통임','도배 필요'] }] },
-  ]},
+  EX_비선호('⑦'), EX_금액('⑧'), EX_조세('⑨', 재산세종부세),
+  EX_G[1],
+  EX_실제('⑩'), EX_시설('⑪', true), EX_벽면('⑫', true),
   { h:'⑬ 환경조건', rows:[
     { l:'일조량', p:[{ t:'one', k:'ex.sun', o:['풍부함','보통임','불충분'], x:{'불충분':['ex.sunWhy','이유:']} }] },
     { l:'소음', p:[{ t:'one', k:'ex.noise', o:['아주 작음','보통임','심한 편임'] }] },
@@ -10167,20 +10203,84 @@ const EX_SPEC = [
     { l:'', p:[{ t:'note', s:'※ “중개보조원”이란 공인중개사가 아닌 사람으로서 개업공인중개사에 소속되어 중개대상물에 대한 현장안내 및 일반서무 등 개업공인중개사의 중개업무와 관련된 단순한 업무를 보조하는 사람을 말합니다.' },
       { t:'note', s:'※ 중개보조원은 「공인중개사법」 제18조의4에 따라 현장안내 등 중개업무를 보조하는 경우 중개의뢰인에게 본인이 중개보조원이라는 사실을 미리 알려야 합니다.' }] },
   ]},
-  { g:'Ⅲ. 중개보수 등에 관한 사항' },
-  { h:'⑮ 중개보수 및 실비의 금액과 산출내역', rows:[
-    { l:'중개보수', p:[{ t:'money', k:'ex.fee', suf:'원' }] },
-    { l:'실비', p:[{ t:'money', k:'ex.cost', suf:'원' }] },
-    { l:'계', p:[{ t:'sum' }] },
-    { l:'지급시기', p:[{ t:'text', k:'ex.payWhen', w:160 }] },
-    { l:'산출내역', p:[{ t:'text', k:'ex.feeCalc', pre:'중개보수:', w:220 }, { t:'text', k:'ex.costCalc', pre:'실 비:', w:200 },
-      { t:'note', s:'※ 중개보수는 시ㆍ도 조례로 정한 요율한도에서 중개의뢰인과 개업공인중개사가 서로 협의하여 결정하며 부가가치세는 별도로 부과될 수 있습니다.' }] },
-  ]},
+  EX_G[2],
+  EX_보수('⑮', '※ 중개보수는 시ㆍ도 조례로 정한 요율한도에서 중개의뢰인과 개업공인중개사가 서로 협의하여 결정하며 부가가치세는 별도로 부과될 수 있습니다.'),
 ];
+
+/* [Ⅱ] 비주거용 건축물 <개정 2021. 12. 31.> */
+const EX_SPEC_BIZ = [
+  EX_자료(EX_DOCS7), EX_유의('토지대장 등본'),
+  EX_G[0],
+  { h:'① 대상물건의 표시', rows:[ ...EX_토지칸('공부상 지목'), ...EX_건물칸 ] },
+  { h:'② 권리관계', rows:[ ...EX_등기(true), EX_민간(true),
+    { l:'계약갱신 요구권 행사여부', p:[{ t:'one', k:'ex.renewRight', o:['확인(확인서류 첨부)','미확인','해당 없음'] }] } ]},
+  EX_이용('③'), EX_입지('④', true, false),
+  { h:'⑤ 관리에 관한 사항', rows:[
+    { l:'경비실', p:[{ t:'one', k:'ex.guard', o:['있음','없음'] }] },
+    { l:'관리주체', p:[{ t:'one', k:'ex.mgr', o:['위탁관리','자체관리','그 밖의 유형'] }] } ]},
+  EX_금액('⑥'), EX_조세('⑦', '※ 재산세와 종합부동산세는 6월 1일 기준 대상물건 소유자가 납세의무를 부담'),
+  EX_G[1],
+  EX_실제('⑧'), EX_시설('⑨', false), EX_벽면('⑩', false),
+  EX_G[2],
+  EX_보수('⑪', ''),
+];
+
+/* [Ⅲ] 토지 <개정 2020. 10. 27.> */
+const EX_SPEC_LAND = [
+  EX_자료(EX_DOCS7), EX_유의('토지대장등본'),
+  EX_G[0],
+  { h:'① 대상물건의 표시', rows: EX_토지칸('공부상 지목') },
+  { h:'② 권리관계', rows: EX_등기(false) },
+  EX_이용('③'), EX_입지('④', false, false), EX_비선호('⑤'), EX_금액('⑥'),
+  EX_조세('⑦', '※ 재산세는 6월 1일 기준 대상물건 소유자가 납세의무를 부담'),
+  EX_G[1], EX_실제('⑧'),
+  EX_G[2], EX_보수('⑨', 천분의9(true)),
+];
+
+/* [Ⅳ] 입목ㆍ광업재단ㆍ공장재단 <개정 2020. 10. 27.> */
+const EX_SPEC_ETC = [
+  EX_자료(EX_DOCS7), EX_유의('토지대장등본'),
+  EX_G[0],
+  { h:'① 대상물건의 표시', rows:[
+    { l:'대상물 종별', p:[{ t:'one', k:'ex.etcKind', o:['입목','광업재단','공장재단'] }] },
+    { l:'소재지(등기ㆍ등록지)', p:[{ t:'addr' }] } ]},
+  { h:'② 권리관계', rows:[
+    { l:'등기부 기재사항 · 소유권에 관한 사항', p:[{ t:'text', k:'ex.ownerName', pre:'성명', w:100 }, { t:'text', k:'ex.ownerAddr', pre:'주소', w:200 }] },
+    { l:'등기부 기재사항 · 소유권 외의 권리사항', p:[{ t:'area', k:'ex.etcLand' }] } ]},
+  { h:'③ 재단목록 또는 입목의 생육상태', rows:[ { l:'', p:[{ t:'area', k:'ex.foundation' }] } ]},
+  { h:'④ 그 밖의 참고사항', rows:[ { l:'', p:[{ t:'area', k:'ex.etcNote' }] } ]},
+  EX_금액('⑤'), EX_조세('⑥', '※ 재산세는 6월 1일 기준 대상물건 소유자가 납세의무를 부담'),
+  EX_G[1], EX_실제('⑦'),
+  EX_G[2], EX_보수('⑧', 천분의9(false)),
+];
+
+/* 서식 표 - 머리의 선택지(주택 유형·용도·거래 형태)도 서식마다 다르다 */
+const EX_HOUSE = ['단독주택','공동주택','주거용 오피스텔'];
+const EX_DEAL = ['매매ㆍ교환','임대'];
+const EX_FORMS = {
+  'explain-home': { spec: EX_SPEC, law:'[별지 제20호서식] <개정 2026. 8. 11.>', h1:'중개대상물 확인ㆍ설명서[Ⅰ] (주거용 건축물)', short:'주거용',
+    kinds:[['주택 유형','house',EX_HOUSE], ['거래 형태','deal',EX_DEAL]] },
+  'explain-biz':  { spec: EX_SPEC_BIZ, law:'[별지 제20호의2서식] <개정 2021. 12. 31.>', h1:'중개대상물 확인ㆍ설명서[Ⅱ] (비주거용 건축물)', short:'비주거용',
+    kinds:[['용도','house',['업무용','상업용','공업용']], ['거래 형태','deal',['매매ㆍ교환','임대','그 밖의 경우']]] },
+  'explain-land': { spec: EX_SPEC_LAND, law:'[별지 제20호의3서식] <개정 2020. 10. 27.>', h1:'중개대상물 확인ㆍ설명서[Ⅲ] (토지)', short:'토지',
+    kinds:[['거래 형태','deal',EX_DEAL]] },
+  'explain-etc':  { spec: EX_SPEC_ETC, law:'[별지 제20호의4서식] <개정 2020. 10. 27.>', h1:'중개대상물 확인ㆍ설명서[Ⅳ] (입목ㆍ광업재단ㆍ공장재단)', short:'입목·재단',
+    kinds:[['거래 형태','deal',EX_DEAL]] },
+};
 const EX_FOOT = '「공인중개사법」 제25조제3항 및 제30조제5항에 따라 거래당사자는 개업공인중개사로부터 위 중개대상물에 관한 확인ㆍ설명 및 손해배상책임의 보장에 관한 설명을 듣고, 같은 법 시행령 제21조제3항에 따른 본 확인ㆍ설명서와 같은 법 시행령 제24조제2항에 따른 손해배상책임 보장 증명서류(사본 또는 전자문서)를 수령합니다.';
 
+/* 계약서에서 만들 때 어느 서식인지 - 상가는 비주거용, 매매는 건물 용도로 가른다(주택이면 주거용, 건물이 없으면 토지) */
+function exFormFor(c){
+  if(!c || !c.form) return 'explain-home';
+  if(c.form === 'home-lease') return 'explain-home';
+  if(c.form === 'shop-lease') return 'explain-biz';
+  const P = c.property || {}, 용도 = String(P.bldUse || '');
+  if(!용도 && !P.bldArea && (P.landCat || P.landArea)) return 'explain-land';
+  return /주택|아파트|오피스텔|연립|다세대|다가구|단독/.test(용도) || !용도 ? 'explain-home' : 'explain-biz';
+}
+
 /* 새 확인·설명서. 계약서에서 만들면 소재지·당사자·중개사·금액을 옮겨 온다 */
-function exNewDoc(from){
+function exNewDoc(from, form){
   const a = S.agent || {};
   const c = from || {};
   const P = c.property || {};
@@ -10190,11 +10290,11 @@ function exNewDoc(from){
   const 사람 = x => ({ name: x.name || '', phone: x.phone || '', addr: x.addr || '', birth:'' });
   const D = c.deal || {};
   return {
-    schema: CT_SCHEMA, form: 'explain-home',
+    schema: CT_SCHEMA, form: EX_FORMS[form] ? form : exFormFor(from),
     property: { road: P.road||'', jibun: P.jibun||'', admCd: P.admCd||'', bun: P.bun||'', ji: P.ji||'', mount: !!P.mount, zip: P.zip||'',
       bdNm: P.bdNm||'', landCat: P.landCat||'', landArea: P.landArea||'', bldStruct: P.bldStruct||'', bldUse: P.bldUse||'',
       bldArea: P.partArea || P.bldArea || '' },
-    house: '', deal: from ? (임대 ? '임대' : '매매ㆍ교환') : '',
+    house: c.form === 'shop-lease' ? '상업용' : '', deal: from ? (임대 ? '임대' : '매매ㆍ교환') : '',
     ex: { price: from ? (임대 ? (+D.deposit||0) : (+D.price||0)) : 0, feeTotal: +D.fee || 0 },
     parties: { a: 사람(pa), b: 사람(pb) },
     broker: { office: a.office||'', rep: a.name||'', regNo: a.reg_no||'', addr: a.addr||'', phone: a.phone||'', staff:'' },
@@ -10223,6 +10323,7 @@ function exPart(doc, p){
   return '';
 }
 function exDocHTML(doc){
+  const E = EX_FORMS[doc.form] || EX_FORMS['explain-home'];
   const 고름 = (list, v) => list.map(o => `[${v === o ? '√' : '&nbsp;&nbsp;'}]${esc(o)}`).join(' ');
   const 사람 = (label, x) => `
     <tr><th rowspan="2" class="w">${label}</th><th>주소</th><td>${ct값(x.addr, 220)}</td><th>성명</th><td class="sign">${ct값(x.name, 80)} <span class="ct-seal">(서명 또는 날인)</span></td></tr>
@@ -10232,16 +10333,16 @@ function exDocHTML(doc){
     <tr><th>사무소 명칭</th><td>${ct값(B.office, 140)}</td><th>소속공인중개사</th><td class="sign">${ct값(B.staff, 70)} <span class="ct-seal">(서명 및 날인)</span></td></tr>
     <tr><th>사무소 소재지</th><td>${ct값(B.addr, 200)}</td><th>전화번호</th><td>${ct값(B.phone, 100)}</td></tr>`;
   let body = '';
-  for(const s of EX_SPEC){
+  for(const s of E.spec){
     if(s.g){ body += `<h2 class="ex-g">${esc(s.g)}</h2>`; continue; }
     body += `<table class="ex-t"><tr><th class="ex-h" rowspan="${s.rows.length}">${esc(s.h)}</th>${s.rows.map((r, i) =>
       `${i ? '<tr>' : ''}${r.l ? `<th class="ex-l">${esc(r.l)}</th><td>` : '<td colspan="2">'}${r.p.map(p => exPart(doc, p)).join(' ')}</td></tr>`).join('')}</table>`;
   }
   return `
   <div class="ctdoc exdoc">
-    <p class="ex-law">■ 공인중개사법 시행규칙 [별지 제20호서식] &lt;개정 2024. 7. 2.&gt;</p>
-    <h1>중개대상물 확인ㆍ설명서[Ⅰ] (주거용 건축물)</h1>
-    <p class="ex-kind">( 주택 유형: ${고름(EX_HOUSE, doc.house)} )<br>( 거래 형태: ${고름(EX_DEAL, doc.deal)} )</p>
+    <p class="ex-law">■ 공인중개사법 시행규칙 ${esc(E.law)}</p>
+    <h1>${esc(E.h1)}</h1>
+    <p class="ex-kind">${E.kinds.map(([이름, k, list]) => `( ${이름 === '용도' ? '' : esc(이름) + ': '}${고름(list, doc[k])} )`).join('<br>')}</p>
     ${body}
     <p class="ct-close">${esc(EX_FOOT)}</p>
     <p class="ct-date">${ct날짜(doc.date)}</p>
@@ -10284,24 +10385,28 @@ function exEditPart(doc, p){
   return '';   /* addr 는 위에서 따로 그린다 */
 }
 function exEditor(doc){
+  const E = EX_FORMS[doc.form] || EX_FORMS['explain-home'];
   const 잠김 = CT.row && CT.row.status === 'sealed';
   const P = doc.property;
   let html = `
-    <div class="card pad ct-sec"><h2>주택 유형 · 거래 형태</h2>
-      ${exChips('house', EX_HOUSE, doc.house, false)}
-      ${exChips('deal', EX_DEAL, doc.deal, false)}</div>
+    ${잠김 ? '' : `<div class="card pad ct-sec"><h2>서식</h2>
+      <div class="chips one" role="radiogroup">${Object.entries(EX_FORMS).map(([k, f]) =>
+        `<button class="chip ${doc.form===k?'on':''}" data-act="ex-form" data-v="${k}" role="radio" aria-checked="${doc.form===k}" tabindex="${doc.form===k?0:-1}">${esc(f.short)}</button>`).join('')}</div>
+      <p class="sub" style="margin:0">서식을 바꿔도 이미 적은 값은 남습니다 - 그 서식에 있는 칸만 인쇄됩니다.</p></div>`}
+    <div class="card pad ct-sec"><h2>${E.kinds.map(([이름]) => esc(이름)).join(' · ')}</h2>
+      ${E.kinds.map(([, k, list]) => exChips(k, list, doc[k], false)).join('')}</div>
     <div class="card pad ct-sec"><h2>소재지</h2>
       ${잠김 ? `<p style="margin:0">${esc(P.road||'')}</p>` : P.road ? `
       <div class="ct-addr"><b>${esc(P.road)}</b><span>${esc(P.jibun||'')}${P.admCd?` · 법정동코드 ${esc(P.admCd)}`:' · <span style="color:var(--danger)">법정동코드 없음 - ‘다시 찾기’로 주소를 골라 주세요</span>'}</span>
         <button class="tapx" data-act="ct-addr-clear" style="font-size:12.5px;color:var(--n500)">다시 찾기</button></div>`
       : addrBox('ct-addr', '도로명·지번·건물명으로 찾기 (예: 미사강변대로 220)')}</div>`;
-  for(const s of EX_SPEC){
+  for(const s of E.spec){
     if(s.g){ html += `<h2 class="ex-eg">${esc(s.g)}</h2>`; continue; }
     const rows = s.rows.map(r => {
       const 칸 = r.p.filter(p => p.t !== 'addr').map(p => exEditPart(doc, p)).join('');
       return 칸 ? `<div class="ex-row">${r.l ? `<b class="ex-rl">${esc(r.l)}</b>` : ''}<div class="ct-grid">${칸}</div></div>` : '';
     }).join('');
-    html += `<div class="card pad ct-sec"><h2>${esc(s.h)}</h2>${rows}</div>`;
+    if(rows) html += `<div class="card pad ct-sec"><h2>${esc(s.h)}</h2>${rows}</div>`;
   }
   html += `
     <div class="card pad ct-sec"><h2>거래당사자 <span class="sub" style="font-weight:500;font-size:12.5px">서식대로 생년월일을 적습니다 - 주민등록번호가 아닙니다</span></h2>
@@ -10322,7 +10427,6 @@ function exEditor(doc){
     <div class="card pad ct-sec"><h2>작성일</h2><div class="ct-grid">${ctIn('date','작성일',{type:'date'})}</div></div>`;
   return html;
 }
-
 
 /* ══════════ 거래신고 도우미 (2026-10-29 · 2단계) ══════════
    날인본에서 신고서 항목을 **정부 서식 번호 순서대로** 정리해 칸마다 복사하게 한다. 비버노크가 직접
@@ -12359,6 +12463,7 @@ function handle(a,v,el){
       CT.id = null; CT.row = null; CT.fromProposal = 제안 || null;
       CT.doc = exNewDoc(원); CT.dirty = true; CT.mode = 'edit'; go('#/partner/contract/new'); return true;
     }
+    case 'ex-form': if(CT.doc && EX_FORMS[v] && !(CT.row && CT.row.status === 'sealed')){ CT.doc.form = v; ctDirty(); render(); } return true;
     /* 확인·설명서 고르는 칸 - data-v 는 '경로|고른 값' */
     case 'ex1': case 'exm': {
       if(!CT.doc || (CT.row && CT.row.status === 'sealed')) return true;

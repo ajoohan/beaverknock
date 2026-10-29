@@ -9749,6 +9749,7 @@ V['#/partner/home'] = () => {
   const 계약 = CT.list || [];
   const 작성중 = 계약.filter(r => r.status === 'draft').length, 날인 = 계약.filter(r => r.status === 'sealed').length;
   const 계약없는연결 = 연결.filter(p => !계약.some(r => r.proposal_id === p.id)).length;
+  const 신고전 = 계약.filter(r => r.status === 'sealed' && ['sale','home-lease'].includes(r.form) && !r.reported_at).length;
 
   /* 최근 14일 보낸 제안 · 열람 - 날마다 센다 */
   const 오늘 = new Date(); 오늘.setHours(0,0,0,0);
@@ -9763,6 +9764,7 @@ V['#/partner/home'] = () => {
     !S.agent || S.agent.status !== 'approved' ? { t:'자격 확인 마치기', s:'등록번호를 확인하면 손님 조건 전문이 열립니다', ico:'check', go:'#/partner/verify' } : null,
     안읽힘 ? { t:'아직 안 열린 제안', s:'손님이 보기 전입니다 - 조건을 다시 보세요', n:안읽힘, ico:'eye', go:'#/partner/proposals' } : null,
     계약없는연결 ? { t:'연결된 손님 계약서', s:'연결됐는데 계약서를 아직 안 만들었습니다', n:계약없는연결, ico:'doc', go:'#/partner/proposals' } : null,
+    신고전 ? { t:'신고 안 한 날인본', s:'계약일부터 30일 안에 신고 - 마쳤으면 ‘신고 마침’ 표시', n:신고전, ico:'flag', go:'#/partner/contracts' } : null,
     작성중 ? { t:'작성 중인 계약서', s:'날인받았으면 날인본으로 확정하세요', n:작성중, ico:'doc', go:'#/partner/contracts' } : null,
     !물건.length ? { t:'물건 올려두기', s:'올려두면 맞는 손님과 바로 대조합니다', ico:'building', go:'#/partner/listing/new' } : null,
   ].filter(Boolean);
@@ -10179,9 +10181,12 @@ function ctPrint(){
 /* ── 화면: 목록 ── */
 V['#/partner/contracts'] = () => {
   const rows = CT.list || [];
-  const 판 = r => r.status === 'sealed'
+  /* 신고가 있는 양식(매매·주택임대차)의 날인본은 신고 전/신고 마침도 함께 보인다 */
+  const 신고 = r => r.status === 'sealed' && ['sale','home-lease'].includes(r.form)
+    ? (r.reported_at ? `<span class="badge b-ok">신고 마침</span>` : `<span class="badge b-warn">신고 전</span>`) : '';
+  const 판 = r => `<span style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">${r.status === 'sealed'
     ? `<span class="badge b-ok">날인본 · ${esc(String(r.sealed_at||'').slice(0,10))}</span>`
-    : `<span class="badge b-warn">작성 중</span>`;
+    : `<span class="badge b-warn">작성 중</span>`}${신고(r)}</span>`;
   return `
 <div class="scr fade" style="background:var(--n50)">
   ${navPartner('ct')}
@@ -10277,6 +10282,11 @@ V['#/partner/contract'] = (id) => {
     ${bar}
     ${잠김 ? '' : `<p class="ct-note" style="background:var(--warnbg,#FFF4E5)">아직 날인본이 아닙니다. 날인받은 뒤 '날인본으로 확정' 하고 그 판으로 신고하세요 - 신고한 내용과 계약서가 달라지면 안 됩니다.</p>`}
     ${rpHTML(doc)}
+    ${잠김 ? `<div class="card pad ct-sec"><h2>신고 마침</h2>${CT.row.reported_at
+      ? `<p class="sub" style="margin:0"><b style="color:var(--ok)">${esc(String(CT.row.reported_at).slice(0,10))}</b> 에 신고 마침으로 표시했습니다. 기한 알림 메일이 멈췄습니다.</p>
+         <button class="btn sec sm" data-act="ct-reported" data-v="off" style="align-self:flex-start">표시 취소</button>`
+      : `<p class="sub" style="margin:0">부동산거래관리시스템에서 신고를 마쳤으면 눌러 주세요. 기한 7·3·1일 전과 당일 아침에 가는 알림 메일이 멈춥니다.</p>
+         <button class="btn pri" data-act="ct-reported" data-v="on" style="align-self:flex-start">신고 마침으로 표시</button>`}</div>` : ''}
   </div>
 </div>`;
   const 조항 = doc.clauses.map((c, i) => `
@@ -12838,6 +12848,14 @@ function handle(a,v,el){
       return true;
     case 'ct-preview': CT.mode = 'preview'; render(); return true;
     case 'ct-report': CT.mode = 'report'; render(); return true;
+    case 'ct-reported':
+      (async () => {
+        const { ok, j } = await ctPost({ what:'contract-reported', id: CT.id, on: v !== 'off' }).catch(() => ({ ok:false, j:{} }));
+        if(!ok) return toast(j.error || '표시하지 못했습니다');
+        CT.row = { ...CT.row, reported_at: j.reported_at }; CT.list = null; render();
+        toast(j.reported_at ? '신고 마침으로 표시했습니다 - 기한 알림이 멈춥니다' : '표시를 취소했습니다');
+      })();
+      return true;
     case 'rp-copy':
       try{ navigator.clipboard.writeText(String(v)).then(() => toast('복사했습니다'), () => toast('복사하지 못했습니다 - 직접 선택해 주세요')); }
       catch(_){ toast('복사하지 못했습니다 - 직접 선택해 주세요'); }

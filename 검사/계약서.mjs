@@ -328,6 +328,71 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
   ok(/\['sale','home-lease'\]\.includes\(doc\.form\) && CT\.mode !== 'report'/.test(js), '신고 도우미는 주택임대차·매매에만 - 상가 임대차는 신고 대상이 아니다');
 }
 
+/* ── 신고 마침 · 신고 기한 알림 (2026-10-29) ── */
+{
+  const 응답 = () => { const r = { code: 0, body: null }; r.status = c => (r.code = c, r); r.json = b => (r.body = b, r); return r; };
+  let 불린 = [], 답 = () => new Response('[]', { status: 200 });
+  globalThis.fetch = async (u, o = {}) => { 불린.push({ u: String(u), m: o.method || 'GET', b: o.body }); return 답(u, o); };
+  process.env.BK_URL = 'https://x.supabase.co'; process.env.BK_SECRET_KEY = 'k';
+  const agent = { id: '11111111-1111-1111-1111-111111111111', role: 'agent' }, user = { id: 'u' };
+
+  답 = () => new Response(JSON.stringify([{ id: 'x' }]), { status: 200 });
+  let res = 응답(); 불린 = [];
+  await C.contractRoute({}, res, agent, user, { what: 'contract-reported', id: '33333333-3333-3333-3333-333333333333' });
+  const 본 = JSON.parse(불린[0].b);
+  ok(불린[0].m === 'PATCH' && /status=eq\.sealed/.test(불린[0].u) && /form=in\.\(sale,home-lease\)/.test(불린[0].u) && Object.keys(본).join() === 'reported_at' && 본.reported_at,
+     '신고 마침은 내 날인본 · 매매·주택임대차에만 · reported_at 한 칸만 바꾼다');
+  res = 응답(); 불린 = [];
+  await C.contractRoute({}, res, agent, user, { what: 'contract-reported', id: '33333333-3333-3333-3333-333333333333', on: false });
+  ok(JSON.parse(불린[0].b).reported_at === null, '표시 취소는 reported_at 을 비운다');
+  답 = () => new Response('[]', { status: 200 }); res = 응답();
+  await C.contractRoute({}, res, agent, user, { what: 'contract-reported', id: '33333333-3333-3333-3333-333333333333' });
+  ok(res.code === 409, '작성 중·상가·확인·설명서면 409 (0행)');
+
+  /* 기한 = 계약일 다음 날부터 30일째, 한국 날짜로 */
+  ok(C.신고남은날('2026-10-29', '2026-10-29').기한 === '2026-11-28' && C.신고남은날('2026-10-29', '2026-11-21').남음 === 7
+     && C.신고남은날('2026-10-29', '2026-11-28').남음 === 0 && C.신고남은날('', '2026-10-29') === null, '신고 기한 = 계약일 + 30일 · 남은 날 계산');
+  ok(C.한국오늘(Date.parse('2026-10-29T16:00:00Z')) === '2026-10-30' && C.한국오늘(Date.parse('2026-10-29T14:59:00Z')) === '2026-10-29',
+     '오늘은 한국 날짜 - UTC 15시가 넘으면 다음 날');
+
+  /* 예약 실행 - 비밀값 없으면 거절 */
+  delete process.env.CRON_SECRET; res = 응답(); 불린 = [];
+  await C.reportDueCron({ headers: { authorization: 'Bearer x' } }, res);
+  ok(res.code === 401 && 불린.length === 0, 'CRON_SECRET 이 없으면 돌지 않는다');
+  process.env.CRON_SECRET = 'cron-secret'; res = 응답(); 불린 = [];
+  await C.reportDueCron({ headers: { authorization: 'Bearer 틀림' } }, res);
+  ok(res.code === 401 && 불린.length === 0, '비밀값이 틀리면 돌지 않는다');
+
+  const 오늘 = C.한국오늘(), 며칠전 = n => new Date(Date.parse(오늘 + 'T00:00:00Z') - n * 864e5).toISOString().slice(0, 10);
+  const 행 = [
+    { id: 'a', agent_user: 'u1', form: 'sale', title: '잠실 아파트', doc: { contractDate: 며칠전(23) } },        // 7일 남음
+    { id: 'b', agent_user: 'u1', form: 'home-lease', title: '미사 802호', doc: { contractDate: 며칠전(30) } },  // 오늘
+    { id: 'c', agent_user: 'u2', form: 'sale', title: '알릴 날 아님', doc: { contractDate: 며칠전(20) } },      // 10일 남음
+    { id: 'd', agent_user: 'u3', form: 'sale', title: '계약일 없음', doc: {} },
+  ];
+  let 메일 = null;
+  process.env.RESEND_API_KEY = 'test';
+  답 = (u, o) => /bk_contract/.test(u) ? new Response(JSON.stringify(행), { status: 200 })
+    : /admin\/users\/u1/.test(u) ? new Response(JSON.stringify({ email: 'agent1@example.com' }), { status: 200 })
+    : /resend\.com\/emails\/batch/.test(u) ? (메일 = JSON.parse(o.body), new Response('{}', { status: 200 }))
+    : new Response('{}', { status: 404 });
+  res = 응답(); 불린 = [];
+  await C.reportDueCron({ headers: { authorization: 'Bearer cron-secret', host: 'beaverknock.co.kr' } }, res);
+  ok(/status=eq\.sealed/.test(불린[0].u) && /reported_at=is\.null/.test(불린[0].u) && /form=in\.\(sale,home-lease\)/.test(불린[0].u),
+     '신고 안 한 매매·주택임대차 날인본만 읽는다');
+  ok(res.code === 200 && 메일 && 메일.length === 1 && 메일[0].to[0] === 'agent1@example.com' && /오늘이 신고 기한/.test(메일[0].subject)
+     && 메일[0].html.includes('잠실 아파트') && 메일[0].html.includes('미사 802호') && !메일[0].html.includes('알릴 날 아님'),
+     '7·3·1·0일 남은 것만 · 중개사별로 한 통 · 가장 급한 것으로 제목');
+  ok(/신고 마침/.test(메일[0].text) && res.body.보냄 === 1, '메일에 "신고 마침을 누르면 멈춘다" 안내 · 보낸 수를 돌려준다');
+  delete process.env.CRON_SECRET; delete process.env.RESEND_API_KEY;
+
+  const 설정 = JSON.parse(fs.readFileSync(new URL('../vercel.json', import.meta.url), 'utf8'));
+  ok((설정.crons || []).some(c => c.path === '/api/feed?cron=report-due' && c.schedule === '0 0 * * *'), '예약 실행: 매일 UTC 0시(한국 9시) /api/feed?cron=report-due');
+  const feed = fs.readFileSync(new URL('../api/feed.js', import.meta.url), 'utf8');
+  ok(feed.indexOf("req.query.cron === 'report-due'") < feed.indexOf("if (req.method !== 'POST')"), '예약 실행 갈래는 POST 문 앞에 있다(GET 으로 온다)');
+  ok(/case 'ct-reported':/.test(js) && /신고 안 한 날인본/.test(js) && /badge b-warn">신고 전/.test(js), '화면: 신고 마침 단추 · 목록 배지(신고 전/마침) · 대시보드 할 일');
+}
+
 /* ── 약관 · 처리방침 ── */
 {
   const 약관 = fs.readFileSync(new URL('../terms.html', import.meta.url), 'utf8');

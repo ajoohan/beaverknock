@@ -17,14 +17,17 @@
  * (법정동코드·본번·부번·산)를 그대로 담는다 - 나중에 어디로 보내더라도 보낼 때 바꿀 것이 없게.
  */
 import crypto from 'node:crypto';
-import { sbHeaders, sbUrl } from './_auth.js';
+import { sbHeaders, sbUrl, emailOf } from './_auth.js';
+import { notifyMany } from './_notify.js';
 
 /* 주택임대차 · 상가건물 임대차 · 부동산 매매 · 중개대상물 확인·설명서(주거용) (화면의 CT_FORMS 와 같은 이름) */
 export const CT_FORMS = ['home-lease', 'shop-lease', 'sale', 'explain-home', 'explain-biz', 'explain-land', 'explain-etc'];
 export const CT_SCHEMA = 'bk-contract/1';
 const CT_MAX = 64 * 1024;                     /* 계약서 한 장 - 조항·특약을 넉넉히 적어도 이 안이다 */
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const LIST_COLS = 'id,created_at,updated_at,form,title,status,sealed_at,sha256,prev_id,proposal_id';
+const LIST_COLS = 'id,created_at,updated_at,form,title,status,sealed_at,sha256,prev_id,proposal_id,reported_at';
+/* 신고가 있는 양식 - 매매(거래신고) · 주택임대차(임대차 신고). 상가 임대차·확인·설명서는 신고가 없다 */
+export const CT_REPORT_FORMS = ['sale', 'home-lease'];
 
 const noTable = t => /does not exist|PGRST205|bk_contract/i.test(t);
 const 준비중 = res => res.status(503).json({ error: '계약서 기능을 준비 중입니다 (0031 마이그레이션 필요)', need: '0031' });
@@ -83,6 +86,7 @@ export async function contractRoute(req, res, agent, user, b) {
       case 'contract-seal':    await seal(res, agent, b); break;
       case 'contract-revise':  await revise(res, agent, user, b); break;
       case 'contract-del':     await del(res, agent, b); break;
+      case 'contract-reported': await reported(res, agent, b); break;
       default: res.status(400).json({ error: '알 수 없는 요청입니다' });
     }
   } catch (e) {
@@ -173,6 +177,60 @@ async function revise(res, agent, user, b) {
   });
   if (!r.ok) return res.status(502).json({ error: '새 판을 만들지 못했습니다' });
   return res.status(200).json({ ok: true, id: rows[0] && rows[0].id });
+}
+
+/* '신고 마침' - 날인본에서 바꿀 수 있는 유일한 칸(0031 트리거가 이것만 통과시킨다).
+   on:false 면 되돌린다(잘못 눌렀을 때). 이 표시가 있으면 기한 알림이 멈춘다. */
+async function reported(res, agent, b) {
+  const id = String(b.id || '');
+  if (!UUID.test(id)) return res.status(400).json({ error: '어느 계약서인지 알 수 없습니다' });
+  const at = b.on === false ? null : new Date().toISOString();
+  const { r, t, rows } = await db('bk_contract',
+    `id=eq.${id}&agent_id=eq.${agent.id}&status=eq.sealed&form=in.(${CT_REPORT_FORMS.join(',')})`, {
+      method: 'PATCH', headers: { Prefer: 'return=representation' }, body: JSON.stringify({ reported_at: at }),
+    });
+  if (!r.ok) return noTable(t) ? 준비중(res) : res.status(502).json({ error: '표시하지 못했습니다' });
+  if (!rows.length) return res.status(409).json({ error: '날인본으로 확정한 매매·주택임대차 계약서만 표시할 수 있습니다' });
+  return res.status(200).json({ ok: true, reported_at: at });
+}
+
+/* 신고 기한 - 계약일 다음 날부터 세어 30일째(초일 불산입). 날짜는 한국 날짜로 센다 */
+export const 한국오늘 = (now = Date.now()) => new Date(now + 9 * 3600e3).toISOString().slice(0, 10);
+export function 신고남은날(contractDate, 오늘 = 한국오늘()) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(contractDate || ''))) return null;
+  const 기한 = Date.parse(contractDate + 'T00:00:00Z') + 30 * 864e5;
+  return { 기한: new Date(기한).toISOString().slice(0, 10), 남음: Math.round((기한 - Date.parse(오늘 + 'T00:00:00Z')) / 864e5) };
+}
+export const 알릴날 = [7, 3, 1, 0];
+
+/* 매일 아침 신고 기한 알림 (Vercel 예약 실행이 GET 으로 부른다 - vercel.json crons).
+   CRON_SECRET 이 없으면 돌지 않는다 - 아무나 불러 메일을 쏘게 두지 않는다.
+   신고 안 한(reported_at 없음) 매매·주택임대차 날인본 중 기한이 7·3·1·0일 남은 것만, 중개사별로 한 통씩. */
+export async function reportDueCron(req, res) {
+  const secret = process.env.CRON_SECRET;
+  if (!secret || req.headers.authorization !== `Bearer ${secret}`) return res.status(401).json({ error: '예약 실행만 부를 수 있습니다' });
+  const { r, t, rows } = await db('bk_contract',
+    `select=id,agent_user,form,title,doc&status=eq.sealed&reported_at=is.null&form=in.(${CT_REPORT_FORMS.join(',')})&limit=1000`);
+  if (!r.ok) return noTable(t) ? 준비중(res) : res.status(502).json({ error: '계약서를 읽지 못했습니다' });
+  const 오늘 = 한국오늘(), 사람별 = new Map();
+  for (const c of rows) {
+    const d = 신고남은날(c.doc && c.doc.contractDate, 오늘);
+    if (!d || !알릴날.includes(d.남음) || !c.agent_user) continue;
+    if (!사람별.has(c.agent_user)) 사람별.set(c.agent_user, []);
+    사람별.get(c.agent_user).push({ ...d, title: c.title || '소재지 미입력', form: c.form });
+  }
+  const 메일 = [];
+  for (const [uid, 목록] of 사람별) {
+    const to = await emailOf(uid);
+    if (!to) continue;
+    const 급한 = Math.min(...목록.map(x => x.남음));
+    메일.push({ to, subject: 급한 === 0 ? '오늘이 신고 기한인 계약이 있습니다' : `신고 기한이 ${급한}일 남은 계약이 있습니다`,
+      rows: 목록.map(x => [x.form === 'sale' ? '거래신고' : '임대차 신고', `${x.title} · 기한 ${x.기한} (${x.남음 ? `${x.남음}일 남음` : '오늘'})`]),
+      link: '/#/partner/contracts', cta: '계약서 열기',
+      note: '신고를 마쳤으면 계약서의 신고 도우미에서 ‘신고 마침’ 을 눌러 주세요 - 이 알림이 멈춥니다.' });
+  }
+  const 결과 = 메일.length ? await notifyMany(req, 메일) : { ok: true, sent: 0 };
+  return res.status(200).json({ ok: true, 대상: rows.length, 보냄: 결과.sent || 0 });
 }
 
 /* 작성 중인 것만 지운다. 날인본은 지우지 않는다(트리거도 막는다) */

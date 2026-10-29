@@ -1,5 +1,11 @@
 {
   "cleanUrls": true,
+  "crons": [
+    {
+      "path": "/api/feed?cron=report-due",
+      "schedule": "0 0 * * *"
+    }
+  ],
   "redirects": [
     {
       "source": "/admin",

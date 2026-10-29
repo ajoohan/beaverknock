@@ -9,7 +9,7 @@
 
 import { userFrom, sbHeaders, sbUrl } from './_auth.js';
 import { dbWhy } from './_dberr.js';
-import { contractRoute } from './_contract.js';
+import { contractRoute, reportDueCron } from './_contract.js';
 
 const KIND_KO = { home: '주거', shop: '상가', office: '오피스', storage: '창고' };
 
@@ -133,6 +133,11 @@ export async function approvedAgent(user) {
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
+  /* 매일 아침 신고 기한 알림(Vercel 예약 실행). CRON_SECRET 으로만 열린다 - api/_contract.js */
+  if (req.method === 'GET' && req.query && req.query.cron === 'report-due') {
+    if (!process.env.BK_URL || !process.env.BK_SECRET_KEY) return res.status(503).json({ error: '서버에 환경변수가 설정되지 않았습니다' });
+    return reportDueCron(req, res);
+  }
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST 만 받습니다' });
   if (!process.env.BK_URL || !process.env.BK_SECRET_KEY) {
     return res.status(503).json({ error: '서버에 환경변수가 설정되지 않았습니다' });

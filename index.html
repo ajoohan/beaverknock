@@ -160,6 +160,7 @@ body.mo .nav .items{display:none}
    위아래 줄이 1px 를 남기고 안 겹친다. 그래야 44px 에 닿는다.
    여기서는 기본 규칙(±14.5px)을 그대로 쓰면 되므로 따로 덮지 않는다. */
 body.mo .footlinks{gap:10px 16px!important}
+@media (max-width:420px){ body.mo .footlinks{display:grid!important;grid-template-columns:repeat(3,max-content);justify-content:space-between} }
 /* 바닥글 링크도 위 규칙 하나로 44px 이 된다. 어제 넣었던 덮개(::after)와
    줄 사이 30px 은 걷는다 - 덮개를 안 쓰니 벌려 둘 까닭이 없다. */
 /* 보이는 상자는 30px 이지만 아래 덮개가 위아래 9px 씩 넓혀 누르는 자리는 약 48px 이다.
@@ -1782,6 +1783,7 @@ body:not(.mo) .ctx-scr{height:100vh;height:100dvh;overflow:hidden}
   .ctx-scroll{overflow:visible}
   .ctx-desk{max-height:80vh}
 }
+.nw{white-space:nowrap}
 #ctPrint{display:none}
 @media print{
   @page{size:A4;margin:14mm 13mm}
@@ -1799,22 +1801,22 @@ body:not(.mo) .dz-scr > :not(.dz-side), body:not(.mo) .scr:has(> .psb) > :not(.p
   display:flex;flex-direction:column;gap:2px;padding:18px 8px 12px;border-radius:22px;background:var(--dzside);color:#fff;
   overflow-y:auto;box-shadow:0 22px 44px -26px rgba(36,32,110,.55)}
 .dz-logo{display:flex;align-items:center;gap:8px;padding:2px 8px 18px}
-.dz-tag{font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;background:rgba(255,255,255,.18)}
+.dz-tag{font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;background:rgba(255,255,255,.12);color:#fff}
 .dz-menu{display:flex;flex-direction:column;gap:3px}
-.dz-side .grp{display:block;padding:14px 10px 6px;font-size:12px;font-weight:700;letter-spacing:.06em;color:rgba(255,255,255,.8)}
+.dz-side .grp{display:block;padding:14px 10px 6px;font-size:12px;font-weight:700;letter-spacing:.06em;color:rgba(255,255,255,.92)}
 .dz-menu > a, .dz-menu > button, .dz-foot > a{display:flex;align-items:center;gap:10px;width:100%;min-height:42px;padding:9px 10px;
   border:none;border-radius:12px;background:transparent;color:rgba(255,255,255,.9);font:inherit;font-size:13.5px;font-weight:600;
   text-align:left;cursor:pointer;transition:background var(--t-fast) ease,color var(--t-fast) ease}
 .dz-menu > a:hover, .dz-menu > button:hover, .dz-foot > a:hover{background:rgba(255,255,255,.12);color:#fff}
 .dz-menu > a.on, .dz-menu > button.on{background:#fff;color:var(--ind);font-weight:700;box-shadow:0 8px 18px -10px rgba(20,18,60,.45)}
 .dz-menu .cnt{margin-left:auto;min-width:24px;padding:1px 8px;border-radius:999px;font-size:12px;font-weight:700;text-align:center;
-  background:rgba(255,255,255,.18);color:#fff;font-variant-numeric:tabular-nums}
+  background:rgba(255,255,255,.12);color:#fff;font-variant-numeric:tabular-nums}
 .dz-menu .on .cnt{background:var(--ind50);color:var(--ind)}
 .dz-menu .opsSub{display:flex;flex-direction:column;gap:2px;margin:2px 0 6px 16px;padding-left:8px;border-left:1px solid rgba(255,255,255,.25)}
-.dz-menu .opsSub button{min-height:40px;padding:8px 10px;border:none;border-radius:10px;background:transparent;color:rgba(255,255,255,.78);
+.dz-menu .opsSub button{min-height:40px;padding:8px 10px;border:none;border-radius:10px;background:transparent;color:rgba(255,255,255,.94);
   font:inherit;font-size:13px;font-weight:600;text-align:left;cursor:pointer}
 .dz-menu .opsSub button:hover{background:rgba(255,255,255,.12);color:#fff}
-.dz-menu .opsSub button.on{background:rgba(255,255,255,.2);color:#fff;font-weight:700}
+.dz-menu .opsSub button.on{background:rgba(255,255,255,.1);color:#fff;font-weight:700;box-shadow:inset 3px 0 0 #fff}
 .dz-foot{margin-top:auto;display:flex;flex-direction:column;gap:2px;padding-top:14px;border-top:1px solid rgba(255,255,255,.2)}
 .dz-office{display:block;padding:4px 10px 8px;font-size:12.5px;font-weight:600;color:rgba(255,255,255,.85);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .dz-side :focus-visible{outline:2px solid #fff;outline-offset:2px}
@@ -1862,6 +1864,8 @@ button.dz-kpi:hover{transform:translateY(-2px);box-shadow:0 20px 40px -22px rgba
 .dz-line .ln.a{stroke:var(--ind)} .dz-line .ln.b{stroke:var(--n900);opacity:.75}
 .dz-line .pt{stroke:#fff;stroke-width:2;vector-effect:non-scaling-stroke} .dz-line .pt.a{fill:var(--ind)} .dz-line .pt.b{fill:var(--n900)}
 .dz-chart .axis{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);margin-top:6px;font-size:12px;color:var(--n500);text-align:center}
+body.mo .dz-more{position:relative}
+body.mo .dz-more::after{content:"";position:absolute;left:-6px;right:-6px;top:-5px;bottom:-5px}
 .dz-more{margin-left:auto;font-size:13px;font-weight:700;color:var(--ind);cursor:pointer;padding:10px 4px;margin-top:-10px;margin-bottom:-10px}
 .dz-row{display:grid;grid-template-columns:40px minmax(0,1fr) auto;gap:14px;align-items:center;padding:12px 8px;border-radius:14px;cursor:pointer}
 .dz-row:hover{background:var(--n50)}
@@ -2792,7 +2796,7 @@ function logoLockup(opt){
   const subSize = Math.max(11, h*.44);
   const tagEl = o.tag ? `<span style="font-size:${subSize.toFixed(1)}px;font-weight:600;letter-spacing:-.02em;color:${sub};white-space:nowrap">${esc(TAGLINE())}</span>` : '';
   const enEl  = '';
-  const partEl= o.partner ? `<span style="font-size:${Math.max(11,h*.46).toFixed(1)}px;font-weight:700;letter-spacing:-.01em;color:${sub}">파트너</span>` : '';
+  const partEl= o.partner ? `<span style="font-size:${Math.max(11,h*.46).toFixed(1)}px;font-weight:700;letter-spacing:-.01em;color:${m==="dark" ? "rgba(255,255,255,.9)" : sub}">파트너</span>` : '';   /* 어두운 바탕의 꼬리표는 글자라 4.5:1 을 넘긴다(.62 는 3.4) */
   if(o.stack){
     return `<span style="display:inline-flex;flex-direction:column;align-items:flex-start;gap:${Math.round(h*.22)}px;line-height:1">
       <span style="display:inline-flex;align-items:center;gap:${Math.round(h*.28)}px">${wmCore(h,m,o.noEn)}${partEl}</span>
@@ -3699,8 +3703,9 @@ const CORP = {
    정의하지 않으므로 예전 색(n500)이 그대로 쓰인다 - 부르는 쪽을 고치지 않는다. */
 function bizFooter(){
   return `<div style="font-size:12.5px;line-height:1.8;color:var(--fc,var(--n500))">
-    <span style="display:block">${esc(CORP.corp)} · 대표 ${esc(CORP.ceo)} ·
-      사업자등록번호 ${esc(CORP.no)} · 통신판매업 신고 ${esc(CORP.tsp)}</span>
+    <!-- 항목마다 한 덩어리로 묶는다 - 좁은 화면에서 '206-86-' 과 '86686' 처럼 번호가 쪼개지지 않게 -->
+    <span style="display:block"><span class="nw">${esc(CORP.corp)}</span> · <span class="nw">대표 ${esc(CORP.ceo)}</span> ·
+      <span class="nw">사업자등록번호 ${esc(CORP.no)}</span> · <span class="nw">통신판매업 신고 ${esc(CORP.tsp)}</span></span>
     <span style="display:block">${esc(CORP.addr)}</span>
     <span style="display:block">문의 <a class="tapx" href="tel:${esc(CORP.tel.replace(/-/g,''))}"
       style="color:var(--fc,var(--n500));text-decoration:underline;text-underline-offset:3px">${esc(CORP.tel)}</a>

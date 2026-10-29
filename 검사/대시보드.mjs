@@ -53,6 +53,11 @@ const M = new Function('esc', `${js.slice(시작, 끝)}\nreturn { dzLine, dzPill
      && /\.opsSub button\{[^}]*color:rgba\(255,255,255,\.94\)/.test(css) && /\.opsSub button\.on\{background:rgba\(255,255,255,\.1\);color:#fff;font-weight:700;box-shadow:inset 3px 0 0 #fff\}/.test(css)
      && /color:\$\{m==="dark" \? "rgba\(255,255,255,\.9\)" : sub\}">파트너/.test(js),
      '메뉴 위 작은 글자(꼬리표·묶음 이름·건수·하위 메뉴·로고 옆 파트너)는 4.5:1 을 넘는다');
+  /* 단추가 너무 둥글다(2026-10-29 대표님) - 누르는 것은 각진 둥근 모서리, 알약은 상태 꼬리표에만 */
+  ok(/--r-btn:10px; --r-ctl:8px;/.test(css) && /\.btn\{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:var\(--r-btn\);/.test(css)
+     && /\.chip\{border:1\.5px solid var\(--edge\);background:var\(--white\);color:var\(--n700\);border-radius:var\(--r-ctl\);/.test(css)
+     && /\.seg\{[^}]*border-radius:var\(--r-btn\)/.test(css) && /\.seg button\{[^}]*border-radius:var\(--r-ctl\)/.test(css),
+     '단추 10px · 칩·탭 단추 8px (알약 999px 아님)');
   ok(/body\.mo \.dz-more::after\{content:"";position:absolute;left:-6px;right:-6px;top:-5px;bottom:-5px\}/.test(css), "휴대폰 '전체 보기' 는 덮개로 누르는 자리를 44px 로");
   ok(/@media \(max-width:420px\)\{ body\.mo \.footlinks\{display:grid!important;grid-template-columns:repeat\(3,max-content\)/.test(css)
      && /<span class="nw">사업자등록번호 \$\{esc\(CORP\.no\)\} ·<\/span>/.test(js) && /\.nw\{white-space:nowrap\}/.test(css),

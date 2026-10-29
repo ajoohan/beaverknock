@@ -57,6 +57,7 @@
      그 한두 픽셀이 '고른 값' 이 아니라 '그때그때 적은 값' 으로 읽힌다.
      누르는 것은 전부 sm, 담는 것은 md·lg. 2px 짜리 막대만 예외로 둔다. */
   --r-xs:8px; --r-sm:12px; --r-md:16px; --r-lg:22px; --r-full:999px;
+  --r-btn:10px; --r-ctl:8px;   /* 단추 · 칩·탭 단추 (2026-10-29: 알약 → 각진 둥근 모서리) */
   /* ── 그림자 세 칸 ── (전에는 :root 가 세 군데에서 이 셋을 서로 다르게 적고 있었다)
      색을 띤 그림자는 물건이 빛나는 것처럼 보인다. 중립 남색 한 가지로만 드리운다. */
   --sh0:0 1px 2px rgba(40,42,110,.06);
@@ -170,7 +171,7 @@ body.mo .back::after{content:"";position:absolute;left:0;right:0;top:-9px;bottom
 
 /* 모든 변형이 같은 크기로 그려지도록 테두리를 항상 1.5px 잡아둔다 -
    활성/비활성은 두께가 아니라 색으로만 구분한다 */
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:var(--r-full);
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:var(--r-btn);
   border:1.5px solid transparent;
   font-weight:700;letter-spacing:-.02em;transition:transform .12s,box-shadow .15s,background .15s;text-align:center}
 .btn:active{transform:scale(.985)}
@@ -231,7 +232,7 @@ body.mo .back::after{content:"";position:absolute;left:0;right:0;top:-9px;bottom
 .btn.tool:hover{background:var(--ind50);border-color:var(--ind300);color:var(--ind700)}
 .btn[disabled]{background:var(--n100)!important;color:var(--n500)!important;box-shadow:none!important;cursor:not-allowed;border-color:var(--n100)!important}
 
-.chip{border:1.5px solid var(--edge);background:var(--white);color:var(--n700);border-radius:var(--r-full);
+.chip{border:1.5px solid var(--edge);background:var(--white);color:var(--n700);border-radius:var(--r-ctl);
   padding:10px 16px;font-size:13.5px;transition:all .12s}
 /* 꺼진 칩(지난 달 등)은 손을 올려도 반응하지 않는다 - 고를 수 있는 것처럼 보이면 안 된다 */
 .chip:not(:disabled):hover{border-color:var(--ind);background:var(--ind50)}
@@ -292,7 +293,7 @@ body.mo .scr .pad.opsPad{padding-left:16px;padding-right:16px}
   background:var(--ind);animation:ping 2.4s var(--e-out) infinite}
 @keyframes ping{0%{transform:scale(1);opacity:.55}70%,100%{transform:scale(3.2);opacity:0}}
 .needBar b{font-size:13.5px;font-weight:700;color:var(--n900);letter-spacing:-.02em}
-.needBar .go{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:var(--r-full);
+.needBar .go{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:var(--r-ctl);
   border:1px solid var(--ind100);background:var(--white);color:var(--ind);
   font-size:12.5px;font-weight:700;cursor:pointer;
   transition:transform var(--t-fast) var(--e-spring),background var(--t-mid) ease,border-color var(--t-mid) ease}
@@ -433,8 +434,8 @@ svg.map text{pointer-events:none;user-select:none}
 .regbar .crumb:hover{color:var(--ind700)}
 
 /* 보는 방식은 둘 중 하나다 - 칩 두 개보다 하나로 붙은 토글이 '둘 중 하나' 를 말한다 */
-.seg{display:inline-flex;flex:none;background:var(--n100);border-radius:var(--r-full);padding:3px}
-.seg button{min-height:40px;padding:0 16px;border-radius:var(--r-full);
+.seg{display:inline-flex;flex:none;background:var(--n100);border-radius:var(--r-btn);padding:3px}
+.seg button{min-height:40px;padding:0 16px;border-radius:var(--r-ctl);
   font-size:12.5px;font-weight:700;color:var(--n500);cursor:pointer;white-space:nowrap}
 .seg button.on{background:var(--white);color:var(--ind);box-shadow:var(--sh0)}
 

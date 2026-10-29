@@ -100,6 +100,7 @@ export async function contractRoute(req, res, agent, user, b) {
       case 'contract-revise':  await revise(res, agent, user, b); break;
       case 'contract-del':     await del(res, agent, b); break;
       case 'contract-reported': await reported(res, agent, b); break;
+      case 'contract-scan':    await scan(res, b); break;
       default: res.status(400).json({ error: '알 수 없는 요청입니다' });
     }
   } catch (e) {
@@ -265,6 +266,19 @@ export async function reportDueCron(req, res) {
   let 보냄 = 0;
   for (let i = 0; i < 메일.length; i += 100) 보냄 += (await notifyMany(req, 메일.slice(i, i + 100))).sent || 0;
   return res.status(200).json({ ok: true, 대상: rows.length, 보냄 });
+}
+
+/* 서류 판독 - 등기부등본·건축물대장·토지이용계획확인서를 읽어 칸 값을 돌려준다(_scan.js).
+   서류는 저장하지 않는다 - 읽고 버린다. 값은 화면이 계약서에 옮겨 적고, 저장할 때 다시 docCheck 를 거친다 */
+async function scan(res, b) {
+  const { scanDocs, ScanError } = await import('./_scan.js');
+  try {
+    const out = await scanDocs(b.files);
+    return res.status(200).json({ ok: true, scan: out });
+  } catch (e) {
+    if (e instanceof ScanError) return res.status(e.status).json({ error: e.message, code: e.code, ...(e.code === 'no_key' ? { need: 'key' } : {}) });
+    throw e;
+  }
 }
 
 /* 작성 중인 것만 지운다. 날인본은 지우지 않는다(트리거도 막는다) */

@@ -505,14 +505,14 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
   ok(/if\(k\.startsWith\('ct'\) && ctInput\(el, k\)\) return;/.test(js), '계약서 칸은 글자마다 다시 그리지 않는다');
   ok(/저장하지 않은 고침이 있습니다/.test(js) && /addEventListener\('beforeunload'/.test(js), '저장하지 않고 떠나면 묻는다(화면 이동·창 닫기)');
   ok(/const 스스로 = CT\.건너뜀 === h; CT\.건너뜀 = null;\s*if\(!스스로 && S\.lastRoute && S\.lastRoute\.startsWith\('#\/partner\/contract\/'\) && h !== S\.lastRoute/.test(js)
-     && /CT\.doc = exNewDoc\(원\); CT\.dirty = true; CT\.mode = 'edit'; ctGo\('#\/partner\/contract\/new'\)/.test(js),
+     && /CT\.doc = exNewDoc\(원\);[\s\S]{0,400}CT\.dirty = true; CT\.mode = 원\.src \? 'edit' : 'scan'; ctGo\('#\/partner\/contract\/new'\)/.test(js),
      '다른 계약서로 옮겨 가도 묻는다 - 화면이 새 문서를 들고 가는 길(ctGo)만 묻지 않는다');
   ok(/function ctDirty\(\)\{ CT\.dirty = true; CT\.rev = \(CT\.rev \|\| 0\) \+ 1;/.test(js) && /CT\.dirty = true; CT\.rev = \(CT\.rev \|\| 0\) \+ 1;\n  \}/.test(js),
      '고칠 때마다 판 번호가 오른다(글자·주소 검색 모두)');
   ok(/h==='#\/partner\/proposals' && S\.agent && !ownerSide\(\)\) ctLoadList\(\)/.test(js) && /if\(!CT\.list\) await ctLoadList\(true\);/.test(js),
      '제안 화면에서도 계약서 목록을 받고, 모르면 받아 본 뒤에 만든다');
   /* 2026-10-29 대표님: Lounge 계약서처럼 - 왼쪽 입력 판 | 오른쪽 책상 위 A4, 칸은 값 길이만큼, 빽빽하게 */
-  ok(/if\(!isMo\(\)\)\{\s*const 신고면[\s\S]{0,200}const 판 = 신고면 \? ctReportSide\(doc\) : F\.explain \? exEditor\(doc\) \+[\s\S]{0,260}: ctFormHTML\(doc\);/.test(js)
+  ok(/if\(!isMo\(\)\)\{\s*const 신고면[\s\S]{0,200}const 판 = CT\.mode === 'scan' && !잠김 \? ctScanHTML\(\) : 신고면 \? ctReportSide\(doc\) : \(잠김 \? '' : ctScanBanner\(\)\) \+ \(F\.explain \? exEditor\(doc\) \+[\s\S]{0,260}: ctFormHTML\(doc\)\);/.test(js)
      && /return ctDeskShell\(doc, 판, 신고면\);/.test(js) && /\$\{ctFormHTML\(doc\)\}/.test(js),
      'PC 는 입력 판 | 미리보기 한 화면(계약서·확인·설명서·신고 도우미 모두), 휴대폰은 같은 입력 구획을 카드로 쌓는다');
   ok(/<div class="ctx-desk" id="ctDesk"><div class="ct-sheet" id="ctPv">\$\{ctDocHTML\(doc\)\}<\/div><\/div>/.test(js)

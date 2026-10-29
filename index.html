@@ -1800,6 +1800,34 @@ body:not(.mo) .ctx-scr{height:100vh;height:100dvh;overflow:hidden}
   .ctx-desk{max-height:80vh}
 }
 .nw{white-space:nowrap}
+/* ── 서류로 먼저 채우기 (2026-10-29) ── AI 가 채운 칸은 '확인을 기다리는' 남색(Lounge 견적서 판독과 같은 결) */
+.scan .scan-slots{display:flex;flex-direction:column;gap:8px}
+.scan-slot{position:relative;display:flex;align-items:center;gap:8px;border:1.5px dashed var(--n300);border-radius:10px;background:var(--white)}
+.scan-slot.on{border-style:solid;border-color:var(--ind300);background:var(--ind50)}
+.scan-pick{flex:1;min-width:0;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;align-items:center;padding:12px 14px;cursor:pointer}
+.scan-pick b{font-size:14px;color:var(--n900)}
+.scan-pick span{grid-column:1;font-size:12.5px;color:var(--n500);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.scan-pick em{grid-column:2;grid-row:1 / span 2;font-style:normal;font-size:12.5px;font-weight:700;color:var(--ind700);white-space:nowrap}
+.scan-slot.on .scan-pick span{color:var(--ind700)}
+.scan-pick:focus-within{outline:2px solid var(--ind);outline-offset:2px;border-radius:10px}
+.scan-del{flex:none;margin-right:10px;font-size:12.5px;color:var(--danger)}
+.scan-act{display:flex;gap:8px;flex-wrap:wrap}
+.scan-note{margin:0;font-size:12px;line-height:1.6;color:var(--n500)}
+.scan-busy{display:flex;align-items:center;gap:8px;margin:0;padding:10px 12px;border-radius:8px;background:var(--ind50);font-size:13px;color:var(--ind700)}
+.scan-busy .dot{width:8px;height:8px;border-radius:50%;background:var(--ind);animation:scanPulse .9s ease-in-out infinite alternate}
+@keyframes scanPulse{from{opacity:.35}to{opacity:1}}
+.scan-err{margin:0;padding:10px 12px;border-radius:8px;background:var(--dangerbg);font-size:13px;line-height:1.55;color:var(--danger)}
+.scan-ai{display:inline-block;padding:0 6px;border-radius:4px;background:#E4E6FD;color:#2F3192;font-weight:700}
+.inp.ai,.ctx-side .inp.ai,.ctx-side .inp.ai:not(:placeholder-shown){background:#EEF0FF;border-color:#A9ACF0}
+.scan-done,.scan-mini{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin:10px 0 0;padding:10px 12px;border-radius:10px}
+.scan-done{background:var(--ind50);border:1px solid var(--ind200)}
+.scan-done b{display:block;font-size:13.5px;color:var(--ind700)}
+.scan-done span{display:block;font-size:12px;line-height:1.5;color:var(--n700)}
+.scan-done ul{margin:6px 0 0;padding-left:16px;font-size:12.5px;line-height:1.55;color:var(--warn)}
+.scan-mini{align-items:center;background:var(--n50);border:1px dashed var(--n300)}
+.scan-mini span{font-size:12px;line-height:1.5;color:var(--n500)}
+.scan-done .btn,.scan-mini .btn{flex:none}
+.ctx-side .scan.ct-sec{padding-top:14px}
 /* 화살표는 글자(→ ←)가 아니라 그림 - 글꼴마다 굵기·높이가 달라 단추마다 들쭉날쭉했다(2026-10-29 마감 검토) */
 .ar-l,.ar-r{display:inline-block;flex:none;width:1em;height:1em;vertical-align:-.14em;background:currentColor;
   -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12h14M13 6l6 6-6 6'/%3E%3C/svg%3E") center/contain no-repeat;
@@ -7120,6 +7148,11 @@ function addrFind(target){
       ADDR.loading = false;
       if(!(r.ok && j.ok)){ ADDR.rows = []; ADDR.note = j.error || '주소를 찾지 못했습니다'; }
       else { ADDR.rows = j.rows || []; ADDR.note = j.note || ''; ADDR.off = !!j.off; }
+      if(target === 'ct-addr' && CT.scanRoad && CT.doc && !CT.doc.property.road){
+        const 읽은 = CT.scanRoad; CT.scanRoad = null;
+        if(ADDR.rows.length === 1) return addrPick(0);
+        if(!ADDR.rows.length){ CT.doc.property.road = 읽은; ADDR.rows = null; }
+      }
       render();
     }))
     .catch(()=>{ ADDR.loading=false; ADDR.rows=[]; ADDR.note='네트워크 문제로 찾지 못했습니다'; render(); });
@@ -10159,6 +10192,7 @@ function ctOpen(id){
     if((location.hash || '') !== '#/partner/contract/' + id) return;
     if(!ok){ CT.err = j.error || '계약서를 불러오지 못했습니다'; CT.need = j.need || ''; render(); return; }
     CT.id = j.row.id; CT.row = j.row; CT.doc = j.row.doc; CT.dirty = false; CT.mode = 'edit';
+    CT.filled = new Set(); CT.scan = null; CT.scanWarn = [];
     render();
   }).catch(() => { if(CT.loadingId === id) CT.loadingId = null;
     if((location.hash || '') !== '#/partner/contract/' + id) return;
@@ -10345,7 +10379,7 @@ const ctIn = (path, label, opt = {}) => {
   /* w: PC 입력 판(12칸 격자)에서 차지하는 칸 수 - 값 길이만큼만 준다(날짜·면적은 좁게, 주소는 한 줄) */
   const w = opt.w || (opt.wide ? 12 : money || opt.type === 'date' ? 4 : 6);
   return `<label class="ct-f${opt.wide?' wide':''} w${w}"><span class="lab">${label}</span>
-    <input class="inp" ${money?'inputmode="numeric"':''} type="${opt.type||'text'}" data-in="${money?'ct$':'ct'}:${path}"
+    <input class="inp${CT.filled && CT.filled.has(path) ? ' ai' : ''}" ${money?'inputmode="numeric"':''} type="${opt.type||'text'}" data-in="${money?'ct$':'ct'}:${path}"
       value="${esc(String(val))}" ${opt.ph?`placeholder="${esc(opt.ph)}"`:''} ${잠김?'disabled':''} autocomplete="off">
     ${money ? `<span class="ct-won" data-ctwon="${path}">${esc(한글금액(v) ? `금 ${한글금액(v)}원정` : '')}</span>` : ''}</label>`;
 };
@@ -10367,7 +10401,7 @@ V['#/partner/contract'] = (id) => {
   /* PC - 입력 판 | 미리보기 (Lounge 계약서 구성). 미리보기 단추 없이 늘 보인다 */
   if(!isMo()){
     const 신고면 = CT.mode === 'report' && ['sale','home-lease'].includes(doc.form);
-    const 판 = 신고면 ? ctReportSide(doc) : F.explain ? exEditor(doc) + (잠김||!CT.id ? '' : `<button class="tapx" data-act="ct-del" style="align-self:flex-start;font-size:12.5px;color:var(--danger)">이 확인·설명서 지우기</button>`) : ctFormHTML(doc);
+    const 판 = CT.mode === 'scan' && !잠김 ? ctScanHTML() : 신고면 ? ctReportSide(doc) : (잠김 ? '' : ctScanBanner()) + (F.explain ? exEditor(doc) + (잠김||!CT.id ? '' : `<button class="tapx" data-act="ct-del" style="align-self:flex-start;font-size:12.5px;color:var(--danger)">이 확인·설명서 지우기</button>`) : ctFormHTML(doc));
     /* 다시 그려도 판·책상의 스크롤 자리를 지킨다(칩 하나 눌렀다고 맨 위로 튀지 않게) */
     const 키 = (신고면 ? 'r' : 'e'), 앞판 = document.querySelector('#app .ctx-scroll'), 앞책상 = document.getElementById('ctDesk');
     const 자리 = CT.스크롤키 === 키 && CT.스크롤문서 === doc ? [앞판 ? 앞판.scrollTop : 0, 앞책상 ? 앞책상.scrollTop : 0] : [0, 0];
@@ -10393,6 +10427,15 @@ V['#/partner/contract'] = (id) => {
     </div>
     ${잠김 ? `<p class="ct-note noprint">날인본입니다 · ${esc(String(CT.row.sealed_at||'').slice(0,16).replace('T',' '))} 확정 · 지문 ${esc(String(CT.row.sha256||'').slice(0,12))}… 고칠 수 없습니다. 바꿔야 하면 ‘고쳐서 새 판 만들기’를 누르세요.</p>` : ''}`;
 
+  if(CT.mode === 'scan' && !잠김) return `
+<div class="scr fade" style="background:var(--n50)">
+  ${navPartner('ct', false)}
+  <div class="pad" style="flex:1;padding-top:16px;padding-bottom:32px;width:100%;display:flex;flex-direction:column;gap:14px">
+    <a class="back" data-go="#/partner/contracts"><i class="ar-l" aria-hidden="true"></i>계약서 목록</a>
+    <h1 class="t" style="font-size:20px">${esc(F.explain ? (EX_FORMS[doc.form] || EX_FORMS['explain-home']).h1 : F.ko)}</h1>
+    ${ctScanHTML()}
+  </div>
+</div>`;
   if(미리) return `
 <div class="scr fade" style="background:var(--n100)">
   ${navPartner('ct', false)}
@@ -10434,6 +10477,7 @@ V['#/partner/contract'] = (id) => {
     ${bar}
     <h1 class="t" style="font-size:${isMo()?20:24}px">${esc(F.ko)}</h1>
     <p class="sub measure" style="margin-top:-6px">비워 둔 칸은 인쇄할 때 밑줄 빈칸으로 나갑니다. 주민등록번호·계좌번호는 여기에 적지 마세요 - 만나서 손으로 적습니다.</p>
+    ${ctScanBanner()}
     ${ctFormHTML(doc)}
   </div>
 </div>`;
@@ -10603,6 +10647,173 @@ function ctFit(){
   s.style.zoom = String(Math.min(1, Math.max(.4, (d.clientWidth - 26) / 794)));
 }
 addEventListener('resize', () => ctFit());
+/* ══════════ 서류로 먼저 채우기 (2026-10-29 대표님) ══════════
+   "템플릿을 고르고 제일 먼저 등기부등본 같은 서류를 올린다. 그 서류를 스캔해 정보가 먼저 자동으로 채워지고,
+    채워진 정보를 바탕으로 수정한다." · "등기부등본·건축물대장·토지이용계획 세 서류를 등록하고 적용을 누르면
+    계약서와 확인·설명서에 공시지가부터 건축물 정보, 등기부의 관련 내용이 모두 자동으로 채워지게."
+   새 문서는 'scan' 단계로 시작한다. 서류는 서버(api/_scan.js)가 읽고 저장하지 않는다. 읽은 값은 doc.src 에도 담아
+   이 계약서에서 확인·설명서를 만들 때 같은 값으로 채운다. 채운 칸은 남색(CT.filled) - 고치면 표시가 사라진다. */
+const SCAN_SLOTS = [
+  ['reg',  '등기사항전부증명서', '등기부등본 · 소유자·권리관계·대지권'],
+  ['bld',  '건축물대장',         '용도·구조·면적·사용승인일·위반 여부'],
+  ['land', '토지이용계획확인서', '용도지역·개별공시지가·규제'],
+];
+const SCAN_MAX = 3 * 1024 * 1024;                          /* 서버와 같은 합계 상한(원본) */
+const 스캔 = () => (CT.scan = CT.scan || { files:{}, busy:false, err:'' });
+const 스캔크기 = () => Object.values(스캔().files).reduce((a, f) => a + (f ? f.bytes : 0), 0);
+const 크기글 = n => n >= 1048576 ? (n / 1048576).toFixed(1) + 'MB' : Math.max(1, Math.round(n / 1024)) + 'KB';
+
+function ctScanHTML(){
+  const sc = 스캔(), 있음 = SCAN_SLOTS.filter(([k]) => sc.files[k]).length;
+  return `
+    <div class="card pad ct-sec scan">
+      <h2>서류로 먼저 채우기</h2>
+      <p class="sub" style="margin:0">세 서류를 올리고 <b>적용</b>을 누르면 소재지·면적·소유자·권리관계·건축물 정보·용도지역·개별공시지가가
+        계약서와 확인·설명서에 채워집니다. 채운 칸은 <span class="scan-ai">남색</span>으로 표시되니 확인하며 고치세요.</p>
+      <div class="scan-slots">${SCAN_SLOTS.map(([k, 이름, 설명]) => { const f = sc.files[k];
+        return `<div class="scan-slot ${f?'on':''}">
+          <label class="scan-pick">
+            <input type="file" accept="application/pdf,image/jpeg,image/png,image/webp" data-scanfile="${k}" ${sc.busy?'disabled':''} hidden>
+            <b>${esc(이름)}</b>
+            <span>${f ? `${esc(f.name)} · ${크기글(f.bytes)}` : esc(설명)}</span>
+            <em>${f ? '바꾸기' : 'PDF·사진 올리기'}</em>
+          </label>
+          ${f && !sc.busy ? `<button type="button" class="tapx scan-del" data-act="ct-scan-del" data-v="${k}" aria-label="${esc(이름)} 빼기">빼기</button>` : ''}
+        </div>`; }).join('')}</div>
+      ${sc.busy ? `<p class="scan-busy" role="status"><span class="dot"></span>서류를 읽는 중입니다 · 보통 20~40초 걸립니다</p>` : ''}
+      ${sc.err && !sc.busy ? `<p class="scan-err" role="alert">${esc(sc.err)}</p>` : ''}
+      <div class="scan-act">
+        <button class="btn pri sm" data-act="ct-scan-go" ${!있음||sc.busy?'disabled':''}>${sc.busy?'읽는 중…':`적용${있음?` (${있음}개 서류)`:''}`}</button>
+        <button class="btn tool sm" data-act="ct-scan-skip" ${sc.busy?'disabled':''}>${CT.filled && CT.filled.size ? '돌아가기' : '서류 없이 직접 쓰기'}</button>
+      </div>
+      <p class="scan-note">올린 서류는 칸을 채우는 데만 쓰고 저장하지 않습니다. 판독은 AI(Anthropic)가 하며 주민등록번호는 읽지 않습니다.
+        AI 가 잘못 읽을 수 있으니 채운 값은 서류와 맞춰 확인하세요. 합계 3MB까지 - 사진은 줄여서 보냅니다.</p>
+    </div>`;
+}
+
+/* 파일 고르기 - 사진은 긴 변 2000px JPEG 로 줄인다(본문 상한 4.5MB, base64 는 1.33배). PDF 는 그대로 */
+function 읽기(file){ return new Promise((ok, no) => { const r = new FileReader(); r.onload = () => ok(String(r.result).split(',')[1] || ''); r.onerror = no; r.readAsDataURL(file); }); }
+async function 줄이기(file){
+  const url = URL.createObjectURL(file);
+  try{
+    const img = await new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = no; i.src = url; });
+    const k = Math.min(1, 2000 / Math.max(img.naturalWidth, img.naturalHeight));
+    const c = document.createElement('canvas'); c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k);
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    return c.toDataURL('image/jpeg', 0.85).split(',')[1] || '';
+  } finally { URL.revokeObjectURL(url); }
+}
+async function ctScanPick(kind, file){
+  if(!file || !SCAN_SLOTS.some(([k]) => k === kind)) return;
+  const 사진 = /^image\/(jpeg|png|webp)$/.test(file.type), pdf = file.type === 'application/pdf';
+  if(!사진 && !pdf) return toast('PDF·JPG·PNG·WEBP 서류만 올릴 수 있습니다');
+  try{
+    const data = 사진 ? await 줄이기(file) : await 읽기(file);
+    const bytes = Math.floor(data.length * 3 / 4);
+    const 다른것 = 스캔크기() - (스캔().files[kind] ? 스캔().files[kind].bytes : 0);
+    if(다른것 + bytes > SCAN_MAX) return toast('서류 합계가 3MB 를 넘습니다 - 필요한 쪽만 PDF 로 올려 주세요');
+    스캔().files[kind] = { name: file.name, bytes, data };
+    스캔().err = '';
+    render();
+  }catch(e){ toast('서류를 열지 못했습니다 - 다른 파일로 올려 주세요'); }
+}
+
+/* 읽은 값 → 문서 칸. 고친 칸 경로들을 돌려준다(남색 표시용). 빈칸만=true 면 이미 적힌 칸은 두고 빈칸만 채운다.
+   확인·설명서 칸은 그 서식에 있는 칸만(exKeys), 고르는 칸은 서식의 선택지에 맞을 때만 */
+function ctApplyScan(doc, s, kinds, 빈칸만){
+  const F = CT_FORMS[doc.form] || CT_FORMS['home-lease'];
+  const 칸 = F.explain ? exKeys(doc.form) : null, 채움 = [];
+  const 비었나 = v => v == null || v === '' || v === 0 || (Array.isArray(v) && !v.length);
+  const 넣기 = (path, v) => {
+    if(비었나(v)) return;
+    if(칸 && path.startsWith('ex.') && !칸.has(path)) return;
+    if(빈칸만 && !비었나(ctGet(doc, path))) return;
+    ctSet(doc, path, v); 채움.push(path);
+  };
+  const 있음 = k => (kinds || []).includes(k);
+  /* 소재지·토지·건물 - 계약서·확인·설명서가 같은 property 칸을 쓴다 */
+  넣기('property.jibun', s.jibun); 넣기('property.bdNm', s.bdNm);
+  넣기('property.landCat', s.landCat); 넣기('property.landArea', s.landArea);
+  넣기('property.bldStruct', s.bldStruct); 넣기('property.bldUse', s.bldUse); 넣기('property.bldArea', s.bldArea);
+  if(!F.explain && !F.lease) 넣기('property.landRight', s.landRight);
+  if(!F.explain && F.lease && s.unit) 넣기('property.part', `${s.unit} 전부`);
+  if(!F.explain && F.lease && s.bldArea) 넣기('property.partArea', s.bldArea);
+  /* 소유자 → 임대인·매도인 (확인·설명서는 parties.a) */
+  const 소유 = (s.owners || []).filter(o => o.name);
+  const 갑 = F.explain ? 'a' : (F.a || [])[0];
+  if(갑 && 소유.length){
+    넣기(`parties.${갑}.name`, 소유.map(o => o.name).join(', '));
+    넣기(`parties.${갑}.addr`, 소유[0].addr);
+  }
+  if(F.explain){
+    const 줄 = o => [o.name + (o.share ? ` (지분 ${o.share})` : ''), o.addr, o.cause].filter(Boolean).join(' · ');
+    const 권리 = t => (s.rights || []).filter(r => r.target === t || r.target === '전체')
+      .map(r => `[${r.section}] ${[r.kind, r.holder, r.amount, r.date && r.date + ' 접수'].filter(Boolean).join(' · ')}`).join('\n');
+    if(소유.length){ 넣기('ex.ownLand', 소유.map(줄).join('\n')); 넣기('ex.ownBld', 소유.map(줄).join('\n')); }
+    if(있음('reg')){
+      넣기('ex.etcLand', 권리('토지') || '없음'); 넣기('ex.etcBld', 권리('건물') || '없음');
+      넣기('ex.trust', s.trust ? '확인' : '해당 없음'); 넣기('ex.jointMortgage', s.jointCollateral ? '확인' : '해당 없음');
+    }
+    넣기('ex.landShare', s.landShare);
+    if(있음('bld')){
+      넣기('ex.builtYear', s.approval); 넣기('ex.violation', s.violation ? '위반' : '적법');
+      넣기('ex.seismic', s.seismic); 넣기('ex.seismicLevel', s.seismicLevel);
+      if(/^(없음|0\s*대?|-)$/.test(String(s.elevators || '').trim())) 넣기('ex.elev', '없음');
+    }
+    if(있음('land')){
+      넣기('ex.zone', s.zone); 넣기('ex.district', s.district); 넣기('ex.area', s.zoneArea);
+      넣기('ex.facility', s.facilities); 넣기('ex.plan', s.plan); 넣기('ex.restrict', s.otherRestrict);
+      if(s.permitZone) 넣기('ex.permitZone', ['토지거래허가구역']);
+      if(+s.landPrice) 넣기('ex.landPrice', +s.landPrice);
+    }
+    /* 근거자료 - 올린 서류 이름을 고른다(서식 선택지에 있는 것만) */
+    const 고를 = [['reg','등기사항증명서'],['bld','건축물대장'],['land','토지이용계획확인서']].filter(([k]) => 있음(k)).map(([, v]) => v);
+    if(고를.length && 칸 && 칸.has('ex.docs')){
+      const 지금 = [...(ctGet(doc, 'ex.docs') || [])], 더 = 고를.filter(v => !지금.includes(v));
+      if(더.length){ ctSet(doc, 'ex.docs', [...지금, ...더]); 채움.push('ex.docs'); }
+    }
+  }
+  return 채움;
+}
+
+async function ctScanGo(){
+  const sc = 스캔(); if(sc.busy || !CT.doc) return;
+  const kinds = SCAN_SLOTS.map(([k]) => k).filter(k => sc.files[k]);
+  if(!kinds.length) return toast('서류를 하나 이상 올려 주세요');
+  sc.busy = true; sc.err = ''; render();
+  const 문서 = CT.doc;
+  const { ok, j } = await ctPost({ what:'contract-scan', files: kinds.map(k => ({ kind: k, data: sc.files[k].data })) })
+    .catch(() => ({ ok:false, j:{ error:'네트워크 문제로 서류를 보내지 못했습니다 - 다시 해 주세요' } }));
+  sc.busy = false;
+  if(CT.doc !== 문서){ render(); return; }                  /* 그 사이 다른 문서를 열었다 */
+  if(!ok || !j.scan){ sc.err = j.error || '서류를 읽지 못했습니다 - 직접 적어 주세요'; render(); return; }
+  const 처음 = !(CT.filled && CT.filled.size) && !CT.id;      /* 새 문서 첫 적용은 다 채우고, 그다음부터는 빈칸만 */
+  const 채움 = ctApplyScan(CT.doc, j.scan, kinds, !처음);
+  CT.doc.src = { at: new Date().toISOString().slice(0, 10), kinds, ...j.scan };   /* 확인·설명서를 만들 때 다시 쓴다 */
+  CT.filled = new Set([...(CT.filled || []), ...채움]);
+  CT.scanWarn = j.scan.warnings || [];
+  sc.files = {};                                            /* 읽었으면 버린다 - 화면 메모리에도 남기지 않는다 */
+  CT.mode = 'edit'; ctDirty();
+  /* 소재지는 주소 검색으로 골라야 법정동코드가 붙는다 - 읽은 주소로 바로 찾는다 */
+  const 주소 = j.scan.road || j.scan.jibun;
+  if(주소 && !CT.doc.property.admCd){
+    CT.scanRoad = 주소; CT.doc.property.road = '';
+    ADDR.q = 주소.replace(/\s*\([^)]*\)\s*$/, ''); addrFind('ct-addr');
+  } else render();
+  toast(채움.length ? `서류에서 ${채움.length}칸을 채웠습니다 - 남색 칸을 확인하세요` : '서류에서 채울 값을 찾지 못했습니다 - 직접 적어 주세요');
+}
+
+/* 입력 판 맨 위 - 채운 결과·확인할 점·다시 채우기 */
+function ctScanBanner(){
+  if(CT.row && CT.row.status === 'sealed') return '';
+  const n = CT.filled ? CT.filled.size : 0, 경고 = CT.scanWarn || [];
+  if(!n) return `<div class="scan-mini"><span>등기부등본·건축물대장·토지이용계획확인서로 칸을 채울 수 있습니다</span>
+    <button class="btn tool sm" data-act="ct-scan-open">서류로 채우기</button></div>`;
+  return `<div class="scan-done" role="status"><div><b>서류에서 ${n}칸을 채웠습니다</b><span>남색 칸을 서류와 맞춰 확인하세요 - 고치면 표시가 사라집니다</span>
+      ${경고.length ? `<ul>${경고.map(w => `<li>${esc(w)}</li>`).join('')}</ul>` : ''}</div>
+    <button class="btn tool sm" data-act="ct-scan-open">서류로 다시 채우기</button></div>`;
+}
+
 
 
 /* ══════════ 중개대상물 확인·설명서 [Ⅰ]~[Ⅳ] (2026-10-29) ══════════
@@ -10967,7 +11178,7 @@ function exEditPart(doc, p){
   if(p.t === 'money') return ctIn(p.k, (p.pre || '금액').replace(/:\s*$/,'') + '(원)', { money:true });
   if(p.t === 'area'){
     const 잠김 = CT.row && CT.row.status === 'sealed';
-    return `<label class="ct-f wide w12"><span class="lab">내용</span><textarea class="inp" rows="3" data-in="ct:${p.k}" ${잠김?'disabled':''}>${esc(v || '')}</textarea></label>`;
+    return `<label class="ct-f wide w12"><span class="lab">내용</span><textarea class="inp${CT.filled && CT.filled.has(p.k) ? ' ai' : ''}" rows="3" data-in="ct:${p.k}" ${잠김?'disabled':''}>${esc(v || '')}</textarea></label>`;
   }
   if(p.t === 'note') return `<p class="ex-enote">${esc(p.s)}</p>`;
   if(p.t === 'sign') return '';
@@ -11135,6 +11346,7 @@ function ctInput(el, k){
   if(!CT.doc || (CT.row && CT.row.status === 'sealed')) return false;
   const at = k.indexOf(':'); if(at < 0) return false;
   const kind = k.slice(0, at), path = k.slice(at + 1);
+  if(CT.filled && CT.filled.delete(path)) el.classList.remove('ai');
   if(kind === 'ct') ctSet(CT.doc, path, el.value);
   else if(kind === 'ct$'){
     const 전 = +ctGet(CT.doc, path) || 0;
@@ -13061,7 +13273,12 @@ function handle(a,v,el){
     /* ── 계약서 (2026-10-29) ── */
     case 'ct-new':
       CT.id = null; CT.row = null; CT.fromProposal = null; CT.doc = ctNewDoc(CT_FORMS[v] ? v : 'home-lease');
-      CT.dirty = true; CT.mode = 'edit'; go('#/partner/contract/new'); return true;
+      CT.filled = new Set(); CT.scan = null; CT.scanWarn = [];
+      CT.dirty = true; CT.mode = 'scan'; go('#/partner/contract/new'); return true;
+    case 'ct-scan-go': ctScanGo(); return true;
+    case 'ct-scan-del': if(CT.scan && CT.scan.files) delete CT.scan.files[v]; render(); return true;
+    case 'ct-scan-skip': CT.mode = 'edit'; render(); return true;
+    case 'ct-scan-open': if(CT.doc && !ctSealed()){ CT.mode = 'scan'; render(); } return true;
     case 'ct-open': go('#/partner/contract/' + v); return true;
     case 'ct-reload': ctLoadList(true); render(); return true;
     /* 계약서에서 확인·설명서로 - 소재지·당사자·중개사·금액을 옮긴다. 저장 안 한 고침이 있으면 먼저 저장하게 한다 */
@@ -13070,7 +13287,11 @@ function handle(a,v,el){
       if(CT.dirty || !CT.id) return toast('계약서를 먼저 저장해 주세요'), true;
       const 원 = { ...CT.doc, __id: CT.id }, 제안 = CT.row && CT.row.proposal_id;
       CT.id = null; CT.row = null; CT.fromProposal = 제안 || null;
-      CT.doc = exNewDoc(원); CT.dirty = true; CT.mode = 'edit'; ctGo('#/partner/contract/new'); return true;
+      CT.doc = exNewDoc(원);
+      CT.filled = new Set(원.src ? ctApplyScan(CT.doc, 원.src, 원.src.kinds || [], false) : []);
+      if(원.src) CT.doc.src = 원.src;
+      CT.scan = null; CT.scanWarn = (원.src && 원.src.warnings) || [];
+      CT.dirty = true; CT.mode = 원.src ? 'edit' : 'scan'; ctGo('#/partner/contract/new'); return true;
     }
     case 'ex-form': if(CT.doc && EX_FORMS[v] && !(CT.row && CT.row.status === 'sealed')){ const n = exLost(CT.doc, v);
       if(n && !confirm(`'${EX_FORMS[v].short}' 서식에는 없는 칸 ${n}개의 값이 지워집니다. 바꿀까요?`)) return true;
@@ -13103,7 +13324,8 @@ function handle(a,v,el){
           deal: form === 'sale' ? { price: +r.dep || 0 }
             : { type: +r.rent ? 'monthly' : 'jeonse', deposit: +r.dep || 0, rent: +r.rent || 0, fee: +r.fee || 0 },
           lessee: { name: p.cust || '', phone: p.cphone || '' } });
-        CT.dirty = true; CT.mode = 'edit'; ctGo('#/partner/contract/new');
+        CT.filled = new Set(); CT.scan = null; CT.scanWarn = [];
+        CT.dirty = true; CT.mode = 'scan'; ctGo('#/partner/contract/new');
       })();
       return true;
     }
@@ -13512,6 +13734,7 @@ document.addEventListener('keydown', e=>{
 /* 모바일 조건 선택 셀렉트 */
 document.addEventListener('change', e=>{
   const s=e.target.closest('[data-act="pick-cond-sel"]'); if(s){ S.inboxCond=s.value; render(); }
+  const sf=e.target.closest('[data-scanfile]'); if(sf){ const fl = sf.files && sf.files[0]; sf.value = ''; ctScanPick(sf.dataset.scanfile, fl); }
 });
 
 /* 기기 구분은 창 너비가 정한다 - 사람이 버튼으로 고르던 자리다.

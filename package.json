@@ -1,0 +1,9 @@
+{
+  "name": "beaverknock",
+  "private": true,
+  "type": "module",
+  "description": "비버노크 - 화면 한 장(index.html)과 Vercel 함수(api/). 서류 판독(계약서 자동 채우기)에 Anthropic SDK 를 쓴다",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.3.0"
+  }
+}

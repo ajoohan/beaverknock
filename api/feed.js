@@ -9,6 +9,7 @@
 
 import { userFrom, sbHeaders, sbUrl } from './_auth.js';
 import { dbWhy } from './_dberr.js';
+import { contractRoute } from './_contract.js';
 
 const KIND_KO = { home: '주거', shop: '상가', office: '오피스', storage: '창고' };
 
@@ -158,6 +159,10 @@ export default async function handler(req, res) {
      새로고침하면 자기가 보낸 것이 사라졌다.
      함수 상한(12개) 때문에 수요 목록과 한 지붕 아래 둔다. */
   if (b.what === 'mine') return readMine(req, res, chk.agent);
+
+  /* 계약서 (2026-10-29). 승인 전 중개사도 쓴다 - 자격 확인은 수요 전문을 여는 문이지
+     양식·인쇄 도구의 문이 아니다. 갈래는 api/_contract.js 가 맡는다. */
+  if (await contractRoute(req, res, chk.agent, user, b)) return;
 
   /* 올려둔 물건. 지금까지 이 목록도 그 브라우저에만 있어서 창을 닫으면
      사라졌다. 함수 상한(12개) 때문에 여기 함께 둔다. */

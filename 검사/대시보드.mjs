@@ -46,7 +46,7 @@ const M = new Function('esc', `${js.slice(시작, 끝)}\nreturn { dzLine, dzPill
 /* ── ② 넓은 화면에서만 세로 메뉴 ── */
 {
   ok(/if\(!isMo\(\)\) return 파트너옆\(active\);/.test(js), '중개사 - 넓은 화면은 왼쪽 세로 메뉴, 휴대폰은 위 머리 그대로');
-  ok(/body:not\(\.mo\) \.dz-scr, body:not\(\.mo\) \.scr:has\(> \.psb\)\{display:grid;grid-template-columns:200px/.test(css), '세로 메뉴 틀은 넓은 화면에만 (body:not(.mo)) · 폭 200px(Lounge 188px 수준)');
+  ok(/body:not\(\.mo\) \.dz-scr, body:not\(\.mo\) \.scr:has\(> \.psb\)\{display:grid;grid-template-columns:200px/.test(css) && css.includes('body:not(.mo) .scr.ctx-scr:has(> .psb){grid-template-columns:180px minmax(0,1fr)}'),"세로 메뉴는 넓은 화면에만 · 폭 200px, 계약서 화면만 180px");
   const 운 = js.slice(js.indexOf('V[OPS_HOME] = () => {'), js.indexOf('\n};\n', js.indexOf('V[OPS_HOME] = () => {')));
   ok(/if\(isMo\(\)\) return `[\s\S]*<aside class="opsNav">\$\{메뉴\}<\/aside>/.test(운) && /<aside class="dz-side opsSide" aria-label="운영 메뉴">/.test(운),
      '운영자 - 휴대폰은 가로로 미는 메뉴, 넓은 화면은 왼쪽 보라 메뉴');

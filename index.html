@@ -1710,12 +1710,18 @@ body.mo .rp-l{grid-column:1/-1}
 .ctdoc .ct-foot{margin-top:10px;font-size:8.5pt;color:#666}
 .ctdoc tr,.ctdoc .ct-art{break-inside:avoid}
 /* ── PC 작성 화면 - 입력 판 | 책상 위 A4 (2026-10-29, Lounge 계약서 구성) ── */
-.ctx-scr .ptop{padding:8px 16px 0;min-height:32px}
-.ctx{display:flex;flex-direction:column;gap:8px;height:calc(100vh - 40px);min-height:560px;padding:0 16px 12px;box-sizing:border-box}
-.ctx-head{display:flex;align-items:center;gap:6px 12px;flex-wrap:wrap;margin-top:-28px;padding-right:120px}
+/* 계약서 화면은 메뉴를 10% 더 좁혀(200→180) 미리보기에 준다 (2026-10-29 대표님) */
+body:not(.mo) .scr.ctx-scr:has(> .psb){grid-template-columns:180px minmax(0,1fr)}
+/* 계약서 화면은 창 높이에 딱 맞춘다 - 바깥이 스크롤되면 미리보기 머리(인쇄 단추 줄)가 위로 밀려 잘렸다.
+   위쪽 배지 줄(.ptop)은 감추고 배지는 머리 줄 오른쪽 끝에 둔다. 스크롤은 입력 판·책상 안에서만 */
+body:not(.mo) .ctx-scr .ptop{display:none}
+body:not(.mo) .ctx-scr{height:100vh;height:100dvh;overflow:hidden}
+.ctx{display:flex;flex-direction:column;gap:8px;height:100vh;height:100dvh;padding:10px 16px 12px;box-sizing:border-box}
+.ctx-badge{margin-left:auto;display:flex;align-items:center;gap:8px}
+.ctx-head{display:flex;align-items:center;gap:6px 12px;flex-wrap:wrap}
 .ctx-h1{margin:0;font-size:20px;font-weight:800;letter-spacing:-.03em;color:var(--n900)}
 .ctx-sub{font-size:12.5px;color:var(--n500)}
-.ctx-body{flex:1 1 auto;min-height:0;display:grid;grid-template-columns:minmax(420px,500px) minmax(0,1fr);gap:12px}
+.ctx-body{flex:1 1 auto;min-height:0;display:grid;grid-template-columns:minmax(378px,450px) minmax(0,1fr);gap:12px}
 .ctx-side,.ctx-view{min-height:0;display:flex;flex-direction:column;background:var(--white);border:1px solid var(--n200);border-radius:12px;box-shadow:var(--sh0);overflow:hidden}
 .ctx-tabs{display:flex;gap:4px;margin:8px 12px 0;padding:3px;border-radius:10px;background:var(--n100)}
 .ctx-tabs button{flex:1;min-height:30px;border:none;border-radius:8px;background:transparent;font:inherit;font-size:13px;font-weight:700;color:var(--n700);cursor:pointer}
@@ -1747,7 +1753,9 @@ body.mo .rp-l{grid-column:1/-1}
 .ctx-side .btn.sm{min-height:32px;padding:0 12px;font-size:12.5px}
 .ctx-side textarea.inp{height:auto;padding:6px 8px;line-height:1.55;font-size:12.5px}
 .ctx-side input[type=date].inp{padding-right:4px}
-.ctx-side .ct-won{font-size:11.5px;min-height:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ctx-side .ct-won{font-size:11.5px;min-height:0;line-height:1.4;word-break:keep-all}
+.ctx-side .ex-row .ct-f .lab{white-space:normal}
+.ctx-side .card{overflow:visible}
 .ctx-side .ct-clause{padding:6px 0;gap:4px}
 .ctx-side .ct-clause label{font-size:13px!important}
 .ctx-side .ct-addr{padding:6px 10px;gap:1px}
@@ -1768,6 +1776,7 @@ body.mo .rp-l{grid-column:1/-1}
 .ctx-desk .ct-sheet{margin:0 auto;box-shadow:0 1px 2px rgba(29,28,42,.08),0 8px 24px -12px rgba(29,28,42,.25)}
 /* 좁은 데스크톱 - 두 단이 비좁으면 위아래로(판은 제 키대로, 미리보기는 아래) */
 @media (max-width:1099px){
+  body:not(.mo) .ctx-scr{height:auto;overflow:visible}
   .ctx{height:auto}
   .ctx-body{grid-template-columns:minmax(0,1fr)}
   .ctx-scroll{overflow:visible}
@@ -2965,14 +2974,14 @@ function mprog(pct){ return `<div class="mprog"><i style="width:${pct}%"></i></d
 const 비울수있는줄 = new Set(['move-when','elev','keyOk','signNeed','hbath','hage','moveWhy','bldType','dock','temp',
   'rooms','floor','house','loan','pref','feeType','floorMode','band','moveIn','dir','park','elev6','dirBase',
   'feeBasis','phtype','lfeeBasis','lfeeType','ldir','ldirBase','lhtype','lpark']);
-function chipsHTML(list, sel, act, multi){
+function chipsHTML(list, sel, act, multi, off){
   const 켜짐 = v => multi ? (sel||[]).includes(v) : sel === v;
   /* 라디오 묶음은 Tab 으로 **한 번만** 들어간다 - 고른 칸이 그 문이고,
      아직 안 골랐으면 첫 칸이 문이다. 안에서는 화살표로 옮긴다(아래 처리기). */
   const 문 = multi ? -1 : Math.max(0, list.findIndex(켜짐));
   return `<div class="chips ${multi?'multi':'one'}" role="${multi?'group':'radiogroup'}">${
     list.map((v,i)=>{ const k = 켜짐(v);
-      return `<button class="chip ${k?'on':''}" data-act="${act}" data-v="${esc(v)}"
+      return `<button class="chip ${k?'on':''}" data-act="${act}" data-v="${esc(v)}" ${off?'disabled':''}
         ${multi ? `aria-pressed="${k}"`
                 : `role="radio" aria-checked="${k}" tabindex="${i===문?0:-1}"`}>${esc(v)}</button>`;
     }).join('')}</div>${!multi && sel && 비울수있는줄.has(act)
@@ -10134,6 +10143,7 @@ function ctOpen(id){
     if((location.hash || '') !== '#/partner/contract/' + id) return;
     CT.err = '네트워크 문제로 불러오지 못했습니다'; render(); });
 }
+const ctSealed = () => !!(CT.row && CT.row.status === 'sealed');
 /* 화면이 새 문서를 들고 스스로 옮겨 가는 길 - 떠날 때 묻는 확인을 건너뛴다 */
 function ctGo(h){ CT.건너뜀 = h; go(h); }
 /* 라우터가 부른다 - 화면에 필요한 것을 불러온다 */
@@ -10163,7 +10173,7 @@ async function ctSave(silent){
     CT.row = { ...(CT.row||{}), id: j.id, status:'draft', updated_at: j.updated_at, form: 문서.form, proposal_id: 제안 };
     ctListPut({ id: j.id, status:'draft', updated_at: j.updated_at, form: 문서.form, proposal_id: 제안,
       title: (문서.property && 문서.property.road) || '' });
-    if(새것) history.replaceState(null, '', '#/partner/contract/' + j.id), S.route = S.lastRoute = '#/partner/contract/' + j.id;
+    if(새것 && (location.hash || '').startsWith('#/partner/contract/')) history.replaceState(null, '', '#/partner/contract/' + j.id), S.route = S.lastRoute = '#/partner/contract/' + j.id;
     render(); if(!silent || CT.dirty) toast(CT.dirty ? '저장했습니다 - 그 뒤에 고친 것은 아직 저장 전입니다' : '저장했습니다');
     return !CT.dirty;
   }catch(e){ CT.saving = false; render(); toast('네트워크 문제로 저장하지 못했습니다'); return false; }
@@ -10336,11 +10346,11 @@ V['#/partner/contract'] = (id) => {
   /* PC - 입력 판 | 미리보기 (Lounge 계약서 구성). 미리보기 단추 없이 늘 보인다 */
   if(!isMo()){
     const 신고면 = CT.mode === 'report' && ['sale','home-lease'].includes(doc.form);
-    const 판 = 신고면 ? ctReportSide(doc) : F.explain ? exEditor(doc) : ctFormHTML(doc);
+    const 판 = 신고면 ? ctReportSide(doc) : F.explain ? exEditor(doc) + (잠김||!CT.id ? '' : `<button class="tapx" data-act="ct-del" style="align-self:flex-start;font-size:12.5px;color:var(--danger)">이 확인·설명서 지우기</button>`) : ctFormHTML(doc);
     /* 다시 그려도 판·책상의 스크롤 자리를 지킨다(칩 하나 눌렀다고 맨 위로 튀지 않게) */
-    const 키 = (CT.id || 'new') + '|' + CT.mode, 앞판 = document.querySelector('#app .ctx-scroll'), 앞책상 = document.getElementById('ctDesk');
-    const 자리 = CT.스크롤키 === 키 ? [앞판 ? 앞판.scrollTop : 0, 앞책상 ? 앞책상.scrollTop : 0] : [0, 0];
-    CT.스크롤키 = 키;
+    const 키 = (신고면 ? 'r' : 'e'), 앞판 = document.querySelector('#app .ctx-scroll'), 앞책상 = document.getElementById('ctDesk');
+    const 자리 = CT.스크롤키 === 키 && CT.스크롤문서 === doc ? [앞판 ? 앞판.scrollTop : 0, 앞책상 ? 앞책상.scrollTop : 0] : [0, 0];
+    CT.스크롤키 = 키; CT.스크롤문서 = doc;
     /* render 가 화면을 바꾼 직후에 돈다(가려진 창에서는 requestAnimationFrame 이 멈춰 있을 수 있다) */
     setTimeout(() => { ctFit(); const p = document.querySelector('#app .ctx-scroll'), d = document.getElementById('ctDesk');
       if(p) p.scrollTop = 자리[0]; if(d) d.scrollTop = 자리[1]; });
@@ -10433,7 +10443,7 @@ function ctFormHTML(doc){
     + ctIn(`parties.${k}.addr`,`${ko} 주소`,{w:6});
   return `
     ${F.lease ? `<div class="card pad ct-sec"><h2>계약 종류</h2>
-      ${chipsHTML(Object.values(CT_KIND), CT_KIND[doc.kind] || CT_KIND.new, 'ct-kind', false)}</div>` : ''}
+      ${chipsHTML(Object.values(CT_KIND), CT_KIND[doc.kind] || CT_KIND.new, 'ct-kind', false, 잠김)}</div>` : ''}
 
     <div class="card pad ct-sec"><h2>${매매?'부동산':상가?'임차상가건물':'임차주택'}의 표시</h2>
       <div><span class="lab">소재지 <span class="req">*</span></span>
@@ -10449,15 +10459,15 @@ function ctFormHTML(doc){
         ${/* 줄마다 12칸이 꽉 차게 - 주택 임대 6·3·3 / 3·3·3·3, 상가 임대 6·3·3 / 2·2·3·3·2, 매매 3·3·6 / 4·4·4 */''}
         ${상가 ? ctIn('property.use','용도(업종)',{w:3, ph:'예: 카페'}) : ''}
         ${ctIn('property.landCat','토지 지목',{w: 상가?2:3, ph:'예: 대'})}
-        ${ctIn('property.landArea','토지 면적(㎡)',{w: 상가?2:3})}
+        ${ctIn('property.landArea', 상가?'토지 면적':'토지 면적(㎡)',{w: 상가?2:3, ph: 상가?'㎡':''})}
         ${매매 ? ctIn('property.landRight','대지권 종류·비율',{w:6, ph:'예: 소유권대지권 12345.6분의 45.67'}) : ''}
         ${ctIn('property.bldStruct','건물 구조',{w: 매매?4:3, ph:'예: 철근콘크리트조'})}
         ${ctIn('property.bldUse','건물 용도',{w: 매매?4:3, ph: 상가?'예: 근린생활시설':'예: 아파트'})}
-        ${ctIn('property.bldArea','건물 면적(㎡)',{w: 매매?4:상가?2:3})}
+        ${ctIn('property.bldArea', 상가?'건물 면적':'건물 면적(㎡)',{w: 매매?4:상가?2:3, ph: 상가?'㎡':''})}
       </div></div>
 
     <div class="card pad ct-sec"><h2>${매매?'매매대금':'보증금과 차임'}</h2>
-      ${F.monthly === 'choose' ? chipsHTML(['전세','월세'], D.type==='monthly'?'월세':'전세', 'ct-deal', false) : ''}
+      ${F.monthly === 'choose' ? chipsHTML(['전세','월세'], D.type==='monthly'?'월세':'전세', 'ct-deal', false, 잠김) : ''}
       <div class="ct-grid">
         ${매매 ? ctIn('deal.price','매매대금(원)',{money:true}) : ctIn('deal.deposit','보증금(원)',{money:true})}
         ${ctIn('deal.down','계약금(원)',{money:true})}
@@ -10466,10 +10476,10 @@ function ctFormHTML(doc){
         <label class="ct-f w4"><span class="lab">잔금(원) · 자동 계산</span><input class="inp" value="${esc(ctBalance(D)?comma(String(ctBalance(D))):'')}" disabled data-ctbal>
           <span class="ct-won" data-ctbalwon>${esc(한글금액(ctBalance(D))?`금 ${한글금액(ctBalance(D))}원정`:'')}</span></label>
         ${ctIn('deal.balanceDate','잔금 지급일',{type:'date'})}
-        ${D.type==='monthly' ? ctIn('deal.rent','월 차임(원)',{money:true}) + ctIn('deal.rentDay','차임 지급일',{w:2, ph:'매월 25'}) : ''}
+        ${D.type==='monthly' ? ctIn('deal.rent','월 차임(원)',{money:true}) + ctIn('deal.rentDay','지급일',{w:2, ph:'매월 25'}) : ''}
         ${F.lease ? ctIn('deal.fee','관리비 정액(원)',{money:true, ph:'없으면 비움'}) : ''}
       </div>
-      ${상가 ? `<div><span class="lab">차임의 부가가치세</span>${chipsHTML(['별도','포함'], D.vat||'별도', 'ct-vat', false)}</div>` : ''}</div>
+      ${상가 ? `<div><span class="lab">차임의 부가가치세</span>${chipsHTML(['별도','포함'], D.vat||'별도', 'ct-vat', false, 잠김)}</div>` : ''}</div>
 
     <div class="card pad ct-sec"><h2>${매매?'인도와 계약일':'임대차기간'}${매매?' <span class="sub" style="font-weight:500;font-size:12.5px">인도일을 비우면 잔금일에 인도합니다</span>':''}</h2>
       <div class="ct-grid">
@@ -10518,6 +10528,7 @@ function ctDeskShell(doc, side, 신고면){
       <h1 class="ctx-h1">${esc(이름)}</h1>
       <span class="badge ${잠김?'b-ok':'b-warn'}">${잠김?'날인본':'작성 중'}</span>
       ${!잠김 && !F.explain ? `<span class="ctx-sub">비워 둔 칸은 밑줄 빈칸으로 인쇄됩니다 · 주민등록번호·계좌번호는 적지 않습니다</span>` : ''}
+      <span class="ctx-badge">${agentBadge()}</span>
     </div>
     <div class="ctx-body">
       <section class="ctx-side" aria-label="입력">
@@ -10822,9 +10833,16 @@ function exKeys(form){
 }
 /* 서식 바꾸기 - 새 서식에 없는 칸의 값은 지운다. 화면·인쇄에 안 보이는 값이 날인본(지문)에 남으면 안 된다.
    머리 선택지(주택 유형·용도·거래 형태)도 새 서식에 없는 값이면 비운다. 소재지·당사자·중개사는 그대로 둔다. */
+const EX_PROP = ['landCat', 'landArea', 'bldStruct', 'bldUse', 'bldArea'];   /* 서식마다 있고 없는 소재지 칸 */
+function exLost(doc, form){
+  const 칸 = exKeys(form), 빈 = v => v === '' || v == null || v === 0 || (Array.isArray(v) && !v.length);
+  return Object.keys(doc.ex || {}).filter(k => !칸.has('ex.' + k) && !빈(doc.ex[k])).length
+    + EX_PROP.filter(k => !칸.has('property.' + k) && !빈((doc.property || {})[k])).length;
+}
 function exSwitch(doc, form){
   const 칸 = exKeys(form);
   Object.keys(doc.ex || {}).forEach(k => { if(!칸.has('ex.' + k)) delete doc.ex[k]; });
+  if(doc.property) EX_PROP.forEach(k => { if(!칸.has('property.' + k)) doc.property[k] = ''; });
   const 머리 = Object.fromEntries(EX_FORMS[form].kinds.map(([, key, opts]) => [key, opts]));
   ['house', 'deal'].forEach(key => { if(doc[key] && !(머리[key] || []).includes(doc[key])) doc[key] = ''; });
   doc.form = form;
@@ -10943,7 +10961,7 @@ function exEditor(doc){
     ${잠김 ? '' : `<div class="card pad ct-sec"><h2>서식</h2>
       <div class="chips one" role="radiogroup">${Object.entries(EX_FORMS).map(([k, f]) =>
         `<button class="chip ${doc.form===k?'on':''}" data-act="ex-form" data-v="${k}" role="radio" aria-checked="${doc.form===k}" tabindex="${doc.form===k?0:-1}">${esc(f.short)}</button>`).join('')}</div>
-      <p class="sub" style="margin:0">서식을 바꿔도 이미 적은 값은 남습니다 - 그 서식에 있는 칸만 인쇄됩니다.</p></div>`}
+      <p class="sub" style="margin:0">서식을 바꾸면 새 서식에 없는 칸의 값은 지워집니다(지울 값이 있으면 먼저 묻습니다).</p></div>`}
     <div class="card pad ct-sec"><h2>${E.kinds.map(([이름]) => esc(이름)).join(' · ')}</h2>
       ${E.kinds.map(([, k, list]) => exChips(k, list, doc[k], false)).join('')}</div>
     <div class="card pad ct-sec"><h2>소재지</h2>
@@ -11127,7 +11145,8 @@ function render(){
   if(!스스로 && S.lastRoute && S.lastRoute.startsWith('#/partner/contract/') && h !== S.lastRoute
      && CT.dirty && CT.doc && !(CT.row && CT.row.status === 'sealed')){
     if(!confirm('저장하지 않은 고침이 있습니다. 저장하지 않고 나갈까요?')){ history.replaceState(null, '', S.lastRoute); return; }
-    CT.dirty = false;
+    /* 버린 고침이 화면에 남으면 다시 열었을 때 '저장됨' 으로 보이고, 확정하면 서버 판이 잠기는데 인쇄는 버린 판이 나간다 */
+    CT.dirty = false; CT.doc = null; CT.id = null; CT.row = null;
   }
   /* 가입 화면을 떠나면 적던 것을 비운다. 다만 동의 화면으로 잠깐 다녀오는 길(새 계정이 로그인
      직후 동의를 먼저 해야 할 때)은 떠난 것이 아니다 - 비우면 방금 받은 본인확인까지 지워져
@@ -13023,7 +13042,9 @@ function handle(a,v,el){
       CT.id = null; CT.row = null; CT.fromProposal = 제안 || null;
       CT.doc = exNewDoc(원); CT.dirty = true; CT.mode = 'edit'; ctGo('#/partner/contract/new'); return true;
     }
-    case 'ex-form': if(CT.doc && EX_FORMS[v] && !(CT.row && CT.row.status === 'sealed')){ exSwitch(CT.doc, v); ctDirty(); render(); } return true;
+    case 'ex-form': if(CT.doc && EX_FORMS[v] && !(CT.row && CT.row.status === 'sealed')){ const n = exLost(CT.doc, v);
+      if(n && !confirm(`'${EX_FORMS[v].short}' 서식에는 없는 칸 ${n}개의 값이 지워집니다. 바꿀까요?`)) return true;
+      exSwitch(CT.doc, v); ctDirty(); render(); } return true;
     /* 확인·설명서 고르는 칸 - data-v 는 '경로|고른 값' */
     case 'ex1': case 'exm': {
       if(!CT.doc || (CT.row && CT.row.status === 'sealed')) return true;
@@ -13039,7 +13060,7 @@ function handle(a,v,el){
         /* 이 손님으로 만든 초안이 이미 있으면 그것을 연다 - 목록을 모르면 먼저 받아 본다(모른 채 만들면 중복 초안) */
         if(!CT.list) await ctLoadList(true);
         if(!CT.list) return toast('계약서 목록을 불러오지 못했습니다 - 잠시 뒤 다시 눌러 주세요');
-        const 있던 = CT.list.find(r => r.proposal_id === v && r.status === 'draft');
+        const 있던 = CT.list.find(r => r.proposal_id === v && r.status === 'draft' && !(CT_FORMS[r.form] || {}).explain);
         if(있던){ go('#/partner/contract/' + 있던.id); return; }
         const r = p.raw || {};
         /* 손님이 건 조건의 거래·유형으로 양식을 고른다 - 매매는 (주거든 상가든 토지든) 매매계약서,
@@ -13056,9 +13077,9 @@ function handle(a,v,el){
       })();
       return true;
     }
-    case 'ct-kind': if(CT.doc){ CT.doc.kind = Object.keys(CT_KIND).find(k => CT_KIND[k] === v) || 'new'; ctDirty(); render(); } return true;
-    case 'ct-vat': if(CT.doc){ CT.doc.deal.vat = v === '포함' ? '포함' : '별도'; ctDirty(); render(); } return true;
-    case 'ct-deal': if(CT.doc){ CT.doc.deal.type = v === '월세' ? 'monthly' : 'jeonse'; ctDirty(); render(); } return true;
+    case 'ct-kind': if(CT.doc && !ctSealed()){ CT.doc.kind = Object.keys(CT_KIND).find(k => CT_KIND[k] === v) || 'new'; ctDirty(); render(); } return true;
+    case 'ct-vat': if(CT.doc && !ctSealed()){ CT.doc.deal.vat = v === '포함' ? '포함' : '별도'; ctDirty(); render(); } return true;
+    case 'ct-deal': if(CT.doc && !ctSealed()){ CT.doc.deal.type = v === '월세' ? 'monthly' : 'jeonse'; ctDirty(); render(); } return true;
     case 'ct-cl-on': { const c = CT.doc && CT.doc.clauses[+v]; if(c){ c.on = !c.on; ctDirty(); render(); } return true; }
     case 'ct-cl-reset': {
       const c = CT.doc && CT.doc.clauses[+v], F = CT.doc && CT_FORMS[CT.doc.form];
@@ -13095,12 +13116,15 @@ function handle(a,v,el){
       S.modal = null;
       (async () => {
         if(CT.dirty || !CT.id){ if(!(await ctSave(true))) return; }
+        const 판 = CT.rev || 0;
         CT.saving = true; render();
         const { ok, j } = await ctPost({ what:'contract-seal', id: CT.id }).catch(() => ({ ok:false, j:{} }));
         CT.saving = false;
         if(!ok){ render(); return toast(j.error || '날인본으로 확정하지 못했습니다'); }
         CT.row = { ...CT.row, status:'sealed', sealed_at: j.sealed_at, sha256: j.sha256 };
-        CT.list = null; CT.mode = 'preview'; render(); toast('날인본으로 확정했습니다');
+        CT.list = null; CT.mode = 'preview';
+        if((CT.rev || 0) !== 판){ const id = CT.id; CT.id = null; ctOpen(id); toast('날인본으로 확정했습니다 - 확정하는 사이 적은 것은 들어가지 않아 날인본을 다시 불러왔습니다'); return; }
+        CT.dirty = false; render(); toast('날인본으로 확정했습니다');
       })();
       return true;
     }

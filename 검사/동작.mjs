@@ -158,7 +158,7 @@ const 입력칸 = (값 = '', 커서 = 0) => ({
 {
   const escSrc = 떼기('const esc = s =>', ');\n', true);
   const 줄src = 떼기('const 비울수있는줄 = new Set([', ']);');
-  const 칩src = 떼기('function chipsHTML(list, sel, act, multi){', "      ? `<button class=\"chip-clear\" data-act=\"${act}\" data-v=\"\">선택 해제</button>` : ''}`;}");
+  const 칩src = 떼기('function chipsHTML(list, sel, act, multi, off){', "      ? `<button class=\"chip-clear\" data-act=\"${act}\" data-v=\"\">선택 해제</button>` : ''}`;}");
   const chipsHTML = new Function(`${escSrc}\n${줄src}\n${칩src}\nreturn chipsHTML;`)();
   const 해제 = h => /class="chip-clear"/.test(h);
   ok(!해제(chipsHTML(['1개','2개'], '', 'hbath', false)), '아직 안 고른 줄에는 선택 해제가 없다');

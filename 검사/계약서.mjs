@@ -32,7 +32,8 @@ const html = 길.html(), js = 길.js(), css = 길.css();
   ok(막힘({ specials: ['900101.1234567'] }) && 막힘({ specials: ['900101-1 234567'] }) && 막힘({ specials: ['９００１０１－１２３４５６７'] })
      && 막힘({ specials: ['900101—2345678'] }) && 막힘({ n: 9001011234567 }) && 막힘({ x: { '9001011234567': 1 } }),
      '점·공백 쪼개기·전각 숫자·em dash·숫자 값·키로 넣은 주민번호도 거절한다');
-  ok(C.docCheck('home-lease', 문서({ specials: ['연락처 010-1234-5678, 010-9876-5432', '보증금 1,500,000 / 2,000,000 원', '2026-10-29 14:30 잔금'] })) === null
+  ok(C.docCheck('home-lease', 문서({ specials: ['연락처 010-1234-5678, 010-9876-5432', '보증금 1,500,000 / 2,000,000 원', '2026-10-29 14:30 잔금',
+       '임대인 연락처 010-1234-5678, 25일까지', '010-2345-6789\n12. 잔금은', '01012345678 / 25'] })) === null
      && C.docCheck('home-lease', 문서({ specials: ['9913011234567'] })) === null,
      '전화번호 둘 · 금액 나열 · 날짜시각 · 13월 같은 말 안 되는 생년월일은 잡지 않는다');
   ok(/너무 깁/.test(C.docCheck('home-lease', 문서({ specials: ['가'.repeat(30000)] })) || ''), '64KB 를 넘으면 거절한다');
@@ -140,7 +141,7 @@ const 신몸 = js.slice(신시작, 신끝);
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const 모듈 = new Function('S', 'esc', 'apiFetch', '세션있음', 'render', 'toast',
   `${몸}\n${확몸}\n${신몸}\nreturn { rpItems, rp기한, rp대상, rpHTML, RP_직접, 한글금액, 금액글, ctNewDoc, ctDocHTML, ctBalance, CT_HOME_CLAUSES, CT_SPECIALS, CT_FORMS, exNewDoc, exDocHTML, EX_SPEC, EX_FORMS, exFormFor,
-  CT, ctSave, ctLoadList, ctOpen, exSwitch, exKeys };`);
+  CT, ctSave, ctLoadList, ctOpen, exSwitch, exKeys, exLost };`);
 const S = { route: '#/x', agent: { office: '비버공인중개사사무소', name: '한상혁', reg_no: '41450-2024-00001', addr: '하남시 미사대로 550', phone: '031-000-0000' } };
 const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
 
@@ -511,13 +512,13 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
   ok(/h==='#\/partner\/proposals' && S\.agent && !ownerSide\(\)\) ctLoadList\(\)/.test(js) && /if\(!CT\.list\) await ctLoadList\(true\);/.test(js),
      '제안 화면에서도 계약서 목록을 받고, 모르면 받아 본 뒤에 만든다');
   /* 2026-10-29 대표님: Lounge 계약서처럼 - 왼쪽 입력 판 | 오른쪽 책상 위 A4, 칸은 값 길이만큼, 빽빽하게 */
-  ok(/if\(!isMo\(\)\)\{\s*const 신고면[\s\S]{0,200}const 판 = 신고면 \? ctReportSide\(doc\) : F\.explain \? exEditor\(doc\) : ctFormHTML\(doc\);/.test(js)
+  ok(/if\(!isMo\(\)\)\{\s*const 신고면[\s\S]{0,200}const 판 = 신고면 \? ctReportSide\(doc\) : F\.explain \? exEditor\(doc\) \+[\s\S]{0,260}: ctFormHTML\(doc\);/.test(js)
      && /return ctDeskShell\(doc, 판, 신고면\);/.test(js) && /\$\{ctFormHTML\(doc\)\}/.test(js),
      'PC 는 입력 판 | 미리보기 한 화면(계약서·확인·설명서·신고 도우미 모두), 휴대폰은 같은 입력 구획을 카드로 쌓는다');
   ok(/<div class="ctx-desk" id="ctDesk"><div class="ct-sheet" id="ctPv">\$\{ctDocHTML\(doc\)\}<\/div><\/div>/.test(js)
      && /function ctDirty\(\)\{ CT\.dirty = true; CT\.rev = \(CT\.rev \|\| 0\) \+ 1; ctPvRefresh\(\);/.test(js),
      '미리보기는 늘 떠 있고, 칸을 고칠 때마다(잠깐 멈추면) 다시 그린다');
-  ok(/\.ctx-body\{[^}]*grid-template-columns:minmax\(420px,500px\) minmax\(0,1fr\)/.test(css) && /\.ctx-scroll\{[^}]*overflow-y:auto/.test(css)
+  ok(/\.ctx-body\{[^}]*grid-template-columns:minmax\(378px,450px\) minmax\(0,1fr\)/.test(css) && /\.ctx-scroll\{[^}]*overflow-y:auto/.test(css)
      && /\.ctx-side \.ct-grid\{grid-template-columns:repeat\(12,minmax\(0,1fr\)\)/.test(css) && /const w = opt\.w \|\| \(opt\.wide \? 12 : money \|\| opt\.type === 'date' \? 4 : 6\);/.test(js),
      '입력 판은 고정 폭·안에서만 내려가고, 칸은 12칸 격자에서 값 길이만큼(금액·날짜 4칸, 주소 12칸)');
   ok(/\.ctx-side \.inp\{min-height:32px;height:32px/.test(css) && /\.ctx-side \.ct-sec\{padding:10px 0;gap:6px;/.test(css), '빽빽하게 - 칸 키 32px · 구획 위아래 10px');
@@ -525,6 +526,27 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
      '긴 글 칸(확인·설명서 내용)은 판 폭을 다 쓴다 - 6칸으로 좁아지지 않게');
   ok(/\.btn\.tool\{background:var\(--white\);border-color:var\(--n300\);color:var\(--n900\)\}/.test(css) && /\.btn\[disabled\]\{[^}]*color:var\(--n500\)!important/.test(css),
      '단추 가독성 - 도구 단추는 흰 면·진한 글자(주 동작 보라와 갈림), 막힌 단추 글자는 n500(4.5:1)');
+  /* 창이 낮으면 바깥이 스크롤돼 미리보기 머리(인쇄 단추 줄)가 위로 잘렸다 - 창 높이에 딱 맞추고 배지 줄은 머리 줄 안으로 */
+  ok(/body:not\(\.mo\) \.ctx-scr \.ptop\{display:none\}/.test(css) && /body:not\(\.mo\) \.ctx-scr\{height:100vh;height:100dvh;overflow:hidden\}/.test(css)
+     && /\.ctx\{[^}]*height:100dvh;/.test(css) && !/\.ctx\{[^}]*min-height:560px/.test(css) && !/margin-top:-28px/.test(css) && /<span class="ctx-badge">\$\{agentBadge\(\)\}<\/span>/.test(js),
+     'PC 계약서 화면은 창 높이에 딱 맞는다(최소 높이·음수 여백 없음) - 바깥 스크롤로 미리보기 머리가 잘리지 않는다');
+  /* 2026-10-29 리뷰 2차 */
+  ok(/CT\.dirty = false; CT\.doc = null; CT\.id = null; CT\.row = null;/.test(js), '나가기를 고르면 버린 고침을 메모리에서도 버린다 - 다시 열면 서버 판');
+  ok(/case 'ct-kind': if\(CT\.doc && !ctSealed\(\)\)/.test(js) && /case 'ct-vat': if\(CT\.doc && !ctSealed\(\)\)/.test(js) && /case 'ct-deal': if\(CT\.doc && !ctSealed\(\)\)/.test(js)
+     && /'ct-kind', false, 잠김\)/.test(js) && /data-v="\$\{esc\(v\)\}" \$\{off\?'disabled':''\}/.test(js),
+     '날인본은 칩(계약 종류·전월세·부가세)으로도 못 바꾼다 - 처리기도 막고 칩도 꺼 둔다');
+  ok(/const 판 = CT\.rev \|\| 0;\s*CT\.saving = true; render\(\);/.test(js) && /if\(\(CT\.rev \|\| 0\) !== 판\)\{ const id = CT\.id; CT\.id = null; ctOpen\(id\);/.test(js),
+     '확정하는 사이 적은 것이 있으면 확정 뒤 날인본을 다시 불러와 화면·인쇄를 날인본과 맞춘다');
+  ok(/r\.proposal_id === v && r\.status === 'draft' && !\(CT_FORMS\[r\.form\] \|\| \{\}\)\.explain/.test(js), "제안의 '계약서 만들기' 는 확인·설명서 초안을 열지 않는다");
+  ok(/F\.explain \? exEditor\(doc\) \+ \(잠김\|\|!CT\.id \? '' : `<button class="tapx" data-act="ct-del"/.test(js), 'PC 에서도 확인·설명서를 지울 수 있다');
+  ok(/const 자리 = CT\.스크롤키 === 키 && CT\.스크롤문서 === doc \?/.test(js) && !/const 키 = \(CT\.id \|\| 'new'\)/.test(js), '스크롤 자리는 문서에 붙는다 - 처음 저장·확정해도 맨 위로 튀지 않는다');
+  ok(/if\(새것 && \(location\.hash \|\| ''\)\.startsWith\('#\/partner\/contract\/'\)\) history\.replaceState/.test(js), '저장 중에 화면을 떠났으면 계약서 화면으로 끌고 오지 않는다');
+  ok(/if\(n && !confirm\(/.test(js) && /서식을 바꾸면 새 서식에 없는 칸의 값은 지워집니다/.test(js), '서식 바꾸기 - 지워질 값이 있으면 먼저 묻고, 안내 문구도 동작과 같다');
+  {
+    const d = M.exNewDoc(null, 'explain-home'); d.property.bldUse = '아파트'; d.property.bldArea = '84'; d.ex.guard = '있음';
+    const 잃음 = M.exLost(d, 'explain-land'); M.exSwitch(d, 'explain-land');
+    ok(잃음 >= 2 && d.property.bldUse === '' && d.property.bldArea === '' && 'landCat' in d.property, '토지 서식으로 바꾸면 건물 칸도 지우고(지문에 안 남게), 지울 개수를 먼저 센다');
+  }
   ok(/data-act="ct-reload">다시 불러오기/.test(js) && /case 'ct-reload': ctLoadList\(true\)/.test(js), '목록을 못 불러오면 "다시 불러오기" 가 있다');
   ok(/const 열람 = 진짜\.filter\(열람됨\)/.test(js) && /const viewed = P\.filter\(열람됨\)/.test(js) && /const 열람됨 = p => \['viewed','selected','rejected'\]/.test(js),
      '대시보드와 성과 화면이 같은 셈으로 열람을 센다(관심 없음도 연 것)');

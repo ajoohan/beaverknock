@@ -50,9 +50,18 @@ const M = new Function('esc', `${js.slice(시작, 끝)}\nreturn { dzLine, dzPill
   /* 2026-10-29 전 화면 진단 - 보라 메뉴 위 작은 글자가 3.4~4.35:1 이었다. 흰 글자 + 옅은 면(.1~.12)으로 4.5:1 을 넘긴다 */
   ok(css.includes('.dz-tag{font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;background:rgba(255,255,255,.12);color:#fff}')
      && /letter-spacing:\.06em;color:rgba\(255,255,255,\.92\)\}/.test(css) && /background:rgba\(255,255,255,\.12\);color:#fff;font-variant-numeric:tabular-nums\}/.test(css)
-     && /\.opsSub button\{[^}]*color:rgba\(255,255,255,\.94\)/.test(css) && /\.opsSub button\.on\{background:rgba\(255,255,255,\.1\);color:#fff;font-weight:700;box-shadow:inset 3px 0 0 #fff\}/.test(css)
+     && /\.opsSub button\{[^}]*color:rgba\(255,255,255,\.94\)/.test(css) && css.includes('.dz-menu .opsSub button.on{background:rgba(255,255,255,.12);color:#fff;font-weight:800}')
      && /color:\$\{m==="dark" \? "rgba\(255,255,255,\.9\)" : sub\}">파트너/.test(js),
      '메뉴 위 작은 글자(꼬리표·묶음 이름·건수·하위 메뉴·로고 옆 파트너)는 4.5:1 을 넘는다');
+  /* 마감 검토(2026-10-29) - 영문 머리표·글자 화살표·옆 줄무늬는 쓰지 않는다 (브랜드 견본판만 예외) */
+  {
+    const 브랜드 = js.slice(js.indexOf('V["#/brand"]'), js.indexOf('\n};\n', js.indexOf('V["#/brand"]')));
+    const 밖 = js.replace(브랜드, '');
+    ok(!/<span class="eyebrow">/.test(밖), '제품 화면에 영문 머리표(eyebrow)가 없다');
+    ok(!/>← /.test(js) && !/ →<\//.test(js) && /\.ar-l,\.ar-r\{display:inline-block;/.test(css), '이동·뒤로 표시는 글자 화살표가 아니라 그림 아이콘');
+    ok(!/저장 ●/.test(js) && /<span class="dirty-dot" aria-hidden="true"><\/span>저장/.test(js), "저장할 것이 있으면 점(도형) - '●' 글자가 아니다");
+    ok(!/inset 3px 0 0 (#fff|var\(--ind\))/.test(css + js) && !/border-left:2\.5px solid var\(--ind300\)/.test(css), '옆 줄무늬 강조 없음 - 상태는 바탕색으로');
+  }
   /* 파트너는 로그인하면 바로 대시보드로 (2026-10-29 대표님) */
   ok(/S\.afterLogin = v === 'partner' \? '#\/partner\/home'/.test(js) && /const to = S\.afterLogin \|\| \(S\.agent \? '#\/partner\/home' : '#\/my'\);/.test(js)
      && /if\(지금 === '#\/my'\)\{ S\.기본으로들어옴 = false; if\(S\.agent\)\{ location\.replace\('#\/partner\/home'\); return; \} \}/.test(js)

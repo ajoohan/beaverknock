@@ -1424,7 +1424,7 @@ body.mo .notice dt:first-child{margin-top:0}
 .recap .rc-tags span{font-size:12.5px;font-weight:700;color:var(--ind);background:var(--ind50);
   border-radius:var(--r-full);padding:4px 12px}
 .recap .rc-memo{margin:2px 24px 18px;padding:12px 16px;background:var(--n50);
-  border-left:2.5px solid var(--ind300);border-radius:0 var(--r-sm) var(--r-sm) 0;
+  border-radius:var(--r-sm);
   font-size:13.5px;line-height:1.75;color:var(--n700);word-break:keep-all}
 /* 이건 각주가 아니라 약속이다 - 회색으로 깔아두면 아무도 안 읽는다 */
 .recap .rc-note{padding:14px 24px;border-top:1px solid var(--ind100);background:var(--ind50);
@@ -1800,6 +1800,13 @@ body:not(.mo) .ctx-scr{height:100vh;height:100dvh;overflow:hidden}
   .ctx-desk{max-height:80vh}
 }
 .nw{white-space:nowrap}
+/* 화살표는 글자(→ ←)가 아니라 그림 - 글꼴마다 굵기·높이가 달라 단추마다 들쭉날쭉했다(2026-10-29 마감 검토) */
+.ar-l,.ar-r{display:inline-block;flex:none;width:1em;height:1em;vertical-align:-.14em;background:currentColor;
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12h14M13 6l6 6-6 6'/%3E%3C/svg%3E") center/contain no-repeat;
+          mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12h14M13 6l6 6-6 6'/%3E%3C/svg%3E") center/contain no-repeat}
+.ar-l{transform:scaleX(-1);margin-right:.3em}
+.ar-r{margin-left:.3em}
+.dirty-dot{display:inline-block;width:6px;height:6px;margin-right:6px;border-radius:50%;background:var(--warn);vertical-align:.15em}
 #ctPrint{display:none}
 @media print{
   @page{size:A4;margin:14mm 13mm}
@@ -1832,7 +1839,7 @@ body:not(.mo) .dz-scr > :not(.dz-side), body:not(.mo) .scr:has(> .psb) > :not(.p
 .dz-menu .opsSub button{min-height:40px;padding:8px 10px;border:none;border-radius:6px;background:transparent;color:rgba(255,255,255,.94);
   font:inherit;font-size:13px;font-weight:600;text-align:left;cursor:pointer}
 .dz-menu .opsSub button:hover{background:rgba(255,255,255,.12);color:#fff}
-.dz-menu .opsSub button.on{background:rgba(255,255,255,.1);color:#fff;font-weight:700;box-shadow:inset 3px 0 0 #fff}
+.dz-menu .opsSub button.on{background:rgba(255,255,255,.12);color:#fff;font-weight:800}
 .dz-foot{margin-top:auto;display:flex;flex-direction:column;gap:2px;padding-top:14px;border-top:1px solid rgba(255,255,255,.2)}
 .dz-office{display:block;padding:4px 10px 8px;font-size:12.5px;font-weight:600;color:rgba(255,255,255,.85);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .dz-side :focus-visible{outline:2px solid #fff;outline-offset:2px}
@@ -2967,7 +2974,7 @@ function navPartner(active, 탭있음 = true){
       : navAuth('partner')}
   </div>
 </div>`;}
-function mobileBack(label,target){ return `<a class="back" data-go="${target}">← ${esc(label)}</a>`;}
+function mobileBack(label,target){ return `<a class="back" data-go="${target}"><i class="ar-l" aria-hidden="true"></i>${esc(label)}</a>`;}
 function rail(step, title){
   const steps=[['유형 선택','#/kind'],['조건 등록','#/register'],['연락 · 동의','#/contact'],['상세 보강 (선택)','#/detail']];
   return `<div class="rail">
@@ -3955,7 +3962,7 @@ function findShell(title, lead, body){
   return `
 <div class="scr fade">
   <div class="nav pad"><a data-go="#/" style="flex:none">${logoLockup({h:25,tag:!isMo()})}</a>
-    <div class="right"><a class="tapx" data-go="#/login" style="font-size:13.5px;font-weight:600;color:var(--n700)">← 로그인으로</a></div></div>
+    <div class="right"><a class="tapx" data-go="#/login" style="font-size:13.5px;font-weight:600;color:var(--n700)"><i class="ar-l" aria-hidden="true"></i>로그인으로</a></div></div>
   <div style="flex:1;min-height:0;overflow:auto;display:flex;align-items:flex-start;justify-content:center;padding:${isMo()?'18px 24px 30px':'26px 40px 34px'}">
     <div style="width:100%;max-width:${isMo()?'none':'400px'};display:flex;flex-direction:column;gap:16px">
       <div style="display:flex;flex-direction:column;gap:8px">
@@ -4235,7 +4242,7 @@ ${gDeal ? `<div data-req="dongs"><span class="lab">찾으시는 동네 <span cla
     </div></div>
   </div>
   <div class="foot">
-    ${isMo()?'<span></span>':'<button class="btn ghost" data-go="#/kind">← 유형 다시 고르기</button>'}
+    ${isMo()?'<span></span>':'<button class="btn ghost" data-go="#/kind"><i class="ar-l" aria-hidden="true"></i>유형 다시 고르기</button>'}
     <!-- 넘어갈 수 있을 때만 색이 들어온다. 그래도 **눌리기는 한다** -
          disabled 로 막으면 왜 못 넘어가는지 물어볼 길이 사라진다.
          ── 버튼이 스스로 말한다 (2026-09-26) ──
@@ -5244,7 +5251,7 @@ function agentCards(rows){
     ${rows.map(r=>{
       const st = AG_STATUS[r.status||'new'] || AG_STATUS.new;
       return `
-      <div style="background:var(--white);padding:14px 16px;${AG.pick[r.id]?'box-shadow:inset 3px 0 0 var(--ind)':''}">
+      <div style="background:var(--white);padding:14px 16px;${AG.pick[r.id]?'background:var(--ind50)':''}">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
           <label class="pickhit"><input type="checkbox" data-act="ag-pick" data-v="${esc(r.id)}" ${AG.pick[r.id]?'checked':''}
             aria-label="${esc(r.name||'이름 없는 신청')} 신청 고르기"
@@ -5707,7 +5714,7 @@ V['#/contact'] = () => { const d=S.draft; if(d.전달됨) return 전달된연락
     </div></div>
   </div>
   <div class="foot">
-    ${isMo()?'<span></span>':'<button class="btn ghost" data-go="#/register">← 이전</button>'}
+    ${isMo()?'<span></span>':'<button class="btn ghost" data-go="#/register"><i class="ar-l" aria-hidden="true"></i>이전</button>'}
     <button class="btn pri ${isMo()?'blk':''}" data-act="submit" ${ok?'':'disabled'}>조건 전달하기</button>
   </div>
 </div>`;};
@@ -5786,7 +5793,7 @@ V['#/my'] = () => {
     return `<div class="card ${c.status==='active'?'hi':''} pad fade" style="${c.status==='closed'?'background:var(--n50);box-shadow:none':''}">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
         <span class="badge ${st[0]}">${st[1]}</span>
-        ${cnt? `<a class="tapx" data-go="#/inbox" data-cond="${c.id}" style="font-size:13.5px;font-weight:700;color:var(--ind)">제안 ${cnt}/${c.slots} 도착 →</a>`
+        ${cnt? `<a class="tapx" data-go="#/inbox" data-cond="${c.id}" style="font-size:13.5px;font-weight:700;color:var(--ind)">제안 ${cnt}/${c.slots} 도착<i class="ar-r" aria-hidden="true"></i></a>`
               : `<span style="font-size:13.5px;font-weight:700;color:var(--n500)">제안 0/${c.slots}</span>`}
       </div>
       <b style="display:block;font-size:${isMo()?15:16}px;font-weight:700;letter-spacing:-.02em;margin-bottom:6px">${esc(c.title)} ${demoTag(c,'vertical-align:middle')}${unsavedTag(c)}</b>
@@ -5819,8 +5826,7 @@ V['#/my'] = () => {
   ${navUser('my')}
   <div class="pad" style="flex:1;padding-top:${isMo()?20:32}px;display:flex;flex-direction:column;gap:14px;max-width:${isMo()?'none':'1000px'};margin:0 auto;width:100%">
     <div style="display:flex;justify-content:space-between;align-items:center">
-      <div><span class="eyebrow">MY CONDITIONS</span>
-      <h1 class="t" style="font-size:${isMo()?21:25}px;margin-top:8px">내 조건 <span style="color:var(--ind)">${S.conds.length}건</span></h1></div>
+      <div><h1 class="t" style="font-size:${isMo()?21:25}px;margin-top:8px">내 조건 <span style="color:var(--ind)">${S.conds.length}건</span></h1></div>
       <button class="btn sec sm" data-act="restart">+ 조건 등록</button>
     </div>
     ${보류띠()}
@@ -5886,7 +5892,7 @@ V['#/inbox'] = () => {
           <span style="font-size:12.5px;color:var(--n700)">${esc(p.contact.office||p.contact.role||'')}</span></div>`:''}
         <div style="display:flex;justify-content:space-between;align-items:center">
           <span style="font-size:12px;color:var(--n500)">${esc(p.agency.name)} · ${p.at}</span>
-          <span style="font-size:13.5px;font-weight:700;color:var(--ind)">자세히 →</span></div>
+          <span style="font-size:13.5px;font-weight:700;color:var(--ind)">자세히<i class="ar-r" aria-hidden="true"></i></span></div>
       </div>
     </div>`;
   const empty = () => {
@@ -5970,7 +5976,7 @@ V['#/proposal'] = (id) => { const p=S.props.find(x=>x.id===id); if(!p) return V[
   return `
 <div class="scr fade">
   <div class="nav solid pad"><a data-go="#/" style="flex:none">${logoLockup({h:25,tag:!isMo()})}</a>
-    <a class="back" data-go="#/inbox">← 제안함으로</a>
+    <a class="back" data-go="#/inbox"><i class="ar-l" aria-hidden="true"></i>제안함으로</a>
     <div class="right">${S.user ? userMenu() : navAuth('guest')}</div></div>
   <div class="pad" style="flex:1;padding-top:${isMo()?0:28}px;display:flex;gap:32px;max-width:${isMo()?'none':'1180px'};margin:0 auto;width:100%;${isMo()?'flex-direction:column;padding-left:0;padding-right:0':''}">
     <div style="flex:none;width:${isMo()?'100%':'520px'};display:flex;flex-direction:column;gap:12px">
@@ -6055,7 +6061,7 @@ V['#/connect'] = (id) => { const p=S.props.find(x=>x.id===id); if(!p) return V['
 </div>`;}
   return `
 <div class="scr plain fade">
-  <div class="nav solid pad"><a data-go="#/" style="flex:none">${logoLockup({h:25,tag:!isMo()})}</a><a class="back" data-go="#/proposal/${p.id}">← 제안</a></div>
+  <div class="nav solid pad"><a data-go="#/" style="flex:none">${logoLockup({h:25,tag:!isMo()})}</a><a class="back" data-go="#/proposal/${p.id}"><i class="ar-l" aria-hidden="true"></i>제안</a></div>
   <div style="flex:1;display:flex;justify-content:center;padding:${isMo()?'22px 24px':'46px'}">
     <div style="width:100%;max-width:560px;display:flex;flex-direction:column;gap:20px">
       <h1 class="t" style="font-size:${isMo()?21:25}px">${esc(p.agency.name)}와<br>연결할까요?</h1>
@@ -6083,7 +6089,7 @@ V['#/report'] = (id) => { const p=S.props.find(x=>x.id===id); if(!p) return V['#
   const TYPES=['실제와 다른 가격·조건이에요','사진이 실제 물건과 달라요','이미 나간(거래 완료) 물건이에요','다른 물건을 권유받았어요','그 외 문제가 있어요'];
   return `
 <div class="scr plain fade">
-  <div class="nav solid pad"><a data-go="#/" style="flex:none">${logoLockup({h:25,tag:!isMo()})}</a><a class="back" data-go="#/proposal/${p.id}">← 제안</a></div>
+  <div class="nav solid pad"><a data-go="#/" style="flex:none">${logoLockup({h:25,tag:!isMo()})}</a><a class="back" data-go="#/proposal/${p.id}"><i class="ar-l" aria-hidden="true"></i>제안</a></div>
   <div style="flex:1;display:flex;justify-content:center;padding:${isMo()?'20px 24px':'40px'}">
     <div style="width:100%;max-width:560px;display:flex;flex-direction:column;gap:18px">
       <div><h1 class="t" style="font-size:${isMo()?21:25}px">어떤 문제인가요?</h1>
@@ -6101,7 +6107,7 @@ V['#/report'] = (id) => { const p=S.props.find(x=>x.id===id); if(!p) return V['#
 /* ---------- D-12 조건 완화 ---------- */
 V['#/relax'] = () => `
 <div class="scr fade">
-  <div class="nav solid pad"><a data-go="#/" style="flex:none">${logoLockup({h:25,tag:!isMo()})}</a><a class="back" data-go="#/my">← 내 조건</a></div>
+  <div class="nav solid pad"><a data-go="#/" style="flex:none">${logoLockup({h:25,tag:!isMo()})}</a><a class="back" data-go="#/my"><i class="ar-l" aria-hidden="true"></i>내 조건</a></div>
   <div class="pad" style="flex:1;display:flex;${isMo()?'flex-direction:column;':''}align-items:center;justify-content:center;gap:${isMo()?20:60}px;padding-top:${isMo()?20:0}px;padding-bottom:24px">
     <div style="width:${isMo()?'100%':'500px'};display:flex;flex-direction:column;gap:16px">
       <h1 class="t" style="font-size:${isMo()?21:31}px">조건에 맞는 자리가<br>아직 없습니다</h1>
@@ -6191,8 +6197,7 @@ V['#/partner/demands'] = () => {
   ${navPartner('d')}
   <div class="pad" style="flex:1;padding-top:${isMo()?18:30}px;padding-bottom:24px;max-width:${isMo()?'none':'1180px'};margin:0 auto;width:100%;display:flex;flex-direction:column;gap:14px">
     <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap">
-      <div><span class="eyebrow">${S.feedByListing?'MATCHED':'DEMAND FEED'}</span>
-      <h1 class="t" style="font-size:${isMo()?21:25}px;margin-top:8px">${
+      <div><h1 class="t" style="font-size:${isMo()?21:25}px;margin-top:8px">${
         S.feedByListing ? `올려두신 물건에 맞는 손님` : `내 조건에 맞는 손님`} <span style="color:var(--ind)">${list.length}건</span></h1>
       <p class="sub" style="font-size:13.5px">${S.feedByListing
         ? `올려두신 물건과 <b style="color:var(--n900)">지역 · 유형 · 거래방식 · 예산</b>이 모두 맞는 손님만 보여드립니다. 손님 연락처는 연결 확정 전까지 표시되지 않습니다.`
@@ -6230,10 +6235,10 @@ V['#/partner/demands'] = () => {
       <a class="btn sec sm" data-go="#/partner/settings">활동 조건에서 재개</a></div>` : ''}
     ${hidden ? (S.feedByListing ? `<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:var(--n50);border:1px solid var(--hair);padding:12px 16px">
       <span style="font-size:13.5px;color:var(--n700)">올려두신 물건과 맞지 않아 <b style="color:var(--n900)">${hidden}건</b>을 보여드리지 않았습니다</span>
-      <a data-go="#/partner/listing/new" style="font-size:13.5px;font-weight:700;color:var(--ind)">물건 더 올리기 →</a></div>`
+      <a data-go="#/partner/listing/new" style="font-size:13.5px;font-weight:700;color:var(--ind)">물건 더 올리기<i class="ar-r" aria-hidden="true"></i></a></div>`
     : `<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:var(--n50);border:1px solid var(--hair);padding:12px 16px">
       <span style="font-size:13.5px;color:var(--n700)">활동 조건에 맞지 않아 <b style="color:var(--n900)">${hidden}건</b>을 보여드리지 않았습니다</span>
-      <a data-go="#/partner/settings" style="font-size:13.5px;font-weight:700;color:var(--ind)">활동 조건 넓히기 →</a></div>`) : ''}
+      <a data-go="#/partner/settings" style="font-size:13.5px;font-weight:700;color:var(--ind)">활동 조건 넓히기<i class="ar-r" aria-hidden="true"></i></a></div>`) : ''}
     <div style="display:grid;grid-template-columns:repeat(${isMo()?1:2},minmax(0,1fr));gap:16px">
       ${list.map(d=>`
       <div class="card pad fade" style="display:flex;flex-direction:column;gap:12px;${d.mine?'background:var(--n50);box-shadow:none':''}">
@@ -6273,7 +6278,7 @@ V['#/partner/demand'] = (id) => { const d=S.demands.find(x=>x.id===id); if(!d) r
   ${navPartner('d', false)}
   <div class="pad" style="flex:1;padding-top:${isMo()?16:26}px;padding-bottom:24px;max-width:${isMo()?'none':'860px'};margin:0 auto;width:100%;display:flex;flex-direction:column;gap:14px">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
-      <a class="back" data-go="#/partner/demands">← 수요 목록</a>
+      <a class="back" data-go="#/partner/demands"><i class="ar-l" aria-hidden="true"></i>수요 목록</a>
       <span style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-left:auto">
         ${고침표(d)}${d.urgent?'<span class="badge b-warn">마감 임박</span>':''}
         <span style="font-size:13.5px;font-weight:700;color:var(--n700)">남은 슬롯 <span class="num">${d.slotsLeft}/5</span></span></span>
@@ -6334,7 +6339,7 @@ V['#/partner/propose'] = (id) => { const d=S.demands.find(x=>x.id===id); if(!d) 
 <div class="scr fade" style="background:var(--n50)">
   <div class="nav solid pad" style="gap:18px">
     <a data-go="#/partner" style="flex:none">${logoLockup({h:25,partner:true,tag:!isMo()})}</a>
-    <a class="back" data-go="#/partner/demand/${d.id}">← 수요 상세</a>
+    <a class="back" data-go="#/partner/demand/${d.id}"><i class="ar-l" aria-hidden="true"></i>수요 상세</a>
     <div class="right">
       ${isMo()?'':`<span style="font-size:13.5px;line-height:1.7">손님 조건: ${esc(d.region)} · ${esc(d.lines[0])}</span>`}
       <span class="badge num" style="background:${S.timeLeft<180?'var(--dangerbg)':'var(--ind50)'};color:${S.timeLeft<180?'var(--danger)':'var(--ind)'};padding:8px 14px;font-size:13.5px">슬롯 예약 ${mm}:${ss}</span>
@@ -6467,8 +6472,7 @@ V['#/partner/proposals'] = () => {
 <div class="scr fade" style="background:var(--n50)">
   ${navPartner('p')}
   <div class="pad" style="flex:1;padding-top:${isMo()?18:30}px;padding-bottom:24px;max-width:${isMo()?'none':'1000px'};margin:0 auto;width:100%;display:flex;flex-direction:column;gap:14px">
-    <div><span class="eyebrow">MY PROPOSALS</span>
-    <h1 class="t" style="font-size:${isMo()?21:25}px;margin-top:8px">내 제안</h1></div>
+    <div><h1 class="t" style="font-size:${isMo()?21:25}px;margin-top:8px">내 제안</h1></div>
     <div class="chips">${TABS.map(([k,l,st])=>`<button class="chip ${tab===k?'on':''}" data-act="ptab" data-v="${k}" aria-pressed="${tab===k}">${l} ${S.myprops.filter(p=>st.includes(p.status)).length}</button>`).join('')}</div>
     ${seedGate(S.mpReady, () => list.length? list.map(p=>{const b=badge(p); return `
       <div class="card pad fade" style="${['expired','rejected','withdrawn'].includes(p.status)?'background:var(--n50);box-shadow:none':''}">
@@ -6756,7 +6760,7 @@ function verifyBody(){
 V['#/partner/verify'] = () => `
 <div class="scr fade">
   <div class="nav pad"><a data-go="#/" style="flex:none">${logoLockup({h:25,tag:!isMo()})}</a>
-    <div class="right"><a class="tapx" data-go="#/partner/demands" style="font-size:13.5px;font-weight:600;color:var(--n700)">← 돌아가기</a></div></div>
+    <div class="right"><a class="tapx" data-go="#/partner/demands" style="font-size:13.5px;font-weight:600;color:var(--n700)"><i class="ar-l" aria-hidden="true"></i>돌아가기</a></div></div>
   <div style="flex:1;min-height:0;overflow:auto;display:flex;align-items:flex-start;justify-content:center;padding:${isMo()?'18px 24px 30px':'26px 40px 34px'}">
     <div style="width:100%;max-width:${isMo()?'none':'520px'};display:flex;flex-direction:column;gap:16px">
       <div class="card pad" style="background:var(--ind50);border-color:var(--ind200)">
@@ -6806,7 +6810,7 @@ V['#/partner/verify'] = () => `
 <div class="scr fade" style="background:var(--warm)">
   ${bar}
   <div class="nav pad" style="${isMo()?'':'height:64px'}">
-    ${step>1 ? `<button class="back" data-act="j-back">← 뒤로</button>` : `<a class="back" data-go="#/partner">← 소개로</a>`}
+    ${step>1 ? `<button class="back" data-act="j-back"><i class="ar-l" aria-hidden="true"></i>뒤로</button>` : `<a class="back" data-go="#/partner"><i class="ar-l" aria-hidden="true"></i>소개로</a>`}
     <span style="margin:0 auto">${logoLockup({h:25,partner:true})}</span>
     <span class="num" style="font-size:12.5px;color:var(--n500)">${step} / 4</span>
   </div>
@@ -6836,8 +6840,7 @@ V["#/partner/stats"] = () => {
 <div class="scr fade" style="background:var(--n50)">
   ${navPartner('st')}
   <div class="pad" style="flex:1;padding-top:${isMo()?18:30}px;padding-bottom:24px;max-width:${isMo()?'none':'1000px'};margin:0 auto;width:100%;display:flex;flex-direction:column;gap:14px">
-    <div><span class="eyebrow">PERFORMANCE</span>
-      <h1 class="t" style="font-size:${isMo()?21:25}px;margin-top:8px">성과</h1>
+    <div><h1 class="t" style="font-size:${isMo()?21:25}px;margin-top:8px">성과</h1>
       <p class="sub" style="font-size:13.5px">보내신 제안 전체 기준입니다. 좋은 제안을 쓰는 것이 이기는 길입니다.</p></div>
 
     ${sent ? '' : `<div class="card pad" style="background:var(--ind50);border-color:var(--ind200)">
@@ -6939,8 +6942,7 @@ V["#/partner/settings"] = () => {
   ${navPartner('s')}
   <div class="pad" style="flex:1;padding-top:${isMo()?18:28}px;padding-bottom:24px;max-width:${isMo()?'none':'1100px'};margin:0 auto;width:100%;display:flex;flex-direction:column;gap:14px">
     <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap">
-      <div><span class="eyebrow">ACTIVITY SCOPE</span>
-        <h1 class="t" style="font-size:${isMo()?21:25}px;margin-top:8px">활동 조건 설정</h1>
+      <div><h1 class="t" style="font-size:${isMo()?21:25}px;margin-top:8px">활동 조건 설정</h1>
         <p class="sub" style="font-size:13.5px">저장 즉시 새 조건부터 적용됩니다 · 이미 발송된 알림에는 소급되지 않습니다.</p></div>
       ${own?'':`<button class="btn pri sm" data-act="scope-save">저장</button>`}
     </div>
@@ -7072,8 +7074,7 @@ V["#/partner/listings"] = () => {
   ${navPartner('l')}
   <div class="pad" style="flex:1;padding-top:${isMo()?18:30}px;padding-bottom:24px;max-width:${isMo()?'none':'1000px'};margin:0 auto;width:100%;display:flex;flex-direction:column;gap:14px">
     <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap">
-      <div><span class="eyebrow">INVENTORY</span>
-        <h1 class="t" style="font-size:${isMo()?21:25}px;margin-top:8px">내 물건 <span style="color:var(--ind)">${S.listings.length}건</span></h1>
+      <div><h1 class="t" style="font-size:${isMo()?21:25}px;margin-top:8px">내 물건 <span style="color:var(--ind)">${S.listings.length}건</span></h1>
         <p class="sub" style="font-size:13.5px">올려두시면 지금 들어와 있는 조건과 <b style="color:var(--n900)">바로 대조</b>해 맞는 손님을 찾아드립니다.</p></div>
       <button class="btn pri sm" data-go="#/partner/listing/new">+ 매물 등록</button>
     </div>
@@ -7182,7 +7183,7 @@ V["#/partner/listing/new"] = () => {
   ${navPartner('l', false)}
   <div class="pad" style="flex:1;padding-top:${isMo()?18:28}px;padding-bottom:24px;max-width:${isMo()?'none':'780px'};margin:0 auto;width:100%;display:flex;flex-direction:column;gap:16px">
     <div style="display:flex;justify-content:space-between;align-items:center">
-      <a class="back" data-go="#/partner/listings">← 내 물건</a></div>
+      <a class="back" data-go="#/partner/listings"><i class="ar-l" aria-hidden="true"></i>내 물건</a></div>
     <div><h1 class="t" style="font-size:${isMo()?21:25}px">매물을 올려두세요</h1>
       <p class="sub measure">등록하면 <b style="color:var(--n900)">지금 대기 중인 손님과 즉시 대조</b>합니다. 맞는 손님이 있으면 바로 제안할 수 있습니다.</p></div>
 
@@ -7348,7 +7349,7 @@ V["#/partner/listing"] = (id) => {
 <div class="scr fade" style="background:var(--n50)">
   ${navPartner('l')}
   <div class="pad" style="flex:1;padding-top:${isMo()?18:28}px;padding-bottom:24px;max-width:${isMo()?'none':'1000px'};margin:0 auto;width:100%;display:flex;flex-direction:column;gap:14px">
-    <a class="back" data-go="#/partner/listings">← 내 물건</a>
+    <a class="back" data-go="#/partner/listings"><i class="ar-l" aria-hidden="true"></i>내 물건</a>
     <div class="card pad" style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap">
       <div>
         <span style="font-size:13.5px;font-weight:700;color:var(--ind)">${L.kind==='home'?'주거':'상가'} · ${esc(L.deal||'')}</span>
@@ -7363,8 +7364,7 @@ V["#/partner/listing"] = (id) => {
     </div>
 
     <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;margin-top:4px">
-      <div><span class="eyebrow">REVERSE MATCH</span>
-        <h2 style="margin:8px 0 0;font-size:${isMo()?16:21}px;font-weight:800;letter-spacing:-.03em">이 물건에 맞는 손님 <span style="color:var(--ind)">${ms.length}명</span></h2></div>
+      <div><h2 style="margin:8px 0 0;font-size:${isMo()?16:21}px;font-weight:800;letter-spacing:-.03em">이 물건에 맞는 손님 <span style="color:var(--ind)">${ms.length}명</span></h2></div>
       <span style="font-size:12.5px;color:var(--n500)">유형 → 지역 → 예산(±10%) → 필수 → 확인 순으로 대조했습니다</span>
     </div>
     ${ms.length? `<div style="display:grid;grid-template-columns:repeat(${isMo()?1:2},minmax(0,1fr));gap:16px">${ms.map(card).join('')}</div>`
@@ -8269,8 +8269,8 @@ function userPanel(){
     <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
       <span style="font-size:12.5px;color:var(--n500)">${US.page}쪽 · ${rows.length}명</span>
       <span style="margin-left:auto"></span>
-      <button class="btn sec sm" data-act="us-page" data-v="prev" ${US.page<=1?'disabled':''}>← 이전</button>
-      <button class="btn sec sm" data-act="us-page" data-v="next" ${rows.length<50?'disabled':''}>다음 →</button>
+      <button class="btn sec sm" data-act="us-page" data-v="prev" ${US.page<=1?'disabled':''}><i class="ar-l" aria-hidden="true"></i>이전</button>
+      <button class="btn sec sm" data-act="us-page" data-v="next" ${rows.length<50?'disabled':''}>다음<i class="ar-r" aria-hidden="true"></i></button>
       <button class="btn sec sm" data-act="us-load">새로고침</button>
     </div>
     ${!rows.length ? `<div class="empty"><p style="margin:0;font-size:13.5px;color:var(--n500)">이 쪽에는 계정이 없습니다.</p></div>` : `
@@ -8915,7 +8915,7 @@ function dashRecent(){
     <div class="dz-chh">
       <b class="dz-ct">최근 움직임</b>
       <button data-act="ops-tab" data-v="log"
-        style="border:none;background:none;padding:14px 6px;margin:-14px -6px;color:var(--ind);font-size:12.5px;font-weight:700;cursor:pointer">전체 기록 →</button>
+        style="border:none;background:none;padding:14px 6px;margin:-14px -6px;color:var(--ind);font-size:12.5px;font-weight:700;cursor:pointer">전체 기록<i class="ar-r" aria-hidden="true"></i></button>
     </div>
     ${rows.length ? `<div class="tl">${rows.map(r=>{
       const d = new Date(r.at);
@@ -9105,7 +9105,6 @@ function opsGateScreen(){
     padding-top:${isMo()?24:20}px;padding-bottom:40px;width:100%">
     <div style="width:100%;max-width:${wide||400}px;display:flex;flex-direction:column;align-items:center;gap:16px">
       <div style="text-align:center">
-        <span class="eyebrow">OPERATIONS</span>
         <h1 class="t" style="font-size:${isMo()?21:25}px;margin-top:8px">운영 화면</h1>
       </div>
       <div class="card pad" style="width:100%">${body}</div>
@@ -9203,8 +9202,7 @@ V[OPS_HOME] = () => {
       return `<div class="dz-head"><div><h1 class="dz-h1">${esc(인사)}!</h1><p class="dz-date">${esc(날)} · 운영 대시보드</p></div>
         <div class="dz-hr"><span>${기준}</span><button class="btn sec sm" data-act="ops-reload">전체 새로고침</button></div></div>`; })()
     : `<div class="opsHead">
-        <div><span class="eyebrow">OPERATIONS</span>
-          <h1 class="t" style="font-size:${isMo()?21:25}px;margin-top:6px">${esc(OPS_TITLE[tab]||'운영 화면')}</h1></div>
+        <div><h1 class="t" style="font-size:${isMo()?21:25}px;margin-top:6px">${esc(OPS_TITLE[tab]||'운영 화면')}</h1></div>
         <span style="font-size:12.5px;color:var(--n500)">${기준}</span>
       </div>`;
 
@@ -9483,7 +9481,6 @@ function docShell(eyebrow, title, lead, body){
     <div class="right" style="gap:12px">${navAuth('both')}</div>
   </div>
   <div class="pad" style="flex:1;overflow:auto;padding-top:${isMo()?20:32}px;padding-bottom:44px;max-width:760px;margin:0 auto;width:100%">
-    <span class="eyebrow">${eyebrow}</span>
     <h1 class="t" style="font-size:${isMo()?21:25}px;margin:10px 0 10px">${title}</h1>
     <p style="margin:0 0 24px;font-size:13.5px;line-height:1.75;color:var(--n700)">${lead}</p>
     ${body}
@@ -9897,7 +9894,7 @@ V['#/partner/home'] = () => {
           </div>
         </div>
         <div class="dz-card dz-recent">
-          <div class="dz-chh"><b class="dz-ct">새로 걸린 조건</b><a class="dz-more" data-go="#/partner/demands">전체 보기 →</a></div>
+          <div class="dz-chh"><b class="dz-ct">새로 걸린 조건</b><a class="dz-more" data-go="#/partner/demands">전체 보기<i class="ar-r" aria-hidden="true"></i></a></div>
           ${수요.length ? 수요.slice(0, 6).map(d => `<a class="dz-row" data-go="#/partner/demand/${esc(d.id)}">
             <span class="dz-av">${dzIco(NONHOME(d.kind) ? 'building' : 'home', 18)}</span>
             <span class="dz-rt"><b>${esc(d.region)}</b><span>${esc(d.deal || '')} · ${esc((d.lines || [])[0] || '')}</span></span>
@@ -10358,7 +10355,7 @@ V['#/partner/contract'] = (id) => {
   if(id && id !== 'new' && CT.id !== id){
     return `<div class="scr fade" style="background:var(--n50)">${navPartner('ct', false)}
       <div class="pad" style="padding-top:28px"><p class="sub">${esc(CT.err || '불러오는 중입니다…')}</p>
-      <a class="back" data-go="#/partner/contracts">← 계약서 목록</a></div></div>`;
+      <a class="back" data-go="#/partner/contracts"><i class="ar-l" aria-hidden="true"></i>계약서 목록</a></div></div>`;
   }
   if(!CT.doc) { location.replace('#/partner/contracts'); return ''; }
   const doc = CT.doc, D = doc.deal, P = doc.property;
@@ -10382,7 +10379,7 @@ V['#/partner/contract'] = (id) => {
   }
   const bar = `
     <div class="ct-bar noprint">
-      <a class="back" data-go="#/partner/contracts">← 계약서 목록</a>
+      <a class="back" data-go="#/partner/contracts"><i class="ar-l" aria-hidden="true"></i>계약서 목록</a>
       <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
         ${CT.mode !== 'edit' ? `<button class="btn sec sm" data-act="ct-edit">${잠김?'내용 보기':'고치기'}</button>` : ''}
         ${!미리 ? `<button class="btn sec sm" data-act="ct-preview">미리보기</button>` : ''}
@@ -10390,7 +10387,7 @@ V['#/partner/contract'] = (id) => {
         <button class="btn sec sm" data-act="ct-print">인쇄</button>
         ${F.explain ? '' : `<button class="btn sec sm" data-act="ct-explain">확인·설명서<span class="ct-long"> 만들기</span></button>`}
         ${잠김 ? `<button class="btn sec sm" data-act="ct-revise">고쳐서 새 판 만들기</button>`
-          : `<button class="btn sec sm" data-act="ct-save" ${CT.saving?'disabled':''}>${CT.saving?'저장 중…':CT.dirty||!CT.id?'저장 ●':'저장됨'}</button>
+          : `<button class="btn sec sm" data-act="ct-save" ${CT.saving?'disabled':''}>${CT.saving?'저장 중…':CT.dirty||!CT.id?'<span class="dirty-dot" aria-hidden="true"></span>저장':'저장됨'}</button>
              <button class="btn pri sm" data-act="ct-seal" ${CT.saving?'disabled':''}>날인본으로 확정</button>`}
       </div>
     </div>
@@ -10548,7 +10545,7 @@ function ctDeskShell(doc, side, 신고면){
   ${navPartner('ct', false)}
   <div class="ctx">
     <div class="ctx-head">
-      <a class="back" data-go="#/partner/contracts">← 계약서 목록</a>
+      <a class="back" data-go="#/partner/contracts"><i class="ar-l" aria-hidden="true"></i>계약서 목록</a>
       <h1 class="ctx-h1">${esc(이름)}</h1>
       <span class="badge ${잠김?'b-ok':'b-warn'}">${잠김?'날인본':'작성 중'}</span>
       ${!잠김 && !F.explain ? `<span class="ctx-sub">비워 둔 칸은 밑줄 빈칸으로 인쇄됩니다 · 주민등록번호·계좌번호는 적지 않습니다</span>` : ''}
@@ -11127,7 +11124,7 @@ function rpHTML(doc){
 }
 
 /* 계약서 입력 - 글자마다 다시 그리지 않는다(칸이 교체돼 두 번째 글자가 안 들어간다). 값만 담고 표시만 바꾼다 */
-function ctDirty(){ CT.dirty = true; CT.rev = (CT.rev || 0) + 1; ctPvRefresh(); const b = $('#app [data-act="ct-save"]'); if(b && !CT.saving) b.textContent = '저장 ●';
+function ctDirty(){ CT.dirty = true; CT.rev = (CT.rev || 0) + 1; ctPvRefresh(); const b = $('#app [data-act="ct-save"]'); if(b && !CT.saving && !b.querySelector('.dirty-dot')) b.innerHTML = '<span class="dirty-dot" aria-hidden="true"></span>저장';
   const st = $('#app .ctx-st'); if(st && !CT.saving){ st.className = 'ctx-st warn'; st.textContent = '저장하지 않은 고침이 있습니다'; } }
 function ct잔금표시(){
   const n = ctBalance(CT.doc.deal);

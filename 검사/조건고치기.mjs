@@ -391,7 +391,7 @@ const 조건번호 = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
   /* 수요 카드 머리줄은 접힌다 - 고침·마감 임박·업종·슬롯이 한 줄에 다 안 들어가는 휴대폰 */
   const 머리줄 = 목록화면.slice(목록화면.indexOf('<div class="card pad fade"'), 목록화면.indexOf('${고침알림(d)}'));
   ok((머리줄.match(/flex-wrap:wrap/g) || []).length >= 3, '수요 카드 머리줄과 양쪽 묶음이 좁으면 다음 줄로 접힌다');
-  const 상세머리 = 상세화면.slice(상세화면.indexOf('← 수요 목록') - 120, 상세화면.indexOf('${고침알림(d)}'));
+  const 상세머리 = 상세화면.slice(상세화면.indexOf('<i class="ar-l" aria-hidden="true"></i>수요 목록') - 120, 상세화면.indexOf('${고침알림(d)}'));
   ok((상세머리.match(/flex-wrap:wrap/g) || []).length >= 2, '수요 상세의 머리줄도 접힌다');
 }
 

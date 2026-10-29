@@ -108,9 +108,12 @@ const html = 길.html(), js = 길.js(), css = 길.css();
 /* ── ③④ 화면 문서 ── */
 const 시작 = js.indexOf('/* ══════════ 계약서 (2026-10-29)'), 끝 = js.indexOf('/* ── 화면: 목록 ── */');
 const 몸 = js.slice(시작, 끝);
+/* 확인·설명서 모듈 - 표(EX_SPEC)와 그리기. 작성 화면 함수(exChips 아래)는 빼고 꺼낸다 */
+const 확시작 = js.indexOf('/* ══════════ 중개대상물 확인·설명서[Ⅰ]'), 확끝 = js.indexOf('/* ── 작성 화면 ── 같은 표에서 칸을 만든다 */');
+const 확몸 = js.slice(확시작, 확끝);
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const 모듈 = new Function('S', 'esc', 'apiFetch', '세션있음', 'render', 'toast',
-  `${몸}\nreturn { 한글금액, 금액글, ctNewDoc, ctDocHTML, ctBalance, CT_HOME_CLAUSES, CT_SPECIALS, CT_FORMS };`);
+  `${몸}\n${확몸}\nreturn { 한글금액, 금액글, ctNewDoc, ctDocHTML, ctBalance, CT_HOME_CLAUSES, CT_SPECIALS, CT_FORMS, exNewDoc, exDocHTML, EX_SPEC };`);
 const S = { agent: { office: '비버공인중개사사무소', name: '한상혁', reg_no: '41450-2024-00001', addr: '하남시 미사대로 550', phone: '031-000-0000' } };
 const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
 {
@@ -160,6 +163,7 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
 
   /* 다른 조항을 가리키는 말이 실제 있는 조항으로 이어지는가 - 셋 다 */
   for (const [k, F] of Object.entries(M.CT_FORMS)) {
+    if (F.explain) continue;                 /* 법정 서식 - 조항이 없다(아래 따로 본다) */
     const ids = new Set(F.clauses.map(c => c.id));
     const 가리킴 = F.clauses.flatMap(c => [...c.text.matchAll(/\{\{조:([a-z]+)\}\}/g)].map(m => m[1]));
     ok(가리킴.every(id => ids.has(id)) && new Set(F.clauses.map(c => c.id)).size === F.clauses.length,
@@ -194,6 +198,49 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
      '매매: 임차·보증금 말이 없고, 매도인·매수인 서명 칸 · 주민번호는 둘 다 빈칸');
   ok(/const form = r\.kind && r\.kind !== 'home' \? 'shop-lease' : r\.deal === '매매' \? 'sale' : 'home-lease';/.test(js),
      '제안에서 열면 손님 조건으로 양식을 고른다 (주거 매매 → 매매, 주거 임대 → 주택, 그 밖 → 상가)');
+}
+
+/* ── 중개대상물 확인·설명서[Ⅰ] 주거용 (별지 제20호서식, 2024. 7. 2. 개정) ── */
+{
+  ok(확시작 > 0 && 확끝 > 확시작, '확인·설명서 모듈을 찾았다');
+  /* 서식의 번호 항목 ①~⑮ 가 빠짐없이, 차례대로 있다 */
+  const 머리 = M.EX_SPEC.filter(s => s.h).map(s => s.h);
+  const 번호 = '①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮'.split('');
+  const 붙은 = 머리.map(h => h[0]).filter(c => 번호.includes(c));
+  ok(붙은.join('') === 번호.join(''), `서식의 항목 ①~⑮ 가 빠짐없이 차례대로 있다 (${붙은.join('')})`);
+  ok(M.EX_SPEC.filter(s => s.g).map(s => s.g).join('|') === 'Ⅰ. 개업공인중개사 기본 확인사항|Ⅱ. 개업공인중개사 세부 확인사항|Ⅲ. 중개보수 등에 관한 사항',
+     '큰 묶음 Ⅰ·Ⅱ·Ⅲ 이름이 서식과 같다');
+  const 값들 = JSON.stringify(M.EX_SPEC);
+  ok(['등기권리증','확정일자 부여현황','전입세대확인서','국세납세증명서','지방세납세증명서'].every(x => 값들.includes(`"${x}"`)), '근거자료 선택지(등기권리증 … 지방세납세증명서)');
+  ok(['임대인 자료 제출','열람 동의','임차인 권리 설명','확인(확인서류 첨부)','미확인(열람ㆍ교부 신청방법 설명)','장기일반민간임대주택','계약갱신 요구권 행사 여부'].every(x => 값들.includes(x)),
+     '④ 임대차 확인사항 - 확정일자·체납정보·전입세대·민간임대·갱신요구권');
+  ok(['단독경보형감지기','지역난방','사용연한','확인불가','프로판가스','중개보조원 신분고지 여부'].every(x => 값들.includes(x)), '⑪ 시설물 · ⑭ 현장안내의 서식 칸');
+  ok(['전기료','수도료','가스사용료','난방비','인터넷 사용료','TV 수신료'].every(x => 값들.includes(`"${x}"`)) && 값들.includes('관리규약에 따라 부과'), '⑥ 관리비 비목·부과방식');
+
+  const 계 = M.ctNewDoc('sale', { deal: { price: 700000000 } });
+  계.property = { ...계.property, road: '서울 송파구 올림픽로 300', admCd: '1171010100', landCat: '대', bldArea: '84.97' };
+  계.parties.seller = { name: '김매도', phone: '010-1', addr: '서울' };
+  const e = M.exNewDoc({ ...계, __id: 'c-1' });
+  ok(e.form === 'explain-home' && e.deal === '매매ㆍ교환' && e.ex.price === 700000000 && e.property.admCd === '1171010100' && e.parties.a.name === '김매도' && e.contractId === 'c-1',
+     '계약서에서 만들면 거래 형태·거래예정금액·소재지(법정동코드)·당사자를 옮기고 어느 계약서에서 왔는지 남긴다');
+  const 임 = M.exNewDoc({ ...M.ctNewDoc('home-lease'), deal: { type: 'monthly', deposit: 20000000, rent: 700000, fee: 120000 } });
+  ok(임.deal === '임대' && 임.ex.price === 20000000 && 임.ex.feeTotal === 120000, '임대차 계약서에서 만들면 임대 · 거래예정금액은 보증금 · 관리비를 옮긴다');
+  ok(M.ctNewDoc('explain-home').form === 'explain-home' && !('clauses' in M.ctNewDoc('explain-home')), '양식 표에서 확인·설명서를 고르면 확인·설명서로 만든다');
+
+  e.house = '공동주택'; e.ex.docs = ['등기사항증명서', '그 밖의 자료']; e.ex.docsEtc = '관리비 고지서';
+  e.ex.violation = '적법'; e.ex.nimby = '있음'; e.ex.nimbyWhat = '변전소 600m'; e.ex.fee = 3000000; e.ex.cost = 50000;
+  e.parties.a.birth = '1970-01-01';
+  const h = M.ctDocHTML(e);
+  ok(/별지 제20호서식\] &lt;개정 2024\. 7\. 2\.&gt;/.test(h) && /중개대상물 확인ㆍ설명서\[Ⅰ\] \(주거용 건축물\)/.test(h), '머리에 서식 근거와 개정일이 찍힌다');
+  ok(/\[√\]공동주택/.test(h) && /\[&nbsp;&nbsp;\]단독주택/.test(h) && /\[√\]매매ㆍ교환/.test(h), '고른 것은 [√], 안 고른 것은 [ ]');
+  ok(/\[√\]그 밖의 자료 \(관리비 고지서\)/.test(h) && /\[√\]있음 \(종류 및 위치: 변전소 600m\)/.test(h), '고른 선택지 뒤 글칸이 붙는다 (그 밖의 자료 · 종류 및 위치)');
+  ok(/3,050,000 원/.test(h), '⑮ 계 = 중개보수 + 실비');
+  ok((h.match(/<th>생년월일<\/th>/g) || []).length === 2 && !/주민등록번호/.test(h) && /1970-01-01/.test(h), '당사자 칸은 서식대로 생년월일 - 주민등록번호 칸이 없다');
+  ok((h.match(/개업<br>공인중개사/g) || []).length === 2 && /손해배상책임 보장 증명서류/.test(h), '개업공인중개사 서명란 둘(공동중개) · 수령 확인 문구');
+  ok((h.match(/\(서명 또는 날인\)/g) || []).length >= 6, '④ 설명 확인 서명 넷 + 거래당사자 둘');
+  ok(C.docCheck('explain-home', { schema: 'bk-contract/1', form: 'explain-home', property: {}, parties: { a: { birth: '700101' } } }) === null,
+     '서버가 확인·설명서를 받는다 · 생년월일 6자리는 막지 않는다');
+  ok(/case 'ct-explain':[\s\S]{0,200}계약서를 먼저 저장해 주세요/.test(js), '계약서에서 확인·설명서로 갈 때 저장 안 한 고침이 있으면 먼저 저장하게 한다');
 }
 
 /* ── 약관 · 처리방침 ── */

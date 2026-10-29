@@ -2205,10 +2205,12 @@ function matchStages(L, d){
   return st;
 }
 /* 물건 → 맞는 수요 (슬롯 남고 미제안인 것만) */
+/* 손님이 연 제안 - 관심 없음(rejected)도 연 뒤에 누른 것이다. 성과·품질 점수·대시보드가 같은 셈을 쓴다 */
+const 열람됨 = p => ['viewed','selected','rejected'].includes(p.status);
 /* 품질 점수 - 열람률 40% · 선택률 40% · 무신고 20% (S-09 공개 산식과 동일) */
 function qualityScore(){
   const P=S.myprops, sent=P.length||1;
-  const viewed=P.filter(p=>['viewed','selected','rejected'].includes(p.status)).length;
+  const viewed=P.filter(열람됨).length;
   const sel=P.filter(p=>p.status==='selected').length;
   const vr=viewed/sent, sr=viewed?sel/viewed:0, clean=1;
   return Math.round((vr*.4 + sr*.4 + clean*.2)*100);
@@ -6723,7 +6725,7 @@ V['#/partner/verify'] = () => `
 V["#/partner/stats"] = () => {
   const P = S.myprops;
   const sent = P.length;
-  const viewed = P.filter(p=>['viewed','selected','rejected'].includes(p.status)).length;
+  const viewed = P.filter(열람됨).length;
   const selected = P.filter(p=>p.status==='selected').length;
   const vr = sent? Math.round(viewed/sent*100) : 0;
   const sr = viewed? Math.round(selected/viewed*100) : 0;
@@ -7034,7 +7036,7 @@ function addrPick(i){
     /* 계약서 소재지 - 법정동코드·본번·부번·산까지 그대로 담는다. 나중에 보낼 때 바꿀 것이 없게 */
     Object.assign(CT.doc.property, { road: full, jibun: a.jibun || '', admCd: a.admCd || '', bun: a.bun || '',
       ji: a.ji || '', mount: !!a.mount, zip: a.zip || '', bdNm: CT.doc.property.bdNm || a.bdNm || '' });
-    CT.dirty = true;
+    CT.dirty = true; CT.rev = (CT.rev || 0) + 1;
   }
   else if(ADDR.for === 'laddr'){
     S.form.laddr = full;
@@ -9743,7 +9745,7 @@ V['#/partner/home'] = () => {
   const { 인사, 날 } = dzHello(이름);
   const props = S.myprops || [], 수요 = S.demands || [], 물건 = S.listings || [];
   const 진짜 = props.filter(p => !p.seed);
-  const 열람 = 진짜.filter(p => ['viewed','selected'].includes(p.status)).length;
+  const 열람 = 진짜.filter(열람됨).length;
   const 연결 = 진짜.filter(p => p.status === 'selected');
   const 안읽힘 = 진짜.filter(p => p.status === 'sent').length;
   const 계약 = CT.list || [];
@@ -9757,7 +9759,7 @@ V['#/partner/home'] = () => {
     return { t: d.getTime(), mon: d.getMonth() + 1, lab: String(d.getDate()) }; });
   const 날짜칸 = iso => { if(!iso) return -1; const d = new Date(iso); d.setHours(0,0,0,0); return days.findIndex(x => x.t === d.getTime()); };
   const 보냄 = days.map(() => 0), 열림 = days.map(() => 0);
-  진짜.forEach(p => { const i = 날짜칸(p.createdAt); if(i >= 0){ 보냄[i]++; if(['viewed','selected'].includes(p.status)) 열림[i]++; } });
+  진짜.forEach(p => { const i = 날짜칸(p.createdAt); if(i >= 0){ 보냄[i]++; if(열람됨(p)) 열림[i]++; } });
   const 앞7 = 보냄.slice(0, 7).reduce((a,b)=>a+b,0), 뒤7 = 보냄.slice(7).reduce((a,b)=>a+b,0);
 
   const 할일 = [
@@ -9790,7 +9792,7 @@ V['#/partner/home'] = () => {
             ${dzKpi({ ico:'eye', cap:'열람률', v: 진짜.length ? `${Math.round(열람 / 진짜.length * 100)}%` : '-', go:'#/partner/stats', sub:'보낸 제안 중 손님이 연 비율' })}
           </div>
           <div class="dz-card dz-chart">
-            <div class="dz-chh"><b class="dz-ct">제안 흐름</b><span class="dz-leg"><i class="a"></i>보낸 제안 ${보냄.reduce((a,b)=>a+b,0)}<i class="b"></i>열람 ${열림.reduce((a,b)=>a+b,0)}</span><span class="dz-cs">최근 14일</span></div>
+            <div class="dz-chh"><b class="dz-ct">제안 흐름</b><span class="dz-leg"><i class="a"></i>보낸 제안 ${보냄.reduce((a,b)=>a+b,0)}<i class="b"></i>그중 열람 ${열림.reduce((a,b)=>a+b,0)}</span><span class="dz-cs">최근 14일 · 보낸 날 기준</span></div>
             ${dzLine([{ name:'보낸 제안', v:보냄 }, { name:'열람', v:열림 }])}
             <div class="axis">${days.map((x, i) => `<span>${i === 13 ? '오늘' : i === 0 || x.lab === '1' ? `${x.mon}/${x.lab}` : (i % 2 ? '' : x.lab)}</span>`).join('')}</div>
           </div>
@@ -10029,28 +10031,45 @@ function ctPost(body){
   return apiFetch('/api/feed', {method:'POST', body: JSON.stringify(body)})
     .then(r => r.json().catch(()=>({})).then(j => ({ ok: r.ok && j.ok, j, status: r.status })));
 }
+/* 실패하면 목록을 비워 두지 않는다(null) - 빈 배열로 두면 '계약서 0건' 으로 보이고 다시 묻지도 않는다.
+   다만 화면을 그릴 때마다 다시 묻지 않게 30초는 쉰다. 기다릴 수 있게 약속을 돌려준다. */
 function ctLoadList(force){
-  if(!세션있음() || CT.loading) return;
-  if(CT.list && !force) return;
+  if(!세션있음()) return Promise.resolve();
+  if(CT.loading) return CT.loadP;
+  if(CT.list && !force) return Promise.resolve();
+  if(!force && CT.failAt && Date.now() - CT.failAt < 30e3) return Promise.resolve();
   CT.loading = true;
-  ctPost({what:'contracts'}).then(({ok, j}) => {
+  const 다시 = () => { if(S.route === '#/partner/contracts' || S.route === '#/partner/home' || S.route === '#/partner/proposals' || S.route.startsWith('#/partner/contract/')) render(); };
+  return CT.loadP = ctPost({what:'contracts'}).then(({ok, j}) => {
     CT.loading = false;
     CT.need = j.need || '';
     CT.err = ok ? '' : (j.error || '목록을 불러오지 못했습니다');
-    CT.list = ok ? (j.rows || []) : [];
-    if(S.route === '#/partner/contracts' || S.route === '#/partner/home' || S.route.startsWith('#/partner/contract/')) render();
-  }).catch(() => { CT.loading = false; CT.list = []; CT.err = '네트워크 문제로 불러오지 못했습니다'; render(); });
+    if(ok){ CT.list = j.rows || []; CT.failAt = 0; } else CT.failAt = Date.now();
+    다시();
+  }).catch(() => { CT.loading = false; CT.failAt = Date.now(); CT.err = '네트워크 문제로 불러오지 못했습니다'; 다시(); });
+}
+/* 저장한 판을 목록에 바로 반영한다 - 목록을 비우면 제안 화면에서 같은 손님의 초안을 못 찾아 또 만든다 */
+function ctListPut(row){
+  if(!CT.list) return;
+  const i = CT.list.findIndex(r => r.id === row.id);
+  if(i >= 0) CT.list[i] = { ...CT.list[i], ...row }; else CT.list.unshift(row);
 }
 function ctOpen(id){
   if(CT.loadingId === id) return;
   CT.loadingId = id; CT.err = '';
   ctPost({what:'contract', id}).then(({ok, j}) => {
-    CT.loadingId = null;
+    if(CT.loadingId === id) CT.loadingId = null;
+    /* 그 사이 다른 계약서로 옮겨 갔으면 늦게 온 답으로 지금 화면을 덮지 않는다 */
+    if((location.hash || '') !== '#/partner/contract/' + id) return;
     if(!ok){ CT.err = j.error || '계약서를 불러오지 못했습니다'; CT.need = j.need || ''; render(); return; }
     CT.id = j.row.id; CT.row = j.row; CT.doc = j.row.doc; CT.dirty = false; CT.mode = 'edit';
     render();
-  }).catch(() => { CT.loadingId = null; CT.err = '네트워크 문제로 불러오지 못했습니다'; render(); });
+  }).catch(() => { if(CT.loadingId === id) CT.loadingId = null;
+    if((location.hash || '') !== '#/partner/contract/' + id) return;
+    CT.err = '네트워크 문제로 불러오지 못했습니다'; render(); });
 }
+/* 화면이 새 문서를 들고 스스로 옮겨 가는 길 - 떠날 때 묻는 확인을 건너뛴다 */
+function ctGo(h){ CT.건너뜀 = h; go(h); }
 /* 라우터가 부른다 - 화면에 필요한 것을 불러온다 */
 function ctRoute(h){
   if(h === '#/partner/contracts') ctLoadList();
@@ -10063,18 +10082,24 @@ async function ctSave(silent){
   if(!CT.doc || CT.saving) return false;
   if(CT.row && CT.row.status === 'sealed') return false;
   CT.saving = true; render();
+  /* 보낸 뒤에도 계속 적을 수 있다 - 보낼 때의 판 번호를 적어 두고, 답이 왔을 때 그 사이 고친 게 있으면
+     '저장됨' 으로 바꾸지 않는다(그대로 확정하면 고치기 전 판이 잠긴다) */
+  const 판 = CT.rev || 0, 문서 = CT.doc;
+  const 제안 = (CT.row && CT.row.proposal_id) || CT.fromProposal || null;
   try{
-    const { ok, j } = await ctPost({ what:'contract-save', id: CT.id || undefined, form: CT.doc.form, doc: CT.doc,
-      proposal_id: (CT.row && CT.row.proposal_id) || CT.fromProposal || undefined });
+    const { ok, j } = await ctPost({ what:'contract-save', id: CT.id || undefined, form: 문서.form, doc: 문서,
+      proposal_id: 제안 || undefined });
     CT.saving = false;
+    if(CT.doc !== 문서){ render(); return false; }   /* 그 사이 다른 계약서를 열었다 */
     if(!ok){ CT.need = j.need || ''; render(); toast(j.error || '저장하지 못했습니다'); return false; }
     const 새것 = !CT.id;
-    CT.id = j.id; CT.dirty = false;
-    CT.row = { ...(CT.row||{}), id: j.id, status:'draft', updated_at: j.updated_at, form: CT.doc.form };
-    CT.list = null;                                  /* 목록은 다음에 다시 읽는다 */
+    CT.id = j.id; CT.dirty = (CT.rev || 0) !== 판;
+    CT.row = { ...(CT.row||{}), id: j.id, status:'draft', updated_at: j.updated_at, form: 문서.form, proposal_id: 제안 };
+    ctListPut({ id: j.id, status:'draft', updated_at: j.updated_at, form: 문서.form, proposal_id: 제안,
+      title: (문서.property && 문서.property.road) || '' });
     if(새것) history.replaceState(null, '', '#/partner/contract/' + j.id), S.route = S.lastRoute = '#/partner/contract/' + j.id;
-    render(); if(!silent) toast('저장했습니다');
-    return true;
+    render(); if(!silent || CT.dirty) toast(CT.dirty ? '저장했습니다 - 그 뒤에 고친 것은 아직 저장 전입니다' : '저장했습니다');
+    return !CT.dirty;
   }catch(e){ CT.saving = false; render(); toast('네트워크 문제로 저장하지 못했습니다'); return false; }
 }
 
@@ -10198,7 +10223,8 @@ V['#/partner/contracts'] = () => {
       <button class="btn sec" data-act="ct-new" data-v="explain-home">새 중개대상물 확인·설명서</button></div>
     ${CT.need ? `<div class="card pad"><b>계약서 기능을 준비 중입니다.</b><p class="sub" style="margin:6px 0 0">곧 열립니다 - 잠시 뒤 다시 들어와 주세요.</p></div>`
     : CT.loading && !CT.list ? `<div class="card pad"><p class="sub" style="margin:0">불러오는 중입니다…</p></div>`
-    : CT.err ? `<div class="card pad"><p class="sub" style="margin:0">${esc(CT.err)}</p></div>`
+    : CT.err && !CT.list ? `<div class="card pad" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap"><p class="sub" style="margin:0">${esc(CT.err)}</p>
+        <button class="btn sec sm" data-act="ct-reload">다시 불러오기</button></div>`
     : rows.length ? `<div class="card" style="overflow:hidden">${rows.map(r => `
       <button type="button" class="ct-row" data-act="ct-open" data-v="${esc(r.id)}">
         <span style="display:flex;flex-direction:column;gap:3px;min-width:0;text-align:left">
@@ -10619,6 +10645,25 @@ function exFormFor(c){
   return /주택|아파트|오피스텔|연립|다세대|다가구|단독/.test(용도) || !용도 ? 'explain-home' : 'explain-biz';
 }
 
+/* 서식이 쓰는 ex.* 칸 이름 */
+function exKeys(form){
+  const 칸 = new Set();
+  (EX_FORMS[form] ? EX_FORMS[form].spec : []).forEach(s => (s.rows || []).forEach(r => (r.p || []).forEach(p => {
+    if(p.k) 칸.add(p.k);
+    if(p.x) Object.values(p.x).forEach(x => 칸.add(x[0]));
+  })));
+  return 칸;
+}
+/* 서식 바꾸기 - 새 서식에 없는 칸의 값은 지운다. 화면·인쇄에 안 보이는 값이 날인본(지문)에 남으면 안 된다.
+   머리 선택지(주택 유형·용도·거래 형태)도 새 서식에 없는 값이면 비운다. 소재지·당사자·중개사는 그대로 둔다. */
+function exSwitch(doc, form){
+  const 칸 = exKeys(form);
+  Object.keys(doc.ex || {}).forEach(k => { if(!칸.has('ex.' + k)) delete doc.ex[k]; });
+  const 머리 = Object.fromEntries(EX_FORMS[form].kinds.map(([, key, opts]) => [key, opts]));
+  ['house', 'deal'].forEach(key => { if(doc[key] && !(머리[key] || []).includes(doc[key])) doc[key] = ''; });
+  doc.form = form;
+}
+
 /* 새 확인·설명서. 계약서에서 만들면 소재지·당사자·중개사·금액을 옮겨 온다 */
 function exNewDoc(from, form){
   const a = S.agent || {};
@@ -10874,7 +10919,7 @@ function rpHTML(doc){
 }
 
 /* 계약서 입력 - 글자마다 다시 그리지 않는다(칸이 교체돼 두 번째 글자가 안 들어간다). 값만 담고 표시만 바꾼다 */
-function ctDirty(){ CT.dirty = true; const b = $('#app [data-act="ct-save"]'); if(b && !CT.saving) b.textContent = '저장 ●'; }
+function ctDirty(){ CT.dirty = true; CT.rev = (CT.rev || 0) + 1; const b = $('#app [data-act="ct-save"]'); if(b && !CT.saving) b.textContent = '저장 ●'; }
 function ct잔금표시(){
   const n = ctBalance(CT.doc.deal);
   const a = $('#app [data-ctbal]'); if(a) a.value = n ? comma(String(n)) : '';
@@ -10908,8 +10953,11 @@ addEventListener('beforeunload', e => {
 function render(){
   if(IME && 적는중() && S.lastRoute === (location.hash || '#/')){ 밀린전체 = true; return; }
   let h = location.hash || '#/';
-  /* 계약서를 저장하지 않고 다른 화면으로 가려 하면 묻는다 (2026-10-29) */
-  if(S.lastRoute && S.lastRoute.startsWith('#/partner/contract/') && !h.startsWith('#/partner/contract/')
+  /* 계약서를 저장하지 않고 다른 화면으로 가려 하면 묻는다 (2026-10-29).
+     다른 계약서로 옮겨 가는 것(뒤로가기로 앞 계약서 등)도 떠나는 것이다 - 그 계약서를 열면 적던 것이 덮인다.
+     화면이 스스로 옮기는 길(확인·설명서 만들기처럼 새 문서를 들고 가는 것)은 ctGo 로 표시해 묻지 않는다. */
+  const 스스로 = CT.건너뜀 === h; CT.건너뜀 = null;
+  if(!스스로 && S.lastRoute && S.lastRoute.startsWith('#/partner/contract/') && h !== S.lastRoute
      && CT.dirty && CT.doc && !(CT.row && CT.row.status === 'sealed')){
     if(!confirm('저장하지 않은 고침이 있습니다. 저장하지 않고 나갈까요?')){ history.replaceState(null, '', S.lastRoute); return; }
     CT.dirty = false;
@@ -11173,6 +11221,8 @@ function render(){
   /* '#/partner' 는 누구나 여는 안내 화면이고 내 제안·내 물건을 쓰지 않는다 (2026-10-09).
      거기서 부르면 로그인한 손님 계정도 방문마다 /api/feed 를 두 번 부르고 403 을 받았다. */
   if(h==='#/partner/proposals' || h==='#/partner/stats') loadMyProps(false);
+  /* 내 제안의 '계약서 만들기' 가 이미 만든 초안을 찾으려면 계약서 목록이 있어야 한다 */
+  if(h==='#/partner/proposals' && S.agent && !ownerSide()) ctLoadList();
   if(h.startsWith('#/partner/listing')) loadListings(false);
   /* 위치는 묻지 않는다 - 위치 기능을 통째로 걷었다(2026-10-17, detectRegion 이 있던 자리 주석 참고). */
 
@@ -12797,15 +12847,16 @@ function handle(a,v,el){
       CT.id = null; CT.row = null; CT.fromProposal = null; CT.doc = ctNewDoc(CT_FORMS[v] ? v : 'home-lease');
       CT.dirty = true; CT.mode = 'edit'; go('#/partner/contract/new'); return true;
     case 'ct-open': go('#/partner/contract/' + v); return true;
+    case 'ct-reload': ctLoadList(true); render(); return true;
     /* 계약서에서 확인·설명서로 - 소재지·당사자·중개사·금액을 옮긴다. 저장 안 한 고침이 있으면 먼저 저장하게 한다 */
     case 'ct-explain': {
       if(!CT.doc) return true;
       if(CT.dirty || !CT.id) return toast('계약서를 먼저 저장해 주세요'), true;
       const 원 = { ...CT.doc, __id: CT.id }, 제안 = CT.row && CT.row.proposal_id;
       CT.id = null; CT.row = null; CT.fromProposal = 제안 || null;
-      CT.doc = exNewDoc(원); CT.dirty = true; CT.mode = 'edit'; go('#/partner/contract/new'); return true;
+      CT.doc = exNewDoc(원); CT.dirty = true; CT.mode = 'edit'; ctGo('#/partner/contract/new'); return true;
     }
-    case 'ex-form': if(CT.doc && EX_FORMS[v] && !(CT.row && CT.row.status === 'sealed')){ CT.doc.form = v; ctDirty(); render(); } return true;
+    case 'ex-form': if(CT.doc && EX_FORMS[v] && !(CT.row && CT.row.status === 'sealed')){ exSwitch(CT.doc, v); ctDirty(); render(); } return true;
     /* 확인·설명서 고르는 칸 - data-v 는 '경로|고른 값' */
     case 'ex1': case 'exm': {
       if(!CT.doc || (CT.row && CT.row.status === 'sealed')) return true;
@@ -12817,19 +12868,26 @@ function handle(a,v,el){
     }
     case 'ct-from': {
       const p = (S.myprops || []).find(x => x.id === v); if(!p) return true;
-      const 있던 = (CT.list || []).find(r => r.proposal_id === v && r.status === 'draft');
-      if(있던){ go('#/partner/contract/' + 있던.id); return true; }
-      const r = p.raw || {};
-      /* 손님이 건 조건의 유형·거래로 양식을 고른다 - 주거 매매는 매매, 주거 임대는 주택임대차, 나머지는 상가건물 임대차.
-         매매 물건의 '보증금' 칸에는 매매가가 들어 있다(제안 표가 한 칸을 같이 쓴다) */
-      const form = r.kind && r.kind !== 'home' ? 'shop-lease' : r.deal === '매매' ? 'sale' : 'home-lease';
-      CT.id = null; CT.row = null; CT.fromProposal = v;
-      CT.doc = ctNewDoc(form, {
-        property: { road: r.addr || '', bdNm: r.bname || '' },
-        deal: form === 'sale' ? { price: +r.dep || 0 }
-          : { type: +r.rent ? 'monthly' : 'jeonse', deposit: +r.dep || 0, rent: +r.rent || 0, fee: +r.fee || 0 },
-        lessee: { name: p.cust || '', phone: p.cphone || '' } });
-      CT.dirty = true; CT.mode = 'edit'; go('#/partner/contract/new'); return true;
+      (async () => {
+        /* 이 손님으로 만든 초안이 이미 있으면 그것을 연다 - 목록을 모르면 먼저 받아 본다(모른 채 만들면 중복 초안) */
+        if(!CT.list) await ctLoadList(true);
+        if(!CT.list) return toast('계약서 목록을 불러오지 못했습니다 - 잠시 뒤 다시 눌러 주세요');
+        const 있던 = CT.list.find(r => r.proposal_id === v && r.status === 'draft');
+        if(있던){ go('#/partner/contract/' + 있던.id); return; }
+        const r = p.raw || {};
+        /* 손님이 건 조건의 거래·유형으로 양식을 고른다 - 매매는 (주거든 상가든 토지든) 매매계약서,
+           임대는 주거면 주택임대차, 나머지는 상가건물 임대차.
+           매매 물건의 '보증금' 칸에는 매매가가 들어 있다(제안 표가 한 칸을 같이 쓴다) */
+        const form = r.deal === '매매' ? 'sale' : r.kind && r.kind !== 'home' ? 'shop-lease' : 'home-lease';
+        CT.id = null; CT.row = null; CT.fromProposal = v;
+        CT.doc = ctNewDoc(form, {
+          property: { road: r.addr || '', bdNm: r.bname || '' },
+          deal: form === 'sale' ? { price: +r.dep || 0 }
+            : { type: +r.rent ? 'monthly' : 'jeonse', deposit: +r.dep || 0, rent: +r.rent || 0, fee: +r.fee || 0 },
+          lessee: { name: p.cust || '', phone: p.cphone || '' } });
+        CT.dirty = true; CT.mode = 'edit'; ctGo('#/partner/contract/new');
+      })();
+      return true;
     }
     case 'ct-kind': if(CT.doc){ CT.doc.kind = Object.keys(CT_KIND).find(k => CT_KIND[k] === v) || 'new'; ctDirty(); render(); } return true;
     case 'ct-vat': if(CT.doc){ CT.doc.deal.vat = v === '포함' ? '포함' : '별도'; ctDirty(); render(); } return true;

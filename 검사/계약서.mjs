@@ -27,6 +27,14 @@ const html = 길.html(), js = 길.js(), css = 길.css();
   ok(C.docCheck('home-lease', 문서({ parties: { lessor: { phone: '010-1234-5678' } }, deal: { deposit: 150000000 } })) === null,
      '전화번호·금액은 주민번호로 잘못 잡지 않는다');
   ok(C.docCheck('home-lease', 문서({ specials: ['생년월일 900101 확인'] })) === null, '생년월일 6자리만은 막지 않는다');
+  /* 2026-10-29 리뷰: 다른 구분자·전각 숫자·숫자 값·키로 넣으면 빠져나갔다 */
+  const 막힘 = o => /주민등록번호/.test(C.docCheck('home-lease', 문서(o)) || '');
+  ok(막힘({ specials: ['900101.1234567'] }) && 막힘({ specials: ['900101-1 234567'] }) && 막힘({ specials: ['９００１０１－１２３４５６７'] })
+     && 막힘({ specials: ['900101—2345678'] }) && 막힘({ n: 9001011234567 }) && 막힘({ x: { '9001011234567': 1 } }),
+     '점·공백 쪼개기·전각 숫자·em dash·숫자 값·키로 넣은 주민번호도 거절한다');
+  ok(C.docCheck('home-lease', 문서({ specials: ['연락처 010-1234-5678, 010-9876-5432', '보증금 1,500,000 / 2,000,000 원', '2026-10-29 14:30 잔금'] })) === null
+     && C.docCheck('home-lease', 문서({ specials: ['9913011234567'] })) === null,
+     '전화번호 둘 · 금액 나열 · 날짜시각 · 13월 같은 말 안 되는 생년월일은 잡지 않는다');
   ok(/너무 깁/.test(C.docCheck('home-lease', 문서({ specials: ['가'.repeat(30000)] })) || ''), '64KB 를 넘으면 거절한다');
   ok(C.지문({ a: 1, b: { c: [1, 2], d: '가' } }) === C.지문({ b: { d: '가', c: [1, 2] }, a: 1 }) && /^[0-9a-f]{64}$/.test(C.지문({})),
      '지문은 키 순서와 상관없이 같다 (SHA-256)');
@@ -71,6 +79,22 @@ const html = 길.html(), js = 길.js(), css = 길.css();
   ok(res.code === 200 && 보낸.status === 'sealed' && 보낸.sha256 === C.지문(db도c) && res.body.sha256 === C.지문(db도c),
      '확정은 DB 의 doc 으로 서버가 지문을 낸다 (화면이 보낸 지문·doc 은 무시)');
   ok(/status=eq\.draft/.test(불린[1].u), '확정도 작성 중인 것만 바꾼다');
+  /* 읽은 뒤 다른 창의 저장이 끼어들면 지문과 잠기는 doc 이 어긋난다 - 읽은 updated_at 그대로일 때만 잠근다 */
+  답 = (u, o) => (o.method || 'GET') === 'GET'
+    ? new Response(JSON.stringify([{ id: 'x', status: 'draft', doc: db도c, updated_at: '2026-10-29T03:00:00.123456+00:00' }]), { status: 200 })
+    : new Response('[]', { status: 200 });
+  ({ res } = await 돌려({ what: 'contract-seal', id: '33333333-3333-3333-3333-333333333333' }));
+  ok(불린[1].u.includes('updated_at=eq.2026-10-29T03%3A00%3A00.123456%2B00%3A00') && res.code === 409 && /다시 열어/.test(res.body.error),
+     '확정은 읽었을 때의 updated_at 이 그대로일 때만 잠근다(+ 는 %2B 로) - 그 사이 저장됐으면 409');
+
+  /* 연결된 제안은 내 제안일 때만 잇는다 */
+  const 제안 = '44444444-4444-4444-4444-444444444444';
+  답 = u => /bk_proposal/.test(u) ? new Response('[]', { status: 200 }) : new Response(JSON.stringify([{ id: 'n', updated_at: 't' }]), { status: 201 });
+  ({ res } = await 돌려({ what: 'contract-save', form: 'home-lease', doc, proposal_id: 제안 }));
+  ok(/bk_proposal\?.*agent_id=eq\.1111/.test(불린[0].u) && JSON.parse(불린[1].b).proposal_id === null, '남의 제안 번호면 잇지 않는다(null)');
+  답 = u => /bk_proposal/.test(u) ? new Response(JSON.stringify([{ id: 제안 }]), { status: 200 }) : new Response(JSON.stringify([{ id: 'n', updated_at: 't' }]), { status: 201 });
+  ({ res } = await 돌려({ what: 'contract-save', form: 'home-lease', doc, proposal_id: 제안 }));
+  ok(JSON.parse(불린[1].b).proposal_id === 제안, '내 제안이면 잇는다');
   답 = () => new Response(JSON.stringify([{ id: 'x', status: 'sealed', doc: db도c }]), { status: 200 });
   ok((await 돌려({ what: 'contract-seal', id: '33333333-3333-3333-3333-333333333333' })).res.code === 409, '이미 날인본이면 다시 확정하지 않는다');
 
@@ -115,9 +139,54 @@ const 신시작 = js.indexOf('/* ══════════ 거래신고 도
 const 신몸 = js.slice(신시작, 신끝);
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const 모듈 = new Function('S', 'esc', 'apiFetch', '세션있음', 'render', 'toast',
-  `${몸}\n${확몸}\n${신몸}\nreturn { rpItems, rp기한, rp대상, rpHTML, RP_직접, 한글금액, 금액글, ctNewDoc, ctDocHTML, ctBalance, CT_HOME_CLAUSES, CT_SPECIALS, CT_FORMS, exNewDoc, exDocHTML, EX_SPEC, EX_FORMS, exFormFor };`);
-const S = { agent: { office: '비버공인중개사사무소', name: '한상혁', reg_no: '41450-2024-00001', addr: '하남시 미사대로 550', phone: '031-000-0000' } };
+  `${몸}\n${확몸}\n${신몸}\nreturn { rpItems, rp기한, rp대상, rpHTML, RP_직접, 한글금액, 금액글, ctNewDoc, ctDocHTML, ctBalance, CT_HOME_CLAUSES, CT_SPECIALS, CT_FORMS, exNewDoc, exDocHTML, EX_SPEC, EX_FORMS, exFormFor,
+  CT, ctSave, ctLoadList, ctOpen, exSwitch, exKeys };`);
+const S = { route: '#/x', agent: { office: '비버공인중개사사무소', name: '한상혁', reg_no: '41450-2024-00001', addr: '하남시 미사대로 550', phone: '031-000-0000' } };
 const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
+
+/* ── 저장·열기·목록 - 서버 답을 흉내 내 실제로 돌린다 (2026-10-29 리뷰) ── */
+{
+  let api = () => Promise.reject(new Error('x'));
+  globalThis.location = { hash: '' }; globalThis.history = { replaceState() {} };
+  const M2 = 모듈(S, esc, (...a) => api(...a), () => true, () => {}, () => {});
+  const C2 = M2.CT, 답 = (o, s = 200) => Promise.resolve(new Response(JSON.stringify(o), { status: s }));
+  const id = '33333333-3333-3333-3333-333333333333';
+  C2.doc = M2.ctNewDoc('home-lease'); C2.id = id; C2.row = { id, status: 'draft' }; C2.rev = 5; C2.dirty = true; C2.list = [];
+  api = () => { C2.rev++; return 답({ ok: true, id, updated_at: 't2' }); };   /* 답이 오기 전에 한 글자 더 쳤다 */
+  ok(await M2.ctSave(true) === false && C2.dirty === true, '저장하는 사이 고친 게 있으면 "저장됨" 으로 바꾸지 않는다 (확정도 멈춘다)');
+  api = () => 답({ ok: true, id, updated_at: 't3' });
+  ok(await M2.ctSave(true) === true && C2.dirty === false && C2.list.length === 1 && C2.list[0].id === id && C2.list[0].status === 'draft',
+     '고친 게 없으면 저장됨 · 목록을 비우지 않고 바로 반영한다 (같은 제안으로 초안이 또 생기지 않게)');
+
+  C2.list = null; C2.loading = false; C2.failAt = 0;
+  api = () => 답({ error: '잠시 문제' }, 502);
+  await M2.ctLoadList();
+  ok(C2.list === null && C2.err === '잠시 문제', '목록 불러오기가 실패하면 빈 목록(0건)으로 두지 않는다');
+  let 불림 = 0; api = () => { 불림++; return 답({ ok: true, rows: [{ id: 'a' }] }); };
+  await M2.ctLoadList();
+  ok(불림 === 0, '실패 뒤 30초는 그릴 때마다 다시 묻지 않는다');
+  await M2.ctLoadList(true);
+  ok(불림 === 1 && C2.list.length === 1 && C2.err === '', '다시 불러오기는 바로 묻고, 되면 오류를 지운다');
+
+  location.hash = '#/partner/contract/B'; C2.id = null; C2.doc = null;
+  api = () => 답({ ok: true, row: { id: 'A', doc: { form: 'home-lease' } } });
+  M2.ctOpen('A'); await new Promise(r => setTimeout(r, 20));
+  ok(C2.id === null && C2.doc === null, 'A 를 연 뒤 B 로 옮겼으면 늦게 온 A 답으로 화면을 덮지 않는다');
+}
+
+/* 확인·설명서 서식 바꾸기 - 새 서식에 없는 칸은 지운다 */
+{
+  const d = M.exNewDoc(null, 'explain-biz');
+  d.house = '공업용'; d.deal = '그 밖의 경우'; d.ex.guard = '있음'; d.ex.mgr = '자체관리'; d.ex.price = 500000000;
+  M.exSwitch(d, 'explain-land');
+  ok(d.form === 'explain-land' && !('guard' in d.ex) && !('mgr' in d.ex) && d.house === '' && d.deal === '' && d.ex.price === 500000000,
+     '비주거용 → 토지: 토지 서식에 없는 칸(경비실·관리주체)·머리 선택지는 지우고 금액은 둔다');
+  ok(Object.keys(M.EX_FORMS).every(f => M.exKeys(f).has('ex.price')) && M.exKeys('explain-home').has('ex.feeTotal') && !M.exKeys('explain-biz').has('ex.feeTotal'),
+     '거래예정금액은 네 서식 모두 쓴다(바꿔도 남는다) · 관리비(feeTotal)는 주거용에만 있다');
+  const e = M.exNewDoc(null, 'explain-home'); e.deal = '임대';
+  M.exSwitch(e, 'explain-biz');
+  ok(e.deal === '임대', '새 서식에도 있는 선택지는 그대로 둔다');
+}
 {
   /* 계약서는 '일천만원정' 처럼 '일' 을 붙여 적는다 - 앞에 글자를 덧붙여 금액을 바꾸지 못하게 */
   ok(M.한글금액(150000000) === '일억오천만' && M.한글금액(1000) === '일천' && M.한글금액(10000) === '일만' && M.한글금액(0) === '',
@@ -198,8 +267,13 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
   ok(!/임차할 부분/.test(m) && !/보증금/.test(m) && (m.match(/주민등록번호<\/th><td><span class="ct-blank" style="min-width:140px"><\/span><\/td>/g) || []).length === 2
      && /<th rowspan="2" class="w">매도인<\/th>/.test(m) && /<th rowspan="2" class="w">매수인<\/th>/.test(m),
      '매매: 임차·보증금 말이 없고, 매도인·매수인 서명 칸 · 주민번호는 둘 다 빈칸');
-  ok(/const form = r\.kind && r\.kind !== 'home' \? 'shop-lease' : r\.deal === '매매' \? 'sale' : 'home-lease';/.test(js),
-     '제안에서 열면 손님 조건으로 양식을 고른다 (주거 매매 → 매매, 주거 임대 → 주택, 그 밖 → 상가)');
+  {
+    const 식 = (js.match(/const form = (r\.deal[^;]*);/) || [])[1];
+    const 고름 = 식 && new Function('r', 'return ' + 식);
+    ok(고름 && 고름({ kind:'home', deal:'매매' }) === 'sale' && 고름({ kind:'shop', deal:'매매' }) === 'sale' && 고름({ kind:'land', deal:'매매' }) === 'sale'
+       && 고름({ kind:'home', deal:'월세' }) === 'home-lease' && 고름({ kind:'shop', deal:'월세' }) === 'shop-lease' && 고름({ deal:'전세' }) === 'home-lease',
+       '제안에서 열면 손님 조건으로 양식을 고른다 (매매는 유형과 상관없이 매매, 주거 임대 → 주택, 그 밖 임대 → 상가)');
+  }
 }
 
 /* ── 중개대상물 확인·설명서[Ⅰ] 주거용 (별지 제20호서식, 2024. 7. 2. 개정) ── */
@@ -384,6 +458,22 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
      && 메일[0].html.includes('잠실 아파트') && 메일[0].html.includes('미사 802호') && !메일[0].html.includes('알릴 날 아님'),
      '7·3·1·0일 남은 것만 · 중개사별로 한 통 · 가장 급한 것으로 제목');
   ok(/신고 마침/.test(메일[0].text) && res.body.보냄 === 1, '메일에 "신고 마침을 누르면 멈춘다" 안내 · 보낸 수를 돌려준다');
+  const 주소 = decodeURIComponent(불린[0].u);
+  ok(주소.includes(`doc->>contractDate=gte.${며칠전(30)}`) && 주소.includes(`doc->>contractDate=lte.${며칠전(23)}`) && /order=id/.test(주소),
+     '알릴 날에 걸리는 계약일(오늘-30 ~ 오늘-23)만 DB 에서 고른다 - 쌓인 날인본에 밀려 잘리지 않게');
+
+  /* 1000건 넘게 걸리면 쪽으로 나눠 다 읽고, 알릴 중개사가 100명을 넘으면 100통씩 나눠 보낸다 */
+  const 많은 = Array.from({ length: 1000 }, (_, i) => ({ id: 'm' + i, agent_user: 'u' + i, form: 'sale', title: 't' + i, doc: { contractDate: 며칠전(23) } }));
+  const 묶음 = [];
+  답 = (u, o) => /bk_contract/.test(u) ? new Response(JSON.stringify(/offset=0(&|$)/.test(u) ? 많은 : 많은.slice(0, 5).map(x => ({ ...x, id: x.id + 'b', agent_user: x.agent_user + 'b' }))), { status: 200 })
+    : /admin\/users\//.test(u) ? new Response(JSON.stringify({ email: 'a@example.com' }), { status: 200 })
+    : /resend\.com\/emails\/batch/.test(u) ? (묶음.push(JSON.parse(o.body).length), new Response('{}', { status: 200 }))
+    : new Response('{}', { status: 404 });
+  process.env.CRON_SECRET = 'cron-secret'; process.env.RESEND_API_KEY = 'test';
+  res = 응답(); 불린 = [];
+  await C.reportDueCron({ headers: { authorization: 'Bearer cron-secret', host: 'beaverknock.co.kr' } }, res);
+  ok(불린.filter(x => /bk_contract/.test(x.u)).length === 2 && res.body.대상 === 1005, '1000건이 차면 다음 쪽을 더 읽는다');
+  ok(묶음.length === 11 && 묶음.slice(0, 10).every(n => n === 100) && 묶음[10] === 5 && res.body.보냄 === 1005, '100통씩 나눠 보내 1005통 모두 보낸다');
   delete process.env.CRON_SECRET; delete process.env.RESEND_API_KEY;
 
   const 설정 = JSON.parse(fs.readFileSync(new URL('../vercel.json', import.meta.url), 'utf8'));
@@ -413,6 +503,16 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
   ok(/ADDR\.for === 'ct-addr' && CT\.doc[\s\S]{0,200}admCd: a\.admCd/.test(js), '주소 검색으로 고르면 법정동코드까지 담는다');
   ok(/if\(k\.startsWith\('ct'\) && ctInput\(el, k\)\) return;/.test(js), '계약서 칸은 글자마다 다시 그리지 않는다');
   ok(/저장하지 않은 고침이 있습니다/.test(js) && /addEventListener\('beforeunload'/.test(js), '저장하지 않고 떠나면 묻는다(화면 이동·창 닫기)');
+  ok(/const 스스로 = CT\.건너뜀 === h; CT\.건너뜀 = null;\s*if\(!스스로 && S\.lastRoute && S\.lastRoute\.startsWith\('#\/partner\/contract\/'\) && h !== S\.lastRoute/.test(js)
+     && /CT\.doc = exNewDoc\(원\); CT\.dirty = true; CT\.mode = 'edit'; ctGo\('#\/partner\/contract\/new'\)/.test(js),
+     '다른 계약서로 옮겨 가도 묻는다 - 화면이 새 문서를 들고 가는 길(ctGo)만 묻지 않는다');
+  ok(/function ctDirty\(\)\{ CT\.dirty = true; CT\.rev = \(CT\.rev \|\| 0\) \+ 1;/.test(js) && /CT\.dirty = true; CT\.rev = \(CT\.rev \|\| 0\) \+ 1;\n  \}/.test(js),
+     '고칠 때마다 판 번호가 오른다(글자·주소 검색 모두)');
+  ok(/h==='#\/partner\/proposals' && S\.agent && !ownerSide\(\)\) ctLoadList\(\)/.test(js) && /if\(!CT\.list\) await ctLoadList\(true\);/.test(js),
+     '제안 화면에서도 계약서 목록을 받고, 모르면 받아 본 뒤에 만든다');
+  ok(/data-act="ct-reload">다시 불러오기/.test(js) && /case 'ct-reload': ctLoadList\(true\)/.test(js), '목록을 못 불러오면 "다시 불러오기" 가 있다');
+  ok(/const 열람 = 진짜\.filter\(열람됨\)/.test(js) && /const viewed = P\.filter\(열람됨\)/.test(js) && /const 열람됨 = p => \['viewed','selected','rejected'\]/.test(js),
+     '대시보드와 성과 화면이 같은 셈으로 열람을 센다(관심 없음도 연 것)');
   /* 메뉴가 여섯 칸이 되면서 1024px 에서 '로그아웃' 이 밖으로 밀렸고, 한 줄로만 묶자 800px 에서 줄 전체가 넘쳤다 */
   ok(/\.nav \.items a\{white-space:nowrap\}/.test(css) && /@media \(max-width:1279px\)\{ \.nav \.items a\{padding:8px 9px\} \.nav-office\{display:none\} \}/.test(css)
      && /@media \(max-width:1179px\)\{ \.nav \.items\{min-width:0;flex:1 1 auto;overflow-x:auto/.test(css),

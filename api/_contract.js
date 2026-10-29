@@ -33,14 +33,26 @@ const noTable = t => /does not exist|PGRST205|bk_contract/i.test(t);
 const 준비중 = res => res.status(503).json({ error: '계약서 기능을 준비 중입니다 (0031 마이그레이션 필요)', need: '0031' });
 
 /* 주민등록번호(외국인등록번호 포함) 모양 - 앞 6자리 생년월일 + 성별 숫자 1~8 + 6자리.
-   하이픈·공백이 있든 없든 잡는다. 생년월일 6자리만 적은 것은 잡지 않는다. */
-const RRN = /(?<!\d)\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])\s*[-–]?\s*[1-8]\d{6}(?!\d)/;
+   구분자가 무엇이든(하이픈·점·공백·en dash, 숫자 사이 0~3글자 - '900101 - 5234567' 처럼) 전각 숫자든 잡는다.
+   숫자 13개를 모은 뒤 생년월일·성별 자리가 말이 되는지 본다 - 금액·전화번호를 잘못 잡지 않게.
+   생년월일 6자리만 적은 것은 잡지 않는다. */
+const 열세자리 = /(?<!\d)\d(?:[^\p{L}\p{N}]{0,3}\d){12}(?!\d)/gu;
+function 주민모양(s) {
+  const t = String(s).normalize('NFKC');
+  for (const m of t.matchAll(열세자리)) {
+    const d = m[0].replace(/\D/g, '');
+    const 월 = +d.slice(2, 4), 일 = +d.slice(4, 6), 성 = +d[6];
+    if (월 >= 1 && 월 <= 12 && 일 >= 1 && 일 <= 31 && 성 >= 1 && 성 <= 8) return true;
+  }
+  return false;
+}
 
-/* 문자열 전부를 훑는다 - 어느 칸에 적었든(특약 글 안이든) 잡는다 */
+/* 값 전부를 훑는다 - 어느 칸에 적었든(특약 글 안이든, 숫자로든, 키로든) 잡는다 */
 export function 주민번호있나(v) {
-  if (typeof v === 'string') return RRN.test(v);
+  if (typeof v === 'string') return 주민모양(v);
+  if (typeof v === 'number' || typeof v === 'bigint') return 주민모양(String(v));
   if (Array.isArray(v)) return v.some(주민번호있나);
-  if (v && typeof v === 'object') return Object.values(v).some(주민번호있나);
+  if (v && typeof v === 'object') return Object.keys(v).some(주민모양) || Object.values(v).some(주민번호있나);
   return false;
 }
 
@@ -116,7 +128,6 @@ async function save(res, agent, user, b) {
   const doc = b.doc;
   const why = docCheck(form, doc);
   if (why) return res.status(400).json({ error: why });
-  const proposal = UUID.test(String(b.proposal_id || '')) ? b.proposal_id : null;
   const body = { form, schema: CT_SCHEMA, title: titleOf(b, doc), doc };
 
   if (b.id) {
@@ -131,6 +142,12 @@ async function save(res, agent, user, b) {
     return res.status(200).json({ ok: true, id, updated_at: rows[0].updated_at });
   }
 
+  /* 연결된 제안은 내 제안일 때만 잇는다 - 남의 제안 번호를 적어 와도 그 손님과 엮이지 않게 */
+  let proposal = null;
+  if (UUID.test(String(b.proposal_id || ''))) {
+    const p = await db('bk_proposal', `select=id&id=eq.${b.proposal_id}&agent_id=eq.${agent.id}&limit=1`);
+    if (p.r.ok && p.rows.length) proposal = b.proposal_id;
+  }
   const { r, t, rows } = await db('bk_contract', '', {
     method: 'POST', headers: { Prefer: 'return=representation' },
     body: JSON.stringify({ ...body, agent_id: agent.id, agent_user: user.id, proposal_id: proposal }),
@@ -144,7 +161,7 @@ async function save(res, agent, user, b) {
 async function seal(res, agent, b) {
   const id = String(b.id || '');
   if (!UUID.test(id)) return res.status(400).json({ error: '어느 계약서인지 알 수 없습니다' });
-  const got = await db('bk_contract', `select=id,status,doc&id=eq.${id}&agent_id=eq.${agent.id}&limit=1`);
+  const got = await db('bk_contract', `select=id,status,doc,updated_at&id=eq.${id}&agent_id=eq.${agent.id}&limit=1`);
   if (!got.r.ok) return noTable(got.t) ? 준비중(res) : res.status(502).json({ error: '계약서를 불러오지 못했습니다' });
   const row = got.rows[0];
   if (!row) return res.status(404).json({ error: '내 계약서가 아니거나 지워진 계약서입니다' });
@@ -152,13 +169,16 @@ async function seal(res, agent, b) {
   const why = docCheck(row.doc && row.doc.form, row.doc);
   if (why) return res.status(400).json({ error: why });
 
+  /* 읽은 뒤 다른 창에서 저장이 들어오면 지문과 잠기는 doc 이 어긋난다 -
+     읽었을 때의 updated_at 그대로일 때만 잠근다(저장하면 트리거가 updated_at 을 바꾼다) */
   const sha256 = 지문(row.doc);
-  const { r, rows } = await db('bk_contract', `id=eq.${id}&agent_id=eq.${agent.id}&status=eq.draft`, {
+  const { r, rows } = await db('bk_contract',
+    `id=eq.${id}&agent_id=eq.${agent.id}&status=eq.draft&updated_at=eq.${encodeURIComponent(row.updated_at || '')}`, {
     method: 'PATCH', headers: { Prefer: 'return=representation' },
     body: JSON.stringify({ status: 'sealed', sealed_at: new Date().toISOString(), sha256 }),
   });
   if (!r.ok) return res.status(502).json({ error: '날인본으로 확정하지 못했습니다' });
-  if (!rows.length) return res.status(409).json({ error: '그 사이 다른 곳에서 확정됐거나 지워졌습니다' });
+  if (!rows.length) return res.status(409).json({ error: '그 사이 다른 곳에서 고쳐졌거나 확정·삭제됐습니다 - 다시 열어 확인해 주세요' });
   return res.status(200).json({ ok: true, sealed_at: rows[0].sealed_at, sha256 });
 }
 
@@ -209,19 +229,30 @@ export const 알릴날 = [7, 3, 1, 0];
 export async function reportDueCron(req, res) {
   const secret = process.env.CRON_SECRET;
   if (!secret || req.headers.authorization !== `Bearer ${secret}`) return res.status(401).json({ error: '예약 실행만 부를 수 있습니다' });
-  const { r, t, rows } = await db('bk_contract',
-    `select=id,agent_user,form,title,doc&status=eq.sealed&reported_at=is.null&form=in.(${CT_REPORT_FORMS.join(',')})&limit=1000`);
-  if (!r.ok) return noTable(t) ? 준비중(res) : res.status(502).json({ error: '계약서를 읽지 못했습니다' });
+  /* 알릴 날(0~7일 남음)에 걸리는 계약일만 DB 에서 고른다 - 기한 = 계약일 + 30일이므로
+     계약일이 오늘-30 ~ 오늘-23 인 것. 신고 안 한 날인본이 쌓여도 이번 주 대상이 잘리지 않게, 쪽으로 나눠 다 읽는다. */
   const 오늘 = 한국오늘(), 사람별 = new Map();
+  const 전 = n => new Date(Date.parse(오늘 + 'T00:00:00Z') - n * 864e5).toISOString().slice(0, 10);
+  const 쪽 = 1000, rows = [];
+  for (let 처음 = 0; ; 처음 += 쪽) {
+    const { r, t, rows: 받은 } = await db('bk_contract',
+      `select=id,agent_user,form,title,doc&status=eq.sealed&reported_at=is.null&form=in.(${CT_REPORT_FORMS.join(',')})`
+      + `&doc->>contractDate=gte.${전(30)}&doc->>contractDate=lte.${전(23)}&order=id&limit=${쪽}&offset=${처음}`);
+    if (!r.ok) return noTable(t) ? 준비중(res) : res.status(502).json({ error: '계약서를 읽지 못했습니다' });
+    rows.push(...받은);
+    if (받은.length < 쪽) break;
+  }
   for (const c of rows) {
     const d = 신고남은날(c.doc && c.doc.contractDate, 오늘);
     if (!d || !알릴날.includes(d.남음) || !c.agent_user) continue;
     if (!사람별.has(c.agent_user)) 사람별.set(c.agent_user, []);
     사람별.get(c.agent_user).push({ ...d, title: c.title || '소재지 미입력', form: c.form });
   }
-  const 메일 = [];
-  for (const [uid, 목록] of 사람별) {
-    const to = await emailOf(uid);
+  const 메일 = [], 사람 = [...사람별];
+  const 주소 = [];
+  for (let i = 0; i < 사람.length; i += 10) 주소.push(...await Promise.all(사람.slice(i, i + 10).map(([uid]) => emailOf(uid))));
+  for (const [n, [, 목록]] of 사람.entries()) {
+    const to = 주소[n];
     if (!to) continue;
     const 급한 = Math.min(...목록.map(x => x.남음));
     메일.push({ to, subject: 급한 === 0 ? '오늘이 신고 기한인 계약이 있습니다' : `신고 기한이 ${급한}일 남은 계약이 있습니다`,
@@ -229,8 +260,10 @@ export async function reportDueCron(req, res) {
       link: '/#/partner/contracts', cta: '계약서 열기',
       note: '신고를 마쳤으면 계약서의 신고 도우미에서 ‘신고 마침’ 을 눌러 주세요 - 이 알림이 멈춥니다.' });
   }
-  const 결과 = 메일.length ? await notifyMany(req, 메일) : { ok: true, sent: 0 };
-  return res.status(200).json({ ok: true, 대상: rows.length, 보냄: 결과.sent || 0 });
+  /* notifyMany 는 한 번에 100통까지다(Resend 묶음 상한) - 100통씩 나눠 보낸다 */
+  let 보냄 = 0;
+  for (let i = 0; i < 메일.length; i += 100) 보냄 += (await notifyMany(req, 메일.slice(i, i + 100))).sent || 0;
+  return res.status(200).json({ ok: true, 대상: rows.length, 보냄 });
 }
 
 /* 작성 중인 것만 지운다. 날인본은 지우지 않는다(트리거도 막는다) */

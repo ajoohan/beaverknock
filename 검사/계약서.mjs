@@ -538,6 +538,10 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
   /* 고른 칩에 마우스를 올리면 글자가 사라졌다 - hover 규칙이 .chip.on 을 이겨 옅은 바탕 + 흰 글자 */
   ok(/\.chip\.on:not\(:disabled\):hover\{background:var\(--ind700\);border-color:var\(--ind700\);color:#fff\}/.test(css)
      && css.indexOf('.chip.on:not(:disabled):hover') > css.indexOf('.chip:not(:disabled):hover'), '고른 칩은 마우스를 올려도 진한 보라 + 흰 글자 (뒤에 적어 이긴다)');
+  /* 입력 판은 옆으로 밀리지 않는다 - 신고 도우미의 띄어쓰기 없는 긴 특약이 판을 1000px 넘게 밀었다 */
+  ok(/\.ctx-scroll\{[^}]*overflow-y:auto;overflow-x:hidden;/.test(css) && /\.rp-row\{display:grid;grid-template-columns:minmax\(120px,190px\) minmax\(0,1fr\) auto;/.test(css)
+     && /#app \.rp-v\{word-break:break-all;overflow-wrap:anywhere;min-width:0\}/.test(css) && /\.ctx-side \.ct-grid > \*, \.ctx-side \.ex-row > \*\{min-width:0;max-width:100%\}/.test(css),
+     '입력 판 가로 스크롤 막음 · 신고 도우미 값은 어디서든 접힌다 · 칸은 판 폭을 넘지 않는다');
   /* 2026-10-29 리뷰 2차 */
   ok(/CT\.dirty = false; CT\.doc = null; CT\.id = null; CT\.row = null;/.test(js), '나가기를 고르면 버린 고침을 메모리에서도 버린다 - 다시 열면 서버 판');
   ok(/case 'ct-kind': if\(CT\.doc && !ctSealed\(\)\)/.test(js) && /case 'ct-vat': if\(CT\.doc && !ctSealed\(\)\)/.test(js) && /case 'ct-deal': if\(CT\.doc && !ctSealed\(\)\)/.test(js)

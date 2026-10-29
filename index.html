@@ -1623,7 +1623,23 @@ p,li,dd,.sub,.lines,.opt{line-break:strict;overflow-wrap:break-word}
 
 /* ── 계약서 (2026-10-29) ── */
 .ct-bar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+/* 휴대폰: 단추가 여섯까지 늘어 오른쪽으로 몰리면 네 줄이 됐다 - 세 칸씩 두 줄로 고르게, 긴 이름은 줄인다 */
+body.mo .ct-bar{flex-direction:column;align-items:stretch}
+body.mo .ct-bar > div{display:grid !important;grid-template-columns:repeat(3,1fr);gap:8px}
+body.mo .ct-bar > div .btn{width:100%;padding-left:4px;padding-right:4px;font-size:12.5px}
+body.mo .ct-long{display:none}
 .ct-forms{display:flex;flex-wrap:wrap;gap:8px}
+/* 신고 도우미 - 칸 이름 · 값 · 복사 */
+.rp-due{padding:12px 14px;border-radius:var(--r-sm);background:var(--n50);font-size:14px;color:var(--n700)}
+.rp-due.hot{background:var(--dangerbg);color:var(--danger)}
+.rp-row{display:grid;grid-template-columns:minmax(120px,190px) 1fr auto;gap:6px 12px;align-items:center;padding:10px 0;border-top:1px solid var(--n100)}
+.rp-row:first-of-type{border-top:none}
+.rp-l{font-size:13px;font-weight:700;color:var(--n700)}
+.rp-v{font-size:14px;color:var(--n900);word-break:break-all}
+.rp-v.none{color:var(--n500);font-size:12.5px}
+.rp-n{grid-column:1/-1;font-size:12px;color:var(--n500)}
+body.mo .rp-row{grid-template-columns:1fr auto}
+body.mo .rp-l{grid-column:1/-1}
 /* 확인·설명서 - 법정 서식처럼 항목 칸이 왼쪽, 내용이 오른쪽 */
 .exdoc{font-size:9.5pt}
 .exdoc h1{font-size:15pt;letter-spacing:0}
@@ -9888,10 +9904,11 @@ V['#/partner/contract'] = (id) => {
     <div class="ct-bar noprint">
       <a class="back" data-go="#/partner/contracts">← 계약서 목록</a>
       <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
-        ${미리 ? `<button class="btn sec sm" data-act="ct-edit">${잠김?'내용 보기':'고치기'}</button>`
-               : `<button class="btn sec sm" data-act="ct-preview">미리보기</button>`}
+        ${CT.mode !== 'edit' ? `<button class="btn sec sm" data-act="ct-edit">${잠김?'내용 보기':'고치기'}</button>` : ''}
+        ${!미리 ? `<button class="btn sec sm" data-act="ct-preview">미리보기</button>` : ''}
+        ${['sale','home-lease'].includes(doc.form) && CT.mode !== 'report' ? `<button class="btn sec sm" data-act="ct-report">신고 도우미</button>` : ''}
         <button class="btn sec sm" data-act="ct-print">인쇄</button>
-        ${F.explain ? '' : `<button class="btn sec sm" data-act="ct-explain">확인·설명서 만들기</button>`}
+        ${F.explain ? '' : `<button class="btn sec sm" data-act="ct-explain">확인·설명서<span class="ct-long"> 만들기</span></button>`}
         ${잠김 ? `<button class="btn sec sm" data-act="ct-revise">고쳐서 새 판 만들기</button>`
           : `<button class="btn sec sm" data-act="ct-save" ${CT.saving?'disabled':''}>${CT.saving?'저장 중…':CT.dirty||!CT.id?'저장 ●':'저장됨'}</button>
              <button class="btn pri sm" data-act="ct-seal" ${CT.saving?'disabled':''}>날인본으로 확정</button>`}
@@ -9917,6 +9934,15 @@ V['#/partner/contract'] = (id) => {
     <p class="sub measure" style="margin-top:-6px">공인중개사법 시행규칙 별지 제20호서식(2024. 7. 2. 개정)의 항목 그대로입니다. 비워 둔 칸은 빈칸으로 인쇄됩니다.</p>
     ${exEditor(doc)}
     ${잠김||!CT.id ? '' : `<button class="tapx" data-act="ct-del" style="align-self:flex-start;font-size:12.5px;color:var(--danger)">이 확인·설명서 지우기</button>`}
+  </div>
+</div>`;
+  if(CT.mode === 'report' && ['sale','home-lease'].includes(doc.form)) return `
+<div class="scr fade" style="background:var(--n50)">
+  ${navPartner('ct', false)}
+  <div class="pad" style="flex:1;padding-top:16px;padding-bottom:32px;width:100%;max-width:880px;margin:0 auto;display:flex;flex-direction:column;gap:14px">
+    ${bar}
+    ${잠김 ? '' : `<p class="ct-note" style="background:var(--warnbg,#FFF4E5)">아직 날인본이 아닙니다. 날인받은 뒤 '날인본으로 확정' 하고 그 판으로 신고하세요 - 신고한 내용과 계약서가 달라지면 안 됩니다.</p>`}
+    ${rpHTML(doc)}
   </div>
 </div>`;
   const 조항 = doc.clauses.map((c, i) => `
@@ -10295,6 +10321,112 @@ function exEditor(doc){
       </div></div>
     <div class="card pad ct-sec"><h2>작성일</h2><div class="ct-grid">${ctIn('date','작성일',{type:'date'})}</div></div>`;
   return html;
+}
+
+
+/* ══════════ 거래신고 도우미 (2026-10-29 · 2단계) ══════════
+   날인본에서 신고서 항목을 **정부 서식 번호 순서대로** 정리해 칸마다 복사하게 한다. 비버노크가 직접
+   신고하지는 않는다 - 중개사가 부동산거래관리시스템(rtms.molit.go.kr)에 넣는다(국토부 연계는 3단계).
+   서식 원문(국가법령정보센터) 대조:
+     매매  부동산 거래신고 등에 관한 법률 시행규칙 [별지 제1호서식] 부동산거래계약신고서 <개정 2026. 2. 6.>
+     임대차 같은 시행규칙 [별지 제5호의2서식] 주택임대차계약신고서 <개정 2023. 12. 29.>
+   상가 임대차는 신고 대상이 아니다(임대차 신고는 주택만).
+   ⚠ 신고서에는 주민등록번호 칸이 있다. 비버노크는 받지 않으므로 '신고 화면에서 직접' 이라고 적는다. */
+const RP_HOME_KIND = ['아파트','연립','다세대','단독','다가구','오피스텔','고시원','그 밖의 주거용'];
+const RP_직접 = '신고 화면에서 직접 입력 - 비버노크는 받지 않습니다';
+
+/* 건물 용도에서 신고서의 주택 종류를 짐작한다. 모르면 비운다 - 서식은 건축물대장 용도를 보라고 한다 */
+const rp주택종류 = use => RP_HOME_KIND.find(k => k !== '그 밖의 주거용' && String(use || '').includes(k)) || '';
+const rp날 = s => s ? String(s) : '';
+const rp원 = n => +n > 0 ? `${(+n).toLocaleString()}원` : '';
+function rp기한(doc){
+  if(!doc.contractDate) return { 날:'', 남음:null };
+  /* 계약일 다음 날부터 세어 30일째(초일 불산입). toISOString 은 UTC 로 바꿔 적어 한국 시간에서는 하루 앞당겨진다 -
+     현지 날짜 그대로 적는다 */
+  const d = new Date(doc.contractDate + 'T00:00:00'); d.setDate(d.getDate() + 30);
+  const 두 = n => String(n).padStart(2, '0');
+  const 날 = `${d.getFullYear()}-${두(d.getMonth() + 1)}-${두(d.getDate())}`;
+  const 오늘 = new Date(); 오늘.setHours(0,0,0,0);
+  return { 날, 남음: Math.round((d - 오늘) / 86400000) };
+}
+/* [섹션, 칸 이름, 값, 안내] 의 줄들 */
+function rpItems(doc){
+  const P = doc.property || {}, D = doc.deal || {}, B = doc.broker || {}, R = doc.period || {}, ps = doc.parties || {};
+  const 사람 = (번, 이름, x) => [
+    [번, `${이름} 성명`, x.name || ''], [번, `${이름} 주민등록번호`, '', RP_직접],
+    [번, `${이름} 주소`, x.addr || ''], [번, `${이름} 휴대전화번호`, x.phone || '']];
+  const 중개 = [
+    ['개업공인중개사', '상호(사무소 명칭)', B.office || ''], ['개업공인중개사', '등록번호', B.regNo || ''],
+    ['개업공인중개사', '대표자 성명', B.rep || ''], ['개업공인중개사', '사무소 소재지', B.addr || ''],
+    ['개업공인중개사', '전화번호', B.phone || ''], ['개업공인중개사', '소속공인중개사 성명', B.staff || '']];
+  const 특약 = (doc.specials || []).filter(s => String(s || '').trim()).join(' / ').slice(0, 500);
+  if(doc.form === 'sale') return [
+    ...사람('① 매도인', '매도인', ps.seller || {}), ...사람('② 매수인', '매수인', ps.buyer || {}),
+    ...중개,
+    ['④ 거래대상 종류', '종류', P.bldUse ? `토지 및 건축물 (${P.bldUse})` : '', '건축물이면 ( ) 안에 아파트·연립·다세대·단독·오피스텔 등 건축물 종류'],
+    ['⑥ 소재지/지목/면적', '소재지', [P.jibun || P.road, P.bdNm].filter(Boolean).join(' '), '지번까지, 집합건물은 동·호수까지'],
+    ['⑥ 소재지/지목/면적', '법정동코드', P.admCd || '', '신고 화면의 주소 검색 결과와 같은지 확인용'],
+    ['⑥ 소재지/지목/면적', '지목', P.landCat || ''], ['⑥ 소재지/지목/면적', '토지면적(㎡)', P.landArea || ''],
+    ['⑥ 소재지/지목/면적', '대지권비율', P.landRight || ''], ['⑥ 소재지/지목/면적', '건축물면적(㎡)', P.bldArea || '', '집합건물은 전용면적'],
+    ['⑧ 물건별 거래가격', '거래가격', rp원(D.price)],
+    ['⑨ 총 실제 거래가격', '합계', rp원(D.price)], ['⑨ 총 실제 거래가격', '계약금', rp원(D.down)],
+    ['⑨ 총 실제 거래가격', '계약 체결일', rp날(doc.contractDate)],
+    ['⑨ 총 실제 거래가격', '중도금', rp원(D.mid)], ['⑨ 총 실제 거래가격', '중도금 지급일', rp날(D.midDate)],
+    ['⑨ 총 실제 거래가격', '잔금', rp원(ctBalance(D))], ['⑨ 총 실제 거래가격', '잔금 지급일', rp날(D.balanceDate)],
+    ['⑪ 계약의 조건 및 참고사항', '특약 요약', 특약, '조건·기한을 붙인 경우에만'],
+  ];
+  /* 주택 임대차 */
+  const 갱신 = doc.kind === 'agree' || doc.kind === 'right';
+  return [
+    ...사람('① 임대인', '임대인', ps.lessor || {}), ...사람('② 임차인', '임차인', ps.lessee || {}),
+    ['③ 임대 목적물 현황', '종류', rp주택종류(P.bldUse), '아파트·연립·다세대·단독·다가구·오피스텔·고시원·그 밖의 주거용 중 하나'],
+    ['④ 소재지(주소)', '소재지', P.road || ''], ['④ 소재지(주소)', '건물명', P.bdNm || ''],
+    ['④ 소재지(주소)', '동·층·호', P.part || ''],
+    ['⑤ 임대 면적', '임대 면적(㎡)', P.partArea || '', '면적을 모르면 방의 수(칸)'],
+    [갱신 ? '⑦ 갱신 계약' : '⑥ 신규 계약', '보증금', rp원(D.deposit)],
+    [갱신 ? '⑦ 갱신 계약' : '⑥ 신규 계약', '월 차임', D.type === 'monthly' ? rp원(D.rent) : '0원'],
+    [갱신 ? '⑦ 갱신 계약' : '⑥ 신규 계약', '계약 기간', R.handover && R.to ? `${R.handover} ~ ${R.to}` : ''],
+    [갱신 ? '⑦ 갱신 계약' : '⑥ 신규 계약', '체결일', rp날(doc.contractDate)],
+    ...(갱신 ? [['⑦ 갱신 계약', '종전 임대료(보증금·월 차임)', '', '계약서에 없는 값 - 직접 입력'],
+      ['⑧ 계약갱신요구권 행사 여부', '행사 여부', doc.kind === 'right' ? '행사' : '미행사']] : []),
+    ...중개,
+  ];
+}
+/* 임대차 신고 대상인지 대략 알려 준다 - 지역(수도권·광역시·세종·도의 시)까지는 보지 않으므로 '가능성' 으로만 말한다 */
+function rp대상(doc){
+  if(doc.form === 'sale') return '중개거래는 개업공인중개사가 신고합니다(공동중개는 공동으로).';
+  const D = doc.deal || {};
+  const 넘음 = (+D.deposit || 0) > 60000000 || (D.type === 'monthly' && (+D.rent || 0) > 300000);
+  return 넘음 ? '보증금 6천만 원 또는 월 차임 30만 원을 넘어 신고 대상일 가능성이 높습니다(군 지역은 제외). 계약서를 첨부해 신고하면 확정일자가 함께 부여됩니다.'
+              : '보증금 6천만 원 이하이고 월 차임 30만 원 이하면 신고 대상이 아닐 수 있습니다. 지역과 금액을 확인하세요.';
+}
+function rpHTML(doc){
+  const 기 = rp기한(doc);
+  const 줄 = rpItems(doc);
+  const 묶음 = [];
+  for(const [sec, label, value, note] of 줄){
+    let g = 묶음.find(x => x.sec === sec); if(!g) 묶음.push(g = { sec, rows: [] });
+    g.rows.push({ label, value, note });
+  }
+  const 서식 = doc.form === 'sale' ? '부동산거래계약신고서(별지 제1호서식)' : '주택임대차계약신고서(별지 제5호의2서식)';
+  return `
+    <div class="card pad ct-sec">
+      <h2>${doc.form === 'sale' ? '거래신고' : '임대차 신고'} 도우미</h2>
+      <p class="sub" style="margin:0">${esc(서식)}의 칸 순서대로 정리했습니다. 부동산거래관리시스템에 그대로 옮겨 적으세요.
+        비버노크가 대신 신고하지는 않습니다.</p>
+      <div class="rp-due ${기.남음 != null && 기.남음 < 7 ? 'hot' : ''}">
+        ${기.날 ? `신고 기한 <b>${esc(기.날)}</b> · ${기.남음 >= 0 ? `${기.남음}일 남음` : `${-기.남음}일 지남`} (계약일부터 30일)`
+              : '계약일이 비어 있어 기한을 계산하지 못했습니다 - 계약서의 계약일을 넣어 주세요'}</div>
+      <p class="sub" style="margin:0">${esc(rp대상(doc))}</p>
+      <a class="btn sec sm" href="https://rtms.molit.go.kr" target="_blank" rel="noopener" style="align-self:flex-start">부동산거래관리시스템 열기</a>
+    </div>
+    ${묶음.map(g => `<div class="card pad ct-sec"><h2>${esc(g.sec)}</h2>
+      ${g.rows.map(r => `<div class="rp-row">
+        <span class="rp-l">${esc(r.label)}</span>
+        <span class="rp-v ${r.value ? '' : 'none'}">${r.value ? esc(r.value) : esc(r.note === RP_직접 ? RP_직접 : '계약서에 없음 - 신고 화면에서 직접')}</span>
+        ${r.value ? `<button class="btn sec sm" data-act="rp-copy" data-v="${esc(r.value)}">복사</button>` : '<span></span>'}
+        ${r.note && r.note !== RP_직접 ? `<span class="rp-n">${esc(r.note)}</span>` : ''}
+      </div>`).join('')}</div>`).join('')}`;
 }
 
 /* 계약서 입력 - 글자마다 다시 그리지 않는다(칸이 교체돼 두 번째 글자가 안 들어간다). 값만 담고 표시만 바꾼다 */
@@ -12268,6 +12400,11 @@ function handle(a,v,el){
       if(CT.doc){ Object.assign(CT.doc.property, { road:'', jibun:'', admCd:'', bun:'', ji:'', mount:false, zip:'' }); ctDirty(); render(); }
       return true;
     case 'ct-preview': CT.mode = 'preview'; render(); return true;
+    case 'ct-report': CT.mode = 'report'; render(); return true;
+    case 'rp-copy':
+      try{ navigator.clipboard.writeText(String(v)).then(() => toast('복사했습니다'), () => toast('복사하지 못했습니다 - 직접 선택해 주세요')); }
+      catch(_){ toast('복사하지 못했습니다 - 직접 선택해 주세요'); }
+      return true;
     case 'ct-edit': CT.mode = 'edit'; render(); return true;
     case 'ct-print': return ctPrint();
     case 'ct-save': ctSave(); return true;

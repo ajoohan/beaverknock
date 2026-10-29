@@ -111,9 +111,11 @@ const 몸 = js.slice(시작, 끝);
 /* 확인·설명서 모듈 - 표(EX_SPEC)와 그리기. 작성 화면 함수(exChips 아래)는 빼고 꺼낸다 */
 const 확시작 = js.indexOf('/* ══════════ 중개대상물 확인·설명서[Ⅰ]'), 확끝 = js.indexOf('/* ── 작성 화면 ── 같은 표에서 칸을 만든다 */');
 const 확몸 = js.slice(확시작, 확끝);
+const 신시작 = js.indexOf('/* ══════════ 거래신고 도우미'), 신끝 = js.indexOf('/* 계약서 입력 - 글자마다');
+const 신몸 = js.slice(신시작, 신끝);
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const 모듈 = new Function('S', 'esc', 'apiFetch', '세션있음', 'render', 'toast',
-  `${몸}\n${확몸}\nreturn { 한글금액, 금액글, ctNewDoc, ctDocHTML, ctBalance, CT_HOME_CLAUSES, CT_SPECIALS, CT_FORMS, exNewDoc, exDocHTML, EX_SPEC };`);
+  `${몸}\n${확몸}\n${신몸}\nreturn { rpItems, rp기한, rp대상, rpHTML, RP_직접, 한글금액, 금액글, ctNewDoc, ctDocHTML, ctBalance, CT_HOME_CLAUSES, CT_SPECIALS, CT_FORMS, exNewDoc, exDocHTML, EX_SPEC };`);
 const S = { agent: { office: '비버공인중개사사무소', name: '한상혁', reg_no: '41450-2024-00001', addr: '하남시 미사대로 550', phone: '031-000-0000' } };
 const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
 {
@@ -243,6 +245,54 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
   ok(/case 'ct-explain':[\s\S]{0,200}계약서를 먼저 저장해 주세요/.test(js), '계약서에서 확인·설명서로 갈 때 저장 안 한 고침이 있으면 먼저 저장하게 한다');
 }
 
+/* ── 거래신고 도우미 (2단계) - 별지 제1호서식(2026. 2. 6.) · 별지 제5호의2서식(2023. 12. 29.) ── */
+{
+  ok(신시작 > 0 && 신끝 > 신시작, '신고 도우미 모듈을 찾았다');
+  const 매 = M.ctNewDoc('sale', { deal: { price: 900000000 } });
+  Object.assign(매.property, { road: '서울 송파구 올림픽로 300', jibun: '서울 송파구 잠실동 40', bdNm: '잠실엘스', admCd: '1171010100', bldUse: '아파트', bldArea: '84.97' });
+  매.deal = { ...매.deal, down: 90000000, mid: 300000000, midDate: '2026-11-20', balanceDate: '2026-12-30' };
+  매.parties.seller = { name: '김매도', phone: '010-1111-2222', addr: '서울' }; 매.contractDate = '2026-10-29';
+  const 줄 = M.rpItems(매);
+  const 섹 = [...new Set(줄.map(r => r[0]))];
+  ok(섹.join('|') === '① 매도인|② 매수인|개업공인중개사|④ 거래대상 종류|⑥ 소재지/지목/면적|⑧ 물건별 거래가격|⑨ 총 실제 거래가격|⑪ 계약의 조건 및 참고사항',
+     '매매: 거래신고서 번호 순서대로 묶인다');
+  const 값 = l => (줄.find(r => r[1] === l) || [])[2];
+  ok(값('잔금') === '510,000,000원' && 값('합계') === '900,000,000원' && 값('계약 체결일') === '2026-10-29' && 값('잔금 지급일') === '2026-12-30',
+     '매매: 합계·잔금(자동 계산)·계약 체결일·잔금 지급일');
+  ok(값('소재지') === '서울 송파구 잠실동 40 잠실엘스' && 값('종류') === '토지 및 건축물 (아파트)' && 값('법정동코드') === '1171010100',
+     '매매: 소재지는 지번+건물명 · 종류는 건물 용도로 · 법정동코드도 보여 준다');
+  ok(줄.filter(r => /주민등록번호/.test(r[1])).every(r => r[2] === '' && r[3] === M.RP_직접) && 줄.filter(r => /주민등록번호/.test(r[1])).length === 2,
+     '주민등록번호 칸은 값 없이 "신고 화면에서 직접 입력" 으로만');
+
+  const 기 = M.rp기한({ contractDate: '2026-10-29' });
+  ok(기.날 === '2026-11-28' && M.rp기한({}).날 === '', '신고 기한 = 계약일 + 30일 · 계약일이 없으면 계산하지 않는다');
+
+  const 임 = M.ctNewDoc('home-lease');
+  Object.assign(임.property, { road: '경기도 하남시 미사강변대로 220', bdNm: '미사강변푸르지오', part: '1203동 8층 802호', partArea: '59.92', bldUse: '공동주택(아파트)' });
+  임.deal = { ...임.deal, type: 'monthly', deposit: 50000000, rent: 1200000 };
+  임.period = { handover: '2026-12-01', to: '2028-11-30' }; 임.contractDate = '2026-10-29';
+  const 임줄 = M.rpItems(임), 임값 = l => (임줄.find(r => r[1] === l) || [])[2];
+  ok([...new Set(임줄.map(r => r[0]))].slice(0, 6).join('|') === '① 임대인|② 임차인|③ 임대 목적물 현황|④ 소재지(주소)|⑤ 임대 면적|⑥ 신규 계약',
+     '임대차: 주택임대차계약신고서 번호 순서');
+  ok(임값('종류') === '아파트' && 임값('동·층·호') === '1203동 8층 802호' && 임값('계약 기간') === '2026-12-01 ~ 2028-11-30' && 임값('월 차임') === '1,200,000원',
+     '임대차: 종류(건물 용도에서) · 동층호 · 계약 기간 · 월 차임');
+  임.kind = 'right';
+  const 갱 = M.rpItems(임);
+  ok(갱.some(r => r[0] === '⑦ 갱신 계약' && r[1] === '보증금') && (갱.find(r => r[1] === '행사 여부') || [])[2] === '행사'
+     && 갱.some(r => /종전 임대료/.test(r[1]) && r[2] === ''), '임대차 갱신: ⑦ 갱신 계약 · ⑧ 갱신요구권 행사 · 종전 임대료는 직접');
+  ok(/신고 대상일 가능성이 높습니다/.test(M.rp대상(임)) && /아닐 수 있습니다/.test(M.rp대상({ form: 'home-lease', deal: { type: 'jeonse', deposit: 50000000 } })),
+     '임대차 신고 대상: 보증금 6천만 원 또는 월세 30만 원 초과면 "가능성 높음", 아니면 "아닐 수 있음"');
+  /* 경계 - 월세만 크면 보증금 기준이 틀려도 같은 답이 나온다. 하나씩 따로 본다 */
+  ok(/가능성이 높습니다/.test(M.rp대상({ form: 'home-lease', deal: { type: 'jeonse', deposit: 70000000 } }))
+     && /아닐 수 있습니다/.test(M.rp대상({ form: 'home-lease', deal: { type: 'monthly', deposit: 60000000, rent: 300000 } }))
+     && /가능성이 높습니다/.test(M.rp대상({ form: 'home-lease', deal: { type: 'monthly', deposit: 10000000, rent: 300001 } })),
+     '경계: 전세 7천만 원은 대상 · 6천만 원·30만 원 딱 맞으면 아닐 수 있음 · 월세 30만 1원은 대상');
+  const h = M.rpHTML(매);
+  ok(/부동산거래계약신고서\(별지 제1호서식\)/.test(h) && /href="https:\/\/rtms\.molit\.go\.kr"/.test(h) && /data-act="rp-copy" data-v="510,000,000원"/.test(h),
+     '도우미 화면: 서식 이름 · 부동산거래관리시스템 열기 · 칸마다 복사');
+  ok(/\['sale','home-lease'\]\.includes\(doc\.form\) && CT\.mode !== 'report'/.test(js), '신고 도우미는 주택임대차·매매에만 - 상가 임대차는 신고 대상이 아니다');
+}
+
 /* ── 약관 · 처리방침 ── */
 {
   const 약관 = fs.readFileSync(new URL('../terms.html', import.meta.url), 'utf8');
@@ -268,6 +318,8 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
      && /@media \(max-width:1179px\)\{ \.nav \.items\{min-width:0;flex:1 1 auto;overflow-x:auto/.test(css),
      '좁은 데스크톱: 메뉴 글자는 안 접고, 1279px 이하는 칸을 줄이고 사무소 이름을 감추고, 1179px 이하는 메뉴 줄을 옆으로 민다');
   ok(/켜짐 = 줄 && 줄\.querySelector\('a\.on'\)[\s\S]{0,200}줄\.scrollLeft \+=/.test(js), '메뉴 줄이 밀려도 켜진 탭이 보이게 맞춘다');
+  ok(/body\.mo \.ct-bar > div\{display:grid !important;grid-template-columns:repeat\(3,1fr\)/.test(css) && /body\.mo \.ct-long\{display:none\}/.test(css),
+     '휴대폰 계약서 위 단추는 세 칸씩 · 긴 이름은 줄인다 (네 줄로 몰리지 않게)');
 }
 
 console.log(`${ran - fail} 통과 / ${fail} 실패`);

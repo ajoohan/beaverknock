@@ -220,7 +220,7 @@ const 경계 = 토큰('edge');
 ok(!!경계, '--edge 토큰이 있다');
 for(const [바탕, 이름] of [['#FFFFFF','흰 바탕'], ['#F4F4FD','연보라 바탕(--warm 끝)'], [토큰('ind50'),'ind50 카드']])
   ok(경계 && 대비(경계, 바탕) >= 3, `경계선이 ${이름}에서 3:1 이상 (${경계 ? 대비(경계, 바탕).toFixed(2) : '-'})`);
-ok(/\.chip\{border:1\.5px solid var\(--edge\)/.test(css), '칩 테두리가 --edge');
+ok(/\.chip\{border:1px solid var\(--edge\)/.test(css), '칩 테두리가 --edge (2026-10-30 두께만 1.5 → 1px, 색은 3:1 그대로)');
 ok(/\.inp\{width:100%;border:1\.5px solid var\(--edge\)/.test(css), '입력칸 테두리가 --edge');
 ok(/\.chk \.box\{[^}]*border:1\.8px solid var\(--edge\)/.test(css), '체크 상자 테두리가 --edge');
 ok(!/\.chip:hover\{/.test(css) && /\.chip:not\(:disabled\):hover\{/.test(css), '꺼진 칩은 손을 올려도 반응하지 않는다');
@@ -259,8 +259,8 @@ ok(!/#3D3F8F|#1F1D1A|#6E6859/i.test(메일), '알림 메일에 예전 색이 남
   };
   const 한통 = await 만들어('https://beaverknock.co.kr');
   const h = 한통.html || '';
-  ok(/<!--\[if !mso\]><!--><style>@font-face\{font-family:"Pretendard Variable"[^}]*src:url\(https:\/\/beaverknock\.co\.kr\/fonts\/pretendard-variable\.woff2\)[^<]*<\/style><!--<!\[endif\]-->/.test(h),
-     '메일이 사이트의 Pretendard 파일을 부르고, 그 선언은 아웃룩에서 숨긴다');
+  ok(!/@font-face/.test(h) && !/pretendard-variable\.woff2/.test(h),
+     '메일은 웹 글꼴을 부르지 않는다 - 예전 634자 축소판이 애플 메일에서 다른 글꼴과 섞였다, 본고딕 계열 하나로 (2026-10-30)');
   ok(/<!--\[if mso\]><style>[^<]*font-family:'Malgun Gothic',sans-serif!important[^<]*<\/style><!\[endif\]-->/.test(h),
      '아웃룩에는 맑은 고딕을 따로 못 박는다 (Times New Roman 으로 떨어지지 않게)');
   /* 조건부 주석 안의 선언은 빼고, 글자 칸마다 붙은 목록만 센다 */

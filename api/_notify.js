@@ -26,20 +26,17 @@ const mask = p => {
   return n.length >= 10 ? n.replace(/^(01[016789])([0-9]{3,4})([0-9]{4})$/, '$1-****-$3') : n;
 };
 
-/* 글꼴은 사이트와 같은 Pretendard 다. 파일은 사이트의 것을 그대로 부른다(fonts/ 는 다른 곳에서
- * 불러가도 되게 열려 있다). 웹 글꼴을 받아 주는 곳은 애플 메일·iOS 메일 정도이고, Gmail·네이버·
- * 아웃룩은 버린다. 그때는 같은 결의 본고딕 계열 - 애플은 Apple SD Gothic Neo, 안드로이드는
- * Noto Sans CJK(본고딕), 윈도우는 맑은 고딕 - 으로 넘어간다.
+/* 글꼴은 본고딕 계열 하나로 - 애플은 Apple SD Gothic Neo, 안드로이드는 Noto Sans CJK(본고딕), 윈도우는 맑은 고딕.
+ * 받는 분 기기에 Pretendard 가 깔려 있으면 그것을 먼저 쓴다.
+ * 전에는 사이트의 Pretendard 파일을 웹 글꼴로 불렀는데, 그 파일이 9월 화면 글자만 담은 634자 축소판이라
+ * 애플 메일에서 없는 글자가 다른 글꼴로 섞여 그려졌다(2026-10-30 '폰트 가독성'). 사이트는 이제 조각 92개로
+ * 나눠 필요한 것만 받는데, 메일에 그 선언 92줄(약 50KB)을 넣으면 Gmail 이 102KB 에서 메일을 자른다 - 메일은 웹 글꼴을 쓰지 않는다.
  * 표 칸과 단추에도 따로 적는다. 아웃룩은 표 안으로 글꼴을 물려주지 않는다.
  *
- * 윈도우 아웃룩(워드 엔진)은 @font-face 로 선언된 글꼴을 만나면 목록의 다음 글꼴로 가지 않고
- * Times New Roman 으로 떨어진다. 그래서 @font-face 는 아웃룩에서 숨기고([if !mso]),
- * 아웃룩에는 맑은 고딕을 따로 못 박는다([if mso]). */
+ * 윈도우 아웃룩(워드 엔진)에는 맑은 고딕을 따로 못 박는다([if mso]) - 목록의 앞 글꼴이 없으면 Times New Roman 으로 떨어지기도 한다. */
 const FONT = "'Pretendard Variable',Pretendard,-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo'," +
   "'Noto Sans KR','Noto Sans CJK KR','Source Han Sans KR','Malgun Gothic',sans-serif";
-const fontFace = host =>
-  '<!--[if !mso]><!--><style>@font-face{font-family:"Pretendard Variable";font-weight:45 920;font-style:normal;' +
-  `src:url(${host}/fonts/pretendard-variable.woff2) format("woff2")}</style><!--<![endif]-->` +
+const fontFace = () =>
   "<!--[if mso]><style>body,div,table,td,h1,p,a{font-family:'Malgun Gothic',sans-serif!important}</style><![endif]-->";
 
 /* 메일 속 주소(단추 링크·글꼴 파일)의 앞부분. ALERT_SITE 를 먼저 본다.

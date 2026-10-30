@@ -926,11 +926,11 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
 
 /* ── 문서 글꼴 (2026-10-30 대표님 '계약서 양식의 폰트는 변경이 불가능한가?') ── */
 {
-  const d = M.ctNewDoc('home-lease');
-  ok(!('font' in d) && /<div class="ctdoc">/.test(M.ctDocHTML(d)) && /<div class="ctdoc f-sans">/.test(M.ctDocHTML({ ...d, font: 'sans' })),
-     '계약서 글꼴 - 기본은 명조(칸 없음) · 고딕을 고르면 계약서에 font 를 두고 문서에 f-sans');
-  const e = M.exNewDoc({ ...d, font: 'sans' }, 'explain-home');
-  ok(e.font === 'sans' && /class="ctdoc exdoc f-sans"/.test(M.exDocHTML(e)) && !('font' in M.exNewDoc(d, 'explain-home')), '계약서에서 만든 확인·설명서는 그 계약서의 글꼴을 따른다');
+  const d = M.ctNewDoc('home-lease'), 옛 = { ...d }; delete 옛.font;
+  ok(d.font === 'sans' && /<div class="ctdoc f-sans">/.test(M.ctDocHTML(d)) && /<div class="ctdoc">/.test(M.ctDocHTML(옛)),
+     '계약서 글꼴 - 새 계약서는 고딕(Pretendard)으로 시작 (2026-10-30 \'프리텐다드나 본고딕으로\') · font 가 없는 예전 계약서는 명조 그대로');
+  const e = M.exNewDoc(d, 'explain-home');
+  ok(e.font === 'sans' && /class="ctdoc exdoc f-sans"/.test(M.exDocHTML(e)) && !('font' in M.exNewDoc(옛, 'explain-home')), '계약서에서 만든 확인·설명서는 그 계약서의 글꼴을 따른다');
   ok(/\.ctdoc\.f-sans\{font-family:var\(--font\)\}/.test(css) && /data-act="ct-font"/.test(js) && /case 'ct-font':/.test(js) && /\$\{ct글꼴칸\(doc, 잠김\)\}/.test(js),
      '고딕은 사이트 글꼴(어느 기기에서 찍어도 같다) · 미리보기 위에서 고른다 · 날인본은 못 바꾼다');
 }

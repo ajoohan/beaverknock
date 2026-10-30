@@ -190,5 +190,47 @@ ok(/data-act="login-as" data-v="guest"/.test(js) && /data-act="login-as" data-v=
    '로그인 화면에서 손님·파트너를 오갈 수 있다 - 전에는 파트너로만 바꿀 수 있었다');
 ok(js.includes(`<a data-go="#/account">\${dzIco('user')}<span>마이페이지</span>`), '파트너 왼쪽 메뉴의 마이페이지는 마이페이지로 간다(전에는 활동 설정으로 갔다)');
 
+/* ── 로그인 열쇠 갱신 (2026-10-30 대표님 "계약서 다 작성하고 저장 눌렀는데 로그인하라고 떠") ──
+   열쇠는 1시간이면 끝나는데 갱신을 페이지 열 때만 했다. 오래 쓰다 저장하면 401 이 났다. */
+{
+  const 뽑기 = head => { const i = js.indexOf(head); let d = 0;
+    for(let j = js.indexOf('{', i); j < js.length; j++){ if(js[j]==='{') d++; else if(js[j]==='}'){ d--; if(!d) return js.slice(i, j+1); } } };
+  const 만들기 = (첫세션, 서버) => {
+    const 기록 = { 갱신: 0, 보낸열쇠: [] };
+    let 저장 = 첫세션;
+    const store = { get: () => 저장, set: v => { 저장 = v; } };
+    const refreshSession = async sess => { 기록.갱신++; await new Promise(r => setTimeout(r, 5));
+      if(sess.refresh_token === '죽은것'){ 저장 = null; return null; }
+      const next = { access_token: '새열쇠' + 기록.갱신, refresh_token: 'r' + 기록.갱신, expires_at: Math.floor(Date.now()/1000) + 3600 };
+      저장 = next; return next; };
+    const fetch = async (path, o) => { const t = (o.headers.Authorization || '').replace('Bearer ', ''); 기록.보낸열쇠.push(t);
+      return { status: 서버(t), ok: 서버(t) === 200 }; };
+    const apiFetch = new Function('store', 'refreshSession', 'fetch',
+      `let 갱신중 = null;\n${뽑기('function 열쇠갱신(sess){')}\n${뽑기('async function apiFetch(path, opts){')}\nreturn apiFetch;`)(store, refreshSession, fetch);
+    return { apiFetch, 기록, store };
+  };
+  const 지금초 = () => Math.floor(Date.now()/1000);
+  /* ① 곧 끝날 열쇠는 보내기 전에 바꾼다 */
+  { const m = 만들기({ access_token: '헌열쇠', refresh_token: 'r0', expires_at: 지금초() + 10 }, t => t.startsWith('새열쇠') ? 200 : 401);
+    const r = await m.apiFetch('/api/feed', { method: 'POST', body: '{}' });
+    ok(r.status === 200 && m.기록.갱신 === 1 && m.기록.보낸열쇠.join() === '새열쇠1', '곧 끝날 열쇠는 보내기 전에 새로 받는다 - 끝난 열쇠로 저장하지 않는다'); }
+  /* ② 시계가 어긋나 아직 남았다고 봤는데 서버가 401 이면 한 번 바꿔 다시 보낸다 */
+  { const m = 만들기({ access_token: '헌열쇠', refresh_token: 'r0', expires_at: 지금초() + 3000 }, t => t === '헌열쇠' ? 401 : 200);
+    const r = await m.apiFetch('/api/feed', { method: 'POST', body: '{"what":"contract-save"}' });
+    ok(r.status === 200 && m.기록.갱신 === 1 && m.기록.보낸열쇠.join() === '헌열쇠,새열쇠1', '401 이 오면 열쇠를 한 번 바꿔 같은 요청을 다시 보낸다'); }
+  /* ③ 동시에 여러 요청이 와도 갱신은 한 번 - refresh_token 은 한 번 쓰면 바뀐다 */
+  { const m = 만들기({ access_token: '헌열쇠', refresh_token: 'r0', expires_at: 지금초() - 5 }, t => t.startsWith('새열쇠') ? 200 : 401);
+    const rs = await Promise.all([1,2,3].map(() => m.apiFetch('/api/my', { method: 'POST', body: '{}' })));
+    ok(rs.every(r => r.status === 200) && m.기록.갱신 === 1, '동시에 세 요청이 와도 갱신은 한 번만 한다 - 같은 refresh_token 을 두 번 쓰면 하나가 거절된다'); }
+  /* ④ 갱신마저 거절되면(정말 끝난 로그인) 원래 401 을 돌려준다 - 그때는 로그인하라고 하는 것이 맞다 */
+  { const m = 만들기({ access_token: '헌열쇠', refresh_token: '죽은것', expires_at: 지금초() + 3000 }, () => 401);
+    const r = await m.apiFetch('/api/feed', { method: 'POST', body: '{}' });
+    ok(r.status === 401 && m.기록.보낸열쇠.length === 1 && m.store.get() === null, '갱신도 거절되면 401 그대로 - 같은 요청을 끝없이 다시 보내지 않는다'); }
+  /* ⑤ 로그인 전이면 갱신하지 않는다 */
+  { const m = 만들기(null, () => 401);
+    const r = await m.apiFetch('/api/feed', { method: 'POST', body: '{}' });
+    ok(r.status === 401 && m.기록.갱신 === 0, '로그인 전 요청은 갱신을 시도하지 않는다'); }
+}
+
 console.log(`${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

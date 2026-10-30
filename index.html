@@ -1863,6 +1863,11 @@ body:not(.mo) .ctx-scr{height:100vh;height:100dvh;overflow:hidden}
 .ctx-head{display:flex;align-items:center;gap:6px 12px;flex-wrap:wrap}
 .ctx-h1{margin:0;font-size:20px;font-weight:800;letter-spacing:-.03em;color:var(--n900)}
 .ctx-sub{font-size:12.5px;color:var(--n500)}
+/* 넓은 화면 - 머리 줄은 한 줄. 오른쪽에 프로필이 붙으면서 좁은 데스크톱(1100px)에서 두 줄로 접혔다 - 안내 글이 줄임표로 줄어든다 */
+body:not(.mo) .ctx-head{flex-wrap:nowrap}
+body:not(.mo) .ctx-head > :is(.back,.badge,.ctx-badge){flex:none}
+body:not(.mo) .ctx-h1{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+body:not(.mo) .ctx-sub{flex:1 1 0;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ctx-body{flex:1 1 auto;min-height:0;display:grid;grid-template-columns:minmax(378px,450px) minmax(0,1fr);gap:12px}
 .ctx-side,.ctx-view{min-height:0;display:flex;flex-direction:column;background:var(--white);border:1px solid var(--n200);border-radius:12px;box-shadow:var(--sh0);overflow:hidden}
 .ctx-tabs{display:flex;gap:4px;margin:8px 12px 0;padding:3px;border-radius:10px;background:var(--n100)}
@@ -2001,6 +2006,38 @@ body:not(.mo) .dz-scr > :not(.dz-side), body:not(.mo) .scr:has(> .psb) > :not(.p
   font:inherit;font-size:13px;font-weight:600;text-align:left;cursor:pointer;text-decoration:none}
 .dz-menu .opsSub :is(button,a):hover{background:rgba(255,255,255,.12);color:#fff}
 .dz-menu .opsSub :is(button,a).on{background:rgba(255,255,255,.12);color:#fff;font-weight:800}
+/* ── 어드민 단추·칩 (2026-10-30 대표님 '버튼 사이즈 간격 버튼 디자인 모두 고급스럽게 해. 폰트 크기도 알맞게') ──
+   넓은 화면 어드민(body.adm - 왼쪽 메뉴가 선 화면)에만. 휴대폰·손님 화면은 그대로 둔다.
+   모양 - 둥글기 8px · 테두리 1px · 굵기 600 · 아주 옅은 그림자. 고른 칩은 꽉 찬 남색 대신 옅은 남색 바탕 + 남색 테두리·글자 + 체크
+   (여러 개 골라도 무겁지 않고, 색 말고 체크로도 구분된다).
+   크기 - 마우스(pointer:fine)일 때만 작은 단추 34 · 기본 40 · 꽉 찬 44px, 칩 34px · 칩 사이 8px. 터치 화면은 손가락 과녁 44px 그대로.
+   화면마다 칩에 따로 적어 둔 크기(style=)가 열 가지 넘게 섞여 있어 칩 크기만 !important 로 하나로 맞춘다 */
+body.adm .btn{font-weight:600;letter-spacing:-.01em;border-width:1px;border-radius:8px}
+body.adm .btn.pri{box-shadow:0 1px 2px rgba(40,42,110,.18),inset 0 1px 0 rgba(255,255,255,.16)}
+body.adm .btn.pri:hover{background:var(--ind700);border-color:var(--ind700);box-shadow:0 6px 14px -6px rgba(79,82,209,.55),inset 0 1px 0 rgba(255,255,255,.16)}
+body.adm .btn:is(.sec,.tool){background:var(--white);border-color:var(--n300);box-shadow:0 1px 2px rgba(40,42,110,.06)}
+body.adm .btn.sec{color:var(--ind700)}
+body.adm .btn.tool{color:var(--n900)}
+body.adm .btn:is(.sec,.tool):hover{background:var(--ind50);border-color:var(--ind300);color:var(--ind700)}
+body.adm .btn:active{transform:translateY(1px)}
+body.adm :is(.btn,.chip):focus-visible{border-radius:8px}
+body.adm :is(.chips,.ct-chips,.ct-lib){gap:8px}
+body.adm .chip{line-height:1.2;font-weight:500;letter-spacing:-.01em;color:var(--n700);border:1px solid var(--n300);border-radius:8px;background:var(--white);box-shadow:0 1px 1px rgba(40,42,110,.03)}
+body.adm .chip:not(:disabled):hover{border-color:var(--ind300);background:var(--ind50);color:var(--ind700)}
+body.adm .chip.on{background:var(--ind50);border-color:var(--ind);color:var(--ind700);font-weight:700;box-shadow:inset 0 0 0 .5px var(--ind)}
+@media (hover:hover){ body.adm .chip.on:not(:disabled):hover{background:var(--ind100);border-color:var(--ind700);color:var(--ind900)} }
+body.adm .chip.on::before{margin-right:6px}
+@media (pointer:fine){
+  body.adm .btn{min-height:40px;padding:0 18px;font-size:14px}
+  body.adm .btn.sm{min-height:34px;padding:0 14px;font-size:13px}
+  body.adm .btn.md{min-height:40px;padding:0 20px;font-size:14px}
+  body.adm .btn.blk{min-height:44px;font-size:14.5px}
+  body.adm .btn.lg{min-height:48px;padding:0 28px;font-size:15px}
+  body.adm .chip{min-height:34px!important;padding:0 12px!important;font-size:13px!important}
+  /* 계약서 작성 판은 좁아서 한 단계 작게 */
+  body.adm .ctx-side .chip{min-height:30px!important;padding:0 10px!important;font-size:12.5px!important}
+  body.adm .ctx-side .btn.sm{min-height:32px;padding:0 12px;font-size:12.5px}
+}
 /* 낮은 창(노트북 768px 등) - 메뉴 줄 높이를 줄여 맨 아래 사이트 가기·버전까지 한 화면에 (넓은 화면은 마우스라 38px 로도 넉넉하다) */
 @media (max-height:860px){
   body:not(.mo) :is(.dz-menu > a, .dz-menu > button, .dz-foot > a){min-height:38px;padding-top:7px;padding-bottom:7px}
@@ -7302,7 +7339,7 @@ V["#/partner/settings"] = () => {
   const week = Math.max(0, Math.round(now * 0.6));
   const drop = base > 0 && now <= base/2;
   const sect = (no,title,hint,body) => `<div class="card pad">
-    <h2 style="margin:0 0 ${hint?4:12}px;font-size:15px;font-weight:700;letter-spacing:-.02em"><span style="color:var(--ind);margin-right:6px">${no}.</span>${title}</h2>
+    <h2 style="margin:0 0 ${hint?4:14}px;font-size:16px;font-weight:700;letter-spacing:-.02em"><span style="color:var(--ind);margin-right:6px">${no}.</span>${title}</h2>
     ${hint?`<p style="margin:0 0 12px;font-size:12.5px;line-height:1.6;color:var(--n500)">${hint}</p>`:''}
     ${body}</div>`;
   return `
@@ -10304,6 +10341,9 @@ const CT_하위메뉴 = [['#/partner/contracts', '계약서 목록'], ['#/partne
    번호는 배포한 날(연.월.일 - 같은 날 또 올리면 뒤에 .2). 화면이 version.json 을 가끔 읽어,
    더 새 버전이 올라와 있으면 메뉴 아래에서 새로고침을 권한다(버전확인) - 계약서를 띄워 둔 채 오래 일하면 고친 화면을 못 받는다 */
 const BK_변경 = [
+  { v:'26.10.30.3', 날:'2026-10-30', 줄:[
+    '어드민 단추·칩을 고급스럽게 - 둥글기 8px · 얇은 테두리 · 고른 칩은 옅은 남색과 체크, 마우스 화면은 34·40·44px 로 크기 통일',
+    '활동 설정 묶음 제목 16px · 계약서 작성 화면 머리 줄 한 줄' ] },
   { v:'26.10.30.2', 날:'2026-10-30', 줄:[
     '어드민 머리 줄에 지금 위치(묶음 › 화면) · 화면마다 창 제목',
     '중개사 메뉴를 영업 · 계약 · 내 사무소로 묶음',
@@ -12796,6 +12836,8 @@ function render(){
       if(typeof a.selectionStart === 'number') 커서 = [a.selectionStart, a.selectionEnd]; }catch(_){}
   }
   app.innerHTML = html + modalHTML();
+  /* 넓은 화면 어드민(왼쪽 메뉴가 선 화면)이면 표시 - 단추·칩을 어드민 크기·모양으로 (2026-10-30) */
+  document.body.classList.toggle('adm', !!app.querySelector('.dz-side'));
   가운뎃점붙이기(app);
   키보드로도닿게(app);
   /* 좁은 데스크톱에서 메뉴 줄이 옆으로 밀릴 때 켜진 탭이 가려지지 않게 그 자리로 맞춘다 */

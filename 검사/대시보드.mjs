@@ -153,6 +153,13 @@ const M = new Function('esc', `${js.slice(시작, 끝)}\nreturn { dzLine, dzPill
      '창 제목 - 어드민은 지금 화면 이름 · 비버노크 파트너/운영, 다른 화면은 사이트 제목');
   ok(/body:not\(\.mo\) :is\(\.adm-page, \.dz-main\) h1\.t\{font-size:24px!important;margin-top:0!important/.test(css) && /body:not\(\.mo\) \.dz-h1\{font-size:24px\}/.test(css),
      '어드민 화면 제목은 24px 하나로(화면마다 25·28px 이던 것)');
+  ok(js.includes("document.body.classList.toggle('adm', !!app.querySelector('.dz-side'));")
+     && css.includes('@media (pointer:fine){\n  body.adm .btn{min-height:40px;padding:0 18px;font-size:14px}')
+     && css.includes('body.adm .chip{min-height:34px!important;padding:0 12px!important;font-size:13px!important}')
+     && css.includes('body.adm .chip.on{background:var(--ind50);border-color:var(--ind);color:var(--ind700);font-weight:700;'),
+     '어드민 단추·칩 (2026-10-30 대표님 \'고급스럽게\') - 왼쪽 메뉴가 선 화면에만(body.adm) · 마우스일 때만 34·40·44px · 고른 칩은 옅은 남색 + 체크 · 휴대폰·터치는 44px 그대로');
+  ok(/body:not\(\.mo\) \.ctx-head\{flex-wrap:nowrap\}/.test(css) && /body:not\(\.mo\) \.ctx-sub\{flex:1 1 0;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap\}/.test(css),
+     '계약서 작성 화면 머리 줄은 한 줄 - 프로필이 붙어도 안내 글이 줄임표로 줄어든다');
   ok(js.includes('role="status" aria-label="계약서를 불러오는 중입니다"') && js.includes('<div class="ct-row ct-skr" aria-hidden="true">') && js.includes('data-go="#/partner/contracts/new" style="margin-top:16px">새로 만들기</button>'),
      '계약서 목록 - 불러오는 동안 표 모양 그대로 회색 줄 · 비어 있으면 새로 만들기 단추');
 

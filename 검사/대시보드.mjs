@@ -174,7 +174,7 @@ const M = new Function('esc', `${js.slice(시작, 끝)}\nreturn { dzLine, dzPill
      '단추·칩 모양은 사이트 전체가 하나 (2026-10-30 \'손님 화면도 맞춰서\') - 테두리 1px · 굵기 600 · 고른 칩은 옅은 남색 + 표 · 손가락 화면에서 누른 뒤 남는 hover 도 같은 모양');
   ok(/body:not\(\.mo\) \.ctx-head\{flex-wrap:nowrap\}/.test(css) && /body:not\(\.mo\) \.ctx-sub\{flex:1 1 0;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap\}/.test(css),
      '계약서 작성 화면 머리 줄은 한 줄 - 프로필이 붙어도 안내 글이 줄임표로 줄어든다');
-  ok(js.includes('role="status" aria-label="계약서를 불러오는 중입니다"') && js.includes('<div class="ct-row ct-skr" aria-hidden="true">') && js.includes('data-go="#/partner/contracts/new" style="margin-top:16px">계약서 작성</button>'),
+  ok(js.includes('role="status" aria-label="계약서를 불러오는 중입니다"') && js.includes('<div class="ct-row ct-skr" aria-hidden="true">') && js.includes("빈자리('아직 만든 계약서가 없습니다'") && js.includes('<button class="btn pri md" data-go="#/partner/contracts/new">계약서 작성</button>'),
      '계약서 목록 - 불러오는 동안 표 모양 그대로 회색 줄 · 비어 있으면 계약서 작성 단추');
 
   /* 글꼴 (2026-10-30 대표님 '폰트 가독성 - 프리텐다드나 본고딕으로') - 예전 한 파일은 634자 축소판이라 나머지 글자가 맑은 고딕으로 섞였다 */
@@ -204,6 +204,37 @@ const M = new Function('esc', `${js.slice(시작, 끝)}\nreturn { dzLine, dzPill
      '움직임 표시는 누른 직후 첫 그림에서만 쓰고 지운다(다시 그릴 때 되풀이 없음)');
   ok(css.includes('body.mo .scr:has(> .tabbar) .ctw-foot{bottom:calc(74px + env(safe-area-inset-bottom, 0px))}'),
      '휴대폰 - 만들기 줄은 아래 탭 막대 위에 붙는다(그 밑에 단추가 가려졌다)');
+
+  /* 2026-10-30 '계약서 작성 화면처럼 다른 어드민 화면도 맞춰' */
+  ok(css.includes('body.adm .chip{background:#F0F0F6!important;border-color:transparent!important')
+     && css.includes('body.adm .chip.on{background:var(--ind)!important;border-color:var(--ind)!important;color:#fff!important')
+     && css.includes('body.adm span.chip{background:transparent!important;border:1px dashed var(--n300)!important'),
+     '어드민 칩은 옅은 면 상자, 고르면 꽉 찬 남색 · 누를 수 없는 칩(준비 중)은 점선 - 손님 화면은 그대로');
+  ok(css.includes('body.adm #app[data-enter] .scr > *{animation:none}') && css.includes('body.adm #app[data-enter] :is(.adm-page,.dz-main) > *{animation:rise .32s var(--e-out) both}'),
+     '화면을 옮기면 틀(왼쪽 메뉴·머리 줄)은 그대로, 본문 덩어리만 차례로 올라온다');
+  ok(js.includes("S.justTap = actEl.classList.contains('chip') ? 초점표(actEl) : null;") && /if\(S\.justTap\)\{[^\n]*S\.justTap = null; if\(칩 && 칩\.classList\.contains\('on'\)\) 칩\.classList\.add\('just'\); \}/.test(js)
+     && css.includes('body.adm .chip.just{animation:ctwPop'), '고른 칩은 누른 직후 한 번 톡 - 다시 그려도 되풀이하지 않는다');
+  ok(css.includes('body.adm .btn.pri[disabled]{background:var(--ind)!important;border-color:var(--ind)!important;color:#fff!important;opacity:.38}'),
+     '어드민에서 못 누르는 주 단추는 흐린 남색');
+  ok(js.includes('<h2 class="adm-sh" style="margin-bottom:${hint?6:14}px"><span class="ctw-n">${no}</span>${title}</h2>') && (js.match(/<span class="sect st-n"><span class="ctw-n">\d<\/span>/g) || []).length === 4,
+     '번호 걸음 제목(활동 설정 · 매물 등록)은 계약서 작성 화면과 같은 번호 배지');
+
+  /* 묻는 창 (2026-10-30 '팝업도 디자인 적용해서 화면 중앙에') - 브라우저 기본 창을 하나도 쓰지 않는다 */
+  ok(!/(^|[^.\w$])(confirm|alert|prompt)\(/m.test(js.replace(/\/\*[\s\S]*?\*\//g, '')), '브라우저 기본 확인창·알림창(confirm · alert · prompt)을 쓰지 않는다');
+  ok(js.includes('function 확인창(제목, 설명 = \'\', opt = {}){') && /if\(S\.modal\.type==='ask'\)\{ const m = S\.modal;/.test(js) && js.includes('role="alertdialog"')
+     && js.includes("case 'ask-yes': case 'ask-no': { const m = S.modal; S.modal = null; render(); if(m && m.답) m.답(a === 'ask-yes'); return true; }")
+     && js.includes("case 'modal-close': case 'modal-bg': { const m = S.modal; S.modal = null; render(); if(m && m.답) m.답(false); return true; }"),
+     '묻는 창 - 사이트 모달 틀 그대로(초점 가두기·Esc), 답은 Promise 로 · Esc·바깥 누르기는 아니오');
+  ok(css.includes('.modal.ask,body.mo .modal.ask{align-items:center;padding:24px}') && /확인창\('저장하지 않은 고침이 있습니다', '저장하지 않고 나가면 고친 내용이 사라집니다\.'/.test(js)
+     && js.includes('CT.건너뜀 = 갈곳; location.hash = 갈곳;'), '저장하지 않고 떠날 때 묻는 창은 화면 가운데(휴대폰도) · 나가기를 골라야 그때 간다');
+
+  /* 빈 화면 (2026-10-30 '이런 비어있는 화면에는 비버 캐릭터를') */
+  const 빈 = new Function('beaverlyMini', `${js.match(/const 빈자리 = [^\n]*/)[0]}; return 빈자리;`)(h => `<img data-h="${h}">`);
+  ok(/^<div class="empty"><img data-h="104"><p class="em-t">없음<\/p><p class="em-d">설명<\/p><div class="em-a"><b>단추<\/b><\/div><\/div>$/.test(빈('없음', '설명', '<b>단추</b>'))
+     && /^<div class="empty bare"><img data-h="80">/.test(빈('없음', '', '', 80, true)), '빈 화면 틀 - 비버 + 제목 + 설명 + 단추, 카드 안은 테두리 없이(bare)');
+  ok(["빈자리('아직 만든 계약서가 없습니다'", "빈자리('찾는 계약서가 없습니다'", "묶음에 저장한 특약이 없습니다`", "빈자리('아직 맞는 손님이 없습니다'", "빈자리('아직 맞는 손님 조건이 없습니다'",
+      "빈자리('앞으로 60일 안에 잡힌 일정이 없습니다'", "빈자리('아직 등록한 조건이 없습니다'", "빈자리('올라온 매물이 없습니다'"].every(t => js.includes(t)) && !/<div class="empty"><p style="margin:0/.test(js),
+     '빈 화면마다 비버 - 계약서 목록 · 찾기 결과 · 특약 · 맞는 손님 · 수요 목록 · 일정 · 내 조건 · 운영 목록');
 
   /* 마이페이지 (2026-10-30 '빈 곳 없이 · 서비스 수준') */
   ok(js.includes('<section class="card acc-row"><div class="acc-l"><h2>${제목}</h2>') && js.includes('<button class="btn sec sm acc-out" data-act="logout">로그아웃</button>')

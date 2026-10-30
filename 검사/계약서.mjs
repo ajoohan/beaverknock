@@ -612,7 +612,8 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
   ok(/F\.explain \? exEditor\(doc\) \+ \(잠김\|\|!CT\.id \? '' : `<button class="tapx" data-act="ct-del"/.test(js), 'PC 에서도 확인·설명서를 지울 수 있다');
   ok(/const 자리 = CT\.스크롤키 === 키 && CT\.스크롤문서 === doc \?/.test(js) && !/const 키 = \(CT\.id \|\| 'new'\)/.test(js), '스크롤 자리는 문서에 붙는다 - 처음 저장·확정해도 맨 위로 튀지 않는다');
   ok(/if\(새것 && \(location\.hash \|\| ''\)\.startsWith\('#\/partner\/contract\/'\)\) history\.replaceState/.test(js), '저장 중에 화면을 떠났으면 계약서 화면으로 끌고 오지 않는다');
-  ok(/if\(n && !confirm\(/.test(js) && /서식을 바꾸면 새 서식에 없는 칸의 값은 지워집니다/.test(js), '서식 바꾸기 - 지워질 값이 있으면 먼저 묻고, 안내 문구도 동작과 같다');
+  ok(/if\(n\)\{ 확인창\(`서식을 바꾸면 \$\{n\}칸의 값이 지워집니다`/.test(js) && /\.then\(바꿈 => \{ if\(바꿈 && CT\.doc/.test(js) && /서식을 바꾸면 새 서식에 없는 칸의 값은 지워집니다/.test(js),
+     '서식 바꾸기 - 지워질 값이 있으면 사이트의 묻는 창으로 먼저 묻고(2026-10-30, 브라우저 기본 창 대신), 안내 문구도 동작과 같다');
   {
     const d = M.exNewDoc(null, 'explain-home'); d.property.bldUse = '아파트'; d.property.bldArea = '84'; d.ex.guard = '있음';
     const 잃음 = M.exLost(d, 'explain-land'); M.exSwitch(d, 'explain-land');

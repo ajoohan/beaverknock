@@ -1925,6 +1925,51 @@ body.mo :is(.ctw-c,.ctw-seg button,.ctw-q){min-height:44px}
 body.mo .ctw-foot{flex-wrap:wrap;padding:14px 16px}
 /* 아래 탭 막대(74px + 아이폰 안전 영역)도 같은 자리에 붙는다 - 만들기 단추가 그 밑에 가려졌다(2026-10-30) */
 body.mo .scr:has(> .tabbar) .ctw-foot{bottom:calc(74px + env(safe-area-inset-bottom, 0px))}
+/* ── 어드민 칩·움직임을 계약서 작성 화면처럼 (2026-10-30 대표님 '계약서 작성 화면처럼 다른 어드민 화면도 맞춰') ──
+   칩은 테두리 대신 옅은 면 상자, 고르면 꽉 찬 남색(하나만 = 점 · 여럿 = 체크 - 표는 원래 규칙 그대로 흰색으로).
+   공용 칩 규칙이 여러 겹이라 !important 로 덮는다. 손님 화면(body.adm 아님)은 그대로 */
+body.adm .chip{background:#F0F0F6!important;border-color:transparent!important;box-shadow:none!important;color:var(--n700);font-weight:600}
+body.adm .chip.on{background:var(--ind)!important;border-color:var(--ind)!important;color:#fff!important;font-weight:700;box-shadow:0 6px 14px -6px rgba(79,82,209,.7)!important}
+@media (hover:hover){
+  body.adm .chip:not(.on):not(:disabled):hover{background:#E5E5F1!important;border-color:transparent!important;color:var(--ind700)!important}
+  body.adm .chip.on:not(:disabled):hover{background:var(--ind700)!important;border-color:var(--ind700)!important;color:#fff!important}
+}
+body.adm .chip:not(:disabled):active{transform:scale(.97)}
+/* '준비 중' 처럼 누를 수 없는 칩(span)은 면 없이 점선 - 고를 수 있는 것처럼 보이면 안 된다 */
+body.adm span.chip{background:transparent!important;border:1px dashed var(--n300)!important;color:var(--n500)}
+body.adm .chip.just{animation:ctwPop .26s cubic-bezier(.3,.7,.4,1) both}
+/* 화면을 옮겨도 틀(왼쪽 메뉴 · 머리 줄)은 그대로, 본문 덩어리만 차례로 올라온다 - 메뉴까지 들썩이면 흔들림이 먼저 보인다 */
+body.adm #app[data-enter] .scr > *{animation:none}
+body.adm #app[data-enter] :is(.adm-page,.dz-main) > *{animation:rise .32s var(--e-out) both}
+body.adm #app[data-enter] :is(.adm-page,.dz-main) > :nth-child(2){animation-delay:.04s}
+body.adm #app[data-enter] :is(.adm-page,.dz-main) > :nth-child(3){animation-delay:.08s}
+body.adm #app[data-enter] :is(.adm-page,.dz-main) > :nth-child(4){animation-delay:.12s}
+body.adm #app[data-enter] :is(.adm-page,.dz-main) > :nth-child(n+5){animation-delay:.16s}
+/* 못 누르는 주 단추는 회색 상자 대신 흐린 남색 - 계약서 작성의 만들기 단추와 같다 */
+body.adm .btn.pri[disabled]{background:var(--ind)!important;border-color:var(--ind)!important;color:#fff!important;opacity:.38}
+/* 묻는 창 - 휴대폰에서도 아래에서 올라오는 판이 아니라 가운데 작은 창(대표님 '화면 중앙에') */
+.modal.ask,body.mo .modal.ask{align-items:center;padding:24px}
+.modal.ask .box,body.mo .modal.ask .box{max-width:400px;padding:28px 24px 20px;border-radius:20px;text-align:center;animation:modalIn .34s var(--e-spring) both}
+.ask-ico{display:inline-flex;align-items:center;justify-content:center;width:52px;height:52px;margin:0 auto 14px;border-radius:50%;background:var(--ind50);color:var(--ind700)}
+.ask-ico.warn{background:var(--warnbg);color:var(--warn)}
+.modal.ask h2{margin:0 0 8px;font-size:17px;font-weight:700;line-height:1.4;letter-spacing:-.02em;color:var(--n900)}
+.modal.ask p{margin:0;font-size:14.5px;line-height:1.65;color:var(--n500)}
+.ask-act{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:22px}
+.ask-act .btn{min-height:48px;padding:0 12px;border-radius:12px;font-size:15px;font-weight:700}
+.ask-act .btn.sec{background:#F0F0F6;border-color:transparent;color:var(--n700)}
+.ask-act .btn.warn{background:var(--danger);border-color:var(--danger);color:#fff}
+@media (hover:hover){ .ask-act .btn.sec:hover{background:#E5E5F1;border-color:transparent;color:var(--ind700)} .ask-act .btn.warn:hover{background:#9A2429;border-color:#9A2429;color:#fff} }
+.ask-act .btn:active{transform:scale(.97)}
+/* 빈 화면 - 비버 + 제목 + 설명 + 단추. 카드 안(.bare)은 테두리·바탕 없이 */
+.empty .em-t{margin:12px 0 6px;font-size:15.5px;font-weight:700;line-height:1.4;color:var(--n900)}
+.empty .em-d{margin:0 auto;max-width:460px;font-size:14.5px;line-height:1.65;color:var(--n500)}
+.empty .em-a{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:18px}
+.empty.bare{border:0!important;background:none!important;box-shadow:none!important;padding:28px 16px}
+/* 번호 걸음 제목 - 계약서 작성 화면과 같은 번호 배지(활동 설정 · 매물 등록) */
+.adm-sh{display:flex;align-items:center;gap:10px;margin:0;font-size:16.5px;font-weight:700;line-height:1.35;letter-spacing:-.02em;color:var(--n900)}
+.sect.st-n{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;padding-left:0;margin-bottom:12px;font-size:16px;font-weight:700;letter-spacing:-.02em;color:var(--n900)}
+.sect.st-n::before{display:none}
+.sect.st-n > span:not(.ctw-n){font-size:13.5px;letter-spacing:0}
 body.mo .ctw-foot .btn{width:100%}
 .ct-step{display:flex;flex-direction:column;gap:6px}
 .ct-chips{display:flex;flex-wrap:wrap;gap:6px}
@@ -3384,6 +3429,9 @@ function beaverlySide(h){ return `<img src="${BEAVERLY_SIDE}" alt="공인중개�
 /* 미니 - 안내 배지용 (정면을 작게) */
 function beaverlyMini(h){ return `<img src="${BEAVERLY_FRONT}" alt=""
   style="height:${h||56}px;width:auto;display:block;flex:none;user-select:none;-webkit-user-drag:none">`;}
+/* 빈 화면 (2026-10-30 대표님 '이런 비어있는 화면에는 비버 캐릭터를') - 비버 + 제목 + 설명 + (단추).
+   크기는 화면 전체가 빈 곳 104 · 찾기 결과가 없는 곳처럼 작은 곳 80. 카드 안이면 안쪽=true(상자 속 상자를 만들지 않는다) */
+const 빈자리 = (제목, 설명 = '', 단추 = '', 크기 = 104, 안쪽 = false) => `<div class="empty${안쪽 ? ' bare' : ''}">${beaverlyMini(크기)}<p class="em-t">${제목}</p>${설명 ? `<p class="em-d">${설명}</p>` : ''}${단추 ? `<div class="em-a">${단추}</div>` : ''}</div>`;
 
 const ICON_CHECK = `<svg viewBox="0 0 12 12"><path d="M2 6.5 L5 9.5 L10 3" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 const ICON_PHOTO = `<svg viewBox="0 0 24 24" fill="none" stroke="#6366D6" stroke-width="1.5"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.6"/><path d="M3 16 L9 11 L14 15 L17 13 L21 16"/></svg>`;
@@ -5996,9 +6044,7 @@ function agentPanel(){
         </div>
         ${AG.at ? `<span style="font-size:13px;color:var(--n500)">${esc(AG.at.replace('T',' ').slice(0,16))} 기준</span>` : ''}
       </div>
-      ${rows.length===0 ? `<div style="padding:40px 18px;text-align:center">
-        <p style="margin:0 0 6px;font-size:15px;font-weight:700">${all.length?'조건에 맞는 신청이 없습니다':'아직 신청이 없습니다'}</p>
-        <p style="margin:0;font-size:14.5px;color:var(--n500)">${all.length?'찾는 말을 바꿔보세요.':'중개사 가입 화면으로 신청이 들어오면 여기에 쌓입니다.'}</p></div>`
+      ${rows.length===0 ? 빈자리(all.length?'조건에 맞는 신청이 없습니다':'아직 신청이 없습니다', all.length?'찾는 말을 바꿔보세요.':'중개사 가입 화면으로 신청이 들어오면 여기에 쌓입니다.', '', 80, true)
       : isMo() ? agentCards(rows) : `
       <div style="overflow-x:auto">
         <table style="width:100%;border-collapse:collapse;font-size:14.5px;white-space:nowrap">
@@ -6494,11 +6540,10 @@ V['#/my'] = () => {
     <p style="margin:-6px 0 0;font-size:13.5px;line-height:1.7;color:var(--n500)">
       ${esc(S.user.label||'')} 계정에서 받은 <b style="color:var(--n700)">이름</b>은 중개사에게 전달되는 조건에 함께 쓰이고,
       <b style="color:var(--n700)">이메일</b>은 이 계정을 알아보고 걸어두신 조건을 다시 불러오는 데만 씁니다.</p>` : ''}
-    ${seedGate(S.mineReady, () => S.conds.length? rows : `<div class="empty"><p style="margin:0 0 6px;font-size:15px;font-weight:700">아직 등록한 조건이 없습니다</p>
-      <p style="margin:0 0 18px;font-size:14.5px;color:var(--n500)">조건을 걸어두면 맞는 물건이 있을 때만 연락이 옵니다.</p>
-      <button class="btn pri md" data-act="restart">조건 등록하기</button></div>`)}
-    <div class="beaverbox" style="margin-top:auto;margin-bottom:${isMo()?'14px':'26px'};max-width:${isMo()?'none':'560px'}">
-      ${beaverlyMini(56)}<p>조건을 종료하실 땐 <b style="color:var(--n900)">사유</b>를 꼭 알려주세요. 서비스를 고치는 데 가장 큰 도움이 됩니다.</p></div>
+    ${seedGate(S.mineReady, () => S.conds.length? rows : 빈자리('아직 등록한 조건이 없습니다', '조건을 걸어두면 맞는 물건이 있을 때만 연락이 옵니다.',
+      `<button class="btn pri md" data-act="restart">조건 등록하기</button>`))}
+    ${S.conds.length ? `<div class="beaverbox" style="margin-top:auto;margin-bottom:${isMo()?'14px':'26px'};max-width:${isMo()?'none':'560px'}">
+      ${beaverlyMini(56)}<p>조건을 종료하실 땐 <b style="color:var(--n900)">사유</b>를 꼭 알려주세요. 서비스를 고치는 데 가장 큰 도움이 됩니다.</p></div>` : ''}
   </div>
   ${tabbar('my')}
 </div>`;};
@@ -6903,8 +6948,13 @@ V['#/partner/demands'] = () => {
         </div>
       </div>`).join('')}
     </div>
-    <div class="beaverbox" style="margin-top:6px;margin-bottom:${isMo()?'12px':'0'};max-width:${isMo()?'none':'640px'}">${beaverlyMini(56)}
-      <p>매물 1건 노출에 2천원을 쓰는 대신, <b style="color:var(--n900)">수요가 확인된 손님에게만</b> 제안하세요. 손님에게 제안을 보내는 데는 비용을 받지 않습니다.</p></div>
+    ${!list.length && !S.feedErr && S.feedAt && (S.feedByListing ? S.feedListings : S.scope.regionsSet)
+      ? (f !== '전체' ? 빈자리(`‘${esc(f)}’ 조건은 아직 없습니다`, '다른 유형을 고르거나 전체를 보세요.', `<button class="btn sec md" data-act="dfilter" data-v="전체">전체 보기</button>`)
+        : 빈자리('아직 맞는 손님 조건이 없습니다', S.feedByListing ? '물건을 더 올리면 맞는 손님이 늘어납니다.' : '활동 지역·유형을 넓히면 더 많은 손님 조건이 보입니다.',
+          S.feedByListing ? `<a class="btn pri md" data-go="#/partner/listing/new">물건 올리기</a>` : `<a class="btn pri md" data-go="#/partner/settings">활동 설정 열기</a>`))
+      : !list.length && !S.feedErr && !S.feedAt ? loadingBox() : ''}
+    ${list.length ? `<div class="beaverbox" style="margin-top:6px;margin-bottom:${isMo()?'12px':'0'};max-width:${isMo()?'none':'640px'}">${beaverlyMini(56)}
+      <p>매물 1건 노출에 2천원을 쓰는 대신, <b style="color:var(--n900)">수요가 확인된 손님에게만</b> 제안하세요. 손님에게 제안을 보내는 데는 비용을 받지 않습니다.</p></div>` : ''}
   </div>
   ${tabbar('d','p')}
 </div>`;};
@@ -6986,7 +7036,7 @@ V['#/partner/propose'] = (id) => { const d=S.demands.find(x=>x.id===id); if(!d) 
   <div class="pad" style="flex:1;padding-top:20px;padding-bottom:24px;max-width:${isMo()?'none':'1180px'};margin:0 auto;width:100%;display:flex;gap:20px;${isMo()?'flex-direction:column':''}">
     <div style="flex:1.5;display:flex;flex-direction:column;gap:14px;min-width:0">
       <div class="card pad">
-        <span class="sect"><span style="color:var(--ind)">1.</span> 주소</span>
+        <span class="sect st-n"><span class="ctw-n">1</span>주소</span>
         ${f.fromListing?`<p style="margin:-4px 0 10px;font-size:13.5px;font-weight:700;color:var(--ok)">✓ 내 물건에서 불러왔습니다 - 필요한 곳만 고치세요</p>`:``}
         <div style="margin-bottom:10px">${addrBox('addr','도로명·지번·건물명으로 찾기')}</div>
         ${g('addr')? `<div style="margin-bottom:10px;padding:11px 14px;background:var(--n50);border-radius:var(--r-sm);
@@ -7006,7 +7056,7 @@ V['#/partner/propose'] = (id) => { const d=S.demands.find(x=>x.id===id); if(!d) 
           <div class="unit"><input class="inp" data-in="pbdong" value="${esc(g('pbdong'))}" placeholder="예) 101" style="padding:12px 14px;font-size:14.5px"><span>동</span></div></div>
       </div>
       <div class="card pad">
-        <span class="sect"><span style="color:var(--ind)">2.</span> 필수 정보</span>
+        <span class="sect st-n"><span class="ctw-n">2</span>필수 정보</span>
         <!-- 주택유형. 손님은 '아파트·오피스텔' 처럼 유형을 걸어두고 기다린다.
              그런데 제안 화면에는 고를 칸이 없어, 물건에서 불러온 것에만 붙었다.
              상가·사무실 조건에는 묻지 않는다 - 거기에 주택유형은 없는 말이다. -->
@@ -7063,7 +7113,7 @@ V['#/partner/propose'] = (id) => { const d=S.demands.find(x=>x.id===id); if(!d) 
           ${chipsHTML(['없음','전용주차시설','공용주차시설','그 밖의 주차시설'], g('park'),'park',false)}</div>
       </div>
       <div class="card pad">
-        <span class="sect"><span style="color:var(--ind)">3.</span> 사진 <span style="font-weight:600;color:var(--n500)">${f.photos||0}/5 · 3장 이상이면 열람률이 크게 올라갑니다</span></span>
+        <span class="sect st-n"><span class="ctw-n">3</span>사진 <span style="font-weight:600;color:var(--n500)">${f.photos||0}/5 · 3장 이상이면 열람률이 크게 올라갑니다</span></span>
         <div style="display:flex;gap:10px;margin-bottom:16px">
           ${[0,1,2,3,4].map(i=>{ const 찼다 = i < (f.photos||0);
             return `<button data-act="photo" data-v="${i}"
@@ -7073,7 +7123,7 @@ V['#/partner/propose'] = (id) => { const d=S.demands.find(x=>x.id===id); if(!d) 
                   :'border:1.5px dashed var(--n300);color:var(--n500)'};
             display:flex;align-items:center;justify-content:center">${찼다 ? ICO.photo : ICO.plus}</button>`;}).join('')}
         </div>
-        <span class="sect"><span style="color:var(--ind)">4.</span> 한마디 <span style="font-weight:600;color:var(--n500)">다른 점을 먼저, 솔직하게</span></span>
+        <span class="sect st-n"><span class="ctw-n">4</span>한마디 <span style="font-weight:600;color:var(--n500)">다른 점을 먼저, 솔직하게</span></span>
         <textarea class="inp" rows="3" data-in="msg" style="resize:vertical;line-height:1.6;${f.msg?'border-color:var(--ind)':''}"
           placeholder="요청하신 조건 중 지역·예산·방수는 맞고, 엘리베이터는 없습니다. 대신 2층이라…">${esc(g('msg'))}</textarea>
         <p data-msgcount style="margin:6px 0 0;text-align:right;font-size:13.5px;color:var(--n500)" class="num">${(f.msg||'').length}/200</p>
@@ -7592,7 +7642,7 @@ V["#/partner/settings"] = () => {
   const week = Math.max(0, Math.round(now * 0.6));
   const drop = base > 0 && now <= base/2;
   const sect = (no,title,hint,body) => `<div class="card pad">
-    <h2 style="margin:0 0 ${hint?4:14}px;font-size:16px;font-weight:700;letter-spacing:-.02em"><span style="color:var(--ind);margin-right:6px">${no}.</span>${title}</h2>
+    <h2 class="adm-sh" style="margin-bottom:${hint?6:14}px"><span class="ctw-n">${no}</span>${title}</h2>
     ${hint?`<p style="margin:0 0 12px;font-size:13.5px;line-height:1.6;color:var(--n500)">${hint}</p>`:''}
     ${body}</div>`;
   return `
@@ -8036,8 +8086,7 @@ V["#/partner/listing"] = (id) => {
       <span style="font-size:13.5px;color:var(--n500)">유형 → 지역 → 예산(±10%) → 필수 → 확인 순으로 대조했습니다</span>
     </div>
     ${ms.length? `<div style="display:grid;grid-template-columns:repeat(${isMo()?1:2},minmax(0,1fr));gap:16px">${ms.map(card).join('')}</div>`
-      : `<div class="empty"><p style="margin:0 0 6px;font-size:15px;font-weight:700">아직 맞는 손님이 없습니다</p>
-         <p style="margin:0 auto;max-width:400px;font-size:14.5px;line-height:1.6;color:var(--n500)">수요 목록에 새 조건이 들어온 뒤 이 화면을 다시 열면 그때 다시 대조합니다.</p></div>`}
+      : 빈자리('아직 맞는 손님이 없습니다', '수요 목록에 새 조건이 들어온 뒤 이 화면을 다시 열면 그때 다시 대조합니다.', '', 96)}
   </div>
   ${tabbar('l','p')}
 </div>`;};
@@ -8265,8 +8314,28 @@ V["#/brand"] = () => {
 </div>`;};
 
 /* ══════════ 모달 ══════════ */
+/* 묻는 창 (2026-10-30 대표님 '팝업도 디자인 적용해서 화면 중앙에') - 브라우저 기본 확인창(confirm) 대신.
+   기본 창은 주소창 밑 모서리에 'beaverknock.co.kr의 메시지' 로 뜨고 모양을 바꿀 수 없다.
+   사이트 모달 틀(초점 가두기 · Esc 닫기)을 그대로 쓰고 답은 Promise 로 돌려준다(예 = true).
+   Esc · 바깥 누르기 · 아니오는 모두 false. 초점은 먼저 '아니오'(안전한 쪽)에 간다 */
+function 확인창(제목, 설명 = '', opt = {}){
+  return new Promise(답 => {
+    const 앞 = S.modal; if(앞 && 앞.답) 앞.답(false);
+    S.modal = { type:'ask', 제목, 설명, 예: opt.예 || '확인', 아니오: opt.아니오 || '취소', 위험: !!opt.위험, 답 };
+    render();
+  });
+}
+const ASK_ICO = { warn:'M12 4 L21.5 20 H2.5 Z M12 10 v4.5 M12 17.5 v.01', ask:'M12 21 a9 9 0 1 0 0 -18 a9 9 0 0 0 0 18 M9.6 9.4 a2.5 2.5 0 1 1 3.4 2.4 c-.7 .3 -1 .9 -1 1.6 v.4 M12 17 v.01' };
 function modalHTML(){
   if(!S.modal) return '';
+  if(S.modal.type==='ask'){ const m = S.modal;
+    return `<div class="modal ask" data-act="modal-bg"><div class="box" data-stop role="alertdialog" aria-modal="true" aria-labelledby="mdT"${m.설명 ? ' aria-describedby="mdD"' : ''} tabindex="-1">
+      <span class="ask-ico${m.위험 ? ' warn' : ''}" aria-hidden="true"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round"><path d="${ASK_ICO[m.위험 ? 'warn' : 'ask']}"/></svg></span>
+      <h2 id="mdT">${esc(m.제목)}</h2>${m.설명 ? `<p id="mdD">${esc(m.설명)}</p>` : ''}
+      <div class="ask-act"><button type="button" class="btn sec" data-act="ask-no">${esc(m.아니오)}</button>
+        <button type="button" class="btn ${m.위험 ? 'warn' : 'pri'}" data-act="ask-yes">${esc(m.예)}</button></div>
+    </div></div>`; }
   /* 업데이트 내역 - 왼쪽 메뉴 아래 버전을 누르면 */
   if(S.modal.type==='ver') return `<div class="modal" data-act="modal-bg"><div class="box" data-stop role="dialog" aria-modal="true" aria-labelledby="mdT" tabindex="-1" style="max-width:560px">
       <h2 id="mdT" style="margin:0 0 4px;font-size:16px;font-weight:700;letter-spacing:-.03em">업데이트 내역</h2>
@@ -8912,7 +8981,7 @@ function listingPanel(){
       <span style="margin-left:auto;font-size:13.5px;color:var(--n500)">${rows.length}건</span>
       <button class="btn sec sm" data-act="ls2-load">새로고침</button>
     </div>
-    ${!rows.length ? `<div class="empty"><p style="margin:0;font-size:14.5px;color:var(--n500)">올라온 매물이 없습니다.</p></div>` : `
+    ${!rows.length ? 빈자리('올라온 매물이 없습니다', '', '', 80) : `
     <div class="card pad" style="padding:0;overflow-x:auto">
       <table style="width:100%;border-collapse:collapse;font-size:13.5px;min-width:760px">
         <thead><tr style="text-align:left;color:var(--n500)">
@@ -8949,7 +9018,7 @@ function userPanel(){
       <button class="btn sec sm" data-act="us-page" data-v="next" ${rows.length<50?'disabled':''}>다음<i class="ar-r" aria-hidden="true"></i></button>
       <button class="btn sec sm" data-act="us-load">새로고침</button>
     </div>
-    ${!rows.length ? `<div class="empty"><p style="margin:0;font-size:14.5px;color:var(--n500)">이 쪽에는 계정이 없습니다.</p></div>` : `
+    ${!rows.length ? 빈자리('이 쪽에는 계정이 없습니다', '', '', 80) : `
     <div class="card pad" style="padding:0;overflow-x:auto">
       <table style="width:100%;border-collapse:collapse;font-size:13.5px;min-width:600px">
         <thead><tr style="text-align:left;color:var(--n500)">
@@ -9118,7 +9187,7 @@ function reportPanel(){
       <button class="btn sec sm" data-act="rp-load">새로고침</button>
     </div>
     ${RP.note?`<p style="margin:0 0 12px;background:var(--warnbg);padding:12px 16px;font-size:13.5px;color:var(--n700)">${esc(RP.note)}</p>`:''}
-    ${!rows.length ? `<div class="empty"><p style="margin:0;font-size:14.5px;color:var(--n500)">${RP.only==='todo'?'확인하지 않은 신고가 없습니다.':'접수된 신고가 없습니다.'}</p></div>` : `
+    ${!rows.length ? 빈자리(RP.only==='todo'?'확인하지 않은 신고가 없습니다':'접수된 신고가 없습니다', '', '', 80) : `
     <div style="display:flex;flex-direction:column;gap:12px">
       ${rows.map(r=>{ const m = RP_MARK[r.report_status || 'null'] || RP_MARK['null'];
         return `
@@ -9156,7 +9225,7 @@ function logPanel(){
       <button class="btn sec sm" data-act="lg-load">새로고침</button>
     </div>
     ${LG.note?`<p style="margin:0 0 12px;background:var(--warnbg);padding:12px 16px;font-size:13.5px;color:var(--n700)">${esc(LG.note)}</p>`:''}
-    ${!rows.length ? `<div class="empty"><p style="margin:0;font-size:14.5px;color:var(--n500)">남은 기록이 없습니다.</p></div>` : `
+    ${!rows.length ? 빈자리('남은 기록이 없습니다', '', '', 80, true) : `
     <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13.5px;min-width:620px">
       <thead><tr style="text-align:left;color:var(--n500)">
         <th style="padding:8px 10px;font-weight:800">시각</th><th style="padding:8px 10px;font-weight:800">누가</th>
@@ -9331,9 +9400,7 @@ function demandPanel(){
           <button class="btn ghost sm" data-act="ops-seen" style="flex:none;white-space:nowrap">여기까지 확인함</button>
         </div>
       </div>
-      ${rows.length===0 ? `<div style="padding:40px 18px;text-align:center">
-        <p style="margin:0 0 6px;font-size:15px;font-weight:700">${all.length?'조건에 맞는 접수가 없습니다':'아직 접수된 조건이 없습니다'}</p>
-        <p style="margin:0;font-size:14.5px;color:var(--n500)">${all.length?'찾는 말이나 거른 조건을 바꿔보세요.':'링크로 조건이 들어오면 여기에 쌓입니다.'}</p></div>`
+      ${rows.length===0 ? 빈자리(all.length?'조건에 맞는 접수가 없습니다':'아직 접수된 조건이 없습니다', all.length?'찾는 말이나 거른 조건을 바꿔보세요.':'링크로 조건이 들어오면 여기에 쌓입니다.', '', 80, true)
       : isMo() ? demandCards(rows) : `
       <div style="overflow-x:auto">
         <table style="width:100%;border-collapse:collapse;font-size:14.5px;white-space:nowrap">
@@ -10601,6 +10668,12 @@ const CT_하위메뉴 = [['#/partner/contracts/new', '계약서 작성', 'pen', 
    번호는 배포한 날(연.월.일 - 같은 날 또 올리면 뒤에 .2). 화면이 version.json 을 가끔 읽어,
    더 새 버전이 올라와 있으면 메뉴 아래에서 새로고침을 권한다(버전확인) - 계약서를 띄워 둔 채 오래 일하면 고친 화면을 못 받는다 */
 const BK_변경 = [
+  { v:'26.10.30.8', 날:'2026-10-30', 줄:[
+    '어드민 화면 전체를 계약서 작성 화면처럼 - 칩은 옅은 면 상자, 고르면 꽉 찬 남색 · 누르면 톡 · 못 누르는 주 단추는 흐린 남색 · 번호 제목은 번호 배지',
+    '화면을 옮겨도 왼쪽 메뉴·머리 줄은 그대로, 본문만 차례로 올라온다',
+    '확인 팝업을 사이트 디자인으로 화면 가운데에(휴대폰도) - 계약서를 저장하지 않고 나갈 때 · 확인·설명서 서식을 바꿀 때',
+    '빈 화면마다 비버 - 계약서 목록 · 찾기 결과 · 특약 · 일정 · 수요 목록 · 맞는 손님 · 내 조건 · 운영 목록',
+  ]},
   { v:'26.10.30.7', 날:'2026-10-30', 줄:[
     '계약서 작성 화면 다듬기 - 고르는 단추를 옅은 면 상자로, 고르면 꽉 찬 남색 + 점 · 종류마다 그림 · 자주 쓰는 계약서는 그림 붙은 타일',
     '걸음을 다 고르면 번호가 체크로 바뀌고 고른 값이 제목 옆에 · 만들기 단추는 못 누를 때 흐린 남색, 다 고르면 켜진다',
@@ -11665,10 +11738,10 @@ function ctRowsHTML(전체, rows, 갱신고르기){
         ${isMo() ? '' : `<span class="ct-c2">${esc(ctTitle(r))}${표시(r)}</span><span class="ct-c3">${esc(ct이름들(r).join(' · ') || '-')}</span><span class="ct-c4 num">${esc(String(r.updated_at||'').slice(0,10))}</span>`}
         <span class="ct-c5">${갱신고르기 ? `<span class="badge b-warn">이것으로 갱신</span>` : 판(r)}</span>
       </button>`).join('')}</div>`;
-  if(전체.length) return `<div class="empty"><p style="margin:0;font-size:15px">${갱신고르기 ? '갱신할 임대차·전대차 계약서가 없습니다' : '찾는 계약서가 없습니다'}</p></div>`;
-  return `<div class="empty"><p style="margin:0 0 6px;font-size:15px;font-weight:700">아직 만든 계약서가 없습니다</p>
-       <p style="margin:0;font-size:14.5px;color:var(--n500)">양식을 골라 시작하거나, 연결된 제안에서 ‘계약서 만들기’를 누르면 물건 정보가 채워진 채로 열립니다.</p>
-       <button class="btn pri sm" data-go="#/partner/contracts/new" style="margin-top:16px">계약서 작성</button></div>`;
+  if(전체.length) return 갱신고르기 ? 빈자리('갱신할 임대차·전대차 계약서가 없습니다', '임대차·전대차 계약서를 만들어 두면 여기서 골라 갱신계약을 씁니다.', '', 80)
+    : 빈자리('찾는 계약서가 없습니다', '소재지 · 이름 · 종류 · 날짜 가운데 다른 말로 찾아 보세요.', '', 80);
+  return 빈자리('아직 만든 계약서가 없습니다', '양식을 골라 시작하거나, 연결된 제안에서 ‘계약서 만들기’를 누르면 물건 정보가 채워진 채로 열립니다.',
+    `<button class="btn pri md" data-go="#/partner/contracts/new">계약서 작성</button>`);
 }
 /* 계약서 목록 - 표 | 옆에 2주 안 일정 */
 function ctListPageHTML(전체){
@@ -11692,7 +11765,7 @@ function ctSchedulePageHTML(전체){
   return `
     ${ct머리('일정·알림', '계약서에 넣은 날짜로 일정을 만들고, 매일 아침 9시에 카카오톡·메일로 알려 드립니다.')}
     <div class="ct-lay half">
-      <div class="ct-main">${ctUpcomingHTML(전체, 60, 40) || `<div class="card pad ct-up"><h2>다가오는 일정</h2><p class="sub" style="margin:0">앞으로 60일 안에 잡힌 일정이 없습니다. 계약서에 계약일·중도금·잔금일을 넣으면 여기에 모입니다.</p></div>`}</div>
+      <div class="ct-main">${ctUpcomingHTML(전체, 60, 40) || `<div class="card pad ct-up"><h2>다가오는 일정</h2>${빈자리('앞으로 60일 안에 잡힌 일정이 없습니다', '계약서에 계약일·중도금·잔금일을 넣으면 여기에 모입니다.', '', 80, true)}</div>`}</div>
       <aside class="ct-aside">${ctAlertHTML(true)}</aside>
     </div>`;
 }
@@ -12206,7 +12279,7 @@ function ctPhrPageHTML(){
     ${P && P.need ? '<p class="ct-note">내 특약 저장은 준비 중입니다 - 곧 열립니다.</p>' : ''}
     ${P && !P.err ? `<div class="ct-chips" role="group" aria-label="묶음">${ct묶음탭(전부, g, 'phr-pgtab')}</div>
       ${묶음.length ? `<ul class="ct-my-list adm-grid">${묶음.map(ct문구칸).join('')}</ul>`
-        : `<div class="empty"><p style="margin:0;font-size:15px">${CT_특약묶음[g]} 묶음에 저장한 특약이 없습니다.</p></div>`}` : ''}`;
+        : 빈자리(`${CT_특약묶음[g]} 묶음에 저장한 특약이 없습니다`, '자주 쓰는 특약을 저장해 두면 계약서를 쓸 때 한 번에 넣을 수 있습니다.', '', 80)}` : ''}`;
 }
 /* 특약 모음 아래 '내 특약' - 묶음 탭 · 칩(누르면 특약에 넣는다) · 관리(문구 고치기·묶음 옮기기·지우기) */
 function ctPhrHTML(doc){
@@ -13025,9 +13098,17 @@ function render(){
   const 스스로 = CT.건너뜀 === h; CT.건너뜀 = null;
   if(!스스로 && S.lastRoute && S.lastRoute.startsWith('#/partner/contract/') && h !== S.lastRoute
      && CT.dirty && CT.doc && !(CT.row && CT.row.status === 'sealed')){
-    if(!confirm('저장하지 않은 고침이 있습니다. 저장하지 않고 나갈까요?')){ history.replaceState(null, '', S.lastRoute); return; }
-    /* 버린 고침이 화면에 남으면 다시 열었을 때 '저장됨' 으로 보이고, 확정하면 서버 판이 잠기는데 인쇄는 버린 판이 나간다 */
-    CT.dirty = false; CT.doc = null; CT.id = null; CT.row = null; CT.track = {};
+    /* 2026-10-30 - 브라우저 기본 확인창 대신 사이트의 묻는 창(가운데). 주소는 일단 계약서로 되돌려 두고,
+       '나가기' 를 고르면 그때 간다. 묻는 창을 그리는 render() 는 주소가 계약서라 여기를 다시 타지 않는다 */
+    const 갈곳 = h;
+    history.replaceState(null, '', S.lastRoute);
+    확인창('저장하지 않은 고침이 있습니다', '저장하지 않고 나가면 고친 내용이 사라집니다.', { 예:'나가기', 아니오:'계속 쓰기', 위험:true }).then(나감 => {
+      if(!나감) return;
+      /* 버린 고침이 화면에 남으면 다시 열었을 때 '저장됨' 으로 보이고, 확정하면 서버 판이 잠기는데 인쇄는 버린 판이 나간다 */
+      CT.dirty = false; CT.doc = null; CT.id = null; CT.row = null; CT.track = {};
+      CT.건너뜀 = 갈곳; location.hash = 갈곳;
+    });
+    return;
   }
   /* 가입 화면을 떠나면 적던 것을 비운다. 다만 동의 화면으로 잠깐 다녀오는 길(새 계정이 로그인
      직후 동의를 먼저 해야 할 때)은 떠난 것이 아니다 - 비우면 방금 받은 본인확인까지 지워져
@@ -13212,6 +13293,8 @@ function render(){
       if(b.right > a.right || b.left < a.left) 줄.scrollLeft += (b.right > a.right ? b.right - a.right + 12 : b.left - a.left - 12);
     } }
   되돌린초점(app, 잡고있던곳);
+  /* 고른 칩이 톡 튄다 (2026-10-30 '계약서 작성 화면처럼 다른 어드민 화면도') - 누른 직후 첫 그림에서만 */
+  if(S.justTap){ let 칩 = null; try{ 칩 = app.querySelector(S.justTap); }catch(_){} S.justTap = null; if(칩 && 칩.classList.contains('on')) 칩.classList.add('just'); }
   if(커서 && 적는중()){
     try{ const a = document.activeElement, n = a.value.length;
       a.setSelectionRange(Math.min(커서[0], n), Math.min(커서[1], n)); }catch(_){}
@@ -13950,6 +14033,8 @@ document.addEventListener('click', e=>{
   const actEl = e.target.closest('[data-act]');
   if(actEl){ const a=actEl.dataset.act, v=actEl.dataset.v;
     if(a==='modal-bg' && e.target.closest('[data-stop]')) return;
+    /* 고른 칩이 다시 그린 뒤 한 번 톡 튄다(어드민) - 누른 칩의 자리를 적어 두고 render() 가 찾는다 */
+    S.justTap = actEl.classList.contains('chip') ? 초점표(actEl) : null;
     if(handle(a,v,actEl)) { e.preventDefault(); return; } }
   if(goEl){ e.preventDefault();
     if(goEl.dataset.cond) S.inboxCond=goEl.dataset.cond;
@@ -14720,7 +14805,9 @@ function handle(a,v,el){
       render(); return true; }
     case 'close': S.modal={type:'close',id:v,reason:''}; render(); return true;
     case 'close-reason': S.modal.reason=v; render(); return true;
-    case 'modal-close': case 'modal-bg': S.modal=null; render(); return true;
+    /* 묻는 창(확인창)이면 닫는 것은 '아니오' 다 - 기다리는 쪽에 false 를 돌려준다 */
+    case 'modal-close': case 'modal-bg': { const m = S.modal; S.modal = null; render(); if(m && m.답) m.답(false); return true; }
+    case 'ask-yes': case 'ask-no': { const m = S.modal; S.modal = null; render(); if(m && m.답) m.답(a === 'ask-yes'); return true; }
     case 'do-close': { const c=S.conds.find(x=>x.id===S.modal.id); c.status='closed'; c.closeReason=S.modal.reason;
       if(S.inboxCond===c.id){ const alt=S.conds.find(x=>x.status!=='closed'); if(alt) S.inboxCond=alt.id; }
       S.modal=null; toast('종료했습니다 · 알려주셔서 감사합니다'); render(); return true; }
@@ -15045,7 +15132,8 @@ function handle(a,v,el){
       CT.dirty = true; CT.mode = 원.src ? 'edit' : 'scan'; ctGo('#/partner/contract/new'); return true;
     }
     case 'ex-form': if(CT.doc && EX_FORMS[v] && !(CT.row && CT.row.status === 'sealed')){ const n = exLost(CT.doc, v);
-      if(n && !confirm(`'${EX_FORMS[v].short}' 서식에는 없는 칸 ${n}개의 값이 지워집니다. 바꿀까요?`)) return true;
+      if(n){ 확인창(`서식을 바꾸면 ${n}칸의 값이 지워집니다`, `'${EX_FORMS[v].short}' 서식에는 없는 칸이라, 지금 적힌 값이 사라집니다.`, { 예:'바꾸기', 아니오:'그대로 두기', 위험:true })
+        .then(바꿈 => { if(바꿈 && CT.doc && !(CT.row && CT.row.status === 'sealed')){ exSwitch(CT.doc, v); ctDirty(); render(); } }); return true; }
       exSwitch(CT.doc, v); ctDirty(); render(); } return true;
     /* 확인·설명서 고르는 칸 - data-v 는 '경로|고른 값' */
     case 'ex1': case 'exm': {

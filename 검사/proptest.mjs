@@ -39,7 +39,7 @@ ok(!/ho:\s*f\.(lho|pho)/.test(js.slice(js.indexOf("apiFetch('/api/proposal'"),
 ok(!/lho:L\.ho/.test(js),                         '제안 화면으로 호를 들고 가지 않는다');
 
 /* ⑧ 상가 조건에는 주택유형을 묻지 않는다 */
-const card = js.slice(js.indexOf('<span class="sect"><span style="color:var(--ind)">2.</span> 필수 정보'));
+const card = js.slice(js.indexOf('<span class="sect st-n"><span class="ctw-n">2</span>필수 정보'));
 ok(/\$\{home \? `<div style="margin-bottom:14px"><span class="lab"[^`]*주택 유형/.test(card.slice(0,900)),
    '주택유형은 주거 조건일 때만 나온다');
 
@@ -48,8 +48,8 @@ ok(has(/호수는 적지 않으셔도 됩니다/), "안내문이 '호수는' 으
 ok(!has(/동·호수는 적지 않으셔도 됩니다/), "'동·호수' 라고 말하던 옛 문구가 없다");
 
 /* ⑩ 불러왔다는 표시가 한 번만 나오는가 - 같은 카드에 두 번 박혀 있었다 */
-const addrCard = js.slice(js.indexOf('<span class="sect"><span style="color:var(--ind)">1.</span> 주소'),
-                          js.indexOf('<span class="sect"><span style="color:var(--ind)">2.</span> 필수 정보'));
+const addrCard = js.slice(js.indexOf('<span class="sect st-n"><span class="ctw-n">1</span>주소'),
+                          js.indexOf('<span class="sect st-n"><span class="ctw-n">2</span>필수 정보'));
 ok((addrCard.match(/내 물건에서 불러왔습니다/g)||[]).length === 1,
    '불러왔다는 표시가 주소 카드에 한 번만 있다');
 

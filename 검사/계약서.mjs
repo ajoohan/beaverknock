@@ -939,5 +939,32 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
      '고딕은 사이트 글꼴(어느 기기에서 찍어도 같다) · 미리보기 위에서 고른다 · 날인본은 못 바꾼다');
 }
 
+/* ── 계약서 작성 화면 (2026-10-30 대표님 '완성도 있게 · 단추는 배경색 상자로 더 구분 · 필요하면 모션') ──
+   화면 함수를 실제로 돌린다 - 움직임 표시는 누른 직후 한 번만, 다 고른 순간 만들기 줄이 한 번 켜진다 */
+{
+  const 마법 = js.slice(js.indexOf('const CT_빠른 = ['), js.indexOf('/* 목록 검색 - 소재지'));
+  const W = new Function('S', 'esc', 'apiFetch', '세션있음', 'render', 'toast', 'DZ_ICO', 'ct찾기줄', 'ctRowsHTML', 'ctFilter',
+    `${몸}\n${확몸}\n${마법}\nreturn { ctWizHTML, CT };`)(S, esc, () => {}, () => false, () => {}, () => {}, { building: 'M0 0', doc: 'M0 0', home: 'M0 0' }, () => '', () => '', r => r);
+  W.CT.pick = null; W.CT.wizOk = false;
+  let h = W.ctWizHTML([]);
+  ok(/class="ctw-c" data-act="ctp-sub"/.test(h) && !/class="chip/.test(h.split('<div class="ctw">')[1]) && /data-act="ctp-go" disabled>계약서 만들기/.test(h),
+     '고르는 단추는 공용 칩이 아닌 .ctw-c(옅은 면 상자) · 다 고르기 전에는 만들기가 잠긴다');
+  W.CT.pick.sub = '아파트'; W.CT.wizFx = { just: 'ctp-sub:아파트', kind: 'sub' };
+  h = W.ctWizHTML([]);
+  ok(/class="ctw-c on just" data-act="ctp-sub" data-v="아파트"/.test(h) && /class="ctw-n done just"/.test(h) && /<em class="ctw-picked">아파트<\/em>/.test(h),
+     '고른 단추가 톡 튀고(just) · 걸음 번호가 체크로 · 고른 값이 제목 옆에');
+  h = W.ctWizHTML([]);
+  ok(!/ just/.test(h), '움직임 표시는 한 번만 - 다시 그려도 되풀이하지 않는다');
+  W.CT.pick.deal = '전세';
+  h = W.ctWizHTML([]);
+  ok(/class="ctw-foot lit"/.test(h) && /<b>부동산\(아파트\) 전세계약서<\/b>/.test(h) && /data-act="ctp-go" >계약서 만들기/.test(h), '다 고른 순간 만들기 줄이 한 번 켜진다(lit)');
+  h = W.ctWizHTML([]);
+  ok(/class="ctw-foot"/.test(h) && !/ctw-foot lit/.test(h), '이미 켜진 뒤에 다시 그리면 켜짐 움직임이 없다');
+  W.CT.pick = { cat: 'rights', sub: null, custom: '', deal: null, ex: null }; W.CT.wizOk = false;
+  h = W.ctWizHTML([]);
+  ok(/고를 것 없이 바로 만듭니다\. 점포 영업 양도양수 계약의 일반적인 항목을 따라 만든 양식입니다\./.test(h) && /class="ctw-foot lit"/.test(h),
+     '고를 것 없는 종류는 근거 한 문장으로 · 바꾸자마자 만들기 줄이 켜진다');
+}
+
 console.log(`${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

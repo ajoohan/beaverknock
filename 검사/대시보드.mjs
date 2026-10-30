@@ -191,6 +191,19 @@ const M = new Function('esc', `${js.slice(시작, 끝)}\nreturn { dzLine, dzPill
      && !/if\(c && !c\.subs && !c\.deals\)\{ ctMake/.test(js) && js.includes('<button type="button" class="btn pri" data-act="ctp-go"')
      && /\.ctw-foot\{position:sticky;bottom:0;/.test(css) && /\.ctw\{[^}]*overflow:clip;/.test(css),
      '계약서 작성 - 왼쪽 종류 | 오른쪽 세부 종류·거래유형 · 고르기만으로는 열지 않고 [계약서 만들기] 로 · 자주 쓰는 계약서 바로가기 · 만들기 줄은 화면 아래에 붙는다');
+  /* 2026-10-30 '완성도 있게 · 단추는 배경색 상자로 더 구분 · 줄간격·글자 크기 · 필요하면 모션' */
+  ok(/\.ctw-c\{[^}]*background:var\(--ctw-fill\)/.test(css) && css.includes('.ctw-c.on{background:var(--ind);color:#fff;font-weight:700')
+     && css.includes(".ctw-c.on::before{content:'';flex:none;width:6px;height:6px;border-radius:50%") && /\.ctw-seg button\.on\{background:var\(--ind\);color:#fff/.test(css),
+     '고르는 단추는 옅은 면 상자, 고르면 꽉 찬 남색 + 점(하나만 고르는 칩의 표) · 거래유형도 같은 모양');
+  ok(css.includes('.ctw .ctw-foot .btn[disabled]{background:var(--ind)!important;border-color:var(--ind)!important;color:#fff!important;opacity:.38}'),
+     '아직 못 만들 때는 회색 상자 대신 흐린 남색(.38) - 무엇을 누르게 될지 보인다');
+  ok(/@keyframes ctwIn\{/.test(css) && /@keyframes ctwPop\{/.test(css) && /\.ctw-body\.swap > \*\{animation:ctwIn \.3s [^}]*animation-delay:calc\(var\(--i,0\) \* 45ms\)\}/.test(css)
+     && css.includes('@media (prefers-reduced-motion:reduce){\n  .ctw *,.ctw-quick *{animation:none!important;transition:none!important}'),
+     '움직임 - 종류를 바꾸면 걸음이 45ms 간격으로 올라오고, 고른 것은 톡 · 움직임 줄이기 설정이면 모두 끈다');
+  ok(js.includes("CT.wizFx = { swap: true, just: 'ctp-cat:' + v };") && js.includes("CT.wizFx = { just: 'ctp-sub:' + v, kind: 'sub' };") && js.includes('const fx = CT.wizFx || {}; CT.wizFx = null;'),
+     '움직임 표시는 누른 직후 첫 그림에서만 쓰고 지운다(다시 그릴 때 되풀이 없음)');
+  ok(css.includes('body.mo .scr:has(> .tabbar) .ctw-foot{bottom:calc(74px + env(safe-area-inset-bottom, 0px))}'),
+     '휴대폰 - 만들기 줄은 아래 탭 막대 위에 붙는다(그 밑에 단추가 가려졌다)');
 
   /* 마이페이지 (2026-10-30 '빈 곳 없이 · 서비스 수준') */
   ok(js.includes('<section class="card acc-row"><div class="acc-l"><h2>${제목}</h2>') && js.includes('<button class="btn sec sm acc-out" data-act="logout">로그아웃</button>')

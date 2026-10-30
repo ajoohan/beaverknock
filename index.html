@@ -1827,45 +1827,104 @@ body.mo .ct-long{display:none}
 .pl-chk > .pl-ok{flex:none;display:inline-flex;flex-direction:row}
 .ct-pick-h{display:flex;justify-content:space-between;align-items:center;gap:8px}
 .ct-pick-h h2{margin:0;font-size:16px;font-weight:700}
-/* 계약서 작성 (2026-10-30 '심플하지만 직관적이고 편하게') - 왼쪽 종류 | 오른쪽 고르기 · 아래 만들 계약서와 단추 */
-.ctw-quick{display:flex;align-items:center;gap:8px 14px;flex-wrap:wrap}
-.ctw-quick .lab{margin:0;flex:none}
+/* 계약서 작성 (2026-10-30 '심플하지만 직관적이고 편하게' → 같은 날 '완성도 있게 · 단추는 배경색 상자로 더 구분 · 줄간격·글자 크기 · 필요하면 모션')
+   - 고르는 단추(.ctw-c)는 테두리 대신 옅은 면, 고른 것은 꽉 찬 남색 + 점(하나만 고르는 칩의 표). 공용 .chip 규칙(!important 여러 겹)과 섞이지 않게 이름을 따로 쓴다
+   - 움직임은 세 곳만(150~300ms): 종류를 바꾸면 오른쪽 걸음이 아래에서 45ms 간격으로 올라오고, 고른 단추가 톡 튀고, 다 고르면 만들기 줄이 켜진다.
+     누르면 .97 로 살짝 줄어든다. 움직임 줄이기 설정이면 모두 끈다 */
+.ctw-quick{display:flex;align-items:center;gap:10px 16px;flex-wrap:wrap}
+.ctw-quick .lab{margin:0;flex:none;font-size:14px;font-weight:700;color:var(--n700)}
+.ctw-qs{display:flex;flex-wrap:wrap;gap:8px}
+.ctw-q{display:inline-flex;align-items:center;gap:9px;min-height:42px;padding:0 15px 0 7px;border:1px solid var(--n200);border-radius:12px;background:var(--white);
+  font:inherit;font-size:14.5px;font-weight:600;line-height:1.3;color:var(--n900);cursor:pointer;box-shadow:0 1px 2px rgba(29,28,42,.05);
+  transition:border-color .15s ease-out,box-shadow .2s ease-out,transform .12s ease-out,color .15s ease-out}
+.ctw-q i{flex:none;display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:8px;background:var(--ind50);color:var(--ind700)}
+@media (hover:hover){ .ctw-q:hover{border-color:var(--ind200);color:var(--ind700);box-shadow:0 6px 16px -8px rgba(40,42,110,.3);transform:translateY(-1px)} }
+.ctw-q:active{transform:scale(.97)}
 /* 둥근 모서리 자르기는 clip - hidden 이면 그 상자가 스크롤 기준이 되어 아래 붙는 줄(sticky)이 움직이지 않는다 */
-.ctw{display:grid;grid-template-columns:272px minmax(0,1fr);background:var(--white);border-radius:var(--r-lg);box-shadow:var(--sh1);overflow:clip;min-height:420px}
-.ctw-l{display:flex;flex-direction:column;gap:2px;padding:12px;background:var(--n50);border-right:1px solid var(--n100)}
-.ctw-cat{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;padding:10px 12px;border:1px solid transparent;border-radius:10px;background:transparent;text-align:left;color:var(--n900);cursor:pointer}
-.ctw-cat b{font-size:15px;font-weight:600;letter-spacing:-.01em}
-.ctw-cat span{font-size:13px;line-height:1.45;color:var(--n500)}
-.ctw-cat:hover{background:var(--white)}
-.ctw-cat.on{background:var(--white);border-color:var(--ind);box-shadow:0 1px 2px rgba(40,42,110,.08)}
+.ctw{--ctw-fill:#F0F0F6;--ctw-fill-h:#E5E5F1;display:grid;grid-template-columns:280px minmax(0,1fr);background:var(--white);border-radius:var(--r-lg);box-shadow:var(--sh1);overflow:clip;min-height:420px}
+.ctw-l{display:flex;flex-direction:column;gap:4px;padding:14px 12px;background:var(--n50);border-right:1px solid var(--n100)}
+.ctw-cat{display:grid;grid-template-columns:36px minmax(0,1fr);align-items:center;column-gap:12px;row-gap:1px;width:100%;padding:10px 12px;border:1px solid transparent;border-radius:12px;
+  background:transparent;font:inherit;text-align:left;color:var(--n900);cursor:pointer;
+  transition:background-color .15s ease-out,border-color .15s ease-out,box-shadow .2s ease-out,transform .12s ease-out}
+.ctw-ico{grid-row:1 / span 2;display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:10px;
+  background:var(--white);color:var(--n700);box-shadow:inset 0 0 0 1px var(--n200);transition:background-color .15s ease-out,color .15s ease-out}
+.ctw-cat b{grid-column:2;font-size:15px;font-weight:600;line-height:1.35;letter-spacing:-.01em}
+.ctw-cat span{grid-column:2;font-size:13px;line-height:1.45;color:var(--n500)}
+@media (hover:hover){ .ctw-cat:not(.on):hover{background:var(--white)} .ctw-cat:not(.on):hover .ctw-ico{color:var(--ind700)} }
+.ctw-cat:active{transform:scale(.985)}
+.ctw-cat.on{background:var(--white);border-color:var(--ind);box-shadow:0 0 0 3px rgba(79,82,209,.1),0 2px 6px -2px rgba(40,42,110,.12)}
+.ctw-cat.on .ctw-ico{background:var(--ind);color:#fff;box-shadow:none}
 .ctw-cat.on b{color:var(--ind700);font-weight:700}
 .ctw-sep{display:block;height:1px;margin:8px 4px;background:var(--n200)}
 .ctw-r{display:flex;flex-direction:column;min-width:0}
-.ctw-body{flex:1;display:flex;flex-direction:column;gap:22px;padding:24px 28px}
-.ctw-step{display:flex;flex-direction:column;gap:12px}
-.ctw-step h3{display:flex;align-items:center;gap:8px;margin:0;font-size:15px;font-weight:700;color:var(--n900)}
-.ctw-n{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:var(--ind50);color:var(--ind700);font-size:13px;font-weight:800}
-.ctw-grp{display:flex;flex-direction:column;gap:8px}
-.ctw-grp > span{font-size:13.5px;font-weight:600;color:var(--n500)}
+.ctw-body{flex:1;display:flex;flex-direction:column;gap:30px;padding:28px 32px 32px}
+.ctw-step{display:flex;flex-direction:column;gap:14px}
+.ctw-step h3{display:flex;align-items:center;gap:10px;margin:0;font-size:16.5px;font-weight:700;line-height:1.35;letter-spacing:-.02em;color:var(--n900)}
+.ctw-n{flex:none;display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:var(--ind50);color:var(--ind700);
+  font-size:13.5px;font-weight:800;transition:background-color .2s ease-out,color .2s ease-out}
+.ctw-n.done{background:var(--ok);color:#fff}
+.ctw-picked{padding:3px 10px;border-radius:999px;background:var(--ind50);font-style:normal;font-size:13.5px;font-weight:700;color:var(--ind700)}
+.ctw-grp{display:flex;flex-direction:column;gap:10px}
+.ctw-grp + .ctw-grp{margin-top:4px}
+.ctw-grp > span{font-size:13px;font-weight:700;letter-spacing:.01em;color:var(--n500)}
+.ctw-cs{display:flex;flex-wrap:wrap;gap:8px}
+.ctw-c{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:42px;padding:0 17px;border:1px solid transparent;border-radius:10px;
+  background:var(--ctw-fill);font:inherit;font-size:14.5px;font-weight:600;line-height:1.3;color:var(--n700);cursor:pointer;
+  transition:background-color .15s ease-out,color .15s ease-out,box-shadow .2s ease-out,transform .12s ease-out}
+.ctw-c.on{background:var(--ind);color:#fff;font-weight:700;box-shadow:0 6px 14px -6px rgba(79,82,209,.7)}
+.ctw-c.on::before{content:'';flex:none;width:6px;height:6px;border-radius:50%;background:currentColor}
+@media (hover:hover){ .ctw-c:not(.on):hover{background:var(--ctw-fill-h);color:var(--ind700)} .ctw-c.on:hover{background:var(--ind700)} }
+.ctw-c:active,.ctw-seg button:active{transform:scale(.97)}
+.ctw-seg{align-self:flex-start;display:inline-flex;flex-wrap:wrap;gap:4px;padding:4px;border-radius:12px;background:var(--ctw-fill)}
+.ctw-seg button{min-width:88px;min-height:42px;padding:0 18px;border:0;border-radius:9px;background:transparent;font:inherit;font-size:15px;font-weight:600;line-height:1.3;color:var(--n700);cursor:pointer;
+  transition:background-color .15s ease-out,color .15s ease-out,box-shadow .2s ease-out,transform .12s ease-out}
+@media (hover:hover){ .ctw-seg button:not(.on):hover{background:rgba(255,255,255,.8);color:var(--ind700)} .ctw-seg button.on:hover{background:var(--ind700)} }
+.ctw-seg button.on{background:var(--ind);color:#fff;font-weight:700;box-shadow:0 6px 14px -6px rgba(79,82,209,.7)}
 .ctw-note{margin:0;font-size:14px;line-height:1.65;color:var(--n500)}
-.ctw-one{display:flex;flex-direction:column;gap:6px;padding:18px 20px;border-radius:var(--r-sm);background:var(--n50)}
-.ctw-one b{font-size:16px;font-weight:700;color:var(--n900)}
-.ctw-one p{margin:0;font-size:14px;line-height:1.6;color:var(--n500)}
+.ctw-one{display:flex;align-items:center;gap:16px;padding:20px 22px;border-radius:12px;background:var(--n50)}
+.ctw-one .ctw-ico{flex:none;width:44px;height:44px;border-radius:12px;background:var(--ind);color:#fff;box-shadow:none}
+.ctw-one b{display:block;font-size:16.5px;font-weight:700;color:var(--n900)}
+.ctw-one p{margin:4px 0 0;font-size:14px;line-height:1.6;color:var(--n500)}
 /* 만들 계약서 줄은 화면 아래에 붙는다 - 왼쪽 종류 목록이 길어 단추가 화면 밖으로 밀렸다 */
-.ctw-foot{position:sticky;bottom:0;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 28px;border-top:1px solid var(--n100);background:var(--n50)}
-.ctw-step .seg{align-self:flex-start}
-.ctw-sum{display:flex;flex-direction:column;gap:2px;min-width:0}
+.ctw-foot{position:sticky;bottom:0;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 32px;border-top:1px solid var(--n100);
+  background:rgba(248,247,251,.94);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.ctw-sum{display:flex;flex-direction:column;gap:3px;min-width:0}
 .ctw-sum small{font-size:13px;font-weight:600;color:var(--n500)}
-.ctw-sum b{font-size:17px;font-weight:700;letter-spacing:-.02em;color:var(--n900)}
-.ctw-sum span{font-size:15px;color:var(--n500)}
-.ctw-foot .btn{flex:none}
-/* 휴대폰 - 종류는 두 칸씩, 고르기와 단추는 그 아래 */
+.ctw-sum b{font-size:18px;font-weight:700;line-height:1.35;letter-spacing:-.02em;color:var(--n900)}
+.ctw-sum span{font-size:15px;line-height:1.45;color:var(--n500)}
+.ctw .ctw-foot .btn{flex:none;gap:8px;min-height:48px;padding:0 24px;border-radius:12px;font-size:15.5px;font-weight:700}
+.ctw-foot .btn svg{flex:none;transition:transform .2s ease-out}
+.ctw-foot .btn:not([disabled]){box-shadow:0 8px 18px -8px rgba(79,82,209,.75)}
+@media (hover:hover){ .ctw-foot .btn:not([disabled]):hover svg{transform:translateX(3px)} }
+/* 아직 못 만들 때 - 회색 상자 대신 흐린 남색: 무엇을 누르게 될지는 보이되 눌리지 않는다 */
+.ctw .ctw-foot .btn[disabled]{background:var(--ind)!important;border-color:var(--ind)!important;color:#fff!important;opacity:.38}
+@keyframes ctwIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes ctwPop{0%{transform:scale(.9)}60%{transform:scale(1.05)}100%{transform:scale(1)}}
+@keyframes ctwRise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@keyframes ctwGlow{0%{box-shadow:0 0 0 0 rgba(79,82,209,.5),0 8px 18px -8px rgba(79,82,209,.75)}100%{box-shadow:0 0 0 14px rgba(79,82,209,0),0 8px 18px -8px rgba(79,82,209,.75)}}
+.ctw-body.swap > *{animation:ctwIn .3s cubic-bezier(.2,.7,.3,1) both;animation-delay:calc(var(--i,0) * 45ms)}
+.ctw .just{animation:ctwPop .26s cubic-bezier(.3,.7,.4,1) both}
+.ctw-cat.just{animation:none}
+.ctw-cat.just .ctw-ico{animation:ctwPop .26s cubic-bezier(.3,.7,.4,1) both}
+.ctw-foot.lit .ctw-sum b{animation:ctwRise .28s ease-out both}
+.ctw-foot.lit .btn{animation:ctwGlow .9s ease-out .1s 1 both}
+@media (prefers-reduced-motion:reduce){
+  .ctw *,.ctw-quick *{animation:none!important;transition:none!important}
+  .ctw-q:hover,.ctw-q:active,.ctw-c:active,.ctw-seg button:active,.ctw-cat:active{transform:none!important}
+}
+/* 휴대폰 - 종류는 두 칸씩(그림 없이), 고르기와 단추는 그 아래 */
 body.mo .ctw{grid-template-columns:minmax(0,1fr)}
 body.mo .ctw-l{display:grid;grid-template-columns:1fr 1fr;gap:6px;border-right:none;border-bottom:1px solid var(--n100)}
-body.mo .ctw-cat{background:var(--white);border-color:var(--n200);min-height:56px}
+body.mo .ctw-cat{grid-template-columns:minmax(0,1fr);background:var(--white);border-color:var(--n200);min-height:56px}
+body.mo .ctw-cat.on{border-color:var(--ind)}
+body.mo .ctw-cat :is(b,span){grid-column:1}
+body.mo .ctw-cat .ctw-ico{display:none}
 body.mo .ctw-sep{grid-column:1/-1;margin:2px 0}
-body.mo .ctw-body{padding:18px 16px}
+body.mo .ctw-body{gap:24px;padding:20px 16px}
+body.mo :is(.ctw-c,.ctw-seg button,.ctw-q){min-height:44px}
 body.mo .ctw-foot{flex-wrap:wrap;padding:14px 16px}
+/* 아래 탭 막대(74px + 아이폰 안전 영역)도 같은 자리에 붙는다 - 만들기 단추가 그 밑에 가려졌다(2026-10-30) */
+body.mo .scr:has(> .tabbar) .ctw-foot{bottom:calc(74px + env(safe-area-inset-bottom, 0px))}
 body.mo .ctw-foot .btn{width:100%}
 .ct-step{display:flex;flex-direction:column;gap:6px}
 .ct-chips{display:flex;flex-wrap:wrap;gap:6px}
@@ -10542,6 +10601,11 @@ const CT_하위메뉴 = [['#/partner/contracts/new', '계약서 작성', 'pen', 
    번호는 배포한 날(연.월.일 - 같은 날 또 올리면 뒤에 .2). 화면이 version.json 을 가끔 읽어,
    더 새 버전이 올라와 있으면 메뉴 아래에서 새로고침을 권한다(버전확인) - 계약서를 띄워 둔 채 오래 일하면 고친 화면을 못 받는다 */
 const BK_변경 = [
+  { v:'26.10.30.7', 날:'2026-10-30', 줄:[
+    '계약서 작성 화면 다듬기 - 고르는 단추를 옅은 면 상자로, 고르면 꽉 찬 남색 + 점 · 종류마다 그림 · 자주 쓰는 계약서는 그림 붙은 타일',
+    '걸음을 다 고르면 번호가 체크로 바뀌고 고른 값이 제목 옆에 · 만들기 단추는 못 누를 때 흐린 남색, 다 고르면 켜진다',
+    '움직임 - 종류를 바꾸면 오른쪽이 차례로 올라오고, 고른 단추가 톡 튄다(움직임 줄이기 설정이면 끔) · 휴대폰에서 만들기 단추가 아래 탭에 가려지던 것 고침',
+  ]},
   { v:'26.10.30.6', 날:'2026-10-30', 줄:[
     '서류로 채우기를 세 걸음(서류 받기 · 올리기 · 채우고 확인)으로 - 서류마다 언제 필요한지 · 어디서 받는지 · 올리기를 한 카드에, 카드에 끌어다 놓아도 된다',
     '발급 링크 점검 - 세움터는 건축물대장 발급 화면, 토지이음은 토지이용계획 열람 화면으로 바로 · 인터넷등기소는 메뉴 이름(부동산 열람·발급)까지 알려 줌',
@@ -11464,6 +11528,23 @@ function ctPrint(){
    자주 쓰는 여섯은 위에서 한 번에 연다. 처음 들어오면 부동산을 골라 둔다(가장 많이 쓴다) */
 const CT_빠른 = [['realty','아파트','매매'], ['realty','아파트','전세'], ['realty','아파트','월세'], ['realty','오피스텔','월세'], ['realty','원룸','월세'], ['shop','','']];
 const ct빠른이름 = ([k, sub, deal]) => k === 'shop' ? '상가 임대차' : `${sub} ${deal}`;
+/* 종류마다 그림 (2026-10-30 '완성도 있게') - 대시보드 그림(dzIco)과 같은 선 굵기·끝 모양. 없는 모양만 여기에 더한다 */
+const CTW_ICO = {
+  presale:'M3 8 V5 h18 v3 a3 3 0 0 0 0 6 v3 H3 v-3 a3 3 0 0 0 0 -6 Z M9.5 7.5 v2 M9.5 11 v2 M9.5 14.5 v2',
+  rights:'M4 8 h13 M13.5 4.5 L17 8 l-3.5 3.5 M20 16 H7 M10.5 12.5 L7 16 l3.5 3.5',
+  premium:'M12 21 a9 9 0 1 0 0 -18 a9 9 0 0 0 0 18 M7.5 8.5 L9 15.5 L12 10 L15 15.5 L16.5 8.5 M6.5 12 h11',
+  shop:'M3 10 L4.8 4.5 h14.4 L21 10 M3 10 a3 3 0 0 0 6 0 a3 3 0 0 0 6 0 a3 3 0 0 0 6 0 M4.5 12.5 V20 h15 v-7.5 M10 20 v-5 h4 v5',
+  union:'M15 13 a4 4 0 1 0 0 -8 a4 4 0 0 0 0 8 M12.2 11.8 L4 20 M6 18 l2.2 2.2 M8.6 15.4 l2 2',
+  sublease:'M12 3.5 L3 8.5 l9 5 9 -5 Z M3 13 l9 5 9 -5',
+  explain:'M10 6 h10 M10 12 h10 M10 18 h10 M3.5 6 l1.5 1.5 2.5 -3 M3.5 12 l1.5 1.5 2.5 -3 M3.5 18 l1.5 1.5 2.5 -3',
+  renew:'M20 12 a8 8 0 0 1 -14.3 4.9 M4 12 a8 8 0 0 1 14.3 -4.9 M18.5 3.5 v4 h-4 M5.5 20.5 v-4 h4',
+  go:'M5 12 h14 M13 6 l6 6 -6 6',
+  check:'M5 12.5 l4.5 4.5 L19 7.5',
+};
+const ctw그림 = (k, s = 18, 굵기 = 1.8) => `<svg viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="currentColor" stroke-width="${굵기}"
+  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${CTW_ICO[k] || DZ_ICO[{ realty:'building', std:'doc', home:'home' }[k] || 'doc']}"/></svg>`;
+/* 양식 근거 한 문장 - '…항목을 참고' → '…항목을 참고해 만든 양식입니다', '…항목을 따라' → '…항목을 따라 만든 양식입니다' */
+const ct양식근거 = f => f ? `${f}${/따라$/.test(f) ? ' ' : '해 '}만든 양식입니다.` : '';
 /* 지금 고른 것으로 만들 수 있는가 - { ok, title } 또는 { ok:false, why } */
 function ct만들것(p){
   if(!p) return { ok:false, why:'종류를 고르세요' };
@@ -11476,15 +11557,22 @@ function ct만들것(p){
   const form = c.form || (p.deal === '매매' ? 'sale' : 'lease');
   return { ok:true, title: ctTitle({ form, cat: c.k, sub: 세부 || '', deal: { type: { 전세:'jeonse', 월세:'monthly', 연세:'yearly' }[p.deal] } }) };
 }
+/* 고르는 단추는 공용 .chip 이 아니라 .ctw-c - 옅은 면 상자 · 고르면 꽉 찬 남색과 점(하나만 고르는 칩의 표).
+   움직임 표시(CT.wizFx)는 누른 직후 첫 그림에서만 쓰고 지운다 - 글자를 칠 때마다 다시 그려도 되풀이되지 않는다.
+   걸음을 다 고르면 번호가 체크로 바뀌고 고른 값이 제목 옆에 붙는다. 만들기 줄은 막 다 골랐을 때 한 번 켜진다(CT.wizOk) */
 function ctWizHTML(전체){
   const p = CT.pick || (CT.pick = { cat:'realty', sub:null, custom:'', deal:null, ex:null });
   const c = CT_CATS.find(x => x.k === p.cat), 직접 = p.sub === '__custom';
-  const 칩 = (act, v, t, on) => `<button type="button" class="chip${on ? ' on' : ''}" data-act="${act}" data-v="${esc(v)}" aria-pressed="${!!on}">${esc(t)}</button>`;
-  const 종류 = (k, b, sp) => `<button type="button" class="ctw-cat${p.cat === k ? ' on' : ''}" data-act="ctp-cat" data-v="${k}" aria-pressed="${p.cat === k}"><b>${esc(b)}</b>${sp ? `<span>${esc(sp)}</span>` : ''}</button>`;
-  const 단계 = (n, 제목, 몸) => `<div class="ctw-step"><h3><span class="ctw-n">${n}</span>${제목}</h3>${몸}</div>`;
-  let 오른쪽 = '', n = 1;
-  if(p.cat === 'explain') 오른쪽 = 단계(n++, '서식', `<div class="chips">${Object.entries(EX_FORMS).map(([k, e]) => 칩('ctp-ex', k, e.short, p.ex === k)).join('')}</div>
-      <p class="ctw-note">공인중개사법 시행규칙의 별지 서식 항목 그대로입니다. 계약서에서 만들면 계약서 내용으로 칸이 채워집니다.</p>`);
+  const fx = CT.wizFx || {}; CT.wizFx = null;
+  const 톡 = key => fx.just === key ? ' just' : '';
+  const 칩 = (act, v, t, on) => `<button type="button" class="ctw-c${on ? ' on' : ''}${톡(`${act}:${v}`)}" data-act="${act}" data-v="${esc(v)}" aria-pressed="${!!on}">${esc(t)}</button>`;
+  const 종류 = (k, b, sp) => `<button type="button" class="ctw-cat${p.cat === k ? ' on' : ''}${톡(`ctp-cat:${k}`)}" data-act="ctp-cat" data-v="${k}" aria-pressed="${p.cat === k}"><i class="ctw-ico">${ctw그림(k)}</i><b>${esc(b)}</b>${sp ? `<span>${esc(sp)}</span>` : ''}</button>`;
+  let n = 0;
+  const 단계 = (제목, 몸, 고른것, 갈래) => { n++;
+    return `<div class="ctw-step" style="--i:${n - 1}"><h3><span class="ctw-n${고른것 ? ' done' : ''}${고른것 && fx.kind === 갈래 ? ' just' : ''}" aria-hidden="true">${고른것 ? ctw그림('check', 14, 2.6) : n}</span>${제목}${고른것 ? `<em class="ctw-picked">${esc(고른것)}</em>` : ''}</h3>${몸}</div>`; };
+  let 오른쪽 = '';
+  if(p.cat === 'explain') 오른쪽 = 단계('서식', `<div class="ctw-cs">${Object.entries(EX_FORMS).map(([k, e]) => 칩('ctp-ex', k, e.short, p.ex === k)).join('')}</div>
+      <p class="ctw-note">공인중개사법 시행규칙의 별지 서식 항목 그대로입니다. 계약서에서 만들면 계약서 내용으로 칸이 채워집니다.</p>`, p.ex ? (EX_FORMS[p.ex] || {}).short || '' : '', 'ex');
   else if(p.cat === 'renew') 오른쪽 = `<p class="ctw-note" style="margin:0">갱신할 임대차·전대차 계약서를 고르세요. 내용을 그대로 불러와 새 계약서로 엽니다 - <b>원래 계약서는 고치지 않고 그대로 남습니다.</b></p>
       ${전체.length ? ct찾기줄() : ''}${ctRowsHTML(전체, ctFilter(전체), true)}`;
   else if(c){
@@ -11494,24 +11582,25 @@ function ctWizHTML(전체){
       const 묶음 = c.k === 'realty'
         ? [['주거', c.subs.filter(s => CT_SUB_HOME.includes(s))], ['상가·업무', c.subs.filter(s => !CT_SUB_HOME.includes(s) && !땅.includes(s))], ['토지·공장·창고', c.subs.filter(s => 땅.includes(s))]]
         : [['', c.subs]];
-      오른쪽 += 단계(n++, '세부 종류', 묶음.map(([이름, 줄]) => `<div class="ctw-grp">${이름 ? `<span>${이름}</span>` : ''}<div class="chips">${줄.map(s => 칩('ctp-sub', s, s || '구분 없음', p.sub === s)).join('')}</div></div>`).join('')
-        + `<div class="ctw-grp"><div class="chips">${칩('ctp-sub', '__custom', '직접입력', 직접)}</div>
-          ${직접 ? `<input class="inp" data-in="ctp-custom" value="${esc(p.custom || '')}" placeholder="예: 펜션" style="max-width:320px" aria-label="세부 종류 직접입력">` : ''}</div>`);
+      const 고른세부 = p.sub == null ? '' : 직접 ? String(p.custom || '').trim() : (p.sub || '구분 없음');
+      오른쪽 += 단계('세부 종류', 묶음.map(([이름, 줄]) => `<div class="ctw-grp">${이름 ? `<span>${이름}</span>` : ''}<div class="ctw-cs">${줄.map(s => 칩('ctp-sub', s, s || '구분 없음', p.sub === s)).join('')}</div></div>`).join('')
+        + `<div class="ctw-grp"><span>목록에 없으면</span><div class="ctw-cs">${칩('ctp-sub', '__custom', '직접입력', 직접)}</div>
+          ${직접 ? `<input class="inp" data-in="ctp-custom" value="${esc(p.custom || '')}" placeholder="예: 펜션" style="max-width:320px" aria-label="세부 종류 직접입력">` : ''}</div>`, 고른세부, 'sub');
     }
-    if(c.deals) 오른쪽 += 단계(n++, '거래유형', `<div class="seg" role="group" aria-label="거래유형">${c.deals.map(d => `<button type="button" class="${p.deal === d ? 'on' : ''}" data-act="ctp-deal" data-v="${d}" aria-pressed="${p.deal === d}">${d}</button>`).join('')}</div>`);
-    if(!c.subs && !c.deals) 오른쪽 = `<div class="ctw-one"><b>${esc(c.ko)}</b><p>고를 것 없이 바로 만듭니다 · ${esc((CT_FORMS[c.form] || {}).foot || '')}</p></div>`;
+    if(c.deals) 오른쪽 += 단계('거래유형', `<div class="ctw-seg" role="group" aria-label="거래유형">${c.deals.map(d => `<button type="button" class="${p.deal === d ? 'on' : ''}${톡(`ctp-deal:${d}`)}" data-act="ctp-deal" data-v="${d}" aria-pressed="${p.deal === d}">${d}</button>`).join('')}</div>`, p.deal || '', 'deal');
+    if(!c.subs && !c.deals) 오른쪽 = `<div class="ctw-one"><i class="ctw-ico">${ctw그림(c.k, 22)}</i><div><b>${esc(c.ko)}</b><p>고를 것 없이 바로 만듭니다. ${esc(ct양식근거((CT_FORMS[c.form] || {}).foot))}</p></div></div>`;
   }
-  const 것 = ct만들것(p);
+  const 것 = ct만들것(p), 켜짐 = 것.ok && !CT.wizOk; CT.wizOk = 것.ok;
   return `
     <div class="ctw-quick"><span class="lab">자주 쓰는 계약서</span>
-      <div class="chips">${CT_빠른.map(q => `<button type="button" class="chip" data-act="ctp-quick" data-v="${esc(q.join('|'))}">${esc(ct빠른이름(q))}</button>`).join('')}</div></div>
+      <div class="ctw-qs">${CT_빠른.map(q => `<button type="button" class="ctw-q" data-act="ctp-quick" data-v="${esc(q.join('|'))}"><i>${ctw그림(q[0] === 'shop' ? 'shop' : q[1] === '원룸' ? 'home' : 'realty', 16)}</i>${esc(ct빠른이름(q))}</button>`).join('')}</div></div>
     <div class="ctw">
       <nav class="ctw-l" aria-label="계약서 종류">${CT_CATS.map(x => 종류(x.k, x.ko, x.hint)).join('')}
         <i class="ctw-sep" aria-hidden="true"></i>${종류('explain', '중개대상물 확인·설명서', '주거용 · 비주거용 · 토지 · 입목·재단')}${종류('renew', '갱신계약', '지난 계약서를 불러와 고쳐 쓰기')}</nav>
       <section class="ctw-r" aria-label="고르기">
-        <div class="ctw-body">${오른쪽}</div>
-        ${것.renew ? '' : `<div class="ctw-foot"><div class="ctw-sum"><small>만들 계약서</small>${것.ok ? `<b>${esc(것.title)}</b>` : `<span>${esc(것.why)}</span>`}</div>
-          <button type="button" class="btn pri" data-act="ctp-go" ${것.ok ? '' : 'disabled'}>계약서 만들기</button></div>`}
+        <div class="ctw-body${fx.swap ? ' swap' : ''}">${오른쪽}</div>
+        ${것.renew ? '' : `<div class="ctw-foot${켜짐 ? ' lit' : ''}"><div class="ctw-sum" aria-live="polite"><small>만들 계약서</small>${것.ok ? `<b>${esc(것.title)}</b>` : `<span>${esc(것.why)}</span>`}</div>
+          <button type="button" class="btn pri" data-act="ctp-go" ${것.ok ? '' : 'disabled'}>계약서 만들기${ctw그림('go', 18, 2.2)}</button></div>`}
       </section>
     </div>`;
 }
@@ -14894,11 +14983,13 @@ function handle(a,v,el){
     /* 계약서 작성 - 고르기는 고르기만, 여는 것은 [계약서 만들기](ctp-go)와 자주 쓰는 계약서(ctp-quick) */
     case 'ctp-cat':
       CT.pick = v ? { cat: v, sub: null, custom: '', deal: null, ex: null } : null;
+      CT.wizFx = { swap: true, just: 'ctp-cat:' + v };          /* 움직임은 누른 직후 한 번 - ctWizHTML 이 쓰고 지운다 */
+      CT.wizOk = false;                                          /* 고를 것 없는 종류(권리양도양수 등)면 바로 만들기 줄이 켜진다 */
       if(v === 'renew' && !CT.list) ctLoadList(true);
       render(); return true;
-    case 'ctp-sub': if(CT.pick){ CT.pick.sub = v; render(); } return true;
-    case 'ctp-deal': if(CT.pick){ CT.pick.deal = v; render(); } return true;
-    case 'ctp-ex': if(CT.pick){ CT.pick.ex = EX_FORMS[v] ? v : null; render(); } return true;
+    case 'ctp-sub': if(CT.pick){ CT.pick.sub = v; CT.wizFx = { just: 'ctp-sub:' + v, kind: 'sub' }; render(); } return true;
+    case 'ctp-deal': if(CT.pick){ CT.pick.deal = v; CT.wizFx = { just: 'ctp-deal:' + v, kind: 'deal' }; render(); } return true;
+    case 'ctp-ex': if(CT.pick){ CT.pick.ex = EX_FORMS[v] ? v : null; CT.wizFx = { just: 'ctp-ex:' + v, kind: 'ex' }; render(); } return true;
     case 'ctp-quick': { const [k, sub, deal] = String(v).split('|'); if(CT_CATS.some(x => x.k === k)) ctMake(k, sub || '', deal || ''); return true; }
     case 'ctp-go': {
       const p = CT.pick, 것 = ct만들것(p);

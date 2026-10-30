@@ -9,7 +9,8 @@
 
 import { userFrom, sbHeaders, sbUrl } from './_auth.js';
 import { dbWhy } from './_dberr.js';
-import { contractRoute, reportDueCron, 알림설정 } from './_contract.js';
+import { contractRoute, reportDueCron, 알림설정, 특약문구들, 특약문구고침 } from './_contract.js';
+import { 날씨 } from './_weather.js';
 
 const KIND_KO = { home: '주거', shop: '상가', office: '오피스', storage: '창고' };
 
@@ -158,6 +159,28 @@ async function saveAlert(res, agent, b) {
   return res.status(200).json({ ok: true, alert });
 }
 
+/* 내 특약 문구함 (2026-10-30 대표님) - bk_agent.settings.phrases. 계약서 도구라 공인중개사만.
+   넣기·고치기·지우기는 하나씩 받아 서버가 지금 목록에 반영한다 - 목록을 통째로 덮으면 다른 기기에서 넣은 것이 사라진다 */
+async function readPhrases(res, agent) {
+  if (agent.role !== 'agent') return res.status(403).json({ error: '공인중개사만 쓸 수 있습니다' });
+  const x = await 설정읽기(agent);
+  if (x.error) return res.status(502).json({ error: '내 특약을 불러오지 못했습니다' });
+  return res.status(200).json({ ok: true, phrases: 특약문구들(x.settings.phrases), need: x.need || '' });
+}
+async function savePhrases(res, agent, b) {
+  if (agent.role !== 'agent') return res.status(403).json({ error: '공인중개사만 쓸 수 있습니다' });
+  const x = await 설정읽기(agent);
+  if (x.need) return res.status(503).json({ error: '내 특약 저장을 준비 중입니다 (0032 마이그레이션 필요)', need: '0032' });
+  if (x.error) return res.status(502).json({ error: '내 특약을 불러오지 못했습니다' });
+  const y = 특약문구고침(x.settings.phrases, b);
+  if (y.error) return res.status(y.code || 400).json({ error: y.error, phrases: 특약문구들(x.settings.phrases) });
+  const r = await fetch(sbUrl('bk_agent', 'id=eq.' + agent.id), {
+    method: 'PATCH', headers: { ...sbHeaders(), Prefer: 'return=minimal' }, body: JSON.stringify({ settings: { ...x.settings, phrases: y.list } }),
+  });
+  if (!r.ok) return res.status(502).json({ error: '저장하지 못했습니다' });
+  return res.status(200).json({ ok: true, phrases: y.list, id: y.id || '' });
+}
+
 async function saveOfficeAddr(res, agent, b) {
   const addr = String(b.addr || '').replace(/\s+/g, ' ').trim().slice(0, 200);
   if (!/\d/.test(addr)) return res.status(400).json({ error: '도로명 찾기로 주소를 골라 주세요' });
@@ -183,6 +206,13 @@ export default async function handler(req, res) {
   const user = await userFrom(req);
   if (!user) return res.status(401).json({ error: '로그인이 필요합니다' });
 
+  let b = req.body;
+  if (typeof b === 'string') { try { b = JSON.parse(b); } catch { b = {}; } }
+  b = b || {};
+
+  /* 대시보드 머리의 날씨 (2026-10-30) - 로그인한 누구나(운영자 화면도). 사무소 주소의 시·군·구 기준 - api/_weather.js */
+  if (b.what === 'weather') return res.status(200).json({ ok: true, ...(await 날씨(b.addr)) });
+
   const chk = await approvedAgent(user);
   if (chk.error) {
     if (/user_id/.test(chk.error)) return res.status(503).json({ error: '아직 준비 중입니다 (0009 마이그레이션 필요)' });
@@ -192,10 +222,6 @@ export default async function handler(req, res) {
      다만 **요약만** 본다 - 아래 maskDemand 가 가린다. 전에는 403 으로 아예 막아서,
      가입해도 무엇이 있는지 볼 수 없으니 인증할 이유가 생기지 않았다. */
   if (chk.none)    return res.status(403).json({ error: '파트너 가입 후 이용하실 수 있습니다', need: 'join' });
-
-  let b = req.body;
-  if (typeof b === 'string') { try { b = JSON.parse(b); } catch { b = {}; } }
-  b = b || {};
 
   /* 내가 보낸 제안 목록. 지금까지 이 목록은 그 브라우저 메모리에만 있어서
      새로고침하면 자기가 보낸 것이 사라졌다.
@@ -209,6 +235,10 @@ export default async function handler(req, res) {
   /* 계약 일정 알림 설정 - 받는 곳 · 항목 · 법무사 예약 시점 */
   if (b.what === 'alert-settings')      return readAlert(res, chk.agent);
   if (b.what === 'alert-settings-save') return saveAlert(res, chk.agent, b);
+
+  /* 내 특약 문구함 - 자주 쓰는 특약을 매매·임대차·갱신계약·기타로 */
+  if (b.what === 'phrases')      return readPhrases(res, chk.agent);
+  if (b.what === 'phrases-save') return savePhrases(res, chk.agent, b);
 
   /* 계약서 (2026-10-29). 승인 전 중개사도 쓴다 - 자격 확인은 수요 전문을 여는 문이지
      양식·인쇄 도구의 문이 아니다. 갈래는 api/_contract.js 가 맡는다. */

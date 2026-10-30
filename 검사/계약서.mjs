@@ -142,7 +142,7 @@ const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '
 const 모듈 = new Function('S', 'esc', 'apiFetch', '세션있음', 'render', 'toast',
   `${몸}\n${확몸}\n${신몸}\nreturn { rpItems, rp기한, rp대상, rpHTML, RP_직접, 한글금액, 금액글, ctNewDoc, ctDocHTML, ctBalance, CT_HOME_CLAUSES, CT_SPECIALS, CT_FORMS, exNewDoc, exDocHTML, EX_SPEC, EX_FORMS, exFormFor,
   CT, ctSave, ctLoadList, ctOpen, exSwitch, exKeys, exLost, ctTitle, ct신고, ct군, ctClauseSet, ctSpecialSet, CT_CATS, ctFieldRows,
-  ct일정목록, ct알림설정, ct영업일째, ct영업일전, CT_공휴일 };`);
+  ct일정목록, ct알림설정, ct영업일째, ct영업일전, CT_공휴일, CT_특약묶음, ct특약묶음, ct묶음문구, ct문구이름 };`);
 const S = { route: '#/x', agent: { office: '비버공인중개사사무소', name: '한상혁', reg_no: '41450-2024-00001', addr: '하남시 미사대로 550', phone: '031-000-0000' } };
 const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
 
@@ -455,7 +455,7 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
     { id: 'g', agent_id: 'A1', agent_user: 'u1', form: 'sale', title: '작성 중인 새 판', status: 'draft', prev_id: 'f', cd: 며칠전(23) },
     { id: 'h', agent_id: 'A4', agent_user: 'u4', form: 'sale', title: '신고 마침', status: 'sealed', reported_at: '2026-10-01', cd: 며칠전(30) },
   ];
-  const 중개사들 = { A1: { id: 'A1', name: '한상혁', phone: '010-1234-5678', settings: {} }, A2: { id: 'A2', name: '둘', phone: '' },
+  const 중개사들 = { A1: { id: 'A1', name: '한상혁', phone: '010-1234-5678', alert: null }, A2: { id: 'A2', name: '둘', phone: '' },
     A3: { id: 'A3', name: '셋', phone: '' }, A4: { id: 'A4', name: '넷', phone: '010-9999-0000' } };
   let 메일 = null, 카톡 = [];
   process.env.RESEND_API_KEY = 'test';
@@ -479,6 +479,8 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
      && !메일[0].html.includes('알릴 날 아님') && !메일[0].html.includes('새 판으로 바뀐 앞 판') && !메일[0].html.includes('작성 중인 새 판'),
      '메일은 중개사별 하루 한 통 - 신고 기한(날인본·신고 전) · 잔금 3일 전(작성 중도) · 새 판으로 바뀐 앞 판은 뺀다');
   ok(메일[0].html.includes('잔금안내(이체한도·준비서류) 전입니다') && /알림 설정/.test(메일[0].text), '잔금 알림에 잔금안내 여부 · 메일에 알림 설정 안내');
+  ok(불린.filter(x => /bk_agent/.test(x.u)).every(x => /select=id,name,phone,alert:settings->alert&/.test(decodeURIComponent(x.u))),
+     '중개사는 알림 설정만 꺼내 읽는다 - settings 통째(내 특약 문구 최대 200개)를 날마다 끌어오지 않는다');
   ok(카톡.length === 3 && 카톡.every(m => m.to === '01012345678' && m.kakaoOptions.templateId === 'KA01TP-SCHEDULE')
      && 카톡.some(m => m.kakaoOptions.variables['#{일정}'] === '실거래신고 기한 7일 전' && m.kakaoOptions.variables['#{물건}'] === '잠실 아파트')
      && 카톡.some(m => m.kakaoOptions.variables['#{일정}'] === '임대차 신고 기한 당일')
@@ -487,11 +489,11 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
      && res.body.카톡 === 3, '카카오 알림톡은 일정 하나에 한 통 - 템플릿 변수 다섯(이름·일정·날짜·물건·확인)을 다 채운다');
 
   /* 설정 - 카카오 끄기 · 잔금 항목 끄기 */
-  중개사들.A1.settings = { alert: { kakao: false, off: ['balance'] } };
+  중개사들.A1.alert = { kakao: false, off: ['balance'] };
   메일 = null; 카톡 = []; res = 응답(); 불린 = [];
   await C.reportDueCron({ headers: { authorization: 'Bearer cron-secret', host: 'beaverknock.co.kr' } }, res);
   ok(카톡.length === 0 && 메일 && 메일.length === 1 && !메일[0].html.includes('잔금 사흘 전') && /2건/.test(메일[0].subject), '설정대로 - 카카오톡을 끄면 안 보내고, 끈 항목(잔금)은 메일에서도 뺀다');
-  중개사들.A1.settings = {};
+  중개사들.A1.alert = null;
   delete process.env.SOLAPI_TPL_SCHEDULE; 카톡 = []; res = 응답();
   await C.reportDueCron({ headers: { authorization: 'Bearer cron-secret', host: 'beaverknock.co.kr' } }, res);
   ok(카톡.length === 0 && res.body.보냄 === 1, '심사 통과한 템플릿(SOLAPI_TPL_SCHEDULE)이 없으면 카카오톡은 건너뛰고 메일만');
@@ -575,7 +577,7 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
      '단추 가독성 - 도구 단추는 흰 면·진한 글자(주 동작 보라와 갈림), 막힌 단추 글자는 n500(4.5:1)');
   /* 창이 낮으면 바깥이 스크롤돼 미리보기 머리(인쇄 단추 줄)가 위로 잘렸다 - 창 높이에 딱 맞추고 배지 줄은 머리 줄 안으로 */
   ok(/body:not\(\.mo\) \.ctx-scr \.ptop\{display:none\}/.test(css) && /body:not\(\.mo\) \.ctx-scr\{height:100vh;height:100dvh;overflow:hidden\}/.test(css)
-     && /\.ctx\{[^}]*height:100dvh;/.test(css) && !/\.ctx\{[^}]*min-height:560px/.test(css) && !/margin-top:-28px/.test(css) && /<span class="ctx-badge">\$\{agentBadge\(\)\}<\/span>/.test(js),
+     && /\.ctx\{[^}]*height:100dvh;/.test(css) && !/\.ctx\{[^}]*min-height:560px/.test(css) && !/margin-top:-28px/.test(css) && js.includes('<span class="ctx-badge">${agentBadge()}${S.user ? userMenu({ admin: true }) : \'\'}</span>'),
      'PC 계약서 화면은 창 높이에 딱 맞는다(최소 높이·음수 여백 없음) - 바깥 스크롤로 미리보기 머리가 잘리지 않는다');
   /* 미리보기 - 상자 한 겹(바깥 흰 카드 없음), 도구 줄 단추가 줄 높이 안에(40px 단추가 46px 줄에서 잘려 보였다) */
   ok(/\.ctx-scr \.ctx-view\{gap:6px;background:transparent;border:0;border-radius:0;box-shadow:none;overflow:visible\}/.test(css)
@@ -838,8 +840,9 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
      '알림 설정 - 내 파트너 행의 settings.alert 만 바꾼다(다른 설정은 그대로) · 0032 전이면 저장 막고 알린다 · 카카오 템플릿이 켜졌는지 알린다');
   ok(/function ctPlanHTML\(doc\)/.test(js) && /data-act="ct-plan">일정·체크/.test(js) && /case 'ctk-guide':/.test(js) && /case 'ctk-permit':/.test(js) && /case 'ctk-off':/.test(js)
      && /k\.startsWith\('ctk:'\)/.test(js) && /what:'contract-track'/.test(js), '화면: 일정·체크 탭 - 잔금안내·토지거래허가·알림 켜고 끄기, 날짜 칸은 바로 저장');
-  ok(/function ctAlertHTML\(\)/.test(js) && /data-act="cta-open"/.test(js) && /data-in="cta-a"/.test(js) && /what:'alert-settings-save'/.test(js)
-     && /function ctUpcomingHTML\(rows\)/.test(js) && /\$\{ctUpcomingHTML\(전체\)\}/.test(js), '화면: 알림 설정(받는 곳·항목·법무사 예약 시점) · 다가오는 일정');
+  ok(/function ctAlertHTML\(늘펼침\)/.test(js) && /\$\{ctAlertHTML\(true\)\}/.test(js) && /data-in="cta-a"/.test(js) && /what:'alert-settings-save'/.test(js)
+     && /function ctUpcomingHTML\(rows, 날수 = 14, 최대 = 8\)/.test(js) && /const 일정 = ctUpcomingHTML\(전체\);/.test(js) && /ctUpcomingHTML\(전체, 60, 40\)/.test(js),
+     '화면: 계약서 › 일정·알림 - 알림 설정(받는 곳·항목·법무사 예약 시점)은 늘 펼침, 60일 일정 · 목록 옆은 2주 안 일정');
   ok((js.match(/CT\.id = null; CT\.row = null; CT\.track = \{\};/g) || []).length >= 6, '새 계약서를 열 때마다 앞 계약서의 일정·체크를 비운다 - 다른 계약서에 섞여 저장되지 않게');
 
   /* 0032 마이그레이션 */
@@ -848,6 +851,88 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
      && /\(to_jsonb\(new\) - 'reported_at' - 'updated_at' - 'track'\) = \(to_jsonb\(old\) - 'reported_at' - 'updated_at' - 'track'\)/.test(sql)
      && /raise exception '날인본은 고칠 수 없습니다/.test(sql), '0032 - track·settings 칸 · 날인본도 track 은 바꾸고 나머지는 여전히 막는다');
   delete process.env.BK_URL; delete process.env.BK_SECRET_KEY;
+}
+
+/* ── 내 특약 문구함 (2026-10-30 대표님 - 자주 쓰는 특약을 매매·임대차·갱신계약 등으로 나눠 저장해 두고 불러 쓴다) ── */
+{
+  ok(JSON.stringify(C.특약묶음) === JSON.stringify(M.CT_특약묶음) && Object.keys(C.특약묶음).join() === 'sale,lease,renew,etc',
+     '묶음(매매·임대차·갱신계약·기타) - 서버와 화면이 같다');
+  const 아파트전세 = M.ctNewDoc('lease', null, { cat: 'realty', sub: '아파트', deal: 'jeonse' });
+  ok(M.ct특약묶음(아파트전세) === 'lease' && M.ct특약묶음({ ...아파트전세, kind: 'agree' }) === 'renew' && M.ct특약묶음({ ...아파트전세, kind: 'right' }) === 'renew'
+     && M.ct특약묶음({ ...M.ctNewDoc('sublease'), renewOf: { id: 'x' } }) === 'renew' && M.ct특약묶음(M.ctNewDoc('sublease')) === 'lease'
+     && M.ct특약묶음(M.ctNewDoc('home-lease')) === 'lease' && M.ct특약묶음(M.ctNewDoc('sale')) === 'sale' && M.ct특약묶음(M.ctNewDoc('presale')) === 'sale'
+     && M.ct특약묶음(M.ctNewDoc('union')) === 'sale' && M.ct특약묶음(M.ctNewDoc('rights')) === 'etc' && M.ct특약묶음(M.ctNewDoc('premium')) === 'etc',
+     '이 계약서에 맞는 묶음 - 지난 계약서에서 불러왔거나 재계약·갱신요구권이면 갱신계약 · 임대차·전대차 · 매매·분양권·입주권 · 나머지는 기타');
+  ok(M.ct묶음문구([{ id: '1', g: 'lease', tag: '' }, { id: '2', g: 'lease', tag: '아파트' }, { id: '3', g: 'sale', tag: '아파트' }], 'lease', '아파트').map(p => p.id).join() === '2,1'
+     && M.ct문구이름('가'.repeat(30)) === '가'.repeat(26) + '…' && M.ct문구이름(' 짧은  문구 ') === '짧은 문구',
+     '한 묶음의 문구 - 같은 세부 종류(아파트)에서 저장한 것을 앞에 · 칩 이름은 앞 26자');
+
+  /* 저장된 목록 다듬기 */
+  const 번호 = n => n.toString(16).padStart(12, '0');
+  const 다듬 = C.특약문구들([{ id: 'a1b2c3d4e5f6', g: 'lease', t: '  관리비는 임차인이 낸다.  ', tag: '아파트' }, { id: 'a1b2c3d4e5f6', g: 'sale', t: '겹친 번호' },
+    { id: 'bad', g: 'sale', t: '번호 모양이 틀림' }, { id: 'ffffffffffff', g: '모름', t: '모르는 묶음' }, { id: 'eeeeeeeeeeee', g: 'sale', t: '   ' }, null, 'x']);
+  ok(다듬.length === 2 && 다듬[0].t === '관리비는 임차인이 낸다.' && 다듬[0].tag === '아파트' && 다듬[1].g === 'etc' && C.특약문구들('x').length === 0
+     && C.특약문구들(Array.from({ length: 250 }, (_, i) => ({ id: 번호(i), g: 'sale', t: 't' + i }))).length === C.특약문구최대,
+     '저장된 목록 다듬기 - 겹친 번호·틀린 번호·빈 글은 버리고 모르는 묶음은 기타 · 최대 200개');
+
+  /* 넣기·고치기·지우기 */
+  const y = C.특약문구고침([], { op: 'add', g: 'lease', t: '반려동물을 기르지 않는다.', tag: '아파트' });
+  ok(y.list.length === 1 && /^[0-9a-f]{12}$/.test(y.id) && y.list[0].g === 'lease' && y.list[0].tag === '아파트', '넣기 - 번호는 서버가 짓는다 · 저장한 계약서의 세부 종류를 함께');
+  ok(C.특약문구고침(y.list, { op: 'add', g: 'lease', t: ' 반려동물을 기르지 않는다. ' }).code === 409
+     && C.특약문구고침(y.list, { op: 'add', g: 'renew', t: '반려동물을 기르지 않는다.' }).list.length === 2, '같은 묶음에 같은 문구는 또 넣지 않는다(다른 묶음은 된다)');
+  ok(/주민등록번호/.test(C.특약문구고침([], { op: 'add', g: 'sale', t: '매도인 900101-1234567 의 위임을 받아' }).error || '')
+     && C.특약문구고침([], { op: 'add', g: 'sale', t: '   ' }).code === 400 && C.특약문구고침([], { op: 'add', g: 'sale', t: '가'.repeat(1001) }).code === 400
+     && /200개까지/.test(C.특약문구고침(Array.from({ length: 200 }, (_, i) => ({ id: 번호(i), g: 'sale', t: 't' + i })), { op: 'add', g: 'sale', t: '새것' }).error || ''),
+     '주민등록번호가 든 문구 · 빈 문구 · 1000자 넘는 문구는 받지 않는다 · 200개가 차면 더 넣지 않는다');
+  ok(C.특약문구고침(y.list, { op: 'set', id: y.id, g: 'renew' }).list[0].g === 'renew' && C.특약문구고침(y.list, { op: 'set', id: y.id, t: '고친 문구' }).list[0].t === '고친 문구'
+     && C.특약문구고침(y.list, { op: 'set', id: y.id, g: '모름' }).code === 400 && C.특약문구고침(y.list, { op: 'set', id: y.id, t: ' ' }).code === 400
+     && C.특약문구고침(y.list, { op: 'set', id: y.id, t: '임대인 900101-1234567' }).code === 400,
+     '고치기 - 묶음·문구만 · 모르는 묶음·빈 문구·주민등록번호는 받지 않는다');
+  ok(C.특약문구고침(y.list, { op: 'del', id: y.id }).list.length === 0 && C.특약문구고침(y.list, { op: 'del', id: 'ffffffffffff' }).code === 404
+     && C.특약문구고침(y.list, { op: '뭐' }).code === 400, '지우기 · 없는 번호는 404 · 모르는 요청은 400');
+
+  /* feed.js 를 실제로 돌린다 - 내 파트너 행의 settings.phrases 만 바꾸고 알림 설정은 그대로 */
+  const F = (await import(길.api('feed.js'))).default;
+  const 응답 = () => { const r = { code: 0, body: null }; r.status = c => (r.code = c, r); r.json = b => (r.body = b, r); r.setHeader = () => {}; return r; };
+  process.env.BK_URL = 'https://x.supabase.co'; process.env.BK_SECRET_KEY = 'k';
+  let 설정 = { alert: { kakao: false, mail: true, off: [], lawyer: [7, 10] }, phrases: [{ id: 'a1b2c3d4e5f6', g: 'lease', t: '관리비는 정액으로 한다.', tag: '' }] };
+  let 역할 = 'agent', 불린 = [];
+  globalThis.fetch = async (u, o = {}) => { u = String(u); const m = o.method || 'GET'; 불린.push({ u, m, b: o.body });
+    if (/auth\/v1\/user/.test(u)) return new Response(JSON.stringify({ id: 'u-phr' }), { status: 200 });
+    if (/bk_agent/.test(u) && m === 'GET' && /select=settings/.test(u)) return new Response(JSON.stringify([{ settings: 설정 }]), { status: 200 });
+    if (/bk_agent/.test(u) && m === 'GET') return new Response(JSON.stringify([{ id: 'A1', role: 역할, status: 'approved' }]), { status: 200 });
+    if (/bk_agent/.test(u) && m === 'PATCH') { 설정 = JSON.parse(o.body).settings; return new Response(null, { status: 204 }); }
+    return new Response('{}', { status: 404 }); };
+  const 부름 = async b => { const res = 응답(); 불린 = []; await F({ method: 'POST', headers: { authorization: 'Bearer ' + 'p'.repeat(32) }, body: b, query: {} }, res); return res; };
+  let res = await 부름({ what: 'phrases-save', op: 'add', g: 'renew', t: '차임은 5% 안에서 올린다.', tag: '아파트' });
+  ok(res.code === 200 && res.body.phrases.length === 2 && 설정.phrases.length === 2 && 설정.alert.kakao === false && /^[0-9a-f]{12}$/.test(res.body.id)
+     && 불린.some(x => x.m === 'PATCH' && /bk_agent\?id=eq\.A1$/.test(x.u)), '넣기 - 내 파트너 행의 settings.phrases 에 하나 더 · 알림 설정은 그대로');
+  res = await 부름({ what: 'phrases' });
+  ok(res.code === 200 && res.body.phrases.length === 2 && res.body.phrases[1].tag === '아파트', '불러오기');
+  res = await 부름({ what: 'phrases-save', op: 'add', g: 'sale', t: '매수인 900101-1234567' });
+  ok(res.code === 400 && 설정.phrases.length === 2 && !불린.some(x => x.m === 'PATCH') && res.body.phrases.length === 2, '주민등록번호가 든 문구는 서버가 막는다 - 지금 목록을 돌려준다');
+  res = await 부름({ what: 'phrases-save', op: 'del', id: 'a1b2c3d4e5f6' });
+  ok(res.code === 200 && 설정.phrases.length === 1 && 설정.phrases[0].g === 'renew', '지우기');
+  역할 = 'owner';
+  res = await 부름({ what: 'phrases' });
+  ok(res.code === 403, '소유자·시행사는 쓰지 않는다 - 계약서 도구라 공인중개사만');
+  delete process.env.BK_URL; delete process.env.BK_SECRET_KEY;
+
+  /* 화면 */
+  ok(/function ctPhrHTML\(doc\)/.test(js) && /\$\{ctPhrHTML\(doc\)\}/.test(js) && /data-act="phr-pick"/.test(js) && /data-act="phr-save"/.test(js)
+     && /data-act="phr-add"/.test(js) && /data-act="phr-del"/.test(js) && /data-act="phr-g"/.test(js) && /k\.startsWith\('phr:'\)/.test(js)
+     && /what:'phrases'/.test(js) && /what:'phrases-save'/.test(js), '화면: 특약마다 ‘내 특약으로’(묶음 고르기) · 묶음 탭 칩으로 넣기 · 관리(고치기·옮기기·지우기)');
+}
+
+/* ── 문서 글꼴 (2026-10-30 대표님 '계약서 양식의 폰트는 변경이 불가능한가?') ── */
+{
+  const d = M.ctNewDoc('home-lease');
+  ok(!('font' in d) && /<div class="ctdoc">/.test(M.ctDocHTML(d)) && /<div class="ctdoc f-sans">/.test(M.ctDocHTML({ ...d, font: 'sans' })),
+     '계약서 글꼴 - 기본은 명조(칸 없음) · 고딕을 고르면 계약서에 font 를 두고 문서에 f-sans');
+  const e = M.exNewDoc({ ...d, font: 'sans' }, 'explain-home');
+  ok(e.font === 'sans' && /class="ctdoc exdoc f-sans"/.test(M.exDocHTML(e)) && !('font' in M.exNewDoc(d, 'explain-home')), '계약서에서 만든 확인·설명서는 그 계약서의 글꼴을 따른다');
+  ok(/\.ctdoc\.f-sans\{font-family:var\(--font\)\}/.test(css) && /data-act="ct-font"/.test(js) && /case 'ct-font':/.test(js) && /\$\{ct글꼴칸\(doc, 잠김\)\}/.test(js),
+     '고딕은 사이트 글꼴(어느 기기에서 찍어도 같다) · 미리보기 위에서 고른다 · 날인본은 못 바꾼다');
 }
 
 console.log(`${ran - fail} 통과 / ${fail} 실패`);

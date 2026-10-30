@@ -313,6 +313,58 @@ export function trackCheck(t) {
   return out;
 }
 
+/* 내 특약 문구함 (2026-10-30 대표님 - 자주 쓰는 특약을 매매·임대차·갱신계약 등으로 나눠 저장해 두고 불러 쓴다) - bk_agent.settings.phrases.
+   [{ id, g(묶음), t(문구), tag(저장한 계약서의 세부 종류 - '아파트') }]. 화면의 CT_특약묶음 과 같은 묶음.
+   주민등록번호가 든 문구는 받지 않는다 - 저장한 문구는 다른 계약서에 그대로 옮겨 가기 때문이다 */
+export const 특약묶음 = { sale: '매매', lease: '임대차', renew: '갱신계약', etc: '기타' };
+export const 특약문구최대 = 200, 특약글최대 = 1000;
+const 문구번호 = /^[0-9a-f]{12}$/;
+const 문구글 = v => String(v == null ? '' : v).replace(/\r\n?/g, '\n').trim();
+const 문구종류 = v => String(v == null ? '' : v).replace(/\s+/g, ' ').trim().slice(0, 20);
+/* 저장된 목록 다듬기 - 번호·글이 없거나 겹치는 것은 버리고, 모르는 묶음은 '기타' 로 */
+export function 특약문구들(x) {
+  const 본 = new Set(), out = [];
+  for (const p of Array.isArray(x) ? x : []) {
+    if (!p || typeof p !== 'object' || !문구번호.test(String(p.id)) || 본.has(p.id)) continue;
+    const t = 문구글(p.t).slice(0, 특약글최대);
+    if (!t) continue;
+    본.add(p.id);
+    out.push({ id: p.id, g: Object.hasOwn(특약묶음, p.g) ? p.g : 'etc', t, tag: 문구종류(p.tag) });
+    if (out.length >= 특약문구최대) break;
+  }
+  return out;
+}
+/* 넣기(add) · 고치기(set - 묶음·문구) · 지우기(del) 하나. 목록을 통째로 받아 덮으면 다른 기기에서 넣은 것이 사라진다 - 서버가 지금 목록에 하나씩 반영한다.
+   돌려주는 값: { list, id } 또는 { error, code } */
+export function 특약문구고침(list, b) {
+  const 지금 = 특약문구들(list), op = b && b.op;
+  const 글틀림 = t => !t ? '문구가 비어 있습니다' : t.length > 특약글최대 ? `특약 한 개는 ${특약글최대}자까지 저장합니다`
+    : 주민번호있나(t) ? '주민등록번호가 든 문구는 저장하지 않습니다 - 다른 계약서에도 그대로 들어갑니다' : '';
+  if (op === 'add') {
+    const t = 문구글(b.t), g = Object.hasOwn(특약묶음, b.g) ? b.g : 'etc', 틀림 = 글틀림(t);
+    if (틀림) return { error: 틀림, code: 400 };
+    if (지금.some(p => p.g === g && p.t === t)) return { error: `이미 내 특약(${특약묶음[g]})에 있는 문구입니다`, code: 409 };
+    if (지금.length >= 특약문구최대) return { error: `내 특약은 ${특약문구최대}개까지 저장합니다 - 안 쓰는 문구를 지워 주세요`, code: 400 };
+    const id = crypto.randomBytes(6).toString('hex');
+    return { list: [...지금, { id, g, t, tag: 문구종류(b.tag) }], id };
+  }
+  if (op !== 'del' && op !== 'set') return { error: '알 수 없는 요청입니다', code: 400 };
+  const 그것 = 지금.find(p => p.id === String(b.id == null ? '' : b.id));
+  if (!그것) return { error: '이미 지운 문구입니다', code: 404 };
+  if (op === 'del') return { list: 지금.filter(p => p !== 그것) };
+  const 새것 = { ...그것 };
+  if (b.g != null) {
+    if (!Object.hasOwn(특약묶음, b.g)) return { error: '어느 묶음인지 알 수 없습니다', code: 400 };
+    새것.g = b.g;
+  }
+  if (b.t != null) {
+    const t = 문구글(b.t), 틀림 = 글틀림(t);
+    if (틀림) return { error: 틀림, code: 400 };
+    새것.t = t;
+  }
+  return { list: 지금.map(p => p === 그것 ? 새것 : p), id: 새것.id };
+}
+
 /* 계약 하나의 일정. c = { form, sub, status, reported_at, cd(계약일), mid(중도금액), md(중도금일), bd(잔금일), track } */
 export function 일정목록(c, 설정 = 알림설정()) {
   const t = c.track && typeof c.track === 'object' ? c.track : {};
@@ -388,11 +440,12 @@ export async function reportDueCron(req, res) {
   /* 고쳐 새 판을 만들었거나 갱신계약으로 이어 간 앞 계약서는 뺀다 - 같은 일정이 두 번 가지 않게 */
   const 앞판 = new Set(rows.map(c => c.prev_id).filter(Boolean));
   const 살아있음 = rows.filter(c => c.agent_id && !앞판.has(c.id));
-  /* 중개사 - 이름·전화·알림 설정. 0032 전이면 설정 없이(모두 켬) */
+  /* 중개사 - 이름·전화·알림 설정. 0032 전이면 설정 없이(모두 켬).
+     settings 통째가 아니라 알림 설정만 꺼낸다 - 같은 칸에 내 특약 문구(최대 200개)가 쌓인다 */
   const ids = [...new Set(살아있음.map(c => c.agent_id))], 중개사 = new Map();
   for (let i = 0; i < ids.length; i += 100) {
     const 묶음 = ids.slice(i, i + 100).join(',');
-    let x = await db('bk_agent', `select=id,name,phone,settings&id=in.(${묶음})`);
+    let x = await db('bk_agent', `select=id,name,phone,alert:settings->alert&id=in.(${묶음})`);
     if (!x.r.ok && /settings/.test(x.t || '')) x = await db('bk_agent', `select=id,name,phone&id=in.(${묶음})`);
     if (x.r.ok) for (const a of x.rows) 중개사.set(a.id, a);
   }
@@ -400,7 +453,7 @@ export async function reportDueCron(req, res) {
   for (const c of 살아있음) {
     const a = 중개사.get(c.agent_id);
     if (!a) continue;
-    const 설정 = 알림설정(a.settings && a.settings.alert);
+    const 설정 = 알림설정(a.alert);
     const 오늘것 = 오늘알림(c, 설정, 오늘);
     if (!오늘것.length) continue;
     if (!사람별.has(a.id)) 사람별.set(a.id, { a, 설정, uid: c.agent_user, 목록: [] });
@@ -428,7 +481,7 @@ export async function reportDueCron(req, res) {
     메일.push({ to, subject: 급한 === 0 ? `오늘 챙기실 계약 일정이 ${건}건 있습니다` : `계약 일정 ${건}건 - 가장 가까운 일정이 ${급한}일 남았습니다`,
       rows: p.목록.map(x => [알림제목(x), `${x.title} · ${날짜글(x.날)} · ${x.메모}`]),
       link: '/#/partner/contracts', cta: '계약서 열기',
-      note: '받을 항목과 받는 곳(카카오톡·메일)은 계약서 목록의 ‘알림 설정’ 에서 바꿀 수 있습니다. 신고를 마쳤으면 ‘신고 마침’ 을, 잔금안내를 했으면 체크해 주세요 - 그 알림이 멈춥니다.' });
+      note: '받을 항목과 받는 곳(카카오톡·메일)은 계약서 › 일정·알림의 ‘알림 설정’ 에서 바꿀 수 있습니다. 신고를 마쳤으면 ‘신고 마침’ 을, 잔금안내를 했으면 체크해 주세요 - 그 알림이 멈춥니다.' });
   }
   /* notifyMany 는 한 번에 100통까지다(Resend 묶음 상한) - 100통씩 나눠 보낸다 */
   let 보냄 = 0;

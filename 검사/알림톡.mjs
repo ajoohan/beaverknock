@@ -122,7 +122,7 @@ const 놓기 = o => { for (const k of Object.keys(키들)) delete process.env[k]
 /* ── ⑤ 사이트 뱃지 - 안 읽은 제안만 ── */
 {
   const js = 길.js(), css = 길.css();
-  const 몸 = js.slice(js.indexOf('const 새제안수 = '), js.indexOf('function userMenu(){'));
+  const 몸 = js.slice(js.indexOf('const 새제안수 = '), js.indexOf('function userMenu(opt = {}){'));
   const 만들기 = S => new Function('S', `${몸}; return { 새제안수, 새제안표 };`)(S);
   const 셈 = S => 만들기(S).새제안수();
   ok(셈({ user: { id: 1 }, props: [{ isNew: true }, { isNew: true }, { isNew: false }, { isNew: true, seed: true }] }) === 2, '안 읽은 것만 센다 - 이미 연 것·예시는 세지 않는다');
@@ -130,7 +130,7 @@ const 놓기 = o => { for (const k of Object.keys(키들)) delete process.env[k]
   const { 새제안표 } = 만들기({});
   ok(새제안표(0) === '' && /nbadge/.test(새제안표(3)) && />3</.test(새제안표(3)) && />99\+</.test(새제안표(120)), '0이면 아무것도, 많으면 99+');
   ok(/aria-label="\$\{esc\(who\)\} 님 메뉴\$\{새 \? ` · 새 제안 \$\{새\}건` : ''\}"/.test(js), '낭독기에도 새 제안 수를 읽어 준다');
-  ok(/\$\{새제안표\(새\)\}/.test(js) && /제안함\$\{새제안표\(새제안수\(\)\)\}/.test(js) && /k==='inbox' \? 새제안표\(새제안수\(\)\)/.test(js),
+  ok(/\$\{관리 \? '' : 새제안표\(새\)\}/.test(js) && /제안함\$\{새제안표\(새제안수\(\)\)\}/.test(js) && /k==='inbox' \? 새제안표\(새제안수\(\)\)/.test(js),
      '내 이름 단추 · 제안함 탭 · 휴대폰 탭바 세 곳에 뜬다');
   ok(/else if\(S\.user && !consentNeeded\(\) && BADGE_ROUTES\.includes\(h\)\) loadMine\(false\);/.test(js),
      '첫 화면·안내에서도 받아 둔다 - 들어와 보지 않아도 뱃지가 보인다(동의 전 계정은 빼고)');

@@ -408,7 +408,7 @@ ok(/\$\{partnerDoor\('onDark'\)\}/.test(js), '첫 화면 파트너 칸이 그 �
   ok(!!몸, 'navPartner 를 찾았다');
   if(몸){
     /* 넓은 화면은 왼쪽 세로 메뉴(파트너옆, 2026-10-29)를 낸다 - 그 함수와 아이콘도 함께 꺼낸다 */
-    const 아이콘 = js.slice(js.indexOf('const DZ_ICO = {'), js.indexOf('/* 인사말 - 시간에 따라'));
+    const 아이콘 = js.slice(js.indexOf('const DZ_ICO = {'), js.indexOf('/* 대시보드 머리 (2026-10-30'));
     const 옆 = js.slice(js.indexOf('function 파트너옆(active){'), js.indexOf('/* ── 중개사 대시보드 ── */'));
     const 그려 = (mo, 탭 = true) => new Function('isMo', 'S', 'ownerSide', 'logoLockup', 'agentBadge', 'esc', 'navAuth', '탭', 'userMenu',
       `${아이콘}\n${옆}\n${몸[0]}; return navPartner('d', 탭);`)(() => mo,
@@ -417,8 +417,8 @@ ok(/\$\{partnerDoor\('onDark'\)\}/.test(js), '첫 화면 파트너 칸이 그 �
     const 폰 = 그려(true), 큰 = 그려(false), 탭없는폰 = 그려(true, false);
     ok(!폰.includes('하남미사부동산') && 폰.includes('class="umenu"') && !폰.includes('data-act="logout"'),
        '휴대폰 파트너 상단바는 사무소 이름을 빼고 이름 메뉴 하나(마이페이지·로그아웃이 그 안에)만 둔다 (2026-10-30)');
-    ok(큰.includes('하남미사부동산') && 큰.includes('>마이페이지<') && 큰.includes('data-go="#/account"'),
-       '넓은 화면에서는 사무소 이름과 마이페이지가 왼쪽 메뉴 아래에 있다');
+    ok(큰.includes('class="umenu"') && !큰.includes('>마이페이지<') && 큰.includes('>사이트 가기<') && 큰.includes('class="dz-vb"'),
+       '넓은 화면에서는 오른쪽 위 프로필(이름 메뉴 - 마이페이지·로그아웃이 그 안에), 왼쪽 메뉴 아래는 사이트 가기와 버전 (2026-10-30 대표님)');
     ok(탭없는폰.includes('class="umenu"') && !탭없는폰.includes('하남미사부동산'),
        '탭바를 그리지 않는 화면도 휴대폰에서 이름 메뉴로 마이페이지·로그아웃에 닿는다 (2026-10-15 리뷰)');
   }
@@ -496,7 +496,8 @@ ok(/\$\{partnerDoor\('onDark'\)\}/.test(js), '첫 화면 파트너 칸이 그 �
 
   const 첫화면 = js.slice(js.indexOf("V['#/'] = () =>"), js.indexOf('<!-- 모바일: 세로'));
   ok(!/내 조건 확인/.test(첫화면) && !/data-go="#\/my"/.test(첫화면), '첫 화면 메뉴에 \'내 조건 확인\' 이 없다 - 내 이름 아래로 옮겼다');
-  const 메뉴 = 꺼내('function userMenu(){');
+  /* 인자 기본값 {} 의 괄호를 함수 몸으로 세지 않게 - 다음 함수 앞까지 자른다 */
+  const 메뉴 = js.slice(js.indexOf('function userMenu(opt = {}){'), js.indexOf('function docShell('));
   ok(/data-go="\$\{href\}"/.test(메뉴) && /줄\('#\/my', '내 조건'/.test(메뉴) && /줄\('#\/inbox', '받은 제안'/.test(메뉴) && /data-act="logout"/.test(메뉴),
      '내 이름 메뉴에 내 조건 · 받은 제안 · 로그아웃이 있다');
   ok(/aria-controls="umenuPop" aria-expanded="\$\{S\.umenu\?'true':'false'\}"/.test(메뉴) && /id="umenuPop"/.test(메뉴) && /\$\{계정표\(S\.user\.method\)\}/.test(메뉴),

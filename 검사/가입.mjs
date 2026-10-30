@@ -133,10 +133,62 @@ ok(옛번호.code === 400, '옛 번호 꼴도 명부에 없으면 열어주지 �
 const 이미열림 = await 부르기({ what:'verify', reg_no:'41450-2019-00217' });
 ok(이미열림.code === 200 && 이미열림.body.already === true, '이미 열린 분은 그대로 둔다');
 
+/* ── 같은 번호의 신청이 다른 계정에 있을 때 (2026-10-30) ──
+   대표님: "인증하고 신청했는데 왜 또 가입절차가 나오지?" - 카카오로 신청하고 네이버로 들어오면
+   '이미 신청하셨습니다' 만 듣고 이 계정은 파트너가 아니어서 가입 화면을 맴돌았다. */
+{
+  let 내것 = null, 그것 = null, 고친 = null;
+  globalThis.fetch = async (url, opt = {}) => {
+    const u = String(url), m = (opt.method || 'GET').toUpperCase();
+    if (u.includes('/auth/v1/user')) return new Response(JSON.stringify({ id:'u-2', email:'n@b.c' }), { status:200 });
+    if (u.includes('bk_agent')) {
+      if (m === 'POST') return new Response('{"code":"23505","message":"duplicate key value violates unique constraint \\"bk_agent_uniq\\""}', { status:409 });
+      if (m === 'PATCH') { 고친 = { url: u, body: JSON.parse(opt.body) }; return new Response(null, { status:204 }); }
+      /* 계정 확인은 같은 토큰이면 앞 시험의 답(u-1)을 기억해 둘 수 있다 - 어느 계정이든 '이 계정' 으로 본다 */
+      if (/user_id=eq.u-/.test(u)) return new Response(JSON.stringify(내것 ? [내것] : []), { status:200 });
+      if (u.includes('phone=eq.')) return new Response(JSON.stringify(그것 ? [그것] : []), { status:200 });
+    }
+    return new Response('[]', { status:200 });
+  };
+  const { signIdv } = await import(길.api('_idv.js'));
+  /* 본인확인 없이(시험 창구) - 손으로 적은 번호로는 남의 신청을 가져올 수 없다 */
+  그것 = { id:'a7', name:'한상혁', user_id:'u-1' };
+  const 손으로 = await 부르기({ role:'agent', name:'한상혁', phone:'01012345678' });
+  ok(손으로.body.already === true && 손으로.body.why === 'phone' && 고친 === null,
+     '**본인확인 없이 적은 번호로는 다른 계정의 신청을 옮기지 않는다** - 남의 번호로 승인된 신청을 가져갈 수 있다');
+  /* 실계약 본인확인 - 이름·번호가 같으면 같은 사람이다 */
+  process.env.PORTONE_LIVE = '1';
+  const 표 = signIdv({ name:'한상혁', phone:'01012345678', at: Date.now(), live: true });
+  const 이음 = await 부르기({ role:'agent', name:'아무개', phone:'01099999999', idv_token: 표 });
+  ok(이음.code === 200 && 이음.body.linked === true && 고친 && /^u-\d$/.test(고친.body.user_id) && /id=eq\.a7/.test(고친.url),
+     '본인확인한 이름·번호가 이전 신청과 같으면 그 신청을 지금 계정으로 잇는다');
+  고친 = null; 그것 = { id:'a7', name:'김철수', user_id:'u-1' };
+  const 다른이름 = await 부르기({ role:'agent', phone:'01012345678', idv_token: 표 });
+  ok(다른이름.body.why === 'phone' && 고친 === null, '번호가 같아도 이름이 다르면 잇지 않는다');
+  내것 = { id:'a3' };
+  const 계정에있음 = await 부르기({ role:'agent', phone:'01012345678', idv_token: 표 });
+  ok(계정에있음.body.why === 'account' && 고친 === null,
+     '이 계정에 이미 신청이 있으면 어느 인덱스에 걸렸든 "이 계정으로 이미 신청" 이다');
+  delete process.env.PORTONE_LIVE;
+}
+
 /* ── 화면 쪽 ── 막는 일을 화면에만 맡기지 않는다 ── */
 const js = 길.js();
+ok(/S\.form\.jLinked = !!j\.linked/.test(js), '화면이 "이전 신청을 이었다" 는 답을 알아듣는다');
+ok(/f\.jSent==='already' && f\.jWhy!=='account' \? `[\s\S]{0,400}data-act="logout" data-v="login"/.test(js),
+   '다른 계정에 걸린 신청이면 파트너 화면 단추 대신 "다른 방법으로 로그인" 을 준다 - 파트너 화면은 가입으로 되돌아온다');
+ok(/const 못읽음 = ok && j\.note === 'lookup-failed';\s*S\.agentKnown = !!ok && !못읽음;/.test(js),
+   '서버가 파트너 표를 못 읽었으면(lookup-failed) "파트너 아님" 으로 단정하지 않는다 - 가입으로 튕기지 않게');
 ok(/need_login/.test(js), '로그인이 필요하다는 답을 화면이 알아듣는다');
 ok(/need_idv/.test(js),   '본인확인이 필요하다는 답도 알아듣는다');
+/* ── 들어오는 길 (2026-10-30 대표님 "마이페이지로 가는건 어디있고" · "파트너 로그인으로 가는것도 없고") ── */
+ok(js.includes("w==='enter' ? partner + enter"), '첫 화면 상단바에 파트너 로그인과 손님 로그인이 함께 있다');
+ok(js.includes("줄('#/account', '마이페이지'") && js.includes('${파트너줄(줄)}'), '이름 메뉴에 마이페이지와 파트너 자리가 있다');
+ok(js.includes("V['#/account'] = () =>") && js.includes("h==='#/account'"), '마이페이지 화면이 있고, 로그인이 필요한 화면으로 묶였다');
+ok(/data-act="acc-mkt"/.test(js) && /case 'acc-mkt'/.test(js), '마이페이지에서 광고성 정보 수신을 바로 끈다');
+ok(/data-act="login-as" data-v="guest"/.test(js) && /data-act="login-as" data-v="partner"/.test(js) && /case 'login-as'/.test(js),
+   '로그인 화면에서 손님·파트너를 오갈 수 있다 - 전에는 파트너로만 바꿀 수 있었다');
+ok(js.includes(`<a data-go="#/account">\${dzIco('user')}<span>마이페이지</span>`), '파트너 왼쪽 메뉴의 마이페이지는 마이페이지로 간다(전에는 활동 설정으로 갔다)');
 
 console.log(`${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

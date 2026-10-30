@@ -562,6 +562,46 @@ body.mo .umenu-btn{padding:5px 9px 5px 5px;gap:6px}
   border-radius:var(--r-md);font:inherit;font-size:13.5px;font-weight:600;color:var(--n900);text-align:left;cursor:pointer}
 .umenu-pop .it svg{width:17px;height:17px;flex:none;color:var(--n500)}
 .umenu-pop .it:hover,.umenu-pop .it:focus-visible{background:var(--n50)}
+/* 마이페이지 (2026-10-30) */
+.acc{display:flex;flex-direction:column;gap:14px;max-width:880px;margin:0 auto;width:100%}
+.acc-me{display:flex;align-items:center;gap:14px;padding:18px 20px;flex-wrap:wrap}
+.acc-av{flex:none;position:relative;width:46px;height:46px;border-radius:var(--r-full);background:var(--ind50);overflow:hidden;
+  display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:var(--ind)}
+.acc-av img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.acc-who{flex:1 1 180px;min-width:0;display:flex;flex-direction:column;gap:2px}
+.acc-who b{font-size:16px;font-weight:700;letter-spacing:-.02em;color:var(--n900)}
+.acc-who span{font-size:12.5px;color:var(--n500);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.acc-tag{flex:none}
+.acc-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
+body.mo .acc-grid{grid-template-columns:1fr}
+.acc-sec{padding:16px 18px 14px;display:flex;flex-direction:column;gap:2px}
+.acc-sec h2{margin:0 0 6px;font-size:13.5px;font-weight:700;color:var(--n700);letter-spacing:-.01em}
+.acc-go{display:flex;align-items:center;gap:10px;min-height:44px;padding:0 8px;margin:0 -8px;border-radius:var(--r-ctl);color:var(--n900);cursor:pointer;text-decoration:none}
+.acc-go:hover,.acc-go:focus-visible{background:var(--n50)}
+.acc-go svg{width:18px;height:18px;flex:none;color:var(--n500)}
+.acc-gn{flex:1;min-width:0;font-size:14px;font-weight:600}
+.acc-gv{flex:none;font-size:12.5px;font-weight:700;color:var(--ind)}
+.acc-go .ar-r{flex:none;color:var(--n300)}
+.acc-pt{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 4px;font-size:13.5px;color:var(--n900)}
+.acc-note{margin:4px 0 6px;font-size:12.5px;line-height:1.7;color:var(--n500)}
+.acc-note a{color:var(--ind);font-weight:700;overflow-wrap:anywhere}
+.acc-dl{margin:0 0 4px;display:flex;flex-direction:column}
+.acc-dl div{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--n100);font-size:13.5px}
+.acc-dl dt{color:var(--n700)} .acc-dl dd{margin:0;color:var(--n500);text-align:right}
+.acc-dl a{color:var(--ind);font-weight:700;cursor:pointer}
+.acc-sw{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:52px;padding:6px 0;cursor:pointer}
+.acc-sw span{display:flex;flex-direction:column;gap:2px;min-width:0}
+.acc-sw b{font-size:13.5px;font-weight:600;color:var(--n900)} .acc-sw small{font-size:12px;color:var(--n500)}
+.acc-sw input{appearance:none;-webkit-appearance:none;flex:none;width:44px;height:26px;border-radius:13px;background:var(--n300);position:relative;cursor:pointer;margin:0;transition:background .18s ease}
+.acc-sw input::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2);transition:transform .18s ease}
+.acc-sw input:checked{background:var(--ind)} .acc-sw input:checked::after{transform:translateX(18px)}
+.acc-sw input:focus-visible{outline:2px solid var(--ind);outline-offset:2px}
+.acc-sw input:disabled{opacity:.55;cursor:wait}
+/* 로그인 - 손님·파트너 갈래 */
+.lg-tabs{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;background:var(--n50);border:1px solid var(--n100);border-radius:var(--r-btn)}
+.lg-tabs button{min-height:40px;border:0;border-radius:var(--r-ctl);background:none;font:inherit;font-size:14px;font-weight:700;color:var(--n500);cursor:pointer}
+.lg-tabs button[aria-selected="true"]{background:var(--white);color:var(--n900);box-shadow:var(--sh1)}
+.lg-tabs button:focus-visible{outline:2px solid var(--ind);outline-offset:1px}
 .umenu-pop .it.on{color:var(--ind)} .umenu-pop .it.on svg{color:var(--ind)}
 .umenu-pop .it .ct{margin-left:auto;font-size:12px;font-weight:700;color:var(--n500)}
 .umenu-pop .sep{height:1px;background:var(--n100);margin:4px 6px}
@@ -2995,13 +3035,12 @@ function navPartner(active, 탭있음 = true){
   </div>
   <div class="right" style="gap:10px">
     <!-- 휴대폰 한 줄에는 사무소 이름·배지·내 정보·로그아웃이 다 들어가지 않아 '로그아웃' 이
-         화면 밖으로 잘렸다(2026-10-15). 휴대폰에서는 사무소 이름을 빼고, '내 정보' 는 아래
-         탭바의 '설정' 이 같은 곳으로 가므로 뺀다. -->
+         화면 밖으로 잘렸다(2026-10-15). 휴대폰에서는 사무소 이름을 뺀다.
+         글자 링크 둘(내 정보·로그아웃) 대신 손님 화면과 같은 이름 메뉴를 둔다(2026-10-30) -
+         얼굴 하나 자리에 마이페이지·내 조건·파트너·로그아웃이 다 들어 있다. -->
     ${S.agent && S.agent.office && !isMo() ? `<span class="nav-office">${esc(S.agent.office)}</span>` : ''}
     ${agentBadge()}
-    ${S.user?`${isMo() && 탭있음 ? '' : `<a class="tapx" data-go="#/partner/settings" style="font-size:12.5px;color:var(--n500);cursor:pointer">내 정보</a>`}
-      <a class="tapx" data-act="logout" style="font-size:12.5px;color:var(--n500);cursor:pointer">로그아웃</a>`
-      : navAuth('partner')}
+    ${S.user ? userMenu() : navAuth('partner')}
   </div>
 </div>`;}
 function mobileBack(label,target){ return `<a class="back" data-go="${target}"><i class="ar-l" aria-hidden="true"></i>${esc(label)}</a>`;}
@@ -3910,8 +3949,6 @@ V['#/login'] = () => {
     <div style="width:100%;max-width:${isMo()?'none':'400px'};display:flex;flex-direction:column;gap:16px">
 
       <div style="display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center">
-        ${asPartner?`<span style="font-size:12.5px;font-weight:700;letter-spacing:.06em;color:var(--ind);
-          background:var(--ind50);border:1px solid var(--ind200);border-radius:var(--r-full);padding:6px 14px">파트너</span>`:''}
         <h1 class="t" style="font-size:${isMo()?21:25}px">${
           S.signup ? '비버노크 시작하기'
           : (asPartner && toJoin) ? '먼저 계정을 만들어주세요'
@@ -3927,6 +3964,13 @@ V['#/login'] = () => {
             : S.signup ? '계정을 만들면 걸어둔 조건과 받은 제안이 그대로 남습니다.'
                        : '걸어둔 조건을 확인할 수 있어요.'}</p>
       </div>
+
+      <!-- 손님·파트너 갈래 (2026-10-30). 전에는 손님 → 파트너 한쪽으로만 바꿀 수 있었고 되돌아올 길이 없었다.
+           계정은 하나다 - 갈래는 '들어간 뒤 어디로 가는가' 만 정한다 -->
+      ${S.signup ? '' : `<div class="lg-tabs" role="tablist" aria-label="어떤 일로 들어오시나요">
+        <button type="button" role="tab" aria-selected="${asPartner?'false':'true'}" data-act="login-as" data-v="guest">손님</button>
+        <button type="button" role="tab" aria-selected="${asPartner?'true':'false'}" data-act="login-as" data-v="partner">파트너 (중개사·소유자)</button>
+      </div>`}
 
       <!-- 이메일이 먼저, 소셜은 아래. 손님·파트너 양쪽 다 같은 차례다. -->
       <div style="display:flex;flex-direction:column;gap:12px">
@@ -3975,13 +4019,14 @@ V['#/login'] = () => {
       </div>
       <div style="display:flex;flex-direction:column;gap:8px">${SNS.filter(x=>!x.hide).map(snsButton).join('')}</div>
 
-      ${asPartner || S.signup ? '' : `
+      ${asPartner && !toJoin ? `
       <div style="text-align:center;font-size:13.5px;color:var(--n500)">
-        중개사 · 소유자이신가요? <a class="tapx" data-act="nav-login" data-v="partner"
-          style="font-weight:700;color:var(--ind);cursor:pointer">파트너 로그인</a></div>`}
+        아직 파트너가 아니신가요? <a class="tapx" data-act="login-as" data-v="join"
+          style="font-weight:700;color:var(--ind);cursor:pointer">파트너 가입</a></div>` : ''}
 
       <p style="margin:0;text-align:center;font-size:12.5px;line-height:1.75;color:var(--n500)">
-        ${S.signup ? '가입하신 뒤 조건을 걸으실 때 <b style="color:var(--n700)">본인확인</b>을 한 번 더 받습니다.'
+        ${asPartner ? '처음이시면 계정을 만든 뒤 <b style="color:var(--n700)">본인확인</b>으로 파트너 가입을 마칩니다. 계정 하나로 손님·파트너를 함께 씁니다.'
+          : S.signup ? '가입하신 뒤 조건을 걸으실 때 <b style="color:var(--n700)">본인확인</b>을 한 번 더 받습니다.'
                    : '조건을 걸으실 때 <b style="color:var(--n700)">본인확인</b>을 한 번 더 받습니다.'}</p>
     </div>
   </div>
@@ -5817,6 +5862,79 @@ V['#/done'] = () => `
 </div>`;
 
 /* ---------- D-07 내 조건 ---------- */
+/* ══════════ 마이페이지 (2026-10-30) ══════════
+   대표님: "마이페이지로 가는건 어디있고". 이름 메뉴에 내 조건·받은 제안·로그아웃만 있었다.
+   무엇으로 들어와 있는지 · 내 활동 · 파트너 자리 · 동의 내역(광고 수신 끄기) · 로그아웃·탈퇴를 한 곳에 모은다.
+   광고 수신은 개인정보 보호법상 받을 때만큼 쉽게 거둘 수 있어야 한다 - 여기서 바로 끈다. */
+function 마이줄(go, 이름, 값, 아이콘){
+  return `<a class="acc-go" data-go="${go}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${아이콘}"/></svg>
+    <span class="acc-gn">${이름}</span>${값 ? `<span class="acc-gv">${값}</span>` : ''}<i class="ar-r" aria-hidden="true"></i></a>`;
+}
+V['#/account'] = () => {
+  const u = S.user || {};
+  const 조건수 = (S.conds || []).filter(c => !c.seed).length;
+  const 새 = 새제안수();
+  const c = S.consent && typeof S.consent === 'object' ? S.consent : null;
+  const 날 = t => { const d = t ? new Date(t) : null; return d && !isNaN(d) ? `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}` : ''; };
+  const a = S.agent;
+  const 판 = 'M4 4 h7 v7 H4 Z M13 4 h7 v7 h-7 Z M4 13 h7 v7 H4 Z M13 13 h7 v7 h-7 Z';
+  const 역할 = a ? ({agent:'공인중개사', owner:'소유자', developer:'시행사'}[a.role] || '파트너') : '';
+  const 광고 = !!(c && c.marketing_at);
+  const 파트너칸 = a ? `
+      <div class="acc-pt"><span class="badge ${a.status==='approved'?'b-ok':'b-warn'}">${a.status==='approved'?'자격 확인됨':'자격 확인 전'}</span>
+        <b>${esc(역할)}${a.office ? ` · ${esc(a.office)}` : ''}</b></div>
+      ${a.status==='approved'
+        ? 마이줄('#/partner/home', ownerSide() ? '파트너 화면' : '파트너 대시보드', '', 판)
+          + (ownerSide() ? '' : 마이줄('#/partner/contracts', '계약서', '', 'M6 3 h9 l4 4 v14 H6 Z M9 11 h7 M9 15 h7 M9 19 h4'))
+          + 마이줄('#/partner/settings', '활동 설정', '', 'M12 21 s-7 -6.2 -7 -11.5 a7 7 0 0 1 14 0 C19 14.8 12 21 12 21 Z M12 12.5 a2.5 2.5 0 1 0 0 -5 a2.5 2.5 0 0 0 0 5')
+        : 마이줄('#/partner/verify', '자격 확인하기', '등록번호 대조', 판)}`
+    : S.agentKnown ? `
+      <p class="acc-note">공인중개사·소유자이신가요? 파트너로 가입하시면 손님이 걸어둔 조건에 1:1 로 제안하실 수 있습니다.</p>
+      ${마이줄('#/partner/join', '파트너로 가입하기', '', 'M12 5 v14 M5 12 h14')}`
+    : `<p class="acc-note">확인하는 중입니다…</p>`;
+  return `
+<div class="scr fade">
+  ${navUser('acc')}
+  <div class="pad acc" style="flex:1;padding-top:${isMo()?20:32}px;padding-bottom:${isMo()?24:40}px">
+    <h1 class="t" style="font-size:${isMo()?21:25}px">마이페이지</h1>
+
+    <section class="card acc-me" aria-label="내 계정">
+      <span class="acc-av" aria-hidden="true">${esc((u.name||u.email||'?').slice(0,1))}${u.avatar ? `<img src="${esc(u.avatar)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}</span>
+      <div class="acc-who"><b>${esc(u.name || '회원')} 님</b><span class="num">${esc(u.email || '')}</span></div>
+      <span class="acc-tag">${계정표(u.method, ' 로그인')}</span>
+    </section>
+
+    <div class="acc-grid">
+      <section class="card acc-sec"><h2>내 활동</h2>
+        ${마이줄('#/my', '내 조건', 조건수 ? `${조건수}건` : '', 'M5 6 h14 M5 12 h14 M5 18 h9')}
+        ${마이줄('#/inbox', '받은 제안', 새 ? `새 제안 ${새}건` : '', 'M3 12 h5 l2 3 h4 l2 -3 h5 M3 12 V7 a2 2 0 0 1 2 -2 h14 a2 2 0 0 1 2 2 v5 M3 12 v5 a2 2 0 0 0 2 2 h14 a2 2 0 0 0 2 -2 v-5')}
+        ${마이줄('#/kind', '새 조건 걸기', '', 'M12 5 v14 M5 12 h14')}
+      </section>
+      <section class="card acc-sec"><h2>파트너</h2>${파트너칸}</section>
+
+      <section class="card acc-sec"><h2>동의 내역</h2>
+        ${c ? `<dl class="acc-dl">
+          <div><dt>이용약관</dt><dd>${날(c.terms_at) ? `${날(c.terms_at)} 동의` : '동의'} · <a href="/terms" target="_blank" rel="noopener">보기</a></dd></div>
+          <div><dt>개인정보 수집·이용</dt><dd>${날(c.privacy_at) ? `${날(c.privacy_at)} 동의` : '동의'} · <a href="/privacy" target="_blank" rel="noopener">보기</a></dd></div>
+        </dl>
+        <label class="acc-sw">
+          <span><b>광고성 정보 수신</b><small>${광고 ? `${날(c.marketing_at)} 동의 · 언제든 끌 수 있습니다` : (c.marketing_off_at ? `${날(c.marketing_off_at)} 받지 않기로 함` : '받지 않음')}</small></span>
+          <input type="checkbox" role="switch" data-act="acc-mkt" ${광고?'checked':''} ${S.accBusy?'disabled':''} aria-label="광고성 정보 수신">
+        </label>`
+        : `<p class="acc-note">동의 내역을 불러오지 못했습니다. 잠시 뒤 다시 열어 주세요.</p>`}
+      </section>
+
+      <section class="card acc-sec"><h2>계정</h2>
+        <button class="btn sec md blk" data-act="logout">로그아웃</button>
+        <p class="acc-note">탈퇴를 원하시면 가입하신 이메일과 함께 <a href="mailto:support@plustonic.com?subject=%EB%B9%84%EB%B2%84%EB%85%B8%ED%81%AC%20%ED%9A%8C%EC%9B%90%20%ED%83%88%ED%87%B4">support@plustonic.com</a> 으로 알려 주세요.
+          확인 뒤 계정과 걸어두신 조건을 지우고 결과를 메일로 알려 드립니다.</p>
+      </section>
+    </div>
+  </div>
+  ${tabbar('acc')}
+</div>`;};
+
 V['#/my'] = () => {
   const rows = S.conds.map(c=>{
     const cnt = S.props.filter(p=>p.cond===c.id && p.status!=='hidden').length;
@@ -6809,24 +6927,37 @@ V['#/partner/verify'] = () => `
     const instant = role==='agent';
     body = `<div style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;padding-top:${isMo()?10:24}px">
       ${beaverly(isMo()?150:190)}
-      <span style="width:44px;height:44px;border-radius:var(--r-full);background:var(--okbg);border:1.5px solid var(--okline);display:flex;align-items:center;justify-content:center;margin-top:8px">
-        <svg viewBox="0 0 24 24" style="width:20px" fill="none"><path d="M4.5 12.5l5 5 10-11" stroke="#1B7A46" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      ${/* 끝난 게 아니면 초록 체크를 달지 않는다 - 실패·다른 계정에 걸림은 주의 표시(2026-10-30) */
+        f.jSent==='fail' || (f.jSent==='already' && f.jWhy!=='account')
+        ? `<span style="width:44px;height:44px;border-radius:var(--r-full);background:var(--warnbg);border:1.5px solid var(--warnline);display:flex;align-items:center;justify-content:center;margin-top:8px">
+        <svg viewBox="0 0 24 24" style="width:20px" fill="none" aria-hidden="true"><path d="M12 7.5 v6" stroke="#A85708" stroke-width="2.6" stroke-linecap="round"/><circle cx="12" cy="17" r="1.5" fill="#A85708"/></svg></span>`
+        : f.jSent==='sending' ? ''
+        : `<span style="width:44px;height:44px;border-radius:var(--r-full);background:var(--okbg);border:1.5px solid var(--okline);display:flex;align-items:center;justify-content:center;margin-top:8px">
+        <svg viewBox="0 0 24 24" style="width:20px" fill="none" aria-hidden="true"><path d="M4.5 12.5l5 5 10-11" stroke="#1B7A46" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>`}
       <h1 class="t" style="font-size:${isMo()?21:25}px;margin-top:8px">${
         f.jSent==='fail' ? '신청이 저장되지 않았습니다'
         : f.jSent==='sending' ? '신청을 접수하는 중입니다'
-        : f.jSent==='already' ? (f.jWhy==='account' ? '이 계정으로 이미 신청하셨습니다' : '이미 신청하셨습니다')
+        : f.jSent==='already' ? (f.jWhy==='account' ? '이 계정으로 이미 신청하셨습니다' : '같은 번호로 신청한 다른 계정이 있습니다')
+        : f.jLinked ? '앞서 하신 신청을 이 계정에 이었습니다'
         : '가입이 끝났습니다'}</h1>
       <p style="margin:0;font-size:13.5px;line-height:1.75;color:var(--n700)">${
         f.jSent==='fail' ? '잠시 뒤 다시 시도해 주세요.<br class="mbr">  계속 안 되면 support@plustonic.com 으로 알려주시면 직접 등록해 드립니다.'
         : f.jSent==='sending' ? '잠시만 기다려 주세요.'
         : f.jSent==='already' ? (f.jWhy==='account'
             ? '한 계정에 하나만 신청하실 수 있습니다. 앞서 넣으신 신청이 그대로 살아 있고,<br class="mbr">  방금 적어주신 내용으로 바뀌지는 않았습니다. 고치실 것이 있으면 support@plustonic.com 으로 알려주세요.'
-            : '같은 번호로 접수된 신청이 있습니다.<br class="mbr">  확인 뒤 연락드리겠습니다.')
+            : '카카오·네이버·구글·이메일 중 <b style="color:var(--n900)">처음 신청하실 때 쓰신 방법</b>으로 다시 들어오시면 바로 이어집니다.<br class="mbr">  기억나지 않으시면 support@plustonic.com 으로 알려 주세요. 확인 뒤 이 계정으로 옮겨 드립니다.')
+        : f.jLinked ? '같은 이름·번호로 넣으셨던 신청을 본인확인으로 확인해 지금 로그인한 계정으로 옮겼습니다.<br class="mbr">  앞으로는 이 계정으로 들어오시면 됩니다.'
         : '<b style="color:var(--n900)">바로 시작하실 수 있습니다.</b><br class="mbr">  활동 지역과 유형을 정해두시면 맞는 손님 조건만 골라 보내드립니다.'}</p>
       ${f.jSent==='fail'?`<button class="btn sec md" data-act="j-retry" style="margin-top:14px">다시 보내기</button>`:''}
+      ${/* 다른 계정에 걸린 신청이면 이 계정은 파트너가 아니다 - 파트너 화면 단추를 주면 가입으로 되돌아온다(2026-10-30) */
+        f.jSent==='already' && f.jWhy!=='account' ? `
+      <div style="display:flex;gap:10px;margin-top:16px;${isMo()?'flex-direction:column;width:100%':''}">
+        <button class="btn pri md ${isMo()?'blk':''}" data-act="logout" data-v="login">다른 방법으로 로그인</button>
+        <a class="btn sec md ${isMo()?'blk':''}" href="mailto:support@plustonic.com?subject=%ED%8C%8C%ED%8A%B8%EB%84%88%20%EA%B3%84%EC%A0%95%20%EC%98%AE%EA%B8%B0%EA%B8%B0">메일로 문의</a></div>`
+      : f.jSent==='fail' || f.jSent==='sending' ? '' : `
       <div style="display:flex;gap:10px;margin-top:16px;${isMo()?'flex-direction:column;width:100%':''}">
         <a class="btn pri md ${isMo()?'blk':''}" data-go="#/partner/settings">활동 조건 설정하기</a>
-        <a class="btn sec md ${isMo()?'blk':''}" data-go="#/partner/demands">대기 중인 손님 먼저 보기</a></div>
+        <a class="btn sec md ${isMo()?'blk':''}" data-go="#/partner/demands">대기 중인 손님 먼저 보기</a></div>`}
     </div>`;
   }
   /* 세 번째 걸음의 이름은 역할마다 다르다.
@@ -6841,9 +6972,10 @@ V['#/partner/verify'] = () => `
 <div class="scr fade" style="background:var(--warm)">
   ${bar}
   <div class="nav pad" style="${isMo()?'':'height:64px'}">
-    ${step>1 ? `<button class="back" data-act="j-back"><i class="ar-l" aria-hidden="true"></i>뒤로</button>` : `<a class="back" data-go="#/partner"><i class="ar-l" aria-hidden="true"></i>소개로</a>`}
+    ${step===3 && f.jSent && f.jSent!=='fail' ? `<a class="back" data-go="#/"><i class="ar-l" aria-hidden="true"></i>홈으로</a>`
+      : step>1 ? `<button class="back" data-act="j-back"><i class="ar-l" aria-hidden="true"></i>뒤로</button>` : `<a class="back" data-go="#/partner"><i class="ar-l" aria-hidden="true"></i>소개로</a>`}
     <span style="margin:0 auto">${logoLockup({h:25,partner:true})}</span>
-    <span class="num" style="font-size:12.5px;color:var(--n500)">${step} / 4</span>
+    <span class="num" style="font-size:12.5px;color:var(--n500)">${step} / ${steps.length}</span>
   </div>
   <div style="flex:1;display:flex;justify-content:center;padding:${isMo()?'20px 24px 30px':'32px 40px 40px'}">
     <div style="width:100%;max-width:560px;display:flex;flex-direction:column;gap:14px">
@@ -9455,7 +9587,9 @@ function navAuth(which){
     const partner = `<button class="btn door sm" data-act="nav-login" data-v="partner">파트너 로그인</button>`;
     const guest = `<button class="btn door solid sm" data-act="nav-login" data-v="guest">손님 로그인</button>`;
     const enter = `<button class="btn enter sm" data-act="nav-login" data-v="guest">손님 로그인</button>`;
-    return w==='enter' ? enter : w==='partner' ? partner : w==='guest' ? guest : partner + guest;
+    /* 첫 화면에도 파트너 문을 함께 둔다 (2026-10-30 대표님 "파트너 로그인으로 가는것도 없고").
+       전에는 손님 한 짝만 두고 파트너 길은 화면 아래 작은 글씨에 있었다 - 돌아온 중개사가 못 찾았다 */
+    return w==='enter' ? partner + enter : w==='partner' ? partner : w==='guest' ? guest : partner + guest;
   }
   return userMenu();
 }
@@ -9469,6 +9603,15 @@ const BADGE_ROUTES = ['#/', '#/guide', '#/faq'];
 /* 뱃지 하나를 그린다. 이름표(말)를 주면 낭독기에 '새 제안 3건' 으로 읽히고, 없으면 숨긴다(단추가 따로 말한다) */
 const 새제안표 = (n, 말) => n > 0
   ? `<span class="nbadge num" ${말 ? `role="img" aria-label="${말} ${n}건"` : 'aria-hidden="true"'}>${n > 99 ? '99+' : n}</span>` : '';
+/* 이름 메뉴의 파트너 자리 - 파트너면 대시보드(자격 전이면 자격 확인)로, 아니라고 확인됐으면 가입으로.
+   아직 모르면(계정 확인 중) 비워 둔다 - '가입' 을 띄웠다가 파트너로 바뀌면 거짓말이 된다 */
+function 파트너줄(줄){
+  const 판 = 'M4 4 h7 v7 H4 Z M13 4 h7 v7 h-7 Z M4 13 h7 v7 H4 Z M13 13 h7 v7 h-7 Z';
+  if(S.agent) return S.agent.status === 'approved'
+    ? 줄('#/partner/home', ownerSide() ? '파트너 화면' : '파트너 대시보드', 판)
+    : 줄('#/partner/verify', '파트너 자격 확인', 판);
+  return S.agentKnown ? 줄('#/partner/join', '파트너로 가입', 'M12 5 v14 M5 12 h14') : '';
+}
 function userMenu(){
   if(!S.user) return '';
   const 새 = 새제안수();
@@ -9476,7 +9619,7 @@ function userMenu(){
   const 지금 = S.route || location.hash;
   /* role="menu" 는 달지 않는다 - 화살표 키 이동을 약속하는 역할인데 우리는 링크 몇 개다(2026-10-17 리뷰).
      펼침은 단추의 aria-expanded 로 알리고, 안은 탭 키로 오가는 평범한 링크 묶음이다 */
-  const 줄 = (href, label, d, 수, 뱃지 = '') => `<a class="it ${지금===href?'on':''}" ${지금===href?'aria-current="page"':''} data-go="${href}">
+  const 줄 = (href, label, d, 수 = 0, 뱃지 = '') => `<a class="it ${지금===href?'on':''}" ${지금===href?'aria-current="page"':''} data-go="${href}">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="${d}"/></svg>
       ${label}${뱃지 || (수 ? `<span class="ct num">${수}</span>` : '')}</a>`;
   const 조건수 = (S.conds || []).filter(c => !c.seed).length;
@@ -9494,8 +9637,10 @@ function userMenu(){
         ${S.user.email ? `<span class="em num">${esc(S.user.email)}</span>` : ''}
         ${계정표(S.user.method)}
       </div>
+      ${줄('#/account', '마이페이지', 'M12 12 a4 4 0 1 0 0 -8 a4 4 0 0 0 0 8 M4.5 20 a7.5 7.5 0 0 1 15 0')}
       ${줄('#/my', '내 조건', 'M5 6 h14 M5 12 h14 M5 18 h9', 조건수)}
       ${줄('#/inbox', '받은 제안', 'M3 12 h5 l2 3 h4 l2 -3 h5 M3 12 V7 a2 2 0 0 1 2 -2 h14 a2 2 0 0 1 2 2 v5 M3 12 v5 a2 2 0 0 0 2 2 h14 a2 2 0 0 0 2 -2 v-5', 0, 새제안표(새, '새 제안'))}
+      ${파트너줄(줄)}
       <div class="sep"></div>
       <button class="it out" data-act="logout">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4 h3 a2 2 0 0 1 2 2 v12 a2 2 0 0 1 -2 2 h-3 M10 17 l5 -5 -5 -5 M15 12 H4"/></svg>
@@ -9614,7 +9759,7 @@ function resetJoin(){
   for(const k of Object.keys(f)){
     if(k === 'jStep' || k === 'jRole' || k === 'jSent' || k.startsWith('j-') || k.startsWith('jR') ||
        k === 'jCheck' || k === 'jChecking' || k === 'jDev' || k === 'jDone' || k === 'jMatched' ||
-       k === 'jWhy') delete f[k];
+       k === 'jWhy' || k === 'jLinked') delete f[k];
   }
   /* 다 보내고 나가는 길에는 아무 말도 하지 않는다 - 끝난 일이다 */
   if(had && !done) setTimeout(()=>toast('가입 작성 내용을 비웠습니다 - 다시 들어오시면 처음부터입니다'), 80);
@@ -9863,7 +10008,7 @@ function 파트너옆(active){
       `<a data-go="${h}" class="${active===k?'on':''}" ${active===k?'aria-current="page"':''}>${dzIco(i)}<span>${t}</span></a>`).join('')}</nav>
     <div class="dz-foot">
       ${S.agent && S.agent.office ? `<span class="dz-office">${esc(S.agent.office)}</span>` : ''}
-      ${S.user ? `<a data-go="#/partner/settings">${dzIco('user')}<span>내 정보</span></a>
+      ${S.user ? `<a data-go="#/account">${dzIco('user')}<span>마이페이지</span></a>
         <a data-act="logout">${dzIco('out')}<span>로그아웃</span></a>` : ''}
       <a data-go="#/">${dzIco('site')}<span>사이트로</span></a>
     </div>
@@ -11441,7 +11586,7 @@ function render(){
   /* 동의를 안 받은 계정은 어디로도 못 간다 - 받고 나서 가던 길로 이어진다.
      첫 화면·안내 문서는 열어둔다. 읽는 것까지 막을 이유는 없다. */
   const OPEN = ['#/', '#/guide', '#/faq', '#/partner', '#/agree', '#/login'];
-  const MINE = h==='#/my' || h==='#/inbox' || h.startsWith('#/proposal/') || h.startsWith('#/connect/') || h.startsWith('#/report/');
+  const MINE = h==='#/my' || h==='#/account' || h==='#/inbox' || h.startsWith('#/proposal/') || h.startsWith('#/connect/') || h.startsWith('#/report/');
   /* 로그인이 필요한 화면인데 계정을 읽는 중이면 아무 가드도 타지 않고 기다린다.
      동의 가드보다 앞이어야 한다 - #/agree 도 S.user 를 보고 로그인으로 보내기 때문이다.
      #/my 처럼 S.user 를 곧바로 읽는 화면이 있어 그리지도 않는다. 계정 확인이 끝나면
@@ -12080,7 +12225,16 @@ async function readAgent(미리){
       ok = r.ok; j = await r.json().catch(()=>({}));
     }
     S.agent = (ok && j.agent) || null;
-    S.agentKnown = !!ok;
+    /* 서버가 표를 못 읽었으면 agent:null 에 note:'lookup-failed' 를 붙여 200 으로 답한다.
+       그것을 '파트너 아님' 으로 받으면 멀쩡한 파트너가 가입 화면으로 튕긴다(2026-10-30 대표님
+       "인증하고 신청했는데 왜 또 가입절차가 나오지?") - '모름' 으로 두고 잠시 뒤 한 번 더 묻는다 */
+    const 못읽음 = ok && j.note === 'lookup-failed';
+    S.agentKnown = !!ok && !못읽음;
+    if(!못읽음) readAgent.횟수 = 0;
+    else if(!readAgent.대기 && (readAgent.횟수 || 0) < 3){
+      readAgent.대기 = true; readAgent.횟수 = (readAgent.횟수 || 0) + 1;
+      setTimeout(() => { readAgent.대기 = false; if(S.user) readAgent(); }, 4000);
+    }
   }catch(e){ S.agent = null; S.agentKnown = false; }   /* 못 물었으면 '모름' - '아님' 으로 단정하면 파트너가 가입으로 튕긴다 */
   if(S.기본으로들어옴 && S.agentKnown){
     const 지금 = location.hash || '';
@@ -12203,7 +12357,7 @@ function sendAgent(f){
   };
   apiFetch('/api/agent', {method:'POST', body: JSON.stringify(body)})
     .then(r => r.json().catch(()=>({})).then(j => {
-      if(r.ok){ S.form.jSent = j.already ? 'already' : 'ok'; S.form.jWhy = j.why || '';
+      if(r.ok){ S.form.jSent = j.already ? 'already' : 'ok'; S.form.jWhy = j.why || ''; S.form.jLinked = !!j.linked;
         /* 이제 파트너다 - 계정의 파트너 정보를 다시 받는다. 받기 전에는 '모름' 으로 두어
            완료 화면의 '활동 조건 설정하기' 가 가입 화면으로 튕기지 않게 한다. */
         S.agentKnown = false; readAgent(); }
@@ -12588,6 +12742,31 @@ function handle(a,v,el){
       S.afterLogin = v === 'partner' ? '#/partner/home'
         : (location.hash && location.hash !== '#/partner' ? location.hash : '#/');
       go('#/login'); return true; }
+    /* 로그인 화면의 손님·파트너 갈래. 'join' 은 파트너 가입으로 - 계정을 먼저 만들고 가입으로 잇는다 */
+    case 'login-as': {
+      if(v === 'join'){ S.loginAs = 'partner'; S.afterLogin = '#/partner/join'; S.signup = true; render(); return true; }
+      const 파트너로 = v === 'partner';
+      if((S.loginAs === 'partner') === 파트너로) return true;
+      S.loginAs = 파트너로 ? 'partner' : 'guest';
+      /* 손님이 어디를 가려다 왔는지(#/kind·#/my …)는 손님 갈래로 돌아올 때 되살린다 */
+      if(파트너로){ S.손님갈곳 = S.afterLogin; S.afterLogin = '#/partner/home'; }
+      else { S.afterLogin = S.손님갈곳 && !String(S.손님갈곳).startsWith('#/partner') ? S.손님갈곳 : '#/'; S.손님갈곳 = null; }
+      render(); return true; }
+    /* 마이페이지 - 광고성 정보 수신 켜고 끄기. 필수 둘은 이미 동의한 것이라 그대로 보낸다(서버가 처음 시각을 지킨다) */
+    case 'acc-mkt': {
+      if(S.accBusy) return true;
+      const 켬 = !!(el && el.checked);
+      S.accBusy = true; render();
+      apiFetch('/api/my', {method:'POST', body: JSON.stringify({what:'consent', set:{terms:true, privacy:true, marketing:켬}})})
+        .then(r => r.json().catch(()=>({})).then(j => {
+          S.accBusy = false;
+          if(r.ok && j.consent && typeof j.consent === 'object'){ S.consent = j.consent; S.ag.mkt = 켬; toast(켬 ? '광고성 정보를 받기로 했습니다' : '광고성 정보를 받지 않기로 했습니다'); }
+          else if(r.ok){ readConsent().then(render); toast('저장했습니다'); }
+          else toast(j.error || '저장하지 못했습니다');
+          render();
+        }))
+        .catch(() => { S.accBusy = false; toast('네트워크 문제로 저장하지 못했습니다'); render(); });
+      return true; }
     case 'ops-login':  S.afterLogin = OPS_HOME; go('#/login'); return true;
     /* 운영 화면 안에서 바로 들어온다. 끝나면 손님 화면이 아니라 여기로 돌아온다. */
     case 'ops-email':

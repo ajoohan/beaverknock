@@ -205,8 +205,7 @@ export default async function handler(req, res) {
          다만 어느 쪽에 걸렸는지는 알려야 한다 - 계정당 한 번(bk_agent_user_idx)인데
          "같은 번호로 접수됐다"고만 하면 번호를 바꿔가며 다시 시도하게 된다. */
       if (/duplicate key|23505/i.test(t)) {
-        const why = /bk_agent_user_idx/.test(t) ? 'account' : 'phone';
-        return res.status(200).json({ ok: true, already: true, why });
+        return res.status(200).json(await 겹친신청(BK_URL, BK_SECRET_KEY, { t, owner, idv, name, phone, role }));
       }
       /* 컬럼이 없더라도 신청 자체는 살린다.
          0016 은 칸을 넷 늘렸다 - 하나만 빼고 다시 넣으면 다음 칸에서 또 걸린다.
@@ -254,6 +253,36 @@ export default async function handler(req, res) {
   } catch (e) {
     return res.status(500).json({ error: '저장 중 문제가 생겼습니다' });
   }
+}
+
+/* ── 이미 있는 신청과 겹쳤을 때 (2026-10-30) ──
+   대표님: "인증하고 신청했는데 왜 또 가입절차가 나오지?"
+   같은 번호·같은 역할(bk_agent_uniq)의 신청이 **다른 계정**에 있으면 전에는 '이미 신청하셨습니다' 로만
+   답했다. 지금 계정에는 신청이 없으니 파트너 화면을 누를 때마다 가입으로 되돌아갔다.
+   (카카오로 신청하고 네이버로 들어온 경우, 로그인 전 시절에 계정 없이 남은 신청 등)
+   ① 이 계정에 이미 신청이 있으면 'account' - 어느 인덱스에 먼저 걸렸든 계정이 기준이다.
+   ② 실계약 본인확인으로 받은 이름·번호가 그 신청과 같으면 같은 사람이다 - 지금 계정으로 옮겨 잇는다.
+      ⚠ 본인확인 없이 손으로 적은 번호로는 옮기지 않는다 - 남의 번호를 적어 승인된 신청을 가져갈 수 있다.
+   ③ 못 이으면 'phone' - 화면이 '처음 신청한 로그인으로 들어오세요' 를 안내한다. */
+async function 겹친신청(BK_URL, KEY, { t, owner, idv, name, phone, role }) {
+  const h = { apikey: KEY, Authorization: 'Bearer ' + KEY };
+  const 한줄 = async q => {
+    try { const r = await fetch(`${BK_URL}/rest/v1/${TABLE}?${q}`, { headers: h }); return r.ok ? ((await r.json())[0] || null) : null; }
+    catch { return null; }
+  };
+  const 내것 = await 한줄(new URLSearchParams({ select: 'id', user_id: 'eq.' + owner.id, limit: '1' }));
+  if (내것 || /bk_agent_user_idx/.test(t)) return { ok: true, already: true, why: 'account' };
+  const 그것 = await 한줄(new URLSearchParams({ select: 'id,name,user_id', phone: 'eq.' + phone, role: 'eq.' + role, limit: '1' }));
+  const 같은이름 = 그것 && String(그것.name || '').replace(/s+/g, '') === String(name || '').replace(/s+/g, '');
+  if (그것 && idv && 같은이름) {
+    try {
+      const r = await fetch(`${BK_URL}/rest/v1/${TABLE}?id=eq.${encodeURIComponent(그것.id)}`, {
+        method: 'PATCH', headers: { ...h, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+        body: JSON.stringify({ user_id: owner.id }) });
+      if (r.ok) return { ok: true, linked: true };
+    } catch { /* 못 이으면 아래로 */ }
+  }
+  return { ok: true, already: true, why: 'phone' };
 }
 
 /* ── 자격 확인 ──

@@ -99,7 +99,7 @@
      검사/조판.mjs 가 두 곳이 같은지 본다. */
   --ind900:#2F3192; --ind700:#4144BE; --ind:#4F52D1; --ind300:#6366D6; --ind100:#EDEDFE; --ind50:#F6F6FF;
   --clay700:#9A5A2E; --clay200:#FAD9C0; --clay100:#FFF3EA;
-  --n900:#1D1C2A; --n700:#46455A; --n500:#6B6A7D; --n300:#D6D5E1; --n100:#F0EFF5; --n50:#F8F7FB; --white:#fff;
+  --n900:#1D1C2A; --n700:#46455A; --n500:#5F5E71; --n300:#D6D5E1; --n100:#F0EFF5; --n50:#F8F7FB; --white:#fff;
   --hair:rgba(29,28,42,.08);
 }
 *{box-sizing:border-box}

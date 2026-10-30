@@ -6,6 +6,7 @@
    ② 칩의 표(하나만=점 / 여럿=체크)는 규칙이 두 군데에 나뉘어 있다 -
       만드는 쪽(chipsHTML)과 그리는 쪽(CSS). 한쪽만 고치면 조용히 어긋난다. */
 import * as 길 from './길.mjs';
+import path from 'node:path';
 
 let ran = 0, fail = 0;
 const ok = (c, m) => { ran++; console.log((c ? '  OK  ' : '  X   ') + m); if(!c) fail++; };
@@ -398,10 +399,18 @@ ok(/\$\{partnerDoor\('onDark'\)\}/.test(js), '첫 화면 파트너 칸이 그 �
   ok(마지막(/body\.mo \.btn\.door,body\.mo \.btn\.enter\{min-height:(\d+)px\}/g) === '44',
      '휴대폰 상단바 로그인 단추도 44px 이다 (뒤에서 40 으로 덮지 않는다)');
 
-  /* 11px 은 영문 대문자 머리표·숫자 동그라미·차트 날짜 축에만 남긴다 */
-  const 열하나 = (html.match(/font-size:11px/g) || []).length;
-  ok(열하나 <= 6, `11px 글자는 영문 머리표·숫자 동그라미·날짜 축 여섯 곳뿐이다 (지금 ${열하나})`);
-  ok(!/font-size:11px/.test(js), '화면을 그리는 코드에는 11px 글자가 없다');
+  /* 2026-10-30 대표님 '텍스트 가독성이 안 좋다' - 작은 글자를 한 단계씩 올렸다(11→12 · 12→13 · 13→14 · 14→15).
+     가장 작은 단은 숫자 뱃지·차트 축의 12px. 11px 이 하나라도 돌아오면 여기서 잡는다 */
+  ok(!/font-size:11(\.5)?px/.test(html), '11px · 11.5px 글자가 하나도 없다 - 가장 작은 단은 12px(숫자 뱃지·차트 축)');
+  ok(js.includes('const subSize = Math.max(12, h*.44);') && js.includes('font-size:${Math.max(12,h*.46).toFixed(1)}px'),
+     '로고 옆 한 줄 설명과 \'파트너\' 꼬리표도 12px 아래로 줄지 않는다');
+  ok(css.includes('#app{line-height:1.55}') && /#app :is\(\.btn,\.chip,[^)]*\)\{line-height:1\.3\}/.test(css),
+     '본문 줄 간격 1.55 - 한 줄짜리 단추·칩만 1.3');
+  ok(css.includes('--n500:#5F5E71') && fs.readFileSync(path.join(길.저장소, 'legal-base.css'), 'utf8').includes('--n500:#5F5E71'),
+     '보조 글자색(n500)은 한 단계 짙게 - 화면과 약관·처리방침이 같은 값');
+  ok(css.includes('--navy300:#A9ABD6'), '남색 바탕 위 보조 글자는 7.2:1 (예전 #9395C4 는 5.6:1)');
+  ok(css.includes('.ctx-side .lab{font-size:13px') && css.includes('.ctx-side .ct-f .lab{font-size:13px'),
+     '계약서 입력 칸 이름표는 13px - 서식을 채우는 화면이라 이름표가 읽혀야 한다');
 
   /* 파트너 상단바 - 휴대폰 한 줄에 다 들어가야 한다. 실제 함수를 돌린다. */
   const 몸 = js.match(/function navPartner\(active, 탭있음 = true\)\{[\s\S]*?\n<\/div>`;\}/);

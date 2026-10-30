@@ -57,7 +57,7 @@ const M = new Function('esc', `${js.slice(시작, 끝)}\nreturn { dzLine, dzPill
   ok(/if\(!isMo\(\)\) return 파트너옆\(active\);/.test(js), '중개사 - 넓은 화면은 왼쪽 세로 메뉴, 휴대폰은 위 머리 그대로');
   ok(/body:not\(\.mo\) \.dz-scr, body:not\(\.mo\) \.scr:has\(> \.psb\)\{display:grid;grid-template-columns:200px/.test(css) && css.includes('body:not(.mo) .scr.ctx-scr:has(> .psb){grid-template-columns:180px minmax(0,1fr)}'),"세로 메뉴는 넓은 화면에만 · 폭 200px, 계약서 화면만 180px");
   /* 2026-10-29 전 화면 진단 - 보라 메뉴 위 작은 글자가 3.4~4.35:1 이었다. 흰 글자 + 옅은 면(.1~.12)으로 4.5:1 을 넘긴다 */
-  ok(css.includes('.dz-tag{font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;background:rgba(255,255,255,.12);color:#fff}')
+  ok(css.includes('.dz-tag{font-size:13px;font-weight:700;padding:3px 9px;border-radius:999px;background:rgba(255,255,255,.12);color:#fff}')
      && /letter-spacing:\.06em;color:rgba\(255,255,255,\.92\)\}/.test(css) && /background:rgba\(255,255,255,\.12\);color:#fff;font-variant-numeric:tabular-nums\}/.test(css)
      && /\.opsSub :is\(button,a\)\{[^}]*color:rgba\(255,255,255,\.94\)/.test(css) && css.includes('.dz-menu .opsSub :is(button,a).on{background:rgba(255,255,255,.12);color:#fff;font-weight:800}')
      && /color:\$\{m==="dark" \? "rgba\(255,255,255,\.9\)" : sub\}">파트너/.test(js),
@@ -159,8 +159,8 @@ const M = new Function('esc', `${js.slice(시작, 끝)}\nreturn { dzLine, dzPill
   ok(/body:not\(\.mo\) :is\(\.adm-page, \.dz-main\) h1\.t\{font-size:24px!important;margin-top:0!important/.test(css) && /body:not\(\.mo\) \.dz-h1\{font-size:24px\}/.test(css),
      '어드민 화면 제목은 24px 하나로(화면마다 25·28px 이던 것)');
   ok(js.includes("document.body.classList.toggle('adm', !!app.querySelector('.dz-side'));")
-     && css.includes('@media (pointer:fine){\n  body.adm .btn{min-height:40px;padding:0 18px;font-size:14px}')
-     && css.includes('body.adm .chip{min-height:34px!important;padding:0 12px!important;font-size:13px!important}'),
+     && css.includes('@media (pointer:fine){\n  body.adm .btn{min-height:40px;padding:0 18px;font-size:15px}')
+     && css.includes('body.adm .chip{min-height:34px!important;padding:0 12px!important;font-size:14px!important}'),
      '어드민 단추·칩 크기 (2026-10-30 대표님 \'고급스럽게\') - 왼쪽 메뉴가 선 화면(body.adm)에서 마우스일 때만 34·40·44px · 휴대폰·터치는 44px 그대로');
   ok(css.includes(':is(.chip, .ct-chips .chip).on{background:var(--ind50);border-color:var(--ind);color:var(--ind700);font-weight:700;')
      && css.includes('@media (hover:none){\n  :is(.chip, .ct-chips .chip).on:not(:disabled):hover{background:var(--ind50);border-color:var(--ind);color:var(--ind700)}')

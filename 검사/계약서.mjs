@@ -141,7 +141,8 @@ const 신몸 = js.slice(신시작, 신끝);
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const 모듈 = new Function('S', 'esc', 'apiFetch', '세션있음', 'render', 'toast',
   `${몸}\n${확몸}\n${신몸}\nreturn { rpItems, rp기한, rp대상, rpHTML, RP_직접, 한글금액, 금액글, ctNewDoc, ctDocHTML, ctBalance, CT_HOME_CLAUSES, CT_SPECIALS, CT_FORMS, exNewDoc, exDocHTML, EX_SPEC, EX_FORMS, exFormFor,
-  CT, ctSave, ctLoadList, ctOpen, exSwitch, exKeys, exLost, ctTitle, ct신고, ct군, ctClauseSet, ctSpecialSet, CT_CATS, ctFieldRows };`);
+  CT, ctSave, ctLoadList, ctOpen, exSwitch, exKeys, exLost, ctTitle, ct신고, ct군, ctClauseSet, ctSpecialSet, CT_CATS, ctFieldRows,
+  ct일정목록, ct알림설정, ct영업일째, ct영업일전, CT_공휴일 };`);
 const S = { route: '#/x', agent: { office: '비버공인중개사사무소', name: '한상혁', reg_no: '41450-2024-00001', addr: '하남시 미사대로 550', phone: '031-000-0000' } };
 const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
 
@@ -442,45 +443,86 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
   await C.reportDueCron({ headers: { authorization: 'Bearer 틀림' } }, res);
   ok(res.code === 401 && 불린.length === 0, '비밀값이 틀리면 돌지 않는다');
 
-  const 오늘 = C.한국오늘(), 며칠전 = n => new Date(Date.parse(오늘 + 'T00:00:00Z') - n * 864e5).toISOString().slice(0, 10);
+  /* 매일 아침 계약 일정 알림 (2026-10-30 - 신고 기한만 보내던 것을 일정 전체로) */
+  const 오늘 = C.한국오늘(), 며칠전 = n => C.날더하기(오늘, -n), 며칠뒤 = n => C.날더하기(오늘, n);
   const 행 = [
-    { id: 'a', agent_user: 'u1', form: 'sale', title: '잠실 아파트', doc: { contractDate: 며칠전(23) } },        // 7일 남음
-    { id: 'b', agent_user: 'u1', form: 'home-lease', title: '미사 802호', doc: { contractDate: 며칠전(30) } },  // 오늘
-    { id: 'c', agent_user: 'u2', form: 'sale', title: '알릴 날 아님', doc: { contractDate: 며칠전(20) } },      // 10일 남음
-    { id: 'd', agent_user: 'u3', form: 'sale', title: '계약일 없음', doc: {} },
+    { id: 'a', agent_id: 'A1', agent_user: 'u1', form: 'sale', title: '잠실 아파트', status: 'sealed', reported_at: null, cd: 며칠전(23) },        // 신고 7일 전
+    { id: 'b', agent_id: 'A1', agent_user: 'u1', form: 'home-lease', title: '미사 802호', status: 'sealed', reported_at: null, cd: 며칠전(30) },   // 신고 당일
+    { id: 'c', agent_id: 'A2', agent_user: 'u2', form: 'sale', title: '알릴 날 아님', status: 'sealed', reported_at: null, cd: 며칠전(20) },       // 10일 전 - 안 보냄
+    { id: 'd', agent_id: 'A3', agent_user: 'u3', form: 'sale', title: '계약일 없음', status: 'sealed', reported_at: null },
+    { id: 'e', agent_id: 'A1', agent_user: 'u1', form: 'lease', sub: '아파트', title: '잔금 사흘 전', status: 'draft', cd: 며칠전(40), bd: 며칠뒤(3) },
+    { id: 'f', agent_id: 'A1', agent_user: 'u1', form: 'sale', title: '새 판으로 바뀐 앞 판', status: 'sealed', reported_at: null, cd: 며칠전(23) },
+    { id: 'g', agent_id: 'A1', agent_user: 'u1', form: 'sale', title: '작성 중인 새 판', status: 'draft', prev_id: 'f', cd: 며칠전(23) },
+    { id: 'h', agent_id: 'A4', agent_user: 'u4', form: 'sale', title: '신고 마침', status: 'sealed', reported_at: '2026-10-01', cd: 며칠전(30) },
   ];
-  let 메일 = null;
+  const 중개사들 = { A1: { id: 'A1', name: '한상혁', phone: '010-1234-5678', settings: {} }, A2: { id: 'A2', name: '둘', phone: '' },
+    A3: { id: 'A3', name: '셋', phone: '' }, A4: { id: 'A4', name: '넷', phone: '010-9999-0000' } };
+  let 메일 = null, 카톡 = [];
   process.env.RESEND_API_KEY = 'test';
+  Object.assign(process.env, { SOLAPI_API_KEY: 'k', SOLAPI_API_SECRET: 's', SOLAPI_PFID: 'KA01PF', SOLAPI_FROM: '01024153437', SOLAPI_TPL_SCHEDULE: 'KA01TP-SCHEDULE' });
+  const 중개사답 = u => { const ids = (decodeURIComponent(u).match(/id=in\.\(([^)]*)\)/) || [, ''])[1].split(',');
+    return new Response(JSON.stringify(ids.map(i => 중개사들[i]).filter(Boolean)), { status: 200 }); };
   답 = (u, o) => /bk_contract/.test(u) ? new Response(JSON.stringify(행), { status: 200 })
+    : /bk_agent/.test(u) ? 중개사답(u)
     : /admin\/users\/u1/.test(u) ? new Response(JSON.stringify({ email: 'agent1@example.com' }), { status: 200 })
     : /resend\.com\/emails\/batch/.test(u) ? (메일 = JSON.parse(o.body), new Response('{}', { status: 200 }))
+    : /api\.solapi\.com/.test(u) ? (카톡.push(JSON.parse(o.body).message), new Response('{}', { status: 200 }))
     : new Response('{}', { status: 404 });
   res = 응답(); 불린 = [];
   await C.reportDueCron({ headers: { authorization: 'Bearer cron-secret', host: 'beaverknock.co.kr' } }, res);
-  ok(/status=eq\.sealed/.test(불린[0].u) && /reported_at=is\.null/.test(불린[0].u) && /form=in\.\(sale,home-lease,lease\)/.test(불린[0].u)
-     && C.신고대상('lease', { sub: '아파트' }) && !C.신고대상('lease', { sub: '상가' }) && !C.신고대상('lease', { sub: '토지' }),
-     '신고 안 한 매매·주택임대차 날인본만 읽는다');
-  ok(res.code === 200 && 메일 && 메일.length === 1 && 메일[0].to[0] === 'agent1@example.com' && /오늘이 신고 기한/.test(메일[0].subject)
-     && 메일[0].html.includes('잠실 아파트') && 메일[0].html.includes('미사 802호') && !메일[0].html.includes('알릴 날 아님'),
-     '7·3·1·0일 남은 것만 · 중개사별로 한 통 · 가장 급한 것으로 제목');
-  ok(/신고 마침/.test(메일[0].text) && res.body.보냄 === 1, '메일에 "신고 마침을 누르면 멈춘다" 안내 · 보낸 수를 돌려준다');
   const 주소 = decodeURIComponent(불린[0].u);
-  ok(주소.includes(`doc->>contractDate=gte.${며칠전(30)}`) && 주소.includes(`doc->>contractDate=lte.${며칠전(23)}`) && /order=id/.test(주소),
-     '알릴 날에 걸리는 계약일(오늘-30 ~ 오늘-23)만 DB 에서 고른다 - 쌓인 날인본에 밀려 잘리지 않게');
+  ok(/form=not\.like\.explain\*/.test(주소) && 주소.includes(`created_at=gte.${C.날더하기(오늘, -400)}`) && /,track&/.test(주소) && /order=id/.test(주소)
+     && /cd:doc->>contractDate/.test(주소) && /bd:doc->deal->>balanceDate/.test(주소),
+     '확인·설명서를 뺀 400일 안의 계약서를 읽는다 - 일정 계산에 쓰는 날짜만 doc 에서 꺼낸다');
+  ok(res.code === 200 && 메일 && 메일.length === 1 && 메일[0].to[0] === 'agent1@example.com' && /오늘 챙기실 계약 일정이 3건/.test(메일[0].subject)
+     && 메일[0].html.includes('잠실 아파트') && 메일[0].html.includes('미사 802호') && 메일[0].html.includes('잔금 사흘 전')
+     && !메일[0].html.includes('알릴 날 아님') && !메일[0].html.includes('새 판으로 바뀐 앞 판') && !메일[0].html.includes('작성 중인 새 판'),
+     '메일은 중개사별 하루 한 통 - 신고 기한(날인본·신고 전) · 잔금 3일 전(작성 중도) · 새 판으로 바뀐 앞 판은 뺀다');
+  ok(메일[0].html.includes('잔금안내(이체한도·준비서류) 전입니다') && /알림 설정/.test(메일[0].text), '잔금 알림에 잔금안내 여부 · 메일에 알림 설정 안내');
+  ok(카톡.length === 3 && 카톡.every(m => m.to === '01012345678' && m.kakaoOptions.templateId === 'KA01TP-SCHEDULE')
+     && 카톡.some(m => m.kakaoOptions.variables['#{일정}'] === '실거래신고 기한 7일 전' && m.kakaoOptions.variables['#{물건}'] === '잠실 아파트')
+     && 카톡.some(m => m.kakaoOptions.variables['#{일정}'] === '임대차 신고 기한 당일')
+     && 카톡.some(m => m.kakaoOptions.variables['#{일정}'] === '잔금 3일 전' && m.kakaoOptions.variables['#{확인}'] === '잔금안내(이체한도·준비서류) 전입니다')
+     && 카톡.every(m => ['#{이름}', '#{일정}', '#{날짜}', '#{물건}', '#{확인}'].every(k => String(m.kakaoOptions.variables[k] || '').length))
+     && res.body.카톡 === 3, '카카오 알림톡은 일정 하나에 한 통 - 템플릿 변수 다섯(이름·일정·날짜·물건·확인)을 다 채운다');
+
+  /* 설정 - 카카오 끄기 · 잔금 항목 끄기 */
+  중개사들.A1.settings = { alert: { kakao: false, off: ['balance'] } };
+  메일 = null; 카톡 = []; res = 응답(); 불린 = [];
+  await C.reportDueCron({ headers: { authorization: 'Bearer cron-secret', host: 'beaverknock.co.kr' } }, res);
+  ok(카톡.length === 0 && 메일 && 메일.length === 1 && !메일[0].html.includes('잔금 사흘 전') && /2건/.test(메일[0].subject), '설정대로 - 카카오톡을 끄면 안 보내고, 끈 항목(잔금)은 메일에서도 뺀다');
+  중개사들.A1.settings = {};
+  delete process.env.SOLAPI_TPL_SCHEDULE; 카톡 = []; res = 응답();
+  await C.reportDueCron({ headers: { authorization: 'Bearer cron-secret', host: 'beaverknock.co.kr' } }, res);
+  ok(카톡.length === 0 && res.body.보냄 === 1, '심사 통과한 템플릿(SOLAPI_TPL_SCHEDULE)이 없으면 카카오톡은 건너뛰고 메일만');
+
+  /* 0032 전 - track·settings 칸이 없으면 빼고 다시 읽는다 */
+  let 첫번 = true;
+  답 = (u, o) => /bk_contract/.test(u) ? (첫번 && /track/.test(u) ? (첫번 = false, new Response('{"code":"42703","message":"column bk_contract.track does not exist"}', { status: 400 })) : new Response(JSON.stringify(행), { status: 200 }))
+    : /bk_agent/.test(u) ? (/settings/.test(u) ? new Response('{"code":"42703","message":"column bk_agent.settings does not exist"}', { status: 400 }) : 중개사답(u))
+    : /admin\/users\/u1/.test(u) ? new Response(JSON.stringify({ email: 'agent1@example.com' }), { status: 200 })
+    : /resend\.com\/emails\/batch/.test(u) ? (메일 = JSON.parse(o.body), new Response('{}', { status: 200 }))
+    : new Response('{}', { status: 404 });
+  메일 = null; res = 응답(); 불린 = [];
+  await C.reportDueCron({ headers: { authorization: 'Bearer cron-secret', host: 'beaverknock.co.kr' } }, res);
+  ok(res.code === 200 && 메일 && /3건/.test(메일[0].subject) && 불린.filter(x => /bk_contract/.test(x.u)).length === 2, '0032 전이어도 돈다 - track·settings 없이(설정은 모두 켬)');
 
   /* 1000건 넘게 걸리면 쪽으로 나눠 다 읽고, 알릴 중개사가 100명을 넘으면 100통씩 나눠 보낸다 */
-  const 많은 = Array.from({ length: 1000 }, (_, i) => ({ id: 'm' + i, agent_user: 'u' + i, form: 'sale', title: 't' + i, doc: { contractDate: 며칠전(23) } }));
+  const 많은 = Array.from({ length: 1000 }, (_, i) => ({ id: 'm' + i, agent_id: 'A' + i, agent_user: 'u' + i, form: 'sale', status: 'sealed', title: 't' + i, cd: 며칠전(23) }));
+  const 덤 = 많은.slice(0, 5).map(x => ({ ...x, id: x.id + 'b', agent_id: x.agent_id + 'b', agent_user: x.agent_user + 'b' }));
   const 묶음 = [];
-  답 = (u, o) => /bk_contract/.test(u) ? new Response(JSON.stringify(/offset=0(&|$)/.test(u) ? 많은 : 많은.slice(0, 5).map(x => ({ ...x, id: x.id + 'b', agent_user: x.agent_user + 'b' }))), { status: 200 })
+  답 = (u, o) => /bk_contract/.test(u) ? new Response(JSON.stringify(/offset=0(&|$)/.test(u) ? 많은 : 덤), { status: 200 })
+    : /bk_agent/.test(u) ? new Response(JSON.stringify((decodeURIComponent(u).match(/id=in\.\(([^)]*)\)/) || [, ''])[1].split(',').map(id => ({ id, name: 'n', phone: '' }))), { status: 200 })
     : /admin\/users\//.test(u) ? new Response(JSON.stringify({ email: 'a@example.com' }), { status: 200 })
     : /resend\.com\/emails\/batch/.test(u) ? (묶음.push(JSON.parse(o.body).length), new Response('{}', { status: 200 }))
     : new Response('{}', { status: 404 });
   process.env.CRON_SECRET = 'cron-secret'; process.env.RESEND_API_KEY = 'test';
   res = 응답(); 불린 = [];
   await C.reportDueCron({ headers: { authorization: 'Bearer cron-secret', host: 'beaverknock.co.kr' } }, res);
-  ok(불린.filter(x => /bk_contract/.test(x.u)).length === 2 && res.body.대상 === 1005, '1000건이 차면 다음 쪽을 더 읽는다');
+  ok(불린.filter(x => /bk_contract/.test(x.u)).length === 2 && res.body.대상 === 1005 && 불린.filter(x => /bk_agent/.test(x.u)).length === 11, '1000건이 차면 다음 쪽을 더 읽는다 · 중개사는 100명씩 묻는다');
   ok(묶음.length === 11 && 묶음.slice(0, 10).every(n => n === 100) && 묶음[10] === 5 && res.body.보냄 === 1005, '100통씩 나눠 보내 1005통 모두 보낸다');
   delete process.env.CRON_SECRET; delete process.env.RESEND_API_KEY;
+  for (const k of ['SOLAPI_API_KEY', 'SOLAPI_API_SECRET', 'SOLAPI_PFID', 'SOLAPI_FROM', 'SOLAPI_TPL_SCHEDULE']) delete process.env[k];
 
   const 설정 = JSON.parse(fs.readFileSync(new URL('../vercel.json', import.meta.url), 'utf8'));
   ok((설정.crons || []).some(c => c.path === '/api/feed?cron=report-due' && c.schedule === '0 0 * * *'), '예약 실행: 매일 UTC 0시(한국 9시) /api/feed?cron=report-due');
@@ -517,7 +559,7 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
   ok(/h==='#\/partner\/proposals' && S\.agent && !ownerSide\(\)\) ctLoadList\(\)/.test(js) && /if\(!CT\.list\) await ctLoadList\(true\);/.test(js),
      '제안 화면에서도 계약서 목록을 받고, 모르면 받아 본 뒤에 만든다');
   /* 2026-10-29 대표님: Lounge 계약서처럼 - 왼쪽 입력 판 | 오른쪽 책상 위 A4, 칸은 값 길이만큼, 빽빽하게 */
-  ok(/if\(!isMo\(\)\)\{\s*const 신고면[\s\S]{0,200}const 판 = CT\.mode === 'scan' && !잠김 \? ctScanHTML\(\) : 신고면 \? ctReportSide\(doc\) : \(잠김 \? '' : ctScanBanner\(\)\) \+ \(F\.explain \? exEditor\(doc\) \+[\s\S]{0,260}: ctFormHTML\(doc\)\);/.test(js)
+  ok(/if\(!isMo\(\)\)\{\s*const 신고면[\s\S]{0,200}const 판 = CT\.mode === 'scan' && !잠김 \? ctScanHTML\(\) : CT\.mode === 'plan' && !F\.explain \? ctPlanHTML\(doc\) : 신고면 \? ctReportSide\(doc\) : \(잠김 \? '' : ctScanBanner\(\)\) \+ \(F\.explain \? exEditor\(doc\) \+[\s\S]{0,260}: ctFormHTML\(doc\)\);/.test(js)
      && /return ctDeskShell\(doc, 판, 신고면\);/.test(js) && /\$\{ctFormHTML\(doc\)\}/.test(js),
      'PC 는 입력 판 | 미리보기 한 화면(계약서·확인·설명서·신고 도우미 모두), 휴대폰은 같은 입력 구획을 카드로 쌓는다');
   ok(/<div class="ctx-desk" id="ctDesk"><div class="ct-sheet" id="ctPv">\$\{ctDocHTML\(doc\)\}<\/div><\/div>/.test(js)
@@ -699,6 +741,113 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
      && /sbUrl\('bk_agent', 'id=eq\.' \+ agent\.id\)/.test(feed), '사무소 주소는 내 파트너 행에만 · 숫자 없는 주소(동 이름만)는 받지 않는다');
   const SC = await import(길.api('_scan.js'));
   ok(SC.SCAN_MAX_FILES === 4 && SC.SCAN_KINDS.bldx === '건축물대장(전유부)' && SC.SCAN_KINDS.bld === '건축물대장(표제부)', '판독은 서류 넷까지 - 건축물대장 표제부·전유부를 따로 받는다');
+}
+
+/* ── 계약 일정·알림 (2026-10-30 대표님 '카카오 알림설정') ── */
+{
+  /* 영업일 - 관공서 공휴일·대체공휴일(노동절·제헌절 2026~) */
+  ok(C.영업일째('2026-11-04', 15) === '2026-11-24' && C.영업일째('2026-12-21', 15) === '2027-01-12' && C.영업일째('2026-11-07', 1) === '2026-11-09',
+     '토지거래허가 승인 예정일 = 신청일 포함 15영업일째(성탄절·신정 건너뜀 · 토요일 신청이면 월요일이 첫날)');
+  ok(C.영업일전('2026-12-18', 10) === '2026-12-04' && C.영업일전('2026-12-18', 7) === '2026-12-09' && C.영업일전('2027-02-15', 7) === '2027-02-02',
+     '법무사 예약 = 잔금일 7~10영업일 전(잔금일은 세지 않음 · 설 연휴·대체공휴일 건너뜀)');
+  ok(!C.영업일인가('2027-05-03') && !C.영업일인가('2027-07-19') && !C.영업일인가('2027-12-27') && !C.영업일인가('2026-05-01')
+     && C.영업일인가('2026-09-28') && C.영업일인가('2028-10-06'),
+     '대체공휴일 - 노동절·제헌절·성탄절이 토요일이면 다음 월요일 · 추석이 토요일과만 겹치면(2026) 대체 없음');
+  ok(C.날차(C.한국오늘(), C.공휴일끝) > 90, `공휴일 표가 석 달 넘게 남아 있다(${C.공휴일끝}까지) - 모자라면 다음 해 월력요항으로 서버·화면 두 곳을 고친다`);
+  ok([...C.공휴일].join() === [...M.CT_공휴일].join(), '공휴일 표 - 서버와 화면이 같다');
+
+  /* 설정 - 받는 곳·끈 항목·법무사 예약 시점 */
+  const 기본 = C.알림설정();
+  ok(기본.kakao && 기본.mail && !기본.off.length && 기본.lawyer.join() === '7,10', '기본 - 카카오톡·메일 모두 · 모든 항목 · 법무사 7~10영업일 전');
+  ok(C.알림설정({ lawyer: [12, 5] }).lawyer.join() === '5,12' && C.알림설정({ lawyer: [0, 30] }).lawyer.join() === '7,10'
+     && C.알림설정({ off: ['balance', '없는것', 'balance'], kakao: false }).off.join() === 'balance' && C.알림설정({ kakao: false }).kakao === false,
+     '설정 다듬기 - 순서가 거꾸로면 바로잡고, 1~20 밖이면 기본값 · 모르는 항목은 버린다');
+  ok(JSON.stringify(C.알림설정({ lawyer: [3, 9], off: ['mid'], mail: false })) === JSON.stringify(M.ct알림설정({ lawyer: [3, 9], off: ['mid'], mail: false })),
+     '설정 다듬기 - 서버와 화면이 같다');
+
+  /* 일정·체크(track) 받기 */
+  ok(C.trackCheck({ permitDue: '2026-11-10', guideAt: '2026-12-01', permit: true, off: false, 뭐: 'x' }) !== null
+     && JSON.stringify(C.trackCheck({ permitDue: '2026-11-10', guideAt: '2026-12-01', permit: true, off: false, 뭐: 'x' })) === '{"permitDue":"2026-11-10","guideAt":"2026-12-01","permit":true}'
+     && C.trackCheck({ balanceDate: '12/18' }) === null && C.trackCheck([]) === null && C.trackCheck(null) === null,
+     'track - 날짜 칸은 ISO 날짜만, 켬/끔은 true 만 담고 모르는 칸은 버린다');
+
+  /* 일정 목록 - 서버와 화면이 같은 답 */
+  const 표본 = [
+    { form: 'sale', sub: '아파트', status: 'sealed', reported_at: null, cd: '2026-11-02', mid: '50000000', md: '2026-11-20', bd: '2026-12-18',
+      track: { permit: true, permitDue: '2026-11-10', permitApplied: '2026-11-04', balanceDate: '2026-12-21', guideAt: '2026-12-10' } },
+    { form: 'lease', sub: '오피스텔', status: 'draft', cd: '2026-11-05', mid: 0, md: '2026-11-20', bd: '2026-12-01', track: {} },
+    { form: 'lease', sub: '상가', status: 'sealed', cd: '2026-11-05', bd: '2026-12-01' },
+    { form: 'union', status: 'sealed', reported_at: '2026-11-30', cd: '2026-11-02', bd: '2027-02-15', track: { off: true } },
+  ];
+  for (const 설정 of [C.알림설정(), C.알림설정({ lawyer: [5, 12] })])
+    ok(JSON.stringify(표본.map(c => C.일정목록(c, 설정))) === JSON.stringify(표본.map(c => M.ct일정목록(c, 설정))), `일정 목록 - 서버와 화면이 같다(법무사 ${설정.lawyer.join('~')})`);
+  const 매매 = C.일정목록(표본[0]);
+  const 찾 = k => 매매.find(e => e.k === k) || {};
+  ok(찾('balance').날 === '2026-12-21' && 찾('balance').바뀜 && /잔금안내 마침/.test(찾('balance').메모)
+     && 찾('lawyer').날 === C.영업일전('2026-12-21', 10) && 찾('lawyer').끝 === C.영업일전('2026-12-21', 7)
+     && 찾('permitExpect').날 === '2026-11-24' && /2026-11-04 신청함/.test(찾('permitDue').메모)
+     && 찾('report').날 === '2026-12-02' && 찾('report').이름 === '실거래신고 기한' && 매매.map(e => e.날).join() === [...매매.map(e => e.날)].sort().join(),
+     '매매 일정 - 바뀐 잔금일을 따르고(법무사 예약도 거기서), 승인 예정일·신고 기한(계약일+30)을 날짜 순으로');
+  const 오피스텔 = C.일정목록(표본[1]);
+  ok(!오피스텔.some(e => e.k === 'mid') && !오피스텔.some(e => e.k === 'lawyer') && 오피스텔.find(e => e.k === 'report').이름 === '임대차 신고 기한'
+     && !C.일정목록(표본[2]).some(e => e.k === 'report'), '임대차 - 중도금이 0이면 중도금 일정 없음 · 법무사 예약 없음 · 주거만 임대차 신고 기한');
+
+  /* 오늘 알릴 것 */
+  const 오늘것 = (c, 날, 설정 = C.알림설정()) => C.오늘알림(c, 설정, 날).map(e => `${e.k}:${e.남음}`).join();
+  ok(오늘것(표본[0], '2026-12-04') === '' && 오늘것(표본[0], C.영업일전('2026-12-21', 10)) === 'lawyer:0' && 오늘것(표본[0], '2026-12-14') === 'balance:7'
+     && 오늘것(표본[0], '2026-11-07') === 'permitDue:3' && 오늘것(표본[0], '2026-11-24') === 'permitExpect:0' && 오늘것(표본[0], '2026-11-01') === 'contract:1',
+     '알릴 날 - 계약일 전날·당일, 잔금 7·3일 전·당일, 허가 약정일 3일 전·당일, 승인 예정일 당일, 법무사 예약 시작일');
+  ok(오늘것(표본[0], '2026-11-25') === 'report:7' && 오늘것({ ...표본[0], status: 'draft' }, '2026-11-25') === '' && 오늘것({ ...표본[0], reported_at: '2026-11-20' }, '2026-11-25') === '',
+     '신고 기한 알림은 날인본·신고 전일 때만');
+  ok(오늘것(표본[3], '2027-02-15') === '' && 오늘것(표본[0], '2026-12-14', C.알림설정({ off: ['balance'] })) === '', '이 계약 알림을 끄거나 그 항목을 끄면 보내지 않는다');
+  ok(C.알림제목({ k: 'balance', 이름: '잔금', 남음: 3 }) === '잔금 3일 전' && C.알림제목({ k: 'contract', 이름: '계약일', 남음: 1 }) === '계약일 전날'
+     && C.알림제목({ k: 'mid', 이름: '중도금', 남음: 0 }) === '중도금 당일' && C.알림제목({ k: 'lawyer', 남음: 0 }) === '법무사 예약할 때입니다'
+     && C.날짜글('2026-12-18') === '2026. 12. 18.(금)', '알림 제목 · 날짜 글');
+
+  /* 일정·체크 저장 - 날인본도, 내 계약서만, track 한 칸만 */
+  const 응답 = () => { const r = { code: 0, body: null }; r.status = c => (r.code = c, r); r.json = b => (r.body = b, r); return r; };
+  let 불린 = [], 답 = () => new Response('[{"id":"x"}]', { status: 200 });
+  globalThis.fetch = async (u, o = {}) => { 불린.push({ u: String(u), m: o.method || 'GET', b: o.body }); return 답(u, o); };
+  process.env.BK_URL = 'https://x.supabase.co'; process.env.BK_SECRET_KEY = 'k';
+  const agent = { id: '11111111-1111-1111-1111-111111111111', role: 'agent' }, user = { id: 'u' };
+  let res = 응답();
+  await C.contractRoute({}, res, agent, user, { what: 'contract-track', id: '33333333-3333-3333-3333-333333333333', track: { guideAt: '2026-12-10', 뭐: 1 } });
+  ok(res.code === 200 && 불린[0].m === 'PATCH' && /agent_id=eq\.11111111/.test(불린[0].u) && !/status=eq/.test(불린[0].u) && /select=id/.test(불린[0].u)
+     && JSON.stringify(JSON.parse(불린[0].b)) === '{"track":{"guideAt":"2026-12-10"}}', '일정·체크 저장 - 내 계약서의 track 한 칸만(날인본도 된다)');
+  res = 응답(); 불린 = [];
+  await C.contractRoute({}, res, agent, user, { what: 'contract-track', id: '33333333-3333-3333-3333-333333333333', track: { balanceDate: '내일' } });
+  ok(res.code === 400 && 불린.length === 0, '날짜 모양이 틀리면 DB 에 묻지 않는다');
+  답 = () => new Response('[]', { status: 200 }); res = 응답();
+  await C.contractRoute({}, res, agent, user, { what: 'contract-track', id: '33333333-3333-3333-3333-333333333333', track: {} });
+  ok(res.code === 404, '남의 계약서면 404');
+  답 = () => new Response('{"code":"PGRST204","message":"Could not find the \'track\' column of \'bk_contract\' in the schema cache"}', { status: 400 }); res = 응답();
+  await C.contractRoute({}, res, agent, user, { what: 'contract-track', id: '33333333-3333-3333-3333-333333333333', track: {} });
+  ok(res.code === 503 && res.body.need === '0032', 'track 칸이 아직 없으면 503 · 0032 마이그레이션 필요');
+  /* 목록 - track 칸이 없으면 빼고 다시 읽는다(계약서 화면이 0032 전에도 멀쩡해야 한다) */
+  let 번 = 0;
+  답 = u => (++번 === 1 && /track/.test(u)) ? new Response('{"code":"42703","message":"column bk_contract.track does not exist"}', { status: 400 }) : new Response('[]', { status: 200 });
+  res = 응답(); 불린 = [];
+  await C.contractRoute({}, res, agent, user, { what: 'contracts' });
+  ok(res.code === 200 && res.body.need32 === true && 불린.length === 2 && /,track&/.test(decodeURIComponent(불린[0].u)) && !/track/.test(decodeURIComponent(불린[1].u)),
+     '목록 - 0032 전이면 track 없이 다시 읽고 need32 를 알린다(계약서 기능은 그대로)');
+
+  /* 알림 설정 저장 · 화면 */
+  const feed = fs.readFileSync(new URL('../api/feed.js', import.meta.url), 'utf8');
+  ok(/if \(b\.what === 'alert-settings'\)\s+return readAlert\(res, chk\.agent\);/.test(feed) && /body: JSON\.stringify\(\{ settings: \{ \.\.\.x\.settings, alert \} \}\)/.test(feed)
+     && /need: '0032'/.test(feed) && /kakaoReady: !!process\.env\.SOLAPI_TPL_SCHEDULE/.test(feed),
+     '알림 설정 - 내 파트너 행의 settings.alert 만 바꾼다(다른 설정은 그대로) · 0032 전이면 저장 막고 알린다 · 카카오 템플릿이 켜졌는지 알린다');
+  ok(/function ctPlanHTML\(doc\)/.test(js) && /data-act="ct-plan">일정·체크/.test(js) && /case 'ctk-guide':/.test(js) && /case 'ctk-permit':/.test(js) && /case 'ctk-off':/.test(js)
+     && /k\.startsWith\('ctk:'\)/.test(js) && /what:'contract-track'/.test(js), '화면: 일정·체크 탭 - 잔금안내·토지거래허가·알림 켜고 끄기, 날짜 칸은 바로 저장');
+  ok(/function ctAlertHTML\(\)/.test(js) && /data-act="cta-open"/.test(js) && /data-in="cta-a"/.test(js) && /what:'alert-settings-save'/.test(js)
+     && /function ctUpcomingHTML\(rows\)/.test(js) && /\$\{ctUpcomingHTML\(전체\)\}/.test(js), '화면: 알림 설정(받는 곳·항목·법무사 예약 시점) · 다가오는 일정');
+  ok((js.match(/CT\.id = null; CT\.row = null; CT\.track = \{\};/g) || []).length >= 6, '새 계약서를 열 때마다 앞 계약서의 일정·체크를 비운다 - 다른 계약서에 섞여 저장되지 않게');
+
+  /* 0032 마이그레이션 */
+  const sql = fs.readFileSync(new URL('../../beaverknock-app/supabase/migrations/0032_contract_track.sql', import.meta.url), 'utf8');
+  ok(/add column if not exists track jsonb not null default '\{\}'::jsonb/.test(sql) && /add column if not exists settings jsonb not null default '\{\}'::jsonb/.test(sql)
+     && /\(to_jsonb\(new\) - 'reported_at' - 'updated_at' - 'track'\) = \(to_jsonb\(old\) - 'reported_at' - 'updated_at' - 'track'\)/.test(sql)
+     && /raise exception '날인본은 고칠 수 없습니다/.test(sql), '0032 - track·settings 칸 · 날인본도 track 은 바꾸고 나머지는 여전히 막는다');
+  delete process.env.BK_URL; delete process.env.BK_SECRET_KEY;
 }
 
 console.log(`${ran - fail} 통과 / ${fail} 실패`);

@@ -9,7 +9,7 @@
 
 import { userFrom, sbHeaders, sbUrl } from './_auth.js';
 import { dbWhy } from './_dberr.js';
-import { contractRoute, reportDueCron } from './_contract.js';
+import { contractRoute, reportDueCron, 알림설정 } from './_contract.js';
 
 const KIND_KO = { home: '주거', shop: '상가', office: '오피스', storage: '창고' };
 
@@ -131,6 +131,33 @@ export async function approvedAgent(user) {
   return a.status === 'approved' ? { agent: a } : { pending: a.status || 'new', agent: a };
 }
 
+/* 알림 설정 (2026-10-30 대표님 '카카오 알림설정') - bk_agent.settings.alert.
+   settings 칸이 아직 없으면(0032 전) 기본값(모두 켬)을 보여 주고 저장은 막는다. 다른 설정 키는 건드리지 않고 alert 만 바꾼다 */
+async function 설정읽기(agent) {
+  const r = await fetch(sbUrl('bk_agent', `select=settings&id=eq.${agent.id}`), { headers: sbHeaders() });
+  if (!r.ok) { const t = await r.text().catch(() => ''); return /settings/.test(t) ? { need: '0032', settings: {} } : { error: true }; }
+  const s = ((await r.json().catch(() => []))[0] || {}).settings;
+  return { settings: s && typeof s === 'object' && !Array.isArray(s) ? s : {} };
+}
+const 가린번호 = p => { const n = String(p || '').replace(/\D/g, ''); return n.length >= 10 ? `${n.slice(0, 3)}-****-${n.slice(-4)}` : ''; };
+async function readAlert(res, agent) {
+  const x = await 설정읽기(agent);
+  if (x.error) return res.status(502).json({ error: '알림 설정을 불러오지 못했습니다' });
+  return res.status(200).json({ ok: true, alert: 알림설정(x.settings.alert), need: x.need || '',
+    phone: 가린번호(agent.phone), kakaoReady: !!process.env.SOLAPI_TPL_SCHEDULE });
+}
+async function saveAlert(res, agent, b) {
+  const x = await 설정읽기(agent);
+  if (x.need) return res.status(503).json({ error: '알림 설정을 준비 중입니다 (0032 마이그레이션 필요)', need: '0032' });
+  if (x.error) return res.status(502).json({ error: '알림 설정을 불러오지 못했습니다' });
+  const alert = 알림설정(b.alert);
+  const r = await fetch(sbUrl('bk_agent', 'id=eq.' + agent.id), {
+    method: 'PATCH', headers: { ...sbHeaders(), Prefer: 'return=minimal' }, body: JSON.stringify({ settings: { ...x.settings, alert } }),
+  });
+  if (!r.ok) return res.status(502).json({ error: '저장하지 못했습니다' });
+  return res.status(200).json({ ok: true, alert });
+}
+
 async function saveOfficeAddr(res, agent, b) {
   const addr = String(b.addr || '').replace(/\s+/g, ' ').trim().slice(0, 200);
   if (!/\d/.test(addr)) return res.status(400).json({ error: '도로명 찾기로 주소를 골라 주세요' });
@@ -178,6 +205,10 @@ export default async function handler(req, res) {
   /* 사무소 주소 (2026-10-30 대표님 - 계약서의 사무소 소재지로 자동으로). 마이페이지에서 도로명 찾기로 고른다.
      가입 때 명부에서 온 값은 동 이름 하나라 계약서에 쓸 수 없다 */
   if (b.what === 'office-addr') return saveOfficeAddr(res, chk.agent, b);
+
+  /* 계약 일정 알림 설정 - 받는 곳 · 항목 · 법무사 예약 시점 */
+  if (b.what === 'alert-settings')      return readAlert(res, chk.agent);
+  if (b.what === 'alert-settings-save') return saveAlert(res, chk.agent, b);
 
   /* 계약서 (2026-10-29). 승인 전 중개사도 쓴다 - 자격 확인은 수요 전문을 여는 문이지
      양식·인쇄 도구의 문이 아니다. 갈래는 api/_contract.js 가 맡는다. */

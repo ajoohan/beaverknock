@@ -19,6 +19,7 @@
 import crypto from 'node:crypto';
 import { sbHeaders, sbUrl, emailOf } from './_auth.js';
 import { notifyMany } from './_notify.js';
+import { alimtalk } from './_kakao.js';
 
 /* 주택임대차 · 상가건물 임대차 · 부동산 매매 · 중개대상물 확인·설명서(주거용) (화면의 CT_FORMS 와 같은 이름) */
 /* 2026-10-30 계약서 종류 - 부동산 임대차(전세·월세·연세) · 전대차 · 분양권 · 조합원입주권 · 권리양도양수 · 상가 권리금 */
@@ -111,6 +112,7 @@ export async function contractRoute(req, res, agent, user, b) {
       case 'contract-revise':  await revise(res, agent, user, b); break;
       case 'contract-del':     await del(res, agent, b); break;
       case 'contract-reported': await reported(res, agent, b); break;
+      case 'contract-track':   await track(res, agent, b); break;
       case 'contract-scan':    await scan(res, b); break;
       default: res.status(400).json({ error: '알 수 없는 요청입니다' });
     }
@@ -121,19 +123,18 @@ export async function contractRoute(req, res, agent, user, b) {
 }
 
 async function list(res, agent) {
-  const { r, t, rows } = await db('bk_contract',
-    `select=${LIST_COLS}&agent_id=eq.${agent.id}&order=updated_at.desc&limit=200`);
+  const { r, t, rows, no32 } = await 읽기(`select=${LIST_COLS}${일정열}{track}&agent_id=eq.${agent.id}&order=updated_at.desc&limit=200`);
   if (!r.ok) return noTable(t) ? 준비중(res) : res.status(502).json({ error: '계약서 목록을 불러오지 못했습니다' });
-  return res.status(200).json({ ok: true, rows });
+  return res.status(200).json({ ok: true, rows, ...(no32 ? { need32: true } : {}) });
 }
 
 async function one(res, agent, b) {
   const id = String(b.id || '');
   if (!UUID.test(id)) return res.status(400).json({ error: '어느 계약서인지 알 수 없습니다' });
-  const { r, t, rows } = await db('bk_contract', `select=${LIST_COLS},doc&id=eq.${id}&agent_id=eq.${agent.id}&limit=1`);
+  const { r, t, rows, no32 } = await 읽기(`select=${LIST_COLS},doc{track}&id=eq.${id}&agent_id=eq.${agent.id}&limit=1`);
   if (!r.ok) return noTable(t) ? 준비중(res) : res.status(502).json({ error: '계약서를 불러오지 못했습니다' });
   if (!rows.length) return res.status(404).json({ error: '내 계약서가 아니거나 지워진 계약서입니다' });
-  return res.status(200).json({ ok: true, row: rows[0] });
+  return res.status(200).json({ ok: true, row: rows[0], ...(no32 ? { need32: true } : {}) });
 }
 
 async function save(res, agent, user, b) {
@@ -240,50 +241,199 @@ export function 신고남은날(contractDate, 오늘 = 한국오늘()) {
   const 기한 = Date.parse(contractDate + 'T00:00:00Z') + 30 * 864e5;
   return { 기한: new Date(기한).toISOString().slice(0, 10), 남음: Math.round((기한 - Date.parse(오늘 + 'T00:00:00Z')) / 864e5) };
 }
-export const 알릴날 = [7, 3, 1, 0];
+/* ── 계약 일정·알림 (2026-10-30 대표님 '카카오 알림설정') ──────────────────────────────
+   일정: 토지거래허가 약정일 · 토지거래허가 승인 예정일(신청일 포함 15영업일) · 계약일 · 중도금 · 잔금 ·
+         실거래(임대차) 신고 기한(계약일 + 30일) · 법무사 예약(잔금일 7~10영업일 전 - 중개사마다 바꿀 수 있다).
+   체크: 잔금안내(이체한도·준비서류) · 토지거래허가 신청 · 신고 마침(reported_at).
+   일정·체크는 계약서 본문(doc)이 아니라 track 칸에 둔다 - 날인본이어도 날짜는 바뀌고 체크는 늘어난다
+   (0032 트리거가 날인본에서도 track 만은 통과시킨다).
+   화면(비버노크_프로토타입.html)에 같은 규칙이 한 벌 더 있다 - 검사(계약서.mjs)가 둘을 맞춰 본다. */
 
-/* 매일 아침 신고 기한 알림 (Vercel 예약 실행이 GET 으로 부른다 - vercel.json crons).
-   CRON_SECRET 이 없으면 돌지 않는다 - 아무나 불러 메일을 쏘게 두지 않는다.
-   신고 안 한(reported_at 없음) 매매·주택임대차 날인본 중 기한이 7·3·1·0일 남은 것만, 중개사별로 한 통씩. */
+/* 관공서 공휴일 - 「관공서의 공휴일에 관한 규정」, 대체공휴일 포함. 노동절(5/1)·제헌절(7/17)은 2026년부터 들어갔다.
+   2028년은 월력요항 발표 전이라 잠정이다(국회의원 선거일 4/12 포함). 해마다 다음 해 월력요항(6월께)과
+   임시공휴일 지정 때 고친다 - 남은 기간이 석 달 아래로 줄면 검사가 알린다. */
+export const 공휴일 = new Set([
+  '2026-01-01', '2026-02-16', '2026-02-17', '2026-02-18', '2026-03-01', '2026-03-02', '2026-05-01', '2026-05-05',
+  '2026-05-24', '2026-05-25', '2026-06-03', '2026-06-06', '2026-07-17', '2026-08-15', '2026-08-17', '2026-09-24',
+  '2026-09-25', '2026-09-26', '2026-10-03', '2026-10-05', '2026-10-09', '2026-12-25',
+  '2027-01-01', '2027-02-06', '2027-02-07', '2027-02-08', '2027-02-09', '2027-03-01', '2027-05-01', '2027-05-03',
+  '2027-05-05', '2027-05-13', '2027-06-06', '2027-07-17', '2027-07-19', '2027-08-15', '2027-08-16', '2027-09-14',
+  '2027-09-15', '2027-09-16', '2027-10-03', '2027-10-04', '2027-10-09', '2027-10-11', '2027-12-25', '2027-12-27',
+  '2028-01-01', '2028-01-26', '2028-01-27', '2028-01-28', '2028-03-01', '2028-04-12', '2028-05-01', '2028-05-02',
+  '2028-05-05', '2028-06-06', '2028-07-17', '2028-08-15', '2028-10-02', '2028-10-03', '2028-10-04', '2028-10-05',
+  '2028-10-09', '2028-12-25',
+]);
+export const 공휴일끝 = '2028-12-31';
+const 날꼴 = /^\d{4}-\d{2}-\d{2}$/;
+const 날만 = v => 날꼴.test(String(v || '')) ? String(v) : '';
+export const 날더하기 = (d, n) => new Date(Date.parse(d + 'T00:00:00Z') + n * 864e5).toISOString().slice(0, 10);
+export const 날차 = (a, b) => Math.round((Date.parse(b + 'T00:00:00Z') - Date.parse(a + 'T00:00:00Z')) / 864e5);
+export const 영업일인가 = d => { const w = new Date(d + 'T00:00:00Z').getUTCDay(); return w !== 0 && w !== 6 && !공휴일.has(d); };
+/* 민원 처리기간처럼 센다 - 첫날을 넣고 토요일·공휴일은 뺀다(민원 처리에 관한 법률 제19조). 신청일이 쉬는 날이면 다음 영업일이 첫날 */
+export function 영업일째(시작, n) {
+  let d = 시작, k = 0;
+  for (let i = 0; i < 400; i++, d = 날더하기(d, 1)) if (영업일인가(d) && ++k === n) return d;
+  return '';
+}
+/* 기준일 n영업일 전 - 기준일 자체는 세지 않는다 */
+export function 영업일전(기준, n) {
+  let d = 기준, k = 0;
+  for (let i = 0; i < 400 && k < n; i++) { d = 날더하기(d, -1); if (영업일인가(d)) k++; }
+  return d;
+}
+export const 날짜글 = d => { const t = new Date(d + 'T00:00:00Z');
+  return `${t.getUTCFullYear()}. ${t.getUTCMonth() + 1}. ${t.getUTCDate()}.(${'일월화수목금토'[t.getUTCDay()]})`; };
+
+export const 알림종류 = { permitDue: '토지거래허가 약정일', permitExpect: '토지거래허가 승인 예정일', contract: '계약일', mid: '중도금',
+  balance: '잔금', report: '실거래신고 기한', lawyer: '법무사 예약' };
+/* 며칠 전 아침에 알리는가 - 0 은 당일. 법무사 예약은 예약할 때가 시작되는 날(잔금 b영업일 전) 한 번 */
+export const 알림날 = { permitDue: [3, 0], permitExpect: [0], contract: [1, 0], mid: [3, 0], balance: [7, 3, 0], report: [7, 3, 1, 0], lawyer: [0] };
+/* 중개사 알림 설정 - 받는 곳(카카오톡·메일) · 끈 항목 · 법무사 예약 시점(잔금 a~b영업일 전, 기본 7~10) */
+export function 알림설정(x) {
+  const o = x && typeof x === 'object' ? x : {};
+  const 범위 = v => { const n = Math.round(+v); return n >= 1 && n <= 20 ? n : 0; };
+  let [a, b] = Array.isArray(o.lawyer) ? [범위(o.lawyer[0]), 범위(o.lawyer[1])] : [7, 10];
+  if (!a || !b) [a, b] = [7, 10];
+  if (a > b) [a, b] = [b, a];
+  return { kakao: o.kakao !== false, mail: o.mail !== false,
+    off: [...new Set((Array.isArray(o.off) ? o.off : []).filter(k => Object.hasOwn(알림종류, k)))], lawyer: [a, b] };
+}
+/* 계약 하나의 일정·체크(track). 날짜 칸은 ISO 날짜만, 나머지는 켜짐/꺼짐만 받는다 - 다른 것은 버린다 */
+const TRACK_DATES = ['permitDue', 'permitApplied', 'midDate', 'balanceDate', 'guideAt'];
+export function trackCheck(t) {
+  if (!t || typeof t !== 'object' || Array.isArray(t)) return null;
+  const out = {};
+  for (const k of TRACK_DATES) {
+    const v = t[k] == null ? '' : String(t[k]);
+    if (v && !날꼴.test(v)) return null;
+    if (v) out[k] = v;
+  }
+  if (t.permit === true) out.permit = true;
+  if (t.off === true) out.off = true;
+  return out;
+}
+
+/* 계약 하나의 일정. c = { form, sub, status, reported_at, cd(계약일), mid(중도금액), md(중도금일), bd(잔금일), track } */
+export function 일정목록(c, 설정 = 알림설정()) {
+  const t = c.track && typeof c.track === 'object' ? c.track : {};
+  const cd = 날만(c.cd), md = 날만(t.midDate) || 날만(c.md), bd = 날만(t.balanceDate) || 날만(c.bd);
+  const 신청 = 날만(t.permitApplied), out = [];
+  if (날만(t.permitDue)) out.push({ k: 'permitDue', 날: 날만(t.permitDue), 메모: 신청 ? `${신청} 신청함` : '아직 신청 전입니다' });
+  if (신청) out.push({ k: 'permitExpect', 날: 영업일째(신청, 15), 메모: `${신청} 신청 · 신청일 포함 15영업일` });
+  if (cd) out.push({ k: 'contract', 날: cd, 메모: '계약서 내용을 마지막으로 확인하세요' });
+  if (md && +c.mid > 0) out.push({ k: 'mid', 날: md, 바뀜: !!날만(t.midDate), 메모: '중도금 금액과 입금 계좌를 확인하세요' });
+  if (bd) out.push({ k: 'balance', 날: bd, 바뀜: !!날만(t.balanceDate),
+    메모: 날만(t.guideAt) ? '잔금안내 마침 · 준비서류를 확인하세요' : '잔금안내(이체한도·준비서류) 전입니다' });
+  if (cd && 신고대상(c.form, { sub: c.sub })) out.push({ k: 'report', 이름: c.form === 'sale' ? '실거래신고 기한' : '임대차 신고 기한',
+    날: 날더하기(cd, 30), 마침: !!c.reported_at, 메모: c.reported_at ? '신고 마침' : '부동산거래관리시스템에서 신고하세요' });
+  if (bd && ['sale', 'union'].includes(c.form)) {
+    const [a, b] = 설정.lawyer;
+    out.push({ k: 'lawyer', 날: 영업일전(bd, b), 끝: 영업일전(bd, a), 메모: `잔금 ${bd} 기준 ${a}~${b}영업일 전에 예약하세요` });
+  }
+  return out.map(e => ({ 이름: 알림종류[e.k], ...e })).sort((x, y) => (x.날 > y.날) - (x.날 < y.날));
+}
+/* 오늘 아침 알릴 것 - 이 계약 알림을 껐거나 그 항목을 껐으면 빼고, 신고 기한은 날인본에서 신고 전일 때만 */
+export function 오늘알림(c, 설정, 오늘) {
+  if (c.track && c.track.off) return [];
+  return 일정목록(c, 설정)
+    .filter(e => !설정.off.includes(e.k) && !(e.k === 'report' && (c.status !== 'sealed' || c.reported_at)))
+    .map(e => ({ ...e, 남음: 날차(오늘, e.날) }))
+    .filter(e => (알림날[e.k] || []).includes(e.남음));
+}
+export const 알림제목 = e => e.k === 'lawyer' ? '법무사 예약할 때입니다'
+  : `${e.이름} ${e.남음 === 0 ? '당일' : e.남음 === 1 ? '전날' : `${e.남음}일 전`}`;
+
+/* 목록·한 장 읽기 - 일정 계산에 쓰는 날짜를 doc 에서 꺼내 같이 준다. track 칸이 아직 없으면(0032 전) 빼고 다시 읽는다 */
+const 일정열 = ',cd:doc->>contractDate,mid:doc->deal->>mid,md:doc->deal->>midDate,bd:doc->deal->>balanceDate';
+async function 읽기(q) {
+  const x = await db('bk_contract', q.replace('{track}', ',track'));
+  if (x.r.ok || !/track/.test(x.t || '')) return x;
+  return { ...(await db('bk_contract', q.replace('{track}', ''))), no32: true };
+}
+const 준비중32 = res => res.status(503).json({ error: '일정·알림 기능을 준비 중입니다 (0032 마이그레이션 필요)', need: '0032' });
+
+/* 일정·체크 저장 - 날인본도 된다(트리거가 track 만 통과시킨다). 내 계약서만 */
+async function track(res, agent, b) {
+  const id = String(b.id || '');
+  if (!UUID.test(id)) return res.status(400).json({ error: '어느 계약서인지 알 수 없습니다' });
+  const t = trackCheck(b.track);
+  if (!t) return res.status(400).json({ error: '날짜 모양이 맞지 않습니다' });
+  const { r, t: 글, rows } = await db('bk_contract', `id=eq.${id}&agent_id=eq.${agent.id}&select=id`, {
+    method: 'PATCH', headers: { Prefer: 'return=representation' }, body: JSON.stringify({ track: t }),
+  });
+  if (!r.ok) return /track/.test(글 || '') ? 준비중32(res) : noTable(글) ? 준비중(res) : res.status(502).json({ error: '일정을 저장하지 못했습니다' });
+  if (!rows.length) return res.status(404).json({ error: '내 계약서가 아니거나 지워진 계약서입니다' });
+  return res.status(200).json({ ok: true, track: t });
+}
+
+/* 매일 아침 계약 일정 알림 (Vercel 예약 실행이 GET 으로 부른다 - vercel.json crons, 주소는 예전 이름 그대로).
+   CRON_SECRET 이 없으면 돌지 않는다 - 아무나 불러 알림을 쏘게 두지 않는다.
+   중개사 설정에 따라 카카오 알림톡은 일정 하나에 한 통, 메일은 중개사별로 하루 한 통(모아서). */
 export async function reportDueCron(req, res) {
   const secret = process.env.CRON_SECRET;
   if (!secret || req.headers.authorization !== `Bearer ${secret}`) return res.status(401).json({ error: '예약 실행만 부를 수 있습니다' });
-  /* 알릴 날(0~7일 남음)에 걸리는 계약일만 DB 에서 고른다 - 기한 = 계약일 + 30일이므로
-     계약일이 오늘-30 ~ 오늘-23 인 것. 신고 안 한 날인본이 쌓여도 이번 주 대상이 잘리지 않게, 쪽으로 나눠 다 읽는다. */
-  const 오늘 = 한국오늘(), 사람별 = new Map();
-  const 전 = n => new Date(Date.parse(오늘 + 'T00:00:00Z') - n * 864e5).toISOString().slice(0, 10);
+  const 오늘 = 한국오늘();
+  /* 확인·설명서를 뺀 계약서 - 400일 안에 만든 것(그보다 멀리 가는 일정은 없다). 쪽으로 나눠 다 읽는다 */
+  const 열 = 'id,agent_id,agent_user,form,title,status,reported_at,prev_id,sub:doc->>sub' + 일정열;
   const 쪽 = 1000, rows = [];
+  let 트랙 = true;
   for (let 처음 = 0; ; 처음 += 쪽) {
     const { r, t, rows: 받은 } = await db('bk_contract',
-      `select=id,agent_user,form,title,doc&status=eq.sealed&reported_at=is.null&form=in.(${CT_REPORT_FORMS.join(',')})`
-      + `&doc->>contractDate=gte.${전(30)}&doc->>contractDate=lte.${전(23)}&order=id&limit=${쪽}&offset=${처음}`);
+      `select=${열}${트랙 ? ',track' : ''}&form=not.like.explain*&created_at=gte.${날더하기(오늘, -400)}&order=id&limit=${쪽}&offset=${처음}`);
+    if (!r.ok && 트랙 && /track/.test(t || '')) { 트랙 = false; 처음 -= 쪽; continue; }
     if (!r.ok) return noTable(t) ? 준비중(res) : res.status(502).json({ error: '계약서를 읽지 못했습니다' });
     rows.push(...받은);
     if (받은.length < 쪽) break;
   }
-  for (const c of rows) {
-    if (!신고대상(c.form, c.doc)) continue;
-    const d = 신고남은날(c.doc && c.doc.contractDate, 오늘);
-    if (!d || !알릴날.includes(d.남음) || !c.agent_user) continue;
-    if (!사람별.has(c.agent_user)) 사람별.set(c.agent_user, []);
-    사람별.get(c.agent_user).push({ ...d, title: c.title || '소재지 미입력', form: c.form });
+  /* 고쳐 새 판을 만들었거나 갱신계약으로 이어 간 앞 계약서는 뺀다 - 같은 일정이 두 번 가지 않게 */
+  const 앞판 = new Set(rows.map(c => c.prev_id).filter(Boolean));
+  const 살아있음 = rows.filter(c => c.agent_id && !앞판.has(c.id));
+  /* 중개사 - 이름·전화·알림 설정. 0032 전이면 설정 없이(모두 켬) */
+  const ids = [...new Set(살아있음.map(c => c.agent_id))], 중개사 = new Map();
+  for (let i = 0; i < ids.length; i += 100) {
+    const 묶음 = ids.slice(i, i + 100).join(',');
+    let x = await db('bk_agent', `select=id,name,phone,settings&id=in.(${묶음})`);
+    if (!x.r.ok && /settings/.test(x.t || '')) x = await db('bk_agent', `select=id,name,phone&id=in.(${묶음})`);
+    if (x.r.ok) for (const a of x.rows) 중개사.set(a.id, a);
   }
-  const 메일 = [], 사람 = [...사람별];
-  const 주소 = [];
-  for (let i = 0; i < 사람.length; i += 10) 주소.push(...await Promise.all(사람.slice(i, i + 10).map(([uid]) => emailOf(uid))));
-  for (const [n, [, 목록]] of 사람.entries()) {
+  const 사람별 = new Map();
+  for (const c of 살아있음) {
+    const a = 중개사.get(c.agent_id);
+    if (!a) continue;
+    const 설정 = 알림설정(a.settings && a.settings.alert);
+    const 오늘것 = 오늘알림(c, 설정, 오늘);
+    if (!오늘것.length) continue;
+    if (!사람별.has(a.id)) 사람별.set(a.id, { a, 설정, uid: c.agent_user, 목록: [] });
+    사람별.get(a.id).목록.push(...오늘것.map(e => ({ ...e, title: c.title || '소재지 미입력' })));
+  }
+  const 사람 = [...사람별.values()];
+  for (const p of 사람) p.목록.sort((x, y) => x.남음 - y.남음 || (x.날 > y.날) - (x.날 < y.날));
+
+  /* 카카오 알림톡 - 심사를 통과한 '계약 일정 알림' 템플릿이 있을 때만(SOLAPI_TPL_SCHEDULE). 다섯 통씩 함께 보낸다 */
+  const 템플릿 = process.env.SOLAPI_TPL_SCHEDULE, 카톡 = [];
+  if (템플릿) for (const { a, 설정, 목록 } of 사람) if (설정.kakao && a.phone) for (const e of 목록) {
+    카톡.push({ to: a.phone, template: 템플릿, vars: { 이름: a.name || '중개사', 일정: 알림제목(e), 날짜: 날짜글(e.날), 물건: e.title.slice(0, 40), 확인: e.메모 } });
+  }
+  let 카톡보냄 = 0;
+  for (let i = 0; i < 카톡.length; i += 5) 카톡보냄 += (await Promise.all(카톡.slice(i, i + 5).map(alimtalk))).filter(x => x && x.ok).length;
+
+  /* 메일 - 중개사별로 하루 한 통 */
+  const 받을 = 사람.filter(p => p.설정.mail && p.uid), 주소 = [];
+  for (let i = 0; i < 받을.length; i += 10) 주소.push(...await Promise.all(받을.slice(i, i + 10).map(p => emailOf(p.uid))));
+  const 메일 = [];
+  for (const [n, p] of 받을.entries()) {
     const to = 주소[n];
     if (!to) continue;
-    const 급한 = Math.min(...목록.map(x => x.남음));
-    메일.push({ to, subject: 급한 === 0 ? '오늘이 신고 기한인 계약이 있습니다' : `신고 기한이 ${급한}일 남은 계약이 있습니다`,
-      rows: 목록.map(x => [x.form === 'sale' ? '거래신고' : '임대차 신고', `${x.title} · 기한 ${x.기한} (${x.남음 ? `${x.남음}일 남음` : '오늘'})`]),
+    const 급한 = Math.min(...p.목록.map(x => x.남음)), 건 = p.목록.length;
+    메일.push({ to, subject: 급한 === 0 ? `오늘 챙기실 계약 일정이 ${건}건 있습니다` : `계약 일정 ${건}건 - 가장 가까운 일정이 ${급한}일 남았습니다`,
+      rows: p.목록.map(x => [알림제목(x), `${x.title} · ${날짜글(x.날)} · ${x.메모}`]),
       link: '/#/partner/contracts', cta: '계약서 열기',
-      note: '신고를 마쳤으면 계약서의 신고 도우미에서 ‘신고 마침’ 을 눌러 주세요 - 이 알림이 멈춥니다.' });
+      note: '받을 항목과 받는 곳(카카오톡·메일)은 계약서 목록의 ‘알림 설정’ 에서 바꿀 수 있습니다. 신고를 마쳤으면 ‘신고 마침’ 을, 잔금안내를 했으면 체크해 주세요 - 그 알림이 멈춥니다.' });
   }
   /* notifyMany 는 한 번에 100통까지다(Resend 묶음 상한) - 100통씩 나눠 보낸다 */
   let 보냄 = 0;
   for (let i = 0; i < 메일.length; i += 100) 보냄 += (await notifyMany(req, 메일.slice(i, i + 100))).sent || 0;
-  return res.status(200).json({ ok: true, 대상: rows.length, 보냄 });
+  return res.status(200).json({ ok: true, 대상: 살아있음.length, 알림: 사람.reduce((s, p) => s + p.목록.length, 0), 보냄, 카톡: 카톡보냄 });
 }
 
 /* 서류 판독 - 등기부등본·건축물대장·토지이용계획확인서를 읽어 칸 값을 돌려준다(_scan.js).

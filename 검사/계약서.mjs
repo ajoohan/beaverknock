@@ -141,7 +141,7 @@ const 신몸 = js.slice(신시작, 신끝);
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const 모듈 = new Function('S', 'esc', 'apiFetch', '세션있음', 'render', 'toast',
   `${몸}\n${확몸}\n${신몸}\nreturn { rpItems, rp기한, rp대상, rpHTML, RP_직접, 한글금액, 금액글, ctNewDoc, ctDocHTML, ctBalance, CT_HOME_CLAUSES, CT_SPECIALS, CT_FORMS, exNewDoc, exDocHTML, EX_SPEC, EX_FORMS, exFormFor,
-  CT, ctSave, ctLoadList, ctOpen, exSwitch, exKeys, exLost };`);
+  CT, ctSave, ctLoadList, ctOpen, exSwitch, exKeys, exLost, ctTitle, ct신고, ct군, ctClauseSet, ctSpecialSet, CT_CATS, ctFieldRows };`);
 const S = { route: '#/x', agent: { office: '비버공인중개사사무소', name: '한상혁', reg_no: '41450-2024-00001', addr: '하남시 미사대로 550', phone: '031-000-0000' } };
 const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
 
@@ -240,7 +240,9 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
     const 가리킴 = F.clauses.flatMap(c => [...c.text.matchAll(/\{\{조:([a-z]+)\}\}/g)].map(m => m[1]));
     ok(가리킴.every(id => ids.has(id)) && new Set(F.clauses.map(c => c.id)).size === F.clauses.length,
        `${F.ko}: 조항 번호 가리킴이 모두 있는 조항이다 · 조항 이름이 겹치지 않는다`);
-    ok(!/\d{6}\s*-\s*[1-8]\d{6}/.test(JSON.stringify(F.specials) + JSON.stringify(F.clauses)) && F.specials.length >= 10, `${F.ko}: 특약 모음 열 개 이상 · 주민번호 모양 없음`);
+    /* 처음 셋은 열 개 이상, 2026-10-30 에 넣은 양식은 세 개 이상(자주 쓰는 특약은 내 문구함으로 채운다) */
+    const 최소 = ['home-lease', 'shop-lease', 'sale'].includes(k) ? 10 : 3;
+    ok(!/\d{6}\s*-\s*[1-8]\d{6}/.test(JSON.stringify(F.specials) + JSON.stringify(F.clauses)) && F.specials.length >= 최소, `${F.ko}: 특약 모음 ${최소}개 이상 · 주민번호 모양 없음`);
   }
 
   const 가게 = M.ctNewDoc('shop-lease');
@@ -400,7 +402,9 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
   const h = M.rpHTML(매);
   ok(/부동산거래계약신고서\(별지 제1호서식\)/.test(h) && /href="https:\/\/rtms\.molit\.go\.kr"/.test(h) && /data-act="rp-copy" data-v="510,000,000원"/.test(h),
      '도우미 화면: 서식 이름 · 부동산거래관리시스템 열기 · 칸마다 복사');
-  ok(/\['sale','home-lease'\]\.includes\(doc\.form\) && CT\.mode !== 'report'/.test(js), '신고 도우미는 주택임대차·매매에만 - 상가 임대차는 신고 대상이 아니다');
+  ok(/ct신고\(doc\) && CT\.mode !== 'report'/.test(js) && M.ct신고({ form: 'shop-lease' }) === false && M.ct신고({ form: 'lease', sub: '상가' }) === false
+     && M.ct신고({ form: 'lease', sub: '아파트' }) && M.ct신고({ form: 'sale', sub: '토지' }) && M.ct신고({ form: 'home-lease' }),
+     '신고 도우미는 매매·주택 임대차에만 - 상가 임대차는 신고 대상이 아니다(부동산 임대차는 주거 세부 종류만)');
 }
 
 /* ── 신고 마침 · 신고 기한 알림 (2026-10-29) ── */
@@ -415,7 +419,7 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
   let res = 응답(); 불린 = [];
   await C.contractRoute({}, res, agent, user, { what: 'contract-reported', id: '33333333-3333-3333-3333-333333333333' });
   const 본 = JSON.parse(불린[0].b);
-  ok(불린[0].m === 'PATCH' && /status=eq\.sealed/.test(불린[0].u) && /form=in\.\(sale,home-lease\)/.test(불린[0].u) && Object.keys(본).join() === 'reported_at' && 본.reported_at,
+  ok(불린[0].m === 'PATCH' && /status=eq\.sealed/.test(불린[0].u) && /form=in\.\(sale,home-lease,lease\)/.test(불린[0].u) && Object.keys(본).join() === 'reported_at' && 본.reported_at,
      '신고 마침은 내 날인본 · 매매·주택임대차에만 · reported_at 한 칸만 바꾼다');
   res = 응답(); 불린 = [];
   await C.contractRoute({}, res, agent, user, { what: 'contract-reported', id: '33333333-3333-3333-3333-333333333333', on: false });
@@ -453,7 +457,8 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
     : new Response('{}', { status: 404 });
   res = 응답(); 불린 = [];
   await C.reportDueCron({ headers: { authorization: 'Bearer cron-secret', host: 'beaverknock.co.kr' } }, res);
-  ok(/status=eq\.sealed/.test(불린[0].u) && /reported_at=is\.null/.test(불린[0].u) && /form=in\.\(sale,home-lease\)/.test(불린[0].u),
+  ok(/status=eq\.sealed/.test(불린[0].u) && /reported_at=is\.null/.test(불린[0].u) && /form=in\.\(sale,home-lease,lease\)/.test(불린[0].u)
+     && C.신고대상('lease', { sub: '아파트' }) && !C.신고대상('lease', { sub: '상가' }) && !C.신고대상('lease', { sub: '토지' }),
      '신고 안 한 매매·주택임대차 날인본만 읽는다');
   ok(res.code === 200 && 메일 && 메일.length === 1 && 메일[0].to[0] === 'agent1@example.com' && /오늘이 신고 기한/.test(메일[0].subject)
      && 메일[0].html.includes('잠실 아파트') && 메일[0].html.includes('미사 802호') && !메일[0].html.includes('알릴 날 아님'),
@@ -579,6 +584,121 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
   ok(/켜짐 = 줄 && 줄\.querySelector\('a\.on'\)[\s\S]{0,200}줄\.scrollLeft \+=/.test(js), '메뉴 줄이 밀려도 켜진 탭이 보이게 맞춘다');
   ok(/body\.mo \.ct-bar > div\{display:grid !important;grid-template-columns:repeat\(3,1fr\)/.test(css) && /body\.mo \.ct-long\{display:none\}/.test(css),
      '휴대폰 계약서 위 단추는 세 칸씩 · 긴 이름은 줄인다 (네 줄로 몰리지 않게)');
+}
+
+/* ── 계약서 종류 (2026-10-30 대표님 '계약서 종류 전체 목록') ── */
+{
+  ok(M.CT_CATS.map(c => c.ko).join() === '부동산,분양권,권리양도양수,표준임대차계약서,상가권리금계약서,상가임대차계약서,조합원입주권매매계약서,전대차계약서',
+     '종류 여덟 가지 - 대표님이 준 순서 그대로');
+  ok(M.CT_CATS[0].subs.join() === '아파트,주상복합,연립주택,다세대주택,다가구주택,다중주택,도시형생활주택,주택,오피스텔,원룸,상가,상가주택,상가건물,건물,사무실,토지,공장,창고,지식산업센터'
+     && M.CT_CATS[0].deals.join() === '매매,전세,월세,연세', '부동산 - 세부 종류 열아홉 + 거래유형 매매·전세·월세·연세');
+  ok(M.CT_CATS[1].subs.map(M.CT_CATS[1].name).join() === '분양권(아파트),분양권,분양권(오피스텔),분양권(주상복합),분양권(상가)' && !M.CT_CATS[1].deals,
+     '분양권 - 세부 종류 다섯(거래유형 없음)');
+  ok(M.CT_CATS[7].subs.map(M.CT_CATS[7].name).join() === '부동산전대차(주택),부동산전대차(상가)', '전대차 - 주택·상가 (+직접입력)');
+  ok(/'__custom', '직접입력'/.test(js) && /data-in="ctp-custom"/.test(js), '세부 종류는 직접입력도 된다');
+
+  /* 문서 이름이 고른 것을 따라간다 */
+  const 아파트전세 = M.ctNewDoc('lease', null, { cat: 'realty', sub: '아파트', deal: 'jeonse' });
+  const 토지매매 = M.ctNewDoc('sale', null, { cat: 'realty', sub: '토지' });
+  ok(M.ctTitle(아파트전세) === '부동산(아파트) 전세계약서' && M.ctTitle(토지매매) === '부동산(토지) 매매계약서'
+     && M.ctTitle(M.ctNewDoc('presale', null, { cat: 'presale', sub: '' })) === '분양권 매매계약서'
+     && M.ctTitle(M.ctNewDoc('sublease', null, { cat: 'sublease', sub: '상가' })) === '부동산전대차(상가) 계약서'
+     && M.ctTitle(M.ctNewDoc('home-lease')) === '주택임대차계약서', '문서 이름 - 부동산(아파트) 전세계약서 · 부동산(토지) 매매계약서 · 분양권 매매계약서 …');
+  아파트전세.deal.type = 'yearly';
+  ok(M.ctTitle(아파트전세) === '부동산(아파트) 연세계약서', '거래유형을 바꾸면 이름도 바뀐다(연세)');
+  ok(M.ctTitle({ form: 'lease', sub: '오피스텔', dt: 'monthly' }) === '부동산(오피스텔) 월세계약서', '목록 행(doc 없이 sub·dt 만)으로도 이름을 짓는다');
+
+  /* 세부 종류로 법을 가른다 */
+  ok(M.ct군({ form: 'lease', sub: '아파트' }) === 'home' && M.ct군({ form: 'lease', sub: '사무실' }) === 'shop' && M.ct군({ form: 'lease', sub: '토지' }) === 'gen'
+     && M.ct군({ form: 'lease', sub: '상가주택' }) === 'shop', '주거 → 주택임대차보호법 · 상가·사무실 → 상가건물 임대차보호법 · 토지 → 민법');
+  ok(아파트전세.clauses.some(c => c.id === 'renew' && /주택임대차보호법/.test(c.text))
+     && M.ctNewDoc('lease', null, { cat: 'realty', sub: '사무실', deal: 'monthly' }).clauses.some(c => /상가건물 임대차보호법/.test(c.text))
+     && !M.ctNewDoc('lease', null, { cat: 'realty', sub: '토지', deal: 'jeonse' }).clauses.some(c => c.id === 'renew'), '조항도 세부 종류에 맞춘다(토지는 갱신요구권 조항 없음)');
+
+  /* 새 양식 일곱이 다 그려진다 - 빈 문서 · 값 넣은 문서 */
+  for (const [form, cat, sub] of [['lease','realty','아파트'],['lease','realty','토지'],['sublease','sublease','주택'],['presale','presale','아파트'],['union','union',''],['rights','rights',''],['premium','premium','']]) {
+    const d = M.ctNewDoc(form, null, { cat, sub, deal: form === 'lease' ? 'monthly' : undefined });
+    let h = ''; try { h = M.ctDocHTML(d); } catch (e) { h = 'ERR ' + e.message; }
+    ok(!h.startsWith('ERR') && h.includes('[특약사항]') && h.includes('개업<br>공인중개사') && !/undefined|NaN/.test(h),
+       `${M.ctTitle(d)}: 빈 문서가 그려진다 (undefined·NaN 없음)`);
+  }
+  {
+    const d = M.ctNewDoc('presale', null, { cat: 'presale', sub: '아파트' });
+    Object.assign(d.deal, { orgPrice: 500000000, paid: 100000000, premium: 30000000, price: 130000000, down: 13000000 });
+    d.property.bdNm = '미사 푸르지오'; d.property.part = '101동 1203호';
+    const h = M.ctDocHTML(d);
+    ok(h.includes('분양권(아파트) 매매계약서') && h.includes('[분양권의 표시]') && h.includes('미사 푸르지오') && h.includes('프리미엄') && h.includes('금 삼천만원정')
+       && h.includes('제2조(권리의무의 승계)') && !h.includes('승계할 중도금 대출'), '분양권 - 표시 칸 · 금액 줄(넣은 것만) · 제2조 권리의무 승계');
+  }
+  {
+    const d = M.ctNewDoc('sublease', null, { cat: 'sublease', sub: '주택', deal: 'monthly' });
+    d.orig.lessor = '김임대'; d.orig.to = '2027-12-31';
+    const h = M.ctDocHTML(d);
+    ok(h.includes('[원 임대차계약의 표시]') && h.includes('김임대') && h.includes('전대인과 전차인은') && h.includes('제2조(전대차기간)') && h.includes('전차인에게 인도') && !h.includes('신규 계약'),
+       '전대차 - 원 임대차 표 · 전대인/전차인 · 계약 종류 칸 없음');
+  }
+  {
+    const d = M.ctNewDoc('lease', null, { cat: 'realty', sub: '아파트', deal: 'yearly' });
+    Object.assign(d.deal, { rent: 12000000, rentDay: '매년 3월 1일', rentWhen: '후불' });
+    const h = M.ctDocHTML(d);
+    ok(h.includes('차임(연세)') && h.includes('매년 3월 1일에 1년분을 한꺼번에 지급한다(후불)'), '연세 - 1년분 한꺼번에 · 선불/후불');
+    const m = M.ctNewDoc('home-lease'); m.deal.type = 'monthly'; m.deal.rent = 500000; m.deal.rentDay = '25'; m.deal.rentWhen = '후불';
+    ok(M.ctDocHTML(m).includes('매월 25일에 지급한다(후불)'), '월세 - 선불/후불을 고른 대로 적는다');
+  }
+  ok(/case 'ct-rentwhen'/.test(js) && /chipsHTML\(\['선불','후불'\]/.test(js), '월세·연세는 차임 지급을 선불/후불로 고른다');
+
+  /* 조항은 빈칸이 있는 것만 고친다 */
+  ok(js.includes('const ct빈칸조항 = t =>') && js.includes('고침 ? `<textarea class="inp"') && js.includes('<p class="ct-cltext">'), '조항 문구는 보여만 주고, 빈칸 (     ) 이 있는 조항만 고친다');
+
+  /* 임대인 주소는 비워 둔다 · 사무소 주소는 가입 때 받은 것으로 */
+  ok(js.includes("if(F.explain) 넣기(`parties.${갑}.addr`, 소유[0].addr);"), '서류를 읽어도 임대인·매도인 주소는 채우지 않는다(직접 적는다) - 확인·설명서는 그대로');
+  ok(M.ctNewDoc('home-lease').broker.addr === '하남시 미사대로 550', '사무소 주소가 있으면 계약서에 자동으로 들어간다');
+  S.agent.addr = '경기도 하남시 덕풍동';
+  ok(M.ctNewDoc('home-lease').broker.addr === '', '명부의 동 이름 하나는 주소로 쓰지 않는다');
+  S.agent.addr = '하남시 미사대로 550';
+  ok(js.includes("addr: f['j-addr']||''") && js.includes('padding:11px 14px;background:var(--n50);border-radius:var(--r-sm);display:flex;align-items:center;gap:10px'), '자격 확인 단계에서 사무소 주소를 도로명으로 받는다');
+  ok(/function accAddrHTML\(a\)/.test(js) && /what:'office-addr'/.test(js), '마이페이지에서 사무소 주소를 등록·변경한다');
+  ok(js.includes('function ctAddrIn(path, label') && js.includes('ctAddrIn(`parties.${k}.addr`') && js.includes("ctAddrIn('broker.addr'")
+     && /startsWith\('ct-a:'\) && CT\.doc/.test(js), '당사자·사무소 주소는 도로명 찾기로 고른다');
+
+  /* 서류 발급 단계 */
+  ok(/'세움터', 'https:\/\/www\.eais\.go\.kr'/.test(js) && /'인터넷등기소', 'https:\/\/www\.iros\.go\.kr'/.test(js) && /'토지이음', 'https:\/\/www\.eum\.go\.kr'/.test(js)
+     && /\['bldx', '건축물대장 전유부'/.test(js), '서류 단계마다 발급 사이트로 바로 · 건축물대장은 표제부·전유부 둘');
+
+  /* 목록 찾기 */
+  ok(/data-in="ctq"/.test(js) && /function ctFilter\(rows\)/.test(js) && /data-act="ctq-st"/.test(js), '계약서 목록을 소재지·이름·종류·날짜로 찾는다 · 작성 중/날인본으로 거른다');
+}
+
+/* ── 갱신계약 - 원래 계약서는 그대로 (2026-10-30) ── */
+{
+  ok(/async function ctRenew\(id\)/.test(js) && /CT\.prevId = id/.test(js) && /prev_id: !CT\.id && CT\.prevId \? CT\.prevId : undefined/.test(js),
+     '갱신계약은 지난 계약서를 불러와 새 계약서로 연다 - 저장하면 새 행(앞 계약서와 prev_id 로만 잇는다)');
+  const 응답 = () => { const r = { code: 0, body: null }; r.status = c => (r.code = c, r); r.json = b => (r.body = b, r); return r; };
+  let 불린 = [], 답 = () => new Response('[]', { status: 200 });
+  globalThis.fetch = async (u, o = {}) => { 불린.push({ u: String(u), m: o.method || 'GET', b: o.body }); return 답(u, o); };
+  const agent = { id: '11111111-1111-1111-1111-111111111111', role: 'agent' }, user = { id: 'u' };
+  const 판 = M.ctNewDoc('lease', null, { cat: 'realty', sub: '아파트', deal: 'jeonse' });
+  답 = (u, o) => (o.method || 'GET') === 'GET' ? new Response('[{"id":"22222222-2222-2222-2222-222222222222"}]', { status: 200 }) : new Response('[{"id":"n","updated_at":"t"}]', { status: 200 });
+  let res = 응답(); 불린 = [];
+  await C.contractRoute({}, res, agent, user, { what: 'contract-save', form: 'lease', doc: 판, prev_id: '22222222-2222-2222-2222-222222222222' });
+  const 넣음 = 불린.find(x => x.m === 'POST');
+  ok(res.code === 200 && 넣음 && JSON.parse(넣음.b).prev_id === '22222222-2222-2222-2222-222222222222' && !불린.some(x => x.m === 'PATCH'),
+     '갱신계약 저장 - 새 행으로 넣고 앞 계약서는 고치지 않는다');
+  답 = (u, o) => (o.method || 'GET') === 'GET' ? new Response('[]', { status: 200 }) : new Response('[{"id":"n","updated_at":"t"}]', { status: 200 });
+  res = 응답(); 불린 = [];
+  await C.contractRoute({}, res, agent, user, { what: 'contract-save', form: 'lease', doc: 판, prev_id: '22222222-2222-2222-2222-222222222222' });
+  ok(!('prev_id' in JSON.parse(불린.find(x => x.m === 'POST').b)), '남의 계약서 번호를 앞 계약서로 적어 와도 잇지 않는다');
+  ok(/cat:doc->>cat,sub:doc->>sub,dt:doc->deal->>type,parties:doc->parties,renew:doc->renewOf/.test(fs.readFileSync(new URL('../api/_contract.js', import.meta.url), 'utf8')),
+     '목록에 세부 종류·거래유형·당사자 이름이 함께 온다 - 찾기와 문서 이름에 쓴다');
+}
+
+/* ── 사무소 주소 저장 · 서류 판독 넷 ── */
+{
+  const feed = fs.readFileSync(new URL('../api/feed.js', import.meta.url), 'utf8');
+  ok(/if \(b\.what === 'office-addr'\) return saveOfficeAddr\(res, chk\.agent, b\);/.test(feed) && /if \(!\/\\d\/\.test\(addr\)\) return res\.status\(400\)/.test(feed)
+     && /sbUrl\('bk_agent', 'id=eq\.' \+ agent\.id\)/.test(feed), '사무소 주소는 내 파트너 행에만 · 숫자 없는 주소(동 이름만)는 받지 않는다');
+  const SC = await import(길.api('_scan.js'));
+  ok(SC.SCAN_MAX_FILES === 4 && SC.SCAN_KINDS.bldx === '건축물대장(전유부)' && SC.SCAN_KINDS.bld === '건축물대장(표제부)', '판독은 서류 넷까지 - 건축물대장 표제부·전유부를 따로 받는다');
 }
 
 console.log(`${ran - fail} 통과 / ${fail} 실패`);

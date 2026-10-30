@@ -21,13 +21,13 @@ const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3
 {
   const 막힘 = (files, code) => { try { SC.scanBlocks(files); return false; } catch (e) { return e instanceof SC.ScanError && e.code === code; } };
   ok(막힘([], 'no_file') && 막힘(undefined, 'no_file'), '서류가 없으면 거절');
-  ok(막힘([1, 2, 3, 4].map(() => ({ kind: 'reg', data: PDF(1) })), 'too_many'), '네 개 넘게는 받지 않는다(세 서류)');
+  ok(막힘([1, 2, 3, 4, 5].map(() => ({ kind: 'reg', data: PDF(1) })), 'too_many'), '다섯 개 넘게는 받지 않는다(등기부·건축물대장 표제부·전유부·토지이용계획 넷)');
   ok(막힘([{ kind: 'reg', data: '!!!' }], 'bad_file') && 막힘([{ kind: 'reg', data: Buffer.from('hello').toString('base64') }], 'bad_file'), 'base64 가 아니거나 PDF·사진이 아니면 거절');
   ok(막힘([{ kind: 'reg', data: Buffer.alloc(3.2 * 1024 * 1024, 0x25).toString('base64') }], 'too_big'), '합계 3MB 를 넘으면 거절(함수 본문 4.5MB 안)');
   ok(막힘([{ kind: 'reg', data: PDF(21) }], 'too_many_pages'), 'PDF 는 20쪽까지');
   const 블록 = SC.scanBlocks([{ kind: 'reg', data: PDF(2) }, { kind: 'bld', data: 'data:image/png;base64,' + PNG }, { kind: 'land', data: PDF(1) }]);
   ok(블록.length === 6 && 블록[0].text === '[등기사항전부증명서(등기부등본)]' && 블록[1].type === 'document' && 블록[1].source.media_type === 'application/pdf'
-     && 블록[2].text === '[건축물대장]' && 블록[3].type === 'image' && 블록[3].source.media_type === 'image/png' && 블록[4].text === '[토지이용계획확인서]',
+     && 블록[2].text === '[건축물대장(표제부)]' && 블록[3].type === 'image' && 블록[3].source.media_type === 'image/png' && 블록[4].text === '[토지이용계획확인서]',
      '서류마다 꼬리표 + 서류 블록(PDF 는 document, 사진은 image) - 머리 바이트로 형식을 본다');
 }
 
@@ -116,8 +116,8 @@ const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3
   const 모두 = ['reg', 'bld', 'land'];
   const 집 = M.ctNewDoc('home-lease'); const 채움 = M.ctApplyScan(집, s, 모두, false);
   ok(집.property.landCat === '대' && 집.property.bldArea === '84.98' && 집.property.part === '101동 1203호 전부' && 집.property.partArea === '84.98'
-     && 집.parties.lessor.name === '홍길동, 김철수' && 집.parties.lessor.addr === '서울 강남구 테헤란로 1' && 채움.includes('parties.lessor.name'),
-     '주택임대차: 소재지·면적·임차할 부분·임대인(소유자) 이 채워지고, 채운 칸 목록을 돌려준다');
+     && 집.parties.lessor.name === '홍길동, 김철수' && 집.parties.lessor.addr === '' && 채움.includes('parties.lessor.name'),
+     '주택임대차: 소재지·면적·임차할 부분·임대인 이름이 채워지고(주소는 비워 직접 적는다 - 2026-10-30 대표님), 채운 칸 목록을 돌려준다');
   ok(!('ex' in 집) || !Object.keys(집.ex || {}).length, '계약서에는 확인·설명서 칸(ex.*)을 넣지 않는다');
   const 매 = M.ctNewDoc('sale'); M.ctApplyScan(매, s, 모두, false);
   ok(매.property.landRight === '소유권대지권 23456.7분의 45.6' && 매.parties.seller.name === '홍길동, 김철수' && !매.property.part, '매매: 대지권 · 매도인 · 임차할 부분 없음');

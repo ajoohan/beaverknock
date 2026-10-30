@@ -131,6 +131,16 @@ export async function approvedAgent(user) {
   return a.status === 'approved' ? { agent: a } : { pending: a.status || 'new', agent: a };
 }
 
+async function saveOfficeAddr(res, agent, b) {
+  const addr = String(b.addr || '').replace(/\s+/g, ' ').trim().slice(0, 200);
+  if (!/\d/.test(addr)) return res.status(400).json({ error: '도로명 찾기로 주소를 골라 주세요' });
+  const r = await fetch(sbUrl('bk_agent', 'id=eq.' + agent.id), {
+    method: 'PATCH', headers: { ...sbHeaders(), Prefer: 'return=minimal' }, body: JSON.stringify({ addr }),
+  });
+  if (!r.ok) return res.status(502).json({ error: '저장하지 못했습니다' });
+  return res.status(200).json({ ok: true, addr });
+}
+
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
   /* 매일 아침 신고 기한 알림(Vercel 예약 실행). CRON_SECRET 으로만 열린다 - api/_contract.js */
@@ -164,6 +174,10 @@ export default async function handler(req, res) {
      새로고침하면 자기가 보낸 것이 사라졌다.
      함수 상한(12개) 때문에 수요 목록과 한 지붕 아래 둔다. */
   if (b.what === 'mine') return readMine(req, res, chk.agent);
+
+  /* 사무소 주소 (2026-10-30 대표님 - 계약서의 사무소 소재지로 자동으로). 마이페이지에서 도로명 찾기로 고른다.
+     가입 때 명부에서 온 값은 동 이름 하나라 계약서에 쓸 수 없다 */
+  if (b.what === 'office-addr') return saveOfficeAddr(res, chk.agent, b);
 
   /* 계약서 (2026-10-29). 승인 전 중개사도 쓴다 - 자격 확인은 수요 전문을 여는 문이지
      양식·인쇄 도구의 문이 아니다. 갈래는 api/_contract.js 가 맡는다. */

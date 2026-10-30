@@ -26,7 +26,7 @@ import { 주민번호있나 } from './_contract.js';
 
 export const SCAN_MODEL = 'claude-haiku-5-5';
 export const SCAN_EFFORT = 'low';
-export const SCAN_MAX_FILES = 3;
+export const SCAN_MAX_FILES = 4;          /* 등기부 · 건축물대장 표제부 · 전유부 · 토지이용계획 */
 export const SCAN_MAX_BYTES = 3 * 1024 * 1024;          /* 원본 합계 */
 export const SCAN_MAX_PDF_PAGES = 20;
 const TIMEOUT_MS = 120_000;                            /* Vercel 함수 300초 안 - 몇 쪽짜리 등기부는 보통 20~40초 */
@@ -55,7 +55,7 @@ export class ScanError extends Error {
    모든 칸을 required 로 두고 모르면 빈 글('')·false·빈 배열로 받는다 - 선택 칸·합집합을 쓰지 않는다 */
 const S = { type: 'string' }, B = { type: 'boolean' };
 const obj = (props) => ({ type: 'object', additionalProperties: false, required: Object.keys(props), properties: props });
-export const SCAN_KINDS = { reg: '등기사항전부증명서(등기부등본)', bld: '건축물대장', land: '토지이용계획확인서' };
+export const SCAN_KINDS = { reg: '등기사항전부증명서(등기부등본)', bld: '건축물대장(표제부)', bldx: '건축물대장(전유부)', land: '토지이용계획확인서' };
 export const SCAN_SCHEMA = obj({
   /* 소재지 · 토지 */
   address_road: S, address_jibun: S, building_name: S, unit: S,
@@ -76,7 +76,8 @@ export const SCAN_SCHEMA = obj({
 
 export const SCAN_SYSTEM = `당신은 한국 부동산 공적 서류를 읽어 정해진 칸으로 옮겨 적는 도우미다.
 공인중개사가 계약서와 중개대상물 확인·설명서를 쓰기 전에 기본 정보를 채우는 데 쓴다.
-서류는 [등기사항전부증명서(등기부등본)] [건축물대장] [토지이용계획확인서] 꼬리표 뒤에 붙어 온다. 일부만 올 수도 있다.
+서류는 [등기사항전부증명서(등기부등본)] [건축물대장(표제부)] [건축물대장(전유부)] [토지이용계획확인서] 꼬리표 뒤에 붙어 온다. 일부만 올 수도 있다.
+표제부와 전유부가 함께 오면 호실의 면적·용도·구조(building_area_m2 · building_use · building_structure)는 전유부를, 사용승인일·층수·연면적·내진·승강기·위반 여부는 표제부를 따른다.
 
 규칙:
 - 서류에 인쇄된 글자만 옮겨 적는다. 짐작하거나 지어내지 않는다. 서류에 없거나 읽을 수 없으면 빈 글("")·false·빈 배열로 둔다.

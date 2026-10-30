@@ -21,13 +21,24 @@ import { sbHeaders, sbUrl, emailOf } from './_auth.js';
 import { notifyMany } from './_notify.js';
 
 /* 주택임대차 · 상가건물 임대차 · 부동산 매매 · 중개대상물 확인·설명서(주거용) (화면의 CT_FORMS 와 같은 이름) */
-export const CT_FORMS = ['home-lease', 'shop-lease', 'sale', 'explain-home', 'explain-biz', 'explain-land', 'explain-etc'];
+/* 2026-10-30 계약서 종류 - 부동산 임대차(전세·월세·연세) · 전대차 · 분양권 · 조합원입주권 · 권리양도양수 · 상가 권리금 */
+export const CT_FORMS = ['home-lease', 'shop-lease', 'sale', 'lease', 'sublease', 'presale', 'union', 'rights', 'premium',
+  'explain-home', 'explain-biz', 'explain-land', 'explain-etc'];
 export const CT_SCHEMA = 'bk-contract/1';
 const CT_MAX = 64 * 1024;                     /* 계약서 한 장 - 조항·특약을 넉넉히 적어도 이 안이다 */
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const LIST_COLS = 'id,created_at,updated_at,form,title,status,sealed_at,sha256,prev_id,proposal_id,reported_at';
+/* 목록에서 찾고(당사자 이름) 문서 이름을 짓는 데(세부 종류·거래유형) 쓰는 값은 doc 에서 꺼내 같이 준다 - doc 통째로는 무겁다 */
+const LIST_COLS = 'id,created_at,updated_at,form,title,status,sealed_at,sha256,prev_id,proposal_id,reported_at,'
+  + 'cat:doc->>cat,sub:doc->>sub,dt:doc->deal->>type,parties:doc->parties,renew:doc->renewOf';
 /* 신고가 있는 양식 - 매매(거래신고) · 주택임대차(임대차 신고). 상가 임대차·확인·설명서는 신고가 없다 */
-export const CT_REPORT_FORMS = ['sale', 'home-lease'];
+export const CT_REPORT_FORMS = ['sale', 'home-lease', 'lease'];
+/* 부동산 임대차('lease')는 주거 세부 종류일 때만 임대차 신고 대상이다 - 화면의 ct신고 와 같은 규칙 */
+const 주거종류 = ['아파트','주상복합','연립주택','다세대주택','다가구주택','다중주택','도시형생활주택','주택','오피스텔','원룸'];
+export const 신고대상 = (form, doc) => {
+  if (form !== 'lease') return CT_REPORT_FORMS.includes(form);
+  const s = String((doc && doc.sub) || '').trim();
+  return 주거종류.includes(s) || (/주택|아파트|빌라|원룸|오피스텔|주상복합/.test(s) && !/상가/.test(s));
+};
 
 const noTable = t => /does not exist|PGRST205|bk_contract/i.test(t);
 const 준비중 = res => res.status(503).json({ error: '계약서 기능을 준비 중입니다 (0031 마이그레이션 필요)', need: '0031' });
@@ -144,6 +155,12 @@ async function save(res, agent, user, b) {
     return res.status(200).json({ ok: true, id, updated_at: rows[0].updated_at });
   }
 
+  /* 갱신계약 - 앞 계약서는 내 것일 때만 잇는다. 앞 계약서는 건드리지 않는다(새 행) */
+  let prev = null;
+  if (UUID.test(String(b.prev_id || ''))) {
+    const p = await db('bk_contract', `select=id&id=eq.${b.prev_id}&agent_id=eq.${agent.id}&limit=1`);
+    if (p.r.ok && p.rows.length) prev = b.prev_id;
+  }
   /* 연결된 제안은 내 제안일 때만 잇는다 - 남의 제안 번호를 적어 와도 그 손님과 엮이지 않게 */
   let proposal = null;
   if (UUID.test(String(b.proposal_id || ''))) {
@@ -152,7 +169,7 @@ async function save(res, agent, user, b) {
   }
   const { r, t, rows } = await db('bk_contract', '', {
     method: 'POST', headers: { Prefer: 'return=representation' },
-    body: JSON.stringify({ ...body, agent_id: agent.id, agent_user: user.id, proposal_id: proposal }),
+    body: JSON.stringify({ ...body, agent_id: agent.id, agent_user: user.id, proposal_id: proposal, ...(prev ? { prev_id: prev } : {}) }),
   });
   if (!r.ok) return noTable(t) ? 준비중(res) : res.status(502).json({ error: '저장하지 못했습니다' });
   return res.status(200).json({ ok: true, id: rows[0] && rows[0].id, updated_at: rows[0] && rows[0].updated_at });
@@ -245,6 +262,7 @@ export async function reportDueCron(req, res) {
     if (받은.length < 쪽) break;
   }
   for (const c of rows) {
+    if (!신고대상(c.form, c.doc)) continue;
     const d = 신고남은날(c.doc && c.doc.contractDate, 오늘);
     if (!d || !알릴날.includes(d.남음) || !c.agent_user) continue;
     if (!사람별.has(c.agent_user)) 사람별.set(c.agent_user, []);

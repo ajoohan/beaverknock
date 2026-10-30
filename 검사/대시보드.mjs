@@ -219,6 +219,15 @@ const M = new Function('esc', `${js.slice(시작, 끝)}\nreturn { dzLine, dzPill
   ok(js.includes('<h2 class="adm-sh" style="margin-bottom:${hint?6:14}px"><span class="ctw-n">${no}</span>${title}</h2>') && (js.match(/<span class="sect st-n"><span class="ctw-n">\d<\/span>/g) || []).length === 4,
      '번호 걸음 제목(활동 설정 · 매물 등록)은 계약서 작성 화면과 같은 번호 배지');
 
+  /* 왼쪽 메뉴 (2026-10-30 '항목 구분을 더 명확히 · 로고 옆 PARTNERS 라벨 · 묶음 간격 · 버전 글자 작게') */
+  ok(js.includes('<a data-go="#/partner/home" class="dz-logo">${logoLockup({h:20, mode:\'dark\'})}<span class="dz-tag en">PARTNERS</span></a>')
+     && css.includes('.dz-tag.en{padding:2px 6px;border:1px solid rgba(255,255,255,.55)') && /\.dz-logo\{[^}]*flex-wrap:wrap/.test(css),
+     '로고 옆은 영문 꼬리표 PARTNERS - 좁은 메뉴에서는 로고 아래로 내려가 잘리지 않는다');
+  ok(css.includes('.dz-menu > .grp:not(:first-child){margin-top:12px;padding-top:16px;border-top:1px solid rgba(255,255,255,.16)}')
+     && css.includes('body:not(.mo) .dz-menu > .grp:not(:first-child){margin-top:8px;padding-top:12px}'),
+     '묶음(영업 · 계약 · 내 사무소)마다 위를 띄우고 얇은 줄 - 낮은 창에서는 조금 좁게');
+  ok(css.includes('.dz-vb > span{font-size:12.5px;') && css.includes('.dz-vb small{font-size:12px;'), '아래 버전 칸 글자는 한 단계 작게(12.5 · 12px)');
+
   /* 묻는 창 (2026-10-30 '팝업도 디자인 적용해서 화면 중앙에') - 브라우저 기본 창을 하나도 쓰지 않는다 */
   ok(!/(^|[^.\w$])(confirm|alert|prompt)\(/m.test(js.replace(/\/\*[\s\S]*?\*\//g, '')), '브라우저 기본 확인창·알림창(confirm · alert · prompt)을 쓰지 않는다');
   ok(js.includes('function 확인창(제목, 설명 = \'\', opt = {}){') && /if\(S\.modal\.type==='ask'\)\{ const m = S\.modal;/.test(js) && js.includes('role="alertdialog"')

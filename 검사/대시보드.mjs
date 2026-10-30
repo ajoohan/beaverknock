@@ -227,6 +227,9 @@ const M = new Function('esc', `${js.slice(시작, 끝)}\nreturn { dzLine, dzPill
      && css.includes('body:not(.mo) .dz-menu > .grp:not(:first-child){margin-top:8px;padding-top:12px}'),
      '묶음(영업 · 계약 · 내 사무소)마다 위를 띄우고 얇은 줄 - 낮은 창에서는 조금 좁게');
   ok(css.includes('.dz-vb > span{font-size:12.5px;') && css.includes('.dz-vb small{font-size:12px;'), '아래 버전 칸 글자는 한 단계 작게(12.5 · 12px)');
+  ok(js.includes('<a data-act="ops-tab" data-v="home" class="dz-logo" aria-label="비버노크 운영 대시보드">${logoLockup({h:20, mode:\'dark\'})}<span class="dz-tag en">ADMIN</span></a>')
+     && !js.includes('<span class="dz-tag">운영</span>'),
+     '운영자 메뉴도 같은 모양 - 로고 옆 영문 꼬리표 ADMIN · 로고를 누르면 운영 대시보드(손님 사이트는 아래 사이트 가기)');
 
   /* 묻는 창 (2026-10-30 '팝업도 디자인 적용해서 화면 중앙에') - 브라우저 기본 창을 하나도 쓰지 않는다 */
   ok(!/(^|[^.\w$])(confirm|alert|prompt)\(/m.test(js.replace(/\/\*[\s\S]*?\*\//g, '')), '브라우저 기본 확인창·알림창(confirm · alert · prompt)을 쓰지 않는다');

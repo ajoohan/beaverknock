@@ -9971,7 +9971,7 @@ V[OPS_HOME] = () => {
   return `
 <div class="scr fade dz-scr">
   <aside class="dz-side opsSide" aria-label="운영 메뉴">
-    <a data-go="#/" class="dz-logo">${logoLockup({h:23, mode:'dark'})}<span class="dz-tag">운영</span></a>
+    <a data-act="ops-tab" data-v="home" class="dz-logo" aria-label="비버노크 운영 대시보드">${logoLockup({h:20, mode:'dark'})}<span class="dz-tag en">ADMIN</span></a>
     <nav class="dz-menu">${메뉴}</nav>
     <div class="dz-foot">
       <a data-go="#/">${dzIco('site')}<span>사이트 가기</span></a>
@@ -10673,6 +10673,9 @@ const CT_하위메뉴 = [['#/partner/contracts/new', '계약서 작성', 'pen', 
    번호는 배포한 날(연.월.일 - 같은 날 또 올리면 뒤에 .2). 화면이 version.json 을 가끔 읽어,
    더 새 버전이 올라와 있으면 메뉴 아래에서 새로고침을 권한다(버전확인) - 계약서를 띄워 둔 채 오래 일하면 고친 화면을 못 받는다 */
 const BK_변경 = [
+  { v:'26.10.30.10', 날:'2026-10-30', 줄:[
+    '운영자 화면 메뉴도 같은 모양 - 로고 옆 영문 꼬리표 ADMIN · 현황 / 관리 / 기록 묶음 간격과 얇은 줄 · 로고를 누르면 운영 대시보드',
+  ]},
   { v:'26.10.30.9', 날:'2026-10-30', 줄:[
     '왼쪽 메뉴 다듬기 - 로고 옆에 PARTNERS 영문 꼬리표 · 영업 / 계약 / 내 사무소 묶음마다 간격과 얇은 줄 · 아래 버전 글자를 한 단계 작게',
   ]},

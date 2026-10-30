@@ -98,8 +98,8 @@ const M = new Function('esc', `${js.slice(시작, 끝)}\nreturn { dzLine, dzPill
      '운영자 - 휴대폰은 가로로 미는 메뉴, 넓은 화면은 왼쪽 보라 메뉴');
   ok(운.includes("<div class=\"dz-head\">${dzNowHTML('운영 대시보드')}") && /data-act="ops-reload">전체 새로고침/.test(운), '운영 대시보드는 날짜·요일·시간·날씨로 연다(인사말 없이) · 새로고침은 머리에');
   const 옆 = js.slice(js.indexOf('function 파트너옆(active){'), js.indexOf('/* ── 중개사 대시보드 ── */'));
-  ok(/\['#\/partner\/home', '대시보드', 'home', 'h'\]/.test(옆) && /\.\.\.\(own \? \[\] : \[\['#\/partner\/contracts', '계약서', 'doc', 'ct'\]\]\)/.test(옆),
-     '중개사 세로 메뉴 첫 칸은 대시보드 · 계약서는 공인중개사에게만');
+  ok(/\['#\/partner\/home', '대시보드', 'home', 'h'\]/.test(옆) && 옆.includes("...(own ? [] : ['계약', ['#/partner/contracts', '계약서', 'doc', 'ct']]),"),
+     '중개사 세로 메뉴 첫 칸은 대시보드 · 계약서(와 그 묶음 이름)는 공인중개사에게만');
   ok(/aria-current="page"/.test(옆) && /\.dz-side :focus-visible\{outline:2px solid #fff/.test(css), '지금 화면은 aria-current · 보라 바탕에서 초점 테두리는 흰색');
   ok(/\[\['#\/partner\/home','홈','h'\]/.test(js) && /h:'M4 4 h7 v7 H4 Z/.test(js), '휴대폰 아래 탭 맨 앞은 홈(대시보드)');
   ok(/const 곳 = 열림 \? '#\/partner\/home' : '#\/partner\/verify';/.test(js), '자격이 열린 파트너의 입구는 대시보드');
@@ -119,10 +119,10 @@ const M = new Function('esc', `${js.slice(시작, 끝)}\nreturn { dzLine, dzPill
   const 발 = 옆.slice(옆.indexOf('<div class="dz-foot">'), 옆.indexOf('</aside>'));
   ok(발.indexOf('사이트 가기') > 0 && 발.indexOf('${버전칸()}') > 발.indexOf('사이트 가기') && !/마이페이지|로그아웃|dz-office/.test(발),
      '왼쪽 메뉴 맨 아래는 사이트 가기, 그 아래 버전과 날짜 - 마이페이지·로그아웃은 메뉴에 없다');
-  ok(옆.includes('<div class="ptop">${agentBadge()}${S.user ? userMenu({ admin: true }) : navAuth(\'partner\')}</div>')
-     && js.includes("<div class=\"ptop\">${S.user ? userMenu({ admin: true, sub: '운영자' }) : ''}</div>")
+  ok(옆.includes('<div class="ptop">${adm경로(adm위치(S.route || \'\'))}<span class="ptop-r">${agentBadge()}${S.user ? userMenu({ admin: true }) : navAuth(\'partner\')}</span></div>')
+     && js.includes("<div class=\"ptop\">${adm경로([['운영'], [OPS_TITLE[tab] || '운영 화면']])}<span class=\"ptop-r\">${S.user ? userMenu({ admin: true, sub: '운영자' }) : ''}</span></div>")
      && js.includes('<span class="ctx-badge">${agentBadge()}${S.user ? userMenu({ admin: true }) : \'\'}</span>'),
-     '오른쪽 위 프로필 - 중개사 화면·계약서 작성 화면·운영 화면 모두');
+     '머리 줄 - 왼쪽 지금 위치, 오른쪽 프로필 (중개사 화면·운영 화면) · 계약서 작성 화면은 머리 줄 오른쪽에 프로필');
   const 메뉴 = js.slice(js.indexOf('function userMenu(opt = {}){'), js.indexOf('function docShell('));
   ok(/관리 \? '' : `\$\{줄\('#\/my', '내 조건'/.test(메뉴) && 메뉴.includes("${줄('#/account', '마이페이지'") && 메뉴.includes('data-act="logout"')
      && 메뉴.includes('<span class="nm2"><b>${esc(who)} 님</b>${소속 ? `<small>${esc(소속)}</small>` : \'\'}</span>'),
@@ -134,8 +134,27 @@ const M = new Function('esc', `${js.slice(시작, 끝)}\nreturn { dzLine, dzPill
   for (const k of ['d', 'p', 'st', 's', 'l'])
     ok(js.includes(`\${navPartner('${k}')}\n  <div class="pad adm-page" style=`), `메뉴 화면(${k})은 가운데 폭 제한 없이 본문을 채운다`);
   ok(/body:not\(\.mo\) \.scr:has\(> \.psb\) > \.adm-page\{max-width:none!important;margin:0!important/.test(css) && /\.adm-grid\{display:grid;grid-template-columns:repeat\(auto-fill,minmax\(440px,1fr\)\)/.test(css)
-     && /\.dz-main\{padding-top:14px!important;padding-bottom:32px!important;width:100%\}/.test(css) && /\.ptop\{[^}]*z-index:30\}/.test(css),
+     && /\.dz-main\{padding-top:20px!important;padding-bottom:40px!important;width:100%\}/.test(css) && /\.ptop\{[^}]*z-index:30\}/.test(css),
      '넓은 화면 - 폭 제한을 풀고 카드는 폭만큼 여러 줄 · 대시보드도 1320px 제한 없음 · 프로필 드롭다운이 카드 위로');
+
+  /* 상용 수준 다듬기 (2026-10-30 대표님 '어드민 UIUX 를 상용서비스 수준으로') - 지금 위치 · 묶음 · 창 제목 · 화면 제목 · 불러오는 줄 */
+  const 위치 = new Function('ownerSide', 'CT', 'ctTitle', 'esc', `${옆.slice(옆.indexOf('function adm위치(h){'), 옆.indexOf('const CT_하위메뉴'))}; return { adm위치, adm경로 };`)(
+    () => false, { doc: { form: 'sale' } }, () => '부동산 매매계약서', esc);
+  ok(JSON.stringify(위치.adm위치('#/partner/contracts/schedule')) === '[["계약서","#/partner/contracts"],["일정·알림"]]'
+     && JSON.stringify(위치.adm위치('#/partner/contract/abc')) === '[["계약서","#/partner/contracts"],["부동산 매매계약서"]]'
+     && JSON.stringify(위치.adm위치('#/partner/demand/x')) === '[["영업"],["수요 목록","#/partner/demands"],["손님 조건"]]'
+     && JSON.stringify(위치.adm위치('#/partner/settings')) === '[["내 사무소"],["활동 설정"]]' && 위치.adm위치('#/x').length === 0,
+     '지금 위치 - 묶음 › 화면(› 그 안의 화면), 계약서 작성 중이면 그 계약서 이름');
+  const 경로 = 위치.adm경로([['계약서', '#/partner/contracts'], ['일정·알림']]);
+  ok(/aria-label="현재 위치"/.test(경로) && /<a data-go="#\/partner\/contracts">계약서<\/a><i class="adm-sep" aria-hidden="true"><\/i><b aria-current="page">일정·알림<\/b>/.test(경로) && !/›|>/.test(경로.replace(/<[^>]*>/g, '')),
+     '경로 한 줄 - 앞 칸은 링크, 마지막 칸이 지금 화면(aria-current) · 사이는 그림 꺾쇠(글자 화살표 없음)');
+  ok(["'영업',", "'내 사무소',"].every(t => 옆.includes(t)) && 옆.includes("typeof x === 'string' ? `<span class=\"grp\">${x}</span>`"), '중개사 메뉴를 묶음 이름(영업 · 계약 · 내 사무소)으로 나눈다 - 운영 메뉴와 같은 모양');
+  ok(js.includes("document.title = 곳.length ? `${곳[곳.length - 1][0]} · 비버노크 ${h.startsWith('#/ops') ? '운영' : '파트너'}` : 기본제목;") && js.includes('var 기본제목 = document.title;'),
+     '창 제목 - 어드민은 지금 화면 이름 · 비버노크 파트너/운영, 다른 화면은 사이트 제목');
+  ok(/body:not\(\.mo\) :is\(\.adm-page, \.dz-main\) h1\.t\{font-size:24px!important;margin-top:0!important/.test(css) && /body:not\(\.mo\) \.dz-h1\{font-size:24px\}/.test(css),
+     '어드민 화면 제목은 24px 하나로(화면마다 25·28px 이던 것)');
+  ok(js.includes('role="status" aria-label="계약서를 불러오는 중입니다"') && js.includes('<div class="ct-row ct-skr" aria-hidden="true">') && js.includes('data-go="#/partner/contracts/new" style="margin-top:16px">새로 만들기</button>'),
+     '계약서 목록 - 불러오는 동안 표 모양 그대로 회색 줄 · 비어 있으면 새로 만들기 단추');
 
   /* 버전 - 화면의 버전과 version.json 이 같아야 새 버전 알림이 맞게 뜬다 */
   const 판 = JSON.parse(fs.readFileSync(new URL('../version.json', import.meta.url), 'utf8'));

@@ -188,7 +188,7 @@ ok(js.includes("V['#/account'] = () =>") && js.includes("h==='#/account'"), '마
 ok(/data-act="acc-mkt"/.test(js) && /case 'acc-mkt'/.test(js), '마이페이지에서 광고성 정보 수신을 바로 끈다');
 ok(/data-act="login-as" data-v="guest"/.test(js) && /data-act="login-as" data-v="partner"/.test(js) && /case 'login-as'/.test(js),
    '로그인 화면에서 손님·파트너를 오갈 수 있다 - 전에는 파트너로만 바꿀 수 있었다');
-ok(js.includes('<div class="ptop">${agentBadge()}${S.user ? userMenu({ admin: true }) : navAuth(\'partner\')}</div>') && js.includes("${줄('#/account', '마이페이지'"),
+ok(js.includes('<span class="ptop-r">${agentBadge()}${S.user ? userMenu({ admin: true }) : navAuth(\'partner\')}</span></div>') && js.includes("${줄('#/account', '마이페이지'"),
    '파트너 화면의 마이페이지는 오른쪽 위 프로필 드롭다운에서 마이페이지로 간다 (2026-10-30 대표님 - 왼쪽 메뉴에서 옮김)');
 
 /* ── 로그인 열쇠 갱신 (2026-10-30 대표님 "계약서 다 작성하고 저장 눌렀는데 로그인하라고 떠") ──

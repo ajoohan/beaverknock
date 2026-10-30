@@ -2001,6 +2001,13 @@ body:not(.mo) .dz-scr > :not(.dz-side), body:not(.mo) .scr:has(> .psb) > :not(.p
   font:inherit;font-size:13px;font-weight:600;text-align:left;cursor:pointer;text-decoration:none}
 .dz-menu .opsSub :is(button,a):hover{background:rgba(255,255,255,.12);color:#fff}
 .dz-menu .opsSub :is(button,a).on{background:rgba(255,255,255,.12);color:#fff;font-weight:800}
+/* 낮은 창(노트북 768px 등) - 메뉴 줄 높이를 줄여 맨 아래 사이트 가기·버전까지 한 화면에 (넓은 화면은 마우스라 38px 로도 넉넉하다) */
+@media (max-height:860px){
+  body:not(.mo) :is(.dz-menu > a, .dz-menu > button, .dz-foot > a){min-height:38px;padding-top:7px;padding-bottom:7px}
+  body:not(.mo) .dz-menu .opsSub :is(button,a){min-height:34px;padding-top:6px;padding-bottom:6px}
+  body:not(.mo) .dz-side .grp{padding:10px 10px 4px}
+  body:not(.mo) .dz-logo{padding-bottom:12px}
+}
 /* 버전 (2026-10-30 대표님 '좌측 메뉴바 하단에는 버전 관리') - 지금 버전 · 업데이트 내역 · 새 버전이 올라오면 새로고침 */
 .dz-ver{display:flex;flex-direction:column;gap:6px}
 .dz-vb{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;padding:8px 10px;border-radius:8px;background:transparent;color:rgba(255,255,255,.94);text-align:left}
@@ -2021,11 +2028,23 @@ body:not(.mo) .dz-scr > :not(.dz-side), body:not(.mo) .scr:has(> .psb) > :not(.p
 .dz-foot{margin-top:auto;display:flex;flex-direction:column;gap:2px;padding-top:14px;border-top:1px solid rgba(255,255,255,.2)}
 .dz-office{display:block;padding:4px 10px 8px;font-size:12.5px;font-weight:600;color:rgba(255,255,255,.85);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .dz-side :focus-visible{outline:2px solid #fff;outline-offset:2px}
-.ptop{display:flex;justify-content:flex-end;align-items:center;gap:12px;padding:12px 32px 0;min-height:56px;position:relative;z-index:30}
-.dz-main{padding-top:14px!important;padding-bottom:32px!important;width:100%}
+/* 머리 줄 - 왼쪽 지금 위치(묶음 › 화면), 오른쪽 자격 배지와 프로필. 격자 칸 안이라 붙어 있게(sticky) 하지 못한다 - 그 칸 높이 밖으로 못 나간다 */
+.ptop{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:12px 32px 0;min-height:60px;position:relative;z-index:30}
+.ptop-r{display:flex;align-items:center;gap:12px;flex:none}
+.adm-bc{display:flex;align-items:center;gap:9px;min-width:0;font-size:13.5px;color:var(--n500)}
+.adm-bc > :is(a,span){flex:none;font-weight:600;color:var(--n500);text-decoration:none}
+.adm-bc > a{cursor:pointer;border-radius:4px}
+.adm-bc > a:hover{color:var(--ind700)}
+.adm-bc > b{min-width:0;font-weight:700;color:var(--n900);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.adm-sep{flex:none;width:6px;height:6px;border-top:1.5px solid currentColor;border-right:1.5px solid currentColor;transform:rotate(45deg);opacity:.55}
+.dz-main{padding-top:20px!important;padding-bottom:40px!important;width:100%}
 /* ── 어드민 넓게 쓰기 (2026-10-30 대표님 '어드민 화면을 넓게 써 · 여백이 너무 많다 · 본문 영역을 꽉 채워') ──
    메뉴 화면마다 가운데로 묶었던 폭(880~1180px)을 풀고 같은 여백으로 채운다. 카드 목록은 폭만큼 여러 줄로 */
-body:not(.mo) .scr:has(> .psb) > .adm-page{max-width:none!important;margin:0!important;padding:8px 32px 36px!important}
+body:not(.mo) .scr:has(> .psb) > .adm-page{max-width:none!important;margin:0!important;padding:20px 32px 40px!important;gap:20px!important}
+/* 화면 제목 하나로 - 화면마다 25·28px 로 달랐다. 24px · 위 여백 없음(머리 줄이 위치를 말한다) */
+body:not(.mo) :is(.adm-page, .dz-main) h1.t{font-size:24px!important;margin-top:0!important;letter-spacing:-.03em}
+body:not(.mo) .dz-h1{font-size:24px}
+body:not(.mo) .dz-head{margin-bottom:20px}
 .adm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(440px,1fr));gap:16px;align-items:start}
 body.mo .adm-grid{grid-template-columns:minmax(0,1fr)}
 .adm-h{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap}
@@ -2053,6 +2072,7 @@ body:not(.mo) .ct-table .ct-row,.ct-th{display:grid;grid-template-columns:minmax
 .ct-table :is(.ct-c2,.ct-c3,.ct-c4){font-size:13px;color:var(--n700);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ct-table .ct-c4{color:var(--n500)}
 .ct-table .ct-c5{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.ct-skr,.ct-skr:hover{cursor:default;background:var(--white)}
 .ct-phr-add{display:flex;flex-direction:column;gap:10px}
 .ct-phr-add textarea{font-size:13.5px;line-height:1.65;resize:vertical}
 .ct-phr-add .ct-my-row .btn{margin-left:auto}
@@ -9596,7 +9616,7 @@ V[OPS_HOME] = () => {
       ${버전칸()}
     </div>
   </aside>
-  <div class="ptop">${S.user ? userMenu({ admin: true, sub: '운영자' }) : ''}</div>
+  <div class="ptop">${adm경로([['운영'], [OPS_TITLE[tab] || '운영 화면']])}<span class="ptop-r">${S.user ? userMenu({ admin: true, sub: '운영자' }) : ''}</span></div>
   <main class="pad dz-main">${시험}${머리}${opsPanel()}</main>
 </div>`;
 };
@@ -10227,12 +10247,15 @@ function dzStatus(o){
 /* ── 중개사 왼쪽 메뉴 (PC) ── navPartner 가 넓은 화면에서 이것을 낸다 */
 function 파트너옆(active){
   const own = ownerSide();
+  /* 글자 한 줄은 묶음 이름(운영 메뉴와 같은 .grp) - 영업 · 계약 · 내 사무소 (2026-10-30 '상용 수준') */
   const 항목 = [
     ['#/partner/home', '대시보드', 'home', 'h'],
+    '영업',
     ['#/partner/demands', own ? '맞는 손님' : '수요 목록', 'users', 'd'],
     ['#/partner/listings', '내 물건', 'building', 'l'],
     ['#/partner/proposals', '내 제안', 'send', 'p'],
-    ...(own ? [] : [['#/partner/contracts', '계약서', 'doc', 'ct']]),
+    ...(own ? [] : ['계약', ['#/partner/contracts', '계약서', 'doc', 'ct']]),
+    '내 사무소',
     ['#/partner/stats', '성과', 'chart', 'st'],
     ...(own ? [] : [['#/partner/settings', '활동 설정', 'map', 's']]),
   ];
@@ -10242,15 +10265,38 @@ function 파트너옆(active){
   /* 아래는 사이트 가기, 그 아래 버전과 날짜 · 계정(마이페이지·로그아웃)은 오른쪽 위 프로필 (2026-10-30 대표님) */
   return `<aside class="dz-side psb" aria-label="파트너 메뉴">
     <a data-go="#/partner/home" class="dz-logo">${logoLockup({h:23, partner:true, mode:'dark'})}</a>
-    <nav class="dz-menu">${항목.map(([h, t, i, k]) =>
-      `<a data-go="${h}" class="${active===k?'on':''}" ${active===k && k !== 'ct'?'aria-current="page"':''}>${dzIco(i)}<span>${t}</span></a>${하위(k)}`).join('')}</nav>
+    <nav class="dz-menu">${항목.map(x => typeof x === 'string' ? `<span class="grp">${x}</span>` : (([h, t, i, k]) =>
+      `<a data-go="${h}" class="${active===k?'on':''}" ${active===k && k !== 'ct'?'aria-current="page"':''}>${dzIco(i)}<span>${t}</span></a>${하위(k)}`)(x)).join('')}</nav>
     <div class="dz-foot">
       <a data-go="#/">${dzIco('site')}<span>사이트 가기</span></a>
       ${버전칸()}
     </div>
   </aside>
-  <div class="ptop">${agentBadge()}${S.user ? userMenu({ admin: true }) : navAuth('partner')}</div>`;
+  <div class="ptop">${adm경로(adm위치(S.route || ''))}<span class="ptop-r">${agentBadge()}${S.user ? userMenu({ admin: true }) : navAuth('partner')}</span></div>`;
 }
+/* ── 어드민 머리 줄 (2026-10-30 대표님 '어드민 UIUX 를 상용서비스 수준으로') ──
+   위쪽 줄 왼쪽에 지금 어디인지(묶음 › 화면), 오른쪽에 자격 배지와 프로필. 스크롤해도 붙어 있다.
+   adm위치 는 창 제목(document.title)에도 쓴다 - 탭을 여러 개 띄워도 어느 화면인지 보인다 */
+function adm위치(h){
+  const 계약 = { '#/partner/contracts':'계약서 목록', '#/partner/contracts/new':'새로 만들기', '#/partner/contracts/schedule':'일정·알림', '#/partner/contracts/phrases':'내 특약' };
+  if(계약[h]) return [['계약서', h === '#/partner/contracts' ? '' : '#/partner/contracts'], [계약[h]]];
+  if(h.startsWith('#/partner/contract/')) return [['계약서', '#/partner/contracts'], [CT.doc ? ctTitle(CT.doc) : '계약서']];
+  const 수요 = [ownerSide() ? '맞는 손님' : '수요 목록', '#/partner/demands'], 물건 = ['내 물건', '#/partner/listings'];
+  if(h === '#/partner/home') return [['대시보드']];
+  if(h === '#/partner/demands') return [['영업'], [수요[0]]];
+  if(h.startsWith('#/partner/demand/')) return [['영업'], 수요, ['손님 조건']];
+  if(h.startsWith('#/partner/propose/')) return [['영업'], 수요, ['제안 보내기']];
+  if(h === '#/partner/listings') return [['영업'], ['내 물건']];
+  if(h === '#/partner/listing/new') return [['영업'], 물건, ['매물 등록']];
+  if(h.startsWith('#/partner/listing/')) return [['영업'], 물건, ['물건 보기']];
+  if(h === '#/partner/proposals') return [['영업'], ['내 제안']];
+  if(h === '#/partner/stats') return [['내 사무소'], ['성과']];
+  if(h === '#/partner/settings') return [['내 사무소'], ['활동 설정']];
+  return [];
+}
+/* 경로 한 줄 - 마지막 칸이 지금 화면. 사이는 그림 꺾쇠(글자 화살표를 쓰지 않는다) */
+const adm경로 = 경로 => !경로.length ? '<span></span>' : `<nav class="adm-bc" aria-label="현재 위치">${경로.map(([t, h], i) => i === 경로.length - 1
+  ? `<b aria-current="page">${esc(t)}</b>` : `${h ? `<a data-go="${h}">${esc(t)}</a>` : `<span>${esc(t)}</span>`}<i class="adm-sep" aria-hidden="true"></i>`).join('')}</nav>`;
 const CT_하위메뉴 = [['#/partner/contracts', '계약서 목록'], ['#/partner/contracts/new', '새로 만들기'], ['#/partner/contracts/schedule', '일정·알림'], ['#/partner/contracts/phrases', '내 특약']];
 
 /* ── 버전 (2026-10-30 대표님 '좌측 메뉴바 하단에는 버전 관리 · 사이트 가기 그리고 그 아래는 버전과 날짜') ──
@@ -10258,6 +10304,10 @@ const CT_하위메뉴 = [['#/partner/contracts', '계약서 목록'], ['#/partne
    번호는 배포한 날(연.월.일 - 같은 날 또 올리면 뒤에 .2). 화면이 version.json 을 가끔 읽어,
    더 새 버전이 올라와 있으면 메뉴 아래에서 새로고침을 권한다(버전확인) - 계약서를 띄워 둔 채 오래 일하면 고친 화면을 못 받는다 */
 const BK_변경 = [
+  { v:'26.10.30.2', 날:'2026-10-30', 줄:[
+    '어드민 머리 줄에 지금 위치(묶음 › 화면) · 화면마다 창 제목',
+    '중개사 메뉴를 영업 · 계약 · 내 사무소로 묶음',
+    '화면 제목·여백 통일 · 계약서 목록을 불러오는 동안 회색 줄 · 빈 목록에 새로 만들기 단추' ] },
   { v:'26.10.30', 날:'2026-10-30', 줄:[
     '어드민 화면을 넓게 - 메뉴 화면마다 본문을 끝까지 채우고, 오른쪽 위 프로필에 마이페이지·로그아웃, 왼쪽 아래에 사이트 가기와 버전',
     '계약서 하위 메뉴 - 계약서 목록 · 새로 만들기 · 일정·알림 · 내 특약',
@@ -11216,7 +11266,12 @@ function ctRowsHTML(전체, rows, 갱신고르기){
     : `<span class="badge b-warn">작성 중</span>`}${신고(r)}</span>`;
   const 표시 = r => `${r.renew ? ' · 갱신계약' : r.prev_id ? ' · 새 판' : ''}`;
   if(CT.need) return `<div class="card pad"><b>계약서 기능을 준비 중입니다.</b><p class="sub" style="margin:6px 0 0">곧 열립니다 - 잠시 뒤 다시 들어와 주세요.</p></div>`;
-  if(CT.loading && !CT.list) return `<div class="card pad"><p class="sub" style="margin:0">불러오는 중입니다…</p></div>`;
+  /* 불러오는 동안은 글자 대신 표 모양 그대로 회색 줄 - 다 오면 그 자리에 그대로 채워진다 */
+  if(CT.loading && !CT.list) return `<div class="card ct-table" style="overflow:hidden" role="status" aria-label="계약서를 불러오는 중입니다">
+      ${isMo() ? '' : `<div class="ct-th" aria-hidden="true"><span>소재지</span><span>종류</span><span>당사자</span><span>고친 날</span><span>상태</span></div>`}
+      ${[72, 58, 66].map(w => `<div class="ct-row ct-skr" aria-hidden="true"><span class="ct-c1"><span class="sk" style="height:14px;width:${w}%"></span>${isMo() ? '<span class="sk" style="height:11px;width:46%;margin-top:7px"></span>' : ''}</span>
+        ${isMo() ? '' : `<span class="sk" style="height:12px;width:78%"></span><span class="sk" style="height:12px;width:56%"></span><span class="sk" style="height:12px;width:84%"></span>`}
+        <span class="ct-c5"><span class="sk" style="height:22px;width:68px;border-radius:var(--r-full)"></span></span></div>`).join('')}</div>`;
   if(CT.err && !CT.list) return `<div class="card pad" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap"><p class="sub" style="margin:0">${esc(CT.err)}</p>
         <button class="btn sec sm" data-act="ct-reload">다시 불러오기</button></div>`;
   if(rows.length) return `<div class="card ct-table" style="overflow:hidden">
@@ -11228,7 +11283,8 @@ function ctRowsHTML(전체, rows, 갱신고르기){
       </button>`).join('')}</div>`;
   if(전체.length) return `<div class="empty"><p style="margin:0;font-size:14px">${갱신고르기 ? '갱신할 임대차·전대차 계약서가 없습니다' : '찾는 계약서가 없습니다'}</p></div>`;
   return `<div class="empty"><p style="margin:0 0 6px;font-size:15px;font-weight:700">아직 만든 계약서가 없습니다</p>
-       <p style="margin:0;font-size:13.5px;color:var(--n500)">‘새로 만들기’에서 양식을 골라 시작하거나, 연결된 제안에서 ‘계약서 만들기’를 누르면 물건 정보가 채워진 채로 열립니다.</p></div>`;
+       <p style="margin:0;font-size:13.5px;color:var(--n500)">양식을 골라 시작하거나, 연결된 제안에서 ‘계약서 만들기’를 누르면 물건 정보가 채워진 채로 열립니다.</p>
+       <button class="btn pri sm" data-go="#/partner/contracts/new" style="margin-top:16px">새로 만들기</button></div>`;
 }
 /* 계약서 목록 - 표 | 옆에 2주 안 일정 */
 function ctListPageHTML(전체){
@@ -12553,6 +12609,8 @@ addEventListener('beforeunload', e => {
   if(CT.dirty && CT.doc && !(CT.row && CT.row.status === 'sealed')){ e.preventDefault(); e.returnValue = ''; }
 });
 
+/* 사이트 제목 - 어드민을 떠나면 이것으로 돌아간다 */
+var 기본제목 = document.title;
 function render(){
   if(IME && 적는중() && S.lastRoute === (location.hash || '#/')){ 밀린전체 = true; return; }
   let h = location.hash || '#/';
@@ -12708,6 +12766,9 @@ function render(){
   S.route = h;
   const parts = h.split('/');
   let html;
+  /* 창 제목 - 어드민은 지금 화면 이름을 앞에(탭을 여러 개 띄워도 어느 화면인지 보인다). 다른 화면은 사이트 제목 그대로 */
+  { const 곳 = h.startsWith('#/ops') ? [[OPS_TITLE[OPS.tab || 'home'] || '운영 화면']] : h.startsWith('#/partner/') ? adm위치(h) : [];
+    document.title = 곳.length ? `${곳[곳.length - 1][0]} · 비버노크 ${h.startsWith('#/ops') ? '운영' : '파트너'}` : 기본제목; }
   if(h.startsWith('#/proposal/')) html = V['#/proposal'](parts[2]);
   else if(h.startsWith('#/connect/')) html = V['#/connect'](parts[2]);
   else if(h.startsWith('#/report/')) html = V['#/report'](parts[2]);

@@ -139,8 +139,22 @@ const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3
   ok(고친.property.landCat === '전' && !다시.includes('property.landCat') && 고친.property.bldArea === '84.98', '다시 채우기는 빈칸만 - 이미 적은 값은 덮지 않는다');
   M.CT.scan = { files: { reg: { name: '등기부.pdf', bytes: 300000 } }, busy: false, err: '' };
   const h = M.ctScanHTML();
-  ok(/등기사항전부증명서/.test(h) && /건축물대장/.test(h) && /토지이용계획확인서/.test(h) && /data-scanfile="reg"/.test(h) && /data-act="ct-scan-go"[^>]*>적용 \(1개 서류\)/.test(h)
-     && /저장하지 않습니다/.test(h) && /주민등록번호는 읽지 않습니다/.test(h), '서류 단계: 세 칸 · 적용(올린 수) · 저장하지 않음·주민번호 안내');
+  ok(/등기사항전부증명서/.test(h) && /건축물대장/.test(h) && /토지이용계획확인서/.test(h) && /data-scanfile="reg"/.test(h) && /data-act="ct-scan-go"[^>]*>서류 1개로 칸 채우기/.test(h)
+     && /저장하지 않습니다/.test(h) && /주민등록번호는 읽지 않습니다/.test(h), '서류 단계: 서류 카드 · 채우기 단추(올린 수) · 저장하지 않음·주민번호 안내');
+  /* 2026-10-30 대표님 '쉽고 친절한 프로세스처럼' - 받기 · 올리기 · 채우고 확인 세 걸음, 서류를 올리면 '채우기' 차례 */
+  const 걸음 = [...h.matchAll(/<li class="([a-z]*)"( aria-current="step")?>/g)].map(m => m[1] + (m[2] ? '*' : ''));
+  ok(/class="scan-flow"/.test(h) && 걸음.join(',') === 'done,done,now*', `세 걸음 - 서류를 올리면 받기·올리기는 마침, 채우기가 지금 차례 (${걸음.join(',')})`);
+  M.CT.scan = { files: {}, busy: false, err: '' };
+  const 빈 = M.ctScanHTML(), 빈걸음 = [...빈.matchAll(/<li class="([a-z]*)"/g)].map(m => m[1]);
+  ok(빈걸음.join(',') === 'now,,' && /data-act="ct-scan-go" disabled>서류를 올리면 채울 수 있습니다/.test(빈), '아무것도 안 올렸으면 첫 걸음이 지금 차례 · 채우기 단추는 잠기고 이유를 말한다');
+  ok((빈.match(/<input type="file" class="sr"/g) || []).length === 4 && !/data-scanfile="[a-z]+"[^>]*\shidden/.test(빈),
+     '서류 고르기 칸은 화면에서만 감춘다(.sr) - hidden 이면 Tab 이 닿지 않아 키보드로 못 올린다');
+  ok(/모든 계약/.test(빈) && /아파트·오피스텔 등/.test(빈) && /확인·설명서/.test(빈) && /target="_blank" rel="noopener"/.test(빈) && /\(새 창\)/.test(빈),
+     '서류마다 언제 필요한지 꼬리표 · 받는 곳은 새 창(낭독기에도 알린다)');
+  M.CT.scan = { files: { reg: { name: '등기부.pdf', bytes: 1000 } }, busy: true, err: '' };
+  const 읽는중 = M.ctScanHTML();
+  ok(/AI가 서류를 읽고 있습니다/.test(읽는중) && /이 화면을 닫지 마세요/.test(읽는중) && /data-act="ct-scan-go" disabled>읽는 중…/.test(읽는중) && !/data-act="ct-scan-del"/.test(읽는중),
+     '읽는 중에는 진행 막대 · 채우기 잠금 · 빼기 숨김');
 }
 
 /* ── 화면에 붙은 자리 ── */

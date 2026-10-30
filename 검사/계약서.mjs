@@ -705,9 +705,13 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
   ok(js.includes('function ctAddrIn(path, label') && js.includes('ctAddrIn(`parties.${k}.addr`') && js.includes("ctAddrIn('broker.addr'")
      && /startsWith\('ct-a:'\) && CT\.doc/.test(js), '당사자·사무소 주소는 도로명 찾기로 고른다');
 
-  /* 서류 발급 단계 */
-  ok(/'세움터', 'https:\/\/www\.eais\.go\.kr'/.test(js) && /'인터넷등기소', 'https:\/\/www\.iros\.go\.kr'/.test(js) && /'토지이음', 'https:\/\/www\.eum\.go\.kr'/.test(js)
-     && /\['bldx', '건축물대장 전유부'/.test(js), '서류 단계마다 발급 사이트로 바로 · 건축물대장은 표제부·전유부 둘');
+  /* 서류 발급 단계 - 2026-10-30 브라우저로 열어 확인한 주소. 세움터는 발급 화면, 토지이음은 열람 화면으로 바로 간다.
+     인터넷등기소는 메뉴가 스크립트로만 열려 바로 가는 주소가 없다 - 첫 화면 + 메뉴 이름 */
+  ok(js.includes("'세움터', '건축물대장 발급', 'https://www.eais.go.kr/moct/bci/aaa02/BCIAAA02L01'")
+     && js.includes("'인터넷등기소', '부동산 열람·발급', 'https://www.iros.go.kr'")
+     && js.includes("'토지이음', '토지이용계획 열람', 'https://www.eum.go.kr/web/ar/lu/luLandDet.jsp'")
+     && /\['bldx', '건축물대장 전유부'/.test(js) && !/토지이음에서 발급/.test(js),
+     '서류마다 받는 곳으로 바로(세움터 발급 · 토지이음 열람 화면) · 인터넷등기소는 메뉴 이름까지 · 건축물대장은 표제부·전유부 둘');
 
   /* 목록 찾기 */
   ok(/data-in="ctq"/.test(js) && /function ctFilter\(rows\)/.test(js) && /data-act="ctq-st"/.test(js), '계약서 목록을 소재지·이름·종류·날짜로 찾는다 · 작성 중/날인본으로 거른다');

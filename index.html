@@ -1069,6 +1069,7 @@ table tbody tr:hover{background:var(--ind50)}
 
 /* 빈 화면도 화면이다 */
 .empty{position:relative;overflow:hidden}
+.empty > img{margin-inline:auto}   /* 빈 화면의 비버(블록 그림)도 글과 같이 가운데 - text-align 은 블록 그림을 옮기지 못한다 (2026-10-30 대표님 '비버 가운데로') */
 .empty::before{
   content:''; position:absolute; inset:0; pointer-events:none;
   background:radial-gradient(420px circle at 50% 0%, rgba(79,82,209,.05), transparent 70%);
@@ -1875,12 +1876,6 @@ body.mo .ctw-foot .btn{width:100%}
 .ct-addrpop{margin-top:8px;padding:10px;background:var(--n50);border-radius:var(--r-sm)}
 .ct-cltext{margin:6px 0 0;font-size:14px;line-height:1.7;color:var(--n700)}
 .ct-fill{font-size:12px;font-weight:700;color:var(--warn,#A85708);margin-left:4px}
-.scan-slot:has(.scan-step){flex-wrap:wrap;gap:0 8px}
-.scan-step{display:flex;align-items:center;gap:8px;flex:1 1 100%;padding:10px 14px 0}
-.scan-step + .scan-pick{padding-top:6px}
-.scan-n{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:var(--n900);color:#fff;font-size:13px;font-weight:700;flex:none}
-.scan-go{font-size:13.5px;font-weight:700;color:var(--ind700);text-decoration:none}
-.scan-go:hover{text-decoration:underline}
 .acc-addr{display:flex;flex-direction:column;gap:4px;margin:4px 0 10px}
 .acc-addr-v{display:flex;align-items:center;gap:12px;justify-content:space-between;padding:12px 14px;border-radius:var(--r-sm);background:var(--n50)}
 .acc-addr-none{color:var(--warn)}
@@ -2082,22 +2077,60 @@ body:not(.mo) .ctx-sub{flex:1 1 0;min-width:0;overflow:hidden;text-overflow:elli
 }
 .nw{white-space:nowrap}
 /* ── 서류로 먼저 채우기 (2026-10-29) ── AI 가 채운 칸은 '확인을 기다리는' 남색(Lounge 견적서 판독과 같은 결) */
-.scan .scan-slots{display:flex;flex-direction:column;gap:8px}
-.scan-slot{position:relative;display:flex;align-items:center;gap:8px;border:1.5px dashed var(--n300);border-radius:10px;background:var(--white)}
-.scan-slot.on{border-style:solid;border-color:var(--ind300);background:var(--ind50)}
-.scan-pick{flex:1;min-width:0;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;align-items:center;padding:12px 14px;cursor:pointer}
-.scan-pick b{font-size:15px;color:var(--n900)}
-.scan-pick span{grid-column:1;font-size:13.5px;color:var(--n500);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.scan-pick em{grid-column:2;grid-row:1 / span 2;font-style:normal;font-size:13.5px;font-weight:700;color:var(--ind700);white-space:nowrap}
-.scan-slot.on .scan-pick span{color:var(--ind700)}
-.scan-pick:focus-within{outline:2px solid var(--ind);outline-offset:2px;border-radius:10px}
-.scan-del{flex:none;margin-right:10px;font-size:13.5px;color:var(--danger)}
-.scan-act{display:flex;gap:8px;flex-wrap:wrap}
-.scan-note{margin:0;font-size:13px;line-height:1.6;color:var(--n500)}
-.scan-busy{display:flex;align-items:center;gap:8px;margin:0;padding:10px 12px;border-radius:8px;background:var(--ind50);font-size:14px;color:var(--ind700)}
-.scan-busy .dot{width:8px;height:8px;border-radius:50%;background:var(--ind);animation:scanPulse .9s ease-in-out infinite alternate}
-@keyframes scanPulse{from{opacity:.35}to{opacity:1}}
+/* 2026-10-30 대표님 '쉽고 친절한 프로세스처럼' - 세 걸음(받기 · 올리기 · 채우고 확인)을 위에, 서류마다 한 카드
+   (언제 필요한지 꼬리표 · 채우는 칸 · 받는 곳 링크 · 올리기 단추), 아래에 채우기 단추 하나 */
+.ct-sec.scan,.ctx-side .ct-sec.scan{gap:14px}
+.scan-hd h2{margin:0 0 4px;font-size:17px!important}
+.scan-hd p{margin:0;font-size:14px;line-height:1.6;color:var(--n700)}
+.scan-hd p b{color:var(--n900)}
+.scan-flow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:0;padding:0;list-style:none}
+.scan-flow li{display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-width:0;padding:10px 12px;border-radius:10px;background:var(--n50);color:var(--n500)}
+.scan-flow .sf-n{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;margin-bottom:4px;border-radius:50%;
+  background:var(--n200);color:var(--n700);font-size:13px;font-weight:800;line-height:1}
+.scan-flow b{font-size:14px;font-weight:700;line-height:1.35;color:var(--n700)}
+.scan-flow small{font-size:13px;line-height:1.45;word-break:keep-all}
+.scan-flow li.now{background:var(--ind50);box-shadow:inset 0 0 0 1px var(--ind200)}
+.scan-flow li.now .sf-n{background:var(--ind);color:#fff}
+.scan-flow li.now b{color:var(--ind700)}
+.scan-flow li.done .sf-n{background:var(--ok);color:#fff}
+.scan-flow li.done b{color:var(--n900)}
+@media (pointer:coarse){ .scan-flow .pf{display:none} }
+.scan-slots{display:flex;flex-direction:column;gap:8px}
+.scan-slot{display:flex;align-items:center;gap:12px;padding:13px 14px 13px 16px;border:1px solid var(--n200);border-radius:12px;background:var(--white);
+  transition:border-color .15s,background-color .15s,box-shadow .15s}
+.scan-slot.on{border-color:var(--ind200);background:var(--ind50)}
+.scan-slot.drag{border-color:var(--ind);border-style:dashed;background:var(--ind50);box-shadow:0 0 0 3px rgba(79,82,209,.14)}
+.ss-main{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:3px}
+.ss-head{display:flex;align-items:center;gap:6px 8px;flex-wrap:wrap}
+.ss-head b{font-size:15px;font-weight:700;line-height:1.35;color:var(--n900)}
+.ss-chk{flex:none;display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:var(--ok);color:#fff}
+.ss-tag{padding:2px 8px;border-radius:999px;background:var(--n100);font-size:12.5px;font-weight:600;line-height:1.4;color:var(--n700);white-space:nowrap}
+.scan-slot.on .ss-tag{background:var(--white)}
+.ss-what{font-size:13.5px;line-height:1.5;color:var(--n500)}
+.ss-go{display:inline-flex;align-items:center;gap:4px;margin-top:2px;border-radius:4px;font-size:13.5px;font-weight:600;color:var(--ind700);text-decoration:none}
+.ss-go:hover{text-decoration:underline;text-underline-offset:3px}
+.ss-go svg,.ss-file svg{flex:none}
+.ss-file{display:flex;align-items:center;gap:6px;max-width:100%;font-size:13.5px;color:var(--ind700)}
+.ss-file span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ss-side{flex:none;display:flex;align-items:center;gap:2px}
+.ss-up{position:relative;gap:6px;cursor:pointer}
+.ss-up.off{opacity:.5;pointer-events:none}
+.ss-re{position:relative;cursor:pointer;font-size:13.5px;font-weight:600;color:var(--ind700)}
+.ss-del{font-size:13.5px;color:var(--danger)}
+.ss-up:focus-within,.ss-re:focus-within{outline:2px solid var(--ind);outline-offset:2px}
+.scan-act{display:flex;flex-direction:column;align-items:stretch;gap:4px;margin-top:2px}
+.scan-cta{width:100%;min-height:46px!important;font-size:15px!important}
+.scan-skip{align-self:center;padding:6px 10px;font-size:14px;color:var(--n500)}
+.scan-busy{display:flex;flex-direction:column;gap:4px;margin:0;padding:12px 14px;border-radius:10px;background:var(--ind50);color:var(--ind700)}
+.scan-busy b{font-size:14.5px}
+.scan-busy > span:not(.scan-bar){font-size:13.5px;color:var(--n700)}
+.scan-bar{position:relative;height:4px;margin-top:6px;border-radius:999px;background:rgba(79,82,209,.15);overflow:hidden}
+.scan-bar i{position:absolute;top:0;bottom:0;left:0;width:35%;border-radius:inherit;background:var(--ind);animation:scanBar 1.4s ease-in-out infinite}
+@keyframes scanBar{from{transform:translateX(-100%)}to{transform:translateX(290%)}}
+@media (prefers-reduced-motion:reduce){ .scan-bar i{animation:none;width:100%;opacity:.45} }
 .scan-err{margin:0;padding:10px 12px;border-radius:8px;background:var(--dangerbg);font-size:14px;line-height:1.55;color:var(--danger)}
+.scan-note{display:flex;gap:8px;margin:0;padding:10px 12px;border-radius:10px;background:var(--n50);font-size:13px;line-height:1.6;color:var(--n500)}
+.scan-note svg{flex:none;margin-top:3px}
 .scan-ai{display:inline-block;padding:0 6px;border-radius:4px;background:#E4E6FD;color:#2F3192;font-weight:700}
 .inp.ai,.ctx-side .inp.ai,.ctx-side .inp.ai:not(:placeholder-shown){background:#EEF0FF;border-color:#A9ACF0}
 .scan-done,.scan-mini{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin:10px 0 0;padding:10px 12px;border-radius:10px}
@@ -2231,6 +2264,8 @@ body.adm :is(.chips,.ct-chips,.ct-lib){gap:8px}
 .adm-bc > b{min-width:0;font-weight:700;color:var(--n900);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .adm-sep{flex:none;width:6px;height:6px;border-top:1.5px solid currentColor;border-right:1.5px solid currentColor;transform:rotate(45deg);opacity:.55}
 .dz-main{padding-top:14px!important;padding-bottom:40px!important;width:100%}
+/* 대시보드 본문만 .pad 의 좌우 76px 를 물려받아 머리 줄(32px)보다 안쪽에 있었다 - 카드 좌우 끝을 머리 줄의 날짜 글자·프로필 끝에 맞춘다 (2026-10-30 대표님) */
+body:not(.mo) .dz-main{padding-left:32px!important;padding-right:32px!important}
 /* ── 어드민 넓게 쓰기 (2026-10-30 대표님 '어드민 화면을 넓게 써 · 여백이 너무 많다 · 본문 영역을 꽉 채워') ──
    메뉴 화면마다 가운데로 묶었던 폭(880~1180px)을 풀고 같은 여백으로 채운다. 카드 목록은 폭만큼 여러 줄로 */
 body:not(.mo) .scr:has(> .psb) > .adm-page{max-width:none!important;margin:0!important;padding:14px 32px 40px!important;gap:20px!important}
@@ -10507,6 +10542,11 @@ const CT_하위메뉴 = [['#/partner/contracts/new', '계약서 작성', 'pen', 
    번호는 배포한 날(연.월.일 - 같은 날 또 올리면 뒤에 .2). 화면이 version.json 을 가끔 읽어,
    더 새 버전이 올라와 있으면 메뉴 아래에서 새로고침을 권한다(버전확인) - 계약서를 띄워 둔 채 오래 일하면 고친 화면을 못 받는다 */
 const BK_변경 = [
+  { v:'26.10.30.6', 날:'2026-10-30', 줄:[
+    '서류로 채우기를 세 걸음(서류 받기 · 올리기 · 채우고 확인)으로 - 서류마다 언제 필요한지 · 어디서 받는지 · 올리기를 한 카드에, 카드에 끌어다 놓아도 된다',
+    '발급 링크 점검 - 세움터는 건축물대장 발급 화면, 토지이음은 토지이용계획 열람 화면으로 바로 · 인터넷등기소는 메뉴 이름(부동산 열람·발급)까지 알려 줌',
+    '키보드로도 서류를 올릴 수 있게(고르기 칸이 Tab 에 닿지 않았다) · 대시보드 본문 좌우 끝을 머리 줄 글자 끝에 맞춤 · 빈 화면의 비버를 가운데로',
+  ]},
   { v:'26.10.30.5', 날:'2026-10-30', 줄:[
     '글자 가독성 - 작은 글자를 한 단계씩 키움(11→12 · 12→13 · 13→14 · 14→15px), 본문 줄 간격 1.55, 보조 글자색을 한 단계 짙게',
     '계약서 입력 칸 이름표 12→13px, 계약서 목록의 종류 칸을 넓혀 1024px 화면에서도 이름이 잘리지 않게',
@@ -12135,44 +12175,67 @@ addEventListener('resize', () => ctFit());
     계약서와 확인·설명서에 공시지가부터 건축물 정보, 등기부의 관련 내용이 모두 자동으로 채워지게."
    새 문서는 'scan' 단계로 시작한다. 서류는 서버(api/_scan.js)가 읽고 저장하지 않는다. 읽은 값은 doc.src 에도 담아
    이 계약서에서 확인·설명서를 만들 때 같은 값으로 채운다. 채운 칸은 남색(CT.filled) - 고치면 표시가 사라진다. */
+/* 서류 한 장 = [키, 이름, 채우는 칸, 언제 필요한가, 받는 곳, 그곳의 메뉴, 주소] (2026-10-30 대표님 '쉽고 친절한 프로세스처럼 · 링크가 유효한지 모두 점검')
+   주소는 2026-10-30 브라우저로 열어 확인했다. 세움터는 발급 화면으로 바로 간다(비회원도 발급, 로그인하면 돌아온다).
+   인터넷등기소는 메뉴가 스크립트로만 열려 바로 가는 주소가 없다 - 첫 화면을 열고 메뉴 이름을 알려 준다.
+   토지이음은 '열람'(무료) - 발급본(토지이용계획확인서)은 정부24 에서 받지만, 칸을 채우는 데는 열람 화면이면 된다 */
 const SCAN_SLOTS = [
-  ['reg',  '등기사항전부증명서', '등기부등본 · 소유자·권리관계·대지권', '인터넷등기소', 'https://www.iros.go.kr'],
-  ['bld',  '건축물대장 표제부',  '건물 전체 · 구조·사용승인일·위반 여부', '세움터', 'https://www.eais.go.kr'],
-  ['bldx', '건축물대장 전유부',  '아파트·오피스텔 등 호실 · 전유 면적·용도 (단독주택은 없음)', '세움터', 'https://www.eais.go.kr'],
-  ['land', '토지이용계획확인서', '용도지역·개별공시지가·규제', '토지이음', 'https://www.eum.go.kr'],
+  ['reg',  '등기사항전부증명서', '소유자 · 권리관계 · 대지권',          '모든 계약',          '인터넷등기소', '부동산 열람·발급', 'https://www.iros.go.kr'],
+  ['bld',  '건축물대장 표제부',  '구조 · 용도 · 사용승인일 · 위반 여부', '건물이 있으면',      '세움터', '건축물대장 발급', 'https://www.eais.go.kr/moct/bci/aaa02/BCIAAA02L01'],
+  ['bldx', '건축물대장 전유부',  '호실 · 전유 면적 · 용도',             '아파트·오피스텔 등', '세움터', '건축물대장 발급', 'https://www.eais.go.kr/moct/bci/aaa02/BCIAAA02L01'],
+  ['land', '토지이용계획확인서', '용도지역 · 개별공시지가 · 규제',       '확인·설명서',        '토지이음', '토지이용계획 열람', 'https://www.eum.go.kr/web/ar/lu/luLandDet.jsp'],
 ];
 const SCAN_MAX = 3 * 1024 * 1024;                          /* 서버와 같은 합계 상한(원본) */
 const 스캔 = () => (CT.scan = CT.scan || { files:{}, busy:false, err:'' });
 const 스캔크기 = () => Object.values(스캔().files).reduce((a, f) => a + (f ? f.bytes : 0), 0);
 const 크기글 = n => n >= 1048576 ? (n / 1048576).toFixed(1) + 'MB' : Math.max(1, Math.round(n / 1024)) + 'KB';
+const SCAN_ICO = {
+  up:'M12 15 V4 M7.5 8.5 L12 4 l4.5 4.5 M4 15 v4 a1 1 0 0 0 1 1 h14 a1 1 0 0 0 1 -1 v-4',
+  ext:'M14 4 h6 v6 M20 4 l-9 9 M18 14 v5 a1 1 0 0 1 -1 1 H5 a1 1 0 0 1 -1 -1 V7 a1 1 0 0 1 1 -1 h5',
+  file:'M6 3 h8.5 L19 7.5 V21 H6 Z M14 3 v5 h5',
+  check:'M5 12.5 l4.5 4.5 L19 7.5',
+  lock:'M6 11 h12 v10 H6 Z M8.5 11 V8 a3.5 3.5 0 0 1 7 0 v3',
+};
+const 스캔그림 = (k, s = 16) => `<svg viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="currentColor" stroke-width="1.9"
+  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${SCAN_ICO[k]}"/></svg>`;
 
+/* 받기 → 올리기 → 채우고 확인. 서류를 하나라도 올리면 '채우기' 차례가 된다.
+   서류마다 한 카드 - 언제 필요한지 · 무엇을 채우는지 · 어디서 받는지(새 창) · 올리기. 카드에 끌어다 놓아도 된다.
+   고르기 칸은 숨기지 않고 화면에서만 감춘다(.sr) - hidden 이면 Tab 이 닿지 않아 키보드로는 서류를 못 올렸다 */
 function ctScanHTML(){
   const sc = 스캔(), 있음 = SCAN_SLOTS.filter(([k]) => sc.files[k]).length;
+  const 차례 = sc.busy || 있음 ? 3 : 1;
+  const 걸음 = [['서류 받기', '아래 사이트에서 열람·발급'], ['올리기', 'PDF·사진<span class="pf"> · 끌어다 놓기</span>'], ['채우고 확인', '남색 칸을 서류와 맞춰 확인']];
   return `
     <div class="card pad ct-sec scan">
-      <h2>서류로 먼저 채우기</h2>
-      <p class="sub" style="margin:0">아래 순서대로 발급해 올리고 <b>적용</b>을 누르면 소재지·면적·소유자·권리관계·건축물 정보·용도지역·개별공시지가가
-        계약서와 확인·설명서에 채워집니다. 채운 칸은 <span class="scan-ai">남색</span>으로 표시되니 확인하며 고치세요.</p>
-      <div class="scan-slots">${SCAN_SLOTS.map(([k, 이름, 설명, 곳, 주소], i) => { const f = sc.files[k];
-        return `<div class="scan-slot ${f?'on':''}">
-          <div class="scan-step"><span class="scan-n" aria-hidden="true">${i + 1}</span>
-            <a href="${주소}" target="_blank" rel="noopener" class="scan-go">${esc(곳)}에서 발급<span aria-hidden="true"> ↗</span></a></div>
-          <label class="scan-pick">
-            <input type="file" accept="application/pdf,image/jpeg,image/png,image/webp" data-scanfile="${k}" ${sc.busy?'disabled':''} hidden>
-            <b>${esc(이름)}</b>
-            <span>${f ? `${esc(f.name)} · ${크기글(f.bytes)}` : esc(설명)}</span>
-            <em>${f ? '바꾸기' : 'PDF·사진 올리기'}</em>
-          </label>
-          ${f && !sc.busy ? `<button type="button" class="tapx scan-del" data-act="ct-scan-del" data-v="${k}" aria-label="${esc(이름)} 빼기">빼기</button>` : ''}
+      <div class="scan-hd">
+        <h2>서류로 빠르게 채우기</h2>
+        <p>서류를 올리면 AI가 읽고 계약서와 확인·설명서 칸을 채웁니다. <b>한 장만 올려도 됩니다.</b></p>
+      </div>
+      <ol class="scan-flow" aria-label="진행 순서">${걸음.map(([이름, 말], i) => { const n = i + 1, 끝 = n < 차례, 지금 = n === 차례;
+        return `<li class="${끝 ? 'done' : 지금 ? 'now' : ''}"${지금 ? ' aria-current="step"' : ''}>
+          <span class="sf-n" aria-hidden="true">${끝 ? 스캔그림('check', 13) : n}</span><b>${이름}${끝 ? '<span class="sr"> (마침)</span>' : ''}</b><small>${말}</small></li>`; }).join('')}</ol>
+      <div class="scan-slots">${SCAN_SLOTS.map(([k, 이름, 채움, 언제, 곳, 메뉴, 주소]) => { const f = sc.files[k];
+        const 고르기 = `<input type="file" class="sr" accept="application/pdf,image/jpeg,image/png,image/webp" data-scanfile="${k}" ${sc.busy?'disabled':''} aria-label="${esc(이름)} ${f ? '바꾸기' : '올리기'}">`;
+        return `<div class="scan-slot${f ? ' on' : ''}" data-k="${k}">
+          <div class="ss-main">
+            <div class="ss-head">${f ? `<span class="ss-chk" aria-hidden="true">${스캔그림('check', 12)}</span>` : ''}<b>${esc(이름)}</b><span class="ss-tag">${esc(언제)}</span></div>
+            ${f ? `<span class="ss-file">${스캔그림('file', 15)}<span>${esc(f.name)} · ${크기글(f.bytes)}</span></span>`
+              : `<span class="ss-what">${esc(채움)}</span>
+            <a class="ss-go" href="${주소}" target="_blank" rel="noopener">${esc(곳)} › ${esc(메뉴)}${스캔그림('ext', 13)}<span class="sr"> (새 창)</span></a>`}
+          </div>
+          <div class="ss-side">${f
+            ? (sc.busy ? '' : `<label class="tapx ss-re">바꾸기${고르기}</label>
+              <button type="button" class="tapx ss-del" data-act="ct-scan-del" data-v="${k}" aria-label="${esc(이름)} 빼기">빼기</button>`)
+            : `<label class="btn sec sm ss-up${sc.busy ? ' off' : ''}">${스캔그림('up')}올리기${고르기}</label>`}</div>
         </div>`; }).join('')}</div>
-      ${sc.busy ? `<p class="scan-busy" role="status"><span class="dot"></span>서류를 읽는 중입니다 · 보통 20~40초 걸립니다</p>` : ''}
+      ${sc.busy ? `<div class="scan-busy" role="status"><b>AI가 서류를 읽고 있습니다</b><span>보통 20~40초 걸립니다 · 이 화면을 닫지 마세요</span><span class="scan-bar" aria-hidden="true"><i></i></span></div>` : ''}
       ${sc.err && !sc.busy ? `<p class="scan-err" role="alert">${esc(sc.err)}</p>` : ''}
       <div class="scan-act">
-        <button class="btn pri sm" data-act="ct-scan-go" ${!있음||sc.busy?'disabled':''}>${sc.busy?'읽는 중…':`적용${있음?` (${있음}개 서류)`:''}`}</button>
-        <button class="btn tool sm" data-act="ct-scan-skip" ${sc.busy?'disabled':''}>${CT.filled && CT.filled.size ? '돌아가기' : '서류 없이 직접 쓰기'}</button>
+        <button class="btn pri scan-cta" data-act="ct-scan-go" ${!있음||sc.busy?'disabled':''}>${sc.busy ? '읽는 중…' : 있음 ? `서류 ${있음}개로 칸 채우기` : '서류를 올리면 채울 수 있습니다'}</button>
+        <button type="button" class="tapx scan-skip" data-act="ct-scan-skip" ${sc.busy?'disabled':''}>${CT.filled && CT.filled.size ? '돌아가기' : '서류 없이 직접 쓰기'}</button>
       </div>
-      <p class="scan-note">올린 서류는 칸을 채우는 데만 쓰고 저장하지 않습니다. 판독은 AI(Anthropic)가 하며 주민등록번호는 읽지 않습니다.
-        AI 가 잘못 읽을 수 있으니 채운 값은 서류와 맞춰 확인하세요. 합계 3MB까지 - 사진은 줄여서 보냅니다.</p>
+      <p class="scan-note">${스캔그림('lock', 15)}<span>올린 서류는 칸을 채우는 데만 쓰고 저장하지 않습니다. 판독은 AI(Anthropic)가 하며 주민등록번호는 읽지 않습니다. PDF·사진 합계 3MB까지 - 사진은 줄여서 보냅니다.</span></p>
     </div>`;
 }
 
@@ -15400,6 +15463,28 @@ document.addEventListener('keydown', e=>{
 document.addEventListener('change', e=>{
   const s=e.target.closest('[data-act="pick-cond-sel"]'); if(s){ S.inboxCond=s.value; render(); }
   const sf=e.target.closest('[data-scanfile]'); if(sf){ const fl = sf.files && sf.files[0]; sf.value = ''; ctScanPick(sf.dataset.scanfile, fl); }
+});
+
+/* 서류 카드에 파일 끌어다 놓기 (2026-10-30) - 서류 단계가 열려 있을 때만.
+   카드 밖에 떨어뜨리면 브라우저가 그 파일을 열어 버려 쓰던 계약서를 잃는다 - 서류 단계에서는 막고 알려 준다 */
+const 서류칸 = e => e.target && e.target.closest ? e.target.closest('#app .scan-slot[data-k]') : null;
+const 파일끌기 = e => !!(e.dataTransfer && Array.from(e.dataTransfer.types || []).includes('Files') && document.querySelector('#app .scan'));
+const 끌기풀기 = 칸 => document.querySelectorAll('#app .scan-slot.drag').forEach(x => { if(x !== 칸) x.classList.remove('drag'); });
+document.addEventListener('dragover', e => {
+  if(!파일끌기(e)) return;
+  e.preventDefault();
+  const 칸 = 스캔().busy ? null : 서류칸(e);
+  끌기풀기(칸); if(칸) 칸.classList.add('drag');
+  e.dataTransfer.dropEffect = 칸 ? 'copy' : 'none';
+});
+document.addEventListener('dragleave', e => { const 칸 = 서류칸(e); if(칸 && !칸.contains(e.relatedTarget)) 칸.classList.remove('drag'); });
+document.addEventListener('drop', e => {
+  if(!파일끌기(e)) return;
+  e.preventDefault(); 끌기풀기(null);
+  const 칸 = 서류칸(e), f = e.dataTransfer.files && e.dataTransfer.files[0];
+  if(스캔().busy) return toast('서류를 읽는 중입니다 - 끝난 뒤에 올려 주세요');
+  if(!칸) return toast('서류 카드 위에 놓아 주세요');
+  if(f) ctScanPick(칸.dataset.k, f);
 });
 
 /* 기기 구분은 창 너비가 정한다 - 사람이 버튼으로 고르던 자리다.

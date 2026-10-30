@@ -140,6 +140,12 @@ const M = new Function('esc', `${js.slice(시작, 끝)}\nreturn { dzLine, dzPill
   ok(/body:not\(\.mo\) \.scr:has\(> \.psb\) > \.adm-page\{max-width:none!important;margin:0!important/.test(css) && /\.adm-grid\{display:grid;grid-template-columns:repeat\(auto-fill,minmax\(440px,1fr\)\)/.test(css)
      && /\.dz-main\{padding-top:14px!important;padding-bottom:40px!important;width:100%\}/.test(css) && /\.ptop\{[^}]*z-index:30\}/.test(css),
      '넓은 화면 - 폭 제한을 풀고 카드는 폭만큼 여러 줄 · 대시보드도 1320px 제한 없음 · 프로필 드롭다운이 카드 위로');
+  /* 2026-10-30 대표님 '본문 영역 좌우를 양쪽 텍스트 끝 위치에 맞춰' - 대시보드만 .pad 의 76px 를 물려받아 44px 안쪽에 있었다 */
+  const 머리여백 = (css.match(/\.ptop\{[^}]*padding:10px (\d+)px 0/) || [])[1];
+  ok(머리여백 === '32' && css.includes('body:not(.mo) .dz-main{padding-left:32px!important;padding-right:32px!important}')
+     && /> \.adm-page\{[^}]*padding:14px 32px 40px!important/.test(css),
+     '본문 좌우 끝 = 머리 줄 글자 끝 - 머리 줄 · 대시보드 · 메뉴 화면이 모두 좌우 32px');
+  ok(css.includes('.empty > img{margin-inline:auto}'), '빈 화면의 비버는 글과 같이 가운데 (블록 그림은 text-align 이 옮기지 못한다)');
 
   /* 상용 수준 다듬기 (2026-10-30 대표님 '어드민 UIUX 를 상용서비스 수준으로') - 지금 위치 · 묶음 · 창 제목 · 화면 제목 · 불러오는 줄 */
   const 위치 = new Function('ownerSide', 'CT', 'ctTitle', 'esc', `${옆.slice(옆.indexOf('function adm위치(h){'), 옆.indexOf('/* ── 버전 (2026-10-30'))}; return { adm위치, adm경로 };`)(

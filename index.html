@@ -267,22 +267,19 @@ body.mo .footlinks{gap:10px 16px!important}
 .mf-row a + a::before{content:'';display:inline-block;width:1px;height:11px;margin:0 11px;background:var(--n300)}
 .mf-row.pol a{font-size:13px;font-weight:500;color:var(--n500)}
 .mf-row.pol a.em{font-weight:700;color:var(--n900)}
-/* 사업자 정보 (2026-11-02 '푸터 텍스트 깔끔하게') - 이름표 회색 · 값 한 단계 짙게 · 항목 사이 얇은 세로줄 · 줄 아래 안내 문장과 © */
-.biz{display:flex;flex-direction:column;gap:2px;font-size:13px;line-height:1.7;color:var(--n500)}
-.biz.mo{font-size:12px;line-height:1.65}
+/* 사업자 정보 (2026-11-02 '텍스트가 너무 많다 · 2열로') - 왼쪽 회사 · 오른쪽 연락처 두 칸, 주소·안내는 아래 한 줄씩. 이름표 회색 · 값 한 단계 짙게 */
+.biz{display:grid;grid-template-columns:repeat(2,max-content);column-gap:56px;row-gap:2px;font-size:12.5px;line-height:1.7;color:var(--n500)}
+.biz.mo{grid-template-columns:repeat(2,minmax(0,1fr));column-gap:12px;font-size:12px;line-height:1.65}
 .biz p{margin:0}
-.bz-name{margin-bottom:4px;font-size:13.5px;font-weight:700;color:var(--n700)}
-.bz-row{display:flex;flex-wrap:wrap}
-.bz-i{white-space:nowrap;color:var(--n700)}
+.bz-col{display:flex;flex-direction:column;min-width:0}
+.bz-name{font-weight:700;color:var(--n700)}
+.bz-i{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:var(--n700)}
 .bz-i em{margin-right:6px;font-style:normal;color:var(--n500)}
-.bz-i + .bz-i::before{content:'';display:inline-block;width:1px;height:10px;margin:0 10px;background:var(--n300);vertical-align:-1px}
-.biz.mo .bz-i + .bz-i::before{height:9px;margin:0 8px}
-.biz.mo .bz-name{margin:0;font-size:12px}
 .bz-i a{color:inherit;text-decoration:none}
 @media (hover:hover){ .bz-i a:hover{text-decoration:underline;text-underline-offset:3px} }
-.bz-foot{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:4px 24px;margin-top:12px;padding-top:12px;border-top:1px solid var(--n200)}
-.biz.mo .bz-foot{flex-direction:column;align-items:flex-start;margin-top:8px;padding-top:0;border-top:0}
-.bz-copy{white-space:nowrap}
+.bz-wide,.bz-note{grid-column:1 / -1}
+.bz-wide{margin-top:4px!important}
+.bz-note{margin-top:8px!important}
 /* 바닥글 링크도 위 규칙 하나로 44px 이 된다. 어제 넣었던 덮개(::after)와
    줄 사이 30px 은 걷는다 - 덮개를 안 쓰니 벌려 둘 까닭이 없다. */
 /* 보이는 상자는 30px 이지만 아래 덮개가 위아래 9px 씩 넓혀 누르는 자리는 약 48px 이다.
@@ -4377,34 +4374,25 @@ ${S.agent ? `
 const CORP = {
   corp: '주식회사 플러스토닉', ceo: '한상혁', no: '206-86-86686',
   tel: '070-4105-0678',
-  tsp: '제2024-경기하남-2207호', addr: '경기도 하남시 미사대로 550, A동 3층 77호 (덕풍동, 현대지식산업센터 한강미사 1차)', mail: 'support@plustonic.com',
+  tsp: '제2024-경기하남-2207호',   /* 통신판매업 신고 - 바닥글에는 쓰지 않는다(판매 없음 · 2026-11-02), 결제를 붙이면 다시 */ addr: '경기도 하남시 미사대로 550, A동 3층 77호 (덕풍동, 현대지식산업센터 한강미사 1차)', mail: 'support@plustonic.com',
 };
 
-/* 사업자 정보 (2026-11-02 대표님 '푸터 텍스트 깔끔하게 정리해') - PC·휴대폰이 같은 말, 같은 모양.
-   전에는 PC 는 '·' 로 이어 쓴 긴 줄 + 밑줄 친 '문의', 휴대폰은 '고객센터' + 사이 줄이라 같은 정보가 두 말투였다.
-   이제: 회사 이름(굵게) / 대표 · 사업자등록번호 · 통신판매업신고 / 주소 / 고객센터 · 메일 / 줄 아래 안내 문장 · ©.
-   항목마다 '이름표 값' 한 덩어리(줄바꿈 안 됨), 사이는 얇은 세로줄. 이름표는 회색, 값은 한 단계 짙게.
-   법(전자상거래법 제10조)이 첫 화면에 두라고 한 항목이라 휴대폰에서도 접지 않는다 - 휴대폰은 이름·대표를 한 줄로,
-   통신판매업신고는 다음 줄로, 주소 괄호(동·건물 이름 - 참고 항목)는 뺀다 */
+/* 사업자 정보 (2026-11-02 대표님 '푸터 텍스트가 너무 많다 · 통신판매업이 필요한가 · 폰트 줄여서라도 2열로')
+   - 통신판매업 신고번호는 뺀다. 사이트에서 파는 것이 없다(결제 없음 - 포트원은 본인확인만 한다).
+     표시 의무는 통신판매(판매)를 할 때 생긴다 - 유료 기능·결제를 붙이면 다시 넣는다(약관·처리방침에는 그대로 있다)
+   - 두 칸: 왼쪽 회사(이름 · 대표 · 사업자번호), 오른쪽 연락처(고객센터 · 메일). 주소와 안내는 그 아래 한 줄씩.
+     PC·휴대폰 같은 모양 - 휴대폰은 12px 두 칸(375·360px 에서 한 칸에 들어가게 '메일' 이름표는 뺀다)
+   - 주소 괄호(동·건물 이름 - 참고 항목)는 뺀다. 법(전자상거래법 제10조)상 첫 화면 표시라 접지는 않는다 */
 function bizFooter(){
-  const mo = isMo();
-  const 칸 = (이름, 값, 더 = '') => `<span class="bz-i${더}">${이름 ? `<em>${이름}</em>` : ''}${값}</span>`;
-  const 판매 = 칸('통신판매업신고', esc(CORP.tsp));
-  const 주소 = mo ? CORP.addr.replace(/\s*\([^)]*\)\s*$/, '') : CORP.addr;
-  return `<div class="biz${mo ? ' mo' : ''}">
-    ${mo ? `<p class="bz-row">${칸('', esc(CORP.corp), ' bz-name')}${칸('대표', esc(CORP.ceo))}</p>
-    <p class="bz-row">${칸('사업자등록번호', esc(CORP.no))}</p>
-    <p class="bz-row">${판매}</p>`
-      : `<b class="bz-name">${esc(CORP.corp)}</b>
-    <p class="bz-row">${칸('대표', esc(CORP.ceo))}${칸('사업자등록번호', esc(CORP.no))}${판매}</p>`}
-    <p class="bz-row">${칸('주소', esc(주소))}</p>
-    <p class="bz-row">${칸('고객센터', `<a href="tel:${esc(CORP.tel.replace(/-/g,''))}">${esc(CORP.tel)}</a>`)}${칸('', `<a href="mailto:${esc(CORP.mail)}">${esc(CORP.mail)}</a>`)}</p>
-    <!-- 우리가 무엇이 아닌지 밝히는 문장 - 연락처에 딸린 말처럼 읽히지 않게 줄 아래에 따로 세운다 -->
-    <div class="bz-foot"><p class="bz-note">비버노크는 조건을 전달하는 서비스로, 공인중개사가 아닙니다. 중개와 계약은 공인중개사사무소와 직접 진행됩니다.</p>
-      <p class="bz-copy">© 2026 Beaver Knock</p></div>
+  const 칸 = (이름, 값) => `<span class="bz-i">${이름 ? `<em>${이름}</em>` : ''}${값}</span>`;
+  return `<div class="biz${isMo() ? ' mo' : ''}">
+    <div class="bz-col"><b class="bz-name">${esc(CORP.corp)}</b>${칸('대표', esc(CORP.ceo))}${칸('사업자번호', esc(CORP.no))}</div>
+    <div class="bz-col">${칸('고객센터', `<a href="tel:${esc(CORP.tel.replace(/-/g,''))}">${esc(CORP.tel)}</a>`)}${칸('', `<a href="mailto:${esc(CORP.mail)}">${esc(CORP.mail)}</a>`)}</div>
+    <p class="bz-wide">${칸('주소', esc(CORP.addr.replace(/\s*\([^)]*\)\s*$/, '')))}</p>
+    <!-- 우리가 무엇이 아닌지 밝히는 한 줄 - 연락처에 딸린 말처럼 읽히지 않게 따로 세운다 -->
+    <p class="bz-note">비버노크는 공인중개사가 아닌, 조건을 전달하는 서비스입니다.</p>
   </div>`;
-}
-/* 발밑 지면 - 캐릭터가 떠 보이지 않게 */
+}/* 발밑 지면 - 캐릭터가 떠 보이지 않게 */
 function groundSvg(){
   return `<svg viewBox="0 0 1440 120" preserveAspectRatio="none" aria-hidden="true"
     style="position:absolute;left:0;right:0;bottom:0;width:100%;height:${isMo()?58:78}px">
@@ -10734,6 +10722,10 @@ const CT_하위메뉴 = [['#/partner/contracts/new', '계약서 작성', 'pen', 
    번호는 배포한 날(연.월.일 - 같은 날 또 올리면 뒤에 .2). 화면이 version.json 을 가끔 읽어,
    더 새 버전이 올라와 있으면 메뉴 아래에서 새로고침을 권한다(버전확인) - 계약서를 띄워 둔 채 오래 일하면 고친 화면을 못 받는다 */
 const BK_변경 = [
+  { v:'26.11.02.3', 날:'2026-11-02', 줄:[
+    '바닥글 글 줄이기 - 두 칸(왼쪽 회사 · 오른쪽 연락처) + 주소 · 안내 한 줄씩, 휴대폰 297 → 232px · PC 264 → 238px',
+    '통신판매업 신고번호는 바닥글에서 뺌(사이트에서 파는 것이 없다 - 결제를 붙이면 다시) · © 줄 뺌 · 안내 문장은 한 줄로',
+  ]},
   { v:'26.11.02.2', 날:'2026-11-02', 줄:[
     '바닥글 글 정리 - PC·휴대폰이 같은 말·같은 모양: 회사 이름(굵게) / 대표 · 사업자등록번호 · 통신판매업신고 / 주소 / 고객센터, 이름표는 회색 · 값은 짙게, 사이는 얇은 세로줄',
     '전화·메일 밑줄 없앰 · 안내 문장과 ©는 줄 아래로 · PC 링크의 개인정보 처리방침도 굵게',

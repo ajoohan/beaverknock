@@ -98,14 +98,15 @@ const M = new Function('esc', `${js.slice(시작, 끝)}\nreturn { dzLine, dzPill
   ok(js.includes('<footer class="mfoot">') && js.includes('<div class="mf-row pol"><a data-go="#/brand">브랜드</a>') && js.includes('class="em">개인정보 처리방침</a>')
      && /\.mf-row\.pol a\.em\{font-weight:700;color:var\(--n900\)\}/.test(css) && /\.mf-row a \+ a::before\{content:''/.test(css) && !/\.mf-row a\{[^}]*text-decoration:underline/.test(css),
      '휴대폰 바닥 링크 - 밑줄 없이 사이 줄로 나눈 두 줄 · 개인정보 처리방침은 굵게');
-  /* 2026-11-02 '푸터 텍스트 깔끔하게' - PC·휴대폰이 같은 말·같은 모양(이름표 값 덩어리 · 사이 줄 · 줄 아래 안내와 ©) */
+  /* 2026-11-02 '푸터 텍스트가 너무 많다 · 통신판매업 필요한가 · 2열로' - PC·휴대폰 같은 두 칸(왼쪽 회사 · 오른쪽 연락처) + 주소 · 안내 한 줄씩 */
   const 사업자 = js.slice(js.indexOf('function bizFooter(){'), js.indexOf('\n}\n', js.indexOf('function bizFooter(){')));
-  ok(사업자.includes("칸('사업자등록번호', esc(CORP.no))") && 사업자.includes("const 판매 = 칸('통신판매업신고', esc(CORP.tsp));") && 사업자.includes("칸('고객센터',")
-     && 사업자.includes("CORP.addr.replace(/\\s*\\([^)]*\\)\\s*$/, '')") && !사업자.includes('문의 ') && !/text-decoration:underline/.test(사업자)
-     && 사업자.includes('<p class="bz-copy">© 2026 Beaver Knock</p>'),
-     '사업자 정보 - PC·휴대폰 같은 이름표(대표 · 사업자등록번호 · 통신판매업신고 · 주소 · 고객센터) · 밑줄 없음 · ©, 휴대폰은 주소 괄호를 뺀다(접지는 않는다 - 법상 첫 화면)');
-  ok(/\.bz-i\{white-space:nowrap;/.test(css) && /\.bz-i \+ \.bz-i::before\{content:''/.test(css) && /\.biz\.mo\{font-size:12px/.test(css) && !/\.bizNote\{/.test(css),
-     '항목마다 한 덩어리로 끊기지 않고(번호가 \'206-86-\' 에서 쪼개지지 않게), 사이는 얇은 세로줄 · 휴대폰 12px');
+  ok(사업자.includes("칸('대표', esc(CORP.ceo))") && 사업자.includes("칸('사업자번호', esc(CORP.no))") && 사업자.includes("칸('고객센터',")
+     && (사업자.match(/<div class="bz-col">/g) || []).length === 2 && 사업자.includes("CORP.addr.replace(/\\s*\\([^)]*\\)\\s*$/, '')")
+     && !사업자.includes('CORP.tsp') && !사업자.includes('통신판매') && !/text-decoration:underline/.test(사업자) && !사업자.includes('©'),
+     '사업자 정보 - 두 칸(회사 | 연락처) · 통신판매업 번호는 뺀다(사이트에서 파는 것 없음 - 결제를 붙이면 다시) · 밑줄·© 없음 · 주소 괄호 뺌(접지는 않는다 - 법상 첫 화면)');
+  ok(/\.biz\{display:grid;grid-template-columns:repeat\(2,max-content\)/.test(css) && /\.biz\.mo\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\);[^}]*font-size:12px/.test(css)
+     && /\.bz-i\{overflow:hidden;white-space:nowrap;text-overflow:ellipsis/.test(css) && !/\.bizNote\{/.test(css),
+     '항목마다 한 덩어리로 끊기지 않고(번호가 \'206-86-\' 에서 쪼개지지 않게) · 휴대폰도 12px 두 칸(360px 에서 잘리지 않는다)');
   const 운 = js.slice(js.indexOf('V[OPS_HOME] = () => {'), js.indexOf('\n};\n', js.indexOf('V[OPS_HOME] = () => {')));
   ok(/if\(isMo\(\)\) return `[\s\S]*<aside class="opsNav">\$\{메뉴\}<\/aside>/.test(운) && /<aside class="dz-side opsSide" aria-label="운영 메뉴">/.test(운),
      '운영자 - 휴대폰은 가로로 미는 메뉴, 넓은 화면은 왼쪽 보라 메뉴');

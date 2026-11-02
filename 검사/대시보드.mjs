@@ -60,8 +60,9 @@ const M = new Function('esc', `${js.slice(시작, 끝)}\nreturn { dzLine, dzPill
   ok(css.includes('.dz-tag{font-size:13px;font-weight:700;padding:3px 9px;border-radius:999px;background:rgba(255,255,255,.12);color:#fff}')
      && /letter-spacing:\.06em;color:rgba\(255,255,255,\.92\)\}/.test(css) && /background:rgba\(255,255,255,\.12\);color:#fff;font-variant-numeric:tabular-nums\}/.test(css)
      && /\.opsSub :is\(button,a\)\{[^}]*color:rgba\(255,255,255,\.94\)/.test(css) && css.includes('.dz-menu .opsSub :is(button,a).on{background:rgba(255,255,255,.12);color:#fff;font-weight:800}')
-     && /color:\$\{m==="dark" \? "rgba\(255,255,255,\.9\)" : sub\}">파트너/.test(js),
-     '메뉴 위 작은 글자(꼬리표·묶음 이름·건수·하위 메뉴·로고 옆 파트너)는 4.5:1 을 넘는다');
+     && js.includes('<span class="lk-tag${m==="dark" ? \' dk\' : \'\'}" style="font-size:${Math.max(12,h*.46).toFixed(1)}px">PARTNERS</span>')
+     && css.includes('.lk-tag.dk{border-color:rgba(255,255,255,.55);background:rgba(255,255,255,.08);color:#fff}'),
+     '메뉴 위 작은 글자(꼬리표·묶음 이름·건수·하위 메뉴·로고 옆 PARTNERS)는 4.5:1 을 넘는다');
   /* 마감 검토(2026-10-29) - 영문 머리표·글자 화살표·옆 줄무늬는 쓰지 않는다 (브랜드 견본판만 예외) */
   {
     const 브랜드 = js.slice(js.indexOf('V["#/brand"]'), js.indexOf('\n};\n', js.indexOf('V["#/brand"]')));
@@ -93,9 +94,13 @@ const M = new Function('esc', `${js.slice(시작, 끝)}\nreturn { dzLine, dzPill
      && /\.seg\{[^}]*border-radius:var\(--r-btn\)/.test(css) && /\.seg button\{[^}]*border-radius:var\(--r-ctl\)/.test(css),
      '단추 10px · 칩·탭 단추 8px (알약 999px 아님)');
   ok(/body\.mo \.dz-more::after\{content:"";position:absolute;left:-6px;right:-6px;top:-5px;bottom:-5px\}/.test(css), "휴대폰 '전체 보기' 는 덮개로 누르는 자리를 44px 로");
-  ok(/@media \(max-width:420px\)\{ body\.mo \.footlinks\{display:grid!important;grid-template-columns:repeat\(3,minmax\(0,max-content\)\)/.test(css)
+  /* 2026-11-02 '모바일 메인 푸터가 너무 길고 보기 싫다' - 391px → 약 260px */
+  ok(js.includes('<footer class="mfoot">') && js.includes('<div class="mf-row pol"><a data-go="#/brand">브랜드</a>') && js.includes('class="em">개인정보 처리방침</a>')
+     && /\.mf-row\.pol a\.em\{font-weight:700;color:var\(--n900\)\}/.test(css) && /\.mf-row a \+ a::before\{content:''/.test(css) && !/\.mf-row a\{[^}]*text-decoration:underline/.test(css),
+     '휴대폰 바닥 링크 - 밑줄 없이 사이 줄로 나눈 두 줄 · 개인정보 처리방침은 굵게');
+  ok(js.includes('if(isMo()) return `<div class="mbiz">') && js.includes("CORP.addr.replace(/\\s*\\([^)]*\\)\\s*$/, '')") && /\.mbiz\{[^}]*font-size:12px/.test(css)
      && /<span class="nw">사업자등록번호 \$\{esc\(CORP\.no\)\} ·<\/span>/.test(js) && /\.nw\{white-space:nowrap\}/.test(css),
-     '휴대폰 바닥 - 링크는 셋씩 두 줄, 사업자 정보는 항목마다 끊기지 않는다');
+     '휴대폰 사업자 정보는 접지 않고(법상 첫 화면) 12px 다섯 줄 · PC 는 항목마다 끊기지 않는 그대로');
   const 운 = js.slice(js.indexOf('V[OPS_HOME] = () => {'), js.indexOf('\n};\n', js.indexOf('V[OPS_HOME] = () => {')));
   ok(/if\(isMo\(\)\) return `[\s\S]*<aside class="opsNav">\$\{메뉴\}<\/aside>/.test(운) && /<aside class="dz-side opsSide" aria-label="운영 메뉴">/.test(운),
      '운영자 - 휴대폰은 가로로 미는 메뉴, 넓은 화면은 왼쪽 보라 메뉴');
@@ -206,15 +211,15 @@ const M = new Function('esc', `${js.slice(시작, 끝)}\nreturn { dzLine, dzPill
      '휴대폰 - 만들기 줄은 아래 탭 막대 위에 붙는다(그 밑에 단추가 가려졌다)');
 
   /* 2026-10-30 '계약서 작성 화면처럼 다른 어드민 화면도 맞춰' */
-  ok(css.includes('body.adm .chip{background:#F0F0F6!important;border-color:transparent!important')
-     && css.includes('body.adm .chip.on{background:var(--ind)!important;border-color:var(--ind)!important;color:#fff!important')
-     && css.includes('body.adm span.chip{background:transparent!important;border:1px dashed var(--n300)!important'),
+  ok(css.includes(':is(body.adm,body.ptn) .chip{background:#F0F0F6!important;border-color:transparent!important')
+     && css.includes(':is(body.adm,body.ptn) .chip.on{background:var(--ind)!important;border-color:var(--ind)!important;color:#fff!important')
+     && css.includes(':is(body.adm,body.ptn) span.chip{background:transparent!important;border:1px dashed var(--n300)!important'),
      '어드민 칩은 옅은 면 상자, 고르면 꽉 찬 남색 · 누를 수 없는 칩(준비 중)은 점선 - 손님 화면은 그대로');
-  ok(css.includes('body.adm #app[data-enter] .scr > *{animation:none}') && css.includes('body.adm #app[data-enter] :is(.adm-page,.dz-main) > *{animation:rise .32s var(--e-out) both}'),
+  ok(css.includes(':is(body.adm,body.ptn) #app[data-enter] .scr > *{animation:none}') && css.includes(':is(body.adm,body.ptn) #app[data-enter] :is(.adm-page,.dz-main) > *{animation:rise .32s var(--e-out) both}'),
      '화면을 옮기면 틀(왼쪽 메뉴·머리 줄)은 그대로, 본문 덩어리만 차례로 올라온다');
   ok(js.includes("S.justTap = actEl.classList.contains('chip') ? 초점표(actEl) : null;") && /if\(S\.justTap\)\{[^\n]*S\.justTap = null; if\(칩 && 칩\.classList\.contains\('on'\)\) 칩\.classList\.add\('just'\); \}/.test(js)
-     && css.includes('body.adm .chip.just{animation:ctwPop'), '고른 칩은 누른 직후 한 번 톡 - 다시 그려도 되풀이하지 않는다');
-  ok(css.includes('body.adm .btn.pri[disabled]{background:var(--ind)!important;border-color:var(--ind)!important;color:#fff!important;opacity:.38}'),
+     && css.includes(':is(body.adm,body.ptn) .chip.just{animation:ctwPop'), '고른 칩은 누른 직후 한 번 톡 - 다시 그려도 되풀이하지 않는다');
+  ok(css.includes(':is(body.adm,body.ptn) .btn.pri[disabled]{background:var(--ind)!important;border-color:var(--ind)!important;color:#fff!important;opacity:.38}'),
      '어드민에서 못 누르는 주 단추는 흐린 남색');
   ok(js.includes('<h2 class="adm-sh" style="margin-bottom:${hint?6:14}px"><span class="ctw-n">${no}</span>${title}</h2>') && (js.match(/<span class="sect st-n"><span class="ctw-n">\d<\/span>/g) || []).length === 4,
      '번호 걸음 제목(활동 설정 · 매물 등록)은 계약서 작성 화면과 같은 번호 배지');
@@ -230,6 +235,13 @@ const M = new Function('esc', `${js.slice(시작, 끝)}\nreturn { dzLine, dzPill
   ok(js.includes('<a data-act="ops-tab" data-v="home" class="dz-logo" aria-label="비버노크 운영 대시보드">${logoLockup({h:20, mode:\'dark\'})}<span class="dz-tag en">ADMIN</span></a>')
      && !js.includes('<span class="dz-tag">운영</span>'),
      '운영자 메뉴도 같은 모양 - 로고 옆 영문 꼬리표 ADMIN · 로고를 누르면 운영 대시보드(손님 사이트는 아래 사이트 가기)');
+  ok(js.includes('<div class="nav solid pad ptn-nav">') && js.includes('${logoLockup({h:22,partner:true})}')
+     && js.includes("document.body.classList.toggle('ptn', isMo() && !!app.querySelector('.ptn-nav, .tabbar.pt, .opsPad'));"),
+     '휴대폰 중개사 머리 줄도 로고 옆 PARTNERS(로고 22px - 360px 폭에도 한 줄) · 휴대폰 중개사·운영 화면에도 어드민 칩·움직임(body.ptn)');
+  ok(js.split('<span class="lk-tag" style="font-size:12px">ADMIN</span></a>').length - 1 === 2,
+     '휴대폰 운영자 머리 줄(입장 화면 · 본 화면)에도 로고 옆 ADMIN');
+  ok(js.includes("<nav class=\"tabbar${role==='p' ? ' pt' : ''}\">") && /\.tabbar\.pt a\.on::before\{content:''[^}]*background:var\(--ind50\)/.test(css),
+     '중개사 아래 탭 - 켜진 칸 그림 뒤에 옅은 남색 알약(왼쪽 메뉴의 켜진 칸과 같은 말)');
 
   /* 묻는 창 (2026-10-30 '팝업도 디자인 적용해서 화면 중앙에') - 브라우저 기본 창을 하나도 쓰지 않는다 */
   ok(!/(^|[^.\w$])(confirm|alert|prompt)\(/m.test(js.replace(/\/\*[\s\S]*?\*\//g, '')), '브라우저 기본 확인창·알림창(confirm · alert · prompt)을 쓰지 않는다');

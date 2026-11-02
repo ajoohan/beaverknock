@@ -258,7 +258,20 @@ body.mo .nav .items{display:none}
    위아래 줄이 1px 를 남기고 안 겹친다. 그래야 44px 에 닿는다.
    여기서는 기본 규칙(±14.5px)을 그대로 쓰면 되므로 따로 덮지 않는다. */
 body.mo .footlinks{gap:10px 16px!important}
-@media (max-width:420px){ body.mo .footlinks{display:grid!important;grid-template-columns:repeat(3,minmax(0,max-content));justify-content:space-between} }
+/* 휴대폰 바닥글 (2026-11-02 '너무 길고 보기 싫다') - 옅은 회색 띠로 본문과 나누고, 링크는 사이 줄로 나눈 두 줄, 사업자 정보는 12px */
+.mfoot{flex:none;position:relative;z-index:3;display:flex;flex-direction:column;gap:12px;padding:18px 24px calc(22px + env(safe-area-inset-bottom));
+  background:var(--n50);border-top:1px solid var(--n100)}
+.mf-links{display:flex;flex-direction:column}
+.mf-row{display:flex;flex-wrap:wrap;align-items:center}
+.mf-row a{display:inline-flex;align-items:center;min-height:32px;font-size:13.5px;font-weight:600;color:var(--n700);text-decoration:none;cursor:pointer}
+.mf-row a + a::before{content:'';display:inline-block;width:1px;height:11px;margin:0 11px;background:var(--n300)}
+.mf-row.pol a{font-size:13px;font-weight:500;color:var(--n500)}
+.mf-row.pol a.em{font-weight:700;color:var(--n900)}
+.mbiz{display:flex;flex-direction:column;font-size:12px;line-height:1.65;color:var(--n500)}
+.mbiz b{font-weight:700;color:var(--n700)}
+.mbiz a{color:inherit;text-decoration:none}
+.mbiz .sep{display:inline-block;width:1px;height:9px;margin:0 7px;background:var(--n300);vertical-align:0}
+.mbiz .bizNote{margin-top:8px}
 /* 바닥글 링크도 위 규칙 하나로 44px 이 된다. 어제 넣었던 덮개(::after)와
    줄 사이 30px 은 걷는다 - 덮개를 안 쓰니 벌려 둘 까닭이 없다. */
 /* 보이는 상자는 30px 이지만 아래 덮개가 위아래 9px 씩 넓혀 누르는 자리는 약 48px 이다.
@@ -1396,18 +1409,32 @@ body.mo .chip-clear{min-height:40px}
    굵기는 건드리지 않는다 - font-weight 는 전환되지 않아, .run 이 붙는 순간
    넷이 한꺼번에 굵어지면서 차례가 무너진다. 색과 바탕만 바꾼다.
    여백은 꺼져 있을 때도 그대로 둔다 - 켜질 때 줄이 밀리지 않게. */
-.steps.mini{position:static;display:flex;justify-content:center;flex-wrap:wrap;gap:4px 5px}
-/* 375px 에서는 넷이 한 줄에 들어가지 않아 '④' 만 아래 줄에 홀로 떨어졌다(2026-10-15 UI 검수).
-   좁은 폰에서는 처음부터 둘씩 두 줄로 고르게 놓는다 - 높이는 같고 홀로 남는 줄이 없다. */
-@media (max-width:400px){ .steps.mini{display:grid;grid-template-columns:repeat(2,max-content);justify-content:center} }
-.steps.mini .ms{padding:3px 7px;border-radius:var(--r-full);background:transparent;
-  color:var(--n500);font-weight:700;white-space:nowrap;
-  transition:color .45s var(--e-out),background-color .45s var(--e-out)}
-/* --ind50 로는 흰 바 위에서 1.09:1 이라 알약이 켜진 티가 나지 않았다 - 글자색만
-   바뀌는 꼴이다. --ind200 은 1.51:1 로 보인다. 그 위 글자는 --ind 로는 4.29:1 이라
-   작은 글씨 기준(4.5)에 못 미쳤다(2026-10-15 UI 검수) - 한 단계 짙은 --ind700 으로.
-   바로 아래 주 버튼이 짙은 남보라라, 알약까지 꽉 채우면 둘이 다툰다. */
-.steps.mini.run .ms{color:var(--ind700);background:var(--ind200)}
+/* 2026-11-02 '더 고급스럽게' - 알약 2×2 대신 번호 원 넷이 한 줄(4칸 같은 폭). 원은 안쪽에서 남색이 피어나며 차고
+   (살짝 튀는 스프링), 찬 순간 노크 파동이 한 번 퍼지고, 원 사이 선이 천천히-빠르게-천천히 이어진다.
+   굵기는 처음부터 고정(전환되지 않는 값), 글자는 회색 → 짙은 색만 바뀐다 */
+.steps.mini{position:relative;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));margin:4px 0 6px;padding:0;list-style:none}
+.steps.mini .ms{position:relative;display:flex;flex-direction:column;align-items:center;gap:8px;min-width:0;padding:0;background:transparent;font-weight:700}
+.ms-n{position:relative;z-index:1;display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;
+  background:var(--white);box-shadow:inset 0 0 0 1.5px var(--n300);font-size:12.5px;font-weight:800;line-height:1;color:var(--n500)}
+.ms-on{position:absolute;inset:0;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;background:var(--ind);color:#fff;font-style:normal;
+  opacity:0;transform:scale(.45);transition:transform .7s cubic-bezier(.34,1.56,.64,1),opacity .35s ease-out;transition-delay:var(--d)}
+.ms-n::after{content:'';position:absolute;inset:0;border-radius:50%;border:2px solid var(--ind300);opacity:0;pointer-events:none}
+.ms-t{max-width:100%;font-size:12.5px;font-weight:600;line-height:1.3;letter-spacing:-.01em;color:var(--n500);white-space:nowrap;transition:color .45s ease-out;transition-delay:var(--d)}
+.ms-seg{position:absolute;top:12px;left:calc(50% + 18px);right:calc(-50% + 18px);height:2px;border-radius:2px;background:var(--n200)}
+.ms-seg i{position:absolute;inset:0;border-radius:inherit;background:var(--ind);transform:scaleX(0);transform-origin:left center;
+  transition:transform .85s cubic-bezier(.65,0,.35,1);transition-delay:var(--dd)}
+.steps.mini.run .ms-on{opacity:1;transform:scale(1)}
+.steps.mini.run .ms-n::after{animation:msKnock 1.2s cubic-bezier(.16,.84,.44,1) both;animation-delay:calc(var(--d) + .3s)}
+@keyframes msKnock{0%{opacity:.7;transform:scale(1)}100%{opacity:0;transform:scale(2.3)}}
+.steps.mini.run .ms-t{color:var(--n900)}
+.steps.mini.run .ms-seg i{transform:scaleX(1)}
+/* 되감기 - 줄 전체를 흐리지 않는다(깜빡임으로 보였다). 칠한 층만 스르르 사라졌다 처음부터 */
+.steps.mini.rewind{opacity:1}
+.steps.mini.rewind .ms-on,.steps.mini.rewind .ms-seg i{opacity:0;transition:opacity .42s ease-out!important}
+.steps.mini.rewind .ms-t{transition:color .42s ease-out!important}
+.steps.mini.rewind .ms-n::after{animation:none!important}
+.steps.done .ms-on,.steps.done .ms-seg i,.steps.done .ms-t{transition:none!important}
+.steps.done .ms-n::after{animation:none!important}
 
 /* 이미 채워진 걸 다시 그리는 자리 - 시간표 없이 바로 완성된 모습으로 */
 .steps.done .no,.steps.done .stt,.steps.done .sd,.steps.done .ms,
@@ -1434,6 +1461,8 @@ body.mo .chip-clear{min-height:40px}
   .steps .no::before{transition:none;transform:scale(1)}
   .steps .no,.steps .stt,.steps .sd,.steps .ms{transition:none}
   .steps .no::after{display:none}
+  .steps.mini .ms-on,.steps.mini .ms-seg i,.steps.mini .ms-t{transition:none}
+  .steps.mini .ms-n::after{display:none}
 }
 
 /* ══════════ 모션 레이어 ══════════
@@ -1928,25 +1957,38 @@ body.mo .scr:has(> .tabbar) .ctw-foot{bottom:calc(74px + env(safe-area-inset-bot
 /* ── 어드민 칩·움직임을 계약서 작성 화면처럼 (2026-10-30 대표님 '계약서 작성 화면처럼 다른 어드민 화면도 맞춰') ──
    칩은 테두리 대신 옅은 면 상자, 고르면 꽉 찬 남색(하나만 = 점 · 여럿 = 체크 - 표는 원래 규칙 그대로 흰색으로).
    공용 칩 규칙이 여러 겹이라 !important 로 덮는다. 손님 화면(body.adm 아님)은 그대로 */
-body.adm .chip{background:#F0F0F6!important;border-color:transparent!important;box-shadow:none!important;color:var(--n700);font-weight:600}
-body.adm .chip.on{background:var(--ind)!important;border-color:var(--ind)!important;color:#fff!important;font-weight:700;box-shadow:0 6px 14px -6px rgba(79,82,209,.7)!important}
+:is(body.adm,body.ptn) .chip{background:#F0F0F6!important;border-color:transparent!important;box-shadow:none!important;color:var(--n700);font-weight:600}
+:is(body.adm,body.ptn) .chip.on{background:var(--ind)!important;border-color:var(--ind)!important;color:#fff!important;font-weight:700;box-shadow:0 6px 14px -6px rgba(79,82,209,.7)!important}
 @media (hover:hover){
-  body.adm .chip:not(.on):not(:disabled):hover{background:#E5E5F1!important;border-color:transparent!important;color:var(--ind700)!important}
-  body.adm .chip.on:not(:disabled):hover{background:var(--ind700)!important;border-color:var(--ind700)!important;color:#fff!important}
+  :is(body.adm,body.ptn) .chip:not(.on):not(:disabled):hover{background:#E5E5F1!important;border-color:transparent!important;color:var(--ind700)!important}
+  :is(body.adm,body.ptn) .chip.on:not(:disabled):hover{background:var(--ind700)!important;border-color:var(--ind700)!important;color:#fff!important}
 }
-body.adm .chip:not(:disabled):active{transform:scale(.97)}
+/* 손가락 화면은 누른 뒤 hover 가 남는다 - 안 고른 칩은 원래 면 그대로 */
+@media (hover:none){ body.ptn .chip:not(.on):not(:disabled):hover{background:#F0F0F6!important;border-color:transparent!important;color:var(--n700)!important} }
+:is(body.adm,body.ptn) .chip:not(:disabled):active{transform:scale(.97)}
 /* '준비 중' 처럼 누를 수 없는 칩(span)은 면 없이 점선 - 고를 수 있는 것처럼 보이면 안 된다 */
-body.adm span.chip{background:transparent!important;border:1px dashed var(--n300)!important;color:var(--n500)}
-body.adm .chip.just{animation:ctwPop .26s cubic-bezier(.3,.7,.4,1) both}
-/* 화면을 옮겨도 틀(왼쪽 메뉴 · 머리 줄)은 그대로, 본문 덩어리만 차례로 올라온다 - 메뉴까지 들썩이면 흔들림이 먼저 보인다 */
-body.adm #app[data-enter] .scr > *{animation:none}
-body.adm #app[data-enter] :is(.adm-page,.dz-main) > *{animation:rise .32s var(--e-out) both}
-body.adm #app[data-enter] :is(.adm-page,.dz-main) > :nth-child(2){animation-delay:.04s}
-body.adm #app[data-enter] :is(.adm-page,.dz-main) > :nth-child(3){animation-delay:.08s}
-body.adm #app[data-enter] :is(.adm-page,.dz-main) > :nth-child(4){animation-delay:.12s}
-body.adm #app[data-enter] :is(.adm-page,.dz-main) > :nth-child(n+5){animation-delay:.16s}
+:is(body.adm,body.ptn) span.chip{background:transparent!important;border:1px dashed var(--n300)!important;color:var(--n500)}
+:is(body.adm,body.ptn) .chip.just{animation:ctwPop .26s cubic-bezier(.3,.7,.4,1) both}
+/* 화면을 옮겨도 틀(왼쪽 메뉴 · 머리 줄 · 아래 탭)은 그대로, 본문 덩어리만 차례로 올라온다 - 메뉴까지 들썩이면 흔들림이 먼저 보인다 */
+:is(body.adm,body.ptn) #app[data-enter] .scr > *{animation:none}
+:is(body.adm,body.ptn) #app[data-enter] :is(.adm-page,.dz-main) > *{animation:rise .32s var(--e-out) both}
+:is(body.adm,body.ptn) #app[data-enter] :is(.adm-page,.dz-main) > :nth-child(2){animation-delay:.04s}
+:is(body.adm,body.ptn) #app[data-enter] :is(.adm-page,.dz-main) > :nth-child(3){animation-delay:.08s}
+:is(body.adm,body.ptn) #app[data-enter] :is(.adm-page,.dz-main) > :nth-child(4){animation-delay:.12s}
+:is(body.adm,body.ptn) #app[data-enter] :is(.adm-page,.dz-main) > :nth-child(n+5){animation-delay:.16s}
 /* 못 누르는 주 단추는 회색 상자 대신 흐린 남색 - 계약서 작성의 만들기 단추와 같다 */
-body.adm .btn.pri[disabled]{background:var(--ind)!important;border-color:var(--ind)!important;color:#fff!important;opacity:.38}
+:is(body.adm,body.ptn) .btn.pri[disabled]{background:var(--ind)!important;border-color:var(--ind)!important;color:#fff!important;opacity:.38}
+/* 로고 옆 영문 꼬리표(밝은 바탕) - 왼쪽 메뉴의 PARTNERS·ADMIN 과 같은 모양 (2026-11-02) */
+.lk-tag{display:inline-flex;align-items:center;padding:.16em .5em;border:1px solid var(--ind200);border-radius:6px;background:var(--ind50);
+  font-weight:700;line-height:1.25;letter-spacing:.04em;color:var(--ind700);white-space:nowrap}
+.lk-tag.dk{border-color:rgba(255,255,255,.55);background:rgba(255,255,255,.08);color:#fff}
+/* 중개사 아래 탭 - 왼쪽 메뉴의 켜진 칸처럼, 켜진 탭 그림 뒤에 옅은 남색 알약 */
+.tabbar.pt a{position:relative}
+.tabbar.pt a svg{position:relative;z-index:1}
+.tabbar.pt a.on{color:var(--ind700)}
+.tabbar.pt a.on::before{content:'';position:absolute;top:2px;left:50%;width:56px;height:30px;margin-left:-28px;border-radius:999px;
+  background:var(--ind50);box-shadow:inset 0 0 0 1px var(--ind200);animation:tabPill .26s cubic-bezier(.3,.7,.4,1) both}
+@keyframes tabPill{from{opacity:0;transform:scaleX(.6)}to{opacity:1;transform:none}}
 /* 묻는 창 - 휴대폰에서도 아래에서 올라오는 판이 아니라 가운데 작은 창(대표님 '화면 중앙에') */
 .modal.ask,body.mo .modal.ask{align-items:center;padding:24px}
 .modal.ask .box,body.mo .modal.ask .box{max-width:400px;padding:28px 24px 20px;border-radius:20px;text-align:center;animation:modalIn .34s var(--e-spring) both}
@@ -3396,7 +3438,9 @@ function logoLockup(opt){
   const subSize = Math.max(12, h*.44);
   const tagEl = o.tag ? `<span style="font-size:${subSize.toFixed(1)}px;font-weight:600;letter-spacing:-.02em;color:${sub};white-space:nowrap">${esc(TAGLINE())}</span>` : '';
   const enEl  = '';
-  const partEl= o.partner ? `<span style="font-size:${Math.max(12,h*.46).toFixed(1)}px;font-weight:700;letter-spacing:0;color:${m==="dark" ? "rgba(255,255,255,.9)" : sub}">파트너</span>` : '';   /* 어두운 바탕의 꼬리표는 글자라 4.5:1 을 넘긴다(.62 는 3.4) */
+  /* 로고 옆 꼬리표 (2026-11-02 대표님 '휴대폰 메뉴도 같은 모양으로') - 왼쪽 메뉴의 PARTNERS 와 같은 영문 꼬리표.
+     밝은 바탕은 남색 테두리·옅은 남색 면(7:1), 어두운 바탕은 흰 테두리(6:1) */
+  const partEl= o.partner ? `<span class="lk-tag${m==="dark" ? ' dk' : ''}" style="font-size:${Math.max(12,h*.46).toFixed(1)}px">PARTNERS</span>` : '';
   if(o.stack){
     return `<span style="display:inline-flex;flex-direction:column;align-items:flex-start;gap:${Math.round(h*.22)}px;line-height:1">
       <span style="display:inline-flex;align-items:center;gap:${Math.round(h*.28)}px">${wmCore(h,m,o.noEn)}${partEl}</span>
@@ -3459,7 +3503,7 @@ function tabbar(active, role){
     l:'M4 11 L12 4 L20 11 M6.5 9.5 V19 h11 V9.5 M10 19 v-5 h4 v5',
     s:'M12 15.5 a3.5 3.5 0 1 0 0 -7 a3.5 3.5 0 0 0 0 7 M12 2 v3 M12 19 v3 M2 12 h3 M19 12 h3 M5 5 l2 2 M17 17 l2 2 M19 5 l-2 2 M7 17 l-2 2'
   };
-  return `<nav class="tabbar">${items.map(([href,label,k])=>{
+  return `<nav class="tabbar${role==='p' ? ' pt' : ''}">${items.map(([href,label,k])=>{
     const on = active===k;
     return `<a data-go="${href}" class="${on?'on':''}">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${on?2.2:1.8}" stroke-linecap="round" stroke-linejoin="round"><path d="${ico[k]}"/></svg>
@@ -3533,8 +3577,8 @@ function navPartner(active, 탭있음 = true){
   /* 넓은 화면은 왼쪽 세로 메뉴(2026-10-29 대표님 시안) - 사무소 이름·내 정보는 메뉴 아래에 있다 */
   if(!isMo()) return 파트너옆(active);
   return `
-<div class="nav solid pad">
-  <a data-go="${S.agent ? '#/partner/home' : '#/partner'}" style="flex:none">${logoLockup({h:25,partner:true,tag:!isMo()})}</a>
+<div class="nav solid pad ptn-nav">
+  <a data-go="${S.agent ? '#/partner/home' : '#/partner'}" style="flex:none">${logoLockup({h:22,partner:true})}</a>
   <div class="items mid">
     <a data-go="#/partner/demands" class="${active==='d'?'on':''}">${own?'맞는 손님':'수요 목록'}</a>
     <a data-go="#/partner/listings" class="${active==='l'?'on':''}">내 물건</a>
@@ -4198,26 +4242,29 @@ V['#/'] = () => `
     <!-- 가운뎃점은 뺀다. 알약이 생기면서 칸이 저절로 갈린다.
          넷은 375px 한 줄에 들어가지 않는다(11px 로도 두 줄) - 400px 이하에서는
          CSS 가 둘씩 두 줄(2×2)로 고르게 놓는다. 한 줄로 되돌리면 '④' 만 홀로 떨어진다. -->
-    <div class="steps mini" style="font-size:13px">
-      ${['조건 등록','맞는 지역에만','맞으면 연락','직접 상담'].map((t,i)=>
-        `<span class="ms" style="transition-delay:${(i*STEP_ONE).toFixed(2)}s">${'①②③④'[i]} ${t}</span>`).join('')}
-    </div>
+    <!-- 2026-11-02 대표님 '중간 모션이 안 맞는다 · 더 고급스럽게' - 알약 넷이 2×2 로 들쭉날쭉 칠해지고
+         다 차면 줄 전체가 흐려졌다 켜졌다(깜빡임). 이제 PC 와 같은 말: 번호 원 넷이 한 줄에 서고,
+         원이 차면 노크처럼 파동이 한 번 퍼지고, 다음 원까지 선이 부드럽게 이어진다. 시간표는 같은 STEP_ONE -->
+    <ol class="steps mini" aria-label="이용 순서">
+      ${['조건 등록','맞는 지역에만','맞으면 연락','직접 상담'].map((t,i,a)=>
+        `<li class="ms" style="--d:${(i*STEP_ONE).toFixed(2)}s;--dd:calc(var(--d) + ${STEP_FILL}s)"><span class="ms-n" aria-hidden="true">${i+1}<i class="ms-on">${i+1}</i></span><span class="ms-t">${t}</span>${i < a.length-1 ? '<i class="ms-seg" aria-hidden="true"><i></i></i>' : ''}</li>`).join('')}
+    </ol>
     <button class="btn pri blk" data-go="#/kind">내 조건 걸어두기</button>
     <!-- 가입 권유는 아직 가입하지 않은 사람에게만. 로그인한 사람에게 '30초 간편가입' 을 보이면
          다시 가입해야 하는지 헷갈린다 -->
     ${S.user ? '' : `<span class="signupHint" style="text-align:center;font-size:13px;line-height:1.6;color:var(--n500)"><b style="color:var(--n700);font-weight:700">30초 간편가입</b><br>무료서비스</span>`}
   </div>
 
-  <div style="flex:none;position:relative;z-index:3;background:var(--white);border-top:1px solid var(--n100);
-    padding:18px 24px calc(22px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:12px">
-    <div class="footlinks" style="display:flex;flex-wrap:wrap;gap:10px 16px">
-      ${[['#/guide','이용 안내'],['#/faq','자주 묻는 질문'],['#/partner','파트너 안내'],['#/brand','브랜드']]
-        .map(([h,t])=>`<a class="tapx" data-go="${h}" style="font-size:13.5px;color:var(--n500);text-decoration:underline;text-underline-offset:3px">${t}</a>`).join('')}
-      <a class="tapx" href="/terms" target="_blank" rel="noopener" style="font-size:13.5px;color:var(--n500);text-decoration:underline;text-underline-offset:3px">이용약관</a>
-      <a class="tapx" href="/privacy" target="_blank" rel="noopener" style="font-size:13.5px;color:var(--n500);text-decoration:underline;text-underline-offset:3px">개인정보 처리방침</a>
-    </div>
+  <!-- 휴대폰 바닥글 (2026-11-02 대표님 '모바일 메인 화면 푸터가 너무 길고 보기 싫다') - 391px → 약 260px.
+       밑줄 링크 여섯이 세 칸 격자로 흩어져 있었다 - 사이 줄로 나눈 두 줄로 모은다.
+       개인정보 처리방침은 굵게(개인정보위 권고: 다른 고지와 구분되게). 사업자 정보는 bizFooter 의 휴대폰 판 -->
+  <footer class="mfoot">
+    <nav class="mf-links" aria-label="바닥글 메뉴">
+      <div class="mf-row">${[['#/guide','이용 안내'],['#/faq','자주 묻는 질문'],['#/partner','파트너 안내']].map(([h,t])=>`<a data-go="${h}">${t}</a>`).join('')}</div>
+      <div class="mf-row pol"><a data-go="#/brand">브랜드</a><a href="/terms" target="_blank" rel="noopener">이용약관</a><a href="/privacy" target="_blank" rel="noopener" class="em">개인정보 처리방침</a></div>
+    </nav>
     ${bizFooter()}
-  </div>`
+  </footer>`
   : `
   <!-- PC: 문구 / 캐릭터 / 파트너. 넓어지면 세 칸으로 펴지고, 좁아지면 파트너가 아래로 내려간다.
        넓은 화면으로 오는 사람은 대개 중개사·소유자다 - 그 칸을 먼저 내어준다. -->
@@ -4327,6 +4374,17 @@ const CORP = {
 /* 색을 --fc 로 받는다. 어두운 바닥글에서만 그 값을 정의하고, 나머지 자리는
    정의하지 않으므로 예전 색(n500)이 그대로 쓰인다 - 부르는 쪽을 고치지 않는다. */
 function bizFooter(){
+  /* 휴대폰 판 (2026-11-02) - 법(전자상거래법 제10조)이 첫 화면에 두라고 한 항목이라 접지 않는다.
+     12px 다섯 줄로: 상호·대표 / 사업자등록번호 / 통신판매업 신고 / 주소 / 고객센터. 줄 끝에 매달리던 '·' 대신 사이 줄.
+     주소의 괄호(동·건물 이름)는 참고 항목이라 휴대폰에서는 뺀다 - 두 줄로 꺾이던 줄이 한 줄이 된다 */
+  if(isMo()) return `<div class="mbiz">
+    <span><b>${esc(CORP.corp)}</b><i class="sep" aria-hidden="true"></i>대표 ${esc(CORP.ceo)}</span>
+    <span>사업자등록번호 ${esc(CORP.no)}</span>
+    <span>통신판매업 신고 ${esc(CORP.tsp)}</span>
+    <span>${esc(CORP.addr.replace(/\s*\([^)]*\)\s*$/, ''))}</span>
+    <span>고객센터 <a href="tel:${esc(CORP.tel.replace(/-/g,''))}">${esc(CORP.tel)}</a><i class="sep" aria-hidden="true"></i><a href="mailto:${esc(CORP.mail)}">${esc(CORP.mail)}</a></span>
+    <span class="bizNote">비버노크는 조건을 전달하는 서비스이며 공인중개사가 아닙니다. 중개와 계약은 공인중개사사무소와 직접 하시게 됩니다.</span>
+  </div>`;
   return `<div style="font-size:13.5px;line-height:1.8;color:var(--fc,var(--n500))">
     <!-- 항목마다 한 덩어리로 묶는다 - 좁은 화면에서 '206-86-' 과 '86686' 처럼 번호가 쪼개지지 않게 -->
     <span style="display:block"><span class="nw">${esc(CORP.corp)} ·</span> <span class="nw">대표 ${esc(CORP.ceo)} ·</span>
@@ -6825,11 +6883,11 @@ V['#/relax'] = () => `
 V['#/partner'] = () => `
 <div class="scr dark fade">
   <div class="nav pad" style="border-bottom:1px solid var(--navy700)">
-    <span style="flex:none">${logoLockup({h:25,mode:"dark",partner:true,tag:!isMo()})}</span>
-    <div class="right" style="color:var(--navy300)">
+    <span style="flex:none">${logoLockup({h:isMo()?22:25,mode:"dark",partner:true,tag:!isMo()})}</span>
+    <div class="right" style="color:var(--navy300)${isMo()?';gap:10px':''}">
       <a class="tapx" data-go="#/" style="font-size:${isMo()?13.5:14.5}px;font-weight:600">${isMo()?'손님 화면':'손님 화면 보기'}</a>
       ${S.agent
-        ? `<button class="btn sm" data-go="${S.agent.status === 'approved' ? '#/partner/demands' : '#/partner/verify'}" style="background:var(--ind400);color:#fff">내 파트너 화면</button>`
+        ? `<button class="btn sm" data-go="${S.agent.status === 'approved' ? '#/partner/demands' : '#/partner/verify'}" style="background:var(--ind400);color:#fff">${isMo() ? '파트너 화면' : '내 파트너 화면'}</button>`
         : S.user ? ''   /* 로그인했지만 파트너가 아니면 갈 파트너 화면이 없다 - 아래 '가입하기' 가 길이다 */
         : `<button class="btn sm" data-act="nav-login" data-v="partner" style="background:var(--ind400);color:#fff">파트너 로그인</button>`}
     </div>
@@ -9841,7 +9899,7 @@ function opsPanel(){
    경우에만 - 운영자 명단이 비어 있어 암호가 유일한 문일 때다 - 칸을 낸다. */
 function opsGateScreen(){
   const head = `
-  <div class="nav solid pad opsPad"><a data-go="#/" style="flex:none">${logoLockup({h:25})}</a>
+  <div class="nav solid pad opsPad"><a data-go="#/" style="flex:none;display:inline-flex;align-items:center;gap:7px">${logoLockup({h:22})}<span class="lk-tag" style="font-size:12px">ADMIN</span></a>
     <div class="items"><a class="on">운영</a></div>
     <div class="right"><a class="tapx" data-go="#/" style="font-size:14.5px;font-weight:600;color:var(--n700)">사이트로</a></div></div>`;
   /* 들어가기 전 화면은 가운데에 세운다. 안에 들어가면 목록이 왼쪽부터 차지만,
@@ -9957,7 +10015,7 @@ V[OPS_HOME] = () => {
   /* 휴대폰 - 위 머리 + 가로로 미는 메뉴(지금 그대로) */
   if(isMo()) return `
 <div class="scr fade" style="background:var(--n50)">
-  <div class="nav solid pad opsPad"><a data-go="#/" style="flex:none">${logoLockup({h:25})}</a>
+  <div class="nav solid pad opsPad"><a data-act="ops-tab" data-v="home" style="flex:none;display:inline-flex;align-items:center;gap:7px" aria-label="비버노크 운영 대시보드">${logoLockup({h:22})}<span class="lk-tag" style="font-size:12px">ADMIN</span></a>
     <div class="items"><a class="on">운영</a></div>
     <div class="right"><a class="tapx" data-go="#/" style="font-size:14.5px;font-weight:600;color:var(--n700)">사이트로</a></div></div>
   <div class="pad opsPad" style="flex:1;padding-top:16px;padding-bottom:28px;width:100%">
@@ -10673,6 +10731,11 @@ const CT_하위메뉴 = [['#/partner/contracts/new', '계약서 작성', 'pen', 
    번호는 배포한 날(연.월.일 - 같은 날 또 올리면 뒤에 .2). 화면이 version.json 을 가끔 읽어,
    더 새 버전이 올라와 있으면 메뉴 아래에서 새로고침을 권한다(버전확인) - 계약서를 띄워 둔 채 오래 일하면 고친 화면을 못 받는다 */
 const BK_변경 = [
+  { v:'26.11.02', 날:'2026-11-02', 줄:[
+    '휴대폰 첫 화면 바닥글 정리 - 391px → 264px · 링크는 사이 줄로 나눈 두 줄(개인정보 처리방침 굵게) · 사업자 정보 12px 다섯 줄 · 옅은 회색 띠',
+    '첫 화면 네 걸음 움직임을 새로 - 번호 원 넷이 한 줄에서 차례로 차고(노크 파동 한 번), 원 사이 선이 부드럽게 이어진다 · 다 차면 줄 전체 깜빡임 없이 칠한 층만 사라졌다 다시',
+    '휴대폰 메뉴도 PC 와 같은 모양 - 로고 옆 PARTNERS / ADMIN 꼬리표 · 중개사·운영 화면 칩은 면 상자 · 아래 탭 켜진 칸에 옅은 남색 알약',
+  ]},
   { v:'26.10.30.10', 날:'2026-10-30', 줄:[
     '운영자 화면 메뉴도 같은 모양 - 로고 옆 영문 꼬리표 ADMIN · 현황 / 관리 / 기록 묶음 간격과 얇은 줄 · 로고를 누르면 운영 대시보드',
   ]},
@@ -13295,6 +13358,8 @@ function render(){
   app.innerHTML = html + modalHTML();
   /* 넓은 화면 어드민(왼쪽 메뉴가 선 화면)이면 표시 - 단추·칩을 어드민 크기·모양으로 (2026-10-30) */
   document.body.classList.toggle('adm', !!app.querySelector('.dz-side'));
+  /* 휴대폰의 중개사·운영 화면도 어드민과 같은 칩·움직임 (2026-11-02 '휴대폰 메뉴도 같은 모양으로') */
+  document.body.classList.toggle('ptn', isMo() && !!app.querySelector('.ptn-nav, .tabbar.pt, .opsPad'));
   가운뎃점붙이기(app);
   키보드로도닿게(app);
   /* 좁은 데스크톱에서 메뉴 줄이 옆으로 밀릴 때 켜진 탭이 가려지지 않게 그 자리로 맞춘다 */

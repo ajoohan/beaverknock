@@ -24,7 +24,7 @@ ok(css.includes(`transform ${sec(F)} cubic-bezier`),      `원 잉크가 ${sec(F
 
 /* ── 두 화면이 같은 시간표를 쓰는가 ── */
 ok(js.includes('const at = +(i * STEP_ONE)'),                   '데스크톱이 STEP_ONE 을 본다');
-ok(js.includes('class="ms" style="transition-delay:${(i*STEP_ONE)'), '모바일이 같은 STEP_ONE 을 본다');
+ok(js.includes('<li class="ms" style="--d:${(i*STEP_ONE).toFixed(2)}s;--dd:calc(var(--d) + ${STEP_FILL}s)">'), '모바일이 같은 STEP_ONE 을 본다(원은 걸음마다, 선은 원이 찬 뒤에)');
 ok(js.includes('class="steps mini"'),                           '모바일 줄도 .steps 다 (같은 기계)');
 
 /* ── 되감기: 흐린 동안 시간표를 통째로 끈다 ──
@@ -35,13 +35,17 @@ for(const k of ['.no', '.stt', '.sd', '.ms', '.no::before', '.link i'])
 ok(/\.steps\.rewind\{opacity:\.\d+\}/.test(css), '되감는 동안 흐려진다');
 
 /* ── 굵기는 건드리지 않는다 - font-weight 는 전환되지 않아 차례가 무너진다 ── */
+/* 휴대폰 네 걸음 (2026-11-02 '더 고급스럽게') - 알약 2×2 대신 번호 원 넷 한 줄 */
 const off = css.slice(css.indexOf('.steps.mini .ms{'), css.indexOf('}', css.indexOf('.steps.mini .ms{')));
-const on  = css.slice(css.indexOf('.steps.mini.run .ms{'), css.indexOf('}', css.indexOf('.steps.mini.run .ms{')));
-ok(!on.includes('font-weight'),  '켜질 때 굵기가 변하지 않는다');
-ok(off.includes('font-weight:'), '굵기는 처음부터 고정이다');
-ok(off.includes('padding:'),     '여백은 꺼져 있을 때도 있다 (켜져도 줄이 안 밀린다)');
-ok(off.includes('background:transparent') && on.includes('background:var(--ind200)'),
-   '켜진 알약이 --ind200 이다 (--ind50 은 흰 바 위에서 1.09:1 이라 안 보였다)');
+const 글켜짐 = css.slice(css.indexOf('.steps.mini.run .ms-t{'), css.indexOf('}', css.indexOf('.steps.mini.run .ms-t{')));
+ok(off.includes('font-weight:') && /\.ms-t\{[^}]*font-weight:600/.test(css), '굵기는 처음부터 고정이다');
+ok(글켜짐.includes('color:var(--n900)') && !글켜짐.includes('font-weight'), '켜질 때는 글자색만 바뀐다(굵기 그대로)');
+ok(/\.steps\.mini\{[^}]*grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/.test(css), '번호 원 넷이 같은 폭으로 한 줄 - 2×2 로 들쭉날쭉하지 않다');
+ok(css.includes('.steps.mini.run .ms-on{opacity:1;transform:scale(1)}') && /\.ms-on\{[^}]*transition:transform \.7s cubic-bezier/.test(css)
+   && /\.ms-seg i\{[^}]*transition:transform \.85s cubic-bezier/.test(css), `원이 ${sec(F)}, 원 사이 선이 ${sec(K)} - 데스크톱과 같은 시간표`);
+ok(/\.steps\.mini\.run \.ms-n::after\{animation:msKnock /.test(css), '원이 찬 순간 노크 파동이 한 번 퍼진다');
+ok(css.includes('.steps.mini.rewind{opacity:1}') && css.includes('.steps.mini.rewind .ms-on,.steps.mini.rewind .ms-seg i{opacity:0;transition:opacity .42s ease-out!important}'),
+   '휴대폰은 되감을 때 줄 전체를 흐리지 않는다(깜빡임) - 칠한 층만 사라진다');
 
 /* ── 돌리는 쪽 ── */
 ok(js.includes('function stopSteps()'), '앞선 바퀴를 정리하는 자리가 있다');

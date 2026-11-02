@@ -267,11 +267,22 @@ body.mo .footlinks{gap:10px 16px!important}
 .mf-row a + a::before{content:'';display:inline-block;width:1px;height:11px;margin:0 11px;background:var(--n300)}
 .mf-row.pol a{font-size:13px;font-weight:500;color:var(--n500)}
 .mf-row.pol a.em{font-weight:700;color:var(--n900)}
-.mbiz{display:flex;flex-direction:column;font-size:12px;line-height:1.65;color:var(--n500)}
-.mbiz b{font-weight:700;color:var(--n700)}
-.mbiz a{color:inherit;text-decoration:none}
-.mbiz .sep{display:inline-block;width:1px;height:9px;margin:0 7px;background:var(--n300);vertical-align:0}
-.mbiz .bizNote{margin-top:8px}
+/* 사업자 정보 (2026-11-02 '푸터 텍스트 깔끔하게') - 이름표 회색 · 값 한 단계 짙게 · 항목 사이 얇은 세로줄 · 줄 아래 안내 문장과 © */
+.biz{display:flex;flex-direction:column;gap:2px;font-size:13px;line-height:1.7;color:var(--n500)}
+.biz.mo{font-size:12px;line-height:1.65}
+.biz p{margin:0}
+.bz-name{margin-bottom:4px;font-size:13.5px;font-weight:700;color:var(--n700)}
+.bz-row{display:flex;flex-wrap:wrap}
+.bz-i{white-space:nowrap;color:var(--n700)}
+.bz-i em{margin-right:6px;font-style:normal;color:var(--n500)}
+.bz-i + .bz-i::before{content:'';display:inline-block;width:1px;height:10px;margin:0 10px;background:var(--n300);vertical-align:-1px}
+.biz.mo .bz-i + .bz-i::before{height:9px;margin:0 8px}
+.biz.mo .bz-name{margin:0;font-size:12px}
+.bz-i a{color:inherit;text-decoration:none}
+@media (hover:hover){ .bz-i a:hover{text-decoration:underline;text-underline-offset:3px} }
+.bz-foot{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:4px 24px;margin-top:12px;padding-top:12px;border-top:1px solid var(--n200)}
+.biz.mo .bz-foot{flex-direction:column;align-items:flex-start;margin-top:8px;padding-top:0;border-top:0}
+.bz-copy{white-space:nowrap}
 /* 바닥글 링크도 위 규칙 하나로 44px 이 된다. 어제 넣었던 덮개(::after)와
    줄 사이 30px 은 걷는다 - 덮개를 안 쓰니 벌려 둘 까닭이 없다. */
 /* 보이는 상자는 30px 이지만 아래 덮개가 위아래 9px 씩 넓혀 누르는 자리는 약 48px 이다.
@@ -763,8 +774,6 @@ hr.hair{border:none;border-top:1px solid var(--n100);margin:0}
 /* 사업자 정보 끝의 '우리는 공인중개사가 아니다' 한 줄.
    좁은 화면에서는 두세 줄로 접히는데 그때 오른쪽에 맞추면 왼쪽이 들쭉날쭉해
    읽기 나쁘다 - 넓은 화면에서만 오른쪽에 세운다. */
-.bizNote{display:block;margin-top:2px}
-@media (min-width:768px){ .bizNote{text-align:right} }
 
 /* 좌측 스텝 레일 (PC) */
 .rail{flex:none;width:360px;background:var(--white);border-right:1px solid var(--n100);padding:38px 36px;display:flex;flex-direction:column}
@@ -4352,7 +4361,7 @@ ${S.agent ? `
           ${[['#/guide','이용 안내'],['#/faq','자주 묻는 질문'],['#/partner','파트너 안내']]
             .map(([h,t])=>`<a class="tapx" data-go="${h}" style="font-size:13.5px;color:var(--n500)">${t}</a>`).join('')}
           <a class="tapx" href="/terms" target="_blank" rel="noopener" style="font-size:13.5px;color:var(--n500)">이용약관</a>
-          <a class="tapx" href="/privacy" target="_blank" rel="noopener" style="font-size:13.5px;color:var(--n500)">개인정보 처리방침</a>
+          <a class="tapx" href="/privacy" target="_blank" rel="noopener" style="font-size:13.5px;font-weight:700;color:var(--n700)">개인정보 처리방침</a>
           <a class="tapx" data-go="#/brand" style="font-size:13.5px;color:var(--n500)">브랜드</a>
         </div>
       </div>
@@ -4371,36 +4380,30 @@ const CORP = {
   tsp: '제2024-경기하남-2207호', addr: '경기도 하남시 미사대로 550, A동 3층 77호 (덕풍동, 현대지식산업센터 한강미사 1차)', mail: 'support@plustonic.com',
 };
 
-/* 색을 --fc 로 받는다. 어두운 바닥글에서만 그 값을 정의하고, 나머지 자리는
-   정의하지 않으므로 예전 색(n500)이 그대로 쓰인다 - 부르는 쪽을 고치지 않는다. */
+/* 사업자 정보 (2026-11-02 대표님 '푸터 텍스트 깔끔하게 정리해') - PC·휴대폰이 같은 말, 같은 모양.
+   전에는 PC 는 '·' 로 이어 쓴 긴 줄 + 밑줄 친 '문의', 휴대폰은 '고객센터' + 사이 줄이라 같은 정보가 두 말투였다.
+   이제: 회사 이름(굵게) / 대표 · 사업자등록번호 · 통신판매업신고 / 주소 / 고객센터 · 메일 / 줄 아래 안내 문장 · ©.
+   항목마다 '이름표 값' 한 덩어리(줄바꿈 안 됨), 사이는 얇은 세로줄. 이름표는 회색, 값은 한 단계 짙게.
+   법(전자상거래법 제10조)이 첫 화면에 두라고 한 항목이라 휴대폰에서도 접지 않는다 - 휴대폰은 이름·대표를 한 줄로,
+   통신판매업신고는 다음 줄로, 주소 괄호(동·건물 이름 - 참고 항목)는 뺀다 */
 function bizFooter(){
-  /* 휴대폰 판 (2026-11-02) - 법(전자상거래법 제10조)이 첫 화면에 두라고 한 항목이라 접지 않는다.
-     12px 다섯 줄로: 상호·대표 / 사업자등록번호 / 통신판매업 신고 / 주소 / 고객센터. 줄 끝에 매달리던 '·' 대신 사이 줄.
-     주소의 괄호(동·건물 이름)는 참고 항목이라 휴대폰에서는 뺀다 - 두 줄로 꺾이던 줄이 한 줄이 된다 */
-  if(isMo()) return `<div class="mbiz">
-    <span><b>${esc(CORP.corp)}</b><i class="sep" aria-hidden="true"></i>대표 ${esc(CORP.ceo)}</span>
-    <span>사업자등록번호 ${esc(CORP.no)}</span>
-    <span>통신판매업 신고 ${esc(CORP.tsp)}</span>
-    <span>${esc(CORP.addr.replace(/\s*\([^)]*\)\s*$/, ''))}</span>
-    <span>고객센터 <a href="tel:${esc(CORP.tel.replace(/-/g,''))}">${esc(CORP.tel)}</a><i class="sep" aria-hidden="true"></i><a href="mailto:${esc(CORP.mail)}">${esc(CORP.mail)}</a></span>
-    <span class="bizNote">비버노크는 조건을 전달하는 서비스이며 공인중개사가 아닙니다. 중개와 계약은 공인중개사사무소와 직접 하시게 됩니다.</span>
-  </div>`;
-  return `<div style="font-size:13.5px;line-height:1.8;color:var(--fc,var(--n500))">
-    <!-- 항목마다 한 덩어리로 묶는다 - 좁은 화면에서 '206-86-' 과 '86686' 처럼 번호가 쪼개지지 않게 -->
-    <span style="display:block"><span class="nw">${esc(CORP.corp)} ·</span> <span class="nw">대표 ${esc(CORP.ceo)} ·</span>
-      <span class="nw">사업자등록번호 ${esc(CORP.no)} ·</span> <span class="nw">통신판매업 신고 ${esc(CORP.tsp)}</span></span>
-    <span style="display:block">${esc(CORP.addr)}</span>
-    <span style="display:block">문의 <a class="tapx" href="tel:${esc(CORP.tel.replace(/-/g,''))}"
-      style="color:var(--fc,var(--n500));text-decoration:underline;text-underline-offset:3px">${esc(CORP.tel)}</a>
-      · <a class="tapx" href="mailto:${esc(CORP.mail)}"
-      style="color:var(--fc,var(--n500));text-decoration:underline;text-underline-offset:3px">${esc(CORP.mail)}</a></span>
-    <!-- 우리가 무엇이 아닌지 밝히는 문장이다. 연락처 뒤에 점 하나로 붙여두면
-         안내문에 딸린 말처럼 읽힌다 - 줄을 따로 세워 오른쪽에 둔다. -->
-    <span class="bizNote">비버노크는 조건을 전달하는 서비스이며 공인중개사가 아닙니다.
-      중개와 계약은 공인중개사사무소와 직접 하시게 됩니다.</span>
+  const mo = isMo();
+  const 칸 = (이름, 값, 더 = '') => `<span class="bz-i${더}">${이름 ? `<em>${이름}</em>` : ''}${값}</span>`;
+  const 판매 = 칸('통신판매업신고', esc(CORP.tsp));
+  const 주소 = mo ? CORP.addr.replace(/\s*\([^)]*\)\s*$/, '') : CORP.addr;
+  return `<div class="biz${mo ? ' mo' : ''}">
+    ${mo ? `<p class="bz-row">${칸('', esc(CORP.corp), ' bz-name')}${칸('대표', esc(CORP.ceo))}</p>
+    <p class="bz-row">${칸('사업자등록번호', esc(CORP.no))}</p>
+    <p class="bz-row">${판매}</p>`
+      : `<b class="bz-name">${esc(CORP.corp)}</b>
+    <p class="bz-row">${칸('대표', esc(CORP.ceo))}${칸('사업자등록번호', esc(CORP.no))}${판매}</p>`}
+    <p class="bz-row">${칸('주소', esc(주소))}</p>
+    <p class="bz-row">${칸('고객센터', `<a href="tel:${esc(CORP.tel.replace(/-/g,''))}">${esc(CORP.tel)}</a>`)}${칸('', `<a href="mailto:${esc(CORP.mail)}">${esc(CORP.mail)}</a>`)}</p>
+    <!-- 우리가 무엇이 아닌지 밝히는 문장 - 연락처에 딸린 말처럼 읽히지 않게 줄 아래에 따로 세운다 -->
+    <div class="bz-foot"><p class="bz-note">비버노크는 조건을 전달하는 서비스로, 공인중개사가 아닙니다. 중개와 계약은 공인중개사사무소와 직접 진행됩니다.</p>
+      <p class="bz-copy">© 2026 Beaver Knock</p></div>
   </div>`;
 }
-
 /* 발밑 지면 - 캐릭터가 떠 보이지 않게 */
 function groundSvg(){
   return `<svg viewBox="0 0 1440 120" preserveAspectRatio="none" aria-hidden="true"
@@ -10731,6 +10734,10 @@ const CT_하위메뉴 = [['#/partner/contracts/new', '계약서 작성', 'pen', 
    번호는 배포한 날(연.월.일 - 같은 날 또 올리면 뒤에 .2). 화면이 version.json 을 가끔 읽어,
    더 새 버전이 올라와 있으면 메뉴 아래에서 새로고침을 권한다(버전확인) - 계약서를 띄워 둔 채 오래 일하면 고친 화면을 못 받는다 */
 const BK_변경 = [
+  { v:'26.11.02.2', 날:'2026-11-02', 줄:[
+    '바닥글 글 정리 - PC·휴대폰이 같은 말·같은 모양: 회사 이름(굵게) / 대표 · 사업자등록번호 · 통신판매업신고 / 주소 / 고객센터, 이름표는 회색 · 값은 짙게, 사이는 얇은 세로줄',
+    '전화·메일 밑줄 없앰 · 안내 문장과 ©는 줄 아래로 · PC 링크의 개인정보 처리방침도 굵게',
+  ]},
   { v:'26.11.02', 날:'2026-11-02', 줄:[
     '휴대폰 첫 화면 바닥글 정리 - 391px → 264px · 링크는 사이 줄로 나눈 두 줄(개인정보 처리방침 굵게) · 사업자 정보 12px 다섯 줄 · 옅은 회색 띠',
     '첫 화면 네 걸음 움직임을 새로 - 번호 원 넷이 한 줄에서 차례로 차고(노크 파동 한 번), 원 사이 선이 부드럽게 이어진다 · 다 차면 줄 전체 깜빡임 없이 칠한 층만 사라졌다 다시',

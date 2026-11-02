@@ -1359,7 +1359,10 @@ body.mo .chip-clear{min-height:40px}
 .pcard .k{font-size:12px;font-weight:700;letter-spacing:.1em;color:var(--clay200)}
 .pcard .h{font-size:clamp(17px,1.25vw,22px);font-weight:720;letter-spacing:-.03em;color:#fff;line-height:1.4}
 .pcard .d{margin:0;font-size:14.5px;line-height:1.75;color:var(--navy300)}
-.pcard .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:2px}
+/* 두 버튼은 같은 폭 - 긴 쪽에 맞춘다(아래 .eqb 와 같은 방식, 2026-11-02). 칸 안쪽이 1360px 화면에서 300px 까지 좁아져
+   좌우 여백을 16px 로 줄인다 - 24px 이면 긴 쪽 둘이 칸을 넘어 '파트너로 시작하기' 가 두 줄로 접혔다 */
+.pcard .row{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;width:max-content;max-width:100%;gap:8px;margin-top:2px}
+.pcard .row .btn{padding-left:16px;padding-right:16px}
 
 /* ── 네 걸음 ──
    저절로 도는 애니메이션이 아니다. 보는 사람이 그 자리까지 왔을 때 한 번만,
@@ -2207,7 +2210,7 @@ body:not(.mo) .ctx-sub{flex:1 1 0;min-width:0;overflow:hidden;text-overflow:elli
 .ctx-act{display:flex;align-items:center;gap:8px;padding:8px 12px;border-top:1px solid var(--n200);background:var(--white)}
 .ctx-st{flex:1 1 auto;min-width:0;font-size:13.5px;font-weight:600;color:var(--n500);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ctx-st.warn{color:var(--warn)} .ctx-st.ok{color:var(--ok)}
-.ctx-btns{display:flex;gap:8px;flex:none}
+.ctx-btns{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:8px;flex:none}
 /* 미리보기는 상자 하나 - 바깥 흰 카드를 걷고 회색 책상 위에 종이 한 장만(카드·책상·종이 세 겹이 이중 상자로 보였다).
    도구 줄은 책상 위에 얹는 한 줄 - 단추 40px 이 46px 줄 안에 들어가지 않아 아래가 잘려 보였다(2026-10-29 대표님) */
 .ctx-scr .ctx-view{gap:6px;background:transparent;border:0;border-radius:0;box-shadow:none;overflow:visible}
@@ -2554,6 +2557,33 @@ body.mo .dz-r2{display:flex;flex-direction:column;gap:10px}
 body.mo .dz-stack{flex-direction:row;gap:10px}
 body.mo .dz-stack .dz-kpi{flex:1 1 0}
 body.mo .dz-kpi .dz-sub{display:none}
+/* ── 나란히 놓인 버튼은 같은 폭 (2026-11-02 대표님 '버튼 가로 사이즈가 제각각이면 이쁘지 않아. 같은 크기로 모두 맞춰') ──
+   묶음(.eqb) 안의 버튼은 가장 긴 버튼의 폭에 모두 맞춘다. 칸을 1fr 로 두고 묶음 폭을 내용만큼(max-content)으로 잡으면
+   칸마다 가장 넓은 버튼 폭이 되어 다 같아진다 - 줄을 꽉 채우지 않고 버튼만큼만 차지한다.
+   .st  휴대폰에서 세로로 쌓는다(모두 한 줄 폭)
+   .fill 휴대폰에서 한 줄을 똑같이 나눈다 - 넷이 나란히 서면 긴 버튼에 맞춘 폭이 화면을 넘는다
+   .w2  휴대폰에서 두 칸씩 - 버튼이 넷까지 붙는 줄(운영 신고 처리) */
+.eqb{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:10px;width:max-content;max-width:100%;align-items:stretch}
+.eqb > .btn{min-width:0}
+.nav .right > .eqb{gap:inherit}
+body.mo .eqb.st{grid-auto-flow:row;width:100%}
+body.mo .eqb.fill{width:100%;grid-auto-columns:minmax(0,1fr)}
+body.mo .eqb.fill > .btn{padding-left:6px;padding-right:6px}
+body.mo .eqb.w2{grid-auto-flow:row;grid-template-columns:repeat(2,minmax(0,1fr));width:100%}
+/* 아래 단추줄(.foot) - 양 끝에 선 두 버튼도 같은 폭. PC 는 가장 긴 글(빠진 칸을 버튼이 말할 때 '희망 면적(전용)을 적어주세요')이
+   들어가는 240px 로 모두 같게, 휴대폰은 둘이 반씩 나눠 쓴다(하나면 한 줄 다) */
+body:not(.mo) .foot > .btn{min-width:240px}
+body.mo .foot > .btn{flex:1 1 0;min-width:0;padding-left:12px;padding-right:12px}
+/* 휴대폰은 '이전' 자리에 빈 칸(span)을 둔다 - 칸은 0 이어도 사이 간격 14px 이 남아 꽉 찬 버튼이 오른쪽으로 비켜 섰다(왼 38 · 오 24) */
+body.mo .foot > span:empty{display:none}
+/* 손님 조건 목록 - 카드마다 하나씩 선 버튼(자세히 보기 · 제안함 · 열람됨 · 제안 마감 · 자격 인증하고 열기)도 한 폭.
+   가장 긴 '자격 인증하고 열기' 가 들어가는 폭(글자 크기를 따라가게 em) */
+.dgo{min-width:9.8em}
+/* 운영 신고 처리 - 처리한 신고에만 '미확인으로' 가 붙어 카드마다 묶음 폭이 달랐다(넷 90px · 셋 81px). 가장 긴 그 말이 들어가는 폭으로 */
+.rpm .btn{min-width:6.5em}
+/* 글꼴 고르기(명조 · 고딕)도 같은 폭 - 명조는 바탕체라 넓고, 고른 쪽은 굵어져 누를 때마다 폭이 바뀌었다 */
+.ct-font button{min-width:3.7em}
+body.mo .ct-font button{min-width:4.2em}
 </style>
 </head>
 <body class="pc">
@@ -3552,7 +3582,7 @@ function partnerDoor(kind){
   const 곳 = 열림 ? '#/partner/home' : '#/partner/verify';
   const 말 = 열림 ? (ownerSide() ? '내 물건' : '파트너 화면') : '자격 확인';
   /* 짙은 파트너 칸 안에서는 그 칸의 주 단추(흰색)와 같은 모양이어야 한다.
-     연한 알약(door sm)을 쓰면 옆의 '안내 다시 보기' 보다 작고 흐려서 위계가 뒤집혔다. */
+     연한 알약(door sm)을 쓰면 옆의 '파트너 안내' 보다 작고 흐려서 위계가 뒤집혔다. */
   if(kind === 'onDark') return `<a class="btn partner" data-go="${곳}">${말}</a>`;
   return kind === 'link'
     ? `<a data-go="${곳}">${말}</a>`
@@ -4307,7 +4337,7 @@ ${S.agent ? `
         : '자격 확인만 끝나면 손님의 조건 전문을 보고 제안하실 수 있습니다.'}</p>
       <div class="row">
         ${partnerDoor('onDark')}
-        <button class="btn onDark" data-go="#/partner">파트너 안내 다시 보기</button>
+        <button class="btn onDark" data-go="#/partner">파트너 안내</button>
       </div>` : `
       <b class="h">중개사·소유자이신가요?<br>먼저 두드리세요.</b>
       <p class="d">손님이 조건을 걸어두고 기다립니다. 맞는 조건에만 1:1 로 제안하시면 됩니다 -
@@ -6065,8 +6095,8 @@ function agentPanel(){
           style="flex:1;min-width:150px;max-width:320px;padding:0 14px;min-height:44px;font-size:14.5px">
         ${chip(AG.reveal?'연락처 원문':'연락처 가림', AG.reveal, 'ag-reveal','')}
         <span class="sp"></span>
-        <button class="btn ghost sm" data-act="ag-load">새로고침</button>
-        <button class="btn sec sm" data-act="ag-csv">CSV 내려받기</button>
+        <span class="eqb" style="gap:8px"><button class="btn ghost sm" data-act="ag-load">새로고침</button>
+        <button class="btn sec sm" data-act="ag-csv">CSV 내려받기</button></span>
       </div>
     </div>
 
@@ -6283,7 +6313,7 @@ function 전달된연락처(d){ return `
   <div class="foot">
     <!-- 휴대폰에서는 '이 내용으로 새로 걸기' 가 두 줄로 접혀 짧게 쓴다 -->
     <button class="btn sec" data-act="draft-again" style="white-space:nowrap">${isMo()?'새로 걸기':'이 내용으로 새로 걸기'}</button>
-    <button class="btn pri ${isMo()?'blk':''}" data-go="#/my">내 조건 보기</button>
+    <button class="btn pri" data-go="#/my">내 조건 보기</button>
   </div>
 </div>`;}
 
@@ -6425,7 +6455,7 @@ V['#/done'] = () => `
               <span style="flex:none;width:5px;height:5px;border-radius:var(--r-full);background:var(--ind);margin-top:10px"></span><span>${t}</span></div>`).join('')}
         </div>
       </div>`}
-      <div style="display:flex;gap:10px;${isMo()?'flex-direction:column':''}">
+      <div class="eqb st">
         ${S.matched>0
           ? `<button class="btn pri md ${isMo()?'blk':''}" data-go="#/inbox">제안 ${S.matched}건 보기</button>
              <button class="btn sec md ${isMo()?'blk':''}" data-go="#/detail">조건 더 채우기</button>`
@@ -6448,7 +6478,7 @@ function accAddrHTML(a){
   if(e) return `<div class="acc-addr"><span class="lab">사무소 주소</span>
       ${addrBox('acc-addr', '도로명·지번·건물명 (예: 미사강변대로 220)')}
       ${e.v ? `<input class="inp" data-in="acc-addr-v" value="${esc(e.v)}" style="margin-top:8px" aria-label="사무소 주소 - 층·호를 덧붙여 적으세요">` : ''}
-      <div style="display:flex;gap:8px;margin-top:8px"><button class="btn pri sm" data-act="acc-addr-save" ${!e.v || e.busy ? 'disabled' : ''}>${e.busy ? '저장 중…' : '저장'}</button>
+      <div class="eqb" style="gap:8px;margin-top:8px"><button class="btn pri sm" data-act="acc-addr-save" ${!e.v || e.busy ? 'disabled' : ''}>${e.busy ? '저장 중…' : '저장'}</button>
         <button class="btn tool sm" data-act="acc-addr-cancel">취소</button></div></div>`;
   return `<div class="acc-addr"><span class="lab">사무소 주소 <span style="font-weight:500;color:var(--n500)">· 계약서에 자동으로 들어갑니다</span></span>
     <div class="acc-addr-v">${쓸만 ? `<b>${esc(지금)}</b>` : `<b class="acc-addr-none">아직 등록하지 않았습니다</b>`}<button class="btn tool sm" data-act="acc-addr-edit">${쓸만 ? '바꾸기' : '등록하기'}</button></div></div>`;
@@ -6550,7 +6580,7 @@ V['#/my'] = () => {
           <button class="btn pri sm" data-go="#/relax" style="flex:none">실거래로 확인</button></div>`:''}
         <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
           <span style="font-size:13.5px;color:var(--n500)">등록 ${esc(c.at)} · 만료까지 ${c.expires}일</span>
-          <div style="display:flex;gap:8px">
+          <div class="eqb fill" style="gap:8px">
             <button class="btn sec sm" data-act="cond-edit" data-v="${esc(c.id)}">수정</button>
             <button class="btn sec sm" data-act="pause" data-v="${c.id}">${c.status==='paused'?'재개':'일시중지'}</button>
             <button class="btn sec sm" data-act="close" data-v="${c.id}" style="color:var(--danger)">종료</button>
@@ -6747,9 +6777,10 @@ V['#/proposal'] = (id) => { const p=S.props.find(x=>x.id===id); if(!p) return V[
         ].filter(Boolean).join(' · ')}</p>
       </div>
       ${info}
-      <div style="margin-top:auto;padding:16px 0 24px;display:grid;grid-template-columns:1fr 2.2fr;gap:10px">
+      <!-- 두 버튼은 같은 폭(2026-11-02 - 전에는 1 : 2.2). 휴대폰 반 칸에는 긴 글이 두 줄로 접혀 짧게 쓴다 -->
+      <div style="margin-top:auto;padding:16px 0 24px;display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <button class="btn sec" data-act="reject" data-v="${p.id}">관심 없음</button>
-        <button class="btn pri" data-go="#/connect/${p.id}">이 중개사무소와 연락하기</button>
+        <button class="btn pri" data-go="#/connect/${p.id}">${isMo() ? '연락하기' : '이 중개사무소와 연락하기'}</button>
       </div>
     </div>
   </div>
@@ -6790,7 +6821,7 @@ V['#/connect'] = (id) => { const p=S.props.find(x=>x.id===id); if(!p) return V['
         ${ct.addr?`<span style="display:block;font-size:13px;color:var(--n500)">${esc(ct.addr)}</span>`:''}</div>
       <p style="margin:0;font-size:14.5px;line-height:1.75;color:var(--n700);background:var(--n50);padding:14px 18px;text-align:left">
         이후 상담과 계약은 <b>중개사무소와 직접</b> 진행하시면 됩니다.<br class="mbr"> 저희는 거래에 관여하지 않으며 어떤 비용도 받지 않습니다.</p>
-      <div style="display:flex;gap:10px;${isMo()?'flex-direction:column':''}">
+      <div class="eqb st">
         <button class="btn pri md ${isMo()?'blk':''}" data-go="#/inbox">제안함으로</button>
         <button class="btn sec md ${isMo()?'blk':''}" data-go="#/my">내 조건 확인</button></div>
     </div>
@@ -6995,10 +7026,10 @@ V['#/partner/demands'] = () => {
         ${d.memo?`<p style="margin:0;background:var(--ind50);padding:12px 14px;font-size:14.5px;line-height:1.6;color:var(--ind700);font-style:italic">"${esc(d.memo.length>52?d.memo.slice(0,52)+'…':d.memo)}"</p>`:''}
         <div style="display:flex;justify-content:space-between;align-items:center;margin-top:auto;padding-top:2px">
           <span style="font-size:13.5px;color:var(--n500)">등록 ${esc(d.at)} · 입력 ${d.pct}%</span>
-          ${d.locked? `<button class="btn pri sm" data-go="#/partner/verify">자격 인증하고 열기</button>`
-            : d.mine? `<button class="btn sm" data-go="#/partner/proposals" style="background:var(--n100);color:var(--n700)">제안함 · 열람됨</button>`
-            : d.slotsLeft===0? `<span class="btn sm" style="background:var(--n100);color:var(--n500)">제안 마감</span>`
-            : `<button class="btn pri sm" data-go="#/partner/demand/${d.id}">자세히 보기</button>`}
+          ${d.locked? `<button class="btn pri sm dgo" data-go="#/partner/verify">자격 인증하고 열기</button>`
+            : d.mine? `<button class="btn sm dgo" data-go="#/partner/proposals" style="background:var(--n100);color:var(--n700)">제안함 · 열람됨</button>`
+            : d.slotsLeft===0? `<span class="btn sm dgo" style="background:var(--n100);color:var(--n500)">제안 마감</span>`
+            : `<button class="btn pri sm dgo" data-go="#/partner/demand/${d.id}">자세히 보기</button>`}
         </div>
       </div>`).join('')}
     </div>
@@ -7230,7 +7261,9 @@ V['#/partner/proposals'] = () => {
         ${p.reason? `<p style="margin:10px 0 0;background:var(--n50);padding:12px 16px;font-size:14.5px;line-height:1.6;color:var(--n700)">${esc(p.reason)}</p>`:''}
         <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;gap:10px;flex-wrap:wrap">
           <span style="font-size:13.5px;color:var(--n500)">발송 ${esc(p.at)}${p.expires!=null?` · 만료까지 ${p.expires}일`:''}</span>
-          <div style="display:flex;gap:8px">
+          <!-- 버튼은 많아야 둘(선택됨: 계약서 만들기 · 보낸 내용 보기 / 보냄: 보낸 내용 보기 · 회수) - 긴 쪽 폭으로 맞추면
+               하나뿐인 카드와도 폭이 같다. 줄을 나눠 쓰게(fill) 하면 하나뿐인 카드만 한 줄을 꽉 채워 카드마다 달라졌다 -->
+          <div class="eqb" style="gap:8px">
             ${p.status==='selected' && !ownerSide() ? `<button class="btn pri sm" data-act="ct-from" data-v="${p.id}">계약서 만들기</button>` : ''}
             <button class="btn sec sm">보낸 내용 보기</button>
             ${p.status==='sent'? `<button class="btn sec sm" data-act="withdraw" data-v="${p.id}" ${S.withdrawing?'disabled':''} style="color:var(--danger)">${S.withdrawing?'회수 중…':'회수'}</button>`:''}
@@ -7550,11 +7583,11 @@ V['#/partner/verify'] = () => `
       ${f.jSent==='fail'?`<button class="btn sec md" data-act="j-retry" style="margin-top:14px">다시 보내기</button>`:''}
       ${/* 다른 계정에 걸린 신청이면 이 계정은 파트너가 아니다 - 파트너 화면 단추를 주면 가입으로 되돌아온다(2026-10-30) */
         f.jSent==='already' && f.jWhy!=='account' ? `
-      <div style="display:flex;gap:10px;margin-top:16px;${isMo()?'flex-direction:column;width:100%':''}">
+      <div class="eqb st" style="margin-top:16px">
         <button class="btn pri md ${isMo()?'blk':''}" data-act="logout" data-v="login">다른 방법으로 로그인</button>
         <a class="btn sec md ${isMo()?'blk':''}" href="mailto:support@plustonic.com?subject=%ED%8C%8C%ED%8A%B8%EB%84%88%20%EA%B3%84%EC%A0%95%20%EC%98%AE%EA%B8%B0%EA%B8%B0">메일로 문의</a></div>`
       : f.jSent==='fail' || f.jSent==='sending' ? '' : `
-      <div style="display:flex;gap:10px;margin-top:16px;${isMo()?'flex-direction:column;width:100%':''}">
+      <div class="eqb st" style="margin-top:16px">
         <a class="btn pri md ${isMo()?'blk':''}" data-go="#/partner/settings">활동 조건 설정하기</a>
         <a class="btn sec md ${isMo()?'blk':''}" data-go="#/partner/demands">대기 중인 손님 먼저 보기</a></div>`}
     </div>`;
@@ -9068,9 +9101,9 @@ function userPanel(){
     <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
       <span style="font-size:13.5px;color:var(--n500)">${US.page}쪽 · ${rows.length}명</span>
       <span style="margin-left:auto"></span>
-      <button class="btn sec sm" data-act="us-page" data-v="prev" ${US.page<=1?'disabled':''}><i class="ar-l" aria-hidden="true"></i>이전</button>
+      <span class="eqb" style="gap:8px"><button class="btn sec sm" data-act="us-page" data-v="prev" ${US.page<=1?'disabled':''}><i class="ar-l" aria-hidden="true"></i>이전</button>
       <button class="btn sec sm" data-act="us-page" data-v="next" ${rows.length<50?'disabled':''}>다음<i class="ar-r" aria-hidden="true"></i></button>
-      <button class="btn sec sm" data-act="us-load">새로고침</button>
+      <button class="btn sec sm" data-act="us-load">새로고침</button></span>
     </div>
     ${!rows.length ? 빈자리('이 쪽에는 계정이 없습니다', '', '', 80) : `
     <div class="card pad" style="padding:0;overflow-x:auto">
@@ -9256,7 +9289,7 @@ function reportPanel(){
             <dd>${r.agent?`${esc(r.agent.office)} · ${esc(RP_ROLE[r.agent.role]||'공인중개사')}${r.agent.status!=='approved'?` · <b style="color:var(--warn)">${esc(r.agent.status)}</b>`:''}`:'-'}</dd></div>
           <div class="kv" style="margin-bottom:12px"><dt>손님 지역</dt>
             <dd>${esc(r.dongs||'-')} · 신고 ${when(r.reported_at)}</dd></div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <div class="eqb w2 rpm" style="gap:6px">
             ${MARKS.map(([k,l])=>`<button class="btn ${r.report_status===k?'pri':'sec'} sm" data-act="rp-mark" data-v="${r.id}|${k}" ${RP.busy===r.id?'disabled':''}>${l}</button>`).join('')}
             ${r.report_status?`<button class="btn sec sm" data-act="rp-mark" data-v="${r.id}|" ${RP.busy===r.id?'disabled':''} style="color:var(--n500)">미확인으로</button>`:''}
           </div>
@@ -9437,8 +9470,8 @@ function demandPanel(){
           style="flex:1;min-width:150px;max-width:320px;padding:0 14px;min-height:44px;font-size:14.5px">
         ${chip(OPS.reveal?'연락처 원문':'연락처 가림', OPS.reveal, 'ops-reveal','')}
         <span class="sp"></span>
-        <button class="btn ghost sm" data-act="ops-load">새로고침</button>
-        <button class="btn sec sm" data-act="ops-csv">CSV 내려받기</button>
+        <span class="eqb" style="gap:8px"><button class="btn ghost sm" data-act="ops-load">새로고침</button>
+        <button class="btn sec sm" data-act="ops-csv">CSV 내려받기</button></span>
       </div>
     </div>
 
@@ -9950,7 +9983,7 @@ function opsGateScreen(){
     <p style="margin:0 0 14px;font-size:14.5px;line-height:1.75;color:var(--n700)">
       지금 <b style="color:var(--n900)">${esc(S.user.email||S.user.name||'로그인됨')}</b> 으로 로그인해 계십니다.
       운영자 명단(<b>BK_OPS_USERS</b>)에 이 계정을 넣거나, 시험 기간(<b>BK_OPS_OPEN_UNTIL</b>)을 여시면 열립니다.</p>
-    <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <div class="eqb" style="gap:8px">
       <button class="btn sec md" data-act="ops-retry">다시 시도</button>
       <button class="btn ghost md" data-act="logout">다른 계정으로</button>
     </div>${linkNote}`);
@@ -10219,7 +10252,9 @@ function navAuth(which){
     const enter = `<button class="btn enter sm" data-act="nav-login" data-v="guest">손님 로그인</button>`;
     /* 첫 화면에도 파트너 문을 함께 둔다 (2026-10-30 대표님 "파트너 로그인으로 가는것도 없고").
        전에는 손님 한 짝만 두고 파트너 길은 화면 아래 작은 글씨에 있었다 - 돌아온 중개사가 못 찾았다 */
-    return w==='enter' ? partner + enter : w==='partner' ? partner : w==='guest' ? guest : partner + guest;
+    /* 두 짝은 같은 폭 - '파트너 로그인' 이 한 글자 길어 손님 쪽이 좁아 보였다 (2026-11-02) */
+    const 짝 = (a, b) => `<span class="eqb">${a}${b}</span>`;
+    return w==='enter' ? 짝(partner, enter) : w==='partner' ? partner : w==='guest' ? guest : 짝(partner, guest);
   }
   return userMenu();
 }
@@ -10722,6 +10757,10 @@ const CT_하위메뉴 = [['#/partner/contracts/new', '계약서 작성', 'pen', 
    번호는 배포한 날(연.월.일 - 같은 날 또 올리면 뒤에 .2). 화면이 version.json 을 가끔 읽어,
    더 새 버전이 올라와 있으면 메뉴 아래에서 새로고침을 권한다(버전확인) - 계약서를 띄워 둔 채 오래 일하면 고친 화면을 못 받는다 */
 const BK_변경 = [
+  { v:'26.11.02.4', 날:'2026-11-02', 줄:[
+    '나란히 놓인 버튼은 같은 폭 - 묶음 안 가장 긴 버튼에 모두 맞춤(머리글 로그인 두 짝 · 파트너 소개 · 완료 화면 · 내 조건 카드 · 제안함 · 운영 화면 등)',
+    '아래 단추줄은 PC 240px 같은 폭 · 휴대폰은 반씩, 받은 제안의 두 버튼도 같은 폭(휴대폰은 \'연락하기\'로 짧게), 손님 조건 목록 버튼 폭도 하나로',
+  ]},
   { v:'26.11.02.3', 날:'2026-11-02', 줄:[
     '바닥글 글 줄이기 - 두 칸(왼쪽 회사 · 오른쪽 연락처) + 주소 · 안내 한 줄씩, 휴대폰 297 → 232px · PC 264 → 238px',
     '통신판매업 신고번호는 바닥글에서 뺌(사이트에서 파는 것이 없다 - 결제를 붙이면 다시) · © 줄 뺌 · 안내 문장은 한 줄로',
@@ -12137,9 +12176,9 @@ function ctDeskShell(doc, side, 신고면){
           <b>미리보기</b><span class="ctx-vn">인쇄되는 모양 그대로 · 고치면 바로 바뀝니다</span>
           <span class="ctx-tools">
             ${ct글꼴칸(doc, 잠김)}
-            ${F.lease && CT.id ? `<button class="btn tool sm" data-act="ct-renew-this">갱신계약 쓰기</button>` : ''}
+            <span class="eqb" style="gap:6px">${F.lease && CT.id ? `<button class="btn tool sm" data-act="ct-renew-this">갱신계약 쓰기</button>` : ''}
             ${F.explain ? '' : `<button class="btn tool sm" data-act="ct-explain">확인·설명서 만들기</button>`}
-            <button class="btn tool sm" data-act="ct-print">인쇄</button>
+            <button class="btn tool sm" data-act="ct-print">인쇄</button></span>
           </span>
         </div>
         <div class="ctx-desk" id="ctDesk"><div class="ct-sheet" id="ctPv">${ctDocHTML(doc)}</div></div>

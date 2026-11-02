@@ -319,5 +319,32 @@ const M = new Function('esc', `${js.slice(시작, 끝)}\nreturn { dzLine, dzPill
      '날씨는 로그인한 누구나(운영자 화면도) - 파트너 확인 앞');
 }
 
+/* ── 나란히 놓인 버튼은 같은 폭 (2026-11-02 대표님 '버튼 가로 사이즈가 제각각이면 이쁘지 않아. 같은 크기로 모두 맞춰') ── */
+{
+  ok(css.includes('.eqb{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:10px;width:max-content;max-width:100%'),
+     '묶음(.eqb)은 칸을 1fr 로, 폭은 내용만큼 - 가장 긴 버튼 폭으로 모두 같아진다');
+  ok(css.includes('body.mo .eqb.st{grid-auto-flow:row;width:100%}') && css.includes('body.mo .eqb.fill{width:100%;grid-auto-columns:minmax(0,1fr)}')
+     && css.includes('body.mo .eqb.w2{grid-auto-flow:row;grid-template-columns:repeat(2,minmax(0,1fr));width:100%}'),
+     '휴대폰에서는 세로로 쌓거나(st) 한 줄을 똑같이 나누거나(fill) 두 칸씩(w2)');
+  ok(css.includes('body:not(.mo) .foot > .btn{min-width:240px}') && css.includes('body.mo .foot > .btn{flex:1 1 0;min-width:0')
+     && css.includes('body.mo .foot > span:empty{display:none}'),
+     '아래 단추줄 - PC 는 240px 같은 폭, 휴대폰은 반씩, 빈 자리(span)는 숨겨 꽉 찬 버튼이 비켜 서지 않는다');
+  ok(css.includes('.pcard .row{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;width:max-content;max-width:100%')
+     && css.includes('.pcard .row .btn{padding-left:16px;padding-right:16px}'),
+     '첫 화면 파트너 칸 두 버튼은 같은 폭(1360px 화면의 칸 안쪽 300px 에 들어가게 여백 16px)');
+  ok(css.includes('.ctx-btns{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;'), '계약서 저장 · 날인본으로 확정은 같은 폭');
+  ok(css.includes('.ct-font button{min-width:3.7em}') && css.includes('body.mo .ct-font button{min-width:4.2em}'),
+     '글꼴 고르기 명조 · 고딕도 같은 폭(고른 쪽이 굵어져도 그대로)');
+  ok(js.includes("const 짝 = (a, b) => `<span class=\"eqb\">${a}${b}</span>`;") && css.includes('.nav .right > .eqb{gap:inherit}'),
+     '머리글 파트너 로그인 · 손님 로그인은 같은 폭 묶음(사이 간격은 머리글 것 그대로)');
+  ok(!js.includes('grid-template-columns:1fr 2.2fr') && js.includes("${isMo() ? '연락하기' : '이 중개사무소와 연락하기'}"),
+     '받은 제안의 관심 없음 · 연락하기는 1:1 - 휴대폰 반 칸에는 짧은 말');
+  const 묶음 = (js.match(/class="eqb[ "]/g) || []).length;
+  ok(묶음 >= 12, `같은 폭 묶음이 화면 곳곳에 섰다 (${묶음}곳)`);
+  ok((js.match(/class="btn [^"]*\bdgo\b/g) || []).length === 4 && css.includes('.dgo{min-width:9.8em}'),
+     '손님 조건 목록의 카드 버튼(자세히 보기 · 제안함 · 열람됨 · 제안 마감 · 자격 인증하고 열기)이 한 폭');
+  ok(!/<div style="display:flex;gap:10px;\$\{isMo\(\)\?'flex-direction:column/.test(js), '버튼 둘을 flex 로 늘어놓던 자리(폭이 글 길이대로)가 남지 않았다');
+}
+
 console.log(`${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

@@ -182,7 +182,7 @@ ok(/const 못읽음 = ok && j\.note === 'lookup-failed';\s*S\.agentKnown = !!ok 
 ok(/need_login/.test(js), '로그인이 필요하다는 답을 화면이 알아듣는다');
 ok(/need_idv/.test(js),   '본인확인이 필요하다는 답도 알아듣는다');
 /* ── 들어오는 길 (2026-10-30 대표님 "마이페이지로 가는건 어디있고" · "파트너 로그인으로 가는것도 없고") ── */
-ok(js.includes("w==='enter' ? partner + enter"), '첫 화면 상단바에 파트너 로그인과 손님 로그인이 함께 있다');
+ok(js.includes("w==='enter' ? 짝(partner, enter)"), '첫 화면 상단바에 파트너 로그인과 손님 로그인이 함께 있다(두 짝은 같은 폭 묶음)');
 ok(js.includes("줄('#/account', '마이페이지'") && js.includes('${파트너줄(줄)}'), '이름 메뉴에 마이페이지와 파트너 자리가 있다');
 ok(js.includes("V['#/account'] = () =>") && js.includes("h==='#/account'"), '마이페이지 화면이 있고, 로그인이 필요한 화면으로 묶였다');
 ok(/data-act="acc-mkt"/.test(js) && /case 'acc-mkt'/.test(js), '마이페이지에서 광고성 정보 수신을 바로 끈다');

@@ -21,8 +21,21 @@ export default async function handler(req, res) {
     return res.status(503).json({ error: '서버에 환경변수가 설정되지 않았습니다' });
   }
 
+  /* ── 오래 가는 열쇠(refresh token)는 HttpOnly 쿠키에 (2026-11-03 보안점검) ──
+     전에는 localStorage 에 두어, 화면에 스크립트가 한 번만 끼어도 계정을 오래 빼앗길 수 있었다.
+     이제 브라우저 저장소에는 1시간짜리 열쇠(access token)만 두고, 갱신은 서버가 쿠키로 대신한다.
+     쿠키는 이 주소(/api/my)에만, 같은 사이트에서만 간다. 본문이 JSON 이라 다른 사이트에서는 미리 묻기(preflight)에 막힌다 */
+  const 본문 = req.method === 'POST' ? (typeof req.body === 'string' ? (() => { try { return JSON.parse(req.body); } catch { return {}; } })() : (req.body || {})) : {};
+  if (본문.what === 'rt-refresh') return rtRefresh(req, res);
+  if (본문.what === 'rt-clear') { 쿠키(res, ''); return res.status(200).json({ ok: true }); }
+
   const user = await userFrom(req);
   if (!user) return res.status(401).json({ error: '로그인이 필요합니다' });
+  if (본문.what === 'rt-set') {
+    const rt = String(본문.rt || '');
+    if (!/^[A-Za-z0-9._-]{8,512}$/.test(rt)) return res.status(400).json({ error: '열쇠 모양이 맞지 않습니다' });
+    쿠키(res, rt); return res.status(200).json({ ok: true });
+  }
 
   /* 가입 동의. 함수 상한(12개)이 꽉 차서 새 주소를 낼 수 없다 - 여기에 붙인다.
      손님·파트너 공통이라 '내 것' 을 다루는 이 자리가 맞다. */
@@ -365,5 +378,31 @@ export async function demandStatus(req, res, user, body) {
   } catch (e) {
     console.error('[my:demand-status]', e && e.message);
     return res.status(502).json({ error: 'DB에 닿지 못했습니다' });
+  }
+}
+
+/* ── refresh token 쿠키 ── */
+function 쿠키(res, v) {
+  res.setHeader('Set-Cookie', `bk_rt=${v}; Path=/api/my; HttpOnly; Secure; SameSite=Strict; Max-Age=${v ? 60 * 60 * 24 * 30 : 0}`);
+}
+const 쿠키값 = req => { const m = /(?:^|;\s*)bk_rt=([^;]+)/.exec(String(req.headers.cookie || '')); return m ? m[1] : ''; };
+async function rtRefresh(req, res) {
+  const rt = 쿠키값(req);
+  if (!rt) return res.status(401).json({ error: '다시 로그인해 주세요' });
+  const { BK_URL, BK_PUBLIC_KEY, BK_SECRET_KEY } = process.env;
+  try {
+    const r = await fetch(`${BK_URL}/auth/v1/token?grant_type=refresh_token`, {
+      method: 'POST', headers: { apikey: BK_PUBLIC_KEY || BK_SECRET_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: rt }) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok || !j.access_token) {
+      /* 서버가 열쇠를 거절했으면(만료·폐기) 쿠키도 지운다. 일시 오류면 남겨 두고 다시 시도하게 */
+      if (r.status >= 400 && r.status < 500) 쿠키(res, '');
+      return res.status(r.status >= 500 ? 502 : 401).json({ error: '다시 로그인해 주세요' });
+    }
+    쿠키(res, j.refresh_token);
+    return res.status(200).json({ ok: true, access_token: j.access_token, expires_in: j.expires_in || 3600 });
+  } catch (e) {
+    return res.status(502).json({ error: '잠시 뒤 다시 시도해 주세요' });
   }
 }

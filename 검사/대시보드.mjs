@@ -360,5 +360,30 @@ const M = new Function('esc', `${js.slice(시작, 끝)}\nreturn { dzLine, dzPill
   const vj = fs.readFileSync(new URL('../vercel.json', import.meta.url), 'utf8');
   ok(/script-src 'self' 'unsafe-inline' https:\/\/cdn\.portone\.io/.test(vj) && /object-src 'none'/.test(vj), '외부 스크립트는 우리와 포트원만(CSP)');
 }
+/* ── 2026-11-03 남은 보안 항목 ── */
+{
+  const api = f => fs.readFileSync(new URL('../api/' + f, import.meta.url), 'utf8');
+  const vj = fs.readFileSync(new URL('../vercel.json', import.meta.url), 'utf8');
+  ok(/connect-src 'self' https:\/\/gmbtsucasfwqskfvugzo\.supabase\.co https:\/\/cdn\.portone\.io/.test(vj) && /\*\.iamport\.co/.test(vj) && !/Report-Only/.test(vj),
+     '통신 출처 제한은 강제 - 포트원 SDK 가 쓰는 주소(iamport·cdn)는 열어 둔다');
+  ok(/rt: 'c'/.test(js) && /what:'rt-set'/.test(js) && /what:'rt-refresh'/.test(js) && /what:'rt-clear'/.test(js),
+     '오래 가는 열쇠는 저장소에 두지 않고 서버 쿠키로 - 갱신·로그아웃도 쿠키로');
+  ok(/HttpOnly; Secure; SameSite=Strict/.test(api('my.js')) && /Path=\/api\/my/.test(api('my.js')), '쿠키는 HttpOnly · Secure · SameSite=Strict · /api/my 에만');
+  ok(/action: 'eq\.contract-scan'/.test(api('_contract.js')) && /contract-scan\)'\);/.test(api('demands.js')), '서류 판독 하루 상한은 DB 기록으로 세고, 운영 기록 화면에는 섞이지 않는다');
+  ok(/data-act="ops-id-copy"/.test(js), '운영 설정에서 계정 id 를 복사해 BK_OPS_USERS 에 넣을 수 있다');
+  /* 쿠키 갱신을 실제로 돌려 본다 */
+  process.env.BK_URL = 'https://fake.supabase.co'; process.env.BK_SECRET_KEY = 'x'.repeat(40);
+  const M = await import(new URL('../api/my.js', import.meta.url));
+  const 원래 = globalThis.fetch; let 받은 = null;
+  globalThis.fetch = async (u, o) => { 받은 = JSON.parse(o.body); return new Response(JSON.stringify({ access_token: 'a'.repeat(40), refresh_token: 'newrt12345', expires_in: 3600 }), { status: 200 }); };
+  const 응 = () => { const r = { h: {}, setHeader(k, v) { this.h[k] = v; }, status(c) { this.c = c; return this; }, json(j) { this.j = j; return this; } }; return r; };
+  let r = 응(); await M.default({ method: 'POST', headers: { cookie: 'a=1; bk_rt=oldrt12345' }, body: { what: 'rt-refresh' } }, r);
+  ok(r.c === 200 && r.j.access_token && !r.j.refresh_token && 받은.refresh_token === 'oldrt12345' && /bk_rt=newrt12345; Path=\/api\/my; HttpOnly/.test(r.h['Set-Cookie']),
+     '갱신: 쿠키의 열쇠로 바꾸고, 새 열쇠는 쿠키로만(응답 본문에 refresh token 없음)');
+  r = 응(); await M.default({ method: 'POST', headers: {}, body: { what: 'rt-refresh' } }, r);
+  ok(r.c === 401, '쿠키가 없으면 401 - 다시 로그인');
+  globalThis.fetch = 원래;
+}
+
 console.log(`${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

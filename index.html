@@ -3706,6 +3706,8 @@ function 열쇠갱신(sess){
   return 갱신중;
 }
 async function apiFetch(path, opts){
+  /* 갱신할 길이 있는가 - 쿠키(rt:'c') 든, 예전처럼 저장소에 든 것이든 */
+  const 갱신가능 = sess => !!(sess && (sess.refresh_token || sess.rt));
   const 보내 = sess => {
     const o = Object.assign({}, opts);
     o.headers = Object.assign({'Content-Type':'application/json'}, o.headers||{});
@@ -3713,10 +3715,10 @@ async function apiFetch(path, opts){
     return fetch(path, o);
   };
   let sess = store.get();
-  if(sess && sess.refresh_token && sess.expires_at && sess.expires_at * 1000 < Date.now() + 60000)
+  if(갱신가능(sess) && sess.expires_at && sess.expires_at * 1000 < Date.now() + 60000)
     sess = (await 열쇠갱신(sess)) || store.get();
   const r = await 보내(sess);
-  if(r.status !== 401 || !sess || !sess.refresh_token) return r;
+  if(r.status !== 401 || !갱신가능(sess)) return r;
   /* 그 사이 다른 요청이 이미 바꿨으면 그것을 쓴다 */
   const 지금 = store.get();
   const 새것 = 지금 && 지금.access_token && 지금.access_token !== sess.access_token ? 지금 : await 열쇠갱신(sess);
@@ -9193,6 +9195,11 @@ function opsSettingPanel(){
       <b style="display:block;font-size:15px;font-weight:700;margin-bottom:8px">지금 로그인</b>
       <p style="margin:0;font-size:14.5px;line-height:1.75;color:var(--n700)">
         ${S.user?`<b style="color:var(--n900)">${esc(S.user.email||S.user.name||'')}</b> <span style="margin-left:6px;vertical-align:middle">${계정표(S.user.method)}</span>`:'로그인되어 있지 않습니다'}</p>
+      ${S.user && S.user.id ? `<!-- 운영자 명단(BK_OPS_USERS)은 메일보다 계정 id 가 안전하다 - 메일은 바뀌거나 겹칠 수 있다 (2026-11-03 보안점검) -->
+      <div style="margin-top:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <span style="font-size:13.5px;color:var(--n500)">계정 id</span><code style="font-size:13.5px;color:var(--n900);word-break:break-all">${esc(S.user.id)}</code>
+        <button class="btn tool sm" data-act="ops-id-copy">복사</button></div>
+      <p style="margin:8px 0 0;font-size:13.5px;line-height:1.7;color:var(--n500)">Vercel 의 <b>BK_OPS_USERS</b> 에는 메일 대신 이 id 를 넣어 두시길 권합니다.</p>` : ''}
     </div>
     <div class="card pad" style="margin-top:14px">
       <b style="display:block;font-size:15px;font-weight:700;margin-bottom:8px">시험할 분 초대하기</b>
@@ -10749,6 +10756,10 @@ const CT_하위메뉴 = [['#/partner/contracts/new', '계약서 작성', 'pen', 
    번호는 배포한 날(연.월.일 - 같은 날 또 올리면 뒤에 .2). 화면이 version.json 을 가끔 읽어,
    더 새 버전이 올라와 있으면 메뉴 아래에서 새로고침을 권한다(버전확인) - 계약서를 띄워 둔 채 오래 일하면 고친 화면을 못 받는다 */
 const BK_변경 = [
+  { v:'26.11.03.3', 날:'2026-11-03', 줄:[
+    '보안 - 오래 가는 로그인 열쇠는 브라우저 저장소 대신 서버 쿠키(스크립트가 못 읽는 곳)에 · 통신 출처 제한(CSP connect-src) 강제',
+    '서류 판독 하루 상한을 DB 기록으로 센다 · 운영 설정에서 내 계정 id 복사(운영자 명단용)',
+  ]},
   { v:'26.11.03.2', 날:'2026-11-03', 줄:[
     '보안 - 소셜 로그인을 PKCE 로(토큰이 주소에 안 실림) · 운영 임시 링크는 서버가 서명한 기한부 표(암호가 안 들어감) · 외부 스크립트 차단(CSP)',
     '보안 - 소유자·시행사는 운영자 승인 · 같은 조건 제안 두 번·시간당 스무 건까지 · 서류 판독 하루 상한 · 본인확인 표는 받은 계정에서만 · 네이버는 네이버로 만든 계정에만 연결',
@@ -13766,9 +13777,28 @@ const idStore = {
   set(v){ try{ v ? localStorage.setItem(SAVED_ID, v) : localStorage.removeItem(SAVED_ID); }catch(e){} },
 };
 
+/* ── 오래 가는 열쇠(refresh token)는 저장소에 두지 않는다 (2026-11-03 보안점검) ──
+   전에는 localStorage 에 함께 두어, 화면에 스크립트가 한 번만 끼어도 계정을 오래 빼앗길 수 있었다.
+   이제 받자마자 서버로 보내 HttpOnly 쿠키(스크립트가 못 읽는 곳)에 넣고, 저장소에는 1시간짜리 열쇠와 rt:'c' 표시만 둔다.
+   쿠키에 넣기 전까지는 메모리에만 들고 있고, 넣지 못하면 예전처럼 저장소에 둔다(로그인이 풀리지 않게) */
+let RT_MEM = null;
 const store = {
   get(){ try{ return JSON.parse(localStorage.getItem(SESS)||'null'); }catch(e){ return null; } },
-  set(v){ try{ v ? localStorage.setItem(SESS, JSON.stringify(v)) : localStorage.removeItem(SESS); }catch(e){} },
+  set(v){
+    if(v && v.refresh_token){
+      const rt = v.refresh_token; RT_MEM = rt;
+      const 저장 = { access_token: v.access_token, expires_at: v.expires_at, rt: 'c' };
+      try{ localStorage.setItem(SESS, JSON.stringify(저장)); }catch(e){}
+      fetch('/api/my', { method:'POST', headers:{ 'Content-Type':'application/json', Authorization:'Bearer ' + v.access_token },
+        body: JSON.stringify({ what:'rt-set', rt }) })
+        .then(r => { if(r.ok){ if(RT_MEM === rt) RT_MEM = null; } else throw 0; })
+        .catch(() => { const 지금 = store.get(); if(지금 && 지금.access_token === v.access_token && RT_MEM === rt){
+          try{ localStorage.setItem(SESS, JSON.stringify({ ...지금, rt: undefined, refresh_token: rt })); }catch(e){} } });
+      return;
+    }
+    if(!v) RT_MEM = null;
+    try{ v ? localStorage.setItem(SESS, JSON.stringify(v)) : localStorage.removeItem(SESS); }catch(e){}
+  },
 };
 
 function oauthStart(provider){
@@ -13918,6 +13948,8 @@ async function hydrate(sess){
     if(!r.ok){ if(r.status === 401 || r.status === 403) store.set(null); else 계정확인실패 = true; return false; }
     S.user = meFrom(await r.json(), sess.access_token);
     계정확인실패 = false;
+    /* 예전 방식으로 저장소에 남은 오래 가는 열쇠는 이번에 쿠키로 옮긴다 */
+    if(sess.refresh_token) store.set(sess);
     clearSeeds(true);          /* 들어온 뒤에는 예시를 지운다 - 위 주석 참고 */
     /* 동의를 받은 적이 있는지(없으면 #/agree) · 파트너인지(없으면 손님 화면).
        둘 다 '내가 누구인가' 라 나란히 묻는다 - 앞뒤로 기다릴 이유가 없다. */
@@ -14022,10 +14054,21 @@ async function saveConsent(){
 }
 
 async function refreshSession(sess){
+  const rt = (sess && sess.refresh_token) || RT_MEM;
+  /* 쿠키에 든 열쇠는 서버가 대신 갱신한다 - 화면은 refresh token 을 보지 못한다 */
+  if(!rt && sess && sess.rt){
+    try{
+      const r = await fetch('/api/my', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ what:'rt-refresh' }) });
+      const j = await r.json().catch(()=>({}));
+      if(!r.ok || !j.access_token){ if(r.status === 401) store.set(null); return null; }
+      const next = { access_token: j.access_token, expires_at: Math.floor(Date.now()/1000) + (j.expires_in||3600), rt: 'c' };
+      store.set(next); return next;
+    }catch(e){ return null; }
+  }
   try{
     const r = await fetch(`${SB_URL}/auth/v1/token?grant_type=refresh_token`, {
       method:'POST', headers:{apikey: SB_KEY, 'Content-Type':'application/json'},
-      body: JSON.stringify({refresh_token: sess.refresh_token})});
+      body: JSON.stringify({refresh_token: rt})});
     if(!r.ok){ store.set(null); return null; }
     const j = await r.json();
     const next = {access_token:j.access_token, refresh_token:j.refresh_token,
@@ -14084,6 +14127,8 @@ function signOutRemote(){
   /* 부른 쪽은 곧바로 페이지를 떠난다(로그아웃은 새로 읽기로 끝난다). keepalive 가 없으면 떠나는 순간
      이 요청이 취소되어 서버의 refresh token 이 폐기되지 않은 채 남았다(2026-10-15 리뷰) */
   fetch(`${SB_URL}/auth/v1/logout`, {method:'POST', headers: authHeaders(sess.access_token), keepalive:true}).catch(()=>{});
+  /* 쿠키에 둔 오래 가는 열쇠도 지운다 */
+  fetch('/api/my', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({what:'rt-clear'}), keepalive:true}).catch(()=>{});
 }
 
 /* 함정칸은 화면에만 있고 상태에는 없다 - 보낼 때 직접 읽는다.
@@ -14558,6 +14603,7 @@ function handle(a,v,el){
     case 'ops-retry':  OPS.tried = false; OPS.err = ''; opsFetch(); return true;
     case 'ops-invite-copy': opsCopy(opsInviteText(), '안내문을 복사했습니다'); return true;
     case 'ops-url-copy':    opsCopy(opsUrl(), '주소를 복사했습니다'); return true;
+    case 'ops-id-copy':     if(S.user && S.user.id) opsCopy(S.user.id, '계정 id 를 복사했습니다'); return true;
     case 'ops-link-days': OPS.linkDays = +v || 7; OPS.link = null; render(); return true;
     case 'ops-link-make':
       if(!OPS.pass) return toast('먼저 접근 암호로 여신 뒤에 만들 수 있습니다'), true;

@@ -28,11 +28,7 @@
         },
         {
           "key": "Content-Security-Policy",
-          "value": "frame-ancestors 'none'; object-src 'none'; base-uri 'none'; script-src 'self' 'unsafe-inline' https://cdn.portone.io https://*.portone.io"
-        },
-        {
-          "key": "Content-Security-Policy-Report-Only",
-          "value": "connect-src 'self' https://gmbtsucasfwqskfvugzo.supabase.co https://*.portone.io"
+          "value": "frame-ancestors 'none'; object-src 'none'; base-uri 'none'; script-src 'self' 'unsafe-inline' https://cdn.portone.io https://*.portone.io; connect-src 'self' https://gmbtsucasfwqskfvugzo.supabase.co https://cdn.portone.io https://*.portone.io https://*.iamport.co https://service.iamport.kr https://*.ingest.us.sentry.io"
         },
         {
           "key": "X-Content-Type-Options",

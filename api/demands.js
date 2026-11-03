@@ -141,8 +141,9 @@ export async function readLog(req, res, p, opsUser) {
     if (p.only === 'reveal') q.set('reveal', 'is.true');
     /* 손님이 고친 조건(demand-edit)은 운영자가 한 일이 아니다 - 따로 본다(2026-10-15 리뷰).
        섞어 두면 한 번에 읽는 줄 수 안에서 '누가 연락처를 열어 봤나' 가 손님 수정에 밀려난다. */
-    else if (p.only === 'edit') q.set('action', 'eq.demand-edit');
-    else q.set('action', 'neq.demand-edit');
+    /* 손님이 바꾼 상태(멈춤·재개·종료·연장)도 손님 쪽에 넣고, 서류 판독 기록(하루 상한을 세는 용도)은 보이지 않는다 (2026-11-03) */
+    else if (p.only === 'edit') q.set('action', 'in.(demand-edit,demand-pause,demand-resume,demand-close,demand-extend)');
+    else q.set('action', 'not.in.(demand-edit,demand-pause,demand-resume,demand-close,demand-extend,contract-scan)');
     const r = await fetch(sbUrl('bk_ops_log', q.toString()), { headers: sbHeaders() });
     if (!r.ok) {
       const t = await r.text();

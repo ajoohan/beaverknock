@@ -166,9 +166,9 @@ const 조건번호 = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
   globalThis.fetch = async (url) => { const u = decodeURIComponent(String(url)); 물음.push(u); return new Response('[]', { status: 200 }); };
   const 읽기 = async only => { 물음.length = 0; const res = 응답(); await readLog({ headers: {} }, res, { only }, null); return 물음[0] || ''; };
   const 전체 = await 읽기(undefined);
-  ok(전체.includes('action=neq.demand-edit'), '기록 \'전체\' 에는 손님 조건 수정이 섞이지 않는다 - 운영자 열람이 밀려나지 않게');
+  ok(/action=not\.in\.\([^)]*demand-edit[^)]*contract-scan\)/.test(전체), '기록 \'전체\' 에는 손님 조건 수정·상태 변경과 서류 판독이 섞이지 않는다 - 운영자 열람이 밀려나지 않게');
   const 수정만 = await 읽기('edit');
-  ok(수정만.includes('action=eq.demand-edit'), '\'손님 조건 수정\' 을 고르면 그것만 본다');
+  ok(/action=in\.\(demand-edit,demand-pause/.test(수정만), '\'손님 조건 수정\' 을 고르면 손님이 바꾼 것(수정·멈춤·재개·종료·연장)만 본다');
   const 열람만 = await 읽기('reveal');
   ok(열람만.includes('reveal=is.true') && !열람만.includes('action='), '\'연락처 열어본 것만\' 은 그대로다');
 }

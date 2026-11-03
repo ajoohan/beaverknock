@@ -19,6 +19,7 @@
 import crypto from 'node:crypto';
 import { sbHeaders, sbUrl, emailOf, sameSecret, overLimit, ipOf } from './_auth.js';
 import { notifyMany } from './_notify.js';
+import { logOps } from './_opslog.js';
 import { alimtalk } from './_kakao.js';
 
 /* 주택임대차 · 상가건물 임대차 · 부동산 매매 · 중개대상물 확인·설명서(주거용) (화면의 CT_FORMS 와 같은 이름) */
@@ -494,12 +495,21 @@ export async function reportDueCron(req, res) {
 async function scan(req, res, b, user) {
   /* 판독 한 번이 Anthropic 요금이다 - 계정마다 하루 30번, 한 곳(IP)에서 하루 60번까지 (2026-11-03 보안점검).
      서버리스라 인스턴스마다 따로 세는 느슨한 상한이지만, 한 계정이 끝없이 돌리는 것은 막는다 */
-  if (overLimit('scan:u:' + (user && user.id), 30, 864e5) || overLimit('scan:ip:' + ipOf(req), 60, 864e5)) {
-    return res.status(429).json({ error: '오늘 서류 판독을 많이 쓰셨습니다 - 내일 다시 해 주세요', code: 'too_many_scans' });
+  const 많음 = () => res.status(429).json({ error: '오늘 서류 판독을 많이 쓰셨습니다 - 내일 다시 해 주세요', code: 'too_many_scans' });
+  if (overLimit('scan:u:' + (user && user.id), 30, 864e5) || overLimit('scan:ip:' + ipOf(req), 60, 864e5)) return 많음();
+  /* 인스턴스마다 세는 위 상한은 느슨하다 - 운영 기록 표에 남긴 판독 수를 DB 에서 한 번 더 센다(새 표 없이) */
+  if (user && user.id) {
+    try {
+      const q = new URLSearchParams({ select: 'id', action: 'eq.contract-scan', user_id: 'eq.' + user.id,
+        at: 'gte.' + new Date(Date.now() - 864e5).toISOString(), limit: '31' });
+      const r = await fetch(sbUrl('bk_ops_log', q.toString()), { headers: sbHeaders() });
+      if (r.ok && (await r.json()).length >= 30) return 많음();
+    } catch { /* 기록을 못 읽어도 판독은 막지 않는다 - 위 상한이 남아 있다 */ }
   }
   const { scanDocs, ScanError } = await import('./_scan.js');
   try {
     const out = await scanDocs(b.files);
+    await logOps(req || { headers: {} }, user, { action: 'contract-scan', count: Array.isArray(b.files) ? b.files.length : null });
     return res.status(200).json({ ok: true, scan: out });
   } catch (e) {
     if (e instanceof ScanError) return res.status(e.status).json({ error: e.message, code: e.code, ...(e.code === 'no_key' ? { need: 'key' } : {}) });

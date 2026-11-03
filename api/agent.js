@@ -17,6 +17,26 @@ import { readIdv } from './_idv.js';
 
 const TABLE = 'bk_agent';
 
+/* ── 남의 등록번호로 승인받기를 막는다 (2026-11-03 보안점검) ──
+   전에는 번호가 명부에 있고 영업 중이면 누구든 바로 승인됐다 - 번호는 공개 정보라, 남의 사무소 번호만 적으면
+   '승인된 파트너' 가 되어 손님 조건 전문을 보고 그 사무소 이름으로 제안할 수 있었다.
+   이제 자동 승인은 ① 본인확인을 실제로 받았고(PORTONE_LIVE) ② 그 이름이 명부의 중개업자 이름과 같고
+   ③ 같은 번호로 이미 승인된 다른 계정이 없을 때만이다. 아니면 'new' 로 두고 운영자가 본다
+   (소속공인중개사처럼 이름이 다른 경우 포함 - 번호 확인 표시 reg_verified 는 그대로 남는다). */
+const 이름같음 = (a, b) => !!a && !!b && String(a).replace(/\s+/g, '') === String(b).replace(/\s+/g, '');
+async function 번호겹침(regNo, userId) {
+  const { BK_URL, BK_SECRET_KEY } = process.env;
+  if (!regNo) return false;
+  const q = new URLSearchParams({ select: 'id', reg_no: 'eq.' + regNo, status: 'eq.approved', user_id: 'neq.' + userId, limit: '1' });
+  try {
+    const r = await fetch(`${BK_URL}/rest/v1/${TABLE}?${q}`, { headers: { apikey: BK_SECRET_KEY, Authorization: 'Bearer ' + BK_SECRET_KEY } });
+    return r.ok ? (await r.json()).length > 0 : true;      /* 확인을 못 하면 겹친 것으로 - 사람이 본다 */
+  } catch { return true; }
+}
+const 본인맞음 = async (look, name, userId) => process.env.PORTONE_LIVE === '1'
+  && 이름같음(name, look && look.hit && look.hit.rep)
+  && !(await 번호겹침(look.regNo || look.value, userId));
+
 /* 같은 인스턴스가 살아 있는 동안의 연타 방지 */
 const burst = new Map();
 const BURST_WINDOW = 60_000, BURST_MAX = 3;
@@ -146,7 +166,8 @@ export default async function handler(req, res) {
   const look = role === 'agent' && str(b.reg_no)
     ? await lookupReg(b.reg_no, b.sigun) : null;
   const verified = role === 'agent' ? regOpens(look) : true;
-  const autoApprove = process.env.BK_AUTO_APPROVE !== '0' && verified;
+  const autoApprove = process.env.BK_AUTO_APPROVE !== '0' && verified
+    && (role !== 'agent' || await 본인맞음(look, name, owner.id));
 
   const row = {
     role, name, phone,
@@ -273,7 +294,7 @@ async function 겹친신청(BK_URL, KEY, { t, owner, idv, name, phone, role }) {
   const 내것 = await 한줄(new URLSearchParams({ select: 'id', user_id: 'eq.' + owner.id, limit: '1' }));
   if (내것 || /bk_agent_user_idx/.test(t)) return { ok: true, already: true, why: 'account' };
   const 그것 = await 한줄(new URLSearchParams({ select: 'id,name,user_id', phone: 'eq.' + phone, role: 'eq.' + role, limit: '1' }));
-  const 같은이름 = 그것 && String(그것.name || '').replace(/s+/g, '') === String(name || '').replace(/s+/g, '');
+  const 같은이름 = 그것 && String(그것.name || '').replace(/\s+/g, '') === String(name || '').replace(/\s+/g, '');
   if (그것 && idv && 같은이름) {
     try {
       const r = await fetch(`${BK_URL}/rest/v1/${TABLE}?id=eq.${encodeURIComponent(그것.id)}`, {
@@ -303,14 +324,17 @@ export async function verify(req, res, b) {
   const me = (await r0.json())[0];
   if (!me) return res.status(404).json({ error: '먼저 파트너 가입을 해주세요', need_join: true });
   if (me.status === 'approved') return res.status(200).json({ ok: true, already: true });
+  /* 운영자가 보류한 신청은 스스로 다시 열 수 없다 - 전에는 what:'verify' 한 번이면 다시 승인됐다 (2026-11-03) */
+  if (me.status === 'rejected') return res.status(403).json({ error: '보류된 신청입니다 - 고객센터로 문의해 주세요' });
 
   const patch = {};
+  let look_ = null;
   if (me.role === 'agent') {
     /* 공공데이터와 맞아떨어져야 연다. 형식만 맞는 번호로는 열지 않는다 -
        손님 조건 전문이 걸린 문이다.
        ⚠ 그 대조를 **서버가 직접 한다.** 전에는 화면이 보내온 reg_verified 를
        믿었는데, 그러면 이 한 줄을 그냥 넣는 쪽에 문을 열어 주는 것이다. */
-    const look = await lookupReg(b.reg_no, b.sigun);
+    const look = look_ = await lookupReg(b.reg_no, b.sigun);
     if (!look.ok) return res.status(400).json({ error: look.reason });
     if (!regOpens(look)) {
       return res.status(400).json({
@@ -332,6 +356,7 @@ export async function verify(req, res, b) {
     else if (look.hit && look.hit.addr) patch.addr = str(look.hit.addr, 200);
   }
   patch.status = process.env.BK_AUTO_APPROVE === '0' ? 'new' : 'approved';
+  if (me.role === 'agent' && patch.status === 'approved' && !(await 본인맞음(look_, me.name, user.id))) patch.status = 'new';
 
   const r = await fetch(`${BK_URL}/rest/v1/${TABLE}?id=eq.${me.id}`, {
     method: 'PATCH',

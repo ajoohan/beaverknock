@@ -10,6 +10,37 @@
  *   BK_SECRET_KEY   없으면 이것으로 대신한다
  */
 
+import crypto from 'node:crypto';
+
+/** 비밀값 비교 - 길이도 흘리지 않는다(양쪽을 같은 길이의 해시로 바꿔 비교) (2026-11-03 보안점검) */
+export function sameSecret(a, b) {
+  const h = v => crypto.createHash('sha256').update(String(v ?? ''), 'utf8').digest();
+  return crypto.timingSafeEqual(h(a), h(b)) && String(a ?? '') === String(b ?? '');
+}
+
+/** 짧은 시간에 몰아치는 시도를 센다(인스턴스마다 따로 - 정교한 방벽은 아니지만 한 곳의 몰아치기는 늦춘다).
+ *  add=false 면 세기만 하고 늘리지 않는다 - 실패할 때만 늘리는 데 쓴다. */
+const tries = new Map();
+export function overLimit(key, max, windowMs, add = true) {
+  const now = Date.now();
+  const seen = (tries.get(key) || []).filter(t => now - t < windowMs);
+  if (tries.size > 2000) for (const [k, v] of tries) if (!v.some(t => now - t < windowMs)) tries.delete(k);
+  if (seen.length >= max) { tries.set(key, seen); return true; }
+  if (add) seen.push(now);
+  tries.set(key, seen);
+  return false;
+}
+export const ipOf = req => String(req.headers['x-forwarded-for'] || '').split(',')[0].trim() || 'unknown';
+
+/** 운영 접근 암호 - 틀린 시도는 IP 마다 10분에 10번까지. 넘으면 맞는 암호도 잠시 받지 않는다 */
+export function opsPassCheck(req, given, real) {
+  const key = 'opsfail:' + ipOf(req);
+  if (overLimit(key, 10, 10 * 60_000, false)) return { code: 429, error: '암호를 여러 번 틀렸습니다 - 10분 뒤에 다시 시도해 주세요' };
+  if (sameSecret(given, real)) return null;
+  overLimit(key, 10, 10 * 60_000, true);
+  return { code: 401, error: '접근 암호가 맞지 않습니다' };
+}
+
 const cache = new Map();          /* 같은 토큰을 짧게 재사용한다 - 화면 하나에 여러 번 부른다 */
 const TTL = 60_000;
 
@@ -38,7 +69,9 @@ export async function userFrom(req) {
     });
     if (!r.ok) { cache.set(token, { at: Date.now(), user: null }); return null; }
     const j = await r.json();
-    const user = j && j.id ? { id: j.id, email: j.email || null } : null;
+    /* 메일 확인 시각도 담는다 - 운영자 명단을 메일로 대조할 때 확인을 마친 메일만 쓴다(opsAccount) */
+    const user = j && j.id ? { id: j.id, email: j.email || null, email_confirmed_at: j.email_confirmed_at || j.confirmed_at || null,
+      provider: (j.app_metadata && j.app_metadata.provider) || null } : null;
     cache.set(token, { at: Date.now(), user });
     /* 캐시가 무한히 자라지 않게 한다 - 서버리스라 오래 살지는 않지만 */
     if (cache.size > 500) cache.clear();
@@ -127,7 +160,10 @@ export async function opsAccount(req) {
   if (!allow.length) return { user };
   if (!user) return { code: 401, error: '운영자 계정으로 로그인한 뒤 다시 시도해 주세요' };
   const id = String(user.id || '').toLowerCase();
-  const email = String(user.email || '').toLowerCase();
+  /* 메일로 명단을 대조할 때는 확인을 마친 메일만 - 확인 안 된 메일을 적어 들어온 계정이 명단을 통과하지 않게 (2026-11-03) */
+  /* 소셜 로그인(카카오·구글 등)은 그쪽이 확인한 메일이다. 막는 것은 '비밀번호로 가입하고 메일 확인을 안 한 계정' 뿐 */
+  const 믿는메일 = user.email_confirmed_at || user.confirmed_at || (user.provider && user.provider !== 'email');
+  const email = 믿는메일 ? String(user.email || '').toLowerCase() : '';
   /* member 는 '로그인만으로 이미 확인이 끝났다' 는 뜻이다. 이 표시가 있으면
      각 화면은 접근 암호를 또 묻지 않는다 - 로그인이 훨씬 강한 문이기 때문이다.
      암호는 사람 사이를 돌아다니고 누가 썼는지 남지 않지만, 계정은 그렇지 않다. */

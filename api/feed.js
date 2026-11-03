@@ -258,7 +258,7 @@ export default async function handler(req, res) {
   if (b.what === 'scope')      return res.status(200).json({ ok: true, scope: scopeOf(chk.agent) });
   /* 소유자·시행사는 목록을 훑지 못한다. 올려둔 물건에 맞는 것만 본다.
      화면에서 감추는 것으로는 부족해 여기서 막는다 - 화면은 고쳐 쓸 수 있다. */
-  if (!canBrowse(chk.agent)) return readFitting(res, chk.agent);
+  if (!canBrowse(chk.agent)) return readFitting(res, chk.agent, !!chk.pending);
 
   /* 거르는 값은 저장된 것을 쓴다. 브라우저가 보내는 것을 그대로 믿으면,
      새 조건이 들어왔을 때 '이것이 누구에게 맞는가' 를 서버가 알 수 없다 -
@@ -447,7 +447,7 @@ async function saveScope(res, agent, b) {
 
 /* ── 소유자: 내 물건에 맞는 수요만 ──
    활동 지역·유형을 따로 설정하지 않는다. 올려둔 물건이 곧 조건이다. */
-async function readFitting(res, agent) {
+async function readFitting(res, agent, pending) {
   try {
     const list = await myListings(agent.id);
     if (list === null) return res.status(502).json({ error: '올려두신 물건을 확인하지 못했습니다' });
@@ -501,10 +501,11 @@ async function readFitting(res, agent) {
       ok: true, agent: meAgent(agent),
       scope: scopeOf(agent),
       byListing: true, listings: list.length, hidden, at: new Date().toISOString(),
-      locked: !!chk.pending,
-      need: chk.pending ? 'verify' : '',
+      /* 승인 전이면 요약만 - 전에는 이 함수 안에 없는 chk 를 읽어 ReferenceError → 늘 502 였다 (2026-11-03 리뷰) */
+      locked: pending,
+      need: pending ? 'verify' : '',
       rows: rows.map(d => {
-        const base = chk.pending ? maskDemand(d) : d;
+        const base = pending ? maskDemand(d) : d;
         return { ...base, kind_ko: KIND_KO[d.kind] || '주거', mine: mine.has(d.id), mine_at: mine.get(d.id) || null };
       }),
     });

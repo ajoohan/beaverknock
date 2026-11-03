@@ -332,8 +332,9 @@ export default async function handler(req, res) {
     agree_multi_alert: true,
     agree_marketing: b.agree_marketing === true,
 
-    slots: int(b.slots) || 5,
-    slots_left: int(b.slots) || 5,
+    /* 자리는 1~5 - 화면이 보낸 값을 그대로 쓰면 slots:1000 으로 '조건당 5곳' 약속이 깨졌다 (2026-11-03 보안점검) */
+    slots: Math.min(5, Math.max(1, int(b.slots) || 5)),
+    slots_left: Math.min(5, Math.max(1, int(b.slots) || 5)),
     /* 같은 전달을 두 번 받지 않는다(2026-10-13). 화면이 접수마다 번호를 붙이고, 응답을 못 받아
        다시 누르면 같은 번호로 온다 - 표의 유일 색인(0029)이 두 번째를 막는다.
        0029 전이면 아래 missingColumn 고리가 이 칸만 빼고 넣는다(막지 못할 뿐 접수는 산다). */
@@ -386,7 +387,6 @@ export default async function handler(req, res) {
         return res.status(502).json({
           error: why.msg || '저장하지 못했습니다',
           code: why.code,
-          detail: t.slice(0, 200),
         });
       }
     }

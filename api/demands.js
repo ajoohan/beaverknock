@@ -9,19 +9,10 @@
  *   BK_OPS_PASS    운영자 접근 암호
  */
 
-import { opsAccount, opsNeedsPass, opsOpenUntil, sbHeaders, sbUrl } from './_auth.js';
+import { opsAccount, opsNeedsPass, opsOpenUntil, opsPassCheck, sbHeaders, sbUrl } from './_auth.js';
 import { logOps } from './_opslog.js';
 
 const TABLE = 'bk_demand';
-
-/* 길이를 흘리지 않는 상수 시간 비교 */
-function sameSecret(a, b) {
-  const x = String(a ?? ''), y = String(b ?? '');
-  if (x.length !== y.length) return false;
-  let d = 0;
-  for (let i = 0; i < x.length; i++) d |= x.charCodeAt(i) ^ y.charCodeAt(i);
-  return d === 0;
-}
 
 const maskPhone = p => {
   const n = String(p ?? '').replace(/-/g, '');
@@ -60,10 +51,10 @@ export default async function handler(req, res) {
 
   /* 로그인으로 이미 확인이 끝났으면 암호는 묻지 않는다.
      명단(BK_OPS_USERS)이 비어 있을 때만 암호가 유일한 문이라 그때는 그대로 받는다. */
-  if (opsNeedsPass(gate) && !sameSecret(pass, BK_OPS_PASS)) {
-    /* 무차별 대입을 조금이라도 늦춘다 */
-    await new Promise(r => setTimeout(r, 400));
-    return res.status(401).json({ error: '접근 암호가 맞지 않습니다' });
+  /* 틀린 암호는 IP 마다 10분에 10번까지 - 400ms 쉬기만으로는 한꺼번에 보내는 시도를 못 막았다 (2026-11-03 보안점검) */
+  if (opsNeedsPass(gate)) {
+    const bad = opsPassCheck(req, pass, BK_OPS_PASS);
+    if (bad) { await new Promise(r => setTimeout(r, 400)); return res.status(bad.code).json({ error: bad.error }); }
   }
 
   /* 운영 화면이 보는 것은 여기로 모은다.

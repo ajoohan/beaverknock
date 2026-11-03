@@ -817,7 +817,7 @@ ok((js.match(/'#\/ops\/live'/g) || []).length === 1 && /const OPS_HOME = '#\/ops
     ok(판정(다참) === true && 판정({ ...다참, 전달됨: true }) === false, '전달된 초안이면 전달 단추가 열리지 않는다');
     ok(판정({ ...다참, 전달됨: true }, false) === false, '본인확인이 꺼진 때도 마찬가지다');
     const 제출 = js.slice(js.indexOf("case 'submit': {"), js.indexOf("case 'detail-save'"));
-    ok(/^case 'submit': \{\s*\/\*[^*]*\*\/\s*if\(d\.전달됨\)\{ toast\([^)]*\); go\('#\/my'\); return true; \}/.test(제출),
+    ok(/^case 'submit': \{\s*\/\*[^*]*\*\/\s*if\(d\.보내는중\) return true;[^\n]*\n\s*if\(d\.전달됨\)\{ toast\([^)]*\); go\('#\/my'\); return true; \}/.test(제출),
        '전달 처리도 맨 앞에서 전달된 초안을 막는다 - 엔터 등 다른 길로 와도');
     /* 2026-10-15 리뷰: 안내만 위에 얹고 양식은 그대로 두니 고친 것이 반영되는 줄 알았고,
        맨 아래 꺼진 단추는 고장처럼 보였다 - 전달된 초안은 따로 그린다 */

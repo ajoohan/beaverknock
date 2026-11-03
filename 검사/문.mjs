@@ -18,7 +18,9 @@ const A = await import(길.api('_auth.js'));
 
 /* 로그인한 '아무개' - 가입만 하면 누구나 이 자리에 설 수 있다 */
 const 나그네 = { id: 'u-아무개', email: 'stranger@example.com' };
-const 대표 = { id: 'u-대표', email: 'boss@plustonic.com' };
+const 대표 = { id: 'u-대표', email: 'boss@plustonic.com', email_confirmed_at: '2026-10-01T00:00:00Z' };
+/* 메일 확인을 안 마친 같은 메일 - 명단을 메일로 대조할 때 통과하면 안 된다 (2026-11-03 보안점검) */
+const 가짜대표 = { id: 'u-가짜', email: 'boss@plustonic.com' };
 /* ⚠ userFrom 은 **토큰으로 캐시한다.** 신분을 바꿔 가며 재려면 토큰도 바꿔야
    한다 - 같은 토큰을 돌려 쓰면 처음 붙은 사람이 끝까지 따라다닌다.
    (여기서 세 번 헛디뎠다) */
@@ -56,6 +58,10 @@ ok(g.막힘 === 403, '명단 밖 계정은 막힌다 (403)');
 g = await 문('boss@plustonic.com', null);
 ok(g.member === true && g.암호 === false,
    '명단에 든 계정은 암호를 안 묻는다 - 대표님이 직접 적어 넣은 계정이라 로그인이 더 강한 문이다');
+누구 = 가짜대표;
+g = await 문('boss@plustonic.com', null);
+ok(g.막힘 === 403, '메일 확인을 안 마친 계정은 같은 메일이어도 명단을 통과하지 못한다');
+누구 = 대표;
 
 /* ⚠ 여기가 이 검사의 핵심 ⚠ */
 누구 = 나그네;

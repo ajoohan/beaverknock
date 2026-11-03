@@ -17,7 +17,7 @@
  * (법정동코드·본번·부번·산)를 그대로 담는다 - 나중에 어디로 보내더라도 보낼 때 바꿀 것이 없게.
  */
 import crypto from 'node:crypto';
-import { sbHeaders, sbUrl, emailOf } from './_auth.js';
+import { sbHeaders, sbUrl, emailOf, sameSecret } from './_auth.js';
 import { notifyMany } from './_notify.js';
 import { alimtalk } from './_kakao.js';
 
@@ -423,7 +423,7 @@ async function track(res, agent, b) {
    중개사 설정에 따라 카카오 알림톡은 일정 하나에 한 통, 메일은 중개사별로 하루 한 통(모아서). */
 export async function reportDueCron(req, res) {
   const secret = process.env.CRON_SECRET;
-  if (!secret || req.headers.authorization !== `Bearer ${secret}`) return res.status(401).json({ error: '예약 실행만 부를 수 있습니다' });
+  if (!secret || !sameSecret(req.headers.authorization, `Bearer ${secret}`)) return res.status(401).json({ error: '예약 실행만 부를 수 있습니다' });
   const 오늘 = 한국오늘();
   /* 확인·설명서를 뺀 계약서 - 400일 안에 만든 것(그보다 멀리 가는 일정은 없다). 쪽으로 나눠 다 읽는다 */
   const 열 = 'id,agent_id,agent_user,form,title,status,reported_at,prev_id,sub:doc->>sub' + 일정열;

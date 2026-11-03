@@ -3894,17 +3894,17 @@ function loadListings(force){
     .then(r => r.json().catch(()=>({})).then(j => {
       S.lsLoading = false; S.lsAt = Date.now(); S.lsReady = true;
       /* 승인 전이거나 가입 전이면 목록이 없는 게 맞다 - 예시를 그대로 둔다 */
-      if(!(r.ok && j.ok)) return;
+      if(!(r.ok && j.ok)) return render();       /* 실패해도 로딩 표시는 내린다(2026-11-03 리뷰) */
       S.lsSaved = !j.note;          /* 표가 없으면 아직 저장되지 않는다 */
       S.listings = (j.rows||[]).map(listingFromRow);
       if(changed('listings', S.listings)) render();
     }))
-    .catch(() => { S.lsLoading = false; S.lsReady = true; });
+    .catch(() => { S.lsLoading = false; S.lsReady = true; render(); });
 }
 
 function myPropFromRow(x){
   const won = v => (+v||0).toLocaleString();
-  const want = x.want ? `보증금 ${won(x.want.dep)}${x.want.rent?` / 월 ${x.want.rent}`:''}` : '';
+  const want = x.want ? `보증금 ${won(x.want.dep)}${x.want.rent?` / 월 ${won(x.want.rent)}`:''}` : '';
   return {
     id: x.id,
     title: x.bname || x.addr || '물건',
@@ -3932,12 +3932,12 @@ function loadMyProps(force){
       if(!(r.ok && j.ok)){
         /* 승인 전이거나 가입 전이면 목록이 없는 게 맞다 - 조용히 둔다 */
         if(r.status !== 403) S.mpErr = j.error || '보낸 제안을 불러오지 못했습니다';
-        return render();
+        delete SIGS.myprops; return render();
       }
       S.mpErr = ''; S.myprops = (j.rows||[]).map(myPropFromRow);
       if(changed('myprops', S.myprops.map(x=>({id:x.id+':'+x.status})))) render();
     }))
-    .catch(() => { S.mpLoading=false; S.mpReady=true; S.mpErr='네트워크 문제로 보낸 제안을 불러오지 못했습니다'; render(); });
+    .catch(() => { S.mpLoading=false; S.mpReady=true; S.mpErr='네트워크 문제로 보낸 제안을 불러오지 못했습니다'; delete SIGS.myprops; render(); });
 }
 
 function propFromRow(p){
@@ -4063,7 +4063,7 @@ function loadMine(force){
       if(!j.ok){
         /* 시드를 그대로 두면 남의 예시를 자기 조건인 줄 안다. 비우고 이유를 적는다. */
         S.mineErr = j.error || '조건을 불러오지 못했습니다';
-        S.conds = []; S.props = []; render(); return;
+        S.conds = []; S.props = []; delete SIGS['mine.c']; delete SIGS['mine.p']; render(); return;
       }
       S.mineErr = '';
       const got = (j.demands||[]).map(condFromRow);
@@ -4124,7 +4124,7 @@ function loadFeed(force){
       if(!j.ok){
         /* 승인 전 중개사에게 예시 수요를 그대로 보여주면 진짜인 줄 안다 */
         S.feedErr = j.error || '불러오지 못했습니다'; S.feedNeed = j.need || '';
-        S.demands = []; render(); return;
+        S.demands = []; delete SIGS.feed; render(); return;
       }
       /* 자격 확인 전이면 서버가 요약만 보낸다(locked). 그렇다고 목록을 비우지는
          않는다 - 무엇이 있는지 알아야 인증할 이유가 생긴다. */
@@ -4139,7 +4139,7 @@ function loadFeed(force){
       S.feedHidden = j.hidden || {region:0, slot:0};
       if(changed('feed', S.demands.map(x=>({id:x.id+':'+x.slotsLeft})))) render();
     }))
-    .catch(()=>{ S.feedLoading=false; S.feedErr='네트워크 문제로 불러오지 못했습니다'; render(); });
+    .catch(()=>{ S.feedLoading=false; S.feedErr='네트워크 문제로 불러오지 못했습니다'; delete SIGS.feed; render(); });
 }
 
 /* ---------- 조건 요약 생성 ---------- */
@@ -6648,7 +6648,7 @@ V['#/inbox'] = () => {
       <div style="padding:16px 18px;display:flex;flex-direction:column;gap:10px">
         <div><b style="display:block;font-size:15px;font-weight:700;letter-spacing:-.02em">${esc(p.title)} ${demoTag(p,'vertical-align:middle')}</b>
         <span class="num" style="font-size:14.5px;color:var(--n700)">${p.rent? `보증금 ${won(p.dep)} / 월 ${won(p.rent)}` : `전세 ${won(p.dep)}`} · 관리비 ${won(p.fee)}</span>
-        <span style="display:block;font-size:13.5px;color:var(--n500)">${p.dong} · 전용 ${p.py}평 · ${p.floor} · 주차 ${esc(p.parking)}</span></div>
+        <span style="display:block;font-size:13.5px;color:var(--n500)">${esc(p.dong)} · 전용 ${esc(p.py)}평 · ${esc(p.floor)} · 주차 ${esc(p.parking)}</span></div>
         <div style="border-top:1px solid var(--n100);padding-top:10px;display:flex;flex-direction:column;gap:6px">
           ${p.diff.map(t=>`<div style="display:flex;align-items:flex-start;gap:8px"><span class="badge b-warn" style="flex:none;font-size:13px;padding:2px 8px">다름</span><span style="font-size:13.5px;line-height:1.45;color:var(--n700)">${esc(t)}</span></div>`).join('')}
           <div style="display:flex;align-items:flex-start;gap:8px"><span class="badge b-ok" style="flex:none;font-size:13px;padding:2px 8px">일치</span><span style="font-size:13.5px;line-height:1.45;color:var(--n700)">${p.match.map(esc).join(' · ')}</span></div>
@@ -6705,6 +6705,13 @@ V['#/inbox'] = () => {
 /* ---------- D-09 제안 상세 ---------- */
 V['#/proposal'] = (id) => { const p=S.props.find(x=>x.id===id); if(!p) return V['#/inbox']();
   p.read=true; p.isNew=false;
+  /* 손님이 열었다는 것을 서버에도 남긴다 - 전에는 화면에서만 읽음이라 중개사 쪽은 늘 '미열람' 이었고
+     다시 불러오면 '새 제안' 뱃지가 되살아났다(2026-11-03 리뷰). 한 번만 보낸다 */
+  if(!p.seed && p.status === 'sent' && !p.읽음보냄 && S.user){
+    p.읽음보냄 = true;
+    apiFetch('/api/proposal', {method:'PATCH', body: JSON.stringify({id:p.id, status:'read'})})
+      .then(r => { if(r.ok) p.status = 'viewed'; else p.읽음보냄 = false; }).catch(() => { p.읽음보냄 = false; });
+  }
   /* 적어 보낸 것만 보여준다. 전에는 '총 층수 0층 · 위반건축물 해당 없음 · 융자금 없음'
      을 늘 띄웠다 - 아무도 확인한 적 없는 문장이고, 손님은 그것을 확인된 사실로 읽는다.
      위반건축물·융자는 예시 카드에만 있다. 실제 제안에는 그 칸이 아예 없다. */
@@ -6761,11 +6768,11 @@ V['#/proposal'] = (id) => { const p=S.props.find(x=>x.id===id); if(!p) return V[
         <p class="num" style="margin:8px 0 0;font-size:${isMo()?16:21}px;font-weight:800;color:var(--ind)">${p.rent? `보증금 ${won(p.dep)} / 월 ${won(p.rent)}` : `전세 ${won(p.dep)}`}
           <span style="font-size:14.5px;font-weight:600;color:var(--n500)">관리비 ${won(p.fee)} (${esc(p.feeType)})</span></p>
         <p style="margin:6px 0 0;font-size:14.5px;color:var(--n500)">${[
-          p.dong,
+          esc(p.dong),   /* 중개사가 적은 소재지에서 온다 - 꼭 거른다(2026-11-03 보안점검: 거르지 않아 손님 화면에서 스크립트가 돌 수 있었다) */
           p.bdong ? `${esc(p.bdong)}동` : '',
           /* ㎡ 가 기준이지만, 평만 있는 것(예시·옛 제안)도 그대로 보여준다 -
              기준을 바꿨다고 해서 있던 숫자가 화면에서 사라지면 안 된다. */
-          p.area    ? `전용 ${p.area}㎡(${pyOf(p.area)}평)` : p.py ? `전용 ${p.py}평` : '',
+          p.area    ? `전용 ${esc(p.area)}㎡(${esc(pyOf(p.area))}평)` : p.py ? `전용 ${esc(p.py)}평` : '',
           p.areaSup ? `${p.kind==='home'?'공급':'계약'} ${p.areaSup}㎡(${pyOf(p.areaSup)}평)` : '',
           p.rooms   ? `방 ${esc(p.rooms)}` : '',
           /* 화장실은 주거에만 있다(중개사 회신 2026-09-20). 옛 행이나 손으로
@@ -6788,6 +6795,9 @@ V['#/proposal'] = (id) => { const p=S.props.find(x=>x.id===id); if(!p) return V[
 
 /* ---------- D-10 연결 ---------- */
 V['#/connect'] = (id) => { const p=S.props.find(x=>x.id===id); if(!p) return V['#/inbox']();
+  /* 연결 표시와 동의는 이 제안 것만 - 전에는 전역이라 A 에서 연결하면 B 를 열자마자 '연결되었습니다' 가 뜨고
+     동의도 이미 켜져 있었다(서버엔 연결 요청이 안 갔다 · 2026-11-03 리뷰) */
+  if(S.form.connectFor !== id){ S.form.connectFor = id; S.form.connectAgree = false; S.form.connected = false; }
   const agreed = !!S.form.connectAgree;
   /* 연결한 뒤에 보여줄 상대 연락처.
      서버가 준 것이 먼저다. 예시 카드는 서버에 없으니 시드의 사무소를 쓴다. */
@@ -7247,6 +7257,8 @@ V['#/partner/proposals'] = () => {
   <div class="pad adm-page" style="flex:1;padding-top:${isMo()?18:30}px;padding-bottom:24px;max-width:${isMo()?'none':'1000px'};margin:0 auto;width:100%;display:flex;flex-direction:column;gap:14px">
     <div><h1 class="t" style="font-size:${isMo()?21:25}px;margin-top:8px">내 제안</h1></div>
     <div class="chips">${TABS.map(([k,l,st])=>`<button class="chip ${tab===k?'on':''}" data-act="ptab" data-v="${k}" aria-pressed="${tab===k}">${l} ${S.myprops.filter(p=>st.includes(p.status)).length}</button>`).join('')}</div>
+    ${S.mpErr ? `<div class="card pad" style="border-color:var(--warnline);background:var(--warnbg);box-shadow:none;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+      <b style="font-size:14.5px">${esc(S.mpErr)}</b><button class="btn sec sm" data-act="mp-retry" style="flex:none">다시 불러오기</button></div>` : ''}
     ${seedGate(S.mpReady, () => list.length? `<div class="adm-grid">${list.map(p=>{const b=badge(p); return `
       <div class="card pad fade" style="${['expired','rejected','withdrawn'].includes(p.status)?'background:var(--n50);box-shadow:none':''}">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap">
@@ -7261,11 +7273,10 @@ V['#/partner/proposals'] = () => {
         ${p.reason? `<p style="margin:10px 0 0;background:var(--n50);padding:12px 16px;font-size:14.5px;line-height:1.6;color:var(--n700)">${esc(p.reason)}</p>`:''}
         <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;gap:10px;flex-wrap:wrap">
           <span style="font-size:13.5px;color:var(--n500)">발송 ${esc(p.at)}${p.expires!=null?` · 만료까지 ${p.expires}일`:''}</span>
-          <!-- 버튼은 많아야 둘(선택됨: 계약서 만들기 · 보낸 내용 보기 / 보냄: 보낸 내용 보기 · 회수) - 긴 쪽 폭으로 맞추면
-               하나뿐인 카드와도 폭이 같다. 줄을 나눠 쓰게(fill) 하면 하나뿐인 카드만 한 줄을 꽉 채워 카드마다 달라졌다 -->
+          <!-- 보낸 내용은 이 카드에 이미 다 있다 - 눌러도 아무 일 없던 '보낸 내용 보기' 단추는 뺐다(2026-11-03 리뷰).
+               남는 단추는 상태마다 하나(계약서 만들기 · 회수) -->
           <div class="eqb" style="gap:8px">
             ${p.status==='selected' && !ownerSide() ? `<button class="btn pri sm" data-act="ct-from" data-v="${p.id}">계약서 만들기</button>` : ''}
-            <button class="btn sec sm">보낸 내용 보기</button>
             ${p.status==='sent'? `<button class="btn sec sm" data-act="withdraw" data-v="${p.id}" ${S.withdrawing?'disabled':''} style="color:var(--danger)">${S.withdrawing?'회수 중…':'회수'}</button>`:''}
           </div>
         </div>
@@ -7402,7 +7413,7 @@ function sendVerify(){
       /* 서버가 올려준 상태를 그대로 받는다 - 화면이 멋대로 승인했다고 하지 않는다 */
       if(S.agent) S.agent.status = j.status || S.agent.status;
       S.feedAt = 0;                      /* 다음에 목록을 열 때 전문으로 새로 받는다 */
-      toast(j.status === 'approved' ? '확인됐습니다 · 이제 조건 전문이 보입니다' : '접수했습니다');
+      toast(j.status === 'approved' ? '확인됐습니다 · 이제 조건 전문이 보입니다' : '접수했습니다 · 담당자가 확인한 뒤 조건 전문이 열립니다');
       go('#/partner/demands');
     }))
     .catch(()=>{ S.agVerifying=false; render(); toast('네트워크 문제로 보내지 못했습니다'); });
@@ -9413,12 +9424,13 @@ function opsFetch(){
 function agCsv(){
   if(!AG.rows || !AG.rows.length) return toast('내려받을 자료가 없습니다'), true;
   const cols = ['created_at','status','role','name','phone','email','office','reg_no','addr','relation','biz_no','dev_type','done'];
-  const esc2 = v => `"${String(Array.isArray(v)?v.join(' · '):(v??'')).replace(/"/g,'""')}"`;
+  /* = + - @ 로 시작하는 칸은 엑셀이 수식으로 돌린다 - 앞에 ' 를 붙여 글로 둔다(2026-11-03 보안점검) */
+  const esc2 = v => { const t = String(Array.isArray(v)?v.join(' · '):(v??'')); return `"${(/^[=+\-@\t\r]/.test(t) ? "'" + t : t).replace(/"/g,'""')}"`; };
   const csv = [cols.join(',')].concat(AG.rows.map(r=>cols.map(c=>esc2(r[c])).join(','))).join('\n');
   const blob = new Blob(['\ufeff'+csv], {type:'text/csv;charset=utf-8'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `비버노크_가입신청_${new Date().toISOString().slice(0,10)}.csv`;
+  a.download = `비버노크_가입신청_${ct오늘()}.csv`;   /* 한국 날짜 - 오전 9시 전엔 전날로 찍혔다 */
   a.click(); URL.revokeObjectURL(a.href);
   return true;
 }
@@ -9427,12 +9439,13 @@ function opsCsv(){
   if(!OPS.rows || !OPS.rows.length) return toast('내려받을 자료가 없습니다'), true;
   const cols = ['created_at','kind','name','phone','dongs','deal','dep','rent','biz',
                 'area_min','area_max','when_text','open_when','memo','verify_method','source'];
-  const esc2 = v => `"${String(Array.isArray(v)?v.join(' · '):(v??'')).replace(/"/g,'""')}"`;
+  /* = + - @ 로 시작하는 칸은 엑셀이 수식으로 돌린다 - 앞에 ' 를 붙여 글로 둔다(2026-11-03 보안점검) */
+  const esc2 = v => { const t = String(Array.isArray(v)?v.join(' · '):(v??'')); return `"${(/^[=+\-@\t\r]/.test(t) ? "'" + t : t).replace(/"/g,'""')}"`; };
   const csv = [cols.join(',')].concat(OPS.rows.map(r=>cols.map(c=>esc2(r[c])).join(','))).join('\n');
   const blob = new Blob(['\ufeff'+csv], {type:'text/csv;charset=utf-8'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `비버노크_조건_${new Date().toISOString().slice(0,10)}.csv`;
+  a.download = `비버노크_조건_${ct오늘()}.csv`;
   a.click(); URL.revokeObjectURL(a.href);
   return true;
 }
@@ -10757,6 +10770,12 @@ const CT_하위메뉴 = [['#/partner/contracts/new', '계약서 작성', 'pen', 
    번호는 배포한 날(연.월.일 - 같은 날 또 올리면 뒤에 .2). 화면이 version.json 을 가끔 읽어,
    더 새 버전이 올라와 있으면 메뉴 아래에서 새로고침을 권한다(버전확인) - 계약서를 띄워 둔 채 오래 일하면 고친 화면을 못 받는다 */
 const BK_변경 = [
+  { v:'26.11.03', 날:'2026-11-03', 줄:[
+    '보안점검 - 제안 소재지를 손님 화면에 거르지 않던 곳(스크립트 실행 위험) 막음 · 남이 만든 로그인 링크로 들어오는 것 막음 · 운영 CSV 수식 막음',
+    '파트너 자동 승인은 본인확인 이름이 명부의 중개업자와 같고 같은 번호로 승인된 계정이 없을 때만 · 보류된 신청은 스스로 다시 열 수 없음',
+    '운영 접근 암호는 틀리면 10분에 10번까지 · 조건 자리 수는 1~5 · 회수·거절 상태가 서로 덮이지 않게',
+    '고친 것 - 다른 제안으로 넘어가던 연결 표시, 서버에 안 남던 제안 열람, 재시도 뒤 그대로 남던 오류 화면, 0초에 되살아나던 제안 타이머, 물건 올린 소유자 목록 오류',
+  ]},
   { v:'26.11.02.4', 날:'2026-11-02', 줄:[
     '나란히 놓인 버튼은 같은 폭 - 묶음 안 가장 긴 버튼에 모두 맞춤(머리글 로그인 두 짝 · 파트너 소개 · 완료 화면 · 내 조건 카드 · 제안함 · 운영 화면 등)',
     '아래 단추줄은 PC 240px 같은 폭 · 휴대폰은 반씩, 받은 제안의 두 버튼도 같은 폭(휴대폰은 \'연락하기\'로 짧게), 손님 조건 목록 버튼 폭도 하나로',
@@ -13357,7 +13376,6 @@ function render(){
   if(h === '#/partner/verify' && S.agent && S.agent.status === 'approved'){
     location.replace('#/partner/home'); return;
   }
-  if(h.startsWith('#/partner/propose/') && S.timeLeft<=0){ S.timeLeft = 900; }
   /* 본인확인 여부로 모양이 갈리는 화면 - 설정이 없거나 오래됐으면 다시 묻는다 */
   if(h === '#/partner/join' || h.startsWith('#/contact')) idvConfig().catch(()=>null);
   if(h.startsWith('#/partner/contract')) ctRoute(h);
@@ -13775,6 +13793,9 @@ function oauthStart(provider){
   }
   /* 어디로 돌아와야 하는지 남겨둔다 - 돌아오면 주소가 갈아끼워져 있다 */
   try{ sessionStorage.setItem('bk.after', S.afterLogin || ''); }catch(e){}
+  /* 이 브라우저에서 로그인을 시작했다는 표 - 돌아온 토큰은 이 표가 있을 때만 받는다(아래 readAuthRedirect).
+     탭이 바뀌어 돌아와도(카카오 앱 등) 읽히게 localStorage 에 둔다. 30분 지나면 무효 */
+  try{ localStorage.setItem('bk.oauth', String(Date.now())); }catch(e){}
   keepDraft();                         /* 적어둔 조건도 함께 - 돌아와서 이어 적는다 */
   /* 네이버는 Supabase 가 기본 제공하지 않는다 - 인증 왕복을 우리 서버 함수가 돈다.
      돌아오는 주소 모양은 같으므로 받는 쪽 코드는 하나로 둔다. */
@@ -13817,10 +13838,17 @@ function readAuthRedirect(){
   if(!back || back === '#/'){ back = back || '#/my'; S.기본으로들어옴 = true; }
   restoreDraft();          /* 나가기 전에 적어둔 조건을 그대로 이어 받는다 */
 
-  if(err){
+  /* ── 남이 만든 로그인 링크를 막는다 (2026-11-03 보안점검) ──
+     전에는 주소에 access_token 만 있으면 그대로 세션으로 받았다 - 공격자가 자기 계정 토큰을 실은 링크를 보내면
+     피해자가 모르는 사이 공격자 계정으로 들어가, 거기에 적은 조건·연락처를 공격자가 보게 된다.
+     이 브라우저에서 30분 안에 소셜 로그인을 시작했을 때만 받는다. 오류 문구도 주소의 글을 그대로 띄우지 않는다 */
+  let 시작 = 0;
+  try{ 시작 = +localStorage.getItem('bk.oauth') || 0; localStorage.removeItem('bk.oauth'); }catch(e){}
+  const 내가시작 = 시작 && Date.now() - 시작 < 30 * 60_000;
+  if(err || !내가시작){
     history.replaceState(null, '', location.pathname + '#/login');
     render();
-    setTimeout(()=>toast(decodeURIComponent(err).slice(0,80)), 60);
+    setTimeout(()=>toast(err ? '로그인을 마치지 못했습니다 - 다시 시도해 주세요' : '로그인을 다시 시작해 주세요'), 60);
     return true;
   }
   const sess = {
@@ -13858,7 +13886,8 @@ async function hydrate(sess){
   }
   try{
     const r = await fetch(`${SB_URL}/auth/v1/user`, {headers: authHeaders(sess.access_token)});
-    if(!r.ok){ store.set(null); return false; }
+    /* 토큰이 거절됐을 때만 세션을 지운다 - 500·503 같은 일시 오류에 로그아웃시키지 않는다(2026-11-03 리뷰) */
+    if(!r.ok){ if(r.status === 401 || r.status === 403) store.set(null); else 계정확인실패 = true; return false; }
     S.user = meFrom(await r.json(), sess.access_token);
     계정확인실패 = false;
     clearSeeds(true);          /* 들어온 뒤에는 예시를 지운다 - 위 주석 참고 */
@@ -14572,6 +14601,7 @@ function handle(a,v,el){
     case 'ag-reveal':  AG.reveal = !AG.reveal; agFetch(); return true;
     case 'feed-retry': loadFeed(true); return true;
     case 'mine-retry': loadMine(true); return true;
+    case 'mp-retry': S.mpErr = ''; loadMyProps(true); render(); return true;
     case 'ag-pick': { AG.pick[v] = !AG.pick[v]; render(); return true; }
     case 'ag-pick-all': {
       const rows = agVisible();
@@ -14759,6 +14789,9 @@ function handle(a,v,el){
     case 'login-continue': 로그인뒤로가기(); return true;
     case 'umenu': S.umenu = !S.umenu; render(); return true;
     case 'logout': {
+      /* 저장 안 한 계약서가 있으면 먼저 묻는다 - 세션을 지운 뒤에 '머무르기' 를 고르면 저장도 못 하는 반쯤 나간 상태가 됐다(2026-11-03 리뷰) */
+      if(CT.dirty){ 확인창('저장하지 않은 고침이 있습니다', '로그아웃하면 고친 내용이 사라집니다.', {예:'로그아웃', 위험:true})
+        .then(ok => { if(ok){ CT.dirty = false; handle('logout', v, el); } }); return true; }
       signOutRemote();
       S.user=null; S.idv=null; S.idvToken=null; S.agent=null; S.agentKnown=false; S.afterLogin=null;
       /* 아이디는 지우지 않는다 - 그러라고 저장한 것이다. 비밀번호만 비운다. */
@@ -14783,7 +14816,9 @@ function handle(a,v,el){
       S.mineErr=S.mpErr=S.feedErr=''; S.feedNeed='';
       /* 운영 화면에서 보던 것도 함께 내린다 - 다음 사람이 앞사람의 목록을 보면 안 된다 */
       OPS.rows=null; OPS.tried=false; OPS.err=''; OPS.needPass=false; OPS.link=null;
-      OPS.openUntil=null; OPS.guest=false; OPS.ok=false; OPS.pass='';
+      OPS.openUntil=null; OPS.guest=false; OPS.ok=false; OPS.pass=''; opsPassKeep.set('');
+      /* 새로고침해도 남던 것들 - 운영 암호(탭), 이름·연락처가 든 초안. 다음 사람에게 남지 않게 (2026-11-03) */
+      try{ ['bk.idv.draft','bk.idv.form','bk.login.draft'].forEach(k => { sessionStorage.removeItem(k); localStorage.removeItem(k); }); }catch(e){}
       AG.rows=US.rows=LS2.rows=RP.rows=LG.rows=LG.recent=null;
       /* 화면을 새로 읽는다. 메모리에 남은 것도, 날아가던 요청도 함께 끝난다 -
          '로그아웃했는데 앞사람 화면이 남아 있다' 는 일이 원천적으로 없어진다.
@@ -14811,6 +14846,7 @@ function handle(a,v,el){
 
     case 'submit': {
       /* 단추가 꺼져 있어도(contactOk) 한 번 더 막는다 - 엔터·옛 화면 등 다른 길로 들어와도 두 번 가지 않게 */
+      if(d.보내는중) return true;     /* 첫 요청이 가는 중에 두 번째가 들어와 화면에 두 번 쌓이지 않게 */
       if(d.전달됨){ toast('이미 전달된 조건입니다 - 「내 조건」에서 보실 수 있습니다'); go('#/my'); return true; }
       const id='c'+Date.now();
       const slotN = (WHO[d.who]||{}).slots || 5;

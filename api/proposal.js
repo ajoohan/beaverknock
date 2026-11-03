@@ -46,7 +46,8 @@ export default async function handler(req, res) {
 
   const demandId = str(b.demand_id, 40);
   if (!demandId || !UUID.test(demandId)) return res.status(400).json({ error: '어느 조건인지 알 수 없습니다' });
-  const addr = str(b.addr, 200);
+  /* 소재지는 손님 화면에 그대로 찍힌다 - 꺾쇠·따옴표는 받지 않는다(심층 방어, 화면도 거른다 · 2026-11-03 보안점검) */
+  const addr = str(b.addr, 200).replace(/[<>"'`]/g, '');
   if (!addr) return res.status(400).json({ error: '소재지가 없습니다' });
 
   try {
@@ -268,6 +269,9 @@ async function patch(req, res, user, b) {
       body.report_detail = str(b.report_detail, 1000);
     }
 
+    /* 중개사가 회수한 제안에는 손님이 답할 수 없다 - 연결하면 회수한 쪽에 번호가 가고, 거절하면 자리가 두 번 돌아갔다 (2026-11-03) */
+    if (p.status === 'withdrawn') return res.status(409).json({ error: '중개사가 회수한 제안입니다' });
+
     /* 슬롯을 돌려줄 자리인지만 먼저 정해둔다. 실제로 돌려주는 것은
        저장이 끝난 뒤다 - 저장이 실패했는데 자리만 돌아가 있으면 안 된다. */
     const backable = (status === 'rejected' || status === 'reported')
@@ -420,6 +424,10 @@ async function withdraw(req, res, user, b) {
     if (p.agent_user !== user.id) return res.status(403).json({ error: '내가 보낸 제안이 아닙니다' });
 
     if (p.status === 'withdrawn') return res.status(200).json({ ok: true, status: 'withdrawn' });
+    /* 손님이 거절·신고한 제안은 회수로 덮지 못한다 - 신고 기록이 지워지고 자리가 두 번 돌아갔다 (2026-11-03) */
+    if (p.status === 'rejected' || p.status === 'reported') {
+      return res.status(409).json({ error: '손님이 이미 답한 제안이라 회수할 수 없습니다' });
+    }
     /* 손님이 이미 연결을 눌렀으면 못 되돌린다 - 연락처가 이미 오갔다 */
     if (p.status === 'accepted') {
       return res.status(409).json({ error: '손님이 이미 연결하셨습니다 - 회수할 수 없습니다' });

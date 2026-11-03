@@ -7,22 +7,11 @@
  *   BK_URL · BK_SECRET_KEY · BK_OPS_PASS
  */
 
-import crypto from 'node:crypto';
-
-import { opsAccount, opsNeedsPass, sbHeaders, sbUrl } from './_auth.js';
+import { opsAccount, opsNeedsPass, opsPassCheck, sbHeaders, sbUrl } from './_auth.js';
 import { logOps } from './_opslog.js';
 
 const TABLE = 'bk_agent';
 const STATUS = ['new', 'contacted', 'approved', 'rejected'];
-
-function sameSecret(a, b) {
-  const x = Buffer.from(String(a ?? ''), 'utf8');
-  const y = Buffer.from(String(b ?? ''), 'utf8');
-  const n = Math.max(x.length, y.length, 1);
-  const px = Buffer.alloc(n), py = Buffer.alloc(n);
-  x.copy(px); y.copy(py);
-  return crypto.timingSafeEqual(px, py) && x.length === y.length;
-}
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -51,8 +40,10 @@ export default async function handler(req, res) {
 
   /* 로그인으로 이미 확인이 끝났으면 암호는 묻지 않는다.
      명단(BK_OPS_USERS)이 비어 있을 때만 암호가 유일한 문이라 그때는 그대로 받는다. */
-  if (opsNeedsPass(gate) && !sameSecret(p.pass, BK_OPS_PASS)) {
-    return res.status(401).json({ error: '접근 암호가 맞지 않습니다' });
+  /* 틀린 암호는 IP 마다 10분에 10번까지 (2026-11-03 보안점검 - 전에는 횟수 제한이 없었다) */
+  if (opsNeedsPass(gate)) {
+    const bad = opsPassCheck(req, p.pass, BK_OPS_PASS);
+    if (bad) return res.status(bad.code).json({ error: bad.error });
   }
   /* 한 건이든 여럿이든 같은 길로 처리한다 - 목록에서 골라 한 번에 바꾸는 일이 잦다 */
   const ids = Array.isArray(p.ids) ? p.ids : (p.id ? [p.id] : []);

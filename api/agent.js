@@ -102,7 +102,7 @@ export default async function handler(req, res) {
      화면에서 무엇을 적었든 서명된 표에 적힌 값만 저장한다 - demand.js 와 같다.
      테스트 MID 일 때는 예전처럼 받는다. 테스트 값으로 공급자를 만들면 안 된다. */
   const idvLive = process.env.PORTONE_LIVE === '1';
-  const idv = idvLive ? readIdv(b.idv_token) : null;
+  const idv = idvLive ? readIdv(b.idv_token, ((await userFrom(req)) || {}).id) : null;
   if (idvLive && !idv) {
     return res.status(401).json({ error: '본인확인을 먼저 받아주세요', need_idv: true });
   }
@@ -166,8 +166,10 @@ export default async function handler(req, res) {
   const look = role === 'agent' && str(b.reg_no)
     ? await lookupReg(b.reg_no, b.sigun) : null;
   const verified = role === 'agent' ? regOpens(look) : true;
+  /* 소유자·시행사는 공공 명부로 확인할 길이 없다 - 운영자가 보고 승인한다(2026-11-03 대표님 '찾은 문제 다 고쳐').
+     전에는 바로 승인돼, 가격을 비운 물건 하나로 그 동네 조건 전부에 제안을 보낼 수 있었다 */
   const autoApprove = process.env.BK_AUTO_APPROVE !== '0' && verified
-    && (role !== 'agent' || await 본인맞음(look, name, owner.id));
+    && role === 'agent' && await 본인맞음(look, name, owner.id);
 
   const row = {
     role, name, phone,
@@ -356,7 +358,7 @@ export async function verify(req, res, b) {
     else if (look.hit && look.hit.addr) patch.addr = str(look.hit.addr, 200);
   }
   patch.status = process.env.BK_AUTO_APPROVE === '0' ? 'new' : 'approved';
-  if (me.role === 'agent' && patch.status === 'approved' && !(await 본인맞음(look_, me.name, user.id))) patch.status = 'new';
+  if (me.role !== 'agent' || (patch.status === 'approved' && !(await 본인맞음(look_, me.name, user.id)))) patch.status = 'new';
 
   const r = await fetch(`${BK_URL}/rest/v1/${TABLE}?id=eq.${me.id}`, {
     method: 'PATCH',

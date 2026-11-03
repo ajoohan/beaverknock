@@ -17,7 +17,7 @@
  * (법정동코드·본번·부번·산)를 그대로 담는다 - 나중에 어디로 보내더라도 보낼 때 바꿀 것이 없게.
  */
 import crypto from 'node:crypto';
-import { sbHeaders, sbUrl, emailOf, sameSecret } from './_auth.js';
+import { sbHeaders, sbUrl, emailOf, sameSecret, overLimit, ipOf } from './_auth.js';
 import { notifyMany } from './_notify.js';
 import { alimtalk } from './_kakao.js';
 
@@ -113,7 +113,7 @@ export async function contractRoute(req, res, agent, user, b) {
       case 'contract-del':     await del(res, agent, b); break;
       case 'contract-reported': await reported(res, agent, b); break;
       case 'contract-track':   await track(res, agent, b); break;
-      case 'contract-scan':    await scan(res, b); break;
+      case 'contract-scan':    await scan(req, res, b, user); break;
       default: res.status(400).json({ error: '알 수 없는 요청입니다' });
     }
   } catch (e) {
@@ -491,7 +491,12 @@ export async function reportDueCron(req, res) {
 
 /* 서류 판독 - 등기부등본·건축물대장·토지이용계획확인서를 읽어 칸 값을 돌려준다(_scan.js).
    서류는 저장하지 않는다 - 읽고 버린다. 값은 화면이 계약서에 옮겨 적고, 저장할 때 다시 docCheck 를 거친다 */
-async function scan(res, b) {
+async function scan(req, res, b, user) {
+  /* 판독 한 번이 Anthropic 요금이다 - 계정마다 하루 30번, 한 곳(IP)에서 하루 60번까지 (2026-11-03 보안점검).
+     서버리스라 인스턴스마다 따로 세는 느슨한 상한이지만, 한 계정이 끝없이 돌리는 것은 막는다 */
+  if (overLimit('scan:u:' + (user && user.id), 30, 864e5) || overLimit('scan:ip:' + ipOf(req), 60, 864e5)) {
+    return res.status(429).json({ error: '오늘 서류 판독을 많이 쓰셨습니다 - 내일 다시 해 주세요', code: 'too_many_scans' });
+  }
   const { scanDocs, ScanError } = await import('./_scan.js');
   try {
     const out = await scanDocs(b.files);

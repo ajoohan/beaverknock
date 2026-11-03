@@ -75,7 +75,7 @@ async function claimOnce(vid) {
 }
 
 import { signIdv } from './_idv.js';
-import { sbHeaders, sbUrl } from './_auth.js';
+import { sbHeaders, sbUrl, userFrom } from './_auth.js';
 import { logOps } from './_opslog.js';
 
 const API = 'https://api.portone.io/identity-verifications';
@@ -238,7 +238,9 @@ export default async function handler(req, res) {
     /* ci·di 는 여기서 끝난다. 로그에도 남기지 않는다. */
     /* live: 실계약에서 끊은 표인가. 전환 직전 시험 창구로 받은 표가 전환 뒤
        30분 동안 통하지 않게, 읽는 쪽(readIdv)이 이 값을 본다. */
-    const token = signIdv({ name, phone, birth, op: String(c.operator ?? '').slice(0, 20), live: isLive() });
+    /* 로그인한 채 받았으면 그 계정에 묶는다 - 다른 계정에서는 이 표를 쓸 수 없다 */
+    const 누구 = await userFrom(req).catch(() => null);
+    const token = signIdv({ name, phone, birth, op: String(c.operator ?? '').slice(0, 20), live: isLive(), ...(누구 ? { uid: 누구.id } : {}) });
 
     return res.status(200).json({
       ok: true, name, phone, birth,

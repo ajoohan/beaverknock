@@ -3824,6 +3824,30 @@ const loadingBox = () => `<div class="empty" style="display:flex;justify-content
   ${bkLoader(30)}</div>`;
 
 /* 서버 조건 → 손님 '내 조건' 카드 */
+/* 서버의 상태·만료일로 화면 상태를 정한다 - 전에는 늘 '활성 · 30일' 로 고정했다 (2026-11-03 리뷰) */
+/* 조건 상태를 서버에 바꾼다. 예시 카드는 화면에서만 */
+function condStatus(c, op, 말, 뒤){
+  const 적용 = (st, exp) => { if(st) Object.assign(c, condState({ status: st, expires_at: exp })); if(뒤) 뒤(); toast(말); render(); };
+  if(c.seed || c.unsaved){
+    적용(null); if(op==='pause') c.status='paused'; else if(op==='resume') c.status='active'; else if(op==='close') c.status='closed'; else { c.status='active'; c.expires=30; }
+    render(); return;
+  }
+  if(S.condBusy) return; S.condBusy = true;
+  apiFetch('/api/my', {method:'POST', body: JSON.stringify({what:'demand-status', id:c.id, op, reason:c.closeReason||''})})
+    .then(r => r.json().catch(()=>({})).then(j => { S.condBusy = false;
+      if(!(r.ok && j.ok)){ render(); return toast(j.error || '바꾸지 못했습니다 - 잠시 뒤 다시 해 주세요'); }
+      if(c.src){ c.src.status = j.status; c.src.expires_at = j.expires_at; }
+      적용(j.status, j.expires_at); }))
+    .catch(() => { S.condBusy = false; render(); toast('네트워크 문제로 바꾸지 못했습니다'); });
+}
+function condState(d){
+  const 남음 = d.expires_at ? Math.ceil((Date.parse(d.expires_at) - Date.now()) / 864e5) : 30;
+  const expires = Math.max(0, 남음);
+  const st = d.status || 'active';
+  if(st === 'closed' || st === 'paused') return { status: st, expires };
+  if(st === 'expired' || 남음 <= 0) return { status: 'expired', expires: 0 };
+  return { status: 남음 <= 7 ? 'expiring' : 'active', expires };
+}
 function condFromRow(d){
   const shop = NONHOME(d.kind);
   const L = [];
@@ -3834,8 +3858,8 @@ function condFromRow(d){
   return {
     id:d.id, kind:d.kind, who:d.kind,
     title:`${(d.dongs||[]).slice(0,2).join('·')||'서울·경기'}${(d.dongs||[]).length>2?' 외':''} · ${shop?(d.biz||d.kind_ko):(d.deal||'전월세')}${!shop&&d.rooms&&d.rooms!=='무관'?` · ${d.rooms}`:''}`,
-    lines:L.filter(Boolean), status:'active',
-    slots:d.slots||5, slotsLeft:d.slots_left, at:agoText(d.created_at), expires:30,
+    lines:L.filter(Boolean), ...condState(d),
+    slots:d.slots||5, slotsLeft:d.slots_left, at:agoText(d.created_at),
     pct:0, memo:d.memo||'', missed:0,
     /* 서버에서 온 원래 값 - '수정' 이 이 조건을 그대로 불러와 고치려면 있어야 한다(2026-10-15) */
     src:d,
@@ -6682,7 +6706,7 @@ V['#/inbox'] = () => {
       ${S.conds.map(c=>{const n=S.props.filter(p=>p.cond===c.id&&p.status!=='hidden').length;
         return `<div class="card ${c.id===S.inboxCond?'hi':''} clickable" data-act="pick-cond" data-v="${c.id}" style="padding:16px 18px">
           <div style="display:flex;justify-content:space-between;margin-bottom:8px">
-            <span class="badge ${c.status==='active'?'b-ok':c.status==='expiring'?'b-warn':'b-mute'}">${c.status==='active'?'활성':c.status==='expiring'?'만료임박':'종료'}</span>
+            <span class="badge ${c.status==='active'?'b-ok':c.status==='expiring'?'b-warn':'b-mute'}">${({active:'활성',expiring:'만료임박',paused:'일시중지',closed:'종료',expired:'만료'})[c.status]||'활성'}</span>
             <span style="font-size:13px;font-weight:700;color:${n?'var(--ind)':'var(--n500)'}">제안 ${n}/5</span></div>
           <b style="display:block;font-size:14.5px;font-weight:700;letter-spacing:-.02em;margin-bottom:4px">${esc(c.title)} ${demoTag(c,'vertical-align:middle')}${unsavedTag(c)}</b>
           <span style="font-size:13.5px;line-height:1.6;color:var(--n700)">${c.lines[0]?esc(c.lines[0]):''}</span></div>`;}).join('')}
@@ -8766,61 +8790,16 @@ function saveDemand(d, slotN, 자리){
 
 /* ══════════ 임시 접속 링크 ══════════
    접근 암호를 매번 치지 않으려고 쓰는 짧은 기간짜리 지름길이다.
-
-   솔직하게 적어둔다. 이 링크는 암호를 '숨긴' 것이지 '지킨' 것이 아니다.
-   토큰 안에는 암호가 뒤섞여 들어 있고, 뜯어보면 나온다. 그러니 링크를 아는
-   것만으로 들어오지는 못하게 하는 것은 여전히 서버 쪽 운영자 명단(BK_OPS_USERS)이다.
-   허용된 계정으로 로그인하지 않으면 링크가 있어도 아무것도 열리지 않는다.
-
-   기한은 토큰 안에 적어 두고 브라우저가 지킨다. 서버는 이 링크를 모른다 -
-   그러니 다 쓴 뒤에는 링크를 버리는 것으로 끝내지 말고 Vercel 에서
-   BK_OPS_PASS 를 바꿔야 진짜로 닫힌다. 화면에도 그렇게 적어 둔다.
-
-   조각을 주소창 뒤(#) 에 둔다 - 물음표 뒤와 달리 서버로도, Referer 로도
-   따라가지 않는다. 남는 곳은 이 브라우저의 방문 기록뿐이다. */
-const LINK_TAG = 'bk1';
-
-const b64u = {
-  enc: bytes => btoa(String.fromCharCode(...bytes)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''),
-  dec: t => { const b = atob(t.replace(/-/g,'+').replace(/_/g,'/'));
-    return Uint8Array.from(b, c => c.charCodeAt(0)); },
-};
-
-/* 소금에서 흐름을 만들어 덮어씌운다. 암호를 눈에 안 띄게 하는 정도이지
-   숨기는 힘이 있는 것은 아니다 - 위 주석대로다. */
-function linkMask(bytes, salt){
-  const out = new Uint8Array(bytes.length);
-  let h = 0x9E3779B1;
-  for(let i=0;i<salt.length;i++) h = (Math.imul(h ^ salt[i], 0x85EBCA77) >>> 0);
-  for(let i=0;i<bytes.length;i++){
-    h = (Math.imul(h ^ (i+1), 0xC2B2AE3D) >>> 0);
-    out[i] = bytes[i] ^ ((h >>> 13) & 0xFF);
-  }
-  return out;
-}
-
-function makeOpsLink(pass, days){
-  const until = Date.now() + days*864e5;
-  const body = new TextEncoder().encode(LINK_TAG + '.' + until + '.' + pass);
-  const salt = crypto.getRandomValues(new Uint8Array(6));
-  const mixed = linkMask(body, salt);
-  const all = new Uint8Array(salt.length + mixed.length);
-  all.set(salt); all.set(mixed, salt.length);
-  return { url: location.origin + location.pathname + '#/ops/k/' + b64u.enc(all), until };
-}
-
+   2026-11-03 보안점검에서 바꿨다 - 전에는 링크 안에 암호를 뒤섞어 넣어 뜯으면 암호가 나왔고 기한도 브라우저가 지켰다.
+   이제 링크는 서버가 만든다(/api/demands what:'ops-link'). 안에는 기한·무작위·서명뿐이고 암호는 없다.
+   서버가 서명과 기한을 직접 확인하고, BK_OPS_PASS 를 바꾸면 그동안 나간 링크가 모두 죽는다.
+   조각을 주소창 뒤(#) 에 둔다 - 서버로도, Referer 로도 따라가지 않는다. */
 function readOpsLink(token){
-  try{
-    const all = b64u.dec(token);
-    if(all.length < 12) return null;
-    const body = linkMask(all.slice(6), all.slice(0,6));
-    const txt = new TextDecoder().decode(body);
-    const bits = txt.split('.');
-    if(bits[0] !== LINK_TAG) return null;
-    const until = +bits[1];
-    if(!isFinite(until) || !bits[2]) return null;
-    return { until, pass: bits.slice(2).join('.'), dead: Date.now() > until };
-  }catch(e){ return null; }
+  /* 서버가 서명한 표(L1.기한.무작위.서명) - 암호는 들어 있지 않다. 이 표를 암호 자리에 그대로 실어 보내면
+     서버가 서명과 기한을 확인한다 (2026-11-03 보안점검). 옛 모양(암호가 든 링크)은 더 받지 않는다 */
+  const m = /^L1\.(\d{13})\.[A-Za-z0-9_-]{12}\.[A-Za-z0-9_-]{43}$/.exec(String(token || ''));
+  if(!m) return null;
+  return { until: +m[1], pass: token, dead: Date.now() > +m[1] };
 }
 
 /* ══════════ A-05 운영 조회 (실데이터) ══════════
@@ -9153,7 +9132,7 @@ function opsCopy(text, said){
 }
 
 const opsUrl = () => location.origin + location.pathname + OPS_HOME;
-const opsDatePlus = d => new Date(Date.now() + d*864e5).toISOString().slice(0,10);
+const opsDatePlus = d => new Date(Date.now() + 9 * 3600e3 + d*864e5).toISOString().slice(0,10);   /* 한국 날짜 */
 const opsInviteText = () => [
   '비버노크 운영 화면 시험 안내',
   '',
@@ -10770,6 +10749,11 @@ const CT_하위메뉴 = [['#/partner/contracts/new', '계약서 작성', 'pen', 
    번호는 배포한 날(연.월.일 - 같은 날 또 올리면 뒤에 .2). 화면이 version.json 을 가끔 읽어,
    더 새 버전이 올라와 있으면 메뉴 아래에서 새로고침을 권한다(버전확인) - 계약서를 띄워 둔 채 오래 일하면 고친 화면을 못 받는다 */
 const BK_변경 = [
+  { v:'26.11.03.2', 날:'2026-11-03', 줄:[
+    '보안 - 소셜 로그인을 PKCE 로(토큰이 주소에 안 실림) · 운영 임시 링크는 서버가 서명한 기한부 표(암호가 안 들어감) · 외부 스크립트 차단(CSP)',
+    '보안 - 소유자·시행사는 운영자 승인 · 같은 조건 제안 두 번·시간당 스무 건까지 · 서류 판독 하루 상한 · 본인확인 표는 받은 계정에서만 · 네이버는 네이버로 만든 계정에만 연결',
+    '손님 조건 일시중지·재개·종료·연장이 서버에 저장되고, 멈추거나 끝난·기한 지난 조건은 중개사 목록에서 빠짐',
+  ]},
   { v:'26.11.03', 날:'2026-11-03', 줄:[
     '보안점검 - 제안 소재지를 손님 화면에 거르지 않던 곳(스크립트 실행 위험) 막음 · 남이 만든 로그인 링크로 들어오는 것 막음 · 운영 CSV 수식 막음',
     '파트너 자동 승인은 본인확인 이름이 명부의 중개업자와 같고 같은 번호로 승인된 계정이 없을 때만 · 보류된 신청은 스스로 다시 열 수 없음',
@@ -12632,7 +12616,7 @@ async function ctScanGo(){
   if(!ok || !j.scan){ sc.err = j.error || '서류를 읽지 못했습니다 - 직접 적어 주세요'; render(); return; }
   const 처음 = !(CT.filled && CT.filled.size) && !CT.id;      /* 새 문서 첫 적용은 다 채우고, 그다음부터는 빈칸만 */
   const 채움 = ctApplyScan(CT.doc, j.scan, kinds, !처음);
-  CT.doc.src = { at: new Date().toISOString().slice(0, 10), kinds, ...j.scan };   /* 확인·설명서를 만들 때 다시 쓴다 */
+  CT.doc.src = { at: ct오늘(), kinds, ...j.scan };   /* 확인·설명서를 만들 때 다시 쓴다 */
   CT.filled = new Set([...(CT.filled || []), ...채움]);
   CT.scanWarn = j.scan.warnings || [];
   sc.files = {};                                            /* 읽었으면 버린다 - 화면 메모리에도 남기지 않는다 */
@@ -13800,9 +13784,17 @@ function oauthStart(provider){
   /* 네이버는 Supabase 가 기본 제공하지 않는다 - 인증 왕복을 우리 서버 함수가 돈다.
      돌아오는 주소 모양은 같으므로 받는 쪽 코드는 하나로 둔다. */
   if(provider === 'naver'){ location.href = '/api/auth/naver/start'; return; }
+  /* ── PKCE (2026-11-03 보안점검) ──
+     전에는 토큰이 주소(#access_token=…)에 실려 돌아왔다 - 방문 기록·화면 공유에 남고, 남이 만든 링크로도 들어올 수 있었다.
+     이제 일회용 코드(?code=)만 돌아오고, 이 브라우저만 아는 열쇠(verifier)로 바꿔야 세션이 된다 */
   const back = location.origin + location.pathname;
-  location.href = `${SB_URL}/auth/v1/authorize?provider=${provider}`
-    + `&redirect_to=${encodeURIComponent(back)}`;
+  const 열쇠 = Array.from(crypto.getRandomValues(new Uint8Array(32)), b => b.toString(16).padStart(2, '0')).join('');
+  crypto.subtle.digest('SHA-256', new TextEncoder().encode(열쇠)).then(h => {
+    const 도전 = btoa(String.fromCharCode(...new Uint8Array(h))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    try{ localStorage.setItem('bk.pkce', JSON.stringify({ v: 열쇠, at: Date.now() })); }catch(e){}
+    location.href = `${SB_URL}/auth/v1/authorize?provider=${provider}`
+      + `&redirect_to=${encodeURIComponent(back)}&code_challenge=${도전}&code_challenge_method=s256`;
+  }).catch(() => toast('이 브라우저에서는 소셜 로그인을 시작할 수 없습니다'));
 }
 
 const authHeaders = tok => ({apikey: SB_KEY, Authorization: 'Bearer ' + tok});
@@ -13829,14 +13821,31 @@ function meFrom(u, tok){
 /* 돌아온 주소에 토큰이 붙어 있다. 해시 라우터와 자리가 겹치므로 먼저 걷어낸다. */
 function readAuthRedirect(){
   const raw = location.hash.slice(1);
+  const qs = new URLSearchParams(location.search);
+  /* PKCE 로 돌아온 길 - ?code= (또는 ?error=) 가 물음표 뒤에 붙는다 */
+  if(qs.get('code') || (qs.get('error') && !/(^|&)(access_token|error)=/.test(raw))){
+    let pk = null;
+    try{ pk = JSON.parse(localStorage.getItem('bk.pkce') || 'null'); localStorage.removeItem('bk.pkce'); localStorage.removeItem('bk.oauth'); }catch(e){}
+    const back = 갈곳();
+    history.replaceState(null, '', location.pathname);          /* 코드는 주소에서 곧바로 지운다 */
+    const 실패 = 말 => { history.replaceState(null, '', location.pathname + '#/login'); S.authBusy = false; render(); setTimeout(()=>toast(말), 60); };
+    if(qs.get('error')){ 실패('로그인을 마치지 못했습니다 - 다시 시도해 주세요'); return true; }
+    if(!pk || !pk.v || Date.now() - (+pk.at || 0) > 30 * 60_000){ 실패('로그인을 다시 시작해 주세요'); return true; }
+    S.authBusy = true; render();
+    fetch(`${SB_URL}/auth/v1/token?grant_type=pkce`, { method:'POST', headers:{ apikey: SB_KEY, 'Content-Type':'application/json' },
+      body: JSON.stringify({ auth_code: qs.get('code'), code_verifier: pk.v }) })
+      .then(r => r.json().catch(()=>({})).then(j => {
+        if(!r.ok || !j.access_token) return 실패('로그인을 마치지 못했습니다 - 다시 시도해 주세요');
+        세션들이기({ access_token: j.access_token, refresh_token: j.refresh_token,
+          expires_at: +j.expires_at || Math.floor(Date.now()/1000) + (+j.expires_in || 3600) }, back);
+      }))
+      .catch(() => 실패('네트워크 문제로 로그인을 마치지 못했습니다'));
+    return true;
+  }
   if(!/(^|&)(access_token|error)=/.test(raw)) return false;
   const q = new URLSearchParams(raw);
   const err = q.get('error_description') || q.get('error');
-  let back = '';
-  try{ back = sessionStorage.getItem('bk.after') || ''; sessionStorage.removeItem('bk.after'); }catch(e){}
-  /* 갈 곳 없이 들어왔으면 손님 화면으로 가되 파트너로 확인되면 대시보드로(로그인뒤로가기 와 같은 규칙) */
-  if(!back || back === '#/'){ back = back || '#/my'; S.기본으로들어옴 = true; }
-  restoreDraft();          /* 나가기 전에 적어둔 조건을 그대로 이어 받는다 */
+  const back = 갈곳();
 
   /* ── 남이 만든 로그인 링크를 막는다 (2026-11-03 보안점검) ──
      전에는 주소에 access_token 만 있으면 그대로 세션으로 받았다 - 공격자가 자기 계정 토큰을 실은 링크를 보내면
@@ -13848,7 +13857,10 @@ function readAuthRedirect(){
   if(err || !내가시작){
     history.replaceState(null, '', location.pathname + '#/login');
     render();
-    setTimeout(()=>toast(err ? '로그인을 마치지 못했습니다 - 다시 시도해 주세요' : '로그인을 다시 시작해 주세요'), 60);
+    /* 서버가 정한 코드만 알맞은 말로 바꾼다 - 주소의 글을 그대로 띄우지 않는다 */
+    const 말 = q.get('error') === 'naver_other' ? '이 메일은 다른 방법(카카오·구글 등)으로 가입된 계정입니다 - 처음 가입하신 방법으로 로그인해 주세요'
+      : err ? '로그인을 마치지 못했습니다 - 다시 시도해 주세요' : '로그인을 다시 시작해 주세요';
+    setTimeout(()=>toast(말), 60);
     return true;
   }
   const sess = {
@@ -13856,6 +13868,22 @@ function readAuthRedirect(){
     refresh_token: q.get('refresh_token'),
     expires_at: +(q.get('expires_at') || 0),
   };
+  세션들이기(sess, back);
+  return true;
+}
+
+/* 돌아갈 곳 - 로그인을 시작할 때 남겨 둔 곳. 나가기 전에 적어둔 조건도 이어 받는다 */
+function 갈곳(){
+  let back = '';
+  try{ back = sessionStorage.getItem('bk.after') || ''; sessionStorage.removeItem('bk.after'); }catch(e){}
+  /* 갈 곳 없이 들어왔으면 손님 화면으로 가되 파트너로 확인되면 대시보드로(로그인뒤로가기 와 같은 규칙) */
+  if(!back || back === '#/'){ back = back || '#/my'; S.기본으로들어옴 = true; }
+  restoreDraft();
+  return back;
+}
+
+/* 받은 세션으로 들어간다 - 해시(네이버)로 왔든 코드(PKCE)로 왔든 여기서 마무리 */
+function 세션들이기(sess, back){
   store.set(sess);
   /* 계정을 확인하기 전에 목적지로 보내면 안 된다.
      그 순간 S.user 는 아직 비어 있어서, 내 조건 화면 가드가 로그인 화면으로 되돌린다.
@@ -14533,8 +14561,14 @@ function handle(a,v,el){
     case 'ops-link-days': OPS.linkDays = +v || 7; OPS.link = null; render(); return true;
     case 'ops-link-make':
       if(!OPS.pass) return toast('먼저 접근 암호로 여신 뒤에 만들 수 있습니다'), true;
-      OPS.link = makeOpsLink(OPS.pass, OPS.linkDays);
-      render(); toast(`${OPS.linkDays}일짜리 링크를 만들었습니다`); return true;
+      /* 링크는 서버가 만든다 - 암호를 링크에 넣지 않는다 */
+      apiFetch('/api/demands', {method:'POST', body: JSON.stringify({what:'ops-link', pass:OPS.pass, days:OPS.linkDays})})
+        .then(r => r.json().catch(()=>({})).then(j => {
+          if(!(r.ok && j.ok && j.token)) return toast(j.error || '링크를 만들지 못했습니다');
+          OPS.link = { url: location.origin + location.pathname + '#/ops/k/' + j.token, until: j.until };
+          render(); toast(`${OPS.linkDays}일짜리 링크를 만들었습니다`); }))
+        .catch(() => toast('네트워크 문제로 링크를 만들지 못했습니다'));
+      return true;
     case 'ops-link-copy':
       if(OPS.link) opsCopy(OPS.link.url, '링크를 복사했습니다 - 아무에게나 보내지 마세요');
       return true;
@@ -14946,9 +14980,12 @@ function handle(a,v,el){
       return true; }
     case 'pick-cond': S.inboxCond=v; render(); return true;
 
-    case 'pause': { const c=S.conds.find(x=>x.id===v); c.status = c.status==='paused'?'active':'paused';
-      toast(c.status==='paused'?'조건을 일시중지했습니다':'조건을 다시 시작합니다'); render(); return true; }
-    case 'extend': { const c=S.conds.find(x=>x.id===v); c.expires=30; c.status='active'; c.missed=0; toast('30일 연장했습니다'); render(); return true; }
+    /* 일시중지·재개·연장은 서버에 남긴다 - 전에는 화면에서만 바뀌어 중개사 목록엔 그대로 떠 있었다 (2026-11-03 리뷰) */
+    case 'pause': { const c=S.conds.find(x=>x.id===v); if(!c) return true;
+      const 멈춤 = c.status!=='paused';
+      condStatus(c, 멈춤?'pause':'resume', 멈춤?'조건을 일시중지했습니다 - 새 제안을 받지 않습니다':'조건을 다시 시작합니다'); return true; }
+    case 'extend': { const c=S.conds.find(x=>x.id===v); if(!c) return true;
+      c.missed=0; condStatus(c, 'extend', '30일 연장했습니다'); return true; }
     case 'miss-demo': { const c=S.conds.find(x=>x.id===v); c.missed=(c.missed||0)+1;
       if(c.missed>=3){ c.status='paused'; toast('3회 연속 미열람 - 조건을 자동 일시중지했습니다 (공급자 헛수고 방지)'); }
       else toast(`미열람 ${c.missed}회 · 3회가 되면 자동 일시중지됩니다`);
@@ -14958,9 +14995,11 @@ function handle(a,v,el){
     /* 묻는 창(확인창)이면 닫는 것은 '아니오' 다 - 기다리는 쪽에 false 를 돌려준다 */
     case 'modal-close': case 'modal-bg': { const m = S.modal; S.modal = null; render(); if(m && m.답) m.답(false); return true; }
     case 'ask-yes': case 'ask-no': { const m = S.modal; S.modal = null; render(); if(m && m.답) m.답(a === 'ask-yes'); return true; }
-    case 'do-close': { const c=S.conds.find(x=>x.id===S.modal.id); c.status='closed'; c.closeReason=S.modal.reason;
-      if(S.inboxCond===c.id){ const alt=S.conds.find(x=>x.status!=='closed'); if(alt) S.inboxCond=alt.id; }
-      S.modal=null; toast('종료했습니다 · 알려주셔서 감사합니다'); render(); return true; }
+    case 'do-close': { const c=S.conds.find(x=>x.id===S.modal.id); if(!c){ S.modal=null; render(); return true; }
+      c.closeReason=S.modal.reason; S.modal=null;
+      condStatus(c, 'close', '종료했습니다 · 알려주셔서 감사합니다', () => {
+        if(S.inboxCond===c.id){ const alt=S.conds.find(x=>x.status!=='closed'); if(alt) S.inboxCond=alt.id; } });
+      return true; }
 
     case 'reject': {
       const p=S.props.find(x=>x.id===v); if(!p) return true;
@@ -15025,6 +15064,8 @@ function handle(a,v,el){
         .catch(()=>{ S.connecting=false; render(); toast('네트워크 문제로 연결하지 못했습니다'); });
       return true; }
     case 'relax': { const c=S.conds.find(x=>x.status==='expiring')||S.conds[0];
+      /* 실제 조건은 바꾼 척하지 않는다 - 그 조건의 수정 화면을 연다(예시 카드만 화면에서 바꿔 보인다) */
+      if(c && !c.seed){ toast(`‘${v}’ - 조건 수정에서 바꿔 주세요`); return handle('cond-edit', c.id, el); }
       if(c){ c.lines=[...c.lines, '완화: '+v]; c.status='active'; c.expires=30; }
       toast(`조건을 바꿨습니다 - ${v}`); go('#/my'); return true; }
 
@@ -15089,8 +15130,8 @@ function handle(a,v,el){
           if(d2) d2.slotsLeft = j.slots_left;
           S.myprops.unshift({id:j.id,
             title:`${f.bname||f.addr}${(f.pkind||'home')==='home' && f.rooms ? ` · ${f.rooms}룸` : ''}`,
-            price:`보증금 ${(+f.dep||0).toLocaleString()} / 월 ${f.rent||0} · 관리비 ${f.fee||0}`,
-            line:`${d2.region} · ${d2.lines[0]||''}`, status:'sent', at:'방금', expires:7});
+            price:`보증금 ${(+f.dep||0).toLocaleString()} / 월 ${(+f.rent||0).toLocaleString()} · 관리비 ${(+f.fee||0).toLocaleString()}`,   /* 서버가 다시 줄 때와 같은 서식 */
+            line: d2 ? `${d2.region} · ${d2.lines[0]||''}` : '', status:'sent', at:'방금', expires:7});
           stopTimer(); S.form={ptab:'sent'}; S.feedAt=0; S.mpAt=0;
           toast('제안을 보냈습니다 - 손님 제안함으로 전달됐습니다');
           go('#/partner/proposals');

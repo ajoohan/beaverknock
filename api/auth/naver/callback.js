@@ -27,10 +27,10 @@ const clearState = res =>
     `${STATE_COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0`);
 
 /* 실패해도 사람에게는 로그인 화면으로 돌려보낸다 — 흰 화면에 영문 오류를 남기지 않는다 */
-function bail(req, res, msg) {
+function bail(req, res, msg, code = 'naver') {
   clearState(res);
   res.writeHead(302, {
-    Location: `${origin(req)}/#error=naver&error_description=${encodeURIComponent(msg)}`,
+    Location: `${origin(req)}/#error=${code}&error_description=${encodeURIComponent(msg)}`,
   });
   res.end();
 }
@@ -93,7 +93,8 @@ export default async function handler(req, res) {
     if (!mk.ok) {
       const t = await mk.text();
       const already = mk.status === 422 || /already|registered|exists|duplicate/i.test(t);
-      if (!already) return bail(req, res, '계정을 만들지 못했습니다: ' + t.slice(0, 90));
+      /* DB 원문은 로그에만 - 주소창에 싣지 않는다 (2026-11-03 보안점검) */
+      if (!already) { console.error('[naver] create', mk.status, t.slice(0, 160)); return bail(req, res, '계정을 만들지 못했습니다'); }
     }
 
     /* ── 5. 세션으로 바꿔 넘긴다 ── */
@@ -103,6 +104,14 @@ export default async function handler(req, res) {
     })).json().catch(() => ({}));
     const hashed = link.hashed_token || link.properties?.hashed_token;
     if (!hashed) return bail(req, res, '세션을 만들지 못했습니다');
+    /* ── 메일만 같다고 남의 계정에 붙이지 않는다 (2026-11-03 보안점검) ──
+       전에는 네이버가 준 메일과 같은 계정(구글·카카오·운영자 계정 포함)이면 그대로 들여보냈다.
+       이제 네이버로 만든 계정(naver_id 가 같은 계정)에만 들어간다. 다른 방법으로 만든 계정이면 그 방법으로 안내한다 */
+    const 계정 = link.user || link;
+    const 붙은네이버 = 계정 && 계정.user_metadata && 계정.user_metadata.naver_id;
+    if (String(붙은네이버 || '') !== String(p.id)) {
+      return bail(req, res, '이 메일은 다른 방법으로 가입된 계정입니다', 'naver_other');
+    }
 
     clearState(res);
     /* 돌아오는 주소 모양은 구글과 같다 — 페이지 쪽 readAuthRedirect 가 그대로 받는다 */

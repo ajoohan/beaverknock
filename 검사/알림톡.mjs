@@ -74,7 +74,7 @@ const 놓기 = o => { for (const k of Object.keys(키들)) delete process.env[k]
 /* ── ④ 제안 서버가 손님에게 보낸다 ── */
 {
   const src = fs.readFileSync(new URL(길.api('proposal.js')), 'utf8');
-  ok(/select: 'id,slots_left,user_id,kind,dongs,deal,dep,rent,name,phone'/.test(src), '제안을 받을 때 손님 이름·휴대폰을 함께 읽는다');
+  ok(/select: 'id,slots_left,user_id,kind,dongs,deal,dep,rent,name,phone[,']/.test(src), '제안을 받을 때 손님 이름·휴대폰을 함께 읽는다');
   ok(/\n[ \t]*alimtalk\(\{\s*to: d\.phone,\s*template: process\.env\.SOLAPI_TPL_PROPOSAL,/.test(src), '제안이 저장되면 손님 휴대폰으로 \'새 제안\' 템플릿을 보낸다(조건 없이 부른다)');
   const 변수 = (src.match(/vars: \{([\s\S]*?)\}/) || [])[1] || '';
   ok(['이름', '지역', '보낸곳', '가격', '남은자리'].every(k => 변수.includes(k + ':')) && !/office|addr|bname|phone/.test(변수),

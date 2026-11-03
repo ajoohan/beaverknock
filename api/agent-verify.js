@@ -267,6 +267,8 @@ export default async function handler(req, res) {
      여기에 문을 두면 가입 자체가 막힌다. 등록번호 조회와 같은 자리다. */
   if (b.what === 'addr') return searchAddr(req, res, b);
 
+  /* 번호 조회도 몰아치면 늦춘다 - 매번 명부 10만 건을 훑고 경기 API 를 부른다 (2026-11-03 보안점검) */
+  if (tooMany(req)) return res.status(429).json({ error: '잠시 후 다시 확인해 주세요' });
   const shape = checkShape(b.reg_no);
   if (!shape.ok) return res.status(400).json({ error: shape.reason });
 

@@ -27,7 +27,8 @@ export function signIdv(payload) {
 }
 
 /** 서명과 유효기간을 본다. 어느 하나라도 어긋나면 null. */
-export function readIdv(token) {
+/** uid 를 주면, 로그인한 채 받은 표는 그 계정에서만 쓴다 (2026-11-03 보안점검 - 전에는 누구 표든 30분 동안 아무 계정에서나 썼다) */
+export function readIdv(token, uid) {
   const key = process.env.BK_SECRET_KEY;
   if (!key || typeof token !== 'string') return null;
   const [body, sig] = token.split('.');
@@ -42,6 +43,7 @@ export function readIdv(token) {
   try { p = JSON.parse(unb64u(body).toString('utf8')); } catch { return null; }
   if (!p || typeof p.at !== 'number' || Date.now() - p.at > TTL) return null;
   if (!p.name || !p.phone) return null;
+  if (p.uid && uid && p.uid !== uid) return null;
   /* 실계약 중에는 실계약에서 끊은 표만 받는다 (2026-10-09).
      PORTONE_LIVE=1 로 바꾸기 직전에 시험 창구로 받은 표가 30분 동안 살아 있었다 -
      그 사이 가짜 이름으로 조건을 내거나 공급자로 가입할 수 있었다. */

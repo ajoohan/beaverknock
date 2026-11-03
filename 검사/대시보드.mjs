@@ -346,5 +346,19 @@ const M = new Function('esc', `${js.slice(시작, 끝)}\nreturn { dzLine, dzPill
   ok(!/<div style="display:flex;gap:10px;\$\{isMo\(\)\?'flex-direction:column/.test(js), '버튼 둘을 flex 로 늘어놓던 자리(폭이 글 길이대로)가 남지 않았다');
 }
 
+/* ── 2026-11-03 보안점검 반영 - 다시 깨지지 않게 ── */
+{
+  const api = f => fs.readFileSync(new URL('../api/' + f, import.meta.url), 'utf8');
+  ok(/code_challenge_method=s256/.test(js) && /grant_type=pkce/.test(js), '소셜 로그인은 PKCE - 토큰 대신 일회용 코드가 돌아온다');
+  ok(/localStorage\.getItem\('bk\.oauth'\)/.test(js), '해시로 온 토큰은 이 브라우저에서 시작한 로그인일 때만 받는다');
+  ok(!/function makeOpsLink|linkMask/.test(js) && /what:'ops-link'/.test(js), '운영 링크는 서버가 만든다 - 암호를 섞어 넣던 코드가 없다');
+  ok(/what:'demand-status'/.test(js) && /export async function demandStatus/.test(api('my.js')), '조건 일시중지·종료·연장은 서버에 저장한다');
+  ok((api('feed.js').match(/q\.set\('status', 'eq\.active'\); q\.set\('expires_at'/g) || []).length === 2, '멈추거나 끝난·기한 지난 조건은 중개사 목록에서 빠진다(두 목록 다)');
+  ok(/같은 조건에는 두 번까지만/.test(api('proposal.js')) && /한 시간에 스무 건까지/.test(api('proposal.js')), '제안 보내기 횟수 상한');
+  ok(/role === 'agent' && await 본인맞음/.test(api('agent.js')), '자동 승인은 공인중개사 + 본인확인 이름 = 명부 이름일 때만');
+  ok(/esc\(p\.dong\)/.test(js) && !/>\$\{p\.dong\} · /.test(js), '제안 소재지는 손님 화면에서 거른다');
+  const vj = fs.readFileSync(new URL('../vercel.json', import.meta.url), 'utf8');
+  ok(/script-src 'self' 'unsafe-inline' https:\/\/cdn\.portone\.io/.test(vj) && /object-src 'none'/.test(vj), '외부 스크립트는 우리와 포트원만(CSP)');
+}
 console.log(`${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

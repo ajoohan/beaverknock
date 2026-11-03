@@ -197,7 +197,7 @@ export default async function handler(req, res) {
      처리방침에 '본인확인된 이름을 전달한다' 고 적어둔 이상, 손으로 고친 이름이
      중개사에게 나가면 안 된다. 표가 없거나 서명이 어긋나면 접수 자체를 막는다. */
   const idvOn = !!process.env.PORTONE_API_SECRET;
-  const idv = idvOn ? readIdv(b.idv_token) : null;
+  const idv = idvOn ? readIdv(b.idv_token, ((await userFrom(req)) || {}).id) : null;
   if (idvOn && !idv) {
     return res.status(401).json({ error: '본인확인을 먼저 받아주세요', need_idv: true });
   }

@@ -136,7 +136,8 @@ export function scanBlocks(files) {
     if (합계 > SCAN_MAX_BYTES) throw new ScanError('too_big', 413);
     const t = 형식(buf);
     if (!t || !TYPES.includes(t)) throw new ScanError('bad_file', 400);
-    if (t === 'application/pdf') { const n = 쪽수(buf); if (n && n > SCAN_MAX_PDF_PAGES) throw new ScanError('too_many_pages', 413); }
+    /* 쪽수를 못 세는 PDF(압축된 목차)는 큰 것만 막는다 - 전에는 그냥 통과해 쪽수 상한을 비켜 갔다 (2026-11-03) */
+    if (t === 'application/pdf') { const n = 쪽수(buf); if ((n && n > SCAN_MAX_PDF_PAGES) || (!n && buf.length > 1_500_000)) throw new ScanError('too_many_pages', 413); }
     const 꼬리표 = SCAN_KINDS[f.kind] || '그 밖의 서류';
     return [{ type: 'text', text: `[${꼬리표}]` },
       t === 'application/pdf'

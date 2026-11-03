@@ -61,6 +61,8 @@ export default async function handler(req, res) {
      전에는 화면의 '저장했습니다' 가 메모리만 바꾸고 서버에는 아무것도 보내지 않았다 -
      덧붙인 상세는 중개사에게 한 번도 가지 않았다. 함수 상한(12개)이 꽉 차 여기에 붙인다. */
   if (body.what === 'demand-edit') return demandEdit(req, res, user, body);
+  /* 일시중지 · 재개 · 종료 · 연장 (2026-11-03) - 전에는 화면에서만 바뀌어, 종료한 조건이 중개사 목록에 계속 떠 있었다 */
+  if (body.what === 'demand-status') return demandStatus(req, res, user, body);
 
   try {
     const dq = new URLSearchParams({
@@ -323,6 +325,45 @@ export async function demandEdit(req, res, user, body) {
   } catch (e) {
     셈되돌리기();
     console.error('[my:demand-edit]', e && e.message);
+    return res.status(502).json({ error: 'DB에 닿지 못했습니다' });
+  }
+}
+
+/* ── 조건 상태 바꾸기 (2026-11-03 리뷰) ──
+   op: pause(멈춤) · resume(다시 받기) · close(종료 - 되돌릴 수 없다) · extend(기한 30일 연장 - 7일 이하 남았을 때만).
+   종료 사유는 표에 칸이 없어 운영 기록에 남긴다. 내 조건(user_id)만 바뀐다 */
+const STATUS_OPS = { pause: 'paused', resume: 'active', close: 'closed' };
+export async function demandStatus(req, res, user, body) {
+  const id = String(body.id || '');
+  if (!/^[0-9a-f-]{8,64}$/i.test(id)) return res.status(400).json({ error: '어느 조건인지 알 수 없습니다' });
+  const op = String(body.op || '');
+  if (!STATUS_OPS[op] && op !== 'extend') return res.status(400).json({ error: '할 수 없는 일입니다' });
+  try {
+    const q = new URLSearchParams({ select: 'id,status,expires_at', id: 'eq.' + id, user_id: 'eq.' + user.id, limit: '1' });
+    const r0 = await fetch(sbUrl('bk_demand', q.toString()), { headers: sbHeaders() });
+    if (!r0.ok) return res.status(502).json({ error: '조건을 확인하지 못했습니다' });
+    const d = (await r0.json())[0];
+    if (!d) return res.status(404).json({ error: '내 조건이 아니거나 이미 없어진 조건입니다' });
+    if (d.status === 'closed') return res.status(409).json({ error: '이미 종료한 조건입니다' });
+    const 남은날 = d.expires_at ? (Date.parse(d.expires_at) - Date.now()) / 864e5 : 30;
+    const patch = {};
+    if (op === 'extend') {
+      if (남은날 > 7) return res.status(409).json({ error: '기한이 7일 이하로 남았을 때 연장하실 수 있습니다' });
+      patch.expires_at = new Date(Math.max(Date.now(), Date.parse(d.expires_at) || Date.now()) + 30 * 864e5).toISOString();
+      if (d.status === 'expired') patch.status = 'active';
+    } else {
+      if (op === 'resume' && 남은날 <= 0) return res.status(409).json({ error: '기한이 지난 조건입니다 - 연장해 주세요' });
+      patch.status = STATUS_OPS[op];
+    }
+    const r = await fetch(sbUrl('bk_demand', 'id=eq.' + id + '&user_id=eq.' + user.id), {
+      method: 'PATCH', headers: { ...sbHeaders(), Prefer: 'return=representation' }, body: JSON.stringify(patch) });
+    if (!r.ok) return res.status(502).json({ error: '바꾸지 못했습니다 - 잠시 뒤 다시 해 주세요' });
+    const row = (await r.json().catch(() => []))[0] || {};
+    const 사유 = op === 'close' ? String(body.reason || '').slice(0, 60) : '';
+    await logOps(req, user, { action: 'demand-' + op, detail: id + (사유 ? ' · ' + 사유 : '') });
+    return res.status(200).json({ ok: true, id, status: row.status || patch.status || d.status, expires_at: row.expires_at || patch.expires_at || d.expires_at });
+  } catch (e) {
+    console.error('[my:demand-status]', e && e.message);
     return res.status(502).json({ error: 'DB에 닿지 못했습니다' });
   }
 }

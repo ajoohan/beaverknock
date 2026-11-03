@@ -140,5 +140,19 @@ process.env.BK_SECRET_KEY = 'z'.repeat(40);
 ok(I.readIdv(표) === null, '다른 열쇠로는 읽히지 않는다');
 process.env.BK_SECRET_KEY = 본래열쇠;
 
+/* ── 운영 임시 링크 (2026-11-03 보안점검) - 링크에 암호가 들지 않고, 서버가 서명·기한을 본다 ── */
+{
+  const t = A.makeOpsLinkToken('진짜암호', 7);
+  ok(!t.token.includes('진짜암호') && /^L1\.\d{13}\./.test(t.token), '링크 표에는 암호가 들어 있지 않다');
+  ok(A.opsLinkValid(t.token, '진짜암호'), '서버가 서명한 표는 통한다');
+  ok(!A.opsLinkValid(t.token, '바꾼암호'), '암호를 바꾸면 그동안 나간 링크가 모두 죽는다');
+  const [, , 무작위, 서명] = t.token.split('.');
+  ok(!A.opsLinkValid('L1.' + (Date.now() + 90 * 864e5) + '.' + 무작위 + '.' + 서명, '진짜암호'), '기한을 고쳐 쓴 표는 통하지 않는다');
+  ok(!A.opsLinkValid('L1.' + (Date.now() - 1000) + '.' + 무작위 + '.' + 서명, '진짜암호'), '기한이 지난 표는 통하지 않는다');
+  let 막힘 = null;
+  const 요청 = { headers: { 'x-forwarded-for': '9.9.9.9' } };
+  for (let i = 0; i < 11; i++) 막힘 = A.opsPassCheck(요청, '틀림' + i, '진짜암호');
+  ok(막힘 && 막힘.code === 429 && A.opsPassCheck(요청, '진짜암호', '진짜암호').code === 429, '암호를 열 번 틀리면 맞는 암호도 잠시 받지 않는다');
+}
 console.log(`${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

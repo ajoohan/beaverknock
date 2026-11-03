@@ -282,6 +282,8 @@ export default async function handler(req, res) {
       order: 'created_at.desc', limit: '200',
     });
     q.set('kind', `in.(${kinds.join(',')})`);
+    /* 손님이 멈추거나 끝낸 조건, 기한(30일)이 지난 조건은 보이지 않는다 - 전에는 거르지 않았다 (2026-11-03) */
+    q.set('status', 'eq.active'); q.set('expires_at', 'gt.' + new Date().toISOString());
     const r = await getDemands(q);
     if (!r.ok) return res.status(502).json({ error: '조건을 불러오지 못했습니다' });
     let rows = await r.json();
@@ -482,6 +484,8 @@ async function readFitting(res, agent, pending) {
       order: 'created_at.desc', limit: '200',
     });
     q.set('kind', `in.(${kinds.join(',')})`);
+    /* 손님이 멈추거나 끝낸 조건, 기한(30일)이 지난 조건은 보이지 않는다 - 전에는 거르지 않았다 (2026-11-03) */
+    q.set('status', 'eq.active'); q.set('expires_at', 'gt.' + new Date().toISOString());
     const r = await getDemands(q);
     if (!r.ok) return res.status(502).json({ error: '조건을 불러오지 못했습니다' });
 

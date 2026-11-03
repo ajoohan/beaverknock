@@ -30,13 +30,30 @@ export function overLimit(key, max, windowMs, add = true) {
   tries.set(key, seen);
   return false;
 }
-export const ipOf = req => String(req.headers['x-forwarded-for'] || '').split(',')[0].trim() || 'unknown';
+export const ipOf = req => String((req && req.headers && req.headers['x-forwarded-for']) || '').split(',')[0].trim() || 'unknown';
 
 /** 운영 접근 암호 - 틀린 시도는 IP 마다 10분에 10번까지. 넘으면 맞는 암호도 잠시 받지 않는다 */
+/* ── 운영 임시 링크 (2026-11-03 보안점검) ──
+   전에는 링크 안에 운영 암호를 되돌릴 수 있는 모양으로 넣었다 - 링크만 있으면 누구나 암호 원문을 꺼냈고,
+   기한도 브라우저가 스스로 지킬 뿐이었다. 이제 링크에는 서버가 서명한 표(기한 + 무작위 + 서명)만 든다.
+   서명 열쇠는 운영 암호에서 나오므로, 암호를 바꾸면 그동안 나간 링크가 모두 죽는다. */
+const linkKey = real => crypto.createHash('sha256').update('bk-ops-link|' + String(real ?? ''), 'utf8').digest();
+const linkSig = (real, body) => crypto.createHmac('sha256', linkKey(real)).update(body).digest('base64url');
+export function makeOpsLinkToken(real, days) {
+  const until = Date.now() + Math.min(30, Math.max(1, +days || 7)) * 864e5;
+  const body = until + '.' + crypto.randomBytes(9).toString('base64url');
+  return { token: 'L1.' + body + '.' + linkSig(real, body), until };
+}
+export function opsLinkValid(given, real) {
+  const m = /^L1\.(\d{13})\.([A-Za-z0-9_-]{12})\.([A-Za-z0-9_-]{43})$/.exec(String(given || ''));
+  if (!m || +m[1] < Date.now()) return false;
+  return sameSecret(m[3], linkSig(real, m[1] + '.' + m[2]));
+}
+
 export function opsPassCheck(req, given, real) {
   const key = 'opsfail:' + ipOf(req);
   if (overLimit(key, 10, 10 * 60_000, false)) return { code: 429, error: '암호를 여러 번 틀렸습니다 - 10분 뒤에 다시 시도해 주세요' };
-  if (sameSecret(given, real)) return null;
+  if (sameSecret(given, real) || opsLinkValid(given, real)) return null;
   overLimit(key, 10, 10 * 60_000, true);
   return { code: 401, error: '접근 암호가 맞지 않습니다' };
 }

@@ -47,19 +47,40 @@ export default async function handler(req, res) {
   const demandId = str(b.demand_id, 40);
   if (!demandId || !UUID.test(demandId)) return res.status(400).json({ error: '어느 조건인지 알 수 없습니다' });
   /* 소재지는 손님 화면에 그대로 찍힌다 - 꺾쇠·따옴표는 받지 않는다(심층 방어, 화면도 거른다 · 2026-11-03 보안점검) */
-  const addr = str(b.addr, 200).replace(/[<>"'`]/g, '');
+  const addr = (str(b.addr, 200) || '').replace(/[<>"'`]/g, '');
   if (!addr) return res.status(400).json({ error: '소재지가 없습니다' });
 
   try {
     /* 슬롯이 남았는지 본다. 조건 하나에 다섯 곳까지가 이 서비스의 약속이다.
        이름·휴대폰은 손님에게 알림톡을 보내는 데만 쓴다(응답에 싣지 않는다). */
     const dq = new URLSearchParams({
-      select: 'id,slots_left,user_id,kind,dongs,deal,dep,rent,name,phone', id: 'eq.' + demandId, limit: '1' });
+      select: 'id,slots_left,user_id,kind,dongs,deal,dep,rent,name,phone,status,expires_at', id: 'eq.' + demandId, limit: '1' });
     const dr = await fetch(sbUrl('bk_demand', dq.toString()), { headers: sbHeaders() });
     if (!dr.ok) return res.status(502).json({ error: '조건을 확인하지 못했습니다' });
     const d = (await dr.json())[0];
     if (!d) return res.status(404).json({ error: '없는 조건입니다' });
     if (!(d.slots_left > 0)) return res.status(409).json({ error: '이 조건은 제안이 마감됐습니다' });
+    /* 손님이 멈추거나 끝낸 조건, 기한이 지난 조건에는 보내지 않는다 (2026-11-03) */
+    if ((d.status && d.status !== 'active') || (d.expires_at && Date.parse(d.expires_at) < Date.now())) {
+      return res.status(409).json({ error: '지금은 제안을 받지 않는 조건입니다' });
+    }
+
+    /* ── 보내기 횟수 (2026-11-03 보안점검) ──
+       회수하면 자리가 돌아오고 주소만 조금 바꾸면 같은 조건에 또 보낼 수 있어, 보내기·회수를 되풀이하면
+       손님 휴대폰에 알림톡이 쏟아졌다. 같은 조건에는 회수 여부와 상관없이 두 번까지, 한 시간에 스무 건까지 */
+    {
+      const 셈 = async extra => {
+        const q = new URLSearchParams({ select: 'id', agent_id: 'eq.' + chk.agent.id, limit: '30', ...extra });
+        const r = await fetch(sbUrl('bk_proposal', q.toString()), { headers: sbHeaders() });
+        return r.ok ? (await r.json()).length : 0;
+      };
+      if (await 셈({ demand_id: 'eq.' + demandId }) >= 2) {
+        return res.status(429).json({ error: '같은 조건에는 두 번까지만 보내실 수 있습니다' });
+      }
+      if (await 셈({ created_at: 'gte.' + new Date(Date.now() - 3600e3).toISOString() }) >= 20) {
+        return res.status(429).json({ error: '한 시간에 스무 건까지 보내실 수 있습니다 - 잠시 뒤 다시 보내 주세요' });
+      }
+    }
 
     /* 소유자·시행사는 올려둔 물건에 맞는 조건에만 보낼 수 있다.
        목록을 막아둔 것과 같은 규칙을 여기서 한 번 더 본다 - 목록을 안 거치고

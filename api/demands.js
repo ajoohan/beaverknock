@@ -9,7 +9,7 @@
  *   BK_OPS_PASS    운영자 접근 암호
  */
 
-import { opsAccount, opsNeedsPass, opsOpenUntil, opsPassCheck, sbHeaders, sbUrl } from './_auth.js';
+import { opsAccount, opsNeedsPass, opsOpenUntil, opsPassCheck, makeOpsLinkToken, sameSecret, sbHeaders, sbUrl } from './_auth.js';
 import { logOps } from './_opslog.js';
 
 const TABLE = 'bk_demand';
@@ -60,6 +60,13 @@ export default async function handler(req, res) {
   /* 운영 화면이 보는 것은 여기로 모은다.
      따로 함수를 두는 편이 깔끔하지만 Vercel 함수 상한(12개)에 걸린다.
      문(계정 + 암호)이 어차피 같으니 한 지붕 아래 둔다. */
+  /* 운영 임시 링크 발급 - 진짜 암호로 연 사람(또는 명단 계정)만. 링크로 들어온 사람이 링크를 또 만들어 기한을 늘리지 못하게 */
+  if (payload.what === 'ops-link') {
+    if (opsNeedsPass(gate) && !sameSecret(pass, BK_OPS_PASS)) return res.status(403).json({ error: '접근 암호로 연 뒤에 만들 수 있습니다' });
+    const t = makeOpsLinkToken(BK_OPS_PASS, payload.days);
+    await logOps(req, opsUser, { action: 'ops-link', detail: '기한 ' + new Date(t.until).toISOString().slice(0, 10) });
+    return res.status(200).json({ ok: true, ...t });
+  }
   if (payload.what === 'log')         return readLog(req, res, payload, opsUser);
   if (payload.what === 'reports')     return readReports(req, res, payload, opsUser);
   if (payload.what === 'report-mark') return markReport(req, res, payload, opsUser);

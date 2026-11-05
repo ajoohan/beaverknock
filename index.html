@@ -10818,6 +10818,9 @@ const CT_하위메뉴 = [['#/partner/contracts/new', '계약서 작성', 'pen', 
    번호는 배포한 날(연.월.일 - 같은 날 또 올리면 뒤에 .2). 화면이 version.json 을 가끔 읽어,
    더 새 버전이 올라와 있으면 메뉴 아래에서 새로고침을 권한다(버전확인) - 계약서를 띄워 둔 채 오래 일하면 고친 화면을 못 받는다 */
 const BK_변경 = [
+  { v:'26.11.05.7', 날:'2026-11-05', 줄:[
+    '거래신고 도우미 - 분양권 · 조합원 입주권 전매도(별지 제1호서식 공급계약·전매 칸 · 분양가격 · 권리가격 · 추가 지불액) · 신고 기한 알림 · 신고 마침',
+  ]},
   { v:'26.11.05.6', 날:'2026-11-05', 줄:[
     '개인정보 처리방침 - 서류 판독에 계약체결 문자 캡처 읽기를 더함(11월 12일 적용) · 캡처 읽기는 그날부터 켜진다',
   ]},
@@ -11432,7 +11435,9 @@ const ct지분 = s => { s = String(s || '').replace(/\s/g, ''); let m;
 const ct부가글 = v => v === '별도' || v === '포함' ? `(부가가치세 ${v})` : '';
 const ct문구이름 = t => { const s = String(t || '').replace(/\s+/g, ' ').trim(); return s.length > 26 ? s.slice(0, 26) + '…' : s; };
 /* 신고가 있는 계약 - 매매(거래신고)와 주택 임대차(임대차 신고). 서버(_contract.js 신고대상)와 같은 규칙 */
-const ct신고 = d => !!d && (d.form === 'sale' || d.form === 'home-lease' || (d.form === 'lease' && ct주거(d.sub)));
+/* 분양권·입주권 전매도 거래신고 대상이다(부동산 거래신고법 제3조 - 공급계약 지위 · 입주자로 선정된 지위의 매매, 2026-11-05) */
+const ct매매신고 = f => f === 'sale' || f === 'presale' || f === 'union';
+const ct신고 = d => !!d && (ct매매신고(d.form) || d.form === 'home-lease' || (d.form === 'lease' && ct주거(d.sub)));
 /* 문서 이름 - '부동산(아파트) 전세계약서'. 세부 종류가 없는 예전 문서는 양식 이름 그대로 */
 function ctTitle(doc){
   const F = CT_FORMS[doc.form] || CT_FORMS['home-lease'];
@@ -11642,7 +11647,7 @@ function ct일정목록(c, 설정 = ct알림설정()){
   if(md && +c.mid > 0) out.push({ k: 'mid', 날: md, 바뀜: !!ct날만(t.midDate), 메모: '중도금 금액과 입금 계좌를 확인하세요' });
   if(bd) out.push({ k: 'balance', 날: bd, 바뀜: !!ct날만(t.balanceDate),
     메모: ct날만(t.guideAt) ? '잔금안내 마침 · 준비서류를 확인하세요' : '잔금안내(이체한도·준비서류) 전입니다' });
-  if(cd && ct신고({ form: c.form, sub: c.sub })) out.push({ k: 'report', 이름: c.form === 'sale' ? '실거래신고 기한' : '임대차 신고 기한',
+  if(cd && ct신고({ form: c.form, sub: c.sub })) out.push({ k: 'report', 이름: ct매매신고(c.form) ? '실거래신고 기한' : '임대차 신고 기한',
     날: ct날더하기(cd, 30), 마침: !!c.reported_at, 메모: c.reported_at ? '신고 마침' : '부동산거래관리시스템에서 신고하세요' });
   if(bd && ['sale', 'union'].includes(c.form)){
     const [a, b] = 설정.lawyer;
@@ -12850,7 +12855,7 @@ function ctPlanHTML(doc){
   const 잠김 = CT.row && CT.row.status === 'sealed', 못씀 = !CT.id || CT.need32;
   const 일정 = ct일정목록(ct일정자료(doc, CT.row, t), 설정);
   const 허가대상 = ['sale', 'union'].includes(doc.form);
-  const 신고이름 = doc.form === 'sale' ? '부동산실거래신고' : '임대차 신고';
+  const 신고이름 = ct매매신고(doc.form) ? '부동산실거래신고' : '임대차 신고';
   const 체크 = (act, on, 글, 설명, 날) => `<label class="pl-chk${on?' on':''}"><input type="checkbox" data-act="${act}" ${on?'checked':''} ${못씀?'disabled':''}>
     <span><b>${글}</b>${설명 ? `<small>${설명}</small>` : ''}</span>${날 ? `<em>${esc(날)}</em>` : ''}</label>`;
   return `
@@ -14082,6 +14087,28 @@ function rpItems(doc){
     ['개업공인중개사', '대표자 성명', B.rep || ''], ['개업공인중개사', '사무소 소재지', B.addr || ''],
     ['개업공인중개사', '전화번호', B.phone || ''], ['개업공인중개사', '소속공인중개사 성명', B.staff || '']];
   const 특약 = (doc.specials || []).filter(s => String(s || '').trim()).join(' / ').slice(0, 500);
+  /* 분양권 · 입주권 - 같은 별지 제1호서식, ④ 거래대상은 '공급계약 · 전매' 칸, ⑧ 은 분양가격 · 선택비용 · 추가 지불액 */
+  if(doc.form === 'presale' || doc.form === 'union'){
+    const 분양 = doc.form === 'presale';
+    return [
+      ...사람('① 매도인', '매도인', ps.seller || {}), ...사람('② 매수인', '매수인', ps.buyer || {}),
+      ...중개,
+      ['④ 거래대상 종류', '종류', 분양 ? '분양권 · 전매' : '입주권 · 전매', 분양 ? '사업주체와 맺는 최초 공급계약이면 ‘공급계약’, 그 지위를 사고팔면 ‘전매’' : '관리처분계획 인가로 취득한 입주자 지위의 매매'],
+      ['④ 거래대상 종류', '건물 종류', 분양 ? '아파트 등 (분양권 계약서의 공급 목적물)' : '아파트 등 (정비사업으로 지을 건축물)'],
+      ['⑥ 소재지/지목/면적', '소재지', [P.road, P.bdNm, P.part].filter(Boolean).join(' '), '분양 공고·관리처분계획의 동·호수까지'],
+      ...(분양 ? [['⑥ 소재지/지목/면적', '공급면적(㎡)', P.supply || ''], ['⑦ 계약대상 면적', '전용면적(㎡)', P.partArea || '']]
+        : [['⑥ 소재지/지목/면적', '정비사업 명칭', P.project || ''], ['⑥ 소재지/지목/면적', '분양 신청 평형·동호', P.part || '']]),
+      ...(분양 ? [['⑧ 물건별 거래가격', '분양가격', rp원(D.orgPrice)], ['⑧ 물건별 거래가격', '발코니 확장 등 선택비용', '', '분양계약서의 선택 품목 금액 - 직접 입력'],
+          ['⑧ 물건별 거래가격', '추가 지불액 등(프리미엄)', rp원(D.premium)]]
+        : [['⑧ 물건별 거래가격', '권리가격', rp원(D.rightValue)], ['⑧ 물건별 거래가격', '추가 지불액 등(추가분담금·프리미엄)', rp원((+D.extra || 0) + (+D.premium || 0))]]),
+      ['⑨ 총 실제 거래가격', '합계', rp원(D.price)], ['⑨ 총 실제 거래가격', '계약금', rp원(D.down)],
+      ['⑨ 총 실제 거래가격', '계약 체결일', rp날(doc.contractDate)],
+      ['⑨ 총 실제 거래가격', '중도금', rp원(D.mid)], ['⑨ 총 실제 거래가격', '중도금 지급일', rp날(D.midDate)],
+      ['⑨ 총 실제 거래가격', '잔금', rp원(ctBalance(D))], ['⑨ 총 실제 거래가격', '잔금 지급일', rp날(D.balanceDate)],
+      ['⑪ 계약의 조건 및 참고사항', '승계할 대출', rp원(D.loan), '중도금·이주비 대출을 승계하면 적습니다'],
+      ['⑪ 계약의 조건 및 참고사항', '특약 요약', 특약, '조건·기한을 붙인 경우에만'],
+    ];
+  }
   if(doc.form === 'sale') return [
     ...사람('① 매도인', '매도인', ps.seller || {}), ...사람('② 매수인', '매수인', ps.buyer || {}),
     ...중개,
@@ -14117,6 +14144,8 @@ function rpItems(doc){
 /* 임대차 신고 대상인지 대략 알려 준다 - 지역(수도권·광역시·세종·도의 시)까지는 보지 않으므로 '가능성' 으로만 말한다 */
 function rp대상(doc){
   if(doc.form === 'sale') return '중개거래는 개업공인중개사가 신고합니다(공동중개는 공동으로).';
+  if(doc.form === 'presale') return '분양권 전매도 거래신고 대상입니다. 중개거래는 개업공인중개사가 계약일부터 30일 안에 신고합니다. 사업주체의 명의변경은 신고필증을 받은 뒤에 합니다.';
+  if(doc.form === 'union') return '조합원 입주권 매매도 거래신고 대상입니다. 중개거래는 개업공인중개사가 계약일부터 30일 안에 신고합니다.';
   const D = doc.deal || {};
   const 넘음 = (+D.deposit || 0) > 60000000 || (D.type === 'monthly' && (+D.rent || 0) > 300000);
   return 넘음 ? '보증금 6천만 원 또는 월 차임 30만 원을 넘어 신고 대상일 가능성이 높습니다(군 지역은 제외). 계약서를 첨부해 신고하면 확정일자가 함께 부여됩니다.'
@@ -14130,10 +14159,10 @@ function rpHTML(doc){
     let g = 묶음.find(x => x.sec === sec); if(!g) 묶음.push(g = { sec, rows: [] });
     g.rows.push({ label, value, note });
   }
-  const 서식 = doc.form === 'sale' ? '부동산거래계약신고서(별지 제1호서식)' : '주택임대차계약신고서(별지 제5호의2서식)';
+  const 서식 = ct매매신고(doc.form) ? '부동산거래계약신고서(별지 제1호서식)' : '주택임대차계약신고서(별지 제5호의2서식)';
   return `
     <div class="card pad ct-sec">
-      <h2>${doc.form === 'sale' ? '거래신고' : '임대차 신고'} 도우미</h2>
+      <h2>${ct매매신고(doc.form) ? '거래신고' : '임대차 신고'} 도우미</h2>
       <p class="sub" style="margin:0">${esc(서식)}의 칸 순서대로 정리했습니다. 부동산거래관리시스템에 그대로 옮겨 적으세요.
         비버노크가 대신 신고하지는 않습니다.</p>
       <div class="rp-due ${기.남음 != null && 기.남음 < 7 ? 'hot' : ''}">

@@ -33,7 +33,9 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const LIST_COLS = 'id,created_at,updated_at,form,title,status,sealed_at,sha256,prev_id,proposal_id,reported_at,'
   + 'cat:doc->>cat,sub:doc->>sub,dt:doc->deal->>type,parties:doc->parties,renew:doc->renewOf';
 /* 신고가 있는 양식 - 매매(거래신고) · 주택임대차(임대차 신고). 상가 임대차·확인·설명서는 신고가 없다 */
-export const CT_REPORT_FORMS = ['sale', 'home-lease', 'lease'];
+export const CT_REPORT_FORMS = ['sale', 'presale', 'union', 'home-lease', 'lease'];
+/* 매매 쪽 신고 - 분양권·입주권 전매도 거래신고 대상(부동산 거래신고법 제3조, 2026-11-05) */
+const 매매신고 = f => f === 'sale' || f === 'presale' || f === 'union';
 /* 부동산 임대차('lease')는 주거 세부 종류일 때만 임대차 신고 대상이다 - 화면의 ct신고 와 같은 규칙 */
 const 주거종류 = ['아파트','주상복합','연립주택','다세대주택','다가구주택','다중주택','도시형생활주택','주택','오피스텔','원룸'];
 export const 신고대상 = (form, doc) => {
@@ -570,7 +572,7 @@ export function 일정목록(c, 설정 = 알림설정()) {
   if (md && +c.mid > 0) out.push({ k: 'mid', 날: md, 바뀜: !!날만(t.midDate), 메모: '중도금 금액과 입금 계좌를 확인하세요' });
   if (bd) out.push({ k: 'balance', 날: bd, 바뀜: !!날만(t.balanceDate),
     메모: 날만(t.guideAt) ? '잔금안내 마침 · 준비서류를 확인하세요' : '잔금안내(이체한도·준비서류) 전입니다' });
-  if (cd && 신고대상(c.form, { sub: c.sub })) out.push({ k: 'report', 이름: c.form === 'sale' ? '실거래신고 기한' : '임대차 신고 기한',
+  if (cd && 신고대상(c.form, { sub: c.sub })) out.push({ k: 'report', 이름: 매매신고(c.form) ? '실거래신고 기한' : '임대차 신고 기한',
     날: 날더하기(cd, 30), 마침: !!c.reported_at, 메모: c.reported_at ? '신고 마침' : '부동산거래관리시스템에서 신고하세요' });
   if (bd && ['sale', 'union'].includes(c.form)) {
     const [a, b] = 설정.lawyer;

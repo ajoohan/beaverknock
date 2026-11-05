@@ -422,8 +422,8 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
   let res = 응답(); 불린 = [];
   await C.contractRoute({}, res, agent, user, { what: 'contract-reported', id: '33333333-3333-3333-3333-333333333333' });
   const 본 = JSON.parse(불린[0].b);
-  ok(불린[0].m === 'PATCH' && /status=eq\.sealed/.test(불린[0].u) && /form=in\.\(sale,home-lease,lease\)/.test(불린[0].u) && Object.keys(본).join() === 'reported_at' && 본.reported_at,
-     '신고 마침은 내 날인본 · 매매·주택임대차에만 · reported_at 한 칸만 바꾼다');
+  ok(불린[0].m === 'PATCH' && /status=eq\.sealed/.test(불린[0].u) && /form=in\.\(sale,presale,union,home-lease,lease\)/.test(불린[0].u) && Object.keys(본).join() === 'reported_at' && 본.reported_at,
+     '신고 마침은 내 날인본 · 매매(분양권·입주권 포함)·주택임대차에만 · reported_at 한 칸만 바꾼다');
   res = 응답(); 불린 = [];
   await C.contractRoute({}, res, agent, user, { what: 'contract-reported', id: '33333333-3333-3333-3333-333333333333', on: false });
   ok(JSON.parse(불린[0].b).reported_at === null, '표시 취소는 reported_at 을 비운다');
@@ -1139,6 +1139,17 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
   ok(가린.parties.lessor.phone === '010-****-5678' && 가린.parties.lessor.co[0].phone === '010-****-8888' && 가린.parties.lessor.proxy.phone === '010-****-2222' && !가린.src,
      '초안에서는 당사자·공동명의자·대리인 전화번호를 가린다');
   ok(/V\['#\/draft'\] = tok =>/.test(js) && /h\.startsWith\('#\/draft\/'\)\) html = V\['#\/draft'\]\(parts\[2\]\)/.test(js), '초안 보기 화면은 로그인 없이 #/draft/표 로 연다');
+
+  /* 분양권 · 입주권 거래신고 도우미 */
+  const 분 = M.ctNewDoc('presale', null, { cat: 'presale', sub: '아파트' });
+  분.deal = { ...분.deal, price: 700000000, orgPrice: 600000000, premium: 100000000, down: 70000000, balanceDate: '2026-12-20' };
+  const 분줄 = M.rpItems(분);
+  ok(M.ct신고(분) && M.ct신고({ form: 'union' }) && C.신고대상('presale') && C.신고대상('union'), '분양권·입주권 전매도 신고 대상(화면·서버)');
+  ok(분줄.some(([s, l, v]) => s === '④ 거래대상 종류' && v === '분양권 · 전매') && 분줄.some(([s, l, v]) => l === '분양가격' && /600,000,000/.test(v)) && 분줄.some(([, l, v]) => /프리미엄/.test(l) && /100,000,000/.test(v)),
+     '분양권 신고 도우미 - 거래대상 분양권·전매 · 분양가격 · 추가 지불액(프리미엄)');
+  const 입 = M.ctNewDoc('union', null, { cat: 'union' }); 입.deal = { ...입.deal, rightValue: 300000000, extra: 50000000, premium: 200000000 };
+  ok(M.rpItems(입).some(([, l, v]) => l === '권리가격' && /300,000,000/.test(v)) && M.rpItems(입).some(([, l, v]) => /추가 지불액/.test(l) && /250,000,000/.test(v)), '입주권 신고 도우미 - 권리가격 · 추가 지불액(추가분담금+프리미엄)');
+  ok(C.일정목록({ form: 'presale', cd: '2026-11-05', track: {} }).find(e => e.k === 'report').이름 === '실거래신고 기한', '분양권 신고 기한 알림은 실거래신고 기한');
 }
 
 console.log(`${ran - fail} 통과 / ${fail} 실패`);

@@ -10821,6 +10821,10 @@ const CT_하위메뉴 = [['#/partner/contracts/new', '계약서 작성', 'pen', 
    번호는 배포한 날(연.월.일 - 같은 날 또 올리면 뒤에 .2). 화면이 version.json 을 가끔 읽어,
    더 새 버전이 올라와 있으면 메뉴 아래에서 새로고침을 권한다(버전확인) - 계약서를 띄워 둔 채 오래 일하면 고친 화면을 못 받는다 */
 const BK_변경 = [
+  { v:'26.11.05.11', 날:'2026-11-05', 줄:[
+    '재검토 반영 - 초안 링크 끊기를 서버가 하고(성공해야 알림) 다른 기기의 저장이 끊은 링크를 되살리지 않게 · 끊기 단추는 늘 보임 · 특약 속 일반전화·계좌번호도 가림',
+    '갱신계약 - 직접 적은 계약금은 보증금을 고쳐도 그대로, 자동으로 맞춘 계약금은 칸에도 보임 · 합의 재계약 기본 특약에 빈 갱신 문구가 들어가지 않게',
+  ]},
   { v:'26.11.05.10', 날:'2026-11-05', 줄:[
     '사무소 설정 저장(특약·문자 틀·보낸 기록·단지·알림·종료일 표기) - 다른 기기에서 같은 때 고쳐도 서로 지우지 않게(읽은 판이 그대로일 때만 쓰고 어긋나면 다시 읽어 저장)',
   ]},
@@ -11414,7 +11418,8 @@ function ct기본특약(doc){
   if(g === 'renew' && doc.renewOf) return [...ct갱신특약(doc), ...내것.filter(t => !CT_계약일조항.test(t) && !CT_갱신표.test(t))];
   /* 지난 계약서 없이 '합의 재계약'만 고른 계약서 - 갱신 특약의 빈 날짜·금액 대신 임대차 기본 특약(계약일 줄 빼고)을 쓴다(2026-11-05 리뷰) */
   if(g === 'renew'){
-    const 임대 = ((CT.phr && CT.phr.list) || []).filter(p => (p.g === 'renew' || p.g === 'lease') && p.base && (!p.tag || ct주거(p.tag) === ct주거(doc.sub))).map(p => p.t);
+    const 임대 = ((CT.phr && CT.phr.list) || []).filter(p => (p.g === 'renew' || p.g === 'lease') && p.base && (!p.tag || ct주거(p.tag) === ct주거(doc.sub))).map(p => p.t)
+      .filter(t => !/^(본 계약은 .*갱신계약으로|기존 계약에서 이미 지급한 보증금으로)/.test(String(t).trim()));
     const 목록 = 임대.length ? 임대 : ['lease', 'home-lease'].includes(doc.form) && ct군(doc) === 'home' ? CT_기본특약.lease : [];
     return 목록.filter(t => !CT_계약일조항.test(t));
   }
@@ -12844,7 +12849,7 @@ function ctDeskShell(doc, side, 신고면){
     <div class="ctx-head">
       <a class="back" data-go="#/partner/contracts"><i class="ar-l" aria-hidden="true"></i>계약서 목록</a>
       <h1 class="ctx-h1">${esc(이름)}</h1>
-      <span class="badge ${잠김?'b-ok':'b-warn'}">${잠김?'날인본':'작성 중'}</span>${판줄}${!잠김 && !F.explain && CT.id && ((CT.track || {}).shareN || CT.shared) ? `<button type="button" class="tapx ctx-rev" data-act="ct-share-cut">나간 초안 링크 끊기</button>` : ''}
+      <span class="badge ${잠김?'b-ok':'b-warn'}">${잠김?'날인본':'작성 중'}</span>${판줄}${!잠김 && !F.explain && CT.id ? `<button type="button" class="tapx ctx-rev" data-act="ct-share-cut">나간 초안 링크 끊기</button>` : ''}
       ${!잠김 && !F.explain ? `<span class="ctx-sub">비워 둔 칸은 밑줄 빈칸으로 인쇄됩니다 · 주민등록번호·계좌번호는 적지 않습니다</span>` : ''}
       <span class="ctx-badge">${agentBadge()}${S.user ? userMenu({ admin: true }) : ''}</span>
     </div>
@@ -14271,7 +14276,14 @@ function ctInput(el, k){
     const n = +(el.value.replace(/[^0-9]/g, '')) || 0;
     ctSet(CT.doc, path, n);
     /* 갱신계약 - 계약금은 기존 보증금이되 새 보증금보다 클 수 없다(감액 갱신, 2026-11-05 리뷰) */
-    if(path === 'deal.deposit' && CT.doc.renewOf && +CT.doc.renewOf.deposit) CT.doc.deal.down = Math.min(+CT.doc.renewOf.deposit, n);
+    /* 계약금이 앞서 자동으로 맞춘 값 그대로일 때만 따라 바꾼다 - 중개사가 직접 적은 계약금은 두고, 바꾼 값은 칸에도 보인다(2026-11-05 리뷰) */
+    if(path === 'deal.deposit' && CT.doc.renewOf && +CT.doc.renewOf.deposit){
+      const 옛 = +CT.doc.renewOf.deposit, D = CT.doc.deal;
+      const 자동 = CT.doc.renewOf.autoDown != null ? +CT.doc.renewOf.autoDown : 옛;
+      if(+D.down === 자동 && n){ D.down = Math.min(옛, n); CT.doc.renewOf.autoDown = D.down;
+        const 칸 = $('#app [data-in="ct$:deal.down"]'); if(칸) 칸.value = comma(String(D.down));
+        const 글 = $('#app [data-ctwon="deal.down"]'); if(글) 글.textContent = `금 ${한글금액(D.down)}원정`; }
+    }
     const w = $(`#app [data-ctwon="${path}"]`); if(w) w.textContent = 한글금액(n) ? `금 ${한글금액(n)}원정` : '';
     ct잔금표시();
     /* 중도금을 처음 넣거나 지우면 지급일 칸이 생기고 없어진다 - 그때만 다시 그린다 */
@@ -16533,7 +16545,7 @@ function handle(a,v,el){
     case 'ct-acct': if(CT.doc && !ctSealed()){ if(CT.doc.acct) delete CT.doc.acct; else CT.doc.acct = true; ctDirty(); render(); } return true;
     case 'ct-renew-sp': if(CT.doc && !ctSealed() && CT.doc.renewOf){
       CT.doc.specials = [...ct갱신특약(CT.doc), ...CT.doc.specials.filter(t => !CT_갱신표.test(String(t).trim()))];
-      if(+CT.doc.renewOf.deposit) CT.doc.deal.down = Math.min(+CT.doc.renewOf.deposit, +CT.doc.deal.deposit || +CT.doc.renewOf.deposit); ctDirty(); render(); toast('갱신 특약을 지금 금액으로 다시 썼습니다'); } return true;
+      if(+CT.doc.renewOf.deposit){ CT.doc.deal.down = Math.min(+CT.doc.renewOf.deposit, +CT.doc.deal.deposit || +CT.doc.renewOf.deposit); CT.doc.renewOf.autoDown = CT.doc.deal.down; } ctDirty(); render(); toast('갱신 특약을 지금 금액으로 다시 썼습니다'); } return true;
     /* 빠진 기본 특약만 다시 넣는다 - 이미 있는 줄은 두 번 넣지 않는다 */
     case 'ct-base-sp': if(CT.doc && !ctSealed()){ const 있음 = new Set(CT.doc.specials.map(t => String(t).trim()));
       const 넣을 = ct기본특약(CT.doc).filter(t => !있음.has(t.trim()));
@@ -16686,14 +16698,20 @@ function handle(a,v,el){
     case 'ctk-hb':      ctTrackSet({ hb: !ct트랙().hb }); return true;
     case 'ct-open-prev': if(CT.row && CT.row.prev_id) go('#/partner/contract/' + CT.row.prev_id); return true;
     /* 나간 초안 링크를 모두 끊는다 - 링크 번호를 올리면 서버가 앞 번호의 링크를 받지 않는다 */
-    case 'ct-share-cut': if(CT.id){ ctTrackSet({ shareN: ((CT.track || {}).shareN || 0) + 1 }); CT.shared = false; toast('이 계약서로 보낸 초안 링크를 모두 끊었습니다 - 다시 보내려면 초안 링크를 새로 만드세요'); } return true;
+    /* 서버가 링크 번호를 올린 뒤에만 '끊었습니다' 라고 한다(2026-11-05 리뷰) */
+    case 'ct-share-cut': if(CT.id){ const id = CT.id;
+      ctPost({ what:'contract-share-cut', id }).then(({ ok, j }) => {
+        if(!ok) return toast(j.need === '0032' ? '링크 끊기는 준비 중입니다 - 곧 열립니다' : (j.error || '링크를 끊지 못했습니다 - 다시 눌러 주세요'));
+        if(CT.id === id){ CT.track = j.track || CT.track; CT.row = { ...(CT.row || {}), track: CT.track }; }
+        toast('이 계약서로 보낸 초안 링크를 모두 끊었습니다 - 다시 보내려면 초안 링크를 새로 만드세요'); render();
+      }).catch(() => toast('네트워크 문제로 링크를 끊지 못했습니다')); } return true;
     case 'ct-open-id':   if(v) go('#/partner/contract/' + v); return true;
     /* 확정 전 초안 공유 - 보기 전용 링크(7일)를 복사한다 */
     case 'ct-share': (async () => {
       if(!CT.id || CT.dirty){ if(!(await ctSave(true))) return; }
       const { ok, j } = await ctPost({ what:'contract-share', id: CT.id }).catch(() => ({ ok:false, j:{} }));
       if(!ok) return toast(j.error || '링크를 만들지 못했습니다');
-      CT.shared = true; render();
+
       const 주소 = `${location.origin}${location.pathname}#/draft/${j.token}`;
       const 끝 = new Date(j.until + 9 * 3600e3).toISOString().slice(0, 10);
       (navigator.clipboard ? navigator.clipboard.writeText(주소) : Promise.reject()).then(

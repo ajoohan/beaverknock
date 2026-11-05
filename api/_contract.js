@@ -118,6 +118,7 @@ export async function contractRoute(req, res, agent, user, b) {
       case 'contract-track':   await track(res, agent, b); break;
       case 'contract-scan':    await scan(req, res, b, user); break;
       case 'contract-share':   await share(res, agent, b); break;
+      case 'contract-share-cut': await shareCut(res, agent, b); break;
       default: res.status(400).json({ error: '알 수 없는 요청입니다' });
     }
   } catch (e) {
@@ -221,7 +222,10 @@ export function 초안표읽기(tok, 지금 = Date.now()) {
 }
 const 번호가림 = v => { const d = String(v || '').replace(/[^0-9]/g, ''); return d.length >= 7 ? `${d.slice(0, 3)}-****-${d.slice(-4)}` : (v ? '****' : ''); };
 /* 글 안의 휴대전화 번호도 가린다(특약에 적은 연락처 등) */
-const 글번호가림 = s => String(s).replace(/01[016789][\s.-]?\d{3,4}[\s.-]?\d{4}/g, m => 번호가림(m));
+/* 휴대전화 · 일반전화 · 계좌처럼 보이는 긴 숫자(숫자 9자리 이상, 사이에 - 나 빈칸)는 끝 4자리만 남긴다. 금액(쉼표)은 건드리지 않는다 */
+const 글번호가림 = s => String(s)
+  .replace(/01[016789][\s.-]?\d{3,4}[\s.-]?\d{4}/g, m => 번호가림(m))
+  .replace(/\d[\d -]{7,}\d/g, m => { const d = m.replace(/\D/g, ''); return d.length >= 9 && /[\s-]|^\d{9,}$/.test(m) ? `****${d.slice(-4)}` : m; });
 export function 초안가림(doc) {
   const d = JSON.parse(JSON.stringify(doc || {}));
   const 가림 = p => { if (!p || typeof p !== 'object') return; if ('phone' in p) p.phone = 번호가림(p.phone);
@@ -243,6 +247,22 @@ async function share(res, agent, b) {
   const n = (trackCheck((got.rows[0] || {}).track || {}) || {}).shareN || 0;
   const tok = 초안표(id, n);
   return res.status(200).json({ ok: true, token: tok, until: +tok.split('.')[2] });
+}
+/* 나간 초안 링크 끊기 - 서버가 지금 링크 번호를 읽어 하나 올린다. 성공해야 화면이 '끊었습니다' 라고 한다 */
+async function shareCut(res, agent, b) {
+  const id = String(b.id || '');
+  if (!UUID.test(id)) return res.status(400).json({ error: '어느 계약서인지 알 수 없습니다' });
+  const got = await db('bk_contract', `select=track&id=eq.${id}&agent_id=eq.${agent.id}&limit=1`);
+  if (!got.r.ok) return /track/.test(got.t || '') ? 준비중32(res) : noTable(got.t) ? 준비중(res) : res.status(502).json({ error: '계약서를 불러오지 못했습니다' });
+  if (!got.rows.length) return res.status(404).json({ error: '내 계약서가 아니거나 지워진 계약서입니다' });
+  const t = trackCheck(got.rows[0].track || {}) || {};
+  t.shareN = (t.shareN || 0) + 1;
+  const { r, t: 글, rows } = await db('bk_contract', `id=eq.${id}&agent_id=eq.${agent.id}&select=id`, {
+    method: 'PATCH', headers: { Prefer: 'return=representation' }, body: JSON.stringify({ track: t }),
+  });
+  if (!r.ok) return /track/.test(글 || '') ? 준비중32(res) : res.status(502).json({ error: '링크를 끊지 못했습니다' });
+  if (!rows.length) return res.status(404).json({ error: '내 계약서가 아니거나 지워진 계약서입니다' });
+  return res.status(200).json({ ok: true, track: t });
 }
 /* 공개 읽기 - 로그인 없이 표만으로. IP 마다 10분에 60번 */
 export async function draftRead(req, res) {
@@ -623,6 +643,12 @@ async function track(res, agent, b) {
   if (!UUID.test(id)) return res.status(400).json({ error: '어느 계약서인지 알 수 없습니다' });
   const t = trackCheck(b.track);
   if (!t) return res.status(400).json({ error: '날짜 모양이 맞지 않습니다' });
+  /* 링크 번호(shareN)는 끊기(contract-share-cut)만 올린다 - 다른 기기의 오래된 track 저장이 0 으로 되돌려
+     끊은 링크가 다시 열리면 안 된다(2026-11-05 리뷰). 받은 값은 버리고 지금 값을 지킨다 */
+  delete t.shareN;
+  const 지금 = await db('bk_contract', `select=track&id=eq.${id}&agent_id=eq.${agent.id}&limit=1`);
+  const 옛번호 = 지금.r.ok && 지금.rows[0] ? ((trackCheck(지금.rows[0].track || {}) || {}).shareN || 0) : 0;
+  if (옛번호) t.shareN = 옛번호;
   const { r, t: 글, rows } = await db('bk_contract', `id=eq.${id}&agent_id=eq.${agent.id}&select=id`, {
     method: 'PATCH', headers: { Prefer: 'return=representation' }, body: JSON.stringify({ track: t }),
   });

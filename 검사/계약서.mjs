@@ -823,8 +823,18 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
   const agent = { id: '11111111-1111-1111-1111-111111111111', role: 'agent' }, user = { id: 'u' };
   let res = 응답();
   await C.contractRoute({}, res, agent, user, { what: 'contract-track', id: '33333333-3333-3333-3333-333333333333', track: { guideAt: '2026-12-10', 뭐: 1 } });
-  ok(res.code === 200 && 불린[0].m === 'PATCH' && /agent_id=eq\.11111111/.test(불린[0].u) && !/status=eq/.test(불린[0].u) && /select=id/.test(불린[0].u)
-     && JSON.stringify(JSON.parse(불린[0].b)) === '{"track":{"guideAt":"2026-12-10"}}', '일정·체크 저장 - 내 계약서의 track 한 칸만(날인본도 된다)');
+  { const 패 = 불린.find(x => x.m === 'PATCH');
+  ok(res.code === 200 && 패 && /agent_id=eq\.11111111/.test(패.u) && !/status=eq/.test(패.u) && /select=id/.test(패.u)
+     && JSON.stringify(JSON.parse(패.b)) === '{"track":{"guideAt":"2026-12-10"}}', '일정·체크 저장 - 내 계약서의 track 한 칸만(날인본도 된다)'); }
+  /* 링크 번호는 끊기만 올린다 - 오래된 track 저장(shareN 없음·0)이 끊은 링크를 되살리지 않는다(2026-11-05 리뷰) */
+  { const 앞답 = 답; 답 = (u, o) => (o && o.method === 'PATCH') ? new Response('[{"id":"x"}]', { status: 200 }) : new Response('[{"track":{"shareN":3,"off":true}}]', { status: 200 });
+    res = 응답(); 불린 = [];
+    await C.contractRoute({}, res, agent, user, { what: 'contract-track', id: '33333333-3333-3333-3333-333333333333', track: { state: 'doing', shareN: 0 } });
+    ok(res.code === 200 && JSON.parse(불린.find(x => x.m === 'PATCH').b).track.shareN === 3 && JSON.parse(불린.find(x => x.m === 'PATCH').b).track.state === 'doing', '일반 track 저장은 서버의 링크 번호를 지킨다');
+    res = 응답(); 불린 = [];
+    await C.contractRoute({}, res, agent, user, { what: 'contract-share-cut', id: '33333333-3333-3333-3333-333333333333' });
+    ok(res.code === 200 && res.body.track.shareN === 4 && res.body.track.off === true, '끊기는 서버가 지금 번호를 읽어 하나 올린다(다른 칸은 그대로)');
+    답 = 앞답; }
   res = 응답(); 불린 = [];
   await C.contractRoute({}, res, agent, user, { what: 'contract-track', id: '33333333-3333-3333-3333-333333333333', track: { balanceDate: '내일' } });
   ok(res.code === 400 && 불린.length === 0, '날짜 모양이 틀리면 DB 에 묻지 않는다');
@@ -1151,6 +1161,7 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
   ok(가린.parties.lessor.phone === '010-****-5678' && 가린.parties.lessor.co[0].phone === '010-****-8888' && 가린.parties.lessor.proxy.phone === '010-****-2222' && !가린.src
      && !('birth' in 가린.parties.lessor) && !가린.edited && 가린.specials[0] === '연락은 010-****-6666 으로',
      '초안에서는 전화번호(특약 글 안까지)를 가리고 생년월일 · 자동값 원본을 뺀다');
+  ok(C.초안가림({ specials: ['사무실 02-123-4567 · 계좌 123456-78-901234 · 금 300,000,000원 · 2026-11-20'] }).specials[0] === '사무실 ****4567 · 계좌 ****1234 · 금 300,000,000원 · 2026-11-20', '일반전화 · 계좌처럼 긴 숫자도 가리고 금액 · 날짜는 둔다');
   ok(C.trackCheck({ shareN: 2 }).shareN === 2 && !('shareN' in C.trackCheck({ shareN: -1 })), '링크 번호(shareN)는 양의 정수만');
   ok(/중개사무소가 이 링크를 끊었습니다/.test(fs.readFileSync(new URL('../api/_contract.js', import.meta.url), 'utf8')) && /if \(row\.status === 'sealed'\) return res\.status\(200\)\.json\(\{ ok: true, until: t\.until, form: row\.form, status: 'sealed' \}\)/.test(fs.readFileSync(new URL('../api/_contract.js', import.meta.url), 'utf8')),
      '링크를 끊으면 열지 않고, 확정된 계약서는 내용을 내보내지 않는다');

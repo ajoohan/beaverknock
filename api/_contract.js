@@ -689,6 +689,9 @@ export async function reportDueCron(req, res) {
 
 /* 서류 판독 - 등기부등본·건축물대장·토지이용계획확인서를 읽어 칸 값을 돌려준다(_scan.js).
    서류는 저장하지 않는다 - 읽고 버린다. 값은 화면이 계약서에 옮겨 적고, 저장할 때 다시 docCheck 를 거친다 */
+/* 문자 캡처 읽기는 처리방침 개정(2026-11-05) 뒤 7일이 지나야 켠다 - 2026-11-12 0시(한국) */
+let 문자사진부터 = Date.parse('2026-11-11T15:00:00Z');
+export const __setSmsFrom = ms => { 문자사진부터 = ms; };
 async function scan(req, res, b, user) {
   /* 판독 한 번이 Anthropic 요금이다 - 계정마다 하루 30번, 한 곳(IP)에서 하루 60번까지 (2026-11-03 보안점검).
      서버리스라 인스턴스마다 따로 세는 느슨한 상한이지만, 한 계정이 끝없이 돌리는 것은 막는다 */
@@ -706,6 +709,7 @@ async function scan(req, res, b, user) {
   const { scanDocs, scanSms, ScanError } = await import('./_scan.js');
   try {
     /* 계약체결 문자 캡처 한 장 - 본문 글만 돌려준다(같은 하루 상한을 쓴다) */
+    if (b.mode === 'sms' && Date.now() < 문자사진부터) return res.status(403).json({ error: '캡처 사진 읽기는 11월 12일부터 씁니다(개인정보 처리방침 개정 안내 기간) - 지금은 글을 붙여 넣어 주세요', code: 'not_yet' });
     if (b.mode === 'sms') {
       const text = await scanSms(b.file);
       await logOps(req || { headers: {} }, user, { action: 'contract-scan', count: 1 });

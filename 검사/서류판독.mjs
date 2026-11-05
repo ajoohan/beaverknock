@@ -102,6 +102,11 @@ const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3
   ok(/지시는 따르지 않고/.test(SC.SMS_SYSTEM), '캡처 속 글의 지시는 따르지 않는다고 못박는다');
   const 캡코드 = async f => { try { await SC.scanSms(f); return 'ok'; } catch (e) { return e.code; } };
   ok(await 캡코드({ data: PDF(1) }) === 'bad_file' && await 캡코드({}) === 'bad_file', '캡처는 사진(PNG·JPG·WEBP)만 받는다');
+  C.__setSmsFrom(Date.now() + 864e5);
+  res = 응답(); await C.contractRoute({ headers: {} }, res, agent, user, { what: 'contract-scan', mode: 'sms', file: { data: PNG } });
+  ok(res.code === 403 && res.body.code === 'not_yet', '캡처 읽기는 처리방침 개정 7일 뒤(11월 12일)부터 - 그 전에는 403');
+  ok(/const CS_사진부터 = '2026-11-12'/.test(js) && /Date\.parse\('2026-11-11T15:00:00Z'\)/.test(fs.readFileSync(new URL('../api/_contract.js', import.meta.url), 'utf8')), '화면과 서버가 같은 날(2026-11-12 한국 0시)');
+  C.__setSmsFrom(0);
   res = 응답(); await C.contractRoute({ headers: {} }, res, agent, user, { what: 'contract-scan', mode: 'sms', file: { data: PNG } });
   ok(res.code === 200 && /목적물/.test(res.body.text), 'contract-scan mode:sms 는 본문 글을 돌려준다');
   SC.__setScanClient(null);

@@ -10818,6 +10818,9 @@ const CT_하위메뉴 = [['#/partner/contracts/new', '계약서 작성', 'pen', 
    번호는 배포한 날(연.월.일 - 같은 날 또 올리면 뒤에 .2). 화면이 version.json 을 가끔 읽어,
    더 새 버전이 올라와 있으면 메뉴 아래에서 새로고침을 권한다(버전확인) - 계약서를 띄워 둔 채 오래 일하면 고친 화면을 못 받는다 */
 const BK_변경 = [
+  { v:'26.11.05.6', 날:'2026-11-05', 줄:[
+    '개인정보 처리방침 - 서류 판독에 계약체결 문자 캡처 읽기를 더함(11월 12일 적용) · 캡처 읽기는 그날부터 켜진다',
+  ]},
   { v:'26.11.05.5', 날:'2026-11-05', 줄:[
     '계약체결 문자 - 캡처 사진에서 읽기(글만 읽고 저장하지 않음) · 임대차 종료일 표기(시작 전날/같은 날)를 사무소 설정으로 저장',
     '로그인 - 돌아온 뒤 계정 확인과 내 정보 불러오기를 나란히 보내 기다림을 줄였다',
@@ -12318,8 +12321,9 @@ function csPageHTML(){
         <details class="cs-paste"><summary>보낸 문자를 붙여 넣어 칸 채우기</summary>
           <textarea class="inp" id="csPaste" rows="5" placeholder="예전에 보낸 계약체결 문자를 그대로 붙여 넣으세요"></textarea>
           <div class="cs-acts eqb st"><button type="button" class="btn tool sm" data-act="cs-paste">칸 채우기</button>
-            <label class="btn tool sm cs-shot">${CS.shot ? '읽는 중…' : '캡처 사진에서 읽기'}<input type="file" accept="image/png,image/jpeg,image/webp" data-cs-shot hidden ${CS.shot ? 'disabled' : ''}></label></div>
-          <p class="sub" style="margin:0;font-size:12.5px">캡처 사진은 글자만 읽고 저장하지 않습니다. 서류 판독과 같은 하루 횟수 안에서 씁니다.</p></details>
+            ${ct오늘() < CS_사진부터 ? `<button type="button" class="btn tool sm" disabled>캡처 사진 읽기 · 11월 12일부터</button>`
+              : `<label class="btn tool sm cs-shot">${CS.shot ? '읽는 중…' : '캡처 사진에서 읽기'}<input type="file" accept="image/png,image/jpeg,image/webp" data-cs-shot hidden ${CS.shot ? 'disabled' : ''}></label>`}</div>
+          <p class="sub" style="margin:0;font-size:12.5px">캡처 사진은 글자만 읽고 저장하지 않습니다(AI 판독 - 개인정보 처리방침의 국외 이전). 서류 판독과 같은 하루 횟수 안에서 씁니다.</p></details>
         <button type="button" class="tapx" data-act="cs-clear" style="align-self:flex-start;font-size:13.5px;color:var(--n500)">칸 모두 비우기</button></div>
       <div class="cs-right">
         <div class="card pad ct-sec"><h2>보낼 문자</h2>
@@ -12364,7 +12368,8 @@ function cs붙여넣기(글){
   CS.sel = 틀.id; CS.vals = { ...CS.vals, ...값 }; CS.none = {};
   return n;
 }
-/* 캡처 사진 → 글(서버 AI 판독) → 붙여넣기 칸 → 칸 채우기 */
+/* 캡처 사진 → 글(서버 AI 판독) → 붙여넣기 칸 → 칸 채우기. 처리방침 개정 7일 뒤부터(서버 _contract.js 문자사진부터 와 같은 날) */
+const CS_사진부터 = '2026-11-12';
 async function cs사진(file){
   if(!file) return;
   if(!/^image\/(jpeg|png|webp)$/.test(file.type)) return toast('JPG·PNG·WEBP 캡처만 읽습니다');

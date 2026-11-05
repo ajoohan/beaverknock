@@ -311,7 +311,34 @@ export function trackCheck(t) {
   }
   if (t.permit === true) out.permit = true;
   if (t.off === true) out.off = true;
+  const x = 부속값(t.extra);
+  if (x) out.extra = x;
   return out;
+}
+/* 부속 서류(2026-11-05 파트너 리뷰) - 잔금정산서 금액 · 추가 항목 · 물품 인계 목록. 날인본이어도 적는다(track 안).
+   금액은 0 초과 정수, 글은 짧게 자르고, 주민등록번호 모양이 든 글은 버린다 */
+const 부속돈 = v => { const n = Math.round(+v); return Number.isFinite(n) && n > 0 && n < 1e13 ? n : 0; };
+const 부속글 = (v, n) => { const s = String(v == null ? '' : v).replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, n); return 주민번호있나(s) ? '' : s; };
+export function 부속값(x) {
+  if (!x || typeof x !== 'object' || Array.isArray(x)) return null;
+  const o = {};
+  for (const k of ['fee', 'prepaid', 'ltm']) { const n = 부속돈(x[k]); if (n) o[k] = n; }
+  if (x.dayOwner === 'a') o.dayOwner = 'a';
+  if (x.dirs && typeof x.dirs === 'object') {
+    const d = {};
+    for (const k of ['prepaid', 'ltm']) if (x.dirs[k] === '-' || x.dirs[k] === '+') d[k] = x.dirs[k];
+    if (Object.keys(d).length) o.dirs = d;
+  }
+  const adds = (Array.isArray(x.adds) ? x.adds : []).slice(0, 10)
+    .map(a => ({ n: 부속글(a && a.n, 30), amt: 부속돈(a && a.amt), dir: a && a.dir === '-' ? '-' : '+' }));
+  if (adds.length) o.adds = adds;
+  if (x.itemsSet === true) {
+    o.itemsSet = true;
+    o.items = (Array.isArray(x.items) ? x.items : []).slice(0, 30)
+      .map(a => ({ n: 부속글(a && a.n, 30), q: 부속글(a && a.q, 10), s: 부속글(a && a.s, 40) })).filter(a => a.n);
+  }
+  if (x.attach === true) o.attach = true;
+  return Object.keys(o).length ? o : null;
 }
 
 /* 내 특약 문구함 (2026-10-30 대표님 - 자주 쓰는 특약을 매매·임대차·갱신계약 등으로 나눠 저장해 두고 불러 쓴다) - bk_agent.settings.phrases.
@@ -330,7 +357,8 @@ export function 특약문구들(x) {
     const t = 문구글(p.t).slice(0, 특약글최대);
     if (!t) continue;
     본.add(p.id);
-    out.push({ id: p.id, g: Object.hasOwn(특약묶음, p.g) ? p.g : 'etc', t, tag: 문구종류(p.tag) });
+    /* base - 새 계약서를 열면 기본 특약으로 들어가는 문구(2026-11-05 파트너 리뷰) */
+    out.push({ id: p.id, g: Object.hasOwn(특약묶음, p.g) ? p.g : 'etc', t, tag: 문구종류(p.tag), ...(p.base === true ? { base: true } : {}) });
     if (out.length >= 특약문구최대) break;
   }
   return out;
@@ -363,6 +391,8 @@ export function 특약문구고침(list, b) {
     if (틀림) return { error: 틀림, code: 400 };
     새것.t = t;
   }
+  if (b.base === true) 새것.base = true;
+  else if (b.base === false) delete 새것.base;
   return { list: 지금.map(p => p === 그것 ? 새것 : p), id: 새것.id };
 }
 

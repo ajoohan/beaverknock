@@ -142,7 +142,8 @@ const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '
 const 모듈 = new Function('S', 'esc', 'apiFetch', '세션있음', 'render', 'toast',
   `${몸}\n${확몸}\n${신몸}\nreturn { rpItems, rp기한, rp대상, rpHTML, RP_직접, 한글금액, 금액글, ctNewDoc, ctDocHTML, ctBalance, CT_HOME_CLAUSES, CT_SPECIALS, CT_FORMS, exNewDoc, exDocHTML, EX_SPEC, EX_FORMS, exFormFor,
   CT, ctSave, ctLoadList, ctOpen, exSwitch, exKeys, exLost, ctTitle, ct신고, ct군, ctClauseSet, ctSpecialSet, CT_CATS, ctFieldRows,
-  ct일정목록, ct알림설정, ct영업일째, ct영업일전, CT_공휴일, CT_특약묶음, ct특약묶음, ct묶음문구, ct문구이름 };`);
+  ct일정목록, ct알림설정, ct영업일째, ct영업일전, CT_공휴일, CT_특약묶음, ct특약묶음, ct묶음문구, ct문구이름,
+  ct기본특약, ct갱신특약, ct종료일, ct부가, CT_기본특약, CT_계약일조항 };`);
 const S = { route: '#/x', agent: { office: '비버공인중개사사무소', name: '한상혁', reg_no: '41450-2024-00001', addr: '하남시 미사대로 550', phone: '031-000-0000' } };
 const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
 
@@ -202,7 +203,8 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
   const d = M.ctNewDoc('home-lease');
   ok(d.schema === 'bk-contract/1' && d.broker.office === '비버공인중개사사무소' && d.broker.regNo === '41450-2024-00001',
      '새 계약서는 스키마 판이 붙고 중개사무소 칸이 가입 정보로 채워진다');
-  ok(!/rrn|jumin|idno|account|계좌/i.test(JSON.stringify(d)), '새 계약서 데이터에 주민번호·계좌 칸이 없다');
+  /* 특약은 글이라 '상환계좌' 같은 말이 들어간다(기본 특약, 2026-11-05) - 칸 이름만 본다 */
+  ok(!/rrn|jumin|idno|account|계좌/i.test(JSON.stringify({ ...d, specials: [] })), '새 계약서 데이터에 주민번호·계좌 칸이 없다');
   ok(['road','jibun','admCd','bun','ji','mount'].every(k => k in d.property), '소재지는 법정동코드·본번·부번·산까지 담을 자리가 있다');
 
   d.deal = { type: 'monthly', deposit: 10000000, down: 1000000, mid: 0, rent: 500000, rentDay: '25' };
@@ -561,10 +563,12 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
   ok(/h==='#\/partner\/proposals' && S\.agent && !ownerSide\(\)\) ctLoadList\(\)/.test(js) && /if\(!CT\.list\) await ctLoadList\(true\);/.test(js),
      '제안 화면에서도 계약서 목록을 받고, 모르면 받아 본 뒤에 만든다');
   /* 2026-10-29 대표님: Lounge 계약서처럼 - 왼쪽 입력 판 | 오른쪽 책상 위 A4, 칸은 값 길이만큼, 빽빽하게 */
-  ok(/if\(!isMo\(\)\)\{\s*const 신고면[\s\S]{0,200}const 판 = CT\.mode === 'scan' && !잠김 \? ctScanHTML\(\) : CT\.mode === 'plan' && !F\.explain \? ctPlanHTML\(doc\) : 신고면 \? ctReportSide\(doc\) : \(잠김 \? '' : ctScanBanner\(\)\) \+ \(F\.explain \? exEditor\(doc\) \+[\s\S]{0,260}: ctFormHTML\(doc\)\);/.test(js)
+  ok(/if\(!isMo\(\)\)\{\s*const 신고면[\s\S]{0,200}const 판 = CT\.mode === 'scan' && !잠김 \? ctScanHTML\(\) : CT\.mode === 'plan' && !F\.explain \? ctPlanHTML\(doc\) : CT\.mode === 'extra' && !F\.explain \? ctExtraHTML\(doc\) : 신고면 \? ctReportSide\(doc\) : \(잠김 \? '' : ctScanBanner\(\)\) \+ \(F\.explain \? exEditor\(doc\) \+[\s\S]{0,260}: ctFormHTML\(doc\)\);/.test(js)
      && /return ctDeskShell\(doc, 판, 신고면\);/.test(js) && /\$\{ctFormHTML\(doc\)\}/.test(js),
      'PC 는 입력 판 | 미리보기 한 화면(계약서·확인·설명서·신고 도우미 모두), 휴대폰은 같은 입력 구획을 카드로 쌓는다');
-  ok(/<div class="ctx-desk" id="ctDesk"><div class="ct-sheet" id="ctPv">\$\{ctDocHTML\(doc\)\}<\/div><\/div>/.test(js)
+  /* 2026-11-05 - 부속 서류 탭에서는 고른 서류(영수증·정산서·인계 확인서)를, 그 밖에는 계약서를 그린다(ct보기HTML) */
+  ok(/<div class="ctx-desk" id="ctDesk"><div class="ct-sheet" id="ctPv">\$\{ct보기HTML\(doc\)\}<\/div><\/div>/.test(js)
+     && /function ct보기HTML\(doc\)\{[\s\S]{0,120}if\(CT\.mode !== 'extra' \|\| F\.explain\) return ctDocHTML\(doc\);/.test(js)
      && /function ctDirty\(\)\{ CT\.dirty = true; CT\.rev = \(CT\.rev \|\| 0\) \+ 1; ctPvRefresh\(\);/.test(js),
      '미리보기는 늘 떠 있고, 칸을 고칠 때마다(잠깐 멈추면) 다시 그린다');
   ok(/\.ctx-body\{[^}]*grid-template-columns:minmax\(378px,450px\) minmax\(0,1fr\)/.test(css) && /\.ctx-scroll\{[^}]*overflow-y:auto/.test(css)
@@ -965,6 +969,69 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
   h = W.ctWizHTML([]);
   ok(/고를 것 없이 바로 만듭니다\. 점포 영업 양도양수 계약의 일반적인 항목을 따라 만든 양식입니다\./.test(h) && /class="ctw-foot lit"/.test(h),
      '고를 것 없는 종류는 근거 한 문장으로 · 바꾸자마자 만들기 줄이 켜진다');
+}
+
+/* ── 파트너 중개사 리뷰 (2026-11-05, 01_기획/중개플랫폼_인수인계) ── 기본 특약 · 갱신 특약 · 종료일 · 부가세 · 자필 · 부속 서류 */
+{
+  const 주택매매 = M.ctNewDoc('sale', null, { cat: 'realty', sub: '아파트' });
+  ok(주택매매.specials.length === 7 && /근저당권\(채권최고액 금 \(\s+\)원\)/.test(주택매매.specials[3]) && 주택매매.acct === true,
+     '주택 매매 새 계약서는 기본 특약 7개로 시작하고 마지막 줄 계좌 칸을 둔다');
+  const 주택임대 = M.ctNewDoc('lease', null, { cat: 'realty', sub: '아파트', deal: 'monthly' });
+  ok(주택임대.specials.length === 11 && 주택임대.specials.some(t => M.CT_계약일조항.test(t)) && /제6조의2제2항/.test(주택임대.specials[10]),
+     '주택 임대차 새 계약서는 기본 특약 11개(작성일·체결일 줄, 임대차 신고 안내 포함)');
+  ok(!주택임대.specials.some(t => /^\d+\./.test(t)), '기본 특약 문구에 번호를 박지 않는다 - 번호는 그릴 때 매긴다');
+  const 상가임대 = M.ctNewDoc('shop-lease', null, { cat: 'shop' });
+  ok(상가임대.specials.length === 0, '상가 기본 특약은 아직 받지 않았다 - 빈 특약으로 시작한다');
+  ok(주택매매.broker.hand === true && !/한상혁 <span class="ct-seal">\(서명 및 날인\)/.test(M.ctDocHTML(주택매매)),
+     '대표 성명은 자필이 기본 - 값은 두고 인쇄 때 비운다');
+  주택매매.broker.hand = false;
+  ok(/한상혁 <span class="ct-seal">\(서명 및 날인\)/.test(M.ctDocHTML(주택매매)), '자필을 끄면 이름이 인쇄된다');
+  ok(/class="ct-acct">\* 매도인 계좌 : /.test(M.ctDocHTML(주택매매)), '특약 마지막 줄에 매도인 계좌 칸');
+
+  /* 부가세 - 주택 월세는 '해당 없음'(안 찍힘), 상가는 별도, 고르면 찍힌다 */
+  주택임대.deal = { ...주택임대.deal, type: 'monthly', deposit: 10000000, rent: 500000, fee: 100000 };
+  let h = M.ctDocHTML(주택임대);
+  ok(M.ct부가(주택임대) === '해당 없음' && !/부가가치세 별도\) 은 매월/.test(h), '주택 월세의 부가세는 기본 해당 없음');
+  주택임대.deal.vat = '별도'; 주택임대.deal.feeVat = '별도'; h = M.ctDocHTML(주택임대);
+  ok(/\(부가가치세 별도\) 은 매월/.test(h) && /\(정액, 매월, 부가가치세 별도\)/.test(h), '고르면 차임·관리비에 부가세 별도가 찍힌다');
+  ok(M.ct부가(상가임대) === '별도', '상가 임대차는 부가세 별도가 기본');
+
+  /* 종료일 */
+  ok(M.ct종료일('2026-11-05', 2, false) === '2028-11-04' && M.ct종료일('2026-11-05', 2, true) === '2028-11-05'
+     && M.ct종료일('2026-11-05', 1, false) === '2027-11-04', '2년·1년 종료일 - 시작 전날 / 같은 날');
+  ok(M.ct종료일('2028-02-29', 1, true) === '2029-02-28' && M.ct종료일('2026-03-01', 1, false) === '2027-02-28', '윤일·월초도 맞다');
+
+  /* 갱신 특약 */
+  const 갱 = M.ctNewDoc('lease', null, { cat: 'realty', sub: '아파트' });
+  갱.renewOf = { contractDate: '2023-08-28', from: '2023-11-03', to: '2025-11-02', deposit: 500000000, rent: 0 };
+  갱.deal.deposit = 525000000;
+  const 줄 = M.ct갱신특약(갱);
+  ok(/^본 계약은 2023년 8월 28일\(계약기간: 2023년 11월 3일부터 2025년 11월 2일까지\)에 계약된 본 소재지 임대차계약의 갱신계약으로 보증금을 금 오억원에서 금 오억이천오백만원으로 증액하는 계약이며/.test(줄[0]),
+     '갱신 특약 1 - 지난 계약일·기간과 보증금 증액을 적는다');
+  ok(/증액하는 금 이천오백만원은 이 계약서의 잔금일에 지급한다/.test(줄[1]) && /제6조의2제2항/.test(줄[2]), '갱신 특약 2·3 - 늘어난 만큼을 잔금일에 · 임대차 신고 안내');
+  ok(M.ct특약묶음(갱) === 'renew' && !M.ct기본특약(갱).some(t => M.CT_계약일조항.test(t)), '갱신계약 기본 특약에는 작성일·체결일 줄이 없다');
+  갱.deal.deposit = 500000000;
+  ok(/보증금을 금 오억원 그대로 두는 계약이며/.test(M.ct갱신특약(갱)[0]) && !/증액하는/.test(M.ct갱신특약(갱)[1]), '보증금이 같으면 증액 줄이 없다');
+
+  /* 화면 - 갱신은 기존 보증금이 계약금, 부속 서류 탭 */
+  ok(/down: \+\(원\.deal && 원\.deal\.deposit\) \|\| 0/.test(js), '갱신계약은 기존 보증금으로 계약금을 낸 것으로 연다 - 잔금은 늘어난 만큼');
+  ok(/data-act="ct-extra">부속 서류<\/button>/.test(js) && /function ctReceiptDocHTML/.test(js) && /function ctSettleDocHTML/.test(js) && /function ctHandDocHTML/.test(js),
+     '부속 서류 탭 - 영수증 · 잔금정산서 · 물품인계 확인서');
+  ok(/ct영수칸\(`영수인/.test(js) && /ct영수칸\(`지급인/.test(js), '영수증은 영수인·지급인 모두 성명·주소·연락처·날인 칸');
+  ok(/function ct확정점검\(doc\)/.test(js) && /ct확정점검\(CT\.doc\)/.test(js), '확정 창에 확정 전 자동 점검 목록');
+
+  /* 서버 - 부속 서류 값과 기본 특약 표 */
+  const t = C.trackCheck({ extra: { fee: '250000', prepaid: 300000.4, ltm: -5, dayOwner: 'a', dirs: { prepaid: '-', x: '+' },
+    adds: [{ n: '수도요금', amt: 12000, dir: '-' }, { n: '900101-1234567', amt: 1 }], itemsSet: true, items: [{ n: '카드키', q: '2', s: '' }, { n: '' }], attach: true, evil: 1 } });
+  ok(t.extra.fee === 250000 && t.extra.prepaid === 300000 && !('ltm' in t.extra) && t.extra.dayOwner === 'a' && JSON.stringify(t.extra.dirs) === '{"prepaid":"-"}',
+     '부속 서류 금액은 양의 정수만, 방향은 아는 항목만');
+  ok(t.extra.adds[0].n === '수도요금' && t.extra.adds[1].n === '' && t.extra.items.length === 1 && t.extra.attach === true && !('evil' in t.extra),
+     '주민번호 모양 글은 버리고, 빈 품목·모르는 칸은 버린다');
+  ok(C.trackCheck({}).extra === undefined, '부속 서류가 없으면 track 에 extra 를 만들지 않는다');
+  const 목록 = [{ id: 'aaaaaaaaaaaa', g: 'lease', t: '문구', tag: '' }];
+  const 켬 = C.특약문구고침(목록, { op: 'set', id: 'aaaaaaaaaaaa', base: true });
+  ok(켬.list[0].base === true && C.특약문구들(켬.list)[0].base === true, '내 특약 - 새 계약서에 기본으로(base) 를 켜고 저장한다');
+  ok(!('base' in C.특약문구고침(켬.list, { op: 'set', id: 'aaaaaaaaaaaa', base: false }).list[0]), '끄면 base 가 빠진다');
 }
 
 console.log(`${ran - fail} 통과 / ${fail} 실패`);

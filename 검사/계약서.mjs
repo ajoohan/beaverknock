@@ -1188,6 +1188,9 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
   ok(C.일정목록({ form: 'presale', cd: '2026-11-05', track: {} }).find(e => e.k === 'report').이름 === '실거래신고 기한', '분양권 신고 기한 알림은 실거래신고 기한');
   ok(js.includes("잔금칸(잔금지연, '잔금 지연?'") && js.includes("잔금칸(오늘잔금, '오늘 잔금 - 완료 확인'") && js.includes('오후3시 = 지금시.getUTCHours() >= 15') && js.includes("!['done', 'cancel', 'hold'].includes((r.track || {}).state)"),
      '대시보드 할 일 - 잔금일 15시부터 완료 확인 · 지나면 잔금 지연(완료·취소·보류면 사라짐)');
+  ok(js.includes('잔금날(r) >= 육십일전'), '잔금 지연은 잔금일이 60일 안에 지난 것만 - 예전 날인본이 쌓이지 않는다');
+  ok(js.includes('const id = CT.id, 그때 = CT.track;') && js.includes('(CT.id === id ? CT.track : 그때) || {}'),
+     '일정 저장 대기 중 다른 계약서로 넘어가도 앞 계약서에 빈 track 을 보내지 않는다');
   ok(js.includes('function exStateHTML(doc, s)') && js.includes('${esc(s.h)}${exStateHTML(doc, s)}') && js.includes('입력 필요 ${키.length - 채움}칸'), '확인·설명서 항목마다 입력 필요 칸 수 · 서류에서 채운 칸 수');
 }
 

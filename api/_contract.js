@@ -658,7 +658,7 @@ async function 링크번호지켜쓰기(id, agent, 고침) {
     const { r, t: 글, rows } = await db('bk_contract', `id=eq.${id}&agent_id=eq.${agent.id}&${조건}&select=id`, {
       method: 'PATCH', headers: { Prefer: 'return=representation' }, body: JSON.stringify({ track: 새 }),
     });
-    if (!r.ok) return { res: (res, 말) => /track/.test(글 || '') ? 준비중32(res) : res.status(502).json({ error: 말 }) };
+    if (!r.ok) return { res: (res, 말) => /track/.test(글 || '') ? 준비중32(res) : noTable(글) ? 준비중(res) : res.status(502).json({ error: 말 }) };
     if (rows.length) return { track: 새 };
   }
   return { res: res => res.status(409).json({ error: '다른 곳에서 같은 때 고쳐 저장하지 못했습니다 - 다시 눌러 주세요' }) };

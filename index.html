@@ -10821,6 +10821,9 @@ const CT_하위메뉴 = [['#/partner/contracts/new', '계약서 작성', 'pen', 
    번호는 배포한 날(연.월.일 - 같은 날 또 올리면 뒤에 .2). 화면이 version.json 을 가끔 읽어,
    더 새 버전이 올라와 있으면 메뉴 아래에서 새로고침을 권한다(버전확인) - 계약서를 띄워 둔 채 오래 일하면 고친 화면을 못 받는다 */
 const BK_변경 = [
+  { v:'26.11.05.14', 날:'2026-11-05', 줄:[
+    '일정·체크 - 날짜를 고치고 곧바로 다른 계약서로 넘어가도 앞 계약서의 일정이 지워지지 않게',
+    '대시보드 잔금 지연 - 잔금일이 60일 안에 지난 계약서만 묻는다' ] },
   { v:'26.11.05.13', 날:'2026-11-05', 줄:[
     '초안 링크 - 일정 저장과 링크 끊기가 같은 때 일어나도 끊은 링크가 되살아나지 않게(읽은 링크 번호가 그대로일 때만 저장)',
   ]},
@@ -10986,7 +10989,9 @@ V['#/partner/home'] = () => {
   const 잔금날 = r => (r.track && r.track.balanceDate) || r.bd || '';
   const 끝안남 = r => r.status === 'sealed' && !['done', 'cancel', 'hold'].includes((r.track || {}).state);
   const 오늘잔금 = 계약.filter(r => 끝안남(r) && 잔금날(r) === 오늘글 && 오후3시);
-  const 잔금지연 = 계약.filter(r => 끝안남(r) && 잔금날(r) && 잔금날(r) < 오늘글);
+  /* 지연은 잔금일이 60일 안에 지난 것만 - 진행 상태가 없던 예전 날인본이 끝없이 쌓이지 않게 */
+  const 육십일전 = new Date(지금시.getTime() - 60 * 864e5).toISOString().slice(0, 10);
+  const 잔금지연 = 계약.filter(r => 끝안남(r) && 잔금날(r) && 잔금날(r) < 오늘글 && 잔금날(r) >= 육십일전);
   const 잔금칸 = (rows, t, s) => !rows.length ? null : rows.length === 1
     ? { t, s: `${rows[0].title || '소재지 미입력'} · ${s}`, n: 1, ico: 'clock', act: 'ct-open', v: rows[0].id }
     : { t, s, n: rows.length, ico: 'clock', go: '#/partner/contracts' };
@@ -12990,9 +12995,10 @@ function ctTrackSet(patch){
 let ctTrackT = 0;
 function ctTrackSave(바로){
   clearTimeout(ctTrackT);
-  const id = CT.id; if(!id) return;
+  /* 저장을 걸 때의 track 을 붙잡아 둔다 - 0.5초 안에 다른 계약서로 넘어가도 앞 계약서에 빈 track 을 보내 지우지 않게(2026-11-05 점검) */
+  const id = CT.id, 그때 = CT.track; if(!id) return;
   ctTrackT = setTimeout(async () => {
-    const 보낼 = { ...(CT.id === id ? CT.track : {}) };
+    const 보낼 = { ...((CT.id === id ? CT.track : 그때) || {}) };
     const { ok, j } = await ctPost({ what:'contract-track', id, track: 보낼 }).catch(() => ({ ok:false, j:{} }));
     if(!ok){ if(j.need === '0032') CT.need32 = true; toast(j.error || '일정을 저장하지 못했습니다'); render(); return; }
     const 새것 = j.track || 보낼;

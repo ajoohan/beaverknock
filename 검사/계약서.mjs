@@ -1178,6 +1178,8 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
   const 입 = M.ctNewDoc('union', null, { cat: 'union' }); 입.deal = { ...입.deal, rightValue: 300000000, extra: 50000000, premium: 200000000 };
   ok(M.rpItems(입).some(([, l, v]) => l === '권리가격' && /300,000,000/.test(v)) && M.rpItems(입).some(([, l, v]) => /추가 지불액/.test(l) && /250,000,000/.test(v)), '입주권 신고 도우미 - 권리가격 · 추가 지불액(추가분담금+프리미엄)');
   ok(C.일정목록({ form: 'presale', cd: '2026-11-05', track: {} }).find(e => e.k === 'report').이름 === '실거래신고 기한', '분양권 신고 기한 알림은 실거래신고 기한');
+  ok(js.includes("잔금칸(잔금지연, '잔금 지연?'") && js.includes("잔금칸(오늘잔금, '오늘 잔금 - 완료 확인'") && js.includes('오후3시 = 지금시.getUTCHours() >= 15') && js.includes("!['done', 'cancel', 'hold'].includes((r.track || {}).state)"),
+     '대시보드 할 일 - 잔금일 15시부터 완료 확인 · 지나면 잔금 지연(완료·취소·보류면 사라짐)');
   ok(js.includes('function exStateHTML(doc, s)') && js.includes('${esc(s.h)}${exStateHTML(doc, s)}') && js.includes('입력 필요 ${키.length - 채움}칸'), '확인·설명서 항목마다 입력 필요 칸 수 · 서류에서 채운 칸 수');
 }
 

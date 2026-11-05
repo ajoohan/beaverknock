@@ -10821,6 +10821,9 @@ const CT_하위메뉴 = [['#/partner/contracts/new', '계약서 작성', 'pen', 
    번호는 배포한 날(연.월.일 - 같은 날 또 올리면 뒤에 .2). 화면이 version.json 을 가끔 읽어,
    더 새 버전이 올라와 있으면 메뉴 아래에서 새로고침을 권한다(버전확인) - 계약서를 띄워 둔 채 오래 일하면 고친 화면을 못 받는다 */
 const BK_변경 = [
+  { v:'26.11.05.12', 날:'2026-11-05', 줄:[
+    '대시보드 할 일 - 잔금일 15시부터 "오늘 잔금 - 완료 확인" · 잔금일이 지나면 "잔금 지연?" (진행 상태를 완료로 바꾸면 사라짐)',
+  ]},
   { v:'26.11.05.11', 날:'2026-11-05', 줄:[
     '재검토 반영 - 초안 링크 끊기를 서버가 하고(성공해야 알림) 다른 기기의 저장이 끊은 링크를 되살리지 않게 · 끊기 단추는 늘 보임 · 특약 속 일반전화·계좌번호도 가림',
     '갱신계약 - 직접 적은 계약금은 보증금을 고쳐도 그대로, 자동으로 맞춘 계약금은 칸에도 보임 · 합의 재계약 기본 특약에 빈 갱신 문구가 들어가지 않게',
@@ -10974,6 +10977,16 @@ V['#/partner/home'] = () => {
   const 작성중 = 계약.filter(r => r.status === 'draft').length, 날인 = 계약.filter(r => r.status === 'sealed').length;
   const 계약없는연결 = 연결.filter(p => !계약.some(r => r.proposal_id === p.id)).length;
   const 신고전 = 계약.filter(r => r.status === 'sealed' && ct신고(r) && !r.reported_at).length;
+  /* 잔금 완료 확인 (파트너 리뷰 '잔금일 15:00 확인 → 미완료면 계속 → 잔금 지연') - 예약 알림은 하루 한 번이라,
+     대시보드가 잔금일 15시부터 묻는다. 진행 상태를 '완료'(또는 취소·보류)로 바꾸면 사라진다. 바뀐 잔금일이 있으면 그 날 */
+  const 지금시 = new Date(Date.now() + 9 * 3600e3), 오늘글 = 지금시.toISOString().slice(0, 10), 오후3시 = 지금시.getUTCHours() >= 15;
+  const 잔금날 = r => (r.track && r.track.balanceDate) || r.bd || '';
+  const 끝안남 = r => r.status === 'sealed' && !['done', 'cancel', 'hold'].includes((r.track || {}).state);
+  const 오늘잔금 = 계약.filter(r => 끝안남(r) && 잔금날(r) === 오늘글 && 오후3시);
+  const 잔금지연 = 계약.filter(r => 끝안남(r) && 잔금날(r) && 잔금날(r) < 오늘글);
+  const 잔금칸 = (rows, t, s) => !rows.length ? null : rows.length === 1
+    ? { t, s: `${rows[0].title || '소재지 미입력'} · ${s}`, n: 1, ico: 'clock', act: 'ct-open', v: rows[0].id }
+    : { t, s, n: rows.length, ico: 'clock', go: '#/partner/contracts' };
 
   /* 최근 14일 보낸 제안 · 열람 - 날마다 센다 */
   const 오늘 = new Date(); 오늘.setHours(0,0,0,0);
@@ -10985,6 +10998,8 @@ V['#/partner/home'] = () => {
   const 앞7 = 보냄.slice(0, 7).reduce((a,b)=>a+b,0), 뒤7 = 보냄.slice(7).reduce((a,b)=>a+b,0);
 
   const 할일 = [
+    잔금칸(잔금지연, '잔금 지연?', '잔금일이 지났는데 완료로 바꾸지 않았습니다 - 일정·체크에서 진행 상태를 고르세요'),
+    잔금칸(오늘잔금, '오늘 잔금 - 완료 확인', '잔금을 마쳤으면 일정·체크에서 진행 상태를 완료로 바꾸세요'),
     !S.agent || S.agent.status !== 'approved' ? { t:'자격 확인 마치기', s:'등록번호를 확인하면 손님 조건 전문이 열립니다', ico:'check', go:'#/partner/verify' } : null,
     안읽힘 ? { t:'아직 안 열린 제안', s:'손님이 보기 전입니다 - 조건을 다시 보세요', n:안읽힘, ico:'eye', go:'#/partner/proposals' } : null,
     계약없는연결 ? { t:'연결된 손님 계약서', s:'연결됐는데 계약서를 아직 안 만들었습니다', n:계약없는연결, ico:'doc', go:'#/partner/proposals' } : null,

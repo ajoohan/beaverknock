@@ -844,7 +844,7 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
 
   /* 알림 설정 저장 · 화면 */
   const feed = fs.readFileSync(new URL('../api/feed.js', import.meta.url), 'utf8');
-  ok(/if \(b\.what === 'alert-settings'\)\s+return readAlert\(res, chk\.agent\);/.test(feed) && /body: JSON\.stringify\(\{ settings: \{ \.\.\.x\.settings, alert \} \}\)/.test(feed)
+  ok(/if \(b\.what === 'alert-settings'\)\s+return readAlert\(res, chk\.agent\);/.test(feed) && /설정고침\(agent, \(\) => \(\{ patch: \{ alert \} \}\)\)/.test(feed) && /settings: \{ \.\.\.x\.settings, \.\.\.y\.patch, rev: rev \+ 1 \}/.test(feed)
      && /need: '0032'/.test(feed) && /kakaoReady: !!process\.env\.SOLAPI_TPL_SCHEDULE/.test(feed),
      '알림 설정 - 내 파트너 행의 settings.alert 만 바꾼다(다른 설정은 그대로) · 0032 전이면 저장 막고 알린다 · 카카오 템플릿이 켜졌는지 알린다');
   ok(/function ctPlanHTML\(doc\)/.test(js) && /data-act="ct-plan">일정·체크/.test(js) && /case 'ctk-guide':/.test(js) && /case 'ctk-permit':/.test(js) && /case 'ctk-off':/.test(js)
@@ -905,23 +905,29 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
   const 응답 = () => { const r = { code: 0, body: null }; r.status = c => (r.code = c, r); r.json = b => (r.body = b, r); r.setHeader = () => {}; return r; };
   process.env.BK_URL = 'https://x.supabase.co'; process.env.BK_SECRET_KEY = 'k';
   let 설정 = { alert: { kakao: false, mail: true, off: [], lawyer: [7, 10] }, phrases: [{ id: 'a1b2c3d4e5f6', g: 'lease', t: '관리비는 정액으로 한다.', tag: '' }] };
-  let 역할 = 'agent', 불린 = [];
+  let 역할 = 'agent', 불린 = [], 막기 = 0;
   globalThis.fetch = async (u, o = {}) => { u = String(u); const m = o.method || 'GET'; 불린.push({ u, m, b: o.body });
     if (/auth\/v1\/user/.test(u)) return new Response(JSON.stringify({ id: 'u-phr' }), { status: 200 });
     if (/bk_agent/.test(u) && m === 'GET' && /select=settings/.test(u)) return new Response(JSON.stringify([{ settings: 설정 }]), { status: 200 });
     if (/bk_agent/.test(u) && m === 'GET') return new Response(JSON.stringify([{ id: 'A1', role: 역할, status: 'approved' }]), { status: 200 });
-    if (/bk_agent/.test(u) && m === 'PATCH') { 설정 = JSON.parse(o.body).settings; return new Response(null, { status: 204 }); }
+    if (/bk_agent/.test(u) && m === 'PATCH') { if (막기 > 0) { 막기--; 설정 = { ...설정, rev: (설정.rev || 0) + 1 }; return new Response('[]', { status: 200 }); } 설정 = JSON.parse(o.body).settings; return new Response(JSON.stringify([{ id: 'A1' }]), { status: 200 }); }
     return new Response('{}', { status: 404 }); };
   const 부름 = async b => { const res = 응답(); 불린 = []; await F({ method: 'POST', headers: { authorization: 'Bearer ' + 'p'.repeat(32) }, body: b, query: {} }, res); return res; };
   let res = await 부름({ what: 'phrases-save', op: 'add', g: 'renew', t: '차임은 5% 안에서 올린다.', tag: '아파트' });
   ok(res.code === 200 && res.body.phrases.length === 2 && 설정.phrases.length === 2 && 설정.alert.kakao === false && /^[0-9a-f]{12}$/.test(res.body.id)
-     && 불린.some(x => x.m === 'PATCH' && /bk_agent\?id=eq\.A1$/.test(x.u)), '넣기 - 내 파트너 행의 settings.phrases 에 하나 더 · 알림 설정은 그대로');
+     && 불린.some(x => x.m === 'PATCH' && /bk_agent\?id=eq\.A1&/.test(x.u) && /or=\(settings->>rev\.is\.null,settings->>rev\.eq\.0\)/.test(decodeURIComponent(x.u))), '넣기 - 내 파트너 행의 settings.phrases 에 하나 더 · 알림 설정은 그대로');
   res = await 부름({ what: 'phrases' });
   ok(res.code === 200 && res.body.phrases.length === 2 && res.body.phrases[1].tag === '아파트', '불러오기');
   res = await 부름({ what: 'phrases-save', op: 'add', g: 'sale', t: '매수인 900101-1234567' });
   ok(res.code === 400 && 설정.phrases.length === 2 && !불린.some(x => x.m === 'PATCH') && res.body.phrases.length === 2, '주민등록번호가 든 문구는 서버가 막는다 - 지금 목록을 돌려준다');
   res = await 부름({ what: 'phrases-save', op: 'del', id: 'a1b2c3d4e5f6' });
   ok(res.code === 200 && 설정.phrases.length === 1 && 설정.phrases[0].g === 'renew', '지우기');
+  /* 다른 기기가 그 사이 고쳤으면(판 번호가 달라 0줄) 다시 읽어 다시 고친다 - 세 번 다 막히면 409 */
+  막기 = 1; res = await 부름({ what: 'phrases-save', op: 'add', g: 'etc', t: '다시 읽어 넣는다.' });
+  ok(res.code === 200 && 설정.phrases.some(p => p.t === '다시 읽어 넣는다.') && 불린.filter(x => x.m === 'PATCH').length === 2 && /settings->>rev=eq./.test(decodeURIComponent(불린.filter(x => x.m === 'PATCH')[1].u)), '판 번호가 어긋나면 다시 읽어 다시 고친다');
+  막기 = 3; res = await 부름({ what: 'phrases-save', op: 'add', g: 'etc', t: '못 넣는다.' });
+  ok(res.code === 409 && !설정.phrases.some(p => p.t === '못 넣는다.'), '세 번 다 어긋나면 409 - 다시 눌러 달라고 한다');
+  막기 = 0;
   역할 = 'owner';
   res = await 부름({ what: 'phrases' });
   ok(res.code === 403, '소유자·시행사는 쓰지 않는다 - 계약서 도구라 공인중개사만');

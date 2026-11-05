@@ -140,6 +140,32 @@ async function 설정읽기(agent) {
   const s = ((await r.json().catch(() => []))[0] || {}).settings;
   return { settings: s && typeof s === 'object' && !Array.isArray(s) ? s : {} };
 }
+/* settings 고치기 (2026-11-05 리뷰) - settings 를 통째로 읽고 덮으므로, 다른 기기에서 같은 때 고치면 한쪽이 사라졌다.
+   읽은 판(settings.rev)이 그대로일 때만 쓰고(rev 를 하나 올린다), 그 사이 바뀌었으면 다시 읽어 다시 고친다 - 3번까지.
+   고침(settings) 은 { patch } 또는 { error, code } 를 돌려준다. 돌려주는 값: { x, y } 또는 { need } · { error } · { busy } · { failed } */
+export async function 설정고침(agent, 고침) {
+  for (let i = 0; i < 3; i++) {
+    const x = await 설정읽기(agent);
+    if (x.need) return { need: x.need };
+    if (x.error) return { error: true };
+    const y = 고침(x.settings);
+    if (!y || y.error) return { x, y };
+    const rev = Number.isInteger(x.settings.rev) && x.settings.rev > 0 ? x.settings.rev : 0;
+    const 조건 = rev ? `settings->>rev=eq.${rev}` : 'or=(settings->>rev.is.null,settings->>rev.eq.0)';
+    const r = await fetch(sbUrl('bk_agent', `id=eq.${agent.id}&${조건}&select=id`), {
+      method: 'PATCH', headers: { ...sbHeaders(), Prefer: 'return=representation' },
+      body: JSON.stringify({ settings: { ...x.settings, ...y.patch, rev: rev + 1 } }),
+    });
+    if (!r.ok) return { failed: true };
+    if ((await r.json().catch(() => [])).length) return { x, y };
+  }
+  return { busy: true };
+}
+/* 설정고침 의 실패를 답으로 - 이름은 '알림 설정' · '문자 틀' 처럼 */
+const 설정실패 = (res, z, 이름) => z.need ? res.status(503).json({ error: `${이름} 저장을 준비 중입니다 (0032 마이그레이션 필요)`, need: '0032' })
+  : z.error ? res.status(502).json({ error: `${이름} - 불러오지 못했습니다` })
+  : z.busy ? res.status(409).json({ error: '다른 기기에서 같은 때 고쳐 저장하지 못했습니다 - 다시 눌러 주세요' })
+  : res.status(502).json({ error: '저장하지 못했습니다' });
 const 가린번호 = p => { const n = String(p || '').replace(/\D/g, ''); return n.length >= 10 ? `${n.slice(0, 3)}-****-${n.slice(-4)}` : ''; };
 async function readAlert(res, agent) {
   const x = await 설정읽기(agent);
@@ -149,25 +175,15 @@ async function readAlert(res, agent) {
 }
 /* 임대차 종료일 표기(파트너 리뷰 '사무소 설정') - 시작 전날(prev) · 시작과 같은 날(same). settings.ctEnd */
 async function saveEndStyle(res, agent, b) {
-  const x = await 설정읽기(agent);
-  if (x.need) return res.status(503).json({ error: '설정 저장을 준비 중입니다', need: '0032' });
-  if (x.error) return res.status(502).json({ error: '설정을 불러오지 못했습니다' });
   const ctEnd = b.end === 'same' ? 'same' : 'prev';
-  const r = await fetch(sbUrl('bk_agent', 'id=eq.' + agent.id), {
-    method: 'PATCH', headers: { ...sbHeaders(), Prefer: 'return=minimal' }, body: JSON.stringify({ settings: { ...x.settings, ctEnd } }),
-  });
-  if (!r.ok) return res.status(502).json({ error: '저장하지 못했습니다' });
+  const z = await 설정고침(agent, () => ({ patch: { ctEnd } }));
+  if (!z.y) return 설정실패(res, z, '설정');
   return res.status(200).json({ ok: true, end: ctEnd });
 }
 async function saveAlert(res, agent, b) {
-  const x = await 설정읽기(agent);
-  if (x.need) return res.status(503).json({ error: '알림 설정을 준비 중입니다 (0032 마이그레이션 필요)', need: '0032' });
-  if (x.error) return res.status(502).json({ error: '알림 설정을 불러오지 못했습니다' });
   const alert = 알림설정(b.alert);
-  const r = await fetch(sbUrl('bk_agent', 'id=eq.' + agent.id), {
-    method: 'PATCH', headers: { ...sbHeaders(), Prefer: 'return=minimal' }, body: JSON.stringify({ settings: { ...x.settings, alert } }),
-  });
-  if (!r.ok) return res.status(502).json({ error: '저장하지 못했습니다' });
+  const z = await 설정고침(agent, () => ({ patch: { alert } }));
+  if (!z.y) return 설정실패(res, z, '알림 설정');
   return res.status(200).json({ ok: true, alert });
 }
 
@@ -181,16 +197,10 @@ async function readPhrases(res, agent) {
 }
 async function savePhrases(res, agent, b) {
   if (agent.role !== 'agent') return res.status(403).json({ error: '공인중개사만 쓸 수 있습니다' });
-  const x = await 설정읽기(agent);
-  if (x.need) return res.status(503).json({ error: '내 특약 저장을 준비 중입니다 (0032 마이그레이션 필요)', need: '0032' });
-  if (x.error) return res.status(502).json({ error: '내 특약을 불러오지 못했습니다' });
-  const y = 특약문구고침(x.settings.phrases, b);
-  if (y.error) return res.status(y.code || 400).json({ error: y.error, phrases: 특약문구들(x.settings.phrases) });
-  const r = await fetch(sbUrl('bk_agent', 'id=eq.' + agent.id), {
-    method: 'PATCH', headers: { ...sbHeaders(), Prefer: 'return=minimal' }, body: JSON.stringify({ settings: { ...x.settings, phrases: y.list } }),
-  });
-  if (!r.ok) return res.status(502).json({ error: '저장하지 못했습니다' });
-  return res.status(200).json({ ok: true, phrases: y.list, id: y.id || '' });
+  const z = await 설정고침(agent, s => { const y = 특약문구고침(s.phrases, b); return y.error ? { ...y, now: 특약문구들(s.phrases) } : { ...y, patch: { phrases: y.list } }; });
+  if (!z.y) return 설정실패(res, z, '내 특약');
+  if (z.y.error) return res.status(z.y.code || 400).json({ error: z.y.error, phrases: z.y.now });
+  return res.status(200).json({ ok: true, phrases: z.y.list, id: z.y.id || '' });
 }
 
 /* 계약체결 문자 (2026-11-05 파트너 리뷰) - 문자 틀과 보낸 기록. 계약서 도구라 공인중개사만 */
@@ -202,16 +212,11 @@ async function readSms(res, agent) {
 }
 async function saveSms(res, agent, b) {
   if (agent.role !== 'agent') return res.status(403).json({ error: '공인중개사만 쓸 수 있습니다' });
-  const x = await 설정읽기(agent);
-  if (x.need) return res.status(503).json({ error: '문자 틀 저장을 준비 중입니다 (0032 마이그레이션 필요)', need: '0032' });
-  if (x.error) return res.status(502).json({ error: '문자 틀을 불러오지 못했습니다' });
-  const y = 문자고침(x.settings, b);
-  if (y.error) return res.status(y.code || 400).json({ error: y.error, tpls: 문자틀들(x.settings.smsTpl), log: 문자기록들(x.settings.smsLog) });
-  const r = await fetch(sbUrl('bk_agent', 'id=eq.' + agent.id), {
-    method: 'PATCH', headers: { ...sbHeaders(), Prefer: 'return=minimal' }, body: JSON.stringify({ settings: { ...x.settings, smsTpl: y.tpls, smsLog: y.log } }),
-  });
-  if (!r.ok) return res.status(502).json({ error: '저장하지 못했습니다' });
-  return res.status(200).json({ ok: true, tpls: y.tpls, log: y.log });
+  const z = await 설정고침(agent, s => { const y = 문자고침(s, b);
+    return y.error ? { ...y, tpls: 문자틀들(s.smsTpl), log: 문자기록들(s.smsLog) } : { ...y, patch: { smsTpl: y.tpls, smsLog: y.log } }; });
+  if (!z.y) return 설정실패(res, z, '문자 틀');
+  if (z.y.error) return res.status(z.y.code || 400).json({ error: z.y.error, tpls: z.y.tpls, log: z.y.log });
+  return res.status(200).json({ ok: true, tpls: z.y.tpls, log: z.y.log });
 }
 
 /* 자주 쓰는 단지 (2026-11-05 파트너 리뷰) - 확인·설명서 단지 값. 공인중개사만 */
@@ -223,16 +228,10 @@ async function readComplex(res, agent) {
 }
 async function saveComplex(res, agent, b) {
   if (agent.role !== 'agent') return res.status(403).json({ error: '공인중개사만 쓸 수 있습니다' });
-  const x = await 설정읽기(agent);
-  if (x.need) return res.status(503).json({ error: '단지 저장을 준비 중입니다 (0032 마이그레이션 필요)', need: '0032' });
-  if (x.error) return res.status(502).json({ error: '단지를 불러오지 못했습니다' });
-  const y = 단지고침(x.settings.complexes, b);
-  if (y.error) return res.status(y.code || 400).json({ error: y.error, list: 단지들(x.settings.complexes) });
-  const r = await fetch(sbUrl('bk_agent', 'id=eq.' + agent.id), {
-    method: 'PATCH', headers: { ...sbHeaders(), Prefer: 'return=minimal' }, body: JSON.stringify({ settings: { ...x.settings, complexes: y.list } }),
-  });
-  if (!r.ok) return res.status(502).json({ error: '저장하지 못했습니다' });
-  return res.status(200).json({ ok: true, list: y.list });
+  const z = await 설정고침(agent, s => { const y = 단지고침(s.complexes, b); return y.error ? { ...y, now: 단지들(s.complexes) } : { ...y, patch: { complexes: y.list } }; });
+  if (!z.y) return 설정실패(res, z, '단지');
+  if (z.y.error) return res.status(z.y.code || 400).json({ error: z.y.error, list: z.y.now });
+  return res.status(200).json({ ok: true, list: z.y.list });
 }
 
 async function saveOfficeAddr(res, agent, b) {

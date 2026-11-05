@@ -211,30 +211,37 @@ async function seal(res, agent, b) {
    서명 열쇠는 서버 비밀값에서 나온다(BK_SECRET_KEY 가 바뀌면 나간 링크가 모두 죽는다). 전화번호는 가려서 보인다.
    날인본은 공유하지 않는다 - 초안을 미리 보여 주는 길이다 */
 const 초안열쇠 = () => crypto.createHash('sha256').update('bk-draft|' + String(process.env.BK_SECRET_KEY || ''), 'utf8').digest();
-const 초안서명 = (id, until) => crypto.createHmac('sha256', 초안열쇠()).update(`${id}.${until}`).digest('base64url');
-export function 초안표(id, 지금 = Date.now()) { const until = 지금 + 7 * 864e5; return `D1.${id}.${until}.${초안서명(id, until)}`; }
+/* 표 = D2.번호.기한.링크번호.서명 - 링크번호(track.shareN)를 올리면 그 계약서의 나간 링크만 끊긴다(2026-11-05 리뷰) */
+const 초안서명 = (id, until, n) => crypto.createHmac('sha256', 초안열쇠()).update(`${id}.${until}.${n}`).digest('base64url');
+export function 초안표(id, n = 0, 지금 = Date.now()) { const until = 지금 + 7 * 864e5; return `D2.${id}.${until}.${n}.${초안서명(id, until, n)}`; }
 export function 초안표읽기(tok, 지금 = Date.now()) {
-  const m = /^D1\.([0-9a-f-]{36})\.(\d{13})\.([A-Za-z0-9_-]{43})$/.exec(String(tok || ''));
+  const m = /^D2\.([0-9a-f-]{36})\.(\d{13})\.(\d{1,6})\.([A-Za-z0-9_-]{43})$/.exec(String(tok || ''));
   if (!m || !UUID.test(m[1]) || +m[2] < 지금) return null;
-  return sameSecret(m[3], 초안서명(m[1], m[2])) ? { id: m[1], until: +m[2] } : null;
+  return sameSecret(m[4], 초안서명(m[1], m[2], m[3])) ? { id: m[1], until: +m[2], n: +m[3] } : null;
 }
 const 번호가림 = v => { const d = String(v || '').replace(/[^0-9]/g, ''); return d.length >= 7 ? `${d.slice(0, 3)}-****-${d.slice(-4)}` : (v ? '****' : ''); };
+/* 글 안의 휴대전화 번호도 가린다(특약에 적은 연락처 등) */
+const 글번호가림 = s => String(s).replace(/01[016789][\s.-]?\d{3,4}[\s.-]?\d{4}/g, m => 번호가림(m));
 export function 초안가림(doc) {
   const d = JSON.parse(JSON.stringify(doc || {}));
   const 가림 = p => { if (!p || typeof p !== 'object') return; if ('phone' in p) p.phone = 번호가림(p.phone);
-    (p.co || []).forEach(가림); if (p.proxy) 가림(p.proxy); };
+    delete p.birth; (p.co || []).forEach(가림); if (p.proxy) 가림(p.proxy); };
   Object.values(d.parties || {}).forEach(가림);
-  delete d.src;
+  if (Array.isArray(d.specials)) d.specials = d.specials.map(t => 글번호가림(t));
+  delete d.src; delete d.edited;
   return d;
 }
 async function share(res, agent, b) {
   const id = String(b.id || '');
   if (!UUID.test(id)) return res.status(400).json({ error: '어느 계약서인지 알 수 없습니다' });
-  const got = await db('bk_contract', `select=id,status&id=eq.${id}&agent_id=eq.${agent.id}&limit=1`);
+  const got = await 읽기(`select=id,status,form{track}&id=eq.${id}&agent_id=eq.${agent.id}&limit=1`);
   if (!got.r.ok) return noTable(got.t) ? 준비중(res) : res.status(502).json({ error: '계약서를 불러오지 못했습니다' });
   if (!got.rows.length) return res.status(404).json({ error: '내 계약서가 아니거나 지워진 계약서입니다' });
   if (got.rows[0].status === 'sealed') return res.status(409).json({ error: '날인본은 인쇄해서 드리세요 - 초안 공유는 작성 중인 계약서만 됩니다' });
-  const tok = 초안표(id);
+  /* 확인·설명서는 당사자 생년월일·권리관계가 많이 든다 - 링크로 내보내지 않는다(2026-11-05 리뷰) */
+  if (String(got.rows[0].form || '').startsWith('explain')) return res.status(409).json({ error: '확인·설명서는 초안 링크로 보내지 않습니다 - 만나서 설명하고 교부해 주세요' });
+  const n = (trackCheck((got.rows[0] || {}).track || {}) || {}).shareN || 0;
+  const tok = 초안표(id, n);
   return res.status(200).json({ ok: true, token: tok, until: +tok.split('.')[2] });
 }
 /* 공개 읽기 - 로그인 없이 표만으로. IP 마다 10분에 60번 */
@@ -242,9 +249,13 @@ export async function draftRead(req, res) {
   if (overLimit('draft:' + ipOf(req), 60, 600e3)) return res.status(429).json({ error: '잠시 뒤 다시 열어 주세요' });
   const t = 초안표읽기(req.query && req.query.draft);
   if (!t) return res.status(404).json({ error: '링크가 맞지 않거나 기한(7일)이 지났습니다 - 중개사무소에 다시 받아 주세요' });
-  const got = await db('bk_contract', `select=id,form,title,status,updated_at,doc&id=eq.${t.id}&limit=1`);
+  const got = await 읽기(`select=id,form,title,status,updated_at,doc{track}&id=eq.${t.id}&limit=1`);
   if (!got.r.ok || !got.rows.length) return res.status(404).json({ error: '계약서를 찾지 못했습니다 - 지워졌을 수 있습니다' });
   const row = got.rows[0];
+  const 지금번호 = (trackCheck(row.track || {}) || {}).shareN || 0;
+  if (지금번호 !== t.n || String(row.form || '').startsWith('explain')) return res.status(404).json({ error: '중개사무소가 이 링크를 끊었습니다 - 새 링크를 받아 주세요' });
+  /* 확정됐으면 내용은 내보내지 않는다 - 최종본은 중개사무소가 인쇄해서 준다 */
+  if (row.status === 'sealed') return res.status(200).json({ ok: true, until: t.until, form: row.form, status: 'sealed' });
   return res.status(200).json({ ok: true, until: t.until, form: row.form, status: row.status, updated_at: row.updated_at, doc: 초안가림(row.doc) });
 }
 
@@ -367,6 +378,8 @@ export function trackCheck(t) {
   if (t.off === true) out.off = true;
   /* 진행 상태(파트너 리뷰 '계약현황') - 준비 · 진행중 · 완료 · 보류 · 취소, 한방 입력 완료(기록용 체크) */
   if (Object.hasOwn(진행상태, t.state)) out.state = t.state;
+  /* 초안 링크 번호 - 올리면 그 계약서의 나간 링크가 모두 끊긴다 */
+  if (Number.isInteger(t.shareN) && t.shareN > 0 && t.shareN < 1e6) out.shareN = t.shareN;
   if (t.hb === true) out.hb = true;
   const x = 부속값(t.extra);
   if (x) out.extra = x;
@@ -625,13 +638,14 @@ export async function reportDueCron(req, res) {
   const secret = process.env.CRON_SECRET;
   if (!secret || !sameSecret(req.headers.authorization, `Bearer ${secret}`)) return res.status(401).json({ error: '예약 실행만 부를 수 있습니다' });
   const 오늘 = 한국오늘();
-  /* 확인·설명서를 뺀 계약서 - 400일 안에 만든 것(그보다 멀리 가는 일정은 없다). 쪽으로 나눠 다 읽는다 */
+  /* 확인·설명서를 뺀 계약서 - 1200일 안에 만든 것. 가장 멀리 가는 일정은 임대차 만기 6개월 전(2년 계약이면 작성 뒤 약 550일,
+     4년이어도 약 1300일 전후 - 갱신하면 새 계약서가 생긴다). 전에는 400일이라 2년 임대차의 만기 알림이 나가지 않았다(2026-11-05 리뷰). 쪽으로 나눠 다 읽는다 */
   const 열 = 'id,agent_id,agent_user,form,title,status,reported_at,prev_id,sub:doc->>sub' + 일정열;
   const 쪽 = 1000, rows = [];
   let 트랙 = true;
   for (let 처음 = 0; ; 처음 += 쪽) {
     const { r, t, rows: 받은 } = await db('bk_contract',
-      `select=${열}${트랙 ? ',track' : ''}&form=not.like.explain*&created_at=gte.${날더하기(오늘, -400)}&order=id&limit=${쪽}&offset=${처음}`);
+      `select=${열}${트랙 ? ',track' : ''}&form=not.like.explain*&created_at=gte.${날더하기(오늘, -1200)}&order=id&limit=${쪽}&offset=${처음}`);
     if (!r.ok && 트랙 && /track/.test(t || '')) { 트랙 = false; 처음 -= 쪽; continue; }
     if (!r.ok) return noTable(t) ? 준비중(res) : res.status(502).json({ error: '계약서를 읽지 못했습니다' });
     rows.push(...받은);
@@ -698,6 +712,8 @@ async function scan(req, res, b, user) {
   /* 판독 한 번이 Anthropic 요금이다 - 계정마다 하루 30번, 한 곳(IP)에서 하루 60번까지 (2026-11-03 보안점검).
      서버리스라 인스턴스마다 따로 세는 느슨한 상한이지만, 한 계정이 끝없이 돌리는 것은 막는다 */
   const 많음 = () => res.status(429).json({ error: '오늘 서류 판독을 많이 쓰셨습니다 - 내일 다시 해 주세요', code: 'too_many_scans' });
+  /* 문자 캡처는 켜기 전이면 횟수를 세기 전에 막는다(막힌 시도가 하루 상한을 깎지 않게) */
+  if (b && b.mode === 'sms' && Date.now() < 문자사진부터) return res.status(403).json({ error: '캡처 사진 읽기는 11월 12일부터 씁니다(개인정보 처리방침 개정 안내 기간) - 지금은 글을 붙여 넣어 주세요', code: 'not_yet' });
   if (overLimit('scan:u:' + (user && user.id), 30, 864e5) || overLimit('scan:ip:' + ipOf(req), 60, 864e5)) return 많음();
   /* 인스턴스마다 세는 위 상한은 느슨하다 - 운영 기록 표에 남긴 판독 수를 DB 에서 한 번 더 센다(새 표 없이) */
   if (user && user.id) {
@@ -711,7 +727,6 @@ async function scan(req, res, b, user) {
   const { scanDocs, scanSms, ScanError } = await import('./_scan.js');
   try {
     /* 계약체결 문자 캡처 한 장 - 본문 글만 돌려준다(같은 하루 상한을 쓴다) */
-    if (b.mode === 'sms' && Date.now() < 문자사진부터) return res.status(403).json({ error: '캡처 사진 읽기는 11월 12일부터 씁니다(개인정보 처리방침 개정 안내 기간) - 지금은 글을 붙여 넣어 주세요', code: 'not_yet' });
     if (b.mode === 'sms') {
       const text = await scanSms(b.file);
       await logOps(req || { headers: {} }, user, { action: 'contract-scan', count: 1 });

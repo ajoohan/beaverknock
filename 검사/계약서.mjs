@@ -473,9 +473,9 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
   res = 응답(); 불린 = [];
   await C.reportDueCron({ headers: { authorization: 'Bearer cron-secret', host: 'beaverknock.co.kr' } }, res);
   const 주소 = decodeURIComponent(불린[0].u);
-  ok(/form=not\.like\.explain\*/.test(주소) && 주소.includes(`created_at=gte.${C.날더하기(오늘, -400)}`) && /,track&/.test(주소) && /order=id/.test(주소)
+  ok(/form=not\.like\.explain\*/.test(주소) && 주소.includes(`created_at=gte.${C.날더하기(오늘, -1200)}`) && /,track&/.test(주소) && /order=id/.test(주소)
      && /cd:doc->>contractDate/.test(주소) && /bd:doc->deal->>balanceDate/.test(주소),
-     '확인·설명서를 뺀 400일 안의 계약서를 읽는다 - 일정 계산에 쓰는 날짜만 doc 에서 꺼낸다');
+     '확인·설명서를 뺀 1200일 안의 계약서를 읽는다(2년 임대차 만기 알림까지) - 일정 계산에 쓰는 날짜만 doc 에서 꺼낸다');
   ok(res.code === 200 && 메일 && 메일.length === 1 && 메일[0].to[0] === 'agent1@example.com' && /오늘 챙기실 계약 일정이 3건/.test(메일[0].subject)
      && 메일[0].html.includes('잠실 아파트') && 메일[0].html.includes('미사 802호') && 메일[0].html.includes('잔금 사흘 전')
      && !메일[0].html.includes('알릴 날 아님') && !메일[0].html.includes('새 판으로 바뀐 앞 판') && !메일[0].html.includes('작성 중인 새 판'),
@@ -1000,6 +1000,7 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
   ok(M.ct종료일('2026-11-05', 2, false) === '2028-11-04' && M.ct종료일('2026-11-05', 2, true) === '2028-11-05'
      && M.ct종료일('2026-11-05', 1, false) === '2027-11-04', '2년·1년 종료일 - 시작 전날 / 같은 날');
   ok(M.ct종료일('2028-02-29', 1, true) === '2029-02-28' && M.ct종료일('2026-03-01', 1, false) === '2027-02-28', '윤일·월초도 맞다');
+  ok(M.ct종료일('2028-02-29', 1, false) === '2029-02-28', '대응하는 날이 없으면 그 달 말일 - 하루를 더 빼지 않는다(민법 제160조 제3항)');
 
   /* 갱신 특약 */
   const 갱 = M.ctNewDoc('lease', null, { cat: 'realty', sub: '아파트' });
@@ -1012,6 +1013,11 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
   ok(M.ct특약묶음(갱) === 'renew' && !M.ct기본특약(갱).some(t => M.CT_계약일조항.test(t)), '갱신계약 기본 특약에는 작성일·체결일 줄이 없다');
   갱.deal.deposit = 500000000;
   ok(/보증금을 금 오억원 그대로 두는 계약이며/.test(M.ct갱신특약(갱)[0]) && !/증액하는/.test(M.ct갱신특약(갱)[1]), '보증금이 같으면 증액 줄이 없다');
+  const 합의만 = M.ctNewDoc('lease', null, { cat: 'realty', sub: '아파트' }); 합의만.kind = 'agree';
+  const 합특 = M.ct기본특약(합의만);
+  ok(합특.length === 10 && !합특.some(t => /^본 계약은/.test(t)) && !합특.some(t => M.CT_계약일조항.test(t)), '지난 계약서 없이 합의 재계약만 고르면 임대차 기본 특약(계약일 줄 빼고)');
+  ok(M.ct부가({ form: 'lease', sub: '상가', deal: {} }) === '해당 없음' && M.ctNewDoc('lease', null, { cat: 'realty', sub: '상가', deal: 'monthly' }).deal.vat === '별도',
+     '예전 상가 임대차 문서는 부가세 문구를 새로 붙이지 않고, 새로 만들 때만 별도를 넣는다');
 
   /* 화면 - 갱신은 기존 보증금이 계약금, 부속 서류 탭 */
   ok(/down: \+\(원\.deal && 원\.deal\.deposit\) \|\| 0/.test(js), '갱신계약은 기존 보증금으로 계약금을 낸 것으로 연다 - 잔금은 늘어난 만큼');
@@ -1132,12 +1138,17 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
   /* 확정 전 초안 링크 */
   const 번 = '11111111-2222-3333-4444-555555555555', 지금 = 1793000000000;
   process.env.BK_SECRET_KEY = process.env.BK_SECRET_KEY || 'test-secret';
-  const 표 = C.초안표(번, 지금);
-  ok(C.초안표읽기(표, 지금 + 1000).id === 번 && C.초안표읽기(표, 지금 + 8 * 864e5) === null, '초안 표는 7일 동안만 열린다');
-  ok(C.초안표읽기(표.slice(0, -2) + (표.endsWith('AA') ? 'BB' : 'AA'), 지금) === null && C.초안표읽기('D1.' + 번 + '.9999999999999.x', 지금) === null, '서명이 틀리면 열지 않는다');
-  const 가린 = C.초안가림({ parties: { lessor: { name: '김', phone: '010-1234-5678', co: [{ phone: '01099998888' }], proxy: { phone: '010-1111-2222' } } }, src: { a: 1 } });
-  ok(가린.parties.lessor.phone === '010-****-5678' && 가린.parties.lessor.co[0].phone === '010-****-8888' && 가린.parties.lessor.proxy.phone === '010-****-2222' && !가린.src,
-     '초안에서는 당사자·공동명의자·대리인 전화번호를 가린다');
+  const 표 = C.초안표(번, 3, 지금);
+  ok(C.초안표읽기(표, 지금 + 1000).id === 번 && C.초안표읽기(표, 지금 + 1000).n === 3 && C.초안표읽기(표, 지금 + 8 * 864e5) === null, '초안 표는 7일 동안만 열리고 링크 번호를 담는다');
+  ok(C.초안표읽기(표.slice(0, -2) + (표.endsWith('AA') ? 'BB' : 'AA'), 지금) === null && C.초안표읽기(표.replace('.3.', '.4.'), 지금) === null, '서명이 틀리거나 링크 번호를 바꾸면 열지 않는다');
+  const 가린 = C.초안가림({ parties: { lessor: { name: '김', phone: '010-1234-5678', birth: '1970-01-01', co: [{ phone: '01099998888' }], proxy: { phone: '010-1111-2222' } } }, specials: ['연락은 010-5555-6666 으로'], edited: { a: 1 }, src: { a: 1 } });
+  ok(가린.parties.lessor.phone === '010-****-5678' && 가린.parties.lessor.co[0].phone === '010-****-8888' && 가린.parties.lessor.proxy.phone === '010-****-2222' && !가린.src
+     && !('birth' in 가린.parties.lessor) && !가린.edited && 가린.specials[0] === '연락은 010-****-6666 으로',
+     '초안에서는 전화번호(특약 글 안까지)를 가리고 생년월일 · 자동값 원본을 뺀다');
+  ok(C.trackCheck({ shareN: 2 }).shareN === 2 && !('shareN' in C.trackCheck({ shareN: -1 })), '링크 번호(shareN)는 양의 정수만');
+  ok(/중개사무소가 이 링크를 끊었습니다/.test(fs.readFileSync(new URL('../api/_contract.js', import.meta.url), 'utf8')) && /if \(row\.status === 'sealed'\) return res\.status\(200\)\.json\(\{ ok: true, until: t\.until, form: row\.form, status: 'sealed' \}\)/.test(fs.readFileSync(new URL('../api/_contract.js', import.meta.url), 'utf8')),
+     '링크를 끊으면 열지 않고, 확정된 계약서는 내용을 내보내지 않는다');
+  ok(/확인·설명서는 초안 링크로 보내지 않습니다/.test(fs.readFileSync(new URL('../api/_contract.js', import.meta.url), 'utf8')), '확인·설명서는 초안 링크를 만들지 않는다');
   ok(/V\['#\/draft'\] = tok =>/.test(js) && /h\.startsWith\('#\/draft\/'\)\) html = V\['#\/draft'\]\(parts\[2\]\)/.test(js), '초안 보기 화면은 로그인 없이 #/draft/표 로 연다');
 
   /* 분양권 · 입주권 거래신고 도우미 */
@@ -1150,6 +1161,7 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
   const 입 = M.ctNewDoc('union', null, { cat: 'union' }); 입.deal = { ...입.deal, rightValue: 300000000, extra: 50000000, premium: 200000000 };
   ok(M.rpItems(입).some(([, l, v]) => l === '권리가격' && /300,000,000/.test(v)) && M.rpItems(입).some(([, l, v]) => /추가 지불액/.test(l) && /250,000,000/.test(v)), '입주권 신고 도우미 - 권리가격 · 추가 지불액(추가분담금+프리미엄)');
   ok(C.일정목록({ form: 'presale', cd: '2026-11-05', track: {} }).find(e => e.k === 'report').이름 === '실거래신고 기한', '분양권 신고 기한 알림은 실거래신고 기한');
+  ok(js.includes('function exStateHTML(doc, s)') && js.includes('${esc(s.h)}${exStateHTML(doc, s)}') && js.includes('입력 필요 ${키.length - 채움}칸'), '확인·설명서 항목마다 입력 필요 칸 수 · 서류에서 채운 칸 수');
 }
 
 console.log(`${ran - fail} 통과 / ${fail} 실패`);

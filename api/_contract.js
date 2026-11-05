@@ -115,6 +115,7 @@ export async function contractRoute(req, res, agent, user, b) {
       case 'contract-reported': await reported(res, agent, b); break;
       case 'contract-track':   await track(res, agent, b); break;
       case 'contract-scan':    await scan(req, res, b, user); break;
+      case 'contract-share':   await share(res, agent, b); break;
       default: res.status(400).json({ error: '알 수 없는 요청입니다' });
     }
   } catch (e) {
@@ -204,6 +205,47 @@ async function seal(res, agent, b) {
 }
 
 /* 날인본을 고쳐야 하면 그 판을 그대로 두고 새 판(작성 중)을 만든다 */
+/* ── 확정 전 초안 공유 (2026-11-05 파트너 리뷰) ── 보기 전용 링크. 표 = 계약서 번호 · 기한(7일) · 서명.
+   서명 열쇠는 서버 비밀값에서 나온다(BK_SECRET_KEY 가 바뀌면 나간 링크가 모두 죽는다). 전화번호는 가려서 보인다.
+   날인본은 공유하지 않는다 - 초안을 미리 보여 주는 길이다 */
+const 초안열쇠 = () => crypto.createHash('sha256').update('bk-draft|' + String(process.env.BK_SECRET_KEY || ''), 'utf8').digest();
+const 초안서명 = (id, until) => crypto.createHmac('sha256', 초안열쇠()).update(`${id}.${until}`).digest('base64url');
+export function 초안표(id, 지금 = Date.now()) { const until = 지금 + 7 * 864e5; return `D1.${id}.${until}.${초안서명(id, until)}`; }
+export function 초안표읽기(tok, 지금 = Date.now()) {
+  const m = /^D1\.([0-9a-f-]{36})\.(\d{13})\.([A-Za-z0-9_-]{43})$/.exec(String(tok || ''));
+  if (!m || !UUID.test(m[1]) || +m[2] < 지금) return null;
+  return sameSecret(m[3], 초안서명(m[1], m[2])) ? { id: m[1], until: +m[2] } : null;
+}
+const 번호가림 = v => { const d = String(v || '').replace(/[^0-9]/g, ''); return d.length >= 7 ? `${d.slice(0, 3)}-****-${d.slice(-4)}` : (v ? '****' : ''); };
+export function 초안가림(doc) {
+  const d = JSON.parse(JSON.stringify(doc || {}));
+  const 가림 = p => { if (!p || typeof p !== 'object') return; if ('phone' in p) p.phone = 번호가림(p.phone);
+    (p.co || []).forEach(가림); if (p.proxy) 가림(p.proxy); };
+  Object.values(d.parties || {}).forEach(가림);
+  delete d.src;
+  return d;
+}
+async function share(res, agent, b) {
+  const id = String(b.id || '');
+  if (!UUID.test(id)) return res.status(400).json({ error: '어느 계약서인지 알 수 없습니다' });
+  const got = await db('bk_contract', `select=id,status&id=eq.${id}&agent_id=eq.${agent.id}&limit=1`);
+  if (!got.r.ok) return noTable(got.t) ? 준비중(res) : res.status(502).json({ error: '계약서를 불러오지 못했습니다' });
+  if (!got.rows.length) return res.status(404).json({ error: '내 계약서가 아니거나 지워진 계약서입니다' });
+  if (got.rows[0].status === 'sealed') return res.status(409).json({ error: '날인본은 인쇄해서 드리세요 - 초안 공유는 작성 중인 계약서만 됩니다' });
+  const tok = 초안표(id);
+  return res.status(200).json({ ok: true, token: tok, until: +tok.split('.')[2] });
+}
+/* 공개 읽기 - 로그인 없이 표만으로. IP 마다 10분에 60번 */
+export async function draftRead(req, res) {
+  if (overLimit('draft:' + ipOf(req), 60, 600e3)) return res.status(429).json({ error: '잠시 뒤 다시 열어 주세요' });
+  const t = 초안표읽기(req.query && req.query.draft);
+  if (!t) return res.status(404).json({ error: '링크가 맞지 않거나 기한(7일)이 지났습니다 - 중개사무소에 다시 받아 주세요' });
+  const got = await db('bk_contract', `select=id,form,title,status,updated_at,doc&id=eq.${t.id}&limit=1`);
+  if (!got.r.ok || !got.rows.length) return res.status(404).json({ error: '계약서를 찾지 못했습니다 - 지워졌을 수 있습니다' });
+  const row = got.rows[0];
+  return res.status(200).json({ ok: true, until: t.until, form: row.form, status: row.status, updated_at: row.updated_at, doc: 초안가림(row.doc) });
+}
+
 async function revise(res, agent, user, b) {
   const id = String(b.id || '');
   if (!UUID.test(id)) return res.status(400).json({ error: '어느 계약서인지 알 수 없습니다' });
@@ -286,9 +328,18 @@ export const 날짜글 = d => { const t = new Date(d + 'T00:00:00Z');
   return `${t.getUTCFullYear()}. ${t.getUTCMonth() + 1}. ${t.getUTCDate()}.(${'일월화수목금토'[t.getUTCDay()]})`; };
 
 export const 알림종류 = { permitDue: '토지거래허가 약정일', permitExpect: '토지거래허가 승인 예정일', contract: '계약일', mid: '중도금',
-  balance: '잔금', report: '실거래신고 기한', lawyer: '법무사 예약' };
+  balance: '잔금', report: '실거래신고 기한', lawyer: '법무사 예약', expiry: '임대차 만기 6개월 전', settle: '잔금 완료 확인' };
 /* 며칠 전 아침에 알리는가 - 0 은 당일. 법무사 예약은 예약할 때가 시작되는 날(잔금 b영업일 전) 한 번 */
-export const 알림날 = { permitDue: [3, 0], permitExpect: [0], contract: [1, 0], mid: [3, 0], balance: [7, 3, 0], report: [7, 3, 1, 0], lawyer: [0] };
+export const 알림날 = { permitDue: [3, 0], permitExpect: [0], contract: [1, 0], mid: [3, 0], balance: [7, 3, 0], report: [7, 3, 1, 0], lawyer: [0], expiry: [0], settle: [0] };
+/* 임대차 만기 6개월 전 - 갱신 의사를 물을 때(파트너 리뷰 2026-11-05). 임대차·전대차만, 한 번 */
+export const 임대차양식 = ['home-lease', 'shop-lease', 'lease', 'sublease'];
+export function 달빼기(d, n) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(d || '')); if (!m) return '';
+  const t = new Date(Date.UTC(+m[1], +m[2] - 1 - n, 1));
+  const 끝날 = new Date(Date.UTC(t.getUTCFullYear(), t.getUTCMonth() + 1, 0)).getUTCDate();
+  t.setUTCDate(Math.min(+m[3], 끝날));
+  return t.toISOString().slice(0, 10);
+}
 /* 중개사 알림 설정 - 받는 곳(카카오톡·메일) · 끈 항목 · 법무사 예약 시점(잔금 a~b영업일 전, 기본 7~10) */
 export function 알림설정(x) {
   const o = x && typeof x === 'object' ? x : {};
@@ -301,6 +352,7 @@ export function 알림설정(x) {
 }
 /* 계약 하나의 일정·체크(track). 날짜 칸은 ISO 날짜만, 나머지는 켜짐/꺼짐만 받는다 - 다른 것은 버린다 */
 const TRACK_DATES = ['permitDue', 'permitApplied', 'midDate', 'balanceDate', 'guideAt'];
+export const 진행상태 = { ready: '준비', doing: '진행중', done: '완료', hold: '보류', cancel: '취소' };
 export function trackCheck(t) {
   if (!t || typeof t !== 'object' || Array.isArray(t)) return null;
   const out = {};
@@ -311,6 +363,9 @@ export function trackCheck(t) {
   }
   if (t.permit === true) out.permit = true;
   if (t.off === true) out.off = true;
+  /* 진행 상태(파트너 리뷰 '계약현황') - 준비 · 진행중 · 완료 · 보류 · 취소, 한방 입력 완료(기록용 체크) */
+  if (Object.hasOwn(진행상태, t.state)) out.state = t.state;
+  if (t.hb === true) out.hb = true;
   const x = 부속값(t.extra);
   if (x) out.extra = x;
   return out;
@@ -406,6 +461,49 @@ export function 문자고침(settings, b, 지금 = new Date()) {
   return { tpls, log };
 }
 
+/* 자주 쓰는 단지 (2026-11-05 파트너 리뷰) - 확인·설명서 입지·관리·비선호시설·환경조건 값(settings.complexes).
+   [{ id, name(40자), road(120자), at, v:{ 칸: 글 | 수 | 글 목록 } }] 50곳까지. 칸 이름은 영문 낱말만, 글은 200자, 주민번호 모양은 버린다 */
+export const 단지최대 = 50;
+const 단지값 = v => {
+  const o = {};
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return o;
+  for (const [k, x] of Object.entries(v).slice(0, 80)) {
+    if (!/^[A-Za-z][A-Za-z0-9]{0,30}$/.test(k)) continue;
+    if (typeof x === 'number' && Number.isFinite(x) && x >= 0 && x < 1e13) o[k] = x;
+    else if (typeof x === 'string') { const s = x.trim().slice(0, 200); if (s && !주민번호있나(s)) o[k] = s; }
+    else if (Array.isArray(x)) { const a = x.filter(y => typeof y === 'string').map(y => y.slice(0, 40)).slice(0, 12); if (a.length) o[k] = a; }
+  }
+  return o;
+};
+export function 단지들(x) {
+  const out = [], 본 = new Set();
+  for (const d of Array.isArray(x) ? x : []) {
+    if (!d || !/^[0-9a-f]{12}$/.test(String(d.id)) || 본.has(d.id)) continue;
+    const name = String(d.name || '').replace(/\s+/g, ' ').trim().slice(0, 40);
+    if (!name) continue;
+    본.add(d.id);
+    out.push({ id: d.id, name, road: String(d.road || '').replace(/\s+/g, ' ').trim().slice(0, 120), at: String(d.at || '').slice(0, 19), v: 단지값(d.v) });
+    if (out.length >= 단지최대) break;
+  }
+  return out;
+}
+/* put - 같은 이름이면 덮어쓰고 맨 앞으로 · del */
+export function 단지고침(list, b, 지금 = new Date()) {
+  let L = 단지들(list);
+  if (b && b.op === 'put') {
+    const name = String(b.name || '').replace(/\s+/g, ' ').trim().slice(0, 40), v = 단지값(b.v);
+    if (!name) return { error: '단지 이름이 비어 있습니다', code: 400 };
+    if (!Object.keys(v).length) return { error: '저장할 칸이 없습니다', code: 400 };
+    const 앞 = L.find(d => d.name === name);
+    const at = new Date(지금.getTime() + 9 * 3600e3).toISOString().slice(0, 19);
+    const 새 = { id: 앞 ? 앞.id : crypto.randomBytes(6).toString('hex'), name, road: String(b.road || '').replace(/\s+/g, ' ').trim().slice(0, 120), at, v };
+    L = [새, ...L.filter(d => d.name !== name)].slice(0, 단지최대);
+    return { list: L };
+  }
+  if (b && b.op === 'del') return { list: L.filter(d => d.id !== String(b.id || '')) };
+  return { error: '알 수 없는 요청입니다', code: 400 };
+}
+
 /* 내 특약 문구함 (2026-10-30 대표님 - 자주 쓰는 특약을 매매·임대차·갱신계약 등으로 나눠 저장해 두고 불러 쓴다) - bk_agent.settings.phrases.
    [{ id, g(묶음), t(문구), tag(저장한 계약서의 세부 종류 - '아파트') }]. 화면의 CT_특약묶음 과 같은 묶음.
    주민등록번호가 든 문구는 받지 않는다 - 저장한 문구는 다른 계약서에 그대로 옮겨 가기 때문이다 */
@@ -478,13 +576,17 @@ export function 일정목록(c, 설정 = 알림설정()) {
     const [a, b] = 설정.lawyer;
     out.push({ k: 'lawyer', 날: 영업일전(bd, b), 끝: 영업일전(bd, a), 메모: `잔금 ${bd} 기준 ${a}~${b}영업일 전에 예약하세요` });
   }
+  /* 잔금 다음 날 아침 - 진행 상태를 '완료'로 바꾸지 않았으면 묻는다(파트너 리뷰 '잔금 완료 확인'. 예약 실행이 하루 한 번이라 시간마다는 못 한다) */
+  if (bd && t.state !== 'done' && t.state !== 'cancel') out.push({ k: 'settle', 날: 날더하기(bd, 1), 메모: '잔금을 마쳤으면 진행 상태를 완료로 바꾸세요 - 안 끝났으면 잔금 지연입니다' });
+  const ex = 날만(c.ex);
+  if (ex && 임대차양식.includes(c.form)) out.push({ k: 'expiry', 날: 달빼기(ex, 6), 메모: `만기 ${ex} - 임대인·임차인의 갱신 의사를 확인하세요` });
   return out.map(e => ({ 이름: 알림종류[e.k], ...e })).sort((x, y) => (x.날 > y.날) - (x.날 < y.날));
 }
 /* 오늘 아침 알릴 것 - 이 계약 알림을 껐거나 그 항목을 껐으면 빼고, 신고 기한은 날인본에서 신고 전일 때만 */
 export function 오늘알림(c, 설정, 오늘) {
   if (c.track && c.track.off) return [];
   return 일정목록(c, 설정)
-    .filter(e => !설정.off.includes(e.k) && !(e.k === 'report' && (c.status !== 'sealed' || c.reported_at)))
+    .filter(e => !설정.off.includes(e.k) && !(e.k === 'report' && (c.status !== 'sealed' || c.reported_at)) && !((e.k === 'expiry' || e.k === 'settle') && c.status !== 'sealed'))
     .map(e => ({ ...e, 남음: 날차(오늘, e.날) }))
     .filter(e => (알림날[e.k] || []).includes(e.남음));
 }
@@ -492,7 +594,7 @@ export const 알림제목 = e => e.k === 'lawyer' ? '법무사 예약할 때입�
   : `${e.이름} ${e.남음 === 0 ? '당일' : e.남음 === 1 ? '전날' : `${e.남음}일 전`}`;
 
 /* 목록·한 장 읽기 - 일정 계산에 쓰는 날짜를 doc 에서 꺼내 같이 준다. track 칸이 아직 없으면(0032 전) 빼고 다시 읽는다 */
-const 일정열 = ',cd:doc->>contractDate,mid:doc->deal->>mid,md:doc->deal->>midDate,bd:doc->deal->>balanceDate';
+const 일정열 = ',cd:doc->>contractDate,mid:doc->deal->>mid,md:doc->deal->>midDate,bd:doc->deal->>balanceDate,ex:doc->period->>to';
 async function 읽기(q) {
   const x = await db('bk_contract', q.replace('{track}', ',track'));
   if (x.r.ok || !/track/.test(x.t || '')) return x;

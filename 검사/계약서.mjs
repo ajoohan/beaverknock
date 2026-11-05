@@ -1038,10 +1038,10 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
 {
   const 문시작 = js.indexOf('/* ── 계약체결 문자 (2026-11-05'), 문끝 = js.indexOf('/* 칸을 고칠 때 - 다시 그리지 않고');
   const comma = s => String(s).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-  const CSM = new Function('S', 'comma', '한글금액', 'ct글날', `${js.slice(문시작, 문끝).replace(/function csPageHTML[\s\S]*$/, '')}\nreturn { CS, CT_문자기본, cs값, cs문자, cs칸들, cs잔금 };`)(
+  const CSM = new Function('S', 'comma', '한글금액', 'ct글날', `${js.slice(문시작, 문끝).replace(/function csPageHTML\(\)\{[\s\S]*?\n\}\n/, '')}\nreturn { CS, CT_문자기본, cs값, cs문자, cs칸들, cs잔금, cs읽기, cs붙여넣기 };`)(
     { agent: { office: '비버공인중개사사무소' } }, comma, M.한글금액, M.ct글날);
-  ok(CSM.CT_문자기본.length === 6 && CSM.CT_문자기본.map(t => t.name).join('|') === '아파트 매매|아파트 전세|아파트 월세|아파트 약정(토허)|상가 매매|상가 임대차',
-     '기본 문자 틀 6개 - 파트너 중개사가 쓰던 매매·전세·토허 약정 + 월세·상가');
+  ok(CSM.CT_문자기본.length === 7 && CSM.CT_문자기본.map(t => t.name).join('|') === '아파트 매매|아파트 전세|아파트 월세|아파트 약정(토허)|상가 매매|잔금 준비물 안내|상가 임대차',
+     '기본 문자 틀 7개 - 파트너 중개사가 쓰던 매매·전세·토허 약정 + 월세·상가 + 잔금 준비물 안내');
   const 매매틀 = CSM.CT_문자기본[0];
   ok(CSM.cs칸들(매매틀.text).includes('배액') && CSM.cs칸들(매매틀.text).includes('채권최고액'), '【칸 이름】을 입력칸으로 읽는다');
   Object.assign(CSM.CS.vals, { 목적물: '하남시 망월동 101동 1203호', 매매대금: 650000000, 계약금일부: 10000000, 중도금: 200000000, 잔금일: '2026-12-20', 계약서작성일: '2026-11-07' });
@@ -1078,6 +1078,67 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
   ok(/사업자등록번호<\/th><td>123-45-67890/.test(h) && /비버주식회사 &nbsp; 대표이사 박대표 <span class="ct-seal">\(법인 인감 날인\)/.test(h) && /본점 소재지/.test(h), '법인은 법인명·대표이사·사업자등록번호·본점 소재지');
   ok(M.ct이름외(d.parties.seller) === '김매도 외 1명' && M.ct지분('1/2') === 0.5 && M.ct지분('50%') === 0.5 && isNaN(M.ct지분('')), '이름 외 n명 · 지분 읽기');
   ok(C.docCheck('sale', d) === null, '법인·공동명의가 든 계약서를 서버가 받는다(사업자등록번호는 주민번호 모양이 아니다)');
+
+  /* 보낸 문자 붙여넣기 → 칸 */
+  const 보낸 = CSM.cs문자(CSM.CT_문자기본[1], { 목적물: '미사 105동 802호', 보증금: 500000000, 계약서작성일: '2026-11-10', 입금일: '2026-11-05', 계약금일부: 5000000, 잔금일: '2027-01-15', 계약기간: '2', 채권최고액: 120000000 }, {});
+  const 읽음 = CSM.cs읽기(보낸, CSM.CT_문자기본[1]);
+  ok(읽음.목적물 === '미사 105동 802호' && 읽음.보증금 === 500000000 && 읽음.잔금일 === '2027-01-15' && 읽음.계약기간 === '2' && 읽음.채권최고액 === 120000000 && 읽음.계약서작성일 === '2026-11-10',
+     '보낸 문자를 붙여 넣으면 틀의 칸 자리대로 다시 읽는다(금액·날짜·기간)');
+  CSM.CS.sel = 'apt-sale'; CSM.CS.vals = {};
+  ok(CSM.cs붙여넣기(보낸) >= 7 && CSM.CS.sel === 'apt-jeonse', '가장 많이 읽히는 틀(전세)로 바꿔 채운다');
+
+  /* 대리인 */
+  const dp = M.ctNewDoc('lease', null, { cat: 'realty', sub: '아파트' });
+  dp.parties.lessor.name = '김임대'; dp.parties.lessor.proxy = { name: '김대리', rel: '배우자', phone: '010-9', addr: '서울', docs: { letter: true } };
+  const hp = M.ctDocHTML(dp);
+  ok(/임대인의<br>대리인/.test(hp) && /김대리 <span class="ct-seal">\(서명 또는 날인\)<\/span> <span class="sm">· 위임장·본인 인감증명서 첨부/.test(hp) && /배우자/.test(hp), '대리인 계약이면 본인 칸 아래 대리인 칸(관계·위임장 첨부)');
+  ok(/function ctProxyDocHTML/.test(js) && /function ctReturnDocHTML/.test(js) && /\['pw','위임장'\], \.\.\.\(F\.lease \? \[\['rt','보증금 반환 영수증'\]\] : \[\]\)/.test(js),
+     '부속 서류에 위임장 · (임대차면) 보증금 반환 영수증');
+  ok(/대리인 계약 - 아직 체크하지 않은 것: \$\{빠짐\.join\('·'\)\}/.test(js), '확정 전 점검 - 위임장·인감증명서·본인 통화 확인 중 빠진 것');
+
+  /* 임대차 만기 6개월 전 - 화면과 서버가 같은 날을 낸다 */
+  const 자료 = { form: 'lease', sub: '아파트', cd: '2026-11-05', bd: '2026-12-01', ex: '2028-11-30', mid: 0, track: {} };
+  const 화 = M.ct일정목록(자료).find(e => e.k === 'expiry'), 서 = C.일정목록(자료).find(e => e.k === 'expiry');
+  ok(화 && 서 && 화.날 === '2028-05-30' && 서.날 === 화.날 && 화.이름 === '임대차 만기 6개월 전', '임대차 만기 6개월 전 알림 - 화면·서버 같은 날');
+  ok(C.달빼기('2027-08-31', 6) === '2027-02-28' && !M.ct일정목록({ ...자료, form: 'sale' }).some(e => e.k === 'expiry'), '말일은 그 달 말일로 · 매매에는 만기 알림이 없다');
+  ok(C.오늘알림({ ...자료, status: 'draft' }, C.알림설정(), '2028-05-30').every(e => e.k !== 'expiry')
+     && C.오늘알림({ ...자료, status: 'sealed' }, C.알림설정(), '2028-05-30').some(e => e.k === 'expiry'), '만기 알림은 날인본만 보낸다');
+
+  /* 자주 쓰는 단지 */
+  let dj = C.단지고침([], { op: 'put', name: '미사강변센트럴자이', road: '경기도 하남시 미사강변대로 220', v: { guard: '있음', feeItems: ['전기료', '수도료'], bad: { x: 1 }, 'ex.evil': 'x', memo: '900101-1234567' } }, 때);
+  ok(dj.list.length === 1 && dj.list[0].v.guard === '있음' && dj.list[0].v.feeItems.length === 2 && !('bad' in dj.list[0].v) && !('ex.evil' in dj.list[0].v) && !('memo' in dj.list[0].v),
+     '단지 저장 - 글·수·글 목록만, 칸 이름은 영문 낱말, 주민번호 모양은 버린다');
+  const dj2 = C.단지고침(dj.list, { op: 'put', name: '미사강변센트럴자이', v: { guard: '없음' } }, 때);
+  ok(dj2.list.length === 1 && dj2.list[0].id === dj.list[0].id && dj2.list[0].v.guard === '없음' && C.단지고침(dj2.list, { op: 'del', id: dj.list[0].id }).list.length === 0,
+     '같은 이름이면 덮어쓰고, 지우면 빠진다');
+  ok(/const EX_단지절 = \/입지조건\|관리에 관한 사항\|비선호시설\|환경조건\//.test(js) && /\$\{exDanjiHTML\(doc\)\}/.test(js), '확인·설명서 작성 화면에 자주 쓰는 단지(⑤ 입지 · ⑥ 관리 · ⑦ 비선호 · ⑬ 환경)');
+  ok(/data-act="cs-go"/.test(js) && /<b class="dz-ct">계약체결 문자<\/b>/.test(js), '중개사 대시보드에 계약체결 문자 단추');
+
+  /* 진행 상태 · 한방 입력 · 잔금 완료 확인 */
+  const tr = C.trackCheck({ state: 'done', hb: true, evil: 'x' }), tr2 = C.trackCheck({ state: 'weird' });
+  ok(tr.state === 'done' && tr.hb === true && !('evil' in tr) && !('state' in tr2), '진행 상태는 준비·진행중·완료·보류·취소만 · 한방 입력 완료 체크');
+  const 잔 = { form: 'sale', sub: '아파트', cd: '2026-11-05', bd: '2026-12-20', mid: 0, status: 'sealed', track: {} };
+  const s화 = M.ct일정목록(잔).find(e => e.k === 'settle'), s서 = C.일정목록(잔).find(e => e.k === 'settle');
+  ok(s화 && s서 && s화.날 === '2026-12-21' && s서.날 === s화.날, '잔금 다음 날 아침 잔금 완료 확인 - 화면·서버 같은 날');
+  ok(!C.일정목록({ ...잔, track: { state: 'done' } }).some(e => e.k === 'settle'), '완료로 바꾸면 잔금 완료 확인이 멈춘다');
+  ok(/data-act="ctk-state"/.test(js) && /r\.track && CT_진행\[r\.track\.state\]/.test(js), '일정·체크에서 진행 상태를 고르고 목록에 보인다');
+
+  /* 확정 후 수정 · 수정됨 · 단기임대 · 개인정보 동의서 */
+  ok(/r\.prev_id \? ' · 확정 후 수정'/.test(js) && /data-act="ct-open-prev">확정 후 수정한 판 · 앞 날인본 보기/.test(js), '확정 후 수정한 판 표시와 앞 날인본으로 가는 단추(판 사슬 = 수정 이력)');
+  ok(/CT\.doc\.edited = \{ \.\.\.\(CT\.doc\.edited \|\| \{\}\), \[path\]: 원 \}/.test(js) && /수정됨 · 자동으로 채운 값/.test(js), '자동으로 채운 칸을 고치면 수정됨과 원래 값을 남긴다');
+  ok(/\['m6', '6개월'\], \['m3', '3개월'\]/.test(js) && /function ct기간끝/.test(js), '단기임대 - 6개월·3개월 종료일');
+  ok(/function ctPrivacyDocHTML/.test(js) && /보유·이용 기간/.test(js) && /동의를 거부할 권리/.test(js), '개인정보 수집·이용 동의서 - 목적·항목·보유 기간·거부권');
+
+  /* 확정 전 초안 링크 */
+  const 번 = '11111111-2222-3333-4444-555555555555', 지금 = 1793000000000;
+  process.env.BK_SECRET_KEY = process.env.BK_SECRET_KEY || 'test-secret';
+  const 표 = C.초안표(번, 지금);
+  ok(C.초안표읽기(표, 지금 + 1000).id === 번 && C.초안표읽기(표, 지금 + 8 * 864e5) === null, '초안 표는 7일 동안만 열린다');
+  ok(C.초안표읽기(표.slice(0, -2) + (표.endsWith('AA') ? 'BB' : 'AA'), 지금) === null && C.초안표읽기('D1.' + 번 + '.9999999999999.x', 지금) === null, '서명이 틀리면 열지 않는다');
+  const 가린 = C.초안가림({ parties: { lessor: { name: '김', phone: '010-1234-5678', co: [{ phone: '01099998888' }], proxy: { phone: '010-1111-2222' } } }, src: { a: 1 } });
+  ok(가린.parties.lessor.phone === '010-****-5678' && 가린.parties.lessor.co[0].phone === '010-****-8888' && 가린.parties.lessor.proxy.phone === '010-****-2222' && !가린.src,
+     '초안에서는 당사자·공동명의자·대리인 전화번호를 가린다');
+  ok(/V\['#\/draft'\] = tok =>/.test(js) && /h\.startsWith\('#\/draft\/'\)\) html = V\['#\/draft'\]\(parts\[2\]\)/.test(js), '초안 보기 화면은 로그인 없이 #/draft/표 로 연다');
 }
 
 console.log(`${ran - fail} 통과 / ${fail} 실패`);

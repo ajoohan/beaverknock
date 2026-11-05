@@ -2177,6 +2177,19 @@ body.mo .ct-font button{min-height:40px;padding:0 14px;font-size:14.5px}
 .ct-party-h{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:4px}
 .ct-party-h b{font-size:14.5px}
 .ct-co-tools{display:flex;justify-content:flex-end}
+.ct-was{display:block;font-size:12.5px;color:var(--warn);margin-top:3px}
+.ctx-rev{font-size:13px;font-weight:700;color:var(--ind700)}
+.ct-draftbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;background:var(--warnbg,#FFF4E5);border-radius:10px;padding:10px 14px;font-size:14px}
+.ct-draft .ct-sheet{position:relative}
+.ct-draft .ct-sheet::after{content:'확정 전 초안';position:absolute;top:40%;left:50%;transform:translate(-50%,-50%) rotate(-24deg);font-size:72px;font-weight:800;color:rgba(200,40,40,.08);pointer-events:none;white-space:nowrap}
+.cs-dz-b{display:flex;flex-wrap:wrap;gap:8px}
+.cs-paste{border-top:1px solid var(--n100);padding-top:10px}
+.cs-paste summary{cursor:pointer;font-size:14px;font-weight:700;color:var(--ind700)}
+.cs-paste[open]{display:flex;flex-direction:column;gap:8px}
+.ex-danji{display:flex;flex-direction:column;gap:8px}
+.ex-danji ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.ex-danji li{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px;background:var(--n50);border-radius:10px;padding:8px 12px;font-size:14px}
+.ex-danji li.hit{background:var(--ind50)}
 .ctdoc .ct-close{margin-top:12px}
 .ctdoc .ct-date{text-align:center;margin:10px 0}
 .ctdoc .ct-seal{float:right;font-size:9pt;color:#444}
@@ -8507,6 +8520,13 @@ function modalHTML(){
         <ul>${x.줄.map(t => `<li>${esc(t)}</li>`).join('')}</ul></li>`).join('')}</ul>
       <button class="btn sec" data-act="modal-close" style="margin-top:16px;width:100%">닫기</button>
     </div></div>`;
+  if(S.modal.type==='ct-share'){
+    return `<div class="modal" data-act="modal-bg"><div class="box" data-stop role="dialog" aria-modal="true" aria-labelledby="mdT" tabindex="-1">
+      <h2 id="mdT" style="margin:0 0 6px;font-size:16px;font-weight:700;letter-spacing:-.03em">초안 링크</h2>
+      <p style="margin:0 0 12px;font-size:14.5px;line-height:1.7;color:var(--n500)">${esc(S.modal.until)}까지 열리는 보기 전용 링크입니다. 길게 눌러 복사해 보내 주세요.</p>
+      <textarea class="inp" rows="3" readonly style="width:100%;font-size:13px">${esc(S.modal.url)}</textarea>
+      <button class="btn pri" data-act="modal-close" style="width:100%;margin-top:12px">닫기</button></div></div>`;
+  }
   if(S.modal.type==='ct-seal' || S.modal.type==='ct-del'){
     const 확정 = S.modal.type==='ct-seal';
     return `<div class="modal" data-act="modal-bg"><div class="box" data-stop role="dialog" aria-modal="true" aria-labelledby="mdT" tabindex="-1">
@@ -10797,6 +10817,11 @@ const CT_하위메뉴 = [['#/partner/contracts/new', '계약서 작성', 'pen', 
    번호는 배포한 날(연.월.일 - 같은 날 또 올리면 뒤에 .2). 화면이 version.json 을 가끔 읽어,
    더 새 버전이 올라와 있으면 메뉴 아래에서 새로고침을 권한다(버전확인) - 계약서를 띄워 둔 채 오래 일하면 고친 화면을 못 받는다 */
 const BK_변경 = [
+  { v:'26.11.05.4', 날:'2026-11-05', 줄:[
+    '계약서 - 파트너 리뷰 나머지: 대리인(위임장·인감증명서·통화 확인) · 진행 상태(준비·진행중·완료·보류·취소)와 한방 입력 체크 · 확정 후 수정 표시와 앞 날인본 보기 · 자동값 고치면 수정됨 표시',
+    '부속 서류에 위임장 · 보증금 반환 영수증 · 개인정보 동의서 · 단기임대 6·3개월 종료일 · 확정 전 초안 보기 전용 링크(7일, 전화번호 가림)',
+    '알림 - 임대차 만기 6개월 전 · 잔금 다음 날 완료 확인 · 계약체결 문자: 잔금 준비물 안내 틀 · 보낸 문자 붙여넣어 칸 채우기 · 대시보드 단추 · 확인설명서 자주 쓰는 단지 저장',
+  ]},
   { v:'26.11.05.3', 날:'2026-11-05', 줄:[
     '계약체결 문자 - 계약서 › 계약체결 문자: 기본 틀 6개(아파트 매매·전세·월세·토허 약정, 상가 매매·임대차) · 칸 채우기(배액·잔금·사무소명 자동, 해당 없음은 줄 빼기) · 복사/문자/공유 · 보낸 기록(동의 표시) · 그 내용으로 계약서 열기 · 사무소별 틀 고치기',
     '계약서 당사자 - 개인/법인(법인명·대표이사·사업자등록번호·본점) · 공동명의자(지분) 최대 4명 더하기 · 영수증·정산서에도 반영 · 확정 전 지분 합계 점검',
@@ -10980,6 +11005,9 @@ V['#/partner/home'] = () => {
           : { t:'자격 확인', state: S.agent ? '확인 중' : '가입 전', pct: S.agent ? 55 : 10,
               note:'등록번호를 공공데이터로 확인하면 손님 조건 전문이 열립니다.', btn:'자격 확인하기', go:'#/partner/verify' })}
         ${dzTodo(할일, '지금 손댈 일은 없습니다. 새 조건이 오면 알려 드립니다.')}
+        ${ownerSide() ? '' : (() => { if(!CS.loaded && 세션있음()) setTimeout(csLoad);
+          return `<div class="dz-card cs-dz"><div class="dz-chh"><b class="dz-ct">계약체결 문자</b><a class="dz-more" data-go="#/partner/contracts/sms">틀 고치기<i class="ar-r" aria-hidden="true"></i></a></div>
+          <div class="cs-dz-b">${cs틀들().filter(t => !t.hidden).map(t => `<button type="button" class="btn tool sm" data-act="cs-go" data-v="${esc(t.id)}">${esc(t.name)}</button>`).join('')}</div></div>`; })()}
       </aside>
     </div>
   </div>
@@ -11372,6 +11400,16 @@ function ct종료일(시작, 해, 같은날){
   if(!같은날) t.setUTCDate(t.getUTCDate() - 1);
   return t.toISOString().slice(0, 10);
 }
+/* 단기임대(파트너 리뷰 '단기임대') - 'm6' 처럼 달 수로 받는다. 달 끝이 없으면(1월 31일 + 1달) 그 달 말일 */
+function ct기간끝(시작, v, 같은날){
+  v = String(v);
+  if(!v.startsWith('m')) return ct종료일(시작, +v, 같은날);
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(시작 || '')); if(!m) return '';
+  const n = +v.slice(1), t = new Date(Date.UTC(+m[1], +m[2] - 1 + n, 1));
+  t.setUTCDate(Math.min(+m[3], new Date(Date.UTC(t.getUTCFullYear(), t.getUTCMonth() + 1, 0)).getUTCDate()));
+  if(!같은날) t.setUTCDate(t.getUTCDate() - 1);
+  return t.toISOString().slice(0, 10);
+}
 /* 차임의 부가가치세 - 상가는 '별도' 가 기본, 주택은 '해당 없음'. 모든 월세·연세 계약서에서 고른다(파트너 리뷰) */
 const ct부가 = doc => { const D = doc.deal || {}; return D.vat || (doc.form === 'shop-lease' || (doc.form === 'lease' && ct군(doc) === 'shop') ? '별도' : '해당 없음'); };
 /* '양도인(임차인)' 처럼 괄호가 붙은 당사자 이름의 앞부분 */
@@ -11564,8 +11602,18 @@ const ct오늘 = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 
 const ct날짜글 = d => { const t = new Date(d + 'T00:00:00Z');
   return `${t.getUTCFullYear()}. ${t.getUTCMonth() + 1}. ${t.getUTCDate()}.(${'일월화수목금토'[t.getUTCDay()]})`; };
 const CT_알림종류 = { permitDue: '토지거래허가 약정일', permitExpect: '토지거래허가 승인 예정일', contract: '계약일', mid: '중도금',
-  balance: '잔금', report: '실거래신고 기한', lawyer: '법무사 예약' };
-const CT_알림날 = { permitDue: [3, 0], permitExpect: [0], contract: [1, 0], mid: [3, 0], balance: [7, 3, 0], report: [7, 3, 1, 0], lawyer: [0] };
+  balance: '잔금', report: '실거래신고 기한', lawyer: '법무사 예약', expiry: '임대차 만기 6개월 전', settle: '잔금 완료 확인' };
+const CT_알림날 = { permitDue: [3, 0], permitExpect: [0], contract: [1, 0], mid: [3, 0], balance: [7, 3, 0], report: [7, 3, 1, 0], lawyer: [0], expiry: [0], settle: [0] };
+/* 진행 상태 (파트너 리뷰 '계약현황') - 서버(_contract.js 진행상태)와 같은 값 */
+const CT_진행 = { ready: '준비', doing: '진행중', done: '완료', hold: '보류', cancel: '취소' };
+/* 임대차 만기 6개월 전 (파트너 리뷰 2026-11-05) - 서버(_contract.js 달빼기)와 같은 규칙. 31일이 없는 달은 그 달 말일 */
+function ct달빼기(d, n){
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(d || '')); if(!m) return '';
+  const t = new Date(Date.UTC(+m[1], +m[2] - 1 - n, 1));
+  const 끝날 = new Date(Date.UTC(t.getUTCFullYear(), t.getUTCMonth() + 1, 0)).getUTCDate();
+  t.setUTCDate(Math.min(+m[3], 끝날));
+  return t.toISOString().slice(0, 10);
+}
 function ct알림설정(x){
   const o = x && typeof x === 'object' ? x : {};
   const 범위 = v => { const n = Math.round(+v); return n >= 1 && n <= 20 ? n : 0; };
@@ -11592,11 +11640,14 @@ function ct일정목록(c, 설정 = ct알림설정()){
     const [a, b] = 설정.lawyer;
     out.push({ k: 'lawyer', 날: ct영업일전(bd, b), 끝: ct영업일전(bd, a), 메모: `잔금 ${bd} 기준 ${a}~${b}영업일 전에 예약하세요` });
   }
+  if(bd && t.state !== 'done' && t.state !== 'cancel') out.push({ k: 'settle', 날: ct날더하기(bd, 1), 메모: '잔금을 마쳤으면 진행 상태를 완료로 바꾸세요 - 안 끝났으면 잔금 지연입니다' });
+  const ex = ct날만(c.ex);
+  if(ex && ['home-lease', 'shop-lease', 'lease', 'sublease'].includes(c.form)) out.push({ k: 'expiry', 날: ct달빼기(ex, 6), 메모: `만기 ${ex} - 임대인·임차인의 갱신 의사를 확인하세요` });
   return out.map(e => ({ 이름: CT_알림종류[e.k], ...e })).sort((x, y) => (x.날 > y.날) - (x.날 < y.날));
 }
 /* 화면의 계약서 → 일정 계산 모양 */
 const ct일정자료 = (doc, row, track) => ({ form: doc.form, sub: doc.sub, status: row && row.status, reported_at: row && row.reported_at,
-  cd: doc.contractDate, mid: doc.deal && doc.deal.mid, md: doc.deal && doc.deal.midDate, bd: doc.deal && doc.deal.balanceDate, track: track || {} });
+  cd: doc.contractDate, mid: doc.deal && doc.deal.mid, md: doc.deal && doc.deal.midDate, bd: doc.deal && doc.deal.balanceDate, ex: doc.period && doc.period.to, track: track || {} });
 
 /* 고른 종류로 새 계약서를 연다 */
 function ctMake(catK, sub, deal){
@@ -11717,7 +11768,7 @@ async function ctSave(silent){
     const 대금 = 문서.deal || {};
     ctListPut({ id: j.id, status:'draft', updated_at: j.updated_at, form: 문서.form, proposal_id: 제안,
       title: (문서.property && 문서.property.road) || '', cat: 문서.cat, sub: 문서.sub, dt: 대금.type, parties: 문서.parties,
-      cd: 문서.contractDate, mid: 대금.mid, md: 대금.midDate, bd: 대금.balanceDate, ...(CT.row && CT.row.track ? { track: CT.row.track } : {}) });
+      cd: 문서.contractDate, mid: 대금.mid, md: 대금.midDate, bd: 대금.balanceDate, ex: 문서.period && 문서.period.to, ...(CT.row && CT.row.track ? { track: CT.row.track } : {}) });
     if(새것 && (location.hash || '').startsWith('#/partner/contract/')) history.replaceState(null, '', '#/partner/contract/' + j.id), S.route = S.lastRoute = '#/partner/contract/' + j.id;
     render(); if(!silent || CT.dirty) toast(CT.dirty ? '저장했습니다 - 그 뒤에 고친 것은 아직 저장 전입니다' : '저장했습니다');
     return !CT.dirty;
@@ -11774,7 +11825,12 @@ function ctDocHTML(doc){
     <tr><th rowspan="2" class="w">${label}</th><th>주소</th><td colspan="3">${ct값(x.addr, 260)}</td></tr>
     <tr><th>주민등록번호</th><td>${빈칸(140)}</td><th>전화</th><td>${ct값(x.phone, 110)}</td></tr>
     <tr><th class="w">성명</th><td colspan="4" class="sign">${ct값(x.name, 120)}${x.share ? ` <span class="sm">(지분 ${esc(x.share)})</span>` : ''} <span class="ct-seal">(서명 또는 날인)</span></td></tr>`;
-  const 당사자 = (label, x) => [당사자1(label, x), ...(x.co || []).map((c, i) => 당사자1(`${label} ${i + 2}`, c))].join('');
+  /* 대리인 - 본인 칸 아래에 대리인 칸(위임장·인감증명서 첨부를 적는다) */
+  const 대리 = (label, x) => !x.proxy ? '' : `
+    <tr><th rowspan="2" class="w">${label}의<br>대리인</th><th>주소</th><td colspan="3">${ct값(x.proxy.addr, 260)}</td></tr>
+    <tr><th>본인과의 관계</th><td>${ct값(x.proxy.rel, 100)}</td><th>전화</th><td>${ct값(x.proxy.phone, 110)}</td></tr>
+    <tr><th class="w">대리인 성명</th><td colspan="4" class="sign">${ct값(x.proxy.name, 120)} <span class="ct-seal">(서명 또는 날인)</span> <span class="sm">· 위임장·본인 인감증명서 첨부</span></td></tr>`;
+  const 당사자 = (label, x) => [당사자1(label, x), ...(x.co || []).map((c, i) => 당사자1(`${label} ${i + 2}`, c)), 대리(label, x)].join('');
   const sp = (doc.specials||[]).filter(s => String(s||'').trim());
   return `
   <div class="ctdoc${ct글꼴(doc) === 'sans' ? ' f-sans' : ''}">
@@ -11870,6 +11926,25 @@ function ctPrint(){
 }
 
 /* ── 화면: 목록 ── */
+/* ── 확정 전 초안 보기 (2026-11-05 파트너 리뷰) ── 로그인 없이 중개사가 보낸 링크로 연다. 보기 전용 · 전화번호는 가려짐 */
+const DR = { tok:'', loading:false, row:null, err:'' };
+V['#/draft'] = tok => {
+  if(DR.tok !== tok){ DR.tok = tok; DR.row = null; DR.err = ''; DR.loading = true;
+    fetch('/api/feed?draft=' + encodeURIComponent(tok)).then(r => r.json().then(j => ({ ok: r.ok, j }))).then(({ ok, j }) => {
+      DR.loading = false; if(ok && j.doc) DR.row = j; else DR.err = j.error || '초안을 열지 못했습니다'; render();
+    }).catch(() => { DR.loading = false; DR.err = '네트워크 문제로 초안을 열지 못했습니다'; render(); }); }
+  const R = DR.row, 끝 = R ? new Date(R.until + 9 * 3600e3).toISOString().slice(0, 10) : '';
+  return `
+<div class="scr fade" style="background:var(--n100)">
+  <div class="pad" style="flex:1;padding-top:20px;padding-bottom:32px;width:100%;max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:12px">
+    <div class="ct-draftbar"><b>확정 전 초안</b><span>보기 전용 · ${끝 ? `${esc(끝)}까지 열립니다` : DR.err ? '링크를 열 수 없습니다' : '불러오는 중'} · 전화번호는 가려서 보입니다</span></div>
+    ${DR.err ? `<div class="card pad"><p class="sub" style="margin:0">${esc(DR.err)}</p></div>`
+      : !R ? `<div class="card pad"><p class="sub" style="margin:0">초안을 불러오는 중입니다…</p></div>`
+      : `<p class="sub" style="margin:0;font-size:13.5px">${R.status === 'sealed' ? '이 계약서는 이미 날인본으로 확정됐습니다. 최종본은 중개사무소에서 받으세요.' : `마지막으로 고친 때 ${esc(String(R.updated_at || '').slice(0, 16).replace('T', ' '))} · 고칠 곳이 있으면 중개사무소에 말씀해 주세요.`}</p>
+        <div class="ct-sheet-wrap ct-draft"><div class="ct-sheet">${ctDocHTML(R.doc)}</div></div>`}
+  </div>
+</div>`;
+};
 /* ── 계약서 작성 (2026-10-30 대표님 '이쪽 UI 가 너무 불편해 - 심플하지만 직관적이고 편할 수 있게') ──
    왼쪽에서 종류, 오른쪽에서 세부 종류·거래유형을 고르면 아래에 만들 계약서 이름이 나오고 [계약서 만들기] 하나로 연다.
    전에는 마지막 칩을 누르는 순간 바로 열려 무엇을 만들었는지 놓쳤고, 세부 종류 스물한 칸이 '부동산(…)' 을 되풀이했다.
@@ -12068,6 +12143,27 @@ const CT_문자기본 = [
 *현 임차인의 임대차(보증금 【임차보증금】원 / 월차임 【임차월세】원)는 매수인이 승계한다.
 
 【사무소명】` },
+  { id:'balance-guide', name:'잔금 준비물 안내', text:`[잔금 준비물 안내]
+*목적물: 【목적물】
+*잔금일: 【잔금일】
+
+■ 매도인 준비물
+- 등기권리증
+- 신분증
+- 매도용 인감증명서(매수인 인적사항 기재, 본인 발급)
+- 인감도장
+- 주민등록초본(상세)
+
+■ 매수인 준비물
+- 신분증
+- 도장
+- 주민등록등본
+- 가족관계증명서(상세)
+- 매매계약서
+
+잔금일에 위 서류를 꼭 챙겨 주세요.
+
+【사무소명】` },
   { id:'shop-lease', name:'상가 임대차', text:`[상가임대차계약체결]
 *목적물: 【목적물】
 *보증금: 【보증금】원 / 월차임: 【월차임】원(부가세 별도, 매월 【지급일】일 【선불/후불】)
@@ -12214,6 +12310,9 @@ function csPageHTML(){
     <div class="cs-wrap">
       <div class="card pad ct-sec cs-fill"><h2>${esc(t.name)} · 칸 채우기 <span class="sub" style="font-weight:500;font-size:13.5px" id="csCount">채운 칸 ${채움} / ${칸.length}</span></h2>
         <div class="ct-grid">${입력}</div>
+        <details class="cs-paste"><summary>보낸 문자를 붙여 넣어 칸 채우기</summary>
+          <textarea class="inp" id="csPaste" rows="5" placeholder="예전에 보낸 계약체결 문자를 그대로 붙여 넣으세요"></textarea>
+          <button type="button" class="btn tool sm" data-act="cs-paste" style="align-self:flex-start">칸 채우기</button></details>
         <button type="button" class="tapx" data-act="cs-clear" style="align-self:flex-start;font-size:13.5px;color:var(--n500)">칸 모두 비우기</button></div>
       <div class="cs-right">
         <div class="card pad ct-sec"><h2>보낼 문자</h2>
@@ -12229,6 +12328,34 @@ function csPageHTML(){
         ${틀관리}
       </div>
     </div>`;
+}
+/* 보낸 문자 붙여넣기 → 칸 (파트너 리뷰 '계약체결 문자 함께 불러오기') - 틀의 줄마다 【칸】 자리를 잡아 읽는다.
+   지금 틀로 가장 적게 읽히면 다른 틀로도 읽어 보고 가장 많이 읽힌 틀로 바꾼다. 돌려주는 값: 채운 칸 수 */
+const cs날읽기 = s => { const m = /(\d{4})\s*[년.\-/]\s*(\d{1,2})\s*[월.\-/]\s*(\d{1,2})/.exec(String(s || ''));
+  return m ? `${m[1]}-${String(m[2]).padStart(2, '0')}-${String(m[3]).padStart(2, '0')}` : ''; };
+function cs읽기(글, t){
+  const 줄들 = String(글 || '').split(/\r?\n/).map(x => x.trim()).filter(Boolean), 값 = {};
+  for(const 틀줄 of String(t.text).split('\n')){
+    const 칸 = []; if(!틀줄.includes('【')) continue;
+    const 식 = 틀줄.trim().split(/(【[^】]+】)/).map(조각 => { const m = /^【([^】]+)】$/.exec(조각);
+      if(m){ 칸.push(m[1]); return '(.+?)'; } return 조각.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/g, '\\s*'); }).join('');
+    const re = new RegExp('^' + 식 + '$');
+    for(const 줄 of 줄들){ const m = re.exec(줄); if(!m) continue;
+      칸.forEach((k, i) => { if(CS_자동.has(k) || k in 값) return; const v = m[i + 1].trim();
+        if(CS_돈.has(k)){ const n = +v.replace(/[^0-9]/g, ''); if(n) 값[k] = n; }
+        else if(CS_날.has(k)){ const d = cs날읽기(v); if(d) 값[k] = d; }
+        else if(/기간|지급일/.test(k)){ const n = v.replace(/[^0-9]/g, ''); if(n) 값[k] = n; }
+        else 값[k] = v.slice(0, 200); });
+      break; }
+  }
+  return 값;
+}
+function cs붙여넣기(글){
+  let 틀 = cs지금(), 값 = cs읽기(글, 틀);
+  for(const t of cs틀들()){ const v = cs읽기(글, t); if(Object.keys(v).length > Object.keys(값).length){ 틀 = t; 값 = v; } }
+  const n = Object.keys(값).length; if(!n) return 0;
+  CS.sel = 틀.id; CS.vals = { ...CS.vals, ...값 }; CS.none = {};
+  return n;
 }
 /* 칸을 고칠 때 - 다시 그리지 않고 미리보기·채운 수만 바꾼다(커서가 튀지 않게) */
 function cs미리(){
@@ -12264,8 +12391,8 @@ function ctRowsHTML(전체, rows, 갱신고르기){
     ? (r.reported_at ? `<span class="badge b-ok">신고 마침</span>` : `<span class="badge b-warn">신고 전</span>`) : '';
   const 판 = r => `<span style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">${r.status === 'sealed'
     ? `<span class="badge b-ok">날인본 · ${esc(String(r.sealed_at||'').slice(0,10))}</span>`
-    : `<span class="badge b-warn">작성 중</span>`}${신고(r)}</span>`;
-  const 표시 = r => `${r.renew ? ' · 갱신계약' : r.prev_id ? ' · 새 판' : ''}`;
+    : `<span class="badge b-warn">작성 중</span>`}${신고(r)}${r.track && CT_진행[r.track.state] ? `<span class="badge ${r.track.state === 'done' ? 'b-ok' : 'b-mute'}">${CT_진행[r.track.state]}</span>` : ''}${r.track && r.track.hb ? '<span class="badge b-mute">한방 입력</span>' : ''}</span>`;
+  const 표시 = r => `${r.renew ? ' · 갱신계약' : r.prev_id ? ' · 확정 후 수정' : ''}`;
   if(CT.need) return `<div class="card pad"><b>계약서 기능을 준비 중입니다.</b><p class="sub" style="margin:6px 0 0">곧 열립니다 - 잠시 뒤 다시 들어와 주세요.</p></div>`;
   /* 불러오는 동안은 글자 대신 표 모양 그대로 회색 줄 - 다 오면 그 자리에 그대로 채워진다 */
   if(CT.loading && !CT.list) return `<div class="card ct-table" style="overflow:hidden" role="status" aria-label="계약서를 불러오는 중입니다">
@@ -12325,7 +12452,8 @@ const ctIn = (path, label, opt = {}) => {
   return `<label class="ct-f${opt.wide?' wide':''} w${w}"><span class="lab">${label}</span>
     <input class="inp${CT.filled && CT.filled.has(path) ? ' ai' : ''}" ${money?'inputmode="numeric"':''} type="${opt.type||'text'}" data-in="${money?'ct$':'ct'}:${path}"
       value="${esc(String(val))}" ${opt.ph?`placeholder="${esc(opt.ph)}"`:''} ${잠김?'disabled':''} autocomplete="off">
-    ${money ? `<span class="ct-won" data-ctwon="${path}">${esc(한글금액(v) ? `금 ${한글금액(v)}원정` : '')}</span>` : ''}</label>`;
+    ${money ? `<span class="ct-won" data-ctwon="${path}">${esc(한글금액(v) ? `금 ${한글금액(v)}원정` : '')}</span>` : ''}
+    ${CT.doc.edited && CT.doc.edited[path] != null ? `<span class="ct-was">수정됨 · 자동으로 채운 값: ${esc(money ? comma(String(CT.doc.edited[path])) : String(CT.doc.edited[path]))}</span>` : ''}</label>`;
 };
 const CT_KIND = { new:'신규 계약', agree:'합의 재계약', right:'갱신요구권 행사' };
 
@@ -12366,13 +12494,15 @@ V['#/partner/contract'] = (id) => {
         ${!F.explain && CT.mode !== 'extra' ? `<button class="btn sec sm" data-act="ct-extra">부속 서류</button>` : ''}
         ${F.lease && CT.id ? `<button class="btn sec sm" data-act="ct-renew-this">갱신계약<span class="ct-long"> 쓰기</span></button>` : ''}
         <button class="btn sec sm" data-act="ct-print">인쇄</button>
+        ${잠김 ? '' : `<button class="btn sec sm" data-act="ct-share">초안 링크</button>`}
         ${F.explain ? '' : `<button class="btn sec sm" data-act="ct-explain">확인·설명서<span class="ct-long"> 만들기</span></button>`}
         ${잠김 ? `<button class="btn sec sm" data-act="ct-revise">고쳐서 새 판 만들기</button>`
           : `<button class="btn sec sm" data-act="ct-save" ${CT.saving?'disabled':''}>${CT.saving?'저장 중…':CT.dirty||!CT.id?'<span class="dirty-dot" aria-hidden="true"></span>저장':'저장됨'}</button>
              <button class="btn pri sm" data-act="ct-seal" ${CT.saving?'disabled':''}>날인본으로 확정</button>`}
       </div>
     </div>
-    ${잠김 ? `<p class="ct-note noprint">날인본입니다 · ${esc(String(CT.row.sealed_at||'').slice(0,16).replace('T',' '))} 확정 · 지문 ${esc(String(CT.row.sha256||'').slice(0,12))}… 고칠 수 없습니다. 바꿔야 하면 ‘고쳐서 새 판 만들기’를 누르세요.</p>` : ''}`;
+    ${잠김 ? `<p class="ct-note noprint">날인본입니다 · ${esc(String(CT.row.sealed_at||'').slice(0,16).replace('T',' '))} 확정 · 지문 ${esc(String(CT.row.sha256||'').slice(0,12))}… 고칠 수 없습니다. 바꿔야 하면 ‘고쳐서 새 판 만들기’를 누르세요.</p>` : ''}
+    ${CT.row && CT.row.prev_id ? `<p class="ct-note noprint">확정 후 수정한 판입니다. <button type="button" class="tapx" data-act="ct-open-prev" style="font-weight:700;color:var(--ind700)">앞 날인본 보기</button></p>` : ''}`;
 
   if(CT.mode === 'scan' && !잠김) return `
 <div class="scr fade" style="background:var(--n50)">
@@ -12511,7 +12641,14 @@ function ctFormHTML(doc){
       + ctIn(`parties.${k}.co.${i}.share`, '지분', {w:3, ph:'1/2'}) + ctAddrIn(`parties.${k}.co.${i}.addr`, '주소', 12)
       + (잠김 ? '' : `<div class="ct-co-tools w12"><button type="button" class="tapx" data-act="ct-co-del" data-v="${k}|${i}" style="font-size:13.5px;color:var(--danger)">공동명의자 ${i + 2} 빼기</button></div>`)).join('');
     const 더하기 = 잠김 || co.length >= 4 ? '' : `<div class="w12"><button type="button" class="btn tool sm" data-act="ct-co-add" data-v="${k}">+ ${esc(짧)} 공동명의자</button></div>`;
-    return 고르기 + 본인 + 공동 + 더하기;
+    /* 대리인 - 위임장 · 인감증명서 · 본인 통화 확인 세 가지를 체크한다(확정 전 점검이 본다) */
+    const p = x.proxy, 서류 = (p && p.docs) || {};
+    const 대리인 = `<label class="ct-chk w12"><input type="checkbox" data-act="ct-proxy" data-v="${k}" ${p ? 'checked' : ''} ${잠김 ? 'disabled' : ''}> ${esc(짧)} 대신 대리인이 계약합니다</label>`
+      + (!p ? '' : ctIn(`parties.${k}.proxy.name`, '대리인 성명', {w:4}) + ctIn(`parties.${k}.proxy.rel`, '본인과의 관계', {w:3, ph:'예: 배우자'})
+        + ctIn(`parties.${k}.proxy.phone`, '대리인 전화', {w:5, ph:'010-0000-0000'}) + ctAddrIn(`parties.${k}.proxy.addr`, '대리인 주소', 12)
+        + `<div class="w12 ct-chips" role="group" aria-label="대리권 확인">${[['letter', '위임장 받음'], ['seal', '인감증명서 받음'], ['call', '본인과 통화로 확인']].map(([d, t]) =>
+          `<button type="button" class="chip${서류[d] ? ' on' : ''}" data-act="ct-proxy-doc" data-v="${k}|${d}" aria-pressed="${!!서류[d]}" ${잠김 ? 'disabled' : ''}>${서류[d] ? '✓ ' : ''}${t}</button>`).join('')}</div>`);
+    return 고르기 + 본인 + 공동 + 더하기 + 대리인;
   };
   const 종류들 = 군 === 'gen' ? [CT_KIND.new, CT_KIND.agree] : Object.values(CT_KIND);
   const 표시명 = 맞춤 ? F.fields[0].h : 매매 ? '부동산의 표시' : doc.form === 'sublease' ? '전대물의 표시' : 상가 || 군 === 'shop' ? '임차상가건물의 표시' : 군 === 'home' ? '임차주택의 표시' : '임차물의 표시';
@@ -12569,7 +12706,7 @@ function ctFormHTML(doc){
                : ctIn('period.handover','인도일(입주일)',{type:'date'}) + ctIn('period.to','종료일',{type:'date'})}
         ${ctIn('contractDate','계약일',{type:'date'})}
       </div>
-      ${!매매 && !잠김 ? `<div class="ct-term"><span class="lab">종료일 바로 넣기</span>${[2, 1].map(n => `<button type="button" class="chip" data-act="ct-term" data-v="${n}">${n}년</button>`).join('')}
+      ${!매매 && !잠김 ? `<div class="ct-term"><span class="lab">종료일 바로 넣기</span>${[['2', '2년'], ['1', '1년'], ['m6', '6개월'], ['m3', '3개월']].map(([n, t]) => `<button type="button" class="chip" data-act="ct-term" data-v="${n}">${t}</button>`).join('')}
         <span class="lab">끝나는 날</span>${chipsHTML(['시작 전날', '시작과 같은 날'], ct끝표기() === 'same' ? '시작과 같은 날' : '시작 전날', 'ct-endstyle', false, false)}</div>` : ''}</div>
 
     <div class="card pad ct-sec"><h2>당사자 <span class="sub" style="font-weight:500;font-size:13.5px">비워 두면 손으로 적을 칸이 인쇄됩니다</span></h2>
@@ -12607,6 +12744,10 @@ function ctDeskShell(doc, side, 신고면){
     ? `<span class="ctx-st ok">날인본 · ${esc(String(CT.row.sealed_at||'').slice(0,16).replace('T',' '))} 확정 · 지문 ${esc(String(CT.row.sha256||'').slice(0,12))}…</span>`
     : CT.saving ? `<span class="ctx-st">저장 중…</span>`
     : CT.dirty || !CT.id ? `<span class="ctx-st warn">저장하지 않은 고침이 있습니다</span>` : `<span class="ctx-st">저장됨</span>`;
+  /* 확정 후 수정 (파트너 리뷰) - 날인본은 그대로 두고 고친 판을 잇는다. 판끼리 오가는 단추가 곧 수정 이력이다 */
+  const 다음판 = 잠김 && (CT.list || []).find(r => r.prev_id === CT.id);
+  const 판줄 = CT.row && CT.row.prev_id ? `<button type="button" class="tapx ctx-rev" data-act="ct-open-prev">확정 후 수정한 판 · 앞 날인본 보기</button>`
+    : 다음판 ? `<button type="button" class="tapx ctx-rev" data-act="ct-open-id" data-v="${esc(다음판.id)}">이 날인본을 고친 새 판이 있습니다 · 열기</button>` : '';
   return `
 <div class="scr fade ctx-scr">
   ${navPartner('ct', false)}
@@ -12614,7 +12755,7 @@ function ctDeskShell(doc, side, 신고면){
     <div class="ctx-head">
       <a class="back" data-go="#/partner/contracts"><i class="ar-l" aria-hidden="true"></i>계약서 목록</a>
       <h1 class="ctx-h1">${esc(이름)}</h1>
-      <span class="badge ${잠김?'b-ok':'b-warn'}">${잠김?'날인본':'작성 중'}</span>
+      <span class="badge ${잠김?'b-ok':'b-warn'}">${잠김?'날인본':'작성 중'}</span>${판줄}
       ${!잠김 && !F.explain ? `<span class="ctx-sub">비워 둔 칸은 밑줄 빈칸으로 인쇄됩니다 · 주민등록번호·계좌번호는 적지 않습니다</span>` : ''}
       <span class="ctx-badge">${agentBadge()}${S.user ? userMenu({ admin: true }) : ''}</span>
     </div>
@@ -12641,6 +12782,7 @@ function ctDeskShell(doc, side, 신고면){
             ${ct글꼴칸(doc, 잠김)}
             <span class="eqb" style="gap:6px">${F.lease && CT.id ? `<button class="btn tool sm" data-act="ct-renew-this">갱신계약 쓰기</button>` : ''}
             ${F.explain ? '' : `<button class="btn tool sm" data-act="ct-explain">확인·설명서 만들기</button>`}
+            ${잠김 ? '' : `<button class="btn tool sm" data-act="ct-share">초안 링크</button>`}
             <button class="btn tool sm" data-act="ct-print">인쇄</button></span>
           </span>
         </div>
@@ -12694,6 +12836,10 @@ function ctPlanHTML(doc){
           ${꺼짐 ? '<span class="pl-mute">알림 끔</span>' : ''}</li>`; }).join('')}</ul>`
       : `<p class="sub" style="margin:0">계약서에 계약일·중도금일·잔금일을 넣으면 여기에 일정이 생깁니다.</p>`}
     </div>
+    <div class="card pad ct-sec"><h2>진행 상태 <span class="sub" style="font-weight:500;font-size:13.5px">계약 목록에 보입니다 · 완료로 바꾸면 잔금 완료 확인 알림이 멈춥니다</span></h2>
+      <div class="ct-chips" role="radiogroup" aria-label="진행 상태">${Object.entries(CT_진행).map(([k, 글]) =>
+        `<button type="button" class="chip${t.state === k ? ' on' : ''}" role="radio" aria-checked="${t.state === k}" data-act="ctk-state" data-v="${k}" ${못씀 ? 'disabled' : ''}>${글}</button>`).join('')}</div>
+      ${체크('ctk-hb', !!t.hb, '한방에도 입력했습니다', '한방은 자동 올리기 창구가 없어 기록용으로만 체크합니다', '')}</div>
     <div class="card pad ct-sec"><h2>체크사항</h2>
       ${체크('ctk-guide', !!t.guideAt, '잔금안내를 했습니다', '이체한도 증액 · 준비서류(신분증·도장·인감증명서 등)를 미리 알렸는지', t.guideAt)}
       ${허가대상 && t.permit ? 체크('ctk-applied', !!t.permitApplied, '토지거래허가를 신청했습니다', '오늘 날짜로 적힙니다 - 다른 날이면 아래 신청일을 고치세요', t.permitApplied) : ''}
@@ -12899,6 +13045,9 @@ function ct확정점검(doc){
   if(F.lease && D.type === 'monthly' && !+D.rent) 남음.push('월 차임이 비어 있습니다');
   for(const [k, ko] of [F.a || [], F.b || []]){ const x = (doc.parties || {})[k]; if(!k || !x) continue;
     if(x.type === 'corp' && !x.rep) 남음.push(`${ct짧은이름(ko)}(법인)의 대표이사 이름이 비어 있습니다`);
+    if(x.proxy){ const s = x.proxy.docs || {}, 빠짐 = [['letter', '위임장'], ['seal', '인감증명서'], ['call', '본인 통화 확인']].filter(([d]) => !s[d]).map(([, t]) => t);
+      if(빠짐.length) 남음.push(`${ct짧은이름(ko)} 대리인 계약 - 아직 체크하지 않은 것: ${빠짐.join('·')}`);
+      if(!x.proxy.name) 남음.push(`${ct짧은이름(ko)}의 대리인 성명이 비어 있습니다`); }
     if(x.type === 'corp' && x.bizNo && !/^\d{3}-?\d{2}-?\d{5}$/.test(String(x.bizNo).trim())) 남음.push(`${ct짧은이름(ko)}의 사업자등록번호 모양이 맞지 않습니다 (000-00-00000)`);
     if((x.co || []).length){ const 몫 = [x, ...x.co].map(p => ct지분(p.share));
       if(몫.every(n => !isNaN(n)) && Math.abs(몫.reduce((a, b) => a + b, 0) - 1) > 0.001) 남음.push(`${ct짧은이름(ko)} 공동명의자 지분을 더하면 1이 아닙니다`);
@@ -12958,7 +13107,73 @@ function ct보기HTML(doc){
   const F = CT_FORMS[doc.form] || {};
   if(CT.mode !== 'extra' || F.explain) return ctDocHTML(doc);
   const 탭 = CT.extraTab || 'rc';
-  return 탭 === 'st' ? ctSettleDocHTML(doc) : 탭 === 'hd' ? ctHandDocHTML(doc) : ctReceiptDocHTML(doc);
+  return 탭 === 'st' ? ctSettleDocHTML(doc) : 탭 === 'hd' ? ctHandDocHTML(doc) : 탭 === 'pw' ? ctProxyDocHTML(doc)
+    : 탭 === 'rt' && F.lease ? ctReturnDocHTML(doc) : 탭 === 'pi' ? ctPrivacyDocHTML(doc) : ctReceiptDocHTML(doc);
+}
+/* 개인정보 수집·이용 동의서 (파트너 리뷰 - 계약서 화면 '개인정보 동의서' 탭) - 비버노크가 쓴 문구.
+   법정 고지 항목(목적·항목·보유 기간·거부권과 불이익)을 다 적는다 */
+function ctPrivacyDocHTML(doc){
+  const F = CT_FORMS[doc.form] || {}, B = doc.broker || {}, 사람 = doc.parties || {};
+  const 동사 = F.verb || (F.lease ? '임대차' : '매매');
+  const 칸 = [F.a, F.b].filter(Boolean).map(([k, ko]) => { const x = 사람[k] || {};
+    return `<tr><th class="w">${esc(ct짧은이름(ko))}</th><td class="sign">${ct값(x.name, 120)} <span class="ct-seal">(서명 또는 날인)</span></td><td>동의함 □ &nbsp; 동의하지 않음 □</td></tr>`; }).join('');
+  return `${ct부속머리(doc)}
+    <h1>개인정보 수집·이용 동의서</h1>
+    <p class="lead">${ct값(B.office, 160)}(이하 ‘중개사무소’)는 위 부동산 ${esc(동사)}계약의 중개를 위하여 아래와 같이 개인정보를 수집·이용합니다.</p>
+    <table>
+      <tr><th class="w">부동산의 표시</th><td>${ct값(ct부동산글(doc), 300)}</td></tr>
+      <tr><th class="w">수집·이용 목적</th><td>거래계약서 · 중개대상물 확인·설명서 작성과 교부, 부동산 거래신고, 공인중개사법에 따른 서류 보존, 계약 진행 연락</td></tr>
+      <tr><th class="w">수집 항목</th><td>성명, 주민등록번호, 주소, 연락처 (법인은 상호 · 대표자 · 사업자등록번호 · 본점 소재지, 대리인은 대리인의 같은 항목)</td></tr>
+      <tr><th class="w">보유·이용 기간</th><td>거래계약서 5년, 중개대상물 확인·설명서 3년(공인중개사법 제26조 · 제25조) - 그 뒤 지체 없이 파기합니다</td></tr>
+      <tr><th class="w">동의를 거부할 권리</th><td>동의를 거부할 수 있습니다. 다만 거부하면 거래계약서 작성과 거래신고 등 중개 업무를 진행할 수 없습니다.</td></tr>
+    </table>
+    <p class="ct-close">주민등록번호는 부동산 거래신고 등 법령이 정한 경우에만 처리합니다(개인정보 보호법 제24조의2). 위 내용을 읽고 동의합니다.</p>
+    <p class="ct-date">${ct날짜(doc.contractDate)}</p>
+    <table class="ct-sign">${칸}</table>
+  </div>`;
+}
+/* 위임장 (대리인 계약용 - 인수인계 서식 '기타서식_위임장') - 대리인이 있는 쪽을 쓴다. 없으면 빈 칸으로 */
+function ctProxyDocHTML(doc){
+  const F = CT_FORMS[doc.form] || {}, 사람 = doc.parties || {};
+  const 쪽 = [F.a, F.b].filter(Boolean).find(([k]) => (사람[k] || {}).proxy) || F.a || ['', '위임인'];
+  const 본인 = 사람[쪽[0]] || {}, 대 = 본인.proxy || {};
+  const 동사 = F.verb || (F.lease ? '임대차' : '매매');
+  return `${ct부속머리(doc)}
+    <h1>위 임 장</h1>
+    <table>
+      <tr><th class="w">부동산의 표시</th><td>${ct값(ct부동산글(doc), 300)}</td></tr>
+      <tr><th class="w">위임 내용</th><td>위 부동산의 ${esc(동사)}계약에 관하여 계약 체결 · 서명날인 · 대금 지급 · 수령 일체의 권한</td></tr>
+    </table>
+    <p class="ct-close">본인은 위 내용의 권한을 아래 수임인에게 위임합니다.</p>
+    <p class="ct-date">${ct날짜(doc.contractDate)}</p>
+    <table class="ct-sign">
+      <tr><th rowspan="2" class="w">위임인<br>(${esc(ct짧은이름(쪽[1]))})</th><th>주소</th><td colspan="3">${ct값(본인.addr, 260)}</td></tr>
+      <tr><th>연락처</th><td>${ct값(본인.phone, 110)}</td><th>성명</th><td class="sign">${ct값(본인.name, 90)} <span class="ct-seal">(인감 날인)</span></td></tr>
+      <tr><th rowspan="2" class="w">수임인<br>(대리인)</th><th>주소</th><td colspan="3">${ct값(대.addr, 260)}</td></tr>
+      <tr><th>연락처</th><td>${ct값(대.phone, 110)}</td><th>성명</th><td class="sign">${ct값(대.name, 90)} <span class="ct-seal">(서명 또는 날인)</span></td></tr>
+    </table>
+    <p class="ct-foot">첨부: 위임인의 인감증명서 1통(위임용 · 본인 발급). 주민등록번호는 손으로 적습니다.</p>
+  </div>`;
+}
+/* 보증금 반환 영수증 - 임대차가 끝나 임차인이 보증금을 돌려받았을 때 */
+function ctReturnDocHTML(doc){
+  const F = CT_FORMS[doc.form] || {}, D = doc.deal || {}, R = doc.period || {}, 사람 = doc.parties || {};
+  const [aKey, aKo] = F.a || ['', ''], [bKey, bKo] = F.b || ['', ''];
+  return `${ct부속머리(doc)}
+    <h1>보 증 금 반 환 영 수 증</h1>
+    <table>
+      <tr><th class="w">금액</th><td>${금액글(D.deposit) || `금 ${빈칸(160)}원정(₩${빈칸(90)})`}</td></tr>
+      <tr><th class="w">부동산의 표시</th><td>${ct값(ct부동산글(doc), 300)}</td></tr>
+      <tr><th class="w">임대차기간</th><td>${ct날짜(R.handover)} ~ ${ct날짜(R.to)}</td></tr>
+    </table>
+    <p class="ct-close">위 부동산 임대차계약의 보증금을 ${esc(ct짧은이름(aKo))}으로부터 틀림없이 반환받았음을 확인합니다.</p>
+    <p class="ct-date">${빈칸(46)}년 ${빈칸(26)}월 ${빈칸(26)}일</p>
+    <table class="ct-sign">
+      ${ct영수칸(`영수인<br>(${esc(ct짧은이름(bKo))})`, 사람[bKey] || {})}
+      ${ct영수칸(`지급인<br>(${esc(ct짧은이름(aKo))})`, 사람[aKey] || {})}
+    </table>
+    <p class="ct-foot">보증금에서 공제한 금액(밀린 차임·원상복구비 등)이 있으면 아래에 적습니다: ${빈칸(260)}</p>
+  </div>`;
 }
 const ct부속머리 = doc => `<div class="ctdoc${ct글꼴(doc) === 'sans' ? ' f-sans' : ''}">`;
 const ct부동산글 = doc => { const P = doc.property || {}; return [P.road, P.part].filter(Boolean).join(' ') || P.bdNm || ''; };
@@ -13064,7 +13279,7 @@ function ctExtraHTML(doc){
   const S0 = ct정산(doc);
   const 안내 = !CT.id ? '<p class="ct-note">계약서를 먼저 저장하면 여기 적은 값이 남습니다. 지금은 인쇄만 됩니다.</p>'
     : CT.need32 ? '<p class="ct-note">부속 서류 값 저장은 준비 중입니다 - 지금은 인쇄만 됩니다.</p>' : '';
-  const 탭줄 = `<div class="ct-chips" role="tablist">${[['rc','영수증'],['st','잔금정산서'],['hd','물품인계 확인서']].map(([k, t]) =>
+  const 탭줄 = `<div class="ct-chips" role="tablist">${[['rc','영수증'],['st','잔금정산서'],['hd','물품인계 확인서'],['pw','위임장'], ...(F.lease ? [['rt','보증금 반환 영수증']] : []), ['pi','개인정보 동의서']].map(([k, t]) =>
     `<button type="button" role="tab" class="chip${탭 === k ? ' on' : ''}" aria-selected="${탭 === k}" data-act="cte-tab" data-v="${k}">${t}</button>`).join('')}</div>`;
   let 본 = '';
   if(탭 === 'rc'){
@@ -13073,6 +13288,11 @@ function ctExtraHTML(doc){
       <div class="ct-chips">${[['down','계약금'], ...(+D.mid ? [['mid','중도금']] : []), ['bal','잔금']].map(([k, t]) =>
         `<button type="button" class="chip${무엇 === k ? ' on' : ''}" data-act="cte-rc" data-v="${k}">${t}</button>`).join('')}</div>
       <p class="sub" style="margin:0;font-size:13.5px">금액·날짜·부동산·당사자는 계약서에서 가져옵니다. 영수인·지급인 모두 성명·주소·연락처를 적고 날인합니다 - 거래신고 때 대금 지급 증빙으로 냅니다.</p></div>`;
+  } else if(탭 === 'pw' || 탭 === 'rt' || 탭 === 'pi'){
+    본 = `<div class="card pad ct-sec"><h2>${탭 === 'pw' ? '위임장' : 탭 === 'pi' ? '개인정보 수집·이용 동의서' : '보증금 반환 영수증'}</h2>
+      <p class="sub" style="margin:0;font-size:13.5px">${탭 === 'pi' ? '계약할 때 양쪽 당사자에게 받습니다. 사무소 이름 · 부동산 · 당사자는 계약서에서 가져옵니다.' : 탭 === 'pw'
+        ? '대리인 계약일 때 씁니다. 계약서 ‘당사자’에서 대리인을 적으면 위임인·수임인 칸이 채워집니다. 위임인은 인감을 날인하고 인감증명서를 붙입니다.'
+        : '임대차가 끝나 보증금을 돌려줄 때 씁니다. 금액·부동산·기간·당사자는 계약서에서 가져오고, 날짜와 공제한 금액은 손으로 적습니다.'}</p></div>`;
   } else if(탭 === 'st'){
     본 = `<div class="card pad ct-sec"><h2>관리비 등 <span class="sub" style="font-weight:500;font-size:13.5px">잔금일 ${S0.잔금일 ? esc(ct글날(S0.잔금일)) : '- 계약서에 잔금일을 넣어 주세요'}</span></h2>
       <div class="ct-grid">${금액칸('fee', '월 관리비(원)', '일할 계산')}${금액칸('prepaid', '선수관리비(원)')}${금액칸('ltm', '장기수선충당금(원)')}</div>
@@ -13708,6 +13928,48 @@ function exEditPart(doc, p){
   if(p.t === 'sum'){ const n = (+ctGet(doc,'ex.fee')||0) + (+ctGet(doc,'ex.cost')||0); return `<p class="sub" style="margin:0">계: ${n ? n.toLocaleString() + '원' : '-'} (중개보수 + 실비)</p>`; }
   return '';   /* addr 는 위에서 따로 그린다 */
 }
+/* ── 자주 쓰는 단지 (2026-11-05 파트너 리뷰 · 10/30 대표님 '같은 단지면 늘 같은 값') ──
+   확인·설명서의 입지조건 · 관리에 관한 사항 · 비선호시설 · 환경조건은 같은 단지면 거의 같다. 단지로 저장해 두고 불러온다
+   (bk_agent.settings.complexes, 50곳까지). 관리비 금액처럼 호마다 다른 값도 같이 오니 불러온 뒤 고친다 */
+const DJ = { loaded:false, loading:false, list:[], need:'', err:'' };
+const EX_단지절 = /입지조건|관리에 관한 사항|비선호시설|환경조건/;
+function exDanjiKeys(form){
+  const E = EX_FORMS[form] || EX_FORMS['explain-home'], 키 = [];
+  for(const s of E.spec) if(s.h && EX_단지절.test(s.h)) for(const r of s.rows || []) for(const p of r.p || []){
+    if(p.k && /^ex\./.test(p.k)) 키.push(p.k);
+    for(const x of Object.values(p.x || {})) if(x && /^ex\./.test(x[0])) 키.push(x[0]); }
+  return [...new Set(키)];
+}
+function djLoad(){
+  if(DJ.loading || !세션있음()) return;
+  DJ.loading = true;
+  ctPost({ what:'complex' }).then(({ ok, j }) => { DJ.loading = false; DJ.loaded = true;
+    if(ok){ DJ.list = j.list || []; DJ.need = j.need || ''; DJ.err = ''; } else DJ.err = j.error || '단지를 불러오지 못했습니다'; render();
+  }).catch(() => { DJ.loading = false; DJ.loaded = true; DJ.err = '네트워크 문제로 단지를 불러오지 못했습니다'; render(); });
+}
+async function djSend(body){
+  const { ok, j } = await ctPost({ what:'complex-save', ...body }).catch(() => ({ ok:false, j:{ error:'네트워크 문제로 저장하지 못했습니다' } }));
+  if(j && j.list) DJ.list = j.list;
+  if(!ok) toast(j.error || '저장하지 못했습니다');
+  render(); return ok;
+}
+/* 이 물건과 같은 단지 - 단지명이 같거나 도로명 주소(번지까지)가 같으면 */
+const dj같음 = (d, P) => { const 이름 = String(P.bdNm || '').trim(), 길 = String(P.road || '').replace(/\s*\(.*$/, '').replace(/\s+\d+동.*$/, '').trim();
+  return (이름 && d.name === 이름) || (길 && d.road && 길.startsWith(d.road)); };
+function exDanjiHTML(doc){
+  if(!세션있음()) return '';
+  if(!DJ.loaded) setTimeout(djLoad);
+  const 잠김 = CT.row && CT.row.status === 'sealed', P = doc.property || {};
+  const 목록 = DJ.list.slice().sort((a, b) => dj같음(b, P) - dj같음(a, P));
+  return `<div class="card pad ct-sec ex-danji"><h2>자주 쓰는 단지 <span class="sub" style="font-weight:500;font-size:13.5px">입지조건 · 관리 · 비선호시설 · 환경조건을 단지로 저장해 두고 불러옵니다</span></h2>
+    ${DJ.need ? '<p class="ct-note">단지 저장은 준비 중입니다 - 곧 열립니다.</p>' : DJ.err ? `<p class="ct-note">${esc(DJ.err)}</p>` : ''}
+    ${목록.length ? `<ul>${목록.map(d => `<li class="${dj같음(d, P) ? 'hit' : ''}"><span><b>${esc(d.name)}</b>${dj같음(d, P) ? ' <small>· 이 물건과 같은 단지</small>' : ''}<br><small>${esc(d.road || '')} · ${esc(String(d.at || '').slice(0, 10))} 저장</small></span>
+      <span class="cs-log-b">${잠김 ? '' : `<button type="button" class="btn ${dj같음(d, P) ? 'pri' : 'tool'} sm" data-act="ex-dj-load" data-v="${esc(d.id)}">불러오기</button>`}
+      <button type="button" class="tapx" data-act="ex-dj-del" data-v="${esc(d.id)}" style="font-size:13.5px;color:var(--n500)">${DJ.del === d.id ? '한 번 더 누르면 지웁니다' : '지우기'}</button></span></li>`).join('')}</ul>`
+      : `<p class="sub" style="margin:0">아직 저장한 단지가 없습니다. 아래 항목을 채운 뒤 ‘이번 내용을 단지로 저장’을 누르면 다음부터 불러옵니다.</p>`}
+    ${잠김 || DJ.need ? '' : `<button type="button" class="btn tool sm" data-act="ex-dj-save" style="align-self:flex-start">이번 내용을 단지로 저장${P.bdNm ? ` (${esc(P.bdNm)})` : ''}</button>`}
+  </div>`;
+}
 function exEditor(doc){
   const E = EX_FORMS[doc.form] || EX_FORMS['explain-home'];
   const 잠김 = CT.row && CT.row.status === 'sealed';
@@ -13723,7 +13985,8 @@ function exEditor(doc){
       ${잠김 ? `<p style="margin:0">${esc(P.road||'')}</p>` : P.road ? `
       <div class="ct-addr"><b>${esc(P.road)}</b><span>${esc(P.jibun||'')}${P.admCd?` · 법정동코드 ${esc(P.admCd)}`:' · <span style="color:var(--danger)">법정동코드 없음 - ‘다시 찾기’로 주소를 골라 주세요</span>'}</span>
         <button class="tapx" data-act="ct-addr-clear" style="font-size:13.5px;color:var(--n500)">다시 찾기</button></div>`
-      : addrBox('ct-addr', '도로명·지번·건물명으로 찾기 (예: 미사강변대로 220)')}</div>`;
+      : addrBox('ct-addr', '도로명·지번·건물명으로 찾기 (예: 미사강변대로 220)')}</div>
+    ${exDanjiHTML(doc)}`;
   for(const s of E.spec){
     if(s.g){ html += `<h2 class="ex-eg">${esc(s.g)}</h2>`; continue; }
     const rows = s.rows.map(r => {
@@ -13870,6 +14133,8 @@ function ctInput(el, k){
   if(!CT.doc || (CT.row && CT.row.status === 'sealed')) return false;
   const at = k.indexOf(':'); if(at < 0) return false;
   const kind = k.slice(0, at), path = k.slice(at + 1);
+  /* 자동으로 채운 칸을 고치면 '수정됨' 과 원래 값을 남긴다(파트너 리뷰) */
+  if(CT.filled && CT.filled.has(path)){ const 원 = ctGet(CT.doc, path); if(원 != null && 원 !== '' && !(CT.doc.edited && path in CT.doc.edited)) CT.doc.edited = { ...(CT.doc.edited || {}), [path]: 원 }; }
   if(CT.filled && CT.filled.delete(path)) el.classList.remove('ai');
   if(kind === 'ct') ctSet(CT.doc, path, el.value);
   else if(kind === 'ct$'){
@@ -14066,6 +14331,7 @@ function render(){
   else if(h.startsWith('#/partner/propose/')) html = V['#/partner/propose'](parts[3]);
   else if(h==='#/partner/contracts' || h.startsWith('#/partner/contracts/')) html = V['#/partner/contracts'](parts[3]);
   else if(h.startsWith('#/partner/contract/')) html = V['#/partner/contract'](parts[3]);
+  else if(h.startsWith('#/draft/')) html = V['#/draft'](parts[2]);
   else if(h==='#/partner/join') html = V['#/partner/join']();
   else if(h==='#/partner/stats') html = V['#/partner/stats']();
   else if(h==='#/partner/settings') html = V['#/partner/settings']();
@@ -16054,6 +16320,21 @@ function handle(a,v,el){
       CT.scan = null; CT.scanWarn = (원.src && 원.src.warnings) || [];
       CT.dirty = true; CT.mode = 원.src ? 'edit' : 'scan'; ctGo('#/partner/contract/new'); return true;
     }
+    /* 자주 쓰는 단지 */
+    case 'ex-dj-save': { const d = CT.doc; if(!d || ctSealed()) return true;
+      const P = d.property || {}, 값 = {};
+      for(const k of exDanjiKeys(d.form)){ const v = ctGet(d, k); if(v != null && v !== '' && !(Array.isArray(v) && !v.length)) 값[k.slice(3)] = v; }
+      if(!Object.keys(값).length) return toast('입지조건·관리·비선호시설·환경조건 중 채운 칸이 없습니다'), true;
+      const name = String(P.bdNm || '').trim() || String(P.road || '').replace(/\s*\(.*$/, '').trim();
+      if(!name) return toast('소재지나 단지명을 먼저 넣어 주세요'), true;
+      djSend({ op:'put', name, road: String(P.road || '').replace(/\s*\(.*$/, '').replace(/\s+\d+동.*$/, '').trim(), v: 값 }).then(ok => ok && toast(`‘${name}’ 단지로 저장했습니다`));
+      return true; }
+    case 'ex-dj-load': { const d = CT.doc, s = DJ.list.find(x => x.id === v); if(!d || !s || ctSealed()) return true;
+      const 키 = new Set(exDanjiKeys(d.form)); let n = 0;
+      for(const [k, x] of Object.entries(s.v || {})) if(키.has('ex.' + k)){ ctSet(d, 'ex.' + k, x); n++; }
+      ctDirty(); render(); toast(n ? `‘${s.name}’에서 ${n}칸을 불러왔습니다 - 이번 물건에 맞게 고쳐 주세요` : '이 서식에 맞는 칸이 없습니다'); return true; }
+    case 'ex-dj-del': if(DJ.del !== v){ DJ.del = v; render(); return true; }
+      DJ.del = null; DJ.list = DJ.list.filter(x => x.id !== v); djSend({ op:'del', id: v }); return true;
     case 'ex-form': if(CT.doc && EX_FORMS[v] && !(CT.row && CT.row.status === 'sealed')){ const n = exLost(CT.doc, v);
       if(n){ 확인창(`서식을 바꾸면 ${n}칸의 값이 지워집니다`, `'${EX_FORMS[v].short}' 서식에는 없는 칸이라, 지금 적힌 값이 사라집니다.`, { 예:'바꾸기', 아니오:'그대로 두기', 위험:true })
         .then(바꿈 => { if(바꿈 && CT.doc && !(CT.row && CT.row.status === 'sealed')){ exSwitch(CT.doc, v); ctDirty(); render(); } }); return true; }
@@ -16097,15 +16378,19 @@ function handle(a,v,el){
     /* 종료일 2년·1년 - 인도일(입주일)부터 */
     case 'ct-term': if(CT.doc && !ctSealed()){ const R = CT.doc.period || (CT.doc.period = {});
       if(!R.handover) return toast('인도일(입주일)을 먼저 넣어 주세요'), true;
-      CT.termN = +v; R.to = ct종료일(R.handover, +v, ct끝표기() === 'same'); ctDirty(); render(); } return true;
+      CT.termN = v; R.to = ct기간끝(R.handover, v, ct끝표기() === 'same'); ctDirty(); render(); } return true;
     case 'ct-endstyle': { const 같은 = v === '시작과 같은 날';
       try{ localStorage.setItem('bk.ctEnd', 같은 ? 'same' : 'prev'); }catch(_){}
       const R = CT.doc && CT.doc.period;
-      if(R && R.handover && CT.termN && !ctSealed()){ R.to = ct종료일(R.handover, CT.termN, 같은); ctDirty(); }
+      if(R && R.handover && CT.termN && !ctSealed()){ R.to = ct기간끝(R.handover, CT.termN, 같은); ctDirty(); }
       render(); return true; }
     /* 당사자 - 개인/법인 · 공동명의자 */
     case 'ct-ptype': if(CT.doc && !ctSealed()){ const [k, t] = String(v).split('|'), P = CT.doc.parties || (CT.doc.parties = {}), x = P[k] || (P[k] = {});
       if(t === '법인') x.type = 'corp'; else { delete x.type; delete x.rep; delete x.bizNo; } ctDirty(); render(); } return true;
+    case 'ct-proxy': if(CT.doc && !ctSealed()){ const P = CT.doc.parties || (CT.doc.parties = {}), x = P[v] || (P[v] = {});
+      if(x.proxy) delete x.proxy; else x.proxy = { name:'', rel:'', phone:'', addr:'', docs:{} }; ctDirty(); render(); } return true;
+    case 'ct-proxy-doc': if(CT.doc && !ctSealed()){ const [k, d] = String(v).split('|'), x = (CT.doc.parties || {})[k];
+      if(x && x.proxy){ const s = x.proxy.docs || (x.proxy.docs = {}); if(s[d]) delete s[d]; else s[d] = true; ctDirty(); render(); } } return true;
     case 'ct-co-add': if(CT.doc && !ctSealed()){ const P = CT.doc.parties || (CT.doc.parties = {}), x = P[v] || (P[v] = {});
       x.co = [...(x.co || []), { name:'', phone:'', addr:'', share:'' }].slice(0, 4); ctDirty(); render(); } return true;
     case 'ct-co-del': if(CT.doc && !ctSealed()){ const [k, i] = String(v).split('|'), x = (CT.doc.parties || {})[k];
@@ -16231,7 +16516,12 @@ function handle(a,v,el){
     case 'cs-hide': cs틀고침(L => { const t = L.find(x => x.id === v); if(t){ if(t.hidden) delete t.hidden; else if(L.filter(x => !x.hidden).length > 1) t.hidden = true; else toast('하나는 보여야 합니다'); } }); return true;
     case 'cs-up': { const i = +v; if(i > 0) cs틀고침(L => { [L[i - 1], L[i]] = [L[i], L[i - 1]]; }); return true; }
     case 'cs-reset': CS.tpls = []; CS.sel = ''; render(); csSend({ op:'tpls', tpls: [] }).then(() => { render(); toast('기본 틀로 되돌렸습니다'); }); return true;
-    case 'cte-tab': if(['rc','st','hd'].includes(v)){ CT.extraTab = v; render(); } return true;
+    case 'cte-tab': if(['rc','st','hd','pw','rt','pi'].includes(v)){ CT.extraTab = v; render(); } return true;
+    /* 대시보드의 계약체결 문자 단추 - 그 틀을 골라 연다 */
+    case 'cs-go': CS.sel = v; CS.edit = null; go('#/partner/contracts/sms'); return true;
+    case 'cs-paste': { const el = document.getElementById('csPaste'), n = cs붙여넣기(el ? el.value : '');
+      if(!n) return toast('문자에서 칸을 찾지 못했습니다 - 같은 틀로 보낸 문자인지 확인해 주세요'), true;
+      render(); toast(`붙여 넣은 문자에서 ${n}칸을 채웠습니다`); return true; }
     case 'cte-rc': if(['down','mid','bal'].includes(v)){ CT.extraRc = v; render(); } return true;
     case 'cte-day': ct부속고침({ dayOwner: v === 'a' ? 'a' : '' }); return true;
     case 'cte-dir': { const [k, d] = String(v).split('|'); const x = ct부속(); ct부속고침({ dirs: { ...(x.dirs || {}), [k]: d === '-' ? '-' : '+' } }); return true; }
@@ -16250,6 +16540,21 @@ function handle(a,v,el){
     case 'ctk-applied': ctTrackSet({ permitApplied: ct트랙().permitApplied ? '' : ct오늘() }); return true;
     case 'ctk-permit':  ctTrackSet(ct트랙().permit ? { permit: false, permitDue: '', permitApplied: '' } : { permit: true }); return true;
     case 'ctk-off':     ctTrackSet({ off: !ct트랙().off }); return true;
+    case 'ctk-state':   if(CT_진행[v]) ctTrackSet({ state: ct트랙().state === v ? '' : v }); return true;
+    case 'ctk-hb':      ctTrackSet({ hb: !ct트랙().hb }); return true;
+    case 'ct-open-prev': if(CT.row && CT.row.prev_id) go('#/partner/contract/' + CT.row.prev_id); return true;
+    case 'ct-open-id':   if(v) go('#/partner/contract/' + v); return true;
+    /* 확정 전 초안 공유 - 보기 전용 링크(7일)를 복사한다 */
+    case 'ct-share': (async () => {
+      if(!CT.id || CT.dirty){ if(!(await ctSave(true))) return; }
+      const { ok, j } = await ctPost({ what:'contract-share', id: CT.id }).catch(() => ({ ok:false, j:{} }));
+      if(!ok) return toast(j.error || '링크를 만들지 못했습니다');
+      const 주소 = `${location.origin}${location.pathname}#/draft/${j.token}`;
+      const 끝 = new Date(j.until + 9 * 3600e3).toISOString().slice(0, 10);
+      (navigator.clipboard ? navigator.clipboard.writeText(주소) : Promise.reject()).then(
+        () => toast(`초안 링크를 복사했습니다 - ${끝}까지 열립니다. 전화번호는 가려서 보입니다`),
+        () => { S.modal = { type:'ct-share', url: 주소, until: 끝 }; render(); });
+    })(); return true;
     /* 버전 - 업데이트 내역 · 새 버전 받기 */
     case 'ver-open': S.modal = { type:'ver' }; render(); return true;
     case 'ver-reload': location.reload(); return true;

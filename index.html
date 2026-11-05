@@ -2186,6 +2186,7 @@ body.mo .ct-font button{min-height:40px;padding:0 14px;font-size:14.5px}
 .cs-paste{border-top:1px solid var(--n100);padding-top:10px}
 .cs-paste summary{cursor:pointer;font-size:14px;font-weight:700;color:var(--ind700)}
 .cs-paste[open]{display:flex;flex-direction:column;gap:8px}
+.cs-shot{cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
 .ex-danji{display:flex;flex-direction:column;gap:8px}
 .ex-danji ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
 .ex-danji li{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px;background:var(--n50);border-radius:10px;padding:8px 12px;font-size:14px}
@@ -10817,6 +10818,10 @@ const CT_하위메뉴 = [['#/partner/contracts/new', '계약서 작성', 'pen', 
    번호는 배포한 날(연.월.일 - 같은 날 또 올리면 뒤에 .2). 화면이 version.json 을 가끔 읽어,
    더 새 버전이 올라와 있으면 메뉴 아래에서 새로고침을 권한다(버전확인) - 계약서를 띄워 둔 채 오래 일하면 고친 화면을 못 받는다 */
 const BK_변경 = [
+  { v:'26.11.05.5', 날:'2026-11-05', 줄:[
+    '계약체결 문자 - 캡처 사진에서 읽기(글만 읽고 저장하지 않음) · 임대차 종료일 표기(시작 전날/같은 날)를 사무소 설정으로 저장',
+    '로그인 - 돌아온 뒤 계정 확인과 내 정보 불러오기를 나란히 보내 기다림을 줄였다',
+  ]},
   { v:'26.11.05.4', 날:'2026-11-05', 줄:[
     '계약서 - 파트너 리뷰 나머지: 대리인(위임장·인감증명서·통화 확인) · 진행 상태(준비·진행중·완료·보류·취소)와 한방 입력 체크 · 확정 후 수정 표시와 앞 날인본 보기 · 자동값 고치면 수정됨 표시',
     '부속 서류에 위임장 · 보증금 반환 영수증 · 개인정보 동의서 · 단기임대 6·3개월 종료일 · 확정 전 초안 보기 전용 링크(7일, 전화번호 가림)',
@@ -12312,7 +12317,9 @@ function csPageHTML(){
         <div class="ct-grid">${입력}</div>
         <details class="cs-paste"><summary>보낸 문자를 붙여 넣어 칸 채우기</summary>
           <textarea class="inp" id="csPaste" rows="5" placeholder="예전에 보낸 계약체결 문자를 그대로 붙여 넣으세요"></textarea>
-          <button type="button" class="btn tool sm" data-act="cs-paste" style="align-self:flex-start">칸 채우기</button></details>
+          <div class="cs-acts eqb st"><button type="button" class="btn tool sm" data-act="cs-paste">칸 채우기</button>
+            <label class="btn tool sm cs-shot">${CS.shot ? '읽는 중…' : '캡처 사진에서 읽기'}<input type="file" accept="image/png,image/jpeg,image/webp" data-cs-shot hidden ${CS.shot ? 'disabled' : ''}></label></div>
+          <p class="sub" style="margin:0;font-size:12.5px">캡처 사진은 글자만 읽고 저장하지 않습니다. 서류 판독과 같은 하루 횟수 안에서 씁니다.</p></details>
         <button type="button" class="tapx" data-act="cs-clear" style="align-self:flex-start;font-size:13.5px;color:var(--n500)">칸 모두 비우기</button></div>
       <div class="cs-right">
         <div class="card pad ct-sec"><h2>보낼 문자</h2>
@@ -12357,6 +12364,22 @@ function cs붙여넣기(글){
   CS.sel = 틀.id; CS.vals = { ...CS.vals, ...값 }; CS.none = {};
   return n;
 }
+/* 캡처 사진 → 글(서버 AI 판독) → 붙여넣기 칸 → 칸 채우기 */
+async function cs사진(file){
+  if(!file) return;
+  if(!/^image\/(jpeg|png|webp)$/.test(file.type)) return toast('JPG·PNG·WEBP 캡처만 읽습니다');
+  CS.shot = true; render();
+  try{
+    const data = await 줄이기(file);
+    const { ok, j } = await ctPost({ what:'contract-scan', mode:'sms', file:{ data } }).catch(() => ({ ok:false, j:{ error:'네트워크 문제로 읽지 못했습니다' } }));
+    CS.shot = false;
+    if(!ok){ render(); return toast(j.error || '캡처를 읽지 못했습니다'); }
+    const n = cs붙여넣기(j.text || ''); render();
+    const ta = document.getElementById('csPaste'); if(ta) ta.value = j.text || '';
+    toast(n ? `캡처에서 ${n}칸을 채웠습니다 - 맞는지 확인해 주세요` : '캡처 글은 읽었지만 틀과 맞는 칸이 없습니다 - 아래 글을 보고 고쳐 주세요');
+  }catch(e){ CS.shot = false; render(); toast('사진을 열지 못했습니다'); }
+}
+if(typeof document !== 'undefined') document.addEventListener('change', e => { const el = e.target.closest && e.target.closest('[data-cs-shot]'); if(el && el.files && el.files[0]){ cs사진(el.files[0]); el.value = ''; } });
 /* 칸을 고칠 때 - 다시 그리지 않고 미리보기·채운 수만 바꾼다(커서가 튀지 않게) */
 function cs미리(){
   const t = cs지금(), 글 = cs문자(), pv = document.getElementById('csPv'); if(pv) pv.textContent = 글;
@@ -12892,6 +12915,8 @@ function ctAlertLoad(){
   CT.alertLoading = true;
   ctPost({ what:'alert-settings' }).then(({ ok, j }) => {
     CT.alertLoading = false;
+    /* 종료일 표기는 사무소 설정 - 서버 값을 이 브라우저에도 맞춰 둔다 */
+    if(ok && (j.end === 'same' || j.end === 'prev')) try{ localStorage.setItem('bk.ctEnd', j.end); }catch(_){}
     CT.alert = ok ? { loaded: true, cfg: ct알림설정(j.alert), need: j.need || '', phone: j.phone || '', kakaoReady: !!j.kakaoReady }
       : { loaded: true, cfg: ct알림설정(), need: '', err: j.error || '알림 설정을 불러오지 못했습니다' };
     if(S.route.startsWith('#/partner/contracts') || CT.mode === 'plan') render();
@@ -14888,6 +14913,11 @@ async function hydrate(sess){
     if(!sess){ 계정확인실패 = true; return false; }   /* 갱신 실패 - 서버가 거절했으면 세션도 이미 지워졌다 */
   }
   try{
+    /* 로그인하고 돌아오면 로딩이 여러 번 돈다(2026-10-17 대표님) - 계정 확인과 '내 정보(me)' 를 차례로 기다렸다.
+       me 는 서버가 따로 토큰을 확인하므로 계정 확인과 나란히 보낸다(2026-11-05) - 기다림이 한 번 준다.
+       열쇠 갱신을 따라 하지 않게 apiFetch 가 아니라 맨 fetch 로 - 토큰이 거절되면 아래에서 세션을 지우고 me 답은 버린다 */
+    const 내정보 = fetch('/api/my', {method:'POST', headers:{'Content-Type':'application/json', Authorization:'Bearer ' + sess.access_token}, body: JSON.stringify({what:'me'})})
+      .then(async r => ({ ok: r.ok, j: await r.json().catch(()=>({})) })).catch(() => null);
     const r = await fetch(`${SB_URL}/auth/v1/user`, {headers: authHeaders(sess.access_token)});
     /* 토큰이 거절됐을 때만 세션을 지운다 - 500·503 같은 일시 오류에 로그아웃시키지 않는다(2026-11-03 리뷰) */
     if(!r.ok){ if(r.status === 401 || r.status === 403) store.set(null); else 계정확인실패 = true; return false; }
@@ -14900,11 +14930,8 @@ async function hydrate(sess){
        둘 다 '내가 누구인가' 라 나란히 묻는다 - 앞뒤로 기다릴 이유가 없다. */
     /* 한 번에 묻는다 (2026-10-12, /api/my what:'me'). 못 물었으면 예전처럼 따로 묻는다 */
     let 둘 = null;
-    try{
-      const r = await apiFetch('/api/my', {method:'POST', body: JSON.stringify({what:'me'})});
-      const j = await r.json().catch(()=>({}));
-      if(r.ok && j.consent && j.agent) 둘 = j;
-    }catch(_){}
+    const m = await 내정보;
+    if(m && m.ok && m.j.consent && m.j.agent) 둘 = m.j;
     await Promise.all([readConsent(둘 && 둘.consent), readAgent(둘 && 둘.agent)]);
     return true;
   }catch(e){ if(!S.user) 계정확인실패 = true; return false; }   /* 오프라인 - 기다리는 화면에 갇히지 않게 */
@@ -16381,6 +16408,7 @@ function handle(a,v,el){
       CT.termN = v; R.to = ct기간끝(R.handover, v, ct끝표기() === 'same'); ctDirty(); render(); } return true;
     case 'ct-endstyle': { const 같은 = v === '시작과 같은 날';
       try{ localStorage.setItem('bk.ctEnd', 같은 ? 'same' : 'prev'); }catch(_){}
+      if(세션있음()) ctPost({ what:'end-style-save', end: 같은 ? 'same' : 'prev' }).catch(() => {});
       const R = CT.doc && CT.doc.period;
       if(R && R.handover && CT.termN && !ctSealed()){ R.to = ct기간끝(R.handover, CT.termN, 같은); ctDirty(); }
       render(); return true; }

@@ -145,7 +145,19 @@ async function readAlert(res, agent) {
   const x = await 설정읽기(agent);
   if (x.error) return res.status(502).json({ error: '알림 설정을 불러오지 못했습니다' });
   return res.status(200).json({ ok: true, alert: 알림설정(x.settings.alert), need: x.need || '',
-    phone: 가린번호(agent.phone), kakaoReady: !!process.env.SOLAPI_TPL_SCHEDULE });
+    phone: 가린번호(agent.phone), kakaoReady: !!process.env.SOLAPI_TPL_SCHEDULE, end: x.settings.ctEnd === 'same' ? 'same' : 'prev' });
+}
+/* 임대차 종료일 표기(파트너 리뷰 '사무소 설정') - 시작 전날(prev) · 시작과 같은 날(same). settings.ctEnd */
+async function saveEndStyle(res, agent, b) {
+  const x = await 설정읽기(agent);
+  if (x.need) return res.status(503).json({ error: '설정 저장을 준비 중입니다', need: '0032' });
+  if (x.error) return res.status(502).json({ error: '설정을 불러오지 못했습니다' });
+  const ctEnd = b.end === 'same' ? 'same' : 'prev';
+  const r = await fetch(sbUrl('bk_agent', 'id=eq.' + agent.id), {
+    method: 'PATCH', headers: { ...sbHeaders(), Prefer: 'return=minimal' }, body: JSON.stringify({ settings: { ...x.settings, ctEnd } }),
+  });
+  if (!r.ok) return res.status(502).json({ error: '저장하지 못했습니다' });
+  return res.status(200).json({ ok: true, end: ctEnd });
 }
 async function saveAlert(res, agent, b) {
   const x = await 설정읽기(agent);
@@ -282,6 +294,7 @@ export default async function handler(req, res) {
   /* 계약 일정 알림 설정 - 받는 곳 · 항목 · 법무사 예약 시점 */
   if (b.what === 'alert-settings')      return readAlert(res, chk.agent);
   if (b.what === 'alert-settings-save') return saveAlert(res, chk.agent, b);
+  if (b.what === 'end-style-save')      return saveEndStyle(res, chk.agent, b);
 
   /* 내 특약 문구함 - 자주 쓰는 특약을 매매·임대차·갱신계약·기타로 */
   if (b.what === 'phrases')      return readPhrases(res, chk.agent);

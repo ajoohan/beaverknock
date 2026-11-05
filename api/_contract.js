@@ -703,8 +703,14 @@ async function scan(req, res, b, user) {
       if (r.ok && (await r.json()).length >= 30) return 많음();
     } catch { /* 기록을 못 읽어도 판독은 막지 않는다 - 위 상한이 남아 있다 */ }
   }
-  const { scanDocs, ScanError } = await import('./_scan.js');
+  const { scanDocs, scanSms, ScanError } = await import('./_scan.js');
   try {
+    /* 계약체결 문자 캡처 한 장 - 본문 글만 돌려준다(같은 하루 상한을 쓴다) */
+    if (b.mode === 'sms') {
+      const text = await scanSms(b.file);
+      await logOps(req || { headers: {} }, user, { action: 'contract-scan', count: 1 });
+      return res.status(200).json({ ok: true, text });
+    }
     const out = await scanDocs(b.files);
     await logOps(req || { headers: {} }, user, { action: 'contract-scan', count: Array.isArray(b.files) ? b.files.length : null });
     return res.status(200).json({ ok: true, scan: out });

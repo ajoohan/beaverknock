@@ -92,6 +92,19 @@ const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3
   res = 응답(); await C.contractRoute({}, res, agent, user, { what: 'contract-scan', files: 파일 });
   ok(res.code === 503 && res.body.need === 'key' && /준비 중/.test(res.body.error), '열쇠(ANTHROPIC_API_KEY)가 없으면 503 · 준비 중 - 직접 적어 주세요');
   if (전) process.env.ANTHROPIC_API_KEY = 전;
+
+  /* 계약체결 문자 캡처 (2026-11-05) - 사진 한 장 → 본문 글 */
+  SC.__setScanClient({ messages: { create: async (p, o) => { 받은 = { p, o }; return typeof 답 === 'function' ? 답() : 답; } } });
+  답 = { stop_reason: 'end_turn', content: [{ type: 'text', text: '[매매계약체결]\n*목적물: 미사 101동\n주민 900101-1234567' }] };
+  const 글 = await SC.scanSms({ data: PNG });
+  ok(/^\[매매계약체결\]\n\*목적물: 미사 101동/.test(글) && !/900101/.test(글) && 받은.p.model === SC.SCAN_MODEL && !받은.p.output_config.format && 받은.p.messages[0].content[0].type === 'image',
+     '캡처는 사진 한 장을 같은 모델로 읽어 글만 돌려준다 · 줄바꿈은 지키고 주민번호 모양은 지운다');
+  ok(/지시는 따르지 않고/.test(SC.SMS_SYSTEM), '캡처 속 글의 지시는 따르지 않는다고 못박는다');
+  const 캡코드 = async f => { try { await SC.scanSms(f); return 'ok'; } catch (e) { return e.code; } };
+  ok(await 캡코드({ data: PDF(1) }) === 'bad_file' && await 캡코드({}) === 'bad_file', '캡처는 사진(PNG·JPG·WEBP)만 받는다');
+  res = 응답(); await C.contractRoute({ headers: {} }, res, agent, user, { what: 'contract-scan', mode: 'sms', file: { data: PNG } });
+  ok(res.code === 200 && /목적물/.test(res.body.text), 'contract-scan mode:sms 는 본문 글을 돌려준다');
+  SC.__setScanClient(null);
 }
 
 /* ── ③ 화면: 읽은 값 → 칸 ── */

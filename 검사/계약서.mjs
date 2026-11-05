@@ -834,6 +834,14 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
     res = 응답(); 불린 = [];
     await C.contractRoute({}, res, agent, user, { what: 'contract-share-cut', id: '33333333-3333-3333-3333-333333333333' });
     ok(res.code === 200 && res.body.track.shareN === 4 && res.body.track.off === true, '끊기는 서버가 지금 번호를 읽어 하나 올린다(다른 칸은 그대로)');
+    /* 읽은 뒤 끊기가 번호를 올렸으면(조건에 안 맞아 0줄) 다시 읽어 다시 쓴다 */
+    let 번 = 3, 막 = 1; 답 = (u, o) => { if (o && o.method === 'PATCH') { if (막-- > 0) { 번 = 4; return new Response('[]', { status: 200 }); } return new Response('[{"id":"x"}]', { status: 200 }); }
+      return new Response(JSON.stringify([{ track: { shareN: 번 } }]), { status: 200 }); };
+    res = 응답(); 불린 = [];
+    await C.contractRoute({}, res, agent, user, { what: 'contract-track', id: '33333333-3333-3333-3333-333333333333', track: { state: 'done' } });
+    const 패들 = 불린.filter(x => x.m === 'PATCH');
+    ok(res.code === 200 && 패들.length === 2 && /track->>shareN=eq\.3/.test(decodeURIComponent(패들[0].u)) && /track->>shareN=eq\.4/.test(decodeURIComponent(패들[1].u)) && JSON.parse(패들[1].b).track.shareN === 4,
+       '링크 번호가 읽은 뒤 바뀌면 다시 읽어 새 번호로 쓴다 - 끊은 링크를 되살리지 않는다');
     답 = 앞답; }
   res = 응답(); 불린 = [];
   await C.contractRoute({}, res, agent, user, { what: 'contract-track', id: '33333333-3333-3333-3333-333333333333', track: { balanceDate: '내일' } });

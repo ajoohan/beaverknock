@@ -252,17 +252,9 @@ async function share(res, agent, b) {
 async function shareCut(res, agent, b) {
   const id = String(b.id || '');
   if (!UUID.test(id)) return res.status(400).json({ error: '어느 계약서인지 알 수 없습니다' });
-  const got = await db('bk_contract', `select=track&id=eq.${id}&agent_id=eq.${agent.id}&limit=1`);
-  if (!got.r.ok) return /track/.test(got.t || '') ? 준비중32(res) : noTable(got.t) ? 준비중(res) : res.status(502).json({ error: '계약서를 불러오지 못했습니다' });
-  if (!got.rows.length) return res.status(404).json({ error: '내 계약서가 아니거나 지워진 계약서입니다' });
-  const t = trackCheck(got.rows[0].track || {}) || {};
-  t.shareN = (t.shareN || 0) + 1;
-  const { r, t: 글, rows } = await db('bk_contract', `id=eq.${id}&agent_id=eq.${agent.id}&select=id`, {
-    method: 'PATCH', headers: { Prefer: 'return=representation' }, body: JSON.stringify({ track: t }),
-  });
-  if (!r.ok) return /track/.test(글 || '') ? 준비중32(res) : res.status(502).json({ error: '링크를 끊지 못했습니다' });
-  if (!rows.length) return res.status(404).json({ error: '내 계약서가 아니거나 지워진 계약서입니다' });
-  return res.status(200).json({ ok: true, track: t });
+  const z = await 링크번호지켜쓰기(id, agent, (n, 지금) => ({ ...지금, shareN: n + 1 }));
+  if (z.res) return z.res(res, '링크를 끊지 못했습니다');
+  return res.status(200).json({ ok: true, track: z.track });
 }
 /* 공개 읽기 - 로그인 없이 표만으로. IP 마다 10분에 60번 */
 export async function draftRead(req, res) {
@@ -646,15 +638,30 @@ async function track(res, agent, b) {
   /* 링크 번호(shareN)는 끊기(contract-share-cut)만 올린다 - 다른 기기의 오래된 track 저장이 0 으로 되돌려
      끊은 링크가 다시 열리면 안 된다(2026-11-05 리뷰). 받은 값은 버리고 지금 값을 지킨다 */
   delete t.shareN;
-  const 지금 = await db('bk_contract', `select=track&id=eq.${id}&agent_id=eq.${agent.id}&limit=1`);
-  const 옛번호 = 지금.r.ok && 지금.rows[0] ? ((trackCheck(지금.rows[0].track || {}) || {}).shareN || 0) : 0;
-  if (옛번호) t.shareN = 옛번호;
-  const { r, t: 글, rows } = await db('bk_contract', `id=eq.${id}&agent_id=eq.${agent.id}&select=id`, {
-    method: 'PATCH', headers: { Prefer: 'return=representation' }, body: JSON.stringify({ track: t }),
-  });
-  if (!r.ok) return /track/.test(글 || '') ? 준비중32(res) : noTable(글) ? 준비중(res) : res.status(502).json({ error: '일정을 저장하지 못했습니다' });
-  if (!rows.length) return res.status(404).json({ error: '내 계약서가 아니거나 지워진 계약서입니다' });
-  return res.status(200).json({ ok: true, track: t });
+  /* 읽은 링크 번호가 그대로일 때만 쓴다 - 그 사이 끊기가 번호를 올렸으면 다시 읽는다(2026-11-05 재검토) */
+  const z = await 링크번호지켜쓰기(id, agent, () => t);
+  if (z.res) return z.res(res, '일정을 저장하지 못했습니다');
+  return res.status(200).json({ ok: true, track: z.track });
+}
+/* track 을 고쳐 쓴다 - 고침(지금 링크 번호 n) 이 새 track 을 돌려준다. 링크 번호가 읽은 뒤 바뀌었으면 다시 읽어 3번까지.
+   돌려주는 값: { track } 또는 { res: (res, 실패말) => 답 } */
+async function 링크번호지켜쓰기(id, agent, 고침) {
+  for (let i = 0; i < 3; i++) {
+    const got = await db('bk_contract', `select=track&id=eq.${id}&agent_id=eq.${agent.id}&limit=1`);
+    if (!got.r.ok) { const 글 = got.t; return { res: (res, 말) => /track/.test(글 || '') ? 준비중32(res) : noTable(글) ? 준비중(res) : res.status(502).json({ error: 말 }) }; }
+    if (!got.rows.length) return { res: res => res.status(404).json({ error: '내 계약서가 아니거나 지워진 계약서입니다' }) };
+    const 옛 = (trackCheck(got.rows[0].track || {}) || {}).shareN || 0;
+    const 새 = { ...고침(옛, trackCheck(got.rows[0].track || {}) || {}) };
+    if (새.shareN == null && 옛) 새.shareN = 옛;
+    if (!새.shareN) delete 새.shareN;
+    const 조건 = 옛 ? `track->>shareN=eq.${옛}` : 'or=(track.is.null,track->>shareN.is.null)';
+    const { r, t: 글, rows } = await db('bk_contract', `id=eq.${id}&agent_id=eq.${agent.id}&${조건}&select=id`, {
+      method: 'PATCH', headers: { Prefer: 'return=representation' }, body: JSON.stringify({ track: 새 }),
+    });
+    if (!r.ok) return { res: (res, 말) => /track/.test(글 || '') ? 준비중32(res) : res.status(502).json({ error: 말 }) };
+    if (rows.length) return { track: 새 };
+  }
+  return { res: res => res.status(409).json({ error: '다른 곳에서 같은 때 고쳐 저장하지 못했습니다 - 다시 눌러 주세요' }) };
 }
 
 /* 매일 아침 계약 일정 알림 (Vercel 예약 실행이 GET 으로 부른다 - vercel.json crons, 주소는 예전 이름 그대로).

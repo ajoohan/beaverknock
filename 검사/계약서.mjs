@@ -143,7 +143,7 @@ const 모듈 = new Function('S', 'esc', 'apiFetch', '세션있음', 'render', 't
   `${몸}\n${확몸}\n${신몸}\nreturn { rpItems, rp기한, rp대상, rpHTML, RP_직접, 한글금액, 금액글, ctNewDoc, ctDocHTML, ctBalance, CT_HOME_CLAUSES, CT_SPECIALS, CT_FORMS, exNewDoc, exDocHTML, EX_SPEC, EX_FORMS, exFormFor,
   CT, ctSave, ctLoadList, ctOpen, exSwitch, exKeys, exLost, ctTitle, ct신고, ct군, ctClauseSet, ctSpecialSet, CT_CATS, ctFieldRows,
   ct일정목록, ct알림설정, ct영업일째, ct영업일전, CT_공휴일, CT_특약묶음, ct특약묶음, ct묶음문구, ct문구이름,
-  ct기본특약, ct갱신특약, ct종료일, ct부가, CT_기본특약, CT_계약일조항 };`);
+  ct기본특약, ct갱신특약, ct종료일, ct부가, CT_기본특약, CT_계약일조항, ct글날, ct이름외, ct지분 };`);
 const S = { route: '#/x', agent: { office: '비버공인중개사사무소', name: '한상혁', reg_no: '41450-2024-00001', addr: '하남시 미사대로 550', phone: '031-000-0000' } };
 const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
 
@@ -1032,6 +1032,52 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
   const 켬 = C.특약문구고침(목록, { op: 'set', id: 'aaaaaaaaaaaa', base: true });
   ok(켬.list[0].base === true && C.특약문구들(켬.list)[0].base === true, '내 특약 - 새 계약서에 기본으로(base) 를 켜고 저장한다');
   ok(!('base' in C.특약문구고침(켬.list, { op: 'set', id: 'aaaaaaaaaaaa', base: false }).list[0]), '끄면 base 가 빠진다');
+}
+
+/* ── 계약체결 문자 · 당사자 법인/공동명의 (2026-11-05 파트너 리뷰 2차) ── */
+{
+  const 문시작 = js.indexOf('/* ── 계약체결 문자 (2026-11-05'), 문끝 = js.indexOf('/* 칸을 고칠 때 - 다시 그리지 않고');
+  const comma = s => String(s).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  const CSM = new Function('S', 'comma', '한글금액', 'ct글날', `${js.slice(문시작, 문끝).replace(/function csPageHTML[\s\S]*$/, '')}\nreturn { CS, CT_문자기본, cs값, cs문자, cs칸들, cs잔금 };`)(
+    { agent: { office: '비버공인중개사사무소' } }, comma, M.한글금액, M.ct글날);
+  ok(CSM.CT_문자기본.length === 6 && CSM.CT_문자기본.map(t => t.name).join('|') === '아파트 매매|아파트 전세|아파트 월세|아파트 약정(토허)|상가 매매|상가 임대차',
+     '기본 문자 틀 6개 - 파트너 중개사가 쓰던 매매·전세·토허 약정 + 월세·상가');
+  const 매매틀 = CSM.CT_문자기본[0];
+  ok(CSM.cs칸들(매매틀.text).includes('배액') && CSM.cs칸들(매매틀.text).includes('채권최고액'), '【칸 이름】을 입력칸으로 읽는다');
+  Object.assign(CSM.CS.vals, { 목적물: '하남시 망월동 101동 1203호', 매매대금: 650000000, 계약금일부: 10000000, 중도금: 200000000, 잔금일: '2026-12-20', 계약서작성일: '2026-11-07' });
+  let 글 = CSM.cs문자(매매틀);
+  ok(/\*잔금: 385,000,000원 \/ 2026년 12월 20일/.test(글), '잔금 = 매매대금 − 계약금 10% − 중도금 (자동)');
+  ok(/매도인은 20,000,000원\(계약금일부의 배액\)/.test(글) && /\n비버공인중개사사무소$/.test(글), '배액 = 계약금 일부 × 2 · 사무소명은 저절로');
+  ok(/계약서작성일: 2026년 11월 7일/.test(글) && /【계좌】/.test(글), '날짜는 글로, 비운 칸은 【 】 그대로 보인다');
+  CSM.CS.none.채권최고액 = true; CSM.CS.none.중도금 = true; 글 = CSM.cs문자(매매틀);
+  ok(!/근저당권/.test(글) && !/\*중도금:/.test(글) && /\*잔금: 585,000,000원/.test(글), '해당 없음을 고른 칸은 그 줄을 빼고, 중도금이 없으면 잔금이 다시 계산된다');
+  ok(/cs기록\(\)[\s\S]{0,200}!\/계좌\/\.test\(k\)/.test(js) || /!\/계좌\/\.test\(k\) && CS\.vals\[k\]/.test(js), '보낸 기록에는 계좌 칸을 넣지 않는다');
+  ok(/\['#\/partner\/contracts\/sms', '계약체결 문자', 'send', 'cms'\]/.test(js) && /sub === 'sms' \? csPageHTML\(\)/.test(js), '계약서 하위 메뉴에 계약체결 문자');
+  ok(/function cs계약서\(e\)/.test(js) && /data-act="cs-log-ct"/.test(js), '보낸 기록에서 그 내용으로 새 계약서를 연다');
+
+  /* 서버 - 틀 · 기록 */
+  let y = C.문자고침({}, { op: 'tpls', tpls: [{ id: 'apt-sale', name: '아파트 매매 아주 긴 이름입니다요', text: '【목적물】' }, { id: 'BAD ID', name: 'x', text: 'y' }, { id: 'u1', name: '숨김', text: 'a', hidden: true }] });
+  ok(y.tpls.length === 2 && y.tpls[0].name.length === 14 && y.tpls[1].hidden === true, '문자 틀 - 번호 모양·이름 14자·숨김만 받는다');
+  ok(C.문자고침({}, { op: 'tpls', tpls: [{ id: 'a', name: 'a', text: '900101-1234567' }] }).code === 400, '주민번호가 든 틀은 거절');
+  const 때 = new Date('2026-11-05T01:00:00Z');
+  y = C.문자고침({}, { op: 'log-add', entry: { tpl: '아파트 매매', vals: { 목적물: 'A동', 계좌: '국민 123-45', 매도인계좌: 'x', 매매대금: 650000000, 메모: '900101-1234567' } } }, 때);
+  ok(y.log.length === 1 && !('계좌' in y.log[0].vals) && !('매도인계좌' in y.log[0].vals) && !('메모' in y.log[0].vals) && y.log[0].vals.매매대금 === 650000000 && y.log[0].at === '2026-11-05T10:00:00',
+     '보낸 기록 - 계좌·주민번호 글은 버리고, 시각은 한국 시각');
+  const y2 = C.문자고침({ smsLog: y.log }, { op: 'log-add', entry: { tpl: '아파트 매매', vals: { 목적물: 'A동', 매매대금: 1 } } }, new Date('2026-11-05T01:05:00Z'));
+  const y3 = C.문자고침({ smsLog: y2.log }, { op: 'log-add', entry: { tpl: '아파트 매매', vals: { 목적물: 'B동' } } }, 때);
+  ok(y2.log.length === 1 && y2.log[0].vals.매매대금 === 1 && y3.log.length === 2, '같은 틀·목적물을 10분 안에 다시 보내면 그 줄을 고친다');
+  const y4 = C.문자고침({ smsLog: y3.log }, { op: 'log-set', id: y3.log[1].id, a: true, b: false });
+  ok(y4.log[1].a === true && y4.log[1].b === false && C.문자고침({ smsLog: y4.log }, { op: 'log-del', id: y4.log[1].id }).log.length === 1, '동의 회신 표시 · 지우기');
+
+  /* 당사자 - 법인 · 공동명의 */
+  const d = M.ctNewDoc('sale', null, { cat: 'realty', sub: '아파트' });
+  d.parties.seller = { name: '김매도', phone: '010-1', addr: '서울', share: '1/2', co: [{ name: '이공동', phone: '010-2', addr: '하남', share: '1/2' }] };
+  d.parties.buyer = { type: 'corp', name: '비버주식회사', rep: '박대표', bizNo: '123-45-67890', phone: '02-1', addr: '본점' };
+  const h = M.ctDocHTML(d);
+  ok(/김매도 <span class="sm">\(지분 1\/2\)<\/span>/.test(h) && /매도인 2<\/th>/.test(h) && /이공동 <span class="sm">\(지분 1\/2\)/.test(h), '공동명의자는 같은 칸을 이어 붙이고 지분을 적는다');
+  ok(/사업자등록번호<\/th><td>123-45-67890/.test(h) && /비버주식회사 &nbsp; 대표이사 박대표 <span class="ct-seal">\(법인 인감 날인\)/.test(h) && /본점 소재지/.test(h), '법인은 법인명·대표이사·사업자등록번호·본점 소재지');
+  ok(M.ct이름외(d.parties.seller) === '김매도 외 1명' && M.ct지분('1/2') === 0.5 && M.ct지분('50%') === 0.5 && isNaN(M.ct지분('')), '이름 외 n명 · 지분 읽기');
+  ok(C.docCheck('sale', d) === null, '법인·공동명의가 든 계약서를 서버가 받는다(사업자등록번호는 주민번호 모양이 아니다)');
 }
 
 console.log(`${ran - fail} 통과 / ${fail} 실패`);

@@ -2156,6 +2156,27 @@ body.mo .ct-font button{min-height:40px;padding:0 14px;font-size:14.5px}
 .ct-check{background:var(--warnbg,#FFF4E5);border-radius:10px;padding:12px 14px;margin:-6px 0 16px;font-size:14px;line-height:1.6}
 .ct-check ul{margin:6px 0 0;padding-left:18px}
 .ct-my-base{margin-top:0;font-size:13.5px}
+.cs-wrap{display:grid;grid-template-columns:minmax(0,440px) minmax(0,1fr);gap:16px;align-items:start}
+.cs-right{display:flex;flex-direction:column;gap:16px;min-width:0}
+@media (max-width:1023px){.cs-wrap{grid-template-columns:1fr}}
+.cs-pv{background:var(--n50);border:1px solid var(--n150,#E6E8EC);border-radius:12px;padding:14px 16px;font-size:14.5px;line-height:1.7;white-space:pre-wrap;word-break:break-word}
+.cs-auto{font-size:15px;font-weight:700;padding:10px 12px;border-radius:10px;background:var(--ind50);color:var(--ind700)}
+.cs-auto small{font-weight:500;color:var(--n500)}
+.cs-none{display:inline-flex;align-items:center;gap:4px;margin-left:8px;font-weight:500;color:var(--n500);cursor:pointer}
+.cs-off .inp{opacity:.5}
+.cs-acts{margin-top:2px}
+.cs-ta{width:100%;font-size:14px;line-height:1.6}
+.cs-log,.cs-tpls{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.cs-log li{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px;background:var(--n50);border-radius:10px;padding:10px 12px}
+.cs-log-t{display:flex;flex-direction:column;min-width:0}
+.cs-log-t small{font-size:12.5px;color:var(--n500)}
+.cs-log-b{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.cs-tpls li{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--n100)}
+.cs-tpls li.off b{color:var(--n400)}
+.cs-tpls li span{display:flex;gap:10px;flex-wrap:wrap;font-size:13.5px}
+.ct-party-h{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:4px}
+.ct-party-h b{font-size:14.5px}
+.ct-co-tools{display:flex;justify-content:flex-end}
 .ctdoc .ct-close{margin-top:12px}
 .ctdoc .ct-date{text-align:center;margin:10px 0}
 .ctdoc .ct-seal{float:right;font-size:9pt;color:#444}
@@ -10768,6 +10789,7 @@ const adm경로 = 경로 => !경로.length ? '<span></span>' : `<nav class="adm-
   ? `<b aria-current="page">${esc(t)}</b>` : `${h ? `<a data-go="${h}">${esc(t)}</a>` : `<span>${esc(t)}</span>`}<i class="adm-sep" aria-hidden="true"></i>`).join('')}</nav>`;
 /* 계약 묶음 네 칸 - [주소, 이름, 아이콘, 켜짐 키]. 휴대폰은 계약서 화면 위 칩 줄로 같은 네 칸 */
 const CT_하위메뉴 = [['#/partner/contracts/new', '계약서 작성', 'pen', 'ctn'], ['#/partner/contracts', '계약서 목록', 'doc', 'ct'],
+  ['#/partner/contracts/sms', '계약체결 문자', 'send', 'cms'],
   ['#/partner/contracts/phrases', '특약 관리', 'list', 'ctp'], ['#/partner/contracts/schedule', '일정·알림', 'cal', 'cts']];
 
 /* ── 버전 (2026-10-30 대표님 '좌측 메뉴바 하단에는 버전 관리 · 사이트 가기 그리고 그 아래는 버전과 날짜') ──
@@ -10775,6 +10797,10 @@ const CT_하위메뉴 = [['#/partner/contracts/new', '계약서 작성', 'pen', 
    번호는 배포한 날(연.월.일 - 같은 날 또 올리면 뒤에 .2). 화면이 version.json 을 가끔 읽어,
    더 새 버전이 올라와 있으면 메뉴 아래에서 새로고침을 권한다(버전확인) - 계약서를 띄워 둔 채 오래 일하면 고친 화면을 못 받는다 */
 const BK_변경 = [
+  { v:'26.11.05.3', 날:'2026-11-05', 줄:[
+    '계약체결 문자 - 계약서 › 계약체결 문자: 기본 틀 6개(아파트 매매·전세·월세·토허 약정, 상가 매매·임대차) · 칸 채우기(배액·잔금·사무소명 자동, 해당 없음은 줄 빼기) · 복사/문자/공유 · 보낸 기록(동의 표시) · 그 내용으로 계약서 열기 · 사무소별 틀 고치기',
+    '계약서 당사자 - 개인/법인(법인명·대표이사·사업자등록번호·본점) · 공동명의자(지분) 최대 4명 더하기 · 영수증·정산서에도 반영 · 확정 전 지분 합계 점검',
+  ]},
   { v:'26.11.05.2', 날:'2026-11-05', 줄:[
     '계약서 - 파트너 중개사 리뷰 반영: 새 계약서에 기본 특약(주택 매매 7 · 주택 임대차 11, 내 특약에서 "새 계약서에 기본으로" 지정 가능) · 특약 마지막 줄 계좌 칸',
     '갱신계약 - 기존 보증금을 계약금으로, 갱신 특약(지난 계약일·기간·증액분)을 자동으로 · 작성일·체결일 줄 빼기 · 종료일 2년·1년 단추 · 모든 월세에 부가세 고르기 · 성명은 자필 칸',
@@ -11350,6 +11376,13 @@ function ct종료일(시작, 해, 같은날){
 const ct부가 = doc => { const D = doc.deal || {}; return D.vat || (doc.form === 'shop-lease' || (doc.form === 'lease' && ct군(doc) === 'shop') ? '별도' : '해당 없음'); };
 /* '양도인(임차인)' 처럼 괄호가 붙은 당사자 이름의 앞부분 */
 const ct짧은이름 = s => String(s || '').replace(/\(.*\)/, '');
+/* 당사자 이름 - 공동명의면 '김매도 외 1명' */
+const ct이름외 = x => { x = x || {}; const n = (x.co || []).filter(c => c && c.name).length; return x.name ? x.name + (n ? ` 외 ${n}명` : '') : ''; };
+/* 지분 '1/2' · '50%' · '0.5' 를 수로 */
+const ct지분 = s => { s = String(s || '').replace(/\s/g, ''); let m;
+  if((m = /^(\d+)\/(\d+)$/.exec(s)) && +m[2]) return +m[1] / +m[2];
+  if((m = /^(\d+(?:\.\d+)?)%$/.exec(s))) return +m[1] / 100;
+  return /^0?\.\d+$|^1$/.test(s) ? +s : NaN; };
 const ct부가글 = v => v === '별도' || v === '포함' ? `(부가가치세 ${v})` : '';
 const ct문구이름 = t => { const s = String(t || '').replace(/\s+/g, ' ').trim(); return s.length > 26 ? s.slice(0, 26) + '…' : s; };
 /* 신고가 있는 계약 - 매매(거래신고)와 주택 임대차(임대차 신고). 서버(_contract.js 신고대상)와 같은 규칙 */
@@ -11656,6 +11689,7 @@ function ctRoute(h){
   if(h === '#/partner/contracts' || h.startsWith('#/partner/contracts/')){
     ctLoadList();
     if(h === '#/partner/contracts/phrases' && !CT.phr) ctPhrLoad();
+    if(h === '#/partner/contracts/sms' && !CS.loaded) csLoad();
   }
   else if(h.startsWith('#/partner/contract/')){
     const id = h.split('/')[3];
@@ -11730,10 +11764,17 @@ function ctDocHTML(doc){
   const 동사 = F.verb || (매매 ? '매매' : '임대차');
   const 받는이 = doc.form === 'sublease' ? '전차인' : '임차인';
   const [aKey, aKo] = F.a, [bKey, bKo] = F.b;
-  const 당사자 = (label, x) => `
+  /* 당사자 - 개인 · 법인, 공동명의자는 같은 칸을 이어 붙인다(파트너 리뷰 2026-11-05).
+     법인등록번호는 주민번호와 모양이 같아 저장하지 않는다 - 사업자등록번호만 적고 법인등록번호는 손으로 */
+  const 당사자1 = (label, x) => x.type === 'corp' ? `
+    <tr><th rowspan="2" class="w">${label}</th><th>본점 소재지</th><td colspan="3">${ct값(x.addr, 260)}</td></tr>
+    <tr><th>사업자등록번호</th><td>${ct값(x.bizNo, 120)}</td><th>전화</th><td>${ct값(x.phone, 110)}</td></tr>
+    <tr><th class="w">법인명</th><td colspan="4" class="sign">${ct값(x.name, 140)} &nbsp; 대표이사 ${ct값(x.rep, 80)} <span class="ct-seal">(법인 인감 날인)</span></td></tr>`
+    : `
     <tr><th rowspan="2" class="w">${label}</th><th>주소</th><td colspan="3">${ct값(x.addr, 260)}</td></tr>
     <tr><th>주민등록번호</th><td>${빈칸(140)}</td><th>전화</th><td>${ct값(x.phone, 110)}</td></tr>
-    <tr><th class="w">성명</th><td colspan="4" class="sign">${ct값(x.name, 120)} <span class="ct-seal">(서명 또는 날인)</span></td></tr>`;
+    <tr><th class="w">성명</th><td colspan="4" class="sign">${ct값(x.name, 120)}${x.share ? ` <span class="sm">(지분 ${esc(x.share)})</span>` : ''} <span class="ct-seal">(서명 또는 날인)</span></td></tr>`;
+  const 당사자 = (label, x) => [당사자1(label, x), ...(x.co || []).map((c, i) => 당사자1(`${label} ${i + 2}`, c))].join('');
   const sp = (doc.specials||[]).filter(s => String(s||'').trim());
   return `
   <div class="ctdoc${ct글꼴(doc) === 'sans' ? ' f-sans' : ''}">
@@ -11924,11 +11965,11 @@ function ctFilter(rows){
 /* 계약서 하위 메뉴 (2026-10-30 대표님 '계약서 부분은 서브 메뉴까지') - 목록 · 새로 만들기 · 일정·알림 · 내 특약.
    PC 는 왼쪽 메뉴 아래(CT_하위메뉴), 휴대폰은 화면 위 칩 줄. 주소는 #/partner/contracts[/new|/schedule|/phrases] */
 V['#/partner/contracts'] = sub => {
-  sub = ['new', 'schedule', 'phrases'].includes(sub) ? sub : '';
+  sub = ['new', 'schedule', 'phrases', 'sms'].includes(sub) ? sub : '';
   const 전체 = CT.list || [];
   /* 알림 설정은 다가오는 일정(법무사 예약 시점·끈 항목)에도 쓴다 - 처음 들어올 때 한 번 받아 둔다 */
   if(!CT.alert && 세션있음()) setTimeout(ctAlertLoad);
-  const 몸 = sub === 'new' ? ctNewPageHTML(전체) : sub === 'schedule' ? ctSchedulePageHTML(전체) : sub === 'phrases' ? ctPhrPageHTML() : ctListPageHTML(전체);
+  const 몸 = sub === 'new' ? ctNewPageHTML(전체) : sub === 'schedule' ? ctSchedulePageHTML(전체) : sub === 'phrases' ? ctPhrPageHTML() : sub === 'sms' ? csPageHTML() : ctListPageHTML(전체);
   return `
 <div class="scr fade" style="background:var(--n50)">
   ${navPartner('ct')}
@@ -11940,6 +11981,275 @@ V['#/partner/contracts'] = sub => {
   ${tabbar('ct','p')}
 </div>`;
 };
+/* ── 계약체결 문자 (2026-11-05 파트너 중개사 리뷰 · 인수인계 ①-10) ──
+   계약금 일부를 넣기 전에 양쪽 당사자에게 조건을 확인받는 문자. 기본 틀은 파트너 중개사가 쓰던 문구 그대로(월세·상가는 같은 꼴로 바꾼 것).
+   【칸 이름】 을 쓰면 입력칸이 생긴다. 배액(계약금 일부 × 2)·사무소명·잔금(매매대금 − 계약금 10% − 중도금)은 저절로 채운다.
+   보내는 것은 중개사 휴대폰(복사 · 문자 앱 · 공유)이라 발송 비용이 없다. 틀은 사무소마다 서버에 둔다(bk_agent.settings.smsTpl),
+   보낸 기록(smsLog)에는 계좌를 남기지 않는다 - 계좌번호는 어디에도 저장하지 않는다 */
+const CT_문자기본 = [
+  { id:'apt-sale', name:'아파트 매매', text:`[매매계약체결]
+*목적물: 【목적물】
+*매매대금: 【매매대금】원
+*계약서작성일: 【계약서작성일】
+*계약금 10%
+【입금일】 계약금일부 【계약금일부】원 입금
+매도인계좌: 【계좌】
+*중도금: 【중도금】원 / 【중도금일】
+*잔금: 【잔금】원 / 【잔금일】
+*일방이 합의없이 고의로 계약서작성을 협조하지 않아 위 계약서작성일까지 계약서작성이 되지 않는 경우 귀책없는 당사자는 계약을 해제할 수 있고 계약금일부 【계약금일부】원은 위약금으로 한다.
+*계약서작성까지 매수인은 계약금일부 【계약금일부】원을 포기하고 매도인은 【배액】원(계약금일부의 배액)을 상환하고 계약을 해제할 수 있다.
+*매도인은 현재 등기부상 설정되어 있는 근저당권(채권최고액 【채권최고액】원)을 잔금일까지 전액 상환/말소 하기로 한다.
+*현 시설물 상태의 계약으로 한다.
+
+【사무소명】` },
+  { id:'apt-jeonse', name:'아파트 전세', text:`[전세계약체결]
+*목적물: 【목적물】
+*전세보증금: 【보증금】원
+*계약서작성일: 【계약서작성일】
+*계약금 10%
+【입금일】 계약금일부 【계약금일부】원 입금
+임대인계좌: 【계좌】
+*잔금: 【잔금일】
+*계약기간: 잔금일로부터 【계약기간】년
+*일방이 합의없이 고의로 계약서작성을 협조하지 않아 위 계약서작성일까지 계약서작성이 되지 않는 경우 귀책없는 당사자는 계약을 해제할 수 있고 계약금일부 【계약금일부】원은 위약금으로 한다.
+*계약서작성까지 임차인은 계약금일부 【계약금일부】원을 포기하고 임대인은 【배액】원(계약금일부의 배액)을 상환하고 계약을 해제할 수 있다.
+*임대인은 현재 등기부상 설정되어 있는 근저당권(채권최고액 【채권최고액】원)을 잔금일까지 전액 상환/말소 하기로 한다.
+
+【사무소명】` },
+  { id:'apt-wolse', name:'아파트 월세', text:`[월세계약체결]
+*목적물: 【목적물】
+*보증금: 【보증금】원 / 월차임: 【월차임】원(매월 【지급일】일 【선불/후불】)
+*계약서작성일: 【계약서작성일】
+*계약금 10%
+【입금일】 계약금일부 【계약금일부】원 입금
+임대인계좌: 【계좌】
+*잔금: 【잔금일】
+*계약기간: 잔금일로부터 【계약기간】년
+*일방이 합의없이 고의로 계약서작성을 협조하지 않아 위 계약서작성일까지 계약서작성이 되지 않는 경우 귀책없는 당사자는 계약을 해제할 수 있고 계약금일부 【계약금일부】원은 위약금으로 한다.
+*계약서작성까지 임차인은 계약금일부 【계약금일부】원을 포기하고 임대인은 【배액】원(계약금일부의 배액)을 상환하고 계약을 해제할 수 있다.
+*임대인은 현재 등기부상 설정되어 있는 근저당권(채권최고액 【채권최고액】원)을 잔금일까지 전액 상환/말소 하기로 한다.
+
+【사무소명】` },
+  { id:'apt-permit', name:'아파트 약정(토허)', text:`부동산매매 관련 토지거래허가신청 사전합의
+
+소재지 : 【목적물】
+■ 매매대금 ₩【매매대금】원
+■ 계약예정일/예정금액 : 토지거래허가승인후 10일이내/매매가의10%
+■ 중도금예정일: 【중도금일】
+■ 잔금예정일: 【잔금일】
+■ 소유자 : 【소유자】
+■ 합의이행금: 금 【합의이행금】원
+■ 합의이행금 중 일부 【계약금일부】원을 매도인의 (【계좌】) 계좌로 【입금일】 입금하고, 토지거래허가신청 합의서를 작성 하기로함.
+
+합의내용 :
+* 합의당사자 쌍방이 협력하여 토지거래허가신청을 한다.
+* 토지거래허가신청 합의서 작성 전까지 매도인은 합의이행금 중 일부 【계약금일부】원의 배액을 상환하고 매수인은 합의이행금 일부 【계약금일부】원을 포기하고 합의를 해제할 수 있다.
+* 서면합의서는 7일 이내에 작성하기로 한다.
+* 일방이 고의로 합의서 작성에 협조하지 않아 7일 이내에 합의서를 작성하지 못하는 경우 귀책있는 당사자는 상대방에게 합의이행금 【합의이행금】원을 위약금으로 지급한다.
+* 합의서작성일: 【계약서작성일】
+* 매도인의 근저당권은 잔금시까지 상환말소하고 소유권 이전에 제한이 없는 상태로 매수인에게 인도한다.
+
+※ 서면합의서가 작성된 이후에는 서면합의서의 내용을 따르기로한다.
+
+【사무소명】` },
+  { id:'shop-sale', name:'상가 매매', text:`[상가매매계약체결]
+*목적물: 【목적물】
+*매매대금: 【매매대금】원
+*계약서작성일: 【계약서작성일】
+*계약금 10%
+【입금일】 계약금일부 【계약금일부】원 입금
+매도인계좌: 【계좌】
+*중도금: 【중도금】원 / 【중도금일】
+*잔금: 【잔금】원 / 【잔금일】
+*일방이 합의없이 고의로 계약서작성을 협조하지 않아 위 계약서작성일까지 계약서작성이 되지 않는 경우 귀책없는 당사자는 계약을 해제할 수 있고 계약금일부 【계약금일부】원은 위약금으로 한다.
+*계약서작성까지 매수인은 계약금일부 【계약금일부】원을 포기하고 매도인은 【배액】원(계약금일부의 배액)을 상환하고 계약을 해제할 수 있다.
+*매도인은 현재 등기부상 설정되어 있는 근저당권(채권최고액 【채권최고액】원)을 잔금일까지 전액 상환/말소 하기로 한다.
+*현 시설물 상태의 계약으로 한다.
+*현 임차인의 임대차(보증금 【임차보증금】원 / 월차임 【임차월세】원)는 매수인이 승계한다.
+
+【사무소명】` },
+  { id:'shop-lease', name:'상가 임대차', text:`[상가임대차계약체결]
+*목적물: 【목적물】
+*보증금: 【보증금】원 / 월차임: 【월차임】원(부가세 별도, 매월 【지급일】일 【선불/후불】)
+*권리금: 【권리금】
+*계약서작성일: 【계약서작성일】
+*계약금 10%
+【입금일】 계약금일부 【계약금일부】원 입금
+임대인계좌: 【계좌】
+*잔금: 【잔금일】
+*계약기간: 잔금일로부터 【계약기간】년
+*일방이 합의없이 고의로 계약서작성을 협조하지 않아 위 계약서작성일까지 계약서작성이 되지 않는 경우 귀책없는 당사자는 계약을 해제할 수 있고 계약금일부 【계약금일부】원은 위약금으로 한다.
+*계약서작성까지 임차인은 계약금일부 【계약금일부】원을 포기하고 임대인은 【배액】원(계약금일부의 배액)을 상환하고 계약을 해제할 수 있다.
+*임대인은 현재 등기부상 설정되어 있는 근저당권(채권최고액 【채권최고액】원)을 잔금일까지 전액 상환/말소 하기로 한다.
+
+【사무소명】` },
+];
+const CS = { loaded:false, loading:false, tpls:[], log:[], need:'', err:'', sel:'', vals:{}, none:{}, edit:null, to:{ a:'', b:'' } };
+/* 칸의 꼴 - 이름으로 가른다 */
+const CS_돈 = new Set(['매매대금', '보증금', '계약금일부', '중도금', '잔금', '월차임', '채권최고액', '임차보증금', '임차월세', '합의이행금']);
+const CS_날 = new Set(['계약서작성일', '입금일', '중도금일', '잔금일']);
+const CS_줄빼기 = new Set(['채권최고액', '중도금', '중도금일', '권리금', '임차보증금', '임차월세']);
+const CS_자동 = new Set(['배액', '사무소명']);
+const cs틀들 = () => CS.tpls.length ? CS.tpls : CT_문자기본;
+const cs지금 = () => { const L = cs틀들(); return L.find(t => t.id === CS.sel) || L.find(t => !t.hidden) || L[0]; };
+const cs칸들 = text => { const n = []; String(text || '').replace(/【([^】]+)】/g, (m, k) => { if(!n.includes(k)) n.push(k); return m; }); return n; };
+/* 잔금 - 직접 적지 않았으면 매매대금 − 계약금(10%) − 중도금 */
+const cs잔금 = v => { const p = +v.매매대금 || 0; if(!p) return 0; return Math.max(0, p - Math.round(p * 0.1) - (CS.none.중도금 ? 0 : (+v.중도금 || 0))); };
+function cs값(k, v = CS.vals){
+  if(k === '사무소명') return (S.agent && S.agent.office) || '';
+  if(k === '배액') return +v.계약금일부 ? comma(String(v.계약금일부 * 2)) : '';
+  if(k === '잔금' && !+v.잔금) { const n = cs잔금(v); return n ? comma(String(n)) : ''; }
+  const x = v[k];
+  if(x == null || x === '') return '';
+  if(CS_돈.has(k)) return +x ? comma(String(x)) : '';
+  if(CS_날.has(k)) return ct글날(x);
+  return String(x);
+}
+/* 보낼 문자 - '해당 없음' 칸이 든 줄은 통째로 뺀다 */
+function cs문자(t = cs지금(), v = CS.vals, none = CS.none){
+  return String(t.text).split('\n').filter(ln => !Object.keys(none).some(k => none[k] && ln.includes(`【${k}】`)))
+    .join('\n').replace(/【([^】]+)】/g, (m, k) => cs값(k, v) || m);
+}
+function csLoad(){
+  if(CS.loading || !세션있음()) return;
+  CS.loading = true;
+  ctPost({ what:'sms' }).then(({ ok, j }) => {
+    CS.loading = false; CS.loaded = true;
+    if(ok){ CS.tpls = j.tpls || []; CS.log = j.log || []; CS.need = j.need || ''; CS.err = ''; } else CS.err = j.error || '문자 틀을 불러오지 못했습니다';
+    if(S.route === '#/partner/contracts/sms') render();
+  }).catch(() => { CS.loading = false; CS.loaded = true; CS.err = '네트워크 문제로 문자 틀을 불러오지 못했습니다'; if(S.route === '#/partner/contracts/sms') render(); });
+}
+async function csSend(body){
+  if(CS.need) { toast('문자 틀 저장은 준비 중입니다 - 곧 열립니다'); return null; }
+  const { ok, j } = await ctPost({ what:'sms-save', ...body }).catch(() => ({ ok:false, j:{ error:'네트워크 문제로 저장하지 못했습니다' } }));
+  if(j && j.tpls) CS.tpls = j.tpls;
+  if(j && j.log) CS.log = j.log;
+  if(!ok){ toast(j.error || '저장하지 못했습니다'); return null; }
+  return j;
+}
+/* 보낸 기록 - 같은 틀·목적물을 10분 안에 다시 보내면 새 줄을 만들지 않고 고친다. 계좌는 남기지 않는다 */
+function cs기록(){
+  const t = cs지금(), 값 = {};
+  for(const k of cs칸들(t.text)) if(!CS_자동.has(k) && !/계좌/.test(k) && CS.vals[k] != null && CS.vals[k] !== '') 값[k] = CS.vals[k];
+  const none = Object.keys(CS.none).filter(k => CS.none[k]);
+  csSend({ op:'log-add', entry:{ tpl: t.name, vals: 값, none } });
+}
+const cs받는번호 = () => [CS.to.a, CS.to.b].map(x => String(x || '').replace(/[^0-9]/g, '')).filter(x => x.length >= 9);
+/* 보낸 기록 → 새 계약서. 금액·날짜·목적물을 옮기고, 채권최고액은 근저당 특약에 넣는다(계좌는 옮기지 않는다 - 손으로) */
+function cs계약서(e){
+  const v = e.vals || {}, none = new Set(e.none || []), 이름 = String(e.tpl || '');
+  const 상가 = /상가/.test(이름), 매매 = (v.매매대금 != null || /매매|약정/.test(이름)) && v.보증금 == null;
+  const 월세 = v.월차임 != null || /월세/.test(이름);
+  const form = 매매 ? 'sale' : 상가 ? 'shop-lease' : 'lease';
+  CT.pick = null; CT.prevId = null; CT.id = null; CT.row = null; CT.track = {}; CT.fromProposal = null;
+  CT.doc = ctNewDoc(form, null, { cat: form === 'shop-lease' ? 'shop' : 'realty', sub: 상가 ? (매매 ? '상가' : '') : '아파트', deal: 매매 ? undefined : 월세 ? 'monthly' : 'jeonse' });
+  const d = CT.doc, D = d.deal;
+  d.property.road = String(v.목적물 || '').slice(0, 200);
+  if(매매) D.price = +v.매매대금 || 0; else D.deposit = +v.보증금 || 0;
+  const 총 = ctTotal(D); if(총) D.down = Math.round(총 * 0.1);
+  if(!none.has('중도금') && +v.중도금){ D.mid = +v.중도금; D.midDate = none.has('중도금일') ? '' : (v.중도금일 || ''); }
+  D.balanceDate = v.잔금일 || '';
+  d.contractDate = v.계약서작성일 || '';
+  if(!매매){ if(+v.월차임) D.rent = +v.월차임; if(v.지급일) D.rentDay = String(v.지급일); if(v['선불/후불'] === '후불') D.rentWhen = '후불';
+    if(v.잔금일){ d.period.handover = v.잔금일; if(+v.계약기간) d.period.to = ct종료일(v.잔금일, +v.계약기간, ct끝표기() === 'same'); } }
+  const 최고 = none.has('채권최고액') ? 0 : +v.채권최고액 || 0;
+  const 근저당 = t => /근저당권\(채권최고액/.test(t);
+  if(최고 && d.specials.some(근저당)) d.specials = d.specials.map(t => 근저당(t) ? t.replace(/금 \(\s+\)원/, `금 ${한글금액(최고)}원`) : t);
+  else if(최고) d.specials.unshift(`${매매 ? '매도인' : '임대인'}은 등기사항증명서상 설정되어 있는 근저당권(채권최고액 금 ${한글금액(최고)}원)을 잔금일까지 전액 상환하고 말소한다.`);
+  else if(none.has('채권최고액')) d.specials = d.specials.filter(t => !근저당(t));
+  if(+v.임차보증금 && !none.has('임차보증금')) d.specials.push(`현 임차인의 임대차(보증금 금 ${한글금액(v.임차보증금)}원${+v.임차월세 ? ` / 월차임 금 ${한글금액(v.임차월세)}원` : ''})는 매수인이 승계한다.`);
+  CT.filled = new Set(); CT.scan = null; CT.scanWarn = [];
+  CT.dirty = true; CT.mode = 'edit'; ctGo('#/partner/contract/new');
+  toast('문자 내용으로 계약서를 열었습니다 - 주소는 ‘다시 찾기’로 골라 주세요');
+}
+function csPageHTML(){
+  if(!CS.loaded && 세션있음()) setTimeout(csLoad);
+  const L = cs틀들(), t = cs지금(), 칸 = cs칸들(t.text), 편집 = CS.edit;
+  const 보임 = L.filter(x => !x.hidden);
+  const 채움 = 칸.filter(k => CS_자동.has(k) || CS.none[k] || cs값(k)).length;
+  const 탭 = 보임.map(x => `<button type="button" class="chip${x.id === t.id ? ' on' : ''}" data-act="cs-sel" data-v="${esc(x.id)}" aria-pressed="${x.id === t.id}">${esc(x.name)}</button>`).join('');
+  const 입력 = 칸.map(k => {
+    const id = `cs-${esc(k)}`, 없음 = !!CS.none[k];
+    const 머리 = `<span class="lab">${esc(k)}${CS_줄빼기.has(k) ? ` <label class="cs-none"><input type="checkbox" data-act="cs-none" data-v="${esc(k)}" ${없음 ? 'checked' : ''}> 해당 없음(줄 빼기)</label>` : ''}</span>`;
+    if(CS_자동.has(k)) return `<div class="ct-f w12">${머리}<div class="cs-auto">${esc(cs값(k)) || '<span class="sub">계약금 일부를 넣으면 채워집니다</span>'} <small>· 자동</small></div></div>`;
+    if(k === '선불/후불') return `<div class="ct-f w12">${머리}<div class="ct-chips">${['선불', '후불'].map(x => `<button type="button" class="chip${CS.vals[k] === x ? ' on' : ''}" data-act="cs-when" data-v="${x}">${x}</button>`).join('')}</div></div>`;
+    const v = CS.vals[k], 돈 = CS_돈.has(k), 날 = CS_날.has(k);
+    const 값 = 돈 ? (+v ? comma(String(v)) : '') : (v == null ? '' : String(v));
+    const 잔금자동 = k === '잔금' && !+v && cs잔금(CS.vals);
+    return `<label class="ct-f ${돈 || 날 ? 'w6' : /기간|지급일/.test(k) ? 'w4' : 'w12'}${없음 ? ' cs-off' : ''}">${머리}
+      <input class="inp" id="${id}" data-in="cs:${esc(k)}" type="${날 ? 'date' : 'text'}" ${돈 || /기간|지급일/.test(k) ? 'inputmode="numeric"' : ''} value="${esc(값)}" ${없음 ? 'disabled' : ''}
+        placeholder="${esc(잔금자동 ? comma(String(잔금자동)) + ' (자동)' : k === '계좌' ? '은행 · 계좌번호 · 예금주 (저장하지 않습니다)' : k === '계약기간' ? '년 (예: 2)' : k === '지급일' ? '일 (예: 25)' : '')}" autocomplete="off">
+      ${돈 ? `<span class="ct-won" data-cswon="${esc(k)}">${+v ? esc(`금 ${한글금액(v)}원정`) : ''}</span>` : ''}</label>`;
+  }).join('');
+  const 막힘 = !!CS.need || !!CS.err;
+  const 기록 = CS.log.length ? `<ul class="cs-log">${CS.log.map(e => `<li>
+      <span class="cs-log-t"><b>${esc(e.vals && e.vals.목적물 ? String(e.vals.목적물).slice(0, 40) : '(목적물 없음)')}</b><small>${esc(e.tpl || '')} · ${esc(String(e.at || '').slice(0, 16).replace('T', ' '))}</small></span>
+      <span class="cs-log-b">
+        <button type="button" class="chip${e.a ? ' on' : ''}" data-act="cs-log-agree" data-v="${esc(e.id)}|a" aria-pressed="${!!e.a}">${e.a ? '✓ ' : ''}${/임대|전세|월세/.test(e.tpl || '') ? '임대인' : '매도인'} 동의</button>
+        <button type="button" class="chip${e.b ? ' on' : ''}" data-act="cs-log-agree" data-v="${esc(e.id)}|b" aria-pressed="${!!e.b}">${e.b ? '✓ ' : ''}${/임대|전세|월세/.test(e.tpl || '') ? '임차인' : '매수인'} 동의</button>
+        <button type="button" class="btn pri sm" data-act="cs-log-ct" data-v="${esc(e.id)}">이 내용으로 계약서</button>
+        <button type="button" class="tapx" data-act="cs-log-again" data-v="${esc(e.id)}" style="font-size:13.5px;color:var(--ind700);font-weight:700">다시 열기</button>
+        <button type="button" class="tapx" data-act="cs-log-del" data-v="${esc(e.id)}" style="font-size:13.5px;color:var(--n500)">지우기</button></span></li>`).join('')}</ul>`
+    : `<p class="sub" style="margin:0">아직 보낸 문자가 없습니다. 복사·문자·공유 중 하나를 누르면 여기에 남습니다(계좌는 남기지 않습니다).</p>`;
+  const 틀관리 = 편집 ? `<div class="card pad ct-sec"><h2>문자 틀 고치기</h2>
+      <p class="sub" style="margin:0;font-size:13.5px">바뀌는 칸은 【칸 이름】으로 적으면 왼쪽에 입력칸이 생깁니다 (예: 【관리비】). 【배액】·【사무소명】은 저절로 채워집니다.</p>
+      <label class="ct-f w12"><span class="lab">이름 (14자까지)</span><input class="inp" data-in="cs-name" maxlength="14" value="${esc(편집.name)}"></label>
+      <textarea class="inp cs-ta" rows="16" data-in="cs-text" aria-label="문자 틀">${esc(편집.text)}</textarea>
+      <div class="cs-acts eqb st"><button type="button" class="btn pri sm" data-act="cs-edit-save" ${막힘 ? 'disabled' : ''}>내 문자 틀로 저장</button>
+        <button type="button" class="btn tool sm" data-act="cs-edit-cancel">그만두기</button></div></div>`
+    : `<div class="card pad ct-sec"><h2>문자 틀 <span class="sub" style="font-weight:500;font-size:13.5px">사무소마다 따로 저장됩니다</span></h2>
+      <ul class="cs-tpls">${L.map((x, i) => `<li class="${x.hidden ? 'off' : ''}"><b>${esc(x.name)}</b>
+        <span><button type="button" class="tapx" data-act="cs-up" data-v="${i}" ${i ? '' : 'disabled'} aria-label="${esc(x.name)} 위로">↑</button>
+        <button type="button" class="tapx" data-act="cs-hide" data-v="${esc(x.id)}">${x.hidden ? '보이기' : '숨기기'}</button>
+        <button type="button" class="tapx" data-act="cs-edit" data-v="${esc(x.id)}">고치기</button>
+        <button type="button" class="tapx" data-act="cs-dup" data-v="${esc(x.id)}">복사본</button>
+        ${L.length > 1 ? `<button type="button" class="tapx" data-act="cs-del" data-v="${esc(x.id)}" style="color:var(--danger)">${CS.del === x.id ? '한 번 더 누르면 지웁니다' : '지우기'}</button>` : ''}</span></li>`).join('')}</ul>
+      <div class="cs-acts eqb st"><button type="button" class="btn tool sm" data-act="cs-new" ${막힘 ? 'disabled' : ''}>+ 새 문자 틀</button>
+        ${CS.tpls.length ? `<button type="button" class="btn tool sm" data-act="cs-reset">기본 틀로 되돌리기</button>` : ''}</div></div>`;
+  return `
+    ${ct머리('계약체결 문자', '계약금 일부를 넣기 전에 양쪽 당사자에게 조건을 확인받는 문자입니다. 칸만 채워 복사하거나 문자·카카오톡으로 보내고, 보낸 내용으로 바로 계약서를 엽니다.')}
+    ${CS.need ? '<p class="ct-note">문자 틀·보낸 기록 저장은 준비 중입니다 - 지금은 기본 틀로 쓰고 보낼 수만 있습니다.</p>' : ''}
+    ${CS.err ? `<p class="ct-note">${esc(CS.err)} <button type="button" class="tapx" data-act="cs-reload" style="font-size:13.5px;font-weight:700;color:var(--ind700)">다시 불러오기</button></p>` : ''}
+    <div class="ct-chips" role="group" aria-label="문자 틀">${탭}</div>
+    <div class="cs-wrap">
+      <div class="card pad ct-sec cs-fill"><h2>${esc(t.name)} · 칸 채우기 <span class="sub" style="font-weight:500;font-size:13.5px" id="csCount">채운 칸 ${채움} / ${칸.length}</span></h2>
+        <div class="ct-grid">${입력}</div>
+        <button type="button" class="tapx" data-act="cs-clear" style="align-self:flex-start;font-size:13.5px;color:var(--n500)">칸 모두 비우기</button></div>
+      <div class="cs-right">
+        <div class="card pad ct-sec"><h2>보낼 문자</h2>
+          <div class="cs-pv" id="csPv">${esc(cs문자())}</div>
+          <p class="sub" id="csLeft" style="margin:0;font-size:13px;color:var(--warn)">${(() => { const n = (cs문자().match(/【[^】]+】/g) || []).length; return n ? `아직 비어 있는 칸 ${n}개 - 【 】로 보입니다` : ''; })()}</p>
+          <div class="ct-grid"><label class="ct-f w6"><span class="lab">받는 사람 1 (${/임대|전세|월세/.test(t.name) ? '임대인' : '매도인'})</span><input class="inp" inputmode="tel" data-in="cs-to:a" value="${esc(CS.to.a)}" placeholder="010-0000-0000" autocomplete="off"></label>
+            <label class="ct-f w6"><span class="lab">받는 사람 2 (${/임대|전세|월세/.test(t.name) ? '임차인' : '매수인'})</span><input class="inp" inputmode="tel" data-in="cs-to:b" value="${esc(CS.to.b)}" placeholder="010-0000-0000" autocomplete="off"></label></div>
+          <div class="cs-acts eqb st"><button type="button" class="btn pri" data-act="cs-copy">복사하기</button>
+            <button type="button" class="btn tool" data-act="cs-sms">문자로 보내기</button>
+            <button type="button" class="btn tool" data-act="cs-share">카카오톡 등 공유</button></div>
+          <p class="sub" style="margin:0;font-size:13px">중개사님 휴대폰에서 보내므로 발송 비용이 없습니다. 받는 번호는 저장하지 않습니다.</p></div>
+        <div class="card pad ct-sec"><h2>보낸 기록 <span class="sub" style="font-weight:500;font-size:13.5px">동의 회신을 표시하고, 그 내용으로 계약서를 엽니다</span></h2>${기록}</div>
+        ${틀관리}
+      </div>
+    </div>`;
+}
+/* 칸을 고칠 때 - 다시 그리지 않고 미리보기·채운 수만 바꾼다(커서가 튀지 않게) */
+function cs미리(){
+  const t = cs지금(), 글 = cs문자(), pv = document.getElementById('csPv'); if(pv) pv.textContent = 글;
+  const n = (글.match(/【[^】]+】/g) || []).length, l = document.getElementById('csLeft'); if(l) l.textContent = n ? `아직 비어 있는 칸 ${n}개 - 【 】로 보입니다` : '';
+  const 칸 = cs칸들(t.text), c = document.getElementById('csCount');
+  if(c) c.textContent = `채운 칸 ${칸.filter(k => CS_자동.has(k) || CS.none[k] || cs값(k)).length} / ${칸.length}`;
+  document.querySelectorAll('#app .cs-auto').forEach((el, i) => { const k = 칸.filter(x => CS_자동.has(x))[i]; if(k) el.innerHTML = `${esc(cs값(k)) || '<span class="sub">계약금 일부를 넣으면 채워집니다</span>'} <small>· 자동</small>`; });
+  const 잔 = document.getElementById('cs-잔금'); if(잔 && !+CS.vals.잔금){ const n2 = cs잔금(CS.vals); 잔.placeholder = n2 ? comma(String(n2)) + ' (자동)' : ''; }
+}
+function cs입력(el, key){
+  if(key.startsWith('to:')){ CS.to[key.slice(3)] = el.value.slice(0, 20); return; }
+  if(CS_돈.has(key)){ money(el); const n = +(el.value.replace(/[^0-9]/g, '')) || 0; CS.vals[key] = n;
+    const w = document.querySelector(`#app [data-cswon="${CSS.escape(key)}"]`); if(w) w.textContent = n ? `금 ${한글금액(n)}원정` : ''; }
+  else if(/기간|지급일/.test(key)) CS.vals[key] = el.value.replace(/[^0-9]/g, '').slice(0, 2);
+  else CS.vals[key] = el.value.slice(0, 200);
+  cs미리();
+}
+/* 틀 목록을 고친다 - 아직 내 틀이 없으면 기본 틀을 베껴서 시작 */
+function cs틀고침(fn){ const L = cs틀들().map(x => ({ ...x })); fn(L); CS.tpls = L; render(); csSend({ op:'tpls', tpls: L }).then(() => render()); }
+const cs새번호 = () => 'u' + Date.now().toString(36).slice(-8);
 /* 머리 - 제목·설명 왼쪽, 할 일 단추 오른쪽 */
 const ct머리 = (제목, 설명, 단추 = '') => `<div class="adm-h"><div><h1 class="t" style="font-size:${isMo()?21:25}px">${제목}</h1>
     ${설명 ? `<p class="sub measure">${설명}</p>` : ''}</div>${단추}</div>`;
@@ -12187,8 +12497,22 @@ function ctFormHTML(doc){
         <button class="tapx" data-act="ct-sp-del" data-v="${i}" style="font-size:13.5px;color:var(--danger)">빼기</button></span>`}</div>
       <textarea class="inp" rows="3" data-in="cts:${i}" ${잠김?'disabled':''}>${esc(s)}</textarea>
       ${!잠김 && 저장할 === i ? ctPhrPickHTML(doc) : ''}</div>`).join('');
-  const 사람 = (k, ko) => ctIn(`parties.${k}.name`,`${ko} 성명`,{w:3}) + ctIn(`parties.${k}.phone`,`${ko} 전화`,{w:3,ph:'010-0000-0000'})
-    + ctAddrIn(`parties.${k}.addr`,`${ko} 주소`,6);
+  /* 당사자 - 개인/법인 고르기 · 공동명의자(지분) 더하기. 매도인·임대인은 등기부 소유자 그대로 적는다 */
+  const 사람 = (k, ko) => {
+    const x = (doc.parties || {})[k] || {}, 법인 = x.type === 'corp', co = x.co || [], 짧 = ct짧은이름(ko);
+    const 고르기 = `<div class="ct-party-h w12"><b>${esc(짧)}</b><span class="ct-chips">${['개인', '법인'].map(t => { const on = (법인 ? '법인' : '개인') === t;
+      return `<button type="button" class="chip${on ? ' on' : ''}" data-act="ct-ptype" data-v="${k}|${t}" aria-pressed="${on}" ${잠김 ? 'disabled' : ''}>${t}</button>`; }).join('')}</span></div>`;
+    const 본인 = 법인
+      ? ctIn(`parties.${k}.name`, '법인명(상호)', {w:4}) + ctIn(`parties.${k}.rep`, '대표이사', {w:2}) + ctIn(`parties.${k}.bizNo`, '사업자등록번호', {w:3, ph:'000-00-00000'})
+        + ctIn(`parties.${k}.phone`, '전화', {w:3, ph:'02-000-0000'}) + ctAddrIn(`parties.${k}.addr`, '본점 소재지', 12)
+      : ctIn(`parties.${k}.name`, `${짧} 성명`, {w: co.length ? 4 : 3}) + ctIn(`parties.${k}.phone`, `${짧} 전화`, {w: co.length ? 5 : 3, ph:'010-0000-0000'})
+        + (co.length ? ctIn(`parties.${k}.share`, '지분', {w:3, ph:'1/2'}) : '') + ctAddrIn(`parties.${k}.addr`, `${짧} 주소`, co.length ? 12 : 6);
+    const 공동 = co.map((c, i) => ctIn(`parties.${k}.co.${i}.name`, `공동명의자 ${i + 2} 성명`, {w:4}) + ctIn(`parties.${k}.co.${i}.phone`, '전화', {w:5, ph:'010-0000-0000'})
+      + ctIn(`parties.${k}.co.${i}.share`, '지분', {w:3, ph:'1/2'}) + ctAddrIn(`parties.${k}.co.${i}.addr`, '주소', 12)
+      + (잠김 ? '' : `<div class="ct-co-tools w12"><button type="button" class="tapx" data-act="ct-co-del" data-v="${k}|${i}" style="font-size:13.5px;color:var(--danger)">공동명의자 ${i + 2} 빼기</button></div>`)).join('');
+    const 더하기 = 잠김 || co.length >= 4 ? '' : `<div class="w12"><button type="button" class="btn tool sm" data-act="ct-co-add" data-v="${k}">+ ${esc(짧)} 공동명의자</button></div>`;
+    return 고르기 + 본인 + 공동 + 더하기;
+  };
   const 종류들 = 군 === 'gen' ? [CT_KIND.new, CT_KIND.agree] : Object.values(CT_KIND);
   const 표시명 = 맞춤 ? F.fields[0].h : 매매 ? '부동산의 표시' : doc.form === 'sublease' ? '전대물의 표시' : 상가 || 군 === 'shop' ? '임차상가건물의 표시' : 군 === 'home' ? '임차주택의 표시' : '임차물의 표시';
   return `
@@ -12573,6 +12897,12 @@ function ct확정점검(doc){
   if(doc.renewOf){ const 지금 = ct갱신특약(doc)[0], 있음 = (doc.specials || []).find(t => /^본 계약은 .*갱신계약으로/.test(String(t).trim()));
     if(있음 && 있음.trim() !== 지금) 남음.push('갱신 특약의 금액이 지금 보증금과 다릅니다 - ‘갱신 특약을 지금 금액으로 다시 쓰기’를 누르세요'); }
   if(F.lease && D.type === 'monthly' && !+D.rent) 남음.push('월 차임이 비어 있습니다');
+  for(const [k, ko] of [F.a || [], F.b || []]){ const x = (doc.parties || {})[k]; if(!k || !x) continue;
+    if(x.type === 'corp' && !x.rep) 남음.push(`${ct짧은이름(ko)}(법인)의 대표이사 이름이 비어 있습니다`);
+    if(x.type === 'corp' && x.bizNo && !/^\d{3}-?\d{2}-?\d{5}$/.test(String(x.bizNo).trim())) 남음.push(`${ct짧은이름(ko)}의 사업자등록번호 모양이 맞지 않습니다 (000-00-00000)`);
+    if((x.co || []).length){ const 몫 = [x, ...x.co].map(p => ct지분(p.share));
+      if(몫.every(n => !isNaN(n)) && Math.abs(몫.reduce((a, b) => a + b, 0) - 1) > 0.001) 남음.push(`${ct짧은이름(ko)} 공동명의자 지분을 더하면 1이 아닙니다`);
+      else if(몫.some(n => isNaN(n))) 남음.push(`${ct짧은이름(ko)} 공동명의자의 지분이 비어 있거나 모양이 다릅니다 (예: 1/2)`); } }
   return 남음;
 }
 /* ── 부속 서류 (2026-11-05 파트너 중개사 리뷰) ── 영수증(계약금·중도금·잔금) · 잔금정산서(관리비·월차임 일할) · 물품인계 확인서.
@@ -12656,7 +12986,9 @@ function ctReceiptDocHTML(doc){
     <p class="ct-date">${ct날짜(날)}</p>
     <table class="ct-sign">
       ${ct영수칸(`영수인<br>(${esc(ct짧은이름(aKo))})`, 사람[aKey] || {})}
+      ${((사람[aKey] || {}).co || []).map((c, i) => ct영수칸(`영수인 ${i + 2}<br>(${esc(ct짧은이름(aKo))})`, c)).join('')}
       ${ct영수칸(`지급인<br>(${esc(ct짧은이름(bKo))})`, 사람[bKey] || {})}
+      ${((사람[bKey] || {}).co || []).map((c, i) => ct영수칸(`지급인 ${i + 2}<br>(${esc(ct짧은이름(bKo))})`, c)).join('')}
     </table>
     <p class="ct-foot">영수인·지급인 모두 성명·주소·연락처를 적고 날인합니다 - 부동산 거래신고의 대금 지급 증빙으로 쓸 수 있습니다.</p>
   </div>`;
@@ -12700,8 +13032,8 @@ function ctSettleDocHTML(doc){
     <p class="ct-close">위와 같이 정산하였음을 확인합니다.</p>
     <p class="ct-date">${ct날짜(S0.잔금일)}</p>
     <table class="ct-sign">
-      <tr><th class="w">${esc(ct짧은이름(aKo))}</th><td class="sign">${ct값((사람[aKey] || {}).name, 120)} <span class="ct-seal">(서명 또는 날인)</span></td></tr>
-      <tr><th class="w">${esc(ct짧은이름(bKo))}</th><td class="sign">${ct값((사람[bKey] || {}).name, 120)} <span class="ct-seal">(서명 또는 날인)</span></td></tr>
+      <tr><th class="w">${esc(ct짧은이름(aKo))}</th><td class="sign">${ct값(ct이름외(사람[aKey]), 120)} <span class="ct-seal">(서명 또는 날인)</span></td></tr>
+      <tr><th class="w">${esc(ct짧은이름(bKo))}</th><td class="sign">${ct값(ct이름외(사람[bKey]), 120)} <span class="ct-seal">(서명 또는 날인)</span></td></tr>
       <tr><th class="w">개업공인중개사</th><td>${ct값((doc.broker || {}).office, 160)}</td></tr>
     </table>
     <p class="ct-foot">일할 계산은 잔금일이 든 달의 날수로 나눈 값입니다(원 미만 반올림). 실제 관리비 고지서와 맞춰 보고 고쳐 쓰세요.</p>
@@ -12718,8 +13050,8 @@ function ctHandDocHTML(doc){
     <p class="ct-close">위 물품을 틀림없이 인계·인수하였음을 확인합니다.</p>
     <p class="ct-date">${ct날짜(t.balanceDate || D.balanceDate)}</p>
     <table class="ct-sign">
-      <tr><th class="w">인계자(${esc(ct짧은이름(aKo))})</th><td class="sign">${ct값((사람[aKey] || {}).name, 120)} <span class="ct-seal">(서명 또는 날인)</span></td></tr>
-      <tr><th class="w">인수자(${esc(ct짧은이름(bKo))})</th><td class="sign">${ct값((사람[bKey] || {}).name, 120)} <span class="ct-seal">(서명 또는 날인)</span></td></tr>
+      <tr><th class="w">인계자(${esc(ct짧은이름(aKo))})</th><td class="sign">${ct값(ct이름외(사람[aKey]), 120)} <span class="ct-seal">(서명 또는 날인)</span></td></tr>
+      <tr><th class="w">인수자(${esc(ct짧은이름(bKo))})</th><td class="sign">${ct값(ct이름외(사람[bKey]), 120)} <span class="ct-seal">(서명 또는 날인)</span></td></tr>
     </table>
     <p class="ct-foot">비밀번호는 서류에 적지 말고 직접 알려 주세요 - 상태 칸에는 '전달함' 만 적습니다.</p>
   </div>`;
@@ -14693,6 +15025,11 @@ document.addEventListener('input', e=>{
     if(el.value) t[key] = el.value; else delete t[key];
     CT.track = t; ctTrackSave(false); return;
   }
+  /* 계약체결 문자 - 칸 · 받는 번호 · 틀 고치기 */
+  if(k.startsWith('cs:')){ cs입력(el, k.slice(3)); return; }
+  if(k.startsWith('cs-to:')){ cs입력(el, 'to:' + k.slice(6)); return; }
+  if(k === 'cs-name'){ if(CS.edit) CS.edit.name = el.value; return; }
+  if(k === 'cs-text'){ if(CS.edit) CS.edit.text = el.value; return; }
   /* 부속 서류 - 정산서 금액 · 추가 항목 · 인계 품목 */
   if(k.startsWith('cte:')){ ct부속입력(el, k.slice(4)); return; }
   /* 알림 설정 - 법무사 예약 시점(1~20영업일) */
@@ -15766,6 +16103,13 @@ function handle(a,v,el){
       const R = CT.doc && CT.doc.period;
       if(R && R.handover && CT.termN && !ctSealed()){ R.to = ct종료일(R.handover, CT.termN, 같은); ctDirty(); }
       render(); return true; }
+    /* 당사자 - 개인/법인 · 공동명의자 */
+    case 'ct-ptype': if(CT.doc && !ctSealed()){ const [k, t] = String(v).split('|'), P = CT.doc.parties || (CT.doc.parties = {}), x = P[k] || (P[k] = {});
+      if(t === '법인') x.type = 'corp'; else { delete x.type; delete x.rep; delete x.bizNo; } ctDirty(); render(); } return true;
+    case 'ct-co-add': if(CT.doc && !ctSealed()){ const P = CT.doc.parties || (CT.doc.parties = {}), x = P[v] || (P[v] = {});
+      x.co = [...(x.co || []), { name:'', phone:'', addr:'', share:'' }].slice(0, 4); ctDirty(); render(); } return true;
+    case 'ct-co-del': if(CT.doc && !ctSealed()){ const [k, i] = String(v).split('|'), x = (CT.doc.parties || {})[k];
+      if(x && x.co){ x.co.splice(+i, 1); if(!x.co.length){ delete x.co; delete x.share; } ctDirty(); render(); } } return true;
     case 'ct-hand': if(CT.doc && !ctSealed()){ const B = CT.doc.broker || (CT.doc.broker = {}); if(B.hand) delete B.hand; else B.hand = true; ctDirty(); render(); } return true;
     case 'ct-acct': if(CT.doc && !ctSealed()){ if(CT.doc.acct) delete CT.doc.acct; else CT.doc.acct = true; ctDirty(); render(); } return true;
     case 'ct-renew-sp': if(CT.doc && !ctSealed() && CT.doc.renewOf){
@@ -15847,6 +16191,46 @@ function handle(a,v,el){
     /* 일정·체크 (2026-10-30) - 고르면 바로 저장 */
     case 'ct-plan': CT.mode = 'plan'; if(!CT.alert) ctAlertLoad(); render(); return true;
     case 'ct-extra': CT.mode = 'extra'; render(); return true;
+    /* 계약체결 문자 */
+    case 'cs-sel': CS.sel = v; CS.edit = null; render(); return true;
+    case 'cs-none': CS.none = { ...CS.none, [v]: !CS.none[v] }; render(); return true;
+    case 'cs-when': CS.vals = { ...CS.vals, '선불/후불': v }; render(); return true;
+    case 'cs-clear': CS.vals = {}; CS.none = {}; render(); return true;
+    case 'cs-reload': CS.loaded = false; CS.err = ''; csLoad(); render(); return true;
+    case 'cs-copy': { const 글 = cs문자();
+      (navigator.clipboard ? navigator.clipboard.writeText(글) : Promise.reject()).then(() => toast('문자를 복사했습니다 - 문자나 카카오톡 대화창에 붙여 넣으세요'), () => toast('복사하지 못했습니다 - 미리보기를 길게 눌러 복사해 주세요'));
+      cs기록(); return true; }
+    case 'cs-sms': { const 번호 = cs받는번호(), ios = /iP(hone|ad|od)/.test(navigator.userAgent);
+      location.href = `sms:${번호.join(ios ? ',' : ';')}${ios ? '&' : '?'}body=${encodeURIComponent(cs문자())}`;
+      if(!isMo()) toast('PC 에서는 문자 앱이 열리지 않을 수 있습니다 - 복사하기를 써 주세요');
+      cs기록(); return true; }
+    case 'cs-share': { const 글 = cs문자();
+      if(navigator.share) navigator.share({ text: 글 }).catch(() => {});
+      else (navigator.clipboard ? navigator.clipboard.writeText(글) : Promise.reject()).then(() => toast('복사했습니다 - 카카오톡 대화창에 붙여 넣으세요'), () => toast('복사하지 못했습니다'));
+      cs기록(); return true; }
+    case 'cs-log-agree': { const [id, w] = String(v).split('|'), e = CS.log.find(x => x.id === id); if(!e) return true;
+      e[w] = !e[w]; render(); csSend({ op:'log-set', id, a: !!e.a, b: !!e.b }).then(() => render()); return true; }
+    case 'cs-log-del': CS.log = CS.log.filter(x => x.id !== v); render(); csSend({ op:'log-del', id: v }).then(() => render()); return true;
+    case 'cs-log-ct': { const e = CS.log.find(x => x.id === v); if(e) cs계약서(e); return true; }
+    case 'cs-log-again': { const e = CS.log.find(x => x.id === v); if(!e) return true;
+      const t = cs틀들().find(x => x.name === e.tpl); if(t) CS.sel = t.id;
+      CS.vals = { ...(e.vals || {}) }; CS.none = Object.fromEntries((e.none || []).map(k => [k, true])); render(); toast('보낸 내용을 다시 열었습니다 - 계좌는 다시 적어 주세요'); return true; }
+    case 'cs-edit': { const t = cs틀들().find(x => x.id === v); if(t){ CS.edit = { id: t.id, name: t.name, text: t.text }; CS.sel = t.id; render(); } return true; }
+    case 'cs-edit-cancel': CS.edit = null; render(); return true;
+    case 'cs-edit-save': { const E = CS.edit; if(!E) return true;
+      const name = String(E.name || '').trim().slice(0, 14), text = String(E.text || '').trim();
+      if(!name || !text) return toast('이름과 문구를 적어 주세요'), true;
+      if(!cs칸들(text).length) return toast('바뀌는 칸을 【칸 이름】으로 하나 이상 적어 주세요'), true;
+      CS.edit = null; cs틀고침(L => { const i = L.findIndex(x => x.id === E.id); if(i >= 0) L[i] = { ...L[i], name, text }; else L.push({ id: E.id, name, text }); });
+      toast('내 문자 틀로 저장했습니다'); return true; }
+    case 'cs-new': { const id = cs새번호(); CS.edit = { id, name:'새 문자 틀', text:'[계약체결]\n*목적물: 【목적물】\n\n【사무소명】' }; render(); return true; }
+    case 'cs-dup': { const t = cs틀들().find(x => x.id === v); if(!t) return true; const id = cs새번호();
+      cs틀고침(L => { const i = L.findIndex(x => x.id === v); L.splice(i + 1, 0, { id, name: (t.name + ' 복사').slice(0, 14), text: t.text }); }); CS.sel = id; return true; }
+    case 'cs-del': if(CS.del !== v){ CS.del = v; render(); return true; }
+      CS.del = null; if(CS.sel === v) CS.sel = ''; cs틀고침(L => { const i = L.findIndex(x => x.id === v); if(i >= 0) L.splice(i, 1); }); return true;
+    case 'cs-hide': cs틀고침(L => { const t = L.find(x => x.id === v); if(t){ if(t.hidden) delete t.hidden; else if(L.filter(x => !x.hidden).length > 1) t.hidden = true; else toast('하나는 보여야 합니다'); } }); return true;
+    case 'cs-up': { const i = +v; if(i > 0) cs틀고침(L => { [L[i - 1], L[i]] = [L[i], L[i - 1]]; }); return true; }
+    case 'cs-reset': CS.tpls = []; CS.sel = ''; render(); csSend({ op:'tpls', tpls: [] }).then(() => { render(); toast('기본 틀로 되돌렸습니다'); }); return true;
     case 'cte-tab': if(['rc','st','hd'].includes(v)){ CT.extraTab = v; render(); } return true;
     case 'cte-rc': if(['down','mid','bal'].includes(v)){ CT.extraRc = v; render(); } return true;
     case 'cte-day': ct부속고침({ dayOwner: v === 'a' ? 'a' : '' }); return true;

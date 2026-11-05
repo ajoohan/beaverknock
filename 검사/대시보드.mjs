@@ -141,11 +141,11 @@ const M = new Function('esc', `${js.slice(시작, 끝)}\nreturn { dzLine, dzPill
   ok(/관리 \? '' : `\$\{줄\('#\/my', '내 조건'/.test(메뉴) && 메뉴.includes("${줄('#/account', '마이페이지'") && 메뉴.includes('data-act="logout"')
      && 메뉴.includes('<span class="nm2"><b>${esc(who)} 님</b>${소속 ? `<small>${esc(소속)}</small>` : \'\'}</span>'),
      '어드민 프로필 드롭다운은 마이페이지 · 로그아웃만 - 단추에 이름과 사무소(운영자는 운영자)');
-  ok(js.includes("const CT_하위메뉴 = [['#/partner/contracts/new', '계약서 작성', 'pen', 'ctn'], ['#/partner/contracts', '계약서 목록', 'doc', 'ct'],\n  ['#/partner/contracts/phrases', '특약 관리', 'list', 'ctp'], ['#/partner/contracts/schedule', '일정·알림', 'cal', 'cts']];")
+  ok(js.includes("const CT_하위메뉴 = [['#/partner/contracts/new', '계약서 작성', 'pen', 'ctn'], ['#/partner/contracts', '계약서 목록', 'doc', 'ct'],\n  ['#/partner/contracts/sms', '계약체결 문자', 'send', 'cms'],\n  ['#/partner/contracts/phrases', '특약 관리', 'list', 'ctp'], ['#/partner/contracts/schedule', '일정·알림', 'cal', 'cts']];")
      && 옆.includes("S.route === '#/partner/contract/new' ? 'ctn' : ((CT_하위메뉴.find(([h]) => h === S.route) || [])[3] || 'ct')")
      && js.includes("else if(h==='#/partner/contracts' || h.startsWith('#/partner/contracts/')) html = V['#/partner/contracts'](parts[3]);")
      && js.includes("if(h === '#/partner/contracts' || h.startsWith('#/partner/contracts/')){"),
-     "계약 묶음 네 칸(계약서 작성 · 계약서 목록 · 특약 관리 · 일정·알림, 2026-10-30 대표님) - 주소마다 화면 · 켜진 칸은 주소로(새 계약서 작성 중이면 '계약서 작성')");
+     "계약 묶음 다섯 칸(계약서 작성 · 계약서 목록 · 계약체결 문자 · 특약 관리 · 일정·알림, 2026-10-30 대표님 · 11-05 문자) - 주소마다 화면 · 켜진 칸은 주소로(새 계약서 작성 중이면 '계약서 작성')");
   for (const k of ['d', 'p', 'st', 's', 'l'])
     ok(js.includes(`\${navPartner('${k}')}\n  <div class="pad adm-page" style=`), `메뉴 화면(${k})은 가운데 폭 제한 없이 본문을 채운다`);
   ok(/body:not\(\.mo\) \.scr:has\(> \.psb\) > \.adm-page\{max-width:none!important;margin:0!important/.test(css) && /\.adm-grid\{display:grid;grid-template-columns:repeat\(auto-fill,minmax\(440px,1fr\)\)/.test(css)

@@ -341,6 +341,71 @@ export function 부속값(x) {
   return Object.keys(o).length ? o : null;
 }
 
+/* 계약체결 문자 (2026-11-05 파트너 리뷰) - 사무소 문자 틀(settings.smsTpl)과 보낸 기록(settings.smsLog).
+   틀: [{ id, name(14자), text(2000자), hidden }] 20개까지 - 통째로 받는다(한 사람이 고치는 작은 목록).
+   기록: [{ id, at, tpl, vals, none, a, b }] 최근 30개 - 계좌 칸과 주민번호 모양 글은 버린다(계좌번호는 어디에도 저장하지 않는다) */
+export const 문자틀최대 = 20, 문자기록최대 = 30;
+const 문자번호 = /^[a-z0-9-]{1,24}$/;
+export function 문자틀들(x) {
+  const 본 = new Set(), out = [];
+  for (const t of Array.isArray(x) ? x : []) {
+    if (!t || typeof t !== 'object' || !문자번호.test(String(t.id)) || 본.has(t.id)) continue;
+    const name = String(t.name == null ? '' : t.name).replace(/\s+/g, ' ').trim().slice(0, 14);
+    const text = String(t.text == null ? '' : t.text).replace(/\r\n?/g, '\n').trim().slice(0, 2000);
+    if (!name || !text || 주민번호있나(text)) continue;
+    본.add(t.id);
+    out.push({ id: t.id, name, text, ...(t.hidden === true ? { hidden: true } : {}) });
+    if (out.length >= 문자틀최대) break;
+  }
+  return out;
+}
+const 문자값들 = v => {
+  const o = {};
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return o;
+  for (const [k0, x] of Object.entries(v).slice(0, 40)) {
+    const k = String(k0).slice(0, 20);
+    if (!k || /계좌/.test(k)) continue;
+    if (typeof x === 'number' && Number.isFinite(x) && x >= 0 && x < 1e13) o[k] = Math.round(x);
+    else if (typeof x === 'string') { const s = x.replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, 200); if (s && !주민번호있나(s)) o[k] = s; }
+  }
+  return o;
+};
+export function 문자기록들(x) {
+  const out = [];
+  for (const e of Array.isArray(x) ? x : []) {
+    if (!e || typeof e !== 'object' || !/^[0-9a-f]{12}$/.test(String(e.id))) continue;
+    out.push({ id: e.id, at: 날시꼴(e.at) ? e.at : '', tpl: String(e.tpl || '').slice(0, 14), vals: 문자값들(e.vals),
+      none: (Array.isArray(e.none) ? e.none : []).map(k => String(k).slice(0, 20)).slice(0, 10), a: e.a === true, b: e.b === true });
+    if (out.length >= 문자기록최대) break;
+  }
+  return out;
+}
+const 날시꼴 = v => /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(String(v || ''));
+/* 하나 고치기 - op: tpls(틀 통째) · log-add · log-set(동의 표시) · log-del. 돌려주는 값 { tpls, log } 또는 { error, code } */
+export function 문자고침(settings, b, 지금 = new Date()) {
+  const s = settings || {}, op = b && b.op;
+  let tpls = 문자틀들(s.smsTpl), log = 문자기록들(s.smsLog);
+  if (op === 'tpls') {
+    if (!Array.isArray(b.tpls)) return { error: '문자 틀이 비어 있습니다', code: 400 };
+    if (b.tpls.some(t => t && 주민번호있나(String(t.text || '')))) return { error: '주민등록번호가 든 문자 틀은 저장하지 않습니다', code: 400 };
+    tpls = 문자틀들(b.tpls);
+  } else if (op === 'log-add') {
+    const e = b.entry || {}, vals = 문자값들(e.vals), tpl = String(e.tpl || '').slice(0, 14);
+    const none = (Array.isArray(e.none) ? e.none : []).map(k => String(k).slice(0, 20)).slice(0, 10);
+    const at = new Date(지금.getTime() + 9 * 3600e3).toISOString().slice(0, 19);
+    /* 같은 틀·목적물을 10분 안에 다시 보내면 그 줄을 고친다 */
+    const 앞 = log[0];
+    if (앞 && 앞.tpl === tpl && (앞.vals.목적물 || '') === (vals.목적물 || '') && Date.parse(at + 'Z') - Date.parse(앞.at + 'Z') < 600e3)
+      log = [{ ...앞, at, vals, none }, ...log.slice(1)];
+    else log = [{ id: crypto.randomBytes(6).toString('hex'), at, tpl, vals, none, a: false, b: false }, ...log].slice(0, 문자기록최대);
+  } else if (op === 'log-set' || op === 'log-del') {
+    const id = String(b.id == null ? '' : b.id);
+    if (!log.some(e => e.id === id)) return { error: '이미 지운 기록입니다', code: 404 };
+    log = op === 'log-del' ? log.filter(e => e.id !== id) : log.map(e => e.id === id ? { ...e, a: b.a === true, b: b.b === true } : e);
+  } else return { error: '알 수 없는 요청입니다', code: 400 };
+  return { tpls, log };
+}
+
 /* 내 특약 문구함 (2026-10-30 대표님 - 자주 쓰는 특약을 매매·임대차·갱신계약 등으로 나눠 저장해 두고 불러 쓴다) - bk_agent.settings.phrases.
    [{ id, g(묶음), t(문구), tag(저장한 계약서의 세부 종류 - '아파트') }]. 화면의 CT_특약묶음 과 같은 묶음.
    주민등록번호가 든 문구는 받지 않는다 - 저장한 문구는 다른 계약서에 그대로 옮겨 가기 때문이다 */

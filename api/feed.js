@@ -9,7 +9,7 @@
 
 import { userFrom, sbHeaders, sbUrl } from './_auth.js';
 import { dbWhy } from './_dberr.js';
-import { contractRoute, reportDueCron, 알림설정, 특약문구들, 특약문구고침 } from './_contract.js';
+import { contractRoute, reportDueCron, 알림설정, 특약문구들, 특약문구고침, 문자틀들, 문자기록들, 문자고침 } from './_contract.js';
 import { 날씨 } from './_weather.js';
 
 const KIND_KO = { home: '주거', shop: '상가', office: '오피스', storage: '창고' };
@@ -181,6 +181,27 @@ async function savePhrases(res, agent, b) {
   return res.status(200).json({ ok: true, phrases: y.list, id: y.id || '' });
 }
 
+/* 계약체결 문자 (2026-11-05 파트너 리뷰) - 문자 틀과 보낸 기록. 계약서 도구라 공인중개사만 */
+async function readSms(res, agent) {
+  if (agent.role !== 'agent') return res.status(403).json({ error: '공인중개사만 쓸 수 있습니다' });
+  const x = await 설정읽기(agent);
+  if (x.error) return res.status(502).json({ error: '문자 틀을 불러오지 못했습니다' });
+  return res.status(200).json({ ok: true, tpls: 문자틀들(x.settings.smsTpl), log: 문자기록들(x.settings.smsLog), need: x.need || '' });
+}
+async function saveSms(res, agent, b) {
+  if (agent.role !== 'agent') return res.status(403).json({ error: '공인중개사만 쓸 수 있습니다' });
+  const x = await 설정읽기(agent);
+  if (x.need) return res.status(503).json({ error: '문자 틀 저장을 준비 중입니다 (0032 마이그레이션 필요)', need: '0032' });
+  if (x.error) return res.status(502).json({ error: '문자 틀을 불러오지 못했습니다' });
+  const y = 문자고침(x.settings, b);
+  if (y.error) return res.status(y.code || 400).json({ error: y.error, tpls: 문자틀들(x.settings.smsTpl), log: 문자기록들(x.settings.smsLog) });
+  const r = await fetch(sbUrl('bk_agent', 'id=eq.' + agent.id), {
+    method: 'PATCH', headers: { ...sbHeaders(), Prefer: 'return=minimal' }, body: JSON.stringify({ settings: { ...x.settings, smsTpl: y.tpls, smsLog: y.log } }),
+  });
+  if (!r.ok) return res.status(502).json({ error: '저장하지 못했습니다' });
+  return res.status(200).json({ ok: true, tpls: y.tpls, log: y.log });
+}
+
 async function saveOfficeAddr(res, agent, b) {
   const addr = String(b.addr || '').replace(/\s+/g, ' ').trim().slice(0, 200);
   if (!/\d/.test(addr)) return res.status(400).json({ error: '도로명 찾기로 주소를 골라 주세요' });
@@ -239,6 +260,8 @@ export default async function handler(req, res) {
   /* 내 특약 문구함 - 자주 쓰는 특약을 매매·임대차·갱신계약·기타로 */
   if (b.what === 'phrases')      return readPhrases(res, chk.agent);
   if (b.what === 'phrases-save') return savePhrases(res, chk.agent, b);
+  if (b.what === 'sms')          return readSms(res, chk.agent);
+  if (b.what === 'sms-save')     return saveSms(res, chk.agent, b);
 
   /* 계약서 (2026-10-29). 승인 전 중개사도 쓴다 - 자격 확인은 수요 전문을 여는 문이지
      양식·인쇄 도구의 문이 아니다. 갈래는 api/_contract.js 가 맡는다. */

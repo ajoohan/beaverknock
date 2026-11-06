@@ -71,7 +71,17 @@ const html = 길.html(), js = 길.js(), css = 길.css();
   ok(res.code === 409, '날인본(0행)이면 409 - 새 판을 만들라고 한다');
 
   /* 확정: DB 에 있는 doc 으로 지문을 낸다 - 화면이 보낸 값은 쓰지 않는다 */
-  const db도c = { ...doc, property: { road: 'DB 에 저장된 주소' } };
+  const db도c = { ...doc, property: { road: 'DB 에 저장된 주소' }, deal: { deposit: 100000000, down: 10000000, balanceDate: '2026-12-01' }, contractDate: '2026-11-06' };
+  /* 필수 항목이 비면 서버도 확정하지 않는다 (2026-11-06) - DB 에 닿기 전(읽기만 하고 잠그지 않는다) */
+  답 = (u, o) => (o.method || 'GET') === 'GET'
+    ? new Response(JSON.stringify([{ id: 'x', status: 'draft', doc: { ...doc, deal: { deposit: 100000000 } } }]), { status: 200 })
+    : new Response(JSON.stringify([{ sealed_at: 'now' }]), { status: 200 });
+  ({ res } = await 돌려({ what: 'contract-seal', id: '33333333-3333-3333-3333-333333333333' }));
+  ok(res.code === 400 && /계약금 · 잔금 지급일 · 계약일/.test(res.body.error) && 불린.every(x => x.m === 'GET'),
+     '필수 항목(계약금·잔금일·계약일 등)이 비면 서버가 확정을 거절한다 - 잠그지 않는다');
+  ok(C.확정필수('explain-home', {}) === null && C.확정필수('sale', { property: { road: 'a' }, deal: { price: 1, down: 1, balanceDate: 'x' }, contractDate: 'y' }) === null
+     && /보증금/.test(C.확정필수('home-lease', {})) && /대금/.test(C.확정필수('sale', {})),
+     '확정필수 - 확인·설명서는 보지 않는다 · 임대차는 보증금, 매매는 대금');
   답 = (u, o) => (o.method || 'GET') === 'GET'
     ? new Response(JSON.stringify([{ id: 'x', status: 'draft', doc: db도c }]), { status: 200 })
     : new Response(JSON.stringify([{ sealed_at: 'now' }]), { status: 200 });
@@ -545,6 +555,25 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
      '처리방침: 받는 것 · 받지 않는 것(주민번호·계좌) · 보관 기간을 적었다');
 }
 
+/* ── 양쪽에서 적기 · 필수 항목 · 임시저장 (2026-11-06 대표님) ── */
+{
+  ok(/id="ctPv">\$\{ct책상HTML\(doc\)\}/.test(js) && /box\.innerHTML = ct보기HTML\(CT\.doc\);/.test(js) && /CT편집칸 = !ctSealed\(\) && CT\.mode !== 'extra' && !F\.explain;\s*try\{ return ct보기HTML\(doc\); \} finally \{ CT편집칸 = false; \}/.test(js),
+     '바로 적는 칸은 PC 책상 미리보기에서만 - 인쇄 · 날인본 · 부속 서류는 종이 그대로');
+  ok(/if\(pv\.contains\(document\.activeElement\)\)\{ CT\.pvStale = true; return; \}/.test(js),
+     '오른쪽 서류에서 적는 중에는 미리보기를 다시 그리지 않는다(커서 지킴)');
+  ok(/ctSet\(CT\.doc, path, 글\); const L = 왼\('ct:' \+ path\); if\(L\) L\.value = 글;/.test(js) && /const L = 왼\('ct\$:' \+ path\); if\(L\) L\.value = n \? comma\(String\(n\)\) : '';/.test(js),
+     '오른쪽에서 적은 값은 왼쪽 칸에도 같은 글로 들어간다');
+  const 읽기 = new Function(js.slice(js.indexOf('function ct날짜읽기'), js.indexOf('/* 책상 미리보기')) + 'return ct날짜읽기;')();
+  ok(읽기('2026년 3월 5일') === '2026-03-05' && 읽기('2026.3.5') === '2026-03-05' && 읽기('20260305') === '2026-03-05'
+     && 읽기('') === '' && 읽기('2026년 3') === null && 읽기('2026-02-30') === null, '서류에 적은 날짜 - 여러 모양을 읽고, 덜 적은 것은 그대로 둔다');
+  ok(/case 'ct-seal': \{[\s\S]{0,300}if\(빠짐\.length\)\{ CT\.req = true;/.test(js) && /case 'ct-seal-go': \{\s*S\.modal = null;\s*if\(CT\.doc && ct필수빠짐\(\)\.size\)/.test(js),
+     '필수 칸이 비면 확정 창을 열지 않고 빠진 칸을 보여 준다 (확정하기 직전에도 다시 본다)');
+  ok(/\['deal\.down', '계약금'\]/.test(js) && /\['contractDate', '계약일'\]/.test(js) && /\['broker\.regNo', '중개사무소 등록번호'\]/.test(js) && /data-act="ct-req-go"/.test(js),
+     '필수 항목 목록과 빠진 칸으로 가는 안내 단추');
+  ok(/'임시저장'/.test(js) && /function ct자동저장\(\)/.test(js) && /if\(!CT\.id && !\(CT\.doc\.property && CT\.doc\.property\.road\)\) return;/.test(js),
+     '임시저장 단추 + 멈춘 뒤 자동 임시저장(새 계약서는 소재지를 넣은 뒤부터)');
+}
+
 /* ── 화면 붙은 자리 ── */
 {
   ok(/@media print\{[\s\S]*@page\{size:A4/.test(html) && /html\.printing-ct body > \*:not\(#ctPrint\)\{display:none!important\}/.test(html),
@@ -567,7 +596,7 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
      && /return ctDeskShell\(doc, 판, 신고면\);/.test(js) && /\$\{ctFormHTML\(doc\)\}/.test(js),
      'PC 는 입력 판 | 미리보기 한 화면(계약서·확인·설명서·신고 도우미 모두), 휴대폰은 같은 입력 구획을 카드로 쌓는다');
   /* 2026-11-05 - 부속 서류 탭에서는 고른 서류(영수증·정산서·인계 확인서)를, 그 밖에는 계약서를 그린다(ct보기HTML) */
-  ok(/<div class="ctx-desk" id="ctDesk"><div class="ct-sheet" id="ctPv">\$\{ct보기HTML\(doc\)\}<\/div><\/div>/.test(js)
+  ok(/<div class="ctx-desk" id="ctDesk"><div class="ct-sheet" id="ctPv">\$\{ct책상HTML\(doc\)\}<\/div><\/div>/.test(js)
      && /function ct보기HTML\(doc\)\{[\s\S]{0,120}if\(CT\.mode !== 'extra' \|\| F\.explain\) return ctDocHTML\(doc\);/.test(js)
      && /function ctDirty\(\)\{ CT\.dirty = true; CT\.rev = \(CT\.rev \|\| 0\) \+ 1; ctPvRefresh\(\);/.test(js),
      '미리보기는 늘 떠 있고, 칸을 고칠 때마다(잠깐 멈추면) 다시 그린다');

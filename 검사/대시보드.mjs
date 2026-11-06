@@ -69,7 +69,7 @@ const M = new Function('esc', `${js.slice(시작, 끝)}\nreturn { dzLine, dzPill
     const 밖 = js.replace(브랜드, '');
     ok(!/<span class="eyebrow">/.test(밖), '제품 화면에 영문 머리표(eyebrow)가 없다');
     ok(!/>← /.test(js) && !/ →<\//.test(js) && /\.ar-l,\.ar-r\{display:inline-block;/.test(css), '이동·뒤로 표시는 글자 화살표가 아니라 그림 아이콘');
-    ok(!/저장 ●/.test(js) && /<span class="dirty-dot" aria-hidden="true"><\/span>저장/.test(js), "저장할 것이 있으면 점(도형) - '●' 글자가 아니다");
+    ok(!/저장 ●/.test(js) && /<span class="dirty-dot" aria-hidden="true"><\/span>(임시)?저장/.test(js), "저장할 것이 있으면 점(도형) - '●' 글자가 아니다");
     ok(!/inset 3px 0 0 (#fff|var\(--ind\))/.test(css + js) && !/border-left:2\.5px solid var\(--ind300\)/.test(css), '옆 줄무늬 강조 없음 - 상태는 바탕색으로');
   }
   /* 리뷰 3차 */

@@ -181,7 +181,7 @@ const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3
      '새 계약서(양식 고르기·제안에서 만들기)는 서류 단계로 시작한다');
   ok(/CT\.filled = new Set\(원\.src \? ctApplyScan\(CT\.doc, 원\.src, 원\.src\.kinds \|\| \[\], false\) : \[\]\)/.test(js) && /CT\.doc\.src = \{ at: /.test(js),
      '계약서에 담아 둔 서류 값으로 확인·설명서를 만들 때 바로 채운다');
-  ok(/if\(CT\.filled && CT\.filled\.delete\(path\)\) el\.classList\.remove\('ai'\);/.test(js) && /class="inp\$\{CT\.filled && CT\.filled\.has\(path\) \? ' ai' : ''\}"/.test(js),
+  ok(/if\(CT\.filled && CT\.filled\.delete\(path\)\) el\.classList\.remove\('ai'\);/.test(js) && /class="inp\$\{CT\.filled && CT\.filled\.has\(path\) \? ' ai' : ''\}/.test(js),
      '채운 칸은 남색 - 고치면 표시가 사라진다');
   ok(/sc\.files = \{\};/.test(js), '읽은 뒤 화면 메모리에서도 서류를 버린다');
   ok(/if\(ADDR\.rows\.length === 1\) return addrPick\(0\);/.test(js), '읽은 주소로 찾은 결과가 하나면 바로 골라 법정동코드까지 잇는다');

@@ -93,6 +93,19 @@ export function docCheck(form, doc) {
   return null;
 }
 
+/* 날인본 확정 전 필수 항목 (2026-11-06 대표님) - 화면(ct필수)이 먼저 막고, 서버는 핵심 다섯 가지를 다시 본다.
+   확인·설명서는 계약서가 아니라 보지 않는다 */
+export function 확정필수(form, doc) {
+  if (String(form || '').startsWith('explain')) return null;
+  const d = (doc && doc.deal) || {}, 빈 = [];
+  if (!String((doc && doc.property && doc.property.road) || '').trim()) 빈.push('소재지');
+  if (!(+(d.price != null ? d.price : d.deposit) > 0)) 빈.push(임대차양식.includes(form) ? '보증금' : '대금');
+  if (!(+d.down > 0)) 빈.push('계약금');
+  if (!d.balanceDate) 빈.push('잔금 지급일');
+  if (!(doc && doc.contractDate)) 빈.push('계약일');
+  return 빈.length ? `필수 항목이 비어 있어 확정할 수 없습니다 - ${빈.join(' · ')}` : null;
+}
+
 const titleOf = (b, doc) => String(b.title || (doc.property && doc.property.road) || '').trim().slice(0, 80);
 
 async function db(path, q, init = {}) {
@@ -191,7 +204,7 @@ async function seal(res, agent, b) {
   const row = got.rows[0];
   if (!row) return res.status(404).json({ error: '내 계약서가 아니거나 지워진 계약서입니다' });
   if (row.status === 'sealed') return res.status(409).json({ error: '이미 날인본입니다' });
-  const why = docCheck(row.doc && row.doc.form, row.doc);
+  const why = docCheck(row.doc && row.doc.form, row.doc) || 확정필수(row.doc && row.doc.form, row.doc);
   if (why) return res.status(400).json({ error: why });
 
   /* 읽은 뒤 다른 창에서 저장이 들어오면 지문과 잠기는 doc 이 어긋난다 -

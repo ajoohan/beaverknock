@@ -2708,6 +2708,54 @@ body.mo .dz-more::after{content:"";position:absolute;left:-6px;right:-6px;top:-5
 .dz-q{display:flex;align-items:center;gap:8px;min-height:42px;padding:8px 10px;border:1px solid var(--n200);border-radius:var(--r-ctl);background:var(--white);
   font-size:13.5px;font-weight:600;color:var(--n900);cursor:pointer;transition:background var(--t-fast) ease,border-color var(--t-fast) ease}
 .dz-q svg{flex:none;color:var(--ind)}
+/* ── 계약 대화방 (2026-11-06) ── */
+.rm-lay{display:grid;grid-template-columns:320px minmax(0,1fr);gap:16px;align-items:stretch;min-height:520px}
+body.mo .rm-lay{display:flex;flex-direction:column}
+.rm-list{display:flex;flex-direction:column;padding:0;overflow:auto}
+/* 넓은 화면 - 대화방이 화면 아래까지 차게(빈 바탕 없이), 말 목록만 스크롤 */
+body:not(.mo) .rm-lay{height:calc(100vh - 150px)}
+body:not(.mo) .rm-lay .rm-pane{min-height:0}
+body:not(.mo) .rm-lay .rm-msgs{max-height:none}
+.rm-lh{display:flex;align-items:baseline;gap:8px;padding:16px 16px 10px;border-bottom:1px solid var(--n100)}
+.rm-lh .sub{font-size:13px}
+.rm-li{display:flex;flex-direction:column;gap:2px;padding:12px 16px;border-bottom:1px solid var(--n100);cursor:pointer;min-width:0}
+.rm-li:hover{background:var(--n50)}
+.rm-li.on{background:var(--ind50)}
+.rm-li b{font-size:14.5px;color:var(--n900);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rm-li span{font-size:13px;color:var(--n700);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rm-li small{font-size:12.5px;color:var(--n500)}
+.rm-pane{display:flex;flex-direction:column;padding:0;overflow:hidden;min-height:520px}
+.rm-none{align-items:center;justify-content:center}
+.rm-h{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px;border-bottom:1px solid var(--n100)}
+.rm-h > div{display:flex;flex-direction:column;gap:2px;min-width:0}
+.rm-h b{font-size:15.5px;color:var(--n900)}
+.rm-h .sub{font-size:13px}
+.rm-in,.rm-out{font-style:normal;font-size:12px;font-weight:700;padding:1px 6px;border-radius:6px}
+.rm-in{background:var(--okbg);color:var(--ok)} .rm-out{background:var(--n100);color:var(--n500)}
+.rm-steps{display:flex;gap:8px;flex-wrap:wrap;margin:0;padding:12px 18px;list-style:none;border-bottom:1px solid var(--n100);background:var(--n50)}
+.rm-steps li{display:flex;flex-direction:column;padding:6px 12px;border:1px solid var(--n200);border-radius:var(--r-ctl);background:var(--white)}
+.rm-steps li b{font-size:12.5px;color:var(--n500);font-weight:700}
+.rm-steps li span{font-size:13.5px;font-weight:700;color:var(--n900)}
+.rm-steps li.done{opacity:.65}
+.rm-msgs{flex:1;display:flex;flex-direction:column;gap:10px;margin:0;padding:16px 18px;list-style:none;overflow-y:auto;max-height:56vh;min-height:260px}
+body.mo .rm-msgs{max-height:58vh}
+.rm-m{display:flex;flex-direction:column;align-items:flex-start;max-width:78%}
+.rm-m.me{align-self:flex-end;align-items:flex-end}
+.rm-m .rm-who{font-size:12.5px;font-weight:700;color:var(--n500);margin-bottom:3px}
+.rm-m p{margin:0;padding:10px 13px;border-radius:12px;border-top-left-radius:4px;background:var(--n100);color:var(--n900);font-size:14.5px;line-height:1.6;white-space:pre-wrap;word-break:break-word}
+.rm-m.me p{background:var(--ind);color:#fff;border-top-left-radius:12px;border-top-right-radius:4px}
+.rm-m small{margin-top:3px;font-size:12px;color:var(--n500)}
+.rm-empty{margin:auto;color:var(--n500);font-size:14px}
+.rm-compose{display:flex;gap:8px;align-items:flex-end;padding:12px 14px;border-top:1px solid var(--n100);background:var(--white)}
+.rm-compose textarea{flex:1;resize:none;min-height:46px;font-size:14.5px}
+.rm-compose .btn{min-height:46px;flex:none}
+.rm-inv{list-style:none;margin:0 0 12px;padding:0;display:flex;flex-direction:column}
+.rm-inv li{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-top:1px solid var(--n100)}
+.rm-inv li:first-child{border-top:none}
+.rm-inv li span{display:flex;flex-direction:column;gap:2px}
+.rm-inv li b{font-size:14.5px;color:var(--n900)}
+.rm-inv li small{font-size:13px;color:var(--n500)}
+.rm-invite{display:flex;flex-direction:column}
 .dz-q:hover{background:var(--ind50);border-color:var(--ind200)}
 .dz-q::after{content:"";margin-left:auto;width:6px;height:6px;border-top:1.5px solid var(--n500);border-right:1.5px solid var(--n500);transform:rotate(45deg)}
 /* 제안 흐름 - 옆 칸 높이만큼 그래프가 늘어난다(카드 아래 빈칸 없이) */
@@ -3810,6 +3858,7 @@ function navPartner(active, 탭있음 = true){
     ${own||직원()?'':`<a data-go="#/partner/settings" class="${active==='s'?'on':''}">활동 설정</a>`}
     <a data-go="#/partner/stats" class="${active==='st'?'on':''}">성과</a>
     <a data-go="#/partner/proposals" class="${active==='p'?'on':''}">내 제안</a>
+    ${own?'':`<a data-go="#/partner/rooms" class="${active==='rm'?'on':''}">손님 대화</a>`}
     ${계약막힘()?'':`<a data-go="#/partner/contracts" class="${active==='ct'?'on':''}">계약서</a>`}
   </div>
   <div class="right" style="gap:10px">
@@ -6746,6 +6795,7 @@ V['#/account'] = () => {
       ${마이줄('#/my', '내 조건', 조건수 ? `${조건수}건` : '', 'M5 6 h14 M5 12 h14 M5 18 h9')}
       ${마이줄('#/inbox', '받은 제안', 새 ? `새 제안 ${새}건` : '', 'M3 12 h5 l2 3 h4 l2 -3 h5 M3 12 V7 a2 2 0 0 1 2 -2 h14 a2 2 0 0 1 2 2 v5 M3 12 v5 a2 2 0 0 0 2 2 h14 a2 2 0 0 0 2 -2 v-5')}
       ${마이줄('#/kind', '새 조건 걸기', '', 'M12 5 v14 M5 12 h14')}</div>`)}
+    ${rm내방HTML()}
     ${줄('파트너', a ? '자격과 사무소 정보' : '중개사·소유자로 함께하기', 파트너칸)}
     ${줄('동의 내역', '언제 무엇에 동의했는지 · 광고 수신은 여기서 바로 끕니다', c ? `<dl class="acc-dl">
         <div><dt>이용약관</dt><dd>${날(c.terms_at) ? `${날(c.terms_at)} 동의` : '동의'} · <a href="/terms" target="_blank" rel="noopener">보기</a></dd></div>
@@ -8713,6 +8763,18 @@ function modalHTML(){
         <ul>${x.줄.map(t => `<li>${esc(t)}</li>`).join('')}</ul></li>`).join('')}</ul>
       <button class="btn sec" data-act="modal-close" style="margin-top:16px;width:100%">닫기</button>
     </div></div>`;
+  if(S.modal.type==='rm-invite'){
+    const m = S.modal, 문자 = `sms:${m.phone || ''}${/iPhone|iPad/.test(navigator.userAgent) ? '&' : '?'}body=${encodeURIComponent(m.text)}`;
+    return `<div class="modal" data-act="modal-bg"><div class="box" data-stop role="dialog" aria-modal="true" aria-labelledby="mdT" tabindex="-1">
+      <h2 id="mdT" style="margin:0 0 6px;font-size:16px;font-weight:700;letter-spacing:-.03em">${esc(RM_자리[m.side] || '손님')} 초대 링크</h2>
+      <p style="margin:0 0 12px;font-size:14.5px;line-height:1.7;color:var(--n500)">${esc(m.until)}까지 쓸 수 있습니다. 한 분이 로그인해 들어오면 그 자리는 닫힙니다.</p>
+      <textarea class="inp" rows="4" readonly style="width:100%;font-size:13px">${esc(m.text)}</textarea>
+      <div class="eqb" style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+        <button class="btn sec" data-act="rm-copy">글 복사</button>
+        <a class="btn sec" href="${esc(문자)}">문자로 보내기</a>
+        ${m.kakao ? `<button class="btn sec" data-act="rm-kakao" data-v="${esc(m.side)}">알림톡으로 보내기</button>` : ''}</div>
+      <button class="btn pri" data-act="modal-close" style="width:100%;margin-top:10px">닫기</button></div></div>`;
+  }
   if(S.modal.type==='ct-share'){
     return `<div class="modal" data-act="modal-bg"><div class="box" data-stop role="dialog" aria-modal="true" aria-labelledby="mdT" tabindex="-1">
       <h2 id="mdT" style="margin:0 0 6px;font-size:16px;font-weight:700;letter-spacing:-.03em">초안 링크</h2>
@@ -10830,6 +10892,7 @@ const DZ_ICO = {
   chart:'M4 19 V5 M4 19 H20 M8 15 l3.5 -4 3 2.5 L19 8',
   users:'M9 11 a3.5 3.5 0 1 0 0 -7 a3.5 3.5 0 0 0 0 7 M2.5 20 c.8 -3.6 3.4 -5.5 6.5 -5.5 s5.7 1.9 6.5 5.5 M16 4.6 a3.3 3.3 0 0 1 0 6.3 M18.5 14.8 c1.6 .8 2.6 2.5 3 5.2',
   list:'M8 6 h12 M8 12 h12 M8 18 h12 M4 6 h.01 M4 12 h.01 M4 18 h.01',
+  chat:'M4 5 h16 v11 H9 l-5 4 Z M8 9.5 h8 M8 12.5 h5',
   pen:'M4 20 h4 L18.5 9.5 a2.8 2.8 0 0 0 -4 -4 L4 16 Z M13.5 6.5 l4 4',
   cal:'M5 5 h14 v15 H5 Z M5 9.5 h14 M9 3 v4 M15 3 v4 M8.5 13 h.01 M12 13 h.01 M15.5 13 h.01 M8.5 16.5 h.01 M12 16.5 h.01',
   building:'M4 21 V6 l8 -3 v18 M12 21 h8 V10 l-8 -3 M7.5 9 v.01 M7.5 13 v.01 M7.5 17 v.01 M16 13 v.01 M16 17 v.01',
@@ -10966,6 +11029,7 @@ function 파트너옆(active){
     ['#/partner/demands', own ? '맞는 손님' : '수요 목록', 'users', 'd'],
     ['#/partner/listings', '내 물건', 'building', 'l'],
     ['#/partner/proposals', '내 제안', 'send', 'p'],
+    ...(own ? [] : [['#/partner/rooms', '손님 대화', 'chat', 'rm']]),
     ...(계약막힘() ? [] : ['계약', ...CT_하위메뉴]),
     '내 사무소',
     ['#/partner/stats', '성과', 'chart', 'st'],
@@ -11005,6 +11069,8 @@ function adm위치(h){
   if(h === '#/partner/listing/new') return [['영업'], 물건, ['매물 등록']];
   if(h.startsWith('#/partner/listing/')) return [['영업'], 물건, ['물건 보기']];
   if(h === '#/partner/proposals') return [['영업'], ['내 제안']];
+  if(h === '#/partner/rooms') return [['영업'], ['손님 대화']];
+  if(h.startsWith('#/partner/rooms/')) return [['영업'], ['손님 대화', '#/partner/rooms'], [((RM.list || []).find(r => r.id === h.split('/')[3]) || {}).title || '대화방']];
   if(h === '#/partner/stats') return [['내 사무소'], ['성과']];
   if(h === '#/partner/settings') return [['내 사무소'], ['활동 설정']];
   return [];
@@ -11022,6 +11088,10 @@ const CT_하위메뉴 = [['#/partner/contracts/new', '계약서 작성', 'pen', 
    번호는 배포한 날(연.월.일 - 같은 날 또 올리면 뒤에 .2). 화면이 version.json 을 가끔 읽어,
    더 새 버전이 올라와 있으면 메뉴 아래에서 새로고침을 권한다(버전확인) - 계약서를 띄워 둔 채 오래 일하면 고친 화면을 못 받는다 */
 const BK_변경 = [
+  { v:'26.11.06.18', 날:'2026-11-06', 줄:[
+    '계약진행 대화방 - 날인본 계약서의 일정·체크 탭에서 당사자마다 초대 링크를 보내면, 손님이 로그인해 대화방에 들어옵니다',
+    '손님 대화(왼쪽 메뉴) - 계약별 대화방 · 계약일 · 중도금 · 잔금 일정 · 새 말이 오면 메일(10분에 한 통)',
+    '손님 - 마이페이지에 ‘계약 대화방’ · 계약서 원문과 다른 당사자 연락처는 보이지 않음 · 중개보조원도 대화는 함' ] },
   { v:'26.11.06.17', 날:'2026-11-06', 줄:[
     '색 - 연보라 · 복숭아빛 파스텔을 빼고 차분한 무채색 회색과 한 단계 깊은 인디고로 (약관 화면도 같은 색)',
     '대시보드 - 왼쪽 · 오른쪽 칸 높이를 맞추고, 제안 흐름 그래프가 칸만큼 늘어나며 할 일 아래에 바로 가기',
@@ -12512,6 +12582,209 @@ V['#/draft'] = tok => {
   </div>
 </div>`;
 };
+/* ══════════ 계약진행 대화방 (2026-11-06 · 파트너 기획 '확정하면 당사자 초대 → 가입하면 계약진행 채팅방') ══════════
+   서버 api/_room.js. 중개사는 날인본 계약서의 일정·체크 탭에서 당사자마다 초대 링크를 만들어 문자 · 카톡으로 보낸다.
+   손님은 링크(#/invite/표)를 열고 로그인하면 그 계약의 방(#/room/번호)에 들어온다. 중개사는 '손님 대화'(#/partner/rooms)에서 본다.
+   방에는 계약 요약 · 다가오는 일정 · 대화만 - 계약서 원문 · 다른 당사자 연락처는 보이지 않는다. 8초마다 새 말을 받아 온다 */
+const RM_자리 = { seller:'매도인', buyer:'매수인', lessor:'임대인', lessee:'임차인', sublessor:'전대인', subtenant:'전차인', assignor:'양도인', assignee:'양수인' };
+const RM = { list:null, listLoading:false, listErr:'', need:'', cur:null, text:'', busy:false, inv:null, mine:null, mineLoading:false };
+const rm손님 = () => (S.route || '').startsWith('#/room/');
+function rmPost(body){
+  const 곳 = /^(invite-join|my-)/.test(body.what) ? '/api/my' : '/api/feed';
+  return apiFetch(곳, { method:'POST', body: JSON.stringify(body) }).then(r => r.json().catch(() => ({})).then(j => ({ ok: r.ok && j.ok, j, status: r.status })));
+}
+const rm때 = t => { const d = new Date(t); if(isNaN(d)) return ''; const k = new Date(d.getTime() + 9 * 3600e3).toISOString();
+  const 오늘 = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
+  return k.slice(0, 10) === 오늘 ? k.slice(11, 16) : `${+k.slice(5, 7)}.${+k.slice(8, 10)} ${k.slice(11, 16)}`; };
+/* 방 하나 읽기 - 처음엔 전부, 다음부터는 마지막 번호 뒤만 */
+function rmLoad(id, 처음){
+  if(!RM.cur || RM.cur.id !== id) RM.text = '';   /* 방을 옮기면 쓰던 글은 그 방에 두지 않는다 */
+  const C = RM.cur && RM.cur.id === id ? RM.cur : (RM.cur = { id, rows:[], meta:null, loading:false, err:'', last:0 });
+  if(C.loading) return;
+  C.loading = true;
+  const 손님 = rm손님();
+  rmPost({ what: 손님 ? 'my-room' : 'room', id, after: 처음 ? 0 : C.last }).then(({ ok, j }) => {
+    C.loading = false;
+    if(!ok){ C.err = j.need === '0034' ? '대화방을 준비 중입니다 - 곧 열립니다' : (j.error || '대화방을 열지 못했습니다'); render(); return; }
+    C.err = ''; C.meta = j;
+    const 새 = (j.rows || []).filter(v => v.id > C.last);
+    if(처음) C.rows = j.rows || []; else C.rows = C.rows.concat(새);
+    C.last = C.rows.length ? C.rows[C.rows.length - 1].id : C.last;
+    if(처음 || 새.length){ render(); rm아래로(); }
+  }).catch(() => { C.loading = false; if(처음){ C.err = '네트워크 문제로 대화방을 열지 못했습니다'; render(); } });
+}
+const rm아래로 = () => setTimeout(() => { const b = document.querySelector('.rm-msgs'); if(b) b.scrollTop = b.scrollHeight; }, 0);
+function rmListLoad(){
+  if(RM.listLoading || !세션있음()) return;
+  RM.listLoading = true;
+  rmPost({ what:'rooms' }).then(({ ok, j }) => { RM.listLoading = false;
+    if(ok){ RM.list = j.rows || []; RM.listErr = ''; } else { RM.list = RM.list || []; RM.need = j.need || ''; RM.listErr = j.error || '대화방 목록을 불러오지 못했습니다'; } render();
+  }).catch(() => { RM.listLoading = false; RM.list = RM.list || []; RM.listErr = '네트워크 문제로 목록을 불러오지 못했습니다'; render(); });
+}
+function rmMineLoad(){
+  if(RM.mineLoading || !세션있음()) return;
+  RM.mineLoading = true;
+  rmPost({ what:'my-rooms' }).then(({ ok, j }) => { RM.mineLoading = false; RM.mine = ok ? (j.rows || []) : []; render(); })
+    .catch(() => { RM.mineLoading = false; RM.mine = []; });
+}
+async function rmSend(){
+  const C = RM.cur; if(!C || RM.busy) return;
+  const text = String(RM.text || '').trim();
+  if(!text) return toast('보낼 말을 적어 주세요');
+  RM.busy = true; render();
+  const { ok, j } = await rmPost({ what: rm손님() ? 'my-room-send' : 'room-send', id: C.id, text }).catch(() => ({ ok:false, j:{ error:'네트워크 문제로 보내지 못했습니다' } }));
+  RM.busy = false;
+  if(!ok){ render(); return toast(j.error || '보내지 못했습니다'); }
+  RM.text = ''; render(); rmLoad(C.id, false);
+  setTimeout(() => { const t = document.querySelector('[data-in="rm-text"]'); if(t) t.focus(); }, 0);
+}
+/* 8초마다 새 말 - 방 화면이 열려 있고 창이 보일 때만 */
+if(typeof window !== 'undefined' && !window.__rmPoll) window.__rmPoll = setInterval(() => {
+  if(document.hidden || !RM.cur || RM.busy) return;
+  const h = S.route || '';
+  if(h === '#/room/' + RM.cur.id || h === '#/partner/rooms/' + RM.cur.id) rmLoad(RM.cur.id, false);
+}, 8000);
+
+/* 말 목록 + 쓰는 칸 - 손님 · 중개사 같은 모양. 내 말은 오른쪽 */
+function rm대화HTML(C, 내편){
+  const 줄 = C.rows.map(v => { const 내 = 내편(v);
+    return `<li class="rm-m${내 ? ' me' : ''}"><span class="rm-who">${esc(v.name || RM_자리[v.side] || '')}</span><p>${esc(v.body).replace(/\n/g, '<br>')}</p><small>${esc(rm때(v.created_at))}</small></li>`; }).join('');
+  return `<ul class="rm-msgs" aria-live="polite">${줄 || `<li class="rm-empty">아직 나눈 말이 없습니다. 먼저 인사를 남겨 보세요.</li>`}</ul>
+    <div class="rm-compose"><label class="sr" for="rmText">보낼 말</label>
+      <textarea id="rmText" class="inp" rows="2" maxlength="1000" data-in="rm-text" placeholder="말을 적고 보내기를 누르세요 (주민등록번호 · 계좌번호는 적지 마세요)">${esc(RM.text)}</textarea>
+      <button type="button" class="btn pri" data-act="rm-send" ${RM.busy ? 'disabled' : ''}>${RM.busy ? '보내는 중' : '보내기'}</button></div>`;
+}
+/* 다가오는 일정 - 계약일 · 중도금 · 잔금 */
+const rm일정HTML = steps => !(steps || []).length ? '' : `<ol class="rm-steps">${steps.map(s => `<li class="${s.됨 ? 'done' : ''}"><b>${esc(s.이름)}</b><span>${esc(String(s.날).replace(/-/g, '.'))}${s.됨 ? ' · 마침' : ''}</span></li>`).join('')}</ol>`;
+
+/* ── 중개사 - 손님 대화 ── */
+V['#/partner/rooms'] = id => {
+  if(RM.list == null && !RM.listLoading) setTimeout(rmListLoad);
+  if(id && (!RM.cur || RM.cur.id !== id)) setTimeout(() => rmLoad(id, true));
+  const C = id && RM.cur && RM.cur.id === id ? RM.cur : null;
+  const 목록 = (RM.list || []).map(r => { const 든 = Object.keys(RM_자리).filter(k => r.room && r.room[k]);
+    const 이름 = Object.entries(r.names || {}).map(([k, n]) => `${RM_자리[k]}${n ? ' ' + n : ''}`).join(' · ');
+    return `<a class="rm-li${r.id === id ? ' on' : ''}" data-go="#/partner/rooms/${esc(r.id)}"><b>${esc(r.title || '계약')}</b>
+      <span>${esc(이름)}</span><small>${든.length ? `${든.map(k => RM_자리[k]).join(' · ')} 들어옴` : '초대만 함'}${r.last ? ` · ${esc(rm때(r.last.at))}` : ''}</small></a>`; }).join('');
+  const 왼쪽 = `<div class="card rm-list"><div class="rm-lh"><b>대화방</b><span class="sub">날인본 계약서마다 하나</span></div>
+    ${RM.listErr ? `<p class="sub" style="margin:12px 16px">${esc(RM.need === '0034' ? '대화방을 준비 중입니다 - 곧 열립니다' : RM.listErr)}</p>`
+      : RM.list == null ? `<p class="sub" style="margin:12px 16px">불러오는 중입니다…</p>`
+      : 목록 || `<p class="sub" style="margin:12px 16px;line-height:1.6">아직 대화방이 없습니다. 날인본 계약서의 ‘일정·체크’에서 손님 초대 링크를 보내면 생깁니다.</p>`}</div>`;
+  const M = C && C.meta;
+  const 오른쪽 = !id ? (isMo() ? '' : `<div class="card pad rm-pane rm-none"><p class="sub" style="margin:0">왼쪽에서 대화방을 고르세요.</p></div>`)
+    : `<div class="card rm-pane">
+      <div class="rm-h"><div><b>${esc((RM.list || []).find(r => r.id === id)?.title || '계약')}</b>
+        <span class="sub">${M ? Object.entries(M.names || {}).map(([k, n]) => `${RM_자리[k]}${n ? ' ' + esc(n) : ''} ${M.room && M.room[k] ? '<i class="rm-in">들어옴</i>' : '<i class="rm-out">초대 전</i>'}`).join(' · ') : ''}</span></div>
+        <a class="btn tool sm" data-go="#/partner/contract/${esc(id)}">계약서</a></div>
+      ${C && C.err ? `<p class="sub" style="margin:16px">${esc(C.err)}</p>` : !M ? `<p class="sub" style="margin:16px">대화를 불러오는 중입니다…</p>`
+        : `${rm일정HTML(M.steps)}${rm대화HTML(C, v => v.side === 'agent')}`}</div>`;
+  return `
+<div class="scr fade" style="background:var(--n50)">
+  ${navPartner('rm')}
+  <div class="pad adm-page" style="flex:1;padding-top:${isMo()?18:28}px;padding-bottom:24px;width:100%;display:flex;flex-direction:column;gap:14px">
+    <div><h1 class="t" style="font-size:${isMo()?21:25}px;margin-top:8px">손님 대화</h1>
+      <p class="sub" style="font-size:14.5px">계약을 마친 손님과 잔금까지 이어지는 대화를 모읍니다. 새 말이 오면 메일로 알려 드립니다.</p></div>
+    <div class="rm-lay${id ? ' has' : ''}">${isMo() && id ? '' : 왼쪽}${오른쪽}</div>
+  </div>
+  ${tabbar('p','p')}
+</div>`;
+};
+
+/* 일정·체크 탭 - 손님 초대 (날인본만) */
+function ct방HTML(doc){
+  if(!CT.id || (CT_FORMS[doc.form] || {}).explain) return '';
+  const 확정 = (CT.row || {}).status === 'sealed';
+  const 방 = ct트랙().room || {};
+  const 자리 = Object.keys(RM_자리).filter(k => (doc.parties || {})[k]);
+  const 보조 = 보조원();
+  return `<div class="card pad ct-sec" id="ctRoom"><h2>손님 대화방 <span class="sub" style="font-weight:500;font-size:13.5px">당사자에게 초대 링크를 보내면 로그인해서 이 계약의 대화방에 들어옵니다</span></h2>
+    ${!확정 ? `<p class="sub" style="margin:0">날인본으로 확정한 뒤에 손님을 초대할 수 있습니다.</p>`
+      : `<ul class="rm-inv">${자리.map(k => { const 사람 = doc.parties[k] || {}, 들 = !!방[k];
+        return `<li><span><b>${RM_자리[k]}${사람.name ? ` · ${esc(사람.name)}` : ''}</b><small>${들 ? `들어옴 ${esc(String(방[k].at || '').slice(0, 10).replace(/-/g, '.'))}` : '아직 안 들어옴'}</small></span>
+          ${보조 ? '' : 들 ? `<button type="button" class="btn tool sm" data-act="rm-kick" data-v="${k}">${CT.rmKick === k ? '한 번 더 누르면 내보냅니다' : '내보내기'}</button>`
+            : `<button type="button" class="btn tool sm" data-act="rm-invite" data-v="${k}">초대 링크</button>`}</li>`; }).join('')}</ul>
+      <div class="eqb" style="gap:8px;flex-wrap:wrap"><button type="button" class="btn sec sm" data-go="#/partner/rooms/${esc(CT.id)}">대화방 열기</button>
+        ${보조 || !(방.n != null) ? '' : `<button type="button" class="btn tool sm" data-act="rm-cut">나간 초대 링크 끊기</button>`}</div>`}</div>`;
+}
+async function rmInvite(side, 카톡){
+  if(!CT.id) return;
+  const { ok, j } = await ctPost({ what:'room-invite', id: CT.id, side, kakao: !!카톡 }).catch(() => ({ ok:false, j:{} }));
+  if(!ok) return toast(j.need === '0034' ? '대화방을 준비 중입니다 - 곧 열립니다' : (j.error || '초대 링크를 만들지 못했습니다'));
+  if(!(ct트랙().room)){ CT.track = { ...(CT.track || {}), room: { n: 0 } }; }
+  const 주소 = `${location.origin}${location.pathname}#/invite/${j.token}`;
+  const 끝 = new Date(j.until + 9 * 3600e3).toISOString().slice(0, 10);
+  const 사람 = ((CT.doc || {}).parties || {})[side] || {};
+  const 글 = `[비버노크] ${(S.agent && S.agent.office) || '중개사무소'}입니다. ${사람.name ? 사람.name + '님, ' : ''}계약 진행 상황과 일정을 이 대화방에서 안내드립니다. 아래 링크를 눌러 로그인해 주세요.\n${주소}`;
+  if(카톡) return toast(j.kakao ? '카카오 알림톡으로 초대를 보냈습니다' : '알림톡을 보내지 못했습니다 - 문자로 보내 주세요');
+  S.modal = { type:'rm-invite', url: 주소, until: 끝, side, phone: String(사람.phone || '').replace(/[^0-9]/g, ''), text: 글, kakao: !!j.kakaoReady };
+  render();
+}
+
+/* ── 손님 - 초대 링크 열기 (로그인 전에도) ── */
+V['#/invite'] = tok => {
+  const I = RM.inv && RM.inv.tok === tok ? RM.inv : (RM.inv = { tok, row:null, err:'', loading:true, joining:false });
+  if(I.loading && !I.asked){ I.asked = true;
+    fetch('/api/feed?invite=' + encodeURIComponent(tok)).then(r => r.json().then(j => ({ ok: r.ok, j }))).then(({ ok, j }) => {
+      I.loading = false; if(ok && j.ok) I.row = j; else I.err = j.error || '초대 링크를 열지 못했습니다'; render();
+    }).catch(() => { I.loading = false; I.err = '네트워크 문제로 초대 링크를 열지 못했습니다'; render(); }); }
+  const R = I.row;
+  return `
+<div class="scr fade" style="background:var(--n50)">
+  ${navUser ? navUser() : ''}
+  <div class="pad" style="flex:1;padding-top:${isMo()?24:48}px;padding-bottom:32px;width:100%;max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:14px">
+    <div class="card pad rm-invite">
+      ${I.err ? `<h1 class="t" style="font-size:20px;margin:0 0 8px">초대 링크를 열 수 없습니다</h1><p class="sub" style="margin:0">${esc(I.err)}</p>`
+        : !R ? `<p class="sub" style="margin:0">초대 내용을 불러오는 중입니다…</p>`
+        : `<span class="badge b-ind" style="align-self:flex-start">계약 대화방 초대</span>
+          <h1 class="t" style="font-size:${isMo()?21:24}px;margin:12px 0 6px">${esc(R.office)}에서 초대했습니다</h1>
+          <p class="sub" style="margin:0 0 16px;line-height:1.7"><b style="color:var(--n900)">${esc(R.title)}</b> 계약의 <b style="color:var(--n900)">${esc(R.role)}</b>으로 초대받으셨습니다.
+            대화방에서 계약 일정과 준비할 것을 안내받고, 궁금한 점을 바로 물어보실 수 있습니다.</p>
+          ${R.joined ? `<p class="ct-note" style="margin:0 0 12px">이 자리에는 이미 누가 들어와 있습니다. 본인이 들어오신 계정으로 로그인하면 바로 열립니다.</p>` : ''}
+          ${로그인전() ? `<button type="button" class="btn pri" data-act="rm-login" style="width:100%">로그인하고 대화방 들어가기</button>
+              <p class="sub" style="margin:10px 0 0;font-size:13px;line-height:1.6">카카오 · 네이버 · 구글 계정이나 메일로 로그인합니다. 처음이시면 가입 화면이 이어집니다.</p>`
+            : `<button type="button" class="btn pri" data-act="rm-join" style="width:100%" ${I.joining ? 'disabled' : ''}>${I.joining ? '들어가는 중…' : '대화방 들어가기'}</button>`}
+          <p class="sub" style="margin:12px 0 0;font-size:12.5px">${esc(new Date(R.until + 9 * 3600e3).toISOString().slice(0, 10))}까지 쓸 수 있는 링크입니다 · 대화방에는 계약서 원문과 다른 분의 연락처가 보이지 않습니다.</p>`}
+    </div>
+  </div>
+</div>`;
+};
+async function rmJoin(){
+  const I = RM.inv; if(!I || I.joining) return;
+  I.joining = true; render();
+  const { ok, j } = await rmPost({ what:'invite-join', token: I.tok }).catch(() => ({ ok:false, j:{ error:'네트워크 문제로 들어가지 못했습니다' } }));
+  I.joining = false;
+  if(!ok){ render(); return toast(j.error || '대화방에 들어가지 못했습니다'); }
+  RM.mine = null; go('#/room/' + j.id);
+}
+
+/* ── 손님 - 대화방 ── */
+V['#/room'] = id => {
+  if(!RM.cur || RM.cur.id !== id) setTimeout(() => rmLoad(id, true));
+  const C = RM.cur && RM.cur.id === id ? RM.cur : null, M = C && C.meta;
+  return `
+<div class="scr fade" style="background:var(--n50)">
+  ${navUser ? navUser() : ''}
+  <div class="pad" style="flex:1;padding-top:${isMo()?16:28}px;padding-bottom:24px;width:100%;max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:12px">
+    <div class="card rm-pane rm-guest">
+      <div class="rm-h"><div><b>${esc(M ? M.title : '계약 대화방')}</b>
+        <span class="sub">${M ? `${esc(M.office)} · 나는 ${esc(M.role)}` : ''}</span></div>
+        ${M && M.officePhone ? `<a class="btn tool sm" href="tel:${esc(String(M.officePhone).replace(/[^0-9]/g, ''))}">전화</a>` : ''}</div>
+      ${C && C.err ? `<p class="sub" style="margin:16px">${esc(C.err)}</p>` : !M ? `<p class="sub" style="margin:16px">대화를 불러오는 중입니다…</p>`
+        : `${rm일정HTML(M.steps)}${rm대화HTML(C, v => v.side === M.me)}`}
+    </div>
+    <p class="sub" style="margin:0;font-size:12.5px;line-height:1.6">새 말이 오면 가입하신 메일로 알려 드립니다. 대화는 이 계약을 맡은 중개사무소와 당사자만 봅니다.</p>
+  </div>
+</div>`;
+};
+/* 마이페이지 - 내 계약 대화방 */
+function rm내방HTML(){
+  if(!세션있음()) return '';
+  if(RM.mine == null){ setTimeout(rmMineLoad); return ''; }
+  if(!RM.mine.length) return '';
+  return `<section class="card acc-row"><div class="acc-l"><h2>계약 대화방</h2><p>중개사무소와 잔금까지</p></div><div class="acc-r"><div class="acc-tiles">
+    ${RM.mine.map(r => 마이줄('#/room/' + r.id, esc(r.title), esc(`${r.office} · ${r.role || ''}`), 'M4 5 h16 v11 H9 l-5 4 Z')).join('')}</div></div></section>`;
+}
+
 /* 초안에 의견 남기기 (2026-11-06 · 파트너 기획 [111]) - 당사자 · 공동중개 사무소가 고칠 곳을 적어 보낸다. 다른 분의 의견은 보이지 않는다 */
 function dr의견칸(R){
   const F = CT_FORMS[R.form] || {}, 누구 = [...new Set([(F.a || [])[1], (F.b || [])[1]].filter(Boolean).map(ct짧은이름)), '공동중개 사무소', '기타'];
@@ -13589,6 +13862,7 @@ function ctPlanHTML(doc){
       ${체크('ctk-hb', !!t.hb, '한방에도 입력했습니다', '한방은 자동 올리기 창구가 없어 기록용으로만 체크합니다', '')}
       ${체크('ctk-ec', !!t.ec, '전자계약으로 진행합니다', '국토교통부 전자계약시스템(irts.molit.go.kr)에 입력하는 건 - 목록에 표시됩니다', '')}</div>
     ${ct입력도우미HTML(doc)}
+    ${ct방HTML(doc)}
     ${ct의견HTML()}
     <div class="card pad ct-sec"><h2>체크사항</h2>
       ${체크('ctk-pi', !!t.piAt, '개인정보 수집·이용 동의서를 받았습니다', '부속 서류 탭에서 인쇄해 양쪽 서명을 받습니다 - 받은 날이 적힙니다', t.piAt)}
@@ -15227,6 +15501,10 @@ function render(){
      제안도 쓸 수 없는 계정이 만들어진다(bk_agent_user_idx 는 계정당 하나라 다시
      신청할 수도 없다). 계정을 먼저 만들게 하면 카카오·네이버·구글로도 가입된다 -
      로그인 화면이 이미 그 넷을 다 들고 있다. */
+  /* 계약 대화방은 로그인한 손님만 - 로그인 뒤 그 방으로 돌아온다 */
+  if(h.startsWith('#/room/') && 로그인전()){
+    S.loginAs='guest'; S.afterLogin = h; location.replace('#/login'); return;
+  }
   if(h==='#/partner/join' && 로그인전()){
     S.loginAs='partner'; S.afterLogin='#/partner/join'; location.replace('#/login'); return;
   }
@@ -15286,6 +15564,9 @@ function render(){
   else if(h==='#/partner/contracts' || h.startsWith('#/partner/contracts/')) html = V['#/partner/contracts'](parts[3]);
   else if(h.startsWith('#/partner/contract/')) html = V['#/partner/contract'](parts[3]);
   else if(h.startsWith('#/draft/')) html = V['#/draft'](parts[2]);
+  else if(h.startsWith('#/invite/')) html = V['#/invite'](parts[2]);
+  else if(h.startsWith('#/room/')) html = V['#/room'](parts[2]);
+  else if(h === '#/partner/rooms' || h.startsWith('#/partner/rooms/')) html = V['#/partner/rooms'](parts[3]);
   else if(h==='#/partner/join') html = V['#/partner/join']();
   else if(h==='#/partner/stats') html = V['#/partner/stats']();
   else if(h==='#/partner/settings') html = V['#/partner/settings']();
@@ -16268,6 +16549,7 @@ document.addEventListener('input', e=>{
   if(k === 'ctp-custom'){ if(CT.pick){ CT.pick.custom = el.value; redrawKeepingCaret('ctp-custom'); } return; }
   if(k === 'acc-addr-v'){ if(S.accAddr) S.accAddr.v = el.value; return; }
   /* 초안 의견 칸 - 적는 대로 담기만(다시 그리지 않는다) */
+  if(k === 'rm-text'){ RM.text = el.value; return; }
   if(k === 'dr-name' || k === 'dr-text'){ if(DR.note) DR.note[k === 'dr-name' ? 'name' : 'text'] = el.value; return; }
   const v = MONEY_IN.includes(k) ? money(el) : el.value;
   if(k==='j-phone'){ S.form[k] = autoHyphen(el); refreshJoin(); return; }
@@ -17550,6 +17832,22 @@ function handle(a,v,el){
     case 'ctk-pi':      ctTrackSet({ piAt: ct트랙().piAt ? '' : ct오늘() }); return true;
     case 'dr-who': if(DR.note){ DR.note.who = v; render(); } return true;
     case 'dr-send': drSend(); return true;
+    /* ── 계약 대화방 ── */
+    case 'rm-send': rmSend(); return true;
+    case 'rm-login': S.loginAs='guest'; S.afterLogin = S.route; go('#/login'); return true;
+    case 'rm-join': rmJoin(); return true;
+    case 'rm-invite': rmInvite(v, false); return true;
+    case 'rm-kakao': S.modal = null; rmInvite(v, true); render(); return true;
+    case 'rm-copy': { const m = S.modal; if(m && navigator.clipboard) navigator.clipboard.writeText(m.text).then(() => toast('복사했습니다 - 문자 · 카톡에 붙여 넣으세요'), () => toast('복사하지 못했습니다 - 길게 눌러 복사해 주세요')); return true; }
+    case 'rm-cut': case 'rm-kick': {
+      if(a === 'rm-kick' && CT.rmKick !== v){ CT.rmKick = v; render(); return true; }
+      CT.rmKick = null;
+      ctPost({ what:'room-cut', id: CT.id, ...(a === 'rm-kick' ? { side: v } : {}) }).then(({ ok, j }) => {
+        if(!ok) return toast(j.error || '고치지 못했습니다');
+        CT.track = { ...(CT.track || {}), room: j.room }; RM.list = null; render();
+        toast(a === 'rm-kick' ? `${RM_자리[v]}을 대화방에서 내보냈습니다 - 다시 부르려면 새 초대 링크를 보내세요` : '나간 초대 링크를 모두 끊었습니다');
+      }).catch(() => toast('네트워크 문제로 고치지 못했습니다'));
+      return true; }
     case 'ct-note-read': ctNoteOp('read-all'); return true;
     case 'ct-note-del': if(CT.noteDel !== v){ CT.noteDel = v; render(); return true; } CT.noteDel = null; ctNoteOp('del', v); return true;
     case 'ct-notes-open': CT.mode = 'plan'; render(); setTimeout(() => { const n = document.getElementById('ctNotes'); if(n) n.scrollIntoView({ block:'start', behavior:'smooth' }); }, 60); return true;

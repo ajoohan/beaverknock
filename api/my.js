@@ -8,6 +8,7 @@
 
 import { userFrom, sbHeaders, sbUrl } from './_auth.js';
 import { approvedAgent, meAgent } from './feed.js';
+import { roomGuest, invitePeek } from './_room.js';
 import { logOps } from './_opslog.js';
 
 const KIND_KO = { home: '주거', shop: '상가', office: '오피스', storage: '창고' };
@@ -41,6 +42,8 @@ export default async function handler(req, res) {
      손님·파트너 공통이라 '내 것' 을 다루는 이 자리가 맞다. */
   const body = req.method === 'POST' ? (req.body || {}) : {};
   if (body.what === 'consent') return consent(req, res, user, body);
+  /* 계약진행 대화방 - 손님 쪽 (2026-11-06 · api/_room.js) */
+  if (['invite-join', 'my-rooms', 'my-room', 'my-room-send'].includes(body.what)) return roomGuest(req, res, user, body);
 
   /* 내가 파트너인가.
      ── 왜 여기에 있나 ──

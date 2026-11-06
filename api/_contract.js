@@ -465,6 +465,17 @@ export function trackCheck(t) {
   /* 초안 의견 (2026-11-06 · 파트너 기획 [111] '의견 남기기') - 초안 링크로 연 손님 · 공동중개 사무소가 남긴다 */
   const 의견 = 의견들(t.notes);
   if (의견.length) out.notes = 의견;
+  /* 계약진행 대화방 (2026-11-06 · api/_room.js) - 링크 번호 n 과 자리마다 들어온 손님 계정 */
+  const 방 = 방값(t.room);
+  if (방) out.room = 방;
+  return out;
+}
+const 방자리 = ['seller', 'buyer', 'lessor', 'lessee', 'sublessor', 'subtenant', 'assignor', 'assignee'];
+export function 방값(x) {
+  if (!x || typeof x !== 'object' || Array.isArray(x)) return null;
+  const out = { n: Number.isInteger(x.n) && x.n >= 0 && x.n < 1e6 ? x.n : 0 };
+  for (const k of 방자리) { const v = x[k];
+    if (v && /^[0-9a-f-]{36}$/.test(String(v.uid || ''))) out[k] = { uid: v.uid, at: String(v.at || '').slice(0, 19) }; }
   return out;
 }
 export const 의견누구 = ['매도인', '매수인', '임대인', '임차인', '전대인', '전차인', '양도인', '양수인', '공동중개 사무소', '기타'];
@@ -721,14 +732,15 @@ async function track(res, agent, b) {
      끊은 링크가 다시 열리면 안 된다(2026-11-05 리뷰). 받은 값은 버리고 지금 값을 지킨다 */
   delete t.shareN;
   /* 초안 의견은 화면이 보낸 것으로 덮지 않는다 - 서버에 지금 있는 것을 그대로 둔다(읽음 · 지우기는 contract-note) */
-  delete t.notes; delete t.tv;
+  delete t.notes; delete t.tv; delete t.room;
   /* 읽은 링크 번호가 그대로일 때만 쓴다 - 그 사이 끊기가 번호를 올렸으면 다시 읽는다(2026-11-05 재검토) */
-  const z = await 링크번호지켜쓰기(id, agent, (n, 지금) => ({ ...t, ...(지금.notes ? { notes: 지금.notes } : {}) }));
+  const z = await 링크번호지켜쓰기(id, agent, (n, 지금) => ({ ...t, ...(지금.notes ? { notes: 지금.notes } : {}), ...(지금.room ? { room: 지금.room } : {}) }));
   if (z.res) return z.res(res, '일정을 저장하지 못했습니다');
   return res.status(200).json({ ok: true, track: z.track });
 }
 /* track 을 고쳐 쓴다 - 고침(지금 링크 번호 n) 이 새 track 을 돌려준다. 링크 번호가 읽은 뒤 바뀌었으면 다시 읽어 3번까지.
    돌려주는 값: { track } 또는 { res: (res, 실패말) => 답 } */
+export const track고치기 = (...a) => 링크번호지켜쓰기(...a);
 async function 링크번호지켜쓰기(id, agent, 고침) {
   /* agent 가 null 이면 초안 의견(로그인 없는 쪽) - 계약서 번호만으로 찾는다 */
   const 내것 = agent ? `&agent_id=eq.${agent.id}` : '';

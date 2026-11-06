@@ -14,6 +14,7 @@ import { 날씨 } from './_weather.js';
 import { 서식들, 서식확인, 서식올리기, 서식주소, 서식지우기, 서식최대 } from './_forms.js';
 import { 직원들, 직원고침, 직원사무소, 직원들어옴, 직원역할, 다른사무소직원 } from './_staff.js';
 import { notify } from './_notify.js';
+import { roomAgent, invitePeek } from './_room.js';
 
 const KIND_KO = { home: '주거', shop: '상가', office: '오피스', storage: '창고' };
 
@@ -343,6 +344,12 @@ export default async function handler(req, res) {
     if (!process.env.BK_URL || !process.env.BK_SECRET_KEY) return res.status(503).json({ error: '서버에 환경변수가 설정되지 않았습니다' });
     return draftRead(req, res);
   }
+  /* 대화방 초대 미리 보기(로그인 전에도 링크만으로) - api/_room.js invitePeek */
+  if (req.method === 'GET' && req.query && req.query.invite) {
+    if (!process.env.BK_URL || !process.env.BK_SECRET_KEY) return res.status(503).json({ error: '서버에 환경변수가 설정되지 않았습니다' });
+    if (overLimit('invite:' + String((req.headers && (req.headers['x-forwarded-for'] || '')) || '').split(',')[0].trim(), 60, 600e3)) return res.status(429).json({ error: '잠시 뒤 다시 열어 주세요' });
+    return invitePeek(res, req.query.invite);
+  }
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST 만 받습니다' });
   /* 초안에 의견 남기기 - 로그인 없이 서명된 표로(api/_contract.js draftNote) */
   if (req.query && req.query.draft) {
@@ -378,6 +385,11 @@ export default async function handler(req, res) {
   const 직원 = chk.agent && chk.agent.staff;
   if (직원 && 대표만(b.what)) return res.status(403).json({ error: '대표만 할 수 있습니다' });
   if (직원 && 직원.role === 'assistant' && 계약기능(b.what)) return res.status(403).json({ error: '중개보조원은 계약서 기능을 쓸 수 없습니다' });
+  /* 계약진행 대화방 (2026-11-06 · api/_room.js) - 보조원도 대화는 한다(초대 · 내보내기는 _room.js 가 막는다) */
+  if (['rooms', 'room', 'room-send', 'room-invite', 'room-cut'].includes(b.what)) {
+    if (chk.agent.role !== 'agent') return res.status(403).json({ error: '공인중개사 사무소만 쓸 수 있습니다' });
+    return roomAgent(req, res, chk.agent, user, b);
+  }
   if (b.what === 'staff')      return readStaff(res, chk.agent);
   if (b.what === 'staff-save') return saveStaff(req, res, chk.agent, user, b);
 

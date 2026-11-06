@@ -56,7 +56,8 @@ export async function alimtalk({ to, template, vars }) {
       to: 번호, from,
       kakaoOptions: {
         pfId, templateId,
-        variables: Object.fromEntries(Object.entries(vars || {}).map(([k, v]) => [`#{${k}}`, String(v ?? '').slice(0, 60)])),
+        /* 글 변수는 60자로 자른다. 버튼 주소에 들어가는 초대 표(#{표})만 길게 - 자르면 링크가 깨진다 */
+        variables: Object.fromEntries(Object.entries(vars || {}).map(([k, v]) => [`#{${k}}`, String(v ?? '').slice(0, k === '표' ? 200 : 60)])),
         /* 알림톡이 안 가면 문자로 대신 보내지 않는다 - 문자는 건당 요금이 따로 들고, 메일이 이미 간다 */
         disableSms: true,
       },

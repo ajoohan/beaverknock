@@ -33,15 +33,15 @@ ok(동호('미사강변대로 220, 101동 1203호').dong === '101' && 동호('�
   ok(/법정동코드/.test((await 건축물대장({ admCd:'', bun:'1' }, 'k', f)).error) && /연결되지/.test((await 건축물대장({ admCd:'4145010300', bun:'1' }, '', f)).error),
      '법정동코드가 없거나 키가 없으면 포털에 묻지 않는다');
 }
-{ const f = async u => /nsdi\/LandCharacteristics/.test(u)
+{ const f = async u => /getLandCharacteristics/.test(u)
     ? new Response(JSON.stringify({ landCharacteristicss: { field: [{ stdrYear: '2025', lndcgrCodeNm: '대', lndpclAr: '1200.5', prposArea1Nm: '제2종일반주거지역', pblntfPclnd: '5230000' }, { stdrYear: '2024', lndcgrCodeNm: '전', pblntfPclnd: '1' }] } }))
-    : /nsdi\/LandUse/.test(u) ? new Response(JSON.stringify({ landUses: { field: [{ prposAreaDstrcCodeNm: '제2종일반주거지역' }, { prposAreaDstrcCodeNm: '토지거래계약에관한허가구역' }, { prposAreaDstrcCodeNm: '가축사육제한구역' }] } }))
+    : /getLandUseAttr/.test(u) ? new Response(JSON.stringify({ landUses: { field: [{ prposAreaDstrcCodeNm: '제2종일반주거지역' }, { prposAreaDstrcCodeNm: '토지거래계약에관한허가구역' }, { prposAreaDstrcCodeNm: '가축사육제한구역' }] } }))
     : 답([]);
-  const o = await 건축물대장({ admCd:'4145010300', bun:'5', ji:'', mount:false }, 'k', f);
+  const o = await 건축물대장({ admCd:'4145010300', bun:'5', ji:'', mount:false }, 'k', f, 'vk');
   ok(o.kinds[0] === 'land' && o.scan.landCat === '대' && o.scan.landArea === 1200.5 && o.scan.zone === '제2종일반주거지역' && o.scan.landPrice === 5230000 && o.scan.landPriceYear === '2025' && o.scan.permitZone === true && /가축사육제한구역/.test(o.scan.district),
      '토지 - 건물이 없으면 토지특성(최근 해) · 토지이용계획(허가구역)만으로 채운다');
-  let 본 = ''; await 건축물대장({ admCd:'4145010300', bun:'5', ji:'12', mount:true }, 'k', async u => { if (/nsdi/.test(u)) 본 = String(u); return /nsdi/.test(u) ? new Response('{}') : 답([]); }).catch(() => {});
-  ok(/pnu=4145010300200050012/.test(본), 'PNU = 법정동코드 + 산(2) + 본번 4 + 부번 4');
+  let 본 = ''; await 건축물대장({ admCd:'4145010300', bun:'5', ji:'12', mount:true }, 'k', async u => { if (/vworld/.test(u)) 본 = String(u); return /vworld/.test(u) ? new Response('{}') : 답([]); }, 'vk').catch(() => {});
+  ok(/pnu=4145010300200050012/.test(본) && /api\.vworld\.kr\/ned\/data\/getLand/.test(본) && /key=vk&domain=beaverknock\.co\.kr/.test(본), 'PNU = 법정동코드 + 산(2) + 본번 4 + 부번 4 · 브이월드 키와 도메인');
 }
 ok(/case 'contract-bld':\s+await 대장\(req, res, agent, b\);/.test(fs.readFileSync(path.resolve(길.저장소, 'api/_contract.js'), 'utf8')) && /ctApplyScan\(CT\.doc, j\.scan, j\.kinds \|\| \['bld'\], true\)/.test(js) && /data-act="ct-bld-go"/.test(js),
    '화면 - 소재지를 고르면 ‘주소로 건축물대장 불러오기’ · 빈칸만 채운다');

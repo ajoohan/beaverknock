@@ -2452,13 +2452,25 @@ body:not(.mo) .ctx-sub{flex:1 1 0;min-width:0;overflow:hidden;text-overflow:elli
 }
 
 /* ── 대시보드 틀 (2026-10-29 대표님 시안) ── 넓은 화면만. 휴대폰은 위 머리 + 아래 탭 */
-:root{--dzbg:#F3F3FA;--dzside:var(--ind);--dzsh:0 14px 34px -20px rgba(36,32,110,.30)}
+:root{--dzbg:#ECECF4;--dzside:var(--ind);--dzsh:0 14px 34px -20px rgba(36,32,110,.30);
+  --dzcard-line:#E1E0EB;--dzcard-sh:0 1px 2px rgba(29,28,42,.05), 0 10px 26px -14px rgba(40,42,110,.18)}
+/* 본문 바탕과 카드 · 표를 가른다 (2026-11-06 대표님 '배경과 표 영역 색 구분이 없어 이상해') - 바탕을 한 단계 내리고, 흰 카드에 또렷한 테두리 · 그림자 */
+body:not(.mo) .dz-scr .card, body:not(.mo) .scr:has(> .psb) .card, body:not(.mo) .scr:has(> .psb) .ctw,
+body:not(.mo) .scr:has(> .psb) .ct-sum-c, body:not(.mo) .scr:has(> .psb) .ctx-side{border:1px solid var(--dzcard-line);box-shadow:var(--dzcard-sh)}
+body:not(.mo) .scr:has(> .psb) .ctw-q{border-color:var(--dzcard-line);box-shadow:0 1px 2px rgba(29,28,42,.05)}
+/* 계약서 입력 판 안의 구획은 카드가 아니라 가는 선으로 나눈 한 판 - 위 규칙에서 빼낸다(상자 이중 방지) */
+body:not(.mo) .scr:has(> .psb) .ctx-side .card{border:0;box-shadow:none}
+body:not(.mo) .scr:has(> .psb) .ctx-side .ct-sec + .ct-sec{border-top:1px solid var(--n100)}
+/* 미리보기 책상은 바탕보다 한 단계 더 - 흰 종이가 떠 보이게 */
+body:not(.mo) .scr:has(> .psb) .ctx-desk{background:#E3E2EC;border-color:var(--dzcard-line)}
 body:not(.mo) .dz-scr, body:not(.mo) .scr:has(> .psb){display:grid;grid-template-columns:200px minmax(0,1fr);
   grid-auto-rows:min-content;align-items:start;background:var(--dzbg)!important;min-height:100%}
 body:not(.mo) .dz-scr > :not(.dz-side), body:not(.mo) .scr:has(> .psb) > :not(.psb){grid-column:2;min-width:0}
 .dz-side{grid-column:1;grid-row:1 / span 60;position:sticky;top:12px;margin:12px 0 12px 12px;height:calc(100vh - 24px);
   display:flex;flex-direction:column;gap:2px;padding:18px 8px 12px;border-radius:16px;background:var(--dzside);color:#fff;
-  overflow-y:auto;box-shadow:0 22px 44px -26px rgba(36,32,110,.55)}
+  overflow-y:auto;box-shadow:0 22px 44px -26px rgba(36,32,110,.55);scrollbar-width:none}
+/* 메뉴 스크롤바는 감춘다 - 스크롤은 그대로 된다(대표님 '두꺼워 · 다들 스크롤 되는지 안다') */
+.dz-side::-webkit-scrollbar{display:none}
 .dz-logo{display:flex;align-items:center;flex-wrap:wrap;gap:6px;padding:2px 6px 18px}   /* 좁은 메뉴(계약서 편집 180px)에서는 꼬리표가 로고 아래로 - 잘리지 않게 */
 .dz-tag{font-size:13px;font-weight:700;padding:3px 9px;border-radius:999px;background:rgba(255,255,255,.12);color:#fff}
 .dz-menu{display:flex;flex-direction:column;gap:3px}
@@ -10904,6 +10916,10 @@ const CT_하위메뉴 = [['#/partner/contracts/new', '계약서 작성', 'pen', 
    번호는 배포한 날(연.월.일 - 같은 날 또 올리면 뒤에 .2). 화면이 version.json 을 가끔 읽어,
    더 새 버전이 올라와 있으면 메뉴 아래에서 새로고침을 권한다(버전확인) - 계약서를 띄워 둔 채 오래 일하면 고친 화면을 못 받는다 */
 const BK_변경 = [
+  { v:'26.11.06.9', 날:'2026-11-06', 줄:[
+    '화면 - 왼쪽 메뉴의 스크롤바를 감췄습니다(스크롤은 그대로 됩니다)',
+    '화면 - 본문 바탕을 한 단계 진하게, 카드 · 표에 또렷한 테두리와 그림자를 줘 영역이 갈라 보입니다 · 계약서 미리보기 책상도 한 단계 진하게',
+    '주소로 토지 불러오기는 브이월드 인증키를 넣으면 켜집니다(공공데이터포털의 토지 서비스가 폐기됨)' ] },
   { v:'26.11.06.8', 날:'2026-11-06', 줄:[
     '주소로 불러오기에 토지도 - 지목 · 면적 · 용도지역 · 지역지구 · 개별공시지가 · 토지거래허가구역 여부(건물이 없는 땅도)',
     '계약서 목록 - 줄에 마우스를 올리면 ‘복사’ 단추(PC) · 소속공인중개사로 ‘담당’ 거르기 · ‘동의서’ 표시',

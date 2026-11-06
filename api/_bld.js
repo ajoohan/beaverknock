@@ -45,7 +45,14 @@ export async function 건축물대장(b, 키 = process.env.DATA_GO_KEY, fetchFn 
   if (!키) return { error: '건축물대장 자동 조회가 아직 연결되지 않았습니다 - 건축물대장을 올려 주세요' };
   const 곳 = { sigunguCd: admCd.slice(0, 5), bjdongCd: admCd.slice(5), platGbCd: b.mount ? '1' : '0', bun: 네자리(b.bun), ji: 네자리(b.ji) };
   const { dong, ho } = 동호(b.unit || b.road);
-  const 표제 = await 묻기('getBrTitleInfo', 곳, 키, fetchFn);
+  let 표제;
+  try { 표제 = await 묻기('getBrTitleInfo', 곳, 키, fetchFn); }
+  catch (e) {
+    /* 건축물대장 쪽이 막혀도(한도 · 지연) 토지만이라도 */
+    const 땅 = e instanceof 포털오류 ? await 토지(b, 토지키, fetchFn).catch(() => null) : null;
+    if (!땅) throw e;
+    return { scan: { ...땅, warnings: [`건축물대장은 불러오지 못했습니다(${e.message}) - 토지 값만 넣었습니다`, ...(땅.permitZone ? ['토지거래허가구역입니다 - 일정 · 체크에서 토지거래허가 단계를 기록하세요'] : [])] }, kinds: ['land'] };
+  }
   if (!표제.length) {
     /* 건물이 없는 땅(토지 매매 등) - 토지 값만이라도 */
     const 땅 = await 토지(b, 토지키, fetchFn).catch(() => null);
@@ -101,7 +108,7 @@ export async function 건축물대장(b, 키 = process.env.DATA_GO_KEY, fetchFn 
  * PNU = 법정동코드 10 + 산(1 일반 · 2 산) + 본번 4 + 부번 4. 활용신청을 안 했거나 실패하면 null - 건축물대장 결과는 그대로 쓴다 */
 const 토지바탕 = 'https://api.vworld.kr/ned/data/';
 export const 필지번호 = b => `${글(b.admCd)}${b.mount ? '2' : '1'}${네자리(b.bun)}${네자리(b.ji)}`;
-async function 토지묻기(path, 키, pnu, fetchFn) {
+async function 토지묻기(path, 키, pnu, fetchFn, 사유) {
   const p = new URLSearchParams({ key: 키, domain: 'beaverknock.co.kr', pnu, format: 'json', numOfRows: '100', pageNo: '1' });
   let t = '';
   try {
@@ -111,36 +118,45 @@ async function 토지묻기(path, 키, pnu, fetchFn) {
     /* { landCharacteristicss: { field: [...] } } 처럼 묶음 이름 아래 field 목록 */
     const 묶음 = Object.values(j || {}).find(v => v && typeof v === 'object' && 'field' in v);
     const f = 묶음 && 묶음.field;
-    if (!묶음) 토지사유.push(`${path.split('/')[0]}: ${t.replace(/\s+/g, ' ').slice(0, 160)}`);
+    if (!묶음) 사유.push(`${path.split('/')[0]}: ${t.replace(/\s+/g, ' ').slice(0, 160)}`);
     return Array.isArray(f) ? f : f ? [f] : [];
-  } catch (e) { 토지사유.push(`${path.split('/')[0]}: ${(t || String(e && e.message || e)).replace(/\s+/g, ' ').slice(0, 160)}`); return null; }
+  } catch (e) { 사유.push(`${path.split('/')[0]}: ${(t || String(e && e.message || e)).replace(/\s+/g, ' ').slice(0, 160)}`); return null; }
 }
-/* 실패 까닭(포털 답 앞부분) - 활용신청 전인지 가린다. 키는 답에 들어 있지 않다 */
-export const 토지사유 = [];
 /* 브이월드는 해외 IP 를 막는다 - 서버 함수(미국)에서 부르면 502. 서울(icn1)에서 도는 api/agent-verify.js(what:'land')를 거친다(경유).
    경유 열쇠는 서버 비밀값에서 나온다. 검사 · 로컬은 바로 부른다 */
 export const 토지열쇠 = () => crypto.createHash('sha256').update('bk-land|' + String(process.env.BK_SECRET_KEY || ''), 'utf8').digest('hex');
+/* 실패 까닭(브이월드 답 앞부분)은 요청마다 따로 모은다 - 함수 인스턴스는 여러 요청을 함께 받는다 */
 export async function 토지원자료(pnu, 키, fetchFn = fetch) {
+  const why = [];
   const [특성, 이용] = await Promise.all([
-    토지묻기('getLandCharacteristics', 키, pnu, fetchFn),
-    토지묻기('getLandUseAttr', 키, pnu, fetchFn)]);
-  return { 특성, 이용 };
+    토지묻기('getLandCharacteristics', 키, pnu, fetchFn, why),
+    토지묻기('getLandUseAttr', 키, pnu, fetchFn, why)]);
+  return { 특성, 이용, why: why.slice(0, 2) };
 }
-async function 토지경유(pnu, fetchFn) {
-  try {
-    const r = await fetchFn(process.env.BK_LAND_URL || 'https://beaverknock.co.kr/api/agent-verify', { method: 'POST', signal: AbortSignal.timeout(9000),
-      headers: { 'Content-Type': 'application/json', 'x-bk-land': 토지열쇠() }, body: JSON.stringify({ what: 'land', pnu }) });
-    const j = await r.json().catch(() => ({}));
-    if (!r.ok) { 토지사유.push(`land: ${r.status} ${String(j.error || '').slice(0, 120)}`); return { 특성: null, 이용: null }; }
-    if (Array.isArray(j.why)) 토지사유.push(...j.why.slice(0, 2));
-    return { 특성: j.특성 ?? null, 이용: j.이용 ?? null };
-  } catch (e) { 토지사유.push('land: ' + String(e && e.message || e).slice(0, 120)); return { 특성: null, 이용: null }; }
+/* 미리보기 배포는 제 주소(VERCEL_URL)를 먼저 - 보호(401 · 403)에 막히면 운영 주소로 */
+async function 토지경유(pnu, fetchFn, 사유) {
+  const 운영 = process.env.BK_LAND_URL || 'https://beaverknock.co.kr/api/agent-verify';
+  const 주소들 = process.env.VERCEL_ENV && process.env.VERCEL_ENV !== 'production' && process.env.VERCEL_URL ? [`https://${process.env.VERCEL_URL}/api/agent-verify`, 운영] : [운영];
+  for (const u of 주소들) {
+    try {
+      const r = await fetchFn(u, { method: 'POST', signal: AbortSignal.timeout(9000),
+        headers: { 'Content-Type': 'application/json', 'x-bk-land': 토지열쇠() }, body: JSON.stringify({ what: 'land', pnu }) });
+      if ((r.status === 401 || r.status === 403) && u !== 운영) continue;
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) { 사유.push(`land: ${r.status} ${String(j.error || '').slice(0, 120)}`); return { 특성: null, 이용: null }; }
+      if (Array.isArray(j.why)) 사유.push(...j.why.slice(0, 2));
+      return { 특성: j.특성 ?? null, 이용: j.이용 ?? null };
+    } catch (e) { 사유.push('land: ' + String(e && e.message || e).slice(0, 120)); if (u === 운영) return { 특성: null, 이용: null }; }
+  }
+  return { 특성: null, 이용: null };
 }
-export async function 토지(b, 키 = process.env.VWORLD_KEY, fetchFn = fetch, 경유 = !!process.env.VERCEL) {
+export async function 토지(b, 키 = process.env.VWORLD_KEY, fetchFn = fetch, 경유 = !!process.env.VERCEL, 사유 = []) {
   if (!키 || !/^\d{10}$/.test(글(b.admCd)) || !/^\d{1,4}$/.test(글(b.bun))) return null;
   const pnu = 필지번호(b);
-  const { 특성, 이용 } = 경유 ? await 토지경유(pnu, fetchFn) : await 토지원자료(pnu, 키, fetchFn);
-  if (!특성 && !이용) return null;
+  const { 특성, 이용, why } = 경유 ? await 토지경유(pnu, fetchFn, 사유) : await 토지원자료(pnu, 키, fetchFn);
+  if (why) 사유.push(...why);
+  /* 실패는 서버 기록에만 - 화면에는 바깥 서비스 오류 글을 내보내지 않는다 */
+  if (!특성 && !이용) { if (사유.length) console.warn('토지 조회 실패', pnu.slice(0, 10), 사유.slice(0, 2)); return null; }
   /* 해마다 한 줄 - 가장 최근 해 */
   const 최근 = (특성 || []).slice().sort((a, c) => String(c.stdrYear || '').localeCompare(String(a.stdrYear || '')))[0] || {};
   const 지역지구 = [...new Set((이용 || []).map(x => 글(x.prposAreaDstrcCodeNm)).filter(Boolean))];
@@ -149,7 +165,7 @@ export async function 토지(b, 키 = process.env.VWORLD_KEY, fetchFn = fetch, �
     landCat: 글(최근.lndcgrCodeNm), landArea: 수(최근.lndpclAr),
     zone: 용도[0] || [글(최근.prposArea1Nm), 글(최근.prposArea2Nm)].filter(x => x && x !== '지정되지않음').join(' · '),
     /* 80자 안에서 이름 단위로 자른다(중간에서 끊지 않는다) */
-    district: 지역지구.filter(n => !용도.includes(n)).reduce((a, n) => (a ? a + ' · ' + n : n).length <= 80 ? (a ? a + ' · ' + n : n) : a, ''),
+    district: (() => { let a = ''; for (const n of 지역지구.filter(x => !용도.includes(x))) { const 다음 = a ? `${a} · ${n}` : n; if (다음.length > 80) break; a = 다음; } return a; })(),
     landPrice: 수(최근.pblntfPclnd), landPriceYear: 글(최근.stdrYear),
     permitZone: 지역지구.some(n => /토지거래(계약에관한)?허가구역/.test(n.replace(/\s/g, ''))),
   };

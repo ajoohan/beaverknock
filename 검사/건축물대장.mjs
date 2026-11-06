@@ -48,6 +48,20 @@ ok(동호('미사강변대로 220, 101동 1203호').dong === '101' && 동호('�
   ok(o && o.landCat === '대' && /\/api\/agent-verify$/.test(본.u) && JSON.parse(본.op.body).what === 'land' && 본.op.headers['x-bk-land'].length === 64 && JSON.parse(본.op.body).pnu === '4145010300100050000' && !/vk/.test(본.op.body),
      '서버(미국)에서는 서울 함수(agent-verify what:land)를 거친다 - 열쇠는 서버 비밀값에서, 브이월드 키는 보내지 않는다');
 }
+{ /* 코드리뷰 11-06 (2) */
+  const 땅답 = u => /getLandCharacteristics/.test(u) ? new Response(JSON.stringify({ landCharacteristicss: { field: [{ stdrYear: '2025', lndcgrCodeNm: '전', lndpclAr: '300' }] } }))
+    : /getLandUseAttr/.test(u) ? new Response(JSON.stringify({ landUses: { field: ['가'.repeat(30) + '지구', '나'.repeat(60) + '지구', '다지구'].map(n => ({ prposAreaDstrcCodeNm: n })) } })) : null;
+  const 막힘 = async u => 땅답(String(u)) || new Response('<x>SERVICE_KEY_IS_NOT_REGISTERED_ERROR</x>');
+  const o = await 건축물대장({ admCd:'4145010300', bun:'5' }, 'k', 막힘, 'vk');
+  ok(o.kinds[0] === 'land' && o.scan.landCat === '전' && /건축물대장은 불러오지 못했습니다/.test(o.scan.warnings[0]), '건축물대장 쪽이 막혀도 토지 값은 넣는다');
+  ok(o.scan.district === '가'.repeat(30) + '지구', '지역지구는 80자를 넘는 이름에서 멈춘다(뒤의 짧은 이름을 건너붙이지 않는다)');
+  const 원 = fs.readFileSync(path.resolve(길.저장소, 'api/_bld.js'), 'utf8');
+  ok(!/export const 토지사유/.test(원) && !/landWhy/.test(fs.readFileSync(path.resolve(길.저장소, 'api/_contract.js'), 'utf8')), '실패 까닭은 요청마다 따로 · 화면 답에는 싣지 않는다');
+  process.env.VERCEL_ENV = 'preview'; process.env.VERCEL_URL = 'pv.vercel.app'; const 간곳 = [];
+  await 토지({ admCd:'4145010300', bun:'5' }, 'vk', async u => { 간곳.push(String(u)); return /pv\.vercel/.test(u) ? new Response('', { status: 401 }) : new Response(JSON.stringify({ 특성: [], 이용: [] })); }, true);
+  ok(/pv\.vercel\.app/.test(간곳[0]) && /beaverknock\.co\.kr/.test(간곳[1]), '미리보기는 제 주소 먼저, 보호에 막히면 운영 주소');
+  delete process.env.VERCEL_ENV; delete process.env.VERCEL_URL;
+}
 ok(/case 'contract-bld':\s+await 대장\(req, res, agent, b\);/.test(fs.readFileSync(path.resolve(길.저장소, 'api/_contract.js'), 'utf8')) && /ctApplyScan\(CT\.doc, j\.scan, j\.kinds \|\| \['bld'\], true\)/.test(js) && /data-act="ct-bld-go"/.test(js),
    '화면 - 소재지를 고르면 ‘주소로 건축물대장 불러오기’ · 빈칸만 채운다');
 console.log(`${ran - fail} 통과 / ${fail} 실패`);

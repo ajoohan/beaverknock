@@ -29,7 +29,7 @@
  *   JUSO_KEY      도로명주소 검색 승인키 (business.juso.go.kr · 무료·즉시)
  */
 
-import { 토지원자료, 토지열쇠, 토지사유 } from './_bld.js';
+import { 토지원자료, 토지열쇠 } from './_bld.js';
 import { sameSecret } from './_auth.js';
 import { findByKey, findByName, STATE_NM, STD_DATE } from './_brokers.js';
 
@@ -276,9 +276,7 @@ export default async function handler(req, res) {
     const pnu = String(b.pnu || '');
     if (!/^\d{19}$/.test(pnu)) return res.status(400).json({ error: 'PNU 모양이 아닙니다' });
     if (!process.env.VWORLD_KEY) return res.status(503).json({ error: 'VWORLD_KEY 없음' });
-    토지사유.length = 0;
-    const o = await 토지원자료(pnu, process.env.VWORLD_KEY);
-    return res.status(200).json({ ...o, why: 토지사유.splice(0).slice(0, 2) });
+    return res.status(200).json(await 토지원자료(pnu, process.env.VWORLD_KEY));
   }
 
   /* 번호 조회도 몰아치면 늦춘다 - 매번 명부 10만 건을 훑고 경기 API 를 부른다 (2026-11-03 보안점검) */

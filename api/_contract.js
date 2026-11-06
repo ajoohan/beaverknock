@@ -476,6 +476,10 @@ export function 방값(x) {
   const out = { n: Number.isInteger(x.n) && x.n >= 0 && x.n < 1e6 ? x.n : 0 };
   for (const k of 방자리) { const v = x[k];
     if (v && /^[0-9a-f-]{36}$/.test(String(v.uid || ''))) out[k] = { uid: v.uid, at: String(v.at || '').slice(0, 19) }; }
+  /* 자리마다 끊은 횟수(c) - 한 손님을 내보내도 다른 당사자의 초대 링크는 살아 있게 (2026-11-07) */
+  if (x.c && typeof x.c === 'object' && !Array.isArray(x.c)) { const c = {};
+    for (const k of 방자리) if (Number.isInteger(x.c[k]) && x.c[k] > 0 && x.c[k] < 1e6) c[k] = x.c[k];
+    if (Object.keys(c).length) out.c = c; }
   return out;
 }
 export const 의견누구 = ['매도인', '매수인', '임대인', '임차인', '전대인', '전차인', '양도인', '양수인', '공동중개 사무소', '기타'];

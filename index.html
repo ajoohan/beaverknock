@@ -2756,6 +2756,18 @@ body.mo .rm-msgs{max-height:58vh}
 .rm-inv li b{font-size:14.5px;color:var(--n900)}
 .rm-inv li small{font-size:13px;color:var(--n500)}
 .rm-invite{display:flex;flex-direction:column}
+.rm-h > .rm-hb{display:flex;flex-direction:row;gap:6px;flex:none}
+.rm-invb{display:flex;gap:6px;flex:none}
+.rm-li small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rm-pane > .rm-msgs{min-height:0}
+/* 휴대폰 - 방을 열면 화면 높이에 맞춰 쓰는 칸이 늘 보이게 (2026-11-07) */
+body.mo .rm-lay.has .rm-pane{height:calc(100dvh - 190px);min-height:400px}
+body.mo .rm-guest{height:calc(100dvh - 175px);min-height:400px}
+body.mo .rm-lay.has .rm-msgs, body.mo .rm-guest .rm-msgs{max-height:none;min-height:120px}
+body.mo .rm-steps{flex-wrap:nowrap;padding:10px 14px;gap:6px}
+body.mo .rm-steps li{flex:1 1 0;min-width:0;padding:5px 8px}
+body.mo .rm-steps li span{font-size:13px;white-space:nowrap}
+body.mo .rm-h{padding:12px 14px}
 .dz-q:hover{background:var(--ind50);border-color:var(--ind200)}
 .dz-q::after{content:"";margin-left:auto;width:6px;height:6px;border-top:1.5px solid var(--n500);border-right:1.5px solid var(--n500);transform:rotate(45deg)}
 /* 제안 흐름 - 옆 칸 높이만큼 그래프가 늘어난다(카드 아래 빈칸 없이) */
@@ -11070,7 +11082,8 @@ function adm위치(h){
   if(h.startsWith('#/partner/listing/')) return [['영업'], 물건, ['물건 보기']];
   if(h === '#/partner/proposals') return [['영업'], ['내 제안']];
   if(h === '#/partner/rooms') return [['영업'], ['손님 대화']];
-  if(h.startsWith('#/partner/rooms/')) return [['영업'], ['손님 대화', '#/partner/rooms'], [((RM.list || []).find(r => r.id === h.split('/')[3]) || {}).title || '대화방']];
+  if(h.startsWith('#/partner/rooms/')){ const [, , , 번호, 자리] = h.split('/'); const 줄 = (RM.list || []).find(r => r.id === 번호 && (!자리 || r.side === 자리)) || {};
+    return [['영업'], ['손님 대화', '#/partner/rooms'], [`${줄.title || '대화방'}${자리 && RM_자리[자리] ? ' · ' + RM_자리[자리] : ''}`]]; }
   if(h === '#/partner/stats') return [['내 사무소'], ['성과']];
   if(h === '#/partner/settings') return [['내 사무소'], ['활동 설정']];
   return [];
@@ -11088,6 +11101,12 @@ const CT_하위메뉴 = [['#/partner/contracts/new', '계약서 작성', 'pen', 
    번호는 배포한 날(연.월.일 - 같은 날 또 올리면 뒤에 .2). 화면이 version.json 을 가끔 읽어,
    더 새 버전이 올라와 있으면 메뉴 아래에서 새로고침을 권한다(버전확인) - 계약서를 띄워 둔 채 오래 일하면 고친 화면을 못 받는다 */
 const BK_변경 = [
+  { v:'26.11.07', 날:'2026-11-07', 줄:[
+    '손님 대화방을 당사자마다 따로 - 매도인 방 · 매수인 방이 나뉘고 중개사만 양쪽을 봅니다. 손님은 상대 당사자의 말을 보지 못합니다',
+    '한 손님을 내보내도 다른 당사자의 초대 링크는 그대로 · 모두 끊기는 따로',
+    '새 말 확인이 한 번 실패해도 대화가 가려지지 않습니다 · 손님 대화 목록은 30초마다, 초대하면 바로 새로',
+    '휴대폰 - 방에서 목록으로 돌아가는 단추 · 쓰는 칸이 늘 화면 안에 · 예전 말을 읽는 중이면 아래로 끌어내리지 않습니다',
+  ]},
   { v:'26.11.06.18', 날:'2026-11-06', 줄:[
     '계약진행 대화방 - 날인본 계약서의 일정·체크 탭에서 당사자마다 초대 링크를 보내면, 손님이 로그인해 대화방에 들어옵니다',
     '손님 대화(왼쪽 메뉴) - 계약별 대화방 · 계약일 · 중도금 · 잔금 일정 · 새 말이 오면 메일(10분에 한 통)',
@@ -12587,7 +12606,7 @@ V['#/draft'] = tok => {
    손님은 링크(#/invite/표)를 열고 로그인하면 그 계약의 방(#/room/번호)에 들어온다. 중개사는 '손님 대화'(#/partner/rooms)에서 본다.
    방에는 계약 요약 · 다가오는 일정 · 대화만 - 계약서 원문 · 다른 당사자 연락처는 보이지 않는다. 8초마다 새 말을 받아 온다 */
 const RM_자리 = { seller:'매도인', buyer:'매수인', lessor:'임대인', lessee:'임차인', sublessor:'전대인', subtenant:'전차인', assignor:'양도인', assignee:'양수인' };
-const RM = { list:null, listLoading:false, listErr:'', need:'', cur:null, text:'', busy:false, inv:null, mine:null, mineLoading:false };
+const RM = { list:null, listAt:0, listLoading:false, listErr:'', need:'', cur:null, text:'', busy:false, inv:null, mine:null, mineLoading:false };
 const rm손님 = () => (S.route || '').startsWith('#/room/');
 function rmPost(body){
   const 곳 = /^(invite-join|my-)/.test(body.what) ? '/api/my' : '/api/feed';
@@ -12596,30 +12615,40 @@ function rmPost(body){
 const rm때 = t => { const d = new Date(t); if(isNaN(d)) return ''; const k = new Date(d.getTime() + 9 * 3600e3).toISOString();
   const 오늘 = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
   return k.slice(0, 10) === 오늘 ? k.slice(11, 16) : `${+k.slice(5, 7)}.${+k.slice(8, 10)} ${k.slice(11, 16)}`; };
-/* 방 하나 읽기 - 처음엔 전부, 다음부터는 마지막 번호 뒤만 */
-function rmLoad(id, 처음){
-  if(!RM.cur || RM.cur.id !== id) RM.text = '';   /* 방을 옮기면 쓰던 글은 그 방에 두지 않는다 */
-  const C = RM.cur && RM.cur.id === id ? RM.cur : (RM.cur = { id, rows:[], meta:null, loading:false, err:'', last:0 });
+const rm준비말 = j => /^003[45]$/.test((j && j.need) || '') ? '대화방을 준비 중입니다 - 곧 열립니다' : '';
+/* 방 하나 - 당사자마다 따로(2026-11-07). 중개사는 계약서 + 당사자(side), 손님은 계약서만(서버가 내 자리를 안다) */
+const rm열쇠 = (id, side) => id + (side ? '/' + side : '');
+/* 예전 말을 올려 읽는 중이면 새 말이 와도 끌어내리지 않는다 */
+const rm아래쪽 = () => { const b = document.querySelector('.rm-msgs'); return !b || b.scrollHeight - b.scrollTop - b.clientHeight < 80; };
+const rm아래로 = () => setTimeout(() => { const b = document.querySelector('.rm-msgs'); if(b) b.scrollTop = b.scrollHeight; }, 0);
+function rmLoad(id, 처음, side){
+  const 키 = rm열쇠(id, side);
+  if(!RM.cur || RM.cur.key !== 키) RM.text = '';   /* 방을 옮기면 쓰던 글은 그 방에 두지 않는다 */
+  const C = RM.cur && RM.cur.key === 키 ? RM.cur : (RM.cur = { key: 키, id, side: side || '', rows:[], meta:null, loading:false, err:'', last:0 });
   if(C.loading) return;
   C.loading = true;
   const 손님 = rm손님();
-  rmPost({ what: 손님 ? 'my-room' : 'room', id, after: 처음 ? 0 : C.last }).then(({ ok, j }) => {
+  rmPost({ what: 손님 ? 'my-room' : 'room', id, ...(손님 ? {} : { side }), after: 처음 ? 0 : C.last }).then(({ ok, j, status }) => {
     C.loading = false;
-    if(!ok){ C.err = j.need === '0034' ? '대화방을 준비 중입니다 - 곧 열립니다' : (j.error || '대화방을 열지 못했습니다'); render(); return; }
+    if(!ok){
+      /* 8초마다 새 말 확인이 한 번 실패했다고 대화를 가리지 않는다 - 처음 열 때와 내보내진 때(403 · 404)만 알린다 */
+      if(처음 || !C.meta || status === 403 || status === 404){ C.err = rm준비말(j) || j.error || '대화방을 열지 못했습니다'; render(); }
+      return;
+    }
+    const 아래였나 = rm아래쪽();
     C.err = ''; C.meta = j;
     const 새 = (j.rows || []).filter(v => v.id > C.last);
     if(처음) C.rows = j.rows || []; else C.rows = C.rows.concat(새);
     C.last = C.rows.length ? C.rows[C.rows.length - 1].id : C.last;
-    if(처음 || 새.length){ render(); rm아래로(); }
-  }).catch(() => { C.loading = false; if(처음){ C.err = '네트워크 문제로 대화방을 열지 못했습니다'; render(); } });
+    if(처음 || 새.length){ render(); if(처음 || 아래였나 || C.보냄){ C.보냄 = false; rm아래로(); } }
+  }).catch(() => { C.loading = false; if(처음 && !C.meta){ C.err = '네트워크 문제로 대화방을 열지 못했습니다'; render(); } });
 }
-const rm아래로 = () => setTimeout(() => { const b = document.querySelector('.rm-msgs'); if(b) b.scrollTop = b.scrollHeight; }, 0);
 function rmListLoad(){
   if(RM.listLoading || !세션있음()) return;
   RM.listLoading = true;
-  rmPost({ what:'rooms' }).then(({ ok, j }) => { RM.listLoading = false;
-    if(ok){ RM.list = j.rows || []; RM.listErr = ''; } else { RM.list = RM.list || []; RM.need = j.need || ''; RM.listErr = j.error || '대화방 목록을 불러오지 못했습니다'; } render();
-  }).catch(() => { RM.listLoading = false; RM.list = RM.list || []; RM.listErr = '네트워크 문제로 목록을 불러오지 못했습니다'; render(); });
+  rmPost({ what:'rooms' }).then(({ ok, j }) => { RM.listLoading = false; RM.listAt = Date.now();
+    if(ok){ RM.list = j.rows || []; RM.listErr = ''; RM.need = ''; } else { RM.list = RM.list || []; RM.need = j.need || ''; RM.listErr = j.error || '대화방 목록을 불러오지 못했습니다'; } render();
+  }).catch(() => { RM.listLoading = false; RM.listAt = Date.now(); RM.list = RM.list || []; RM.listErr = '네트워크 문제로 목록을 불러오지 못했습니다'; render(); });
 }
 function rmMineLoad(){
   if(RM.mineLoading || !세션있음()) return;
@@ -12632,90 +12661,105 @@ async function rmSend(){
   const text = String(RM.text || '').trim();
   if(!text) return toast('보낼 말을 적어 주세요');
   RM.busy = true; render();
-  const { ok, j } = await rmPost({ what: rm손님() ? 'my-room-send' : 'room-send', id: C.id, text }).catch(() => ({ ok:false, j:{ error:'네트워크 문제로 보내지 못했습니다' } }));
+  const 손님 = rm손님();
+  const { ok, j } = await rmPost({ what: 손님 ? 'my-room-send' : 'room-send', id: C.id, ...(손님 ? {} : { side: C.side }), text })
+    .catch(() => ({ ok:false, j:{ error:'네트워크 문제로 보내지 못했습니다' } }));
   RM.busy = false;
-  if(!ok){ render(); return toast(j.error || '보내지 못했습니다'); }
-  RM.text = ''; render(); rmLoad(C.id, false);
+  if(!ok){ render(); return toast(rm준비말(j) || j.error || '보내지 못했습니다'); }
+  RM.text = ''; C.보냄 = true; render(); rmLoad(C.id, false, C.side || undefined);
+  if(!손님) RM.listAt = 0;   /* 목록의 마지막 말도 새로 */
   setTimeout(() => { const t = document.querySelector('[data-in="rm-text"]'); if(t) t.focus(); }, 0);
 }
-/* 8초마다 새 말 - 방 화면이 열려 있고 창이 보일 때만 */
+/* 8초마다 새 말 - 방 화면이 열려 있고 창이 보일 때만. 목록 화면이면 30초마다 목록도 새로 */
 if(typeof window !== 'undefined' && !window.__rmPoll) window.__rmPoll = setInterval(() => {
-  if(document.hidden || !RM.cur || RM.busy) return;
+  if(document.hidden) return;
   const h = S.route || '';
-  if(h === '#/room/' + RM.cur.id || h === '#/partner/rooms/' + RM.cur.id) rmLoad(RM.cur.id, false);
+  if(h.startsWith('#/partner/rooms') && !RM.listLoading && Date.now() - RM.listAt > 30e3) rmListLoad();
+  if(!RM.cur || RM.busy) return;
+  if(h === '#/room/' + RM.cur.key || h === '#/partner/rooms/' + RM.cur.key) rmLoad(RM.cur.id, false, RM.cur.side || undefined);
 }, 8000);
 
 /* 말 목록 + 쓰는 칸 - 손님 · 중개사 같은 모양. 내 말은 오른쪽 */
 function rm대화HTML(C, 내편){
   const 줄 = C.rows.map(v => { const 내 = 내편(v);
     return `<li class="rm-m${내 ? ' me' : ''}"><span class="rm-who">${esc(v.name || RM_자리[v.side] || '')}</span><p>${esc(v.body).replace(/\n/g, '<br>')}</p><small>${esc(rm때(v.created_at))}</small></li>`; }).join('');
-  return `<ul class="rm-msgs" aria-live="polite">${줄 || `<li class="rm-empty">아직 나눈 말이 없습니다. 먼저 인사를 남겨 보세요.</li>`}</ul>
+  return `<ul class="rm-msgs" data-keep="rm" aria-live="polite">${줄 || `<li class="rm-empty">아직 나눈 말이 없습니다. 먼저 인사를 남겨 보세요.</li>`}</ul>
     <div class="rm-compose"><label class="sr" for="rmText">보낼 말</label>
       <textarea id="rmText" class="inp" rows="2" maxlength="1000" data-in="rm-text" placeholder="말을 적고 보내기를 누르세요 (주민등록번호 · 계좌번호는 적지 마세요)">${esc(RM.text)}</textarea>
       <button type="button" class="btn pri" data-act="rm-send" ${RM.busy ? 'disabled' : ''}>${RM.busy ? '보내는 중' : '보내기'}</button></div>`;
 }
 /* 다가오는 일정 - 계약일 · 중도금 · 잔금 */
-const rm일정HTML = steps => !(steps || []).length ? '' : `<ol class="rm-steps">${steps.map(s => `<li class="${s.됨 ? 'done' : ''}"><b>${esc(s.이름)}</b><span>${esc(String(s.날).replace(/-/g, '.'))}${s.됨 ? ' · 마침' : ''}</span></li>`).join('')}</ol>`;
+const rm일정HTML = steps => !(steps || []).length ? '' : `<ol class="rm-steps">${steps.map(s => `<li class="${s.됨 ? 'done' : ''}"><b>${esc(s.이름)}</b><span>${esc((isMo() ? String(s.날).slice(5) : String(s.날)).replace(/-/g, '.'))}${s.됨 ? ' · 마침' : ''}</span></li>`).join('')}</ol>`;
 
-/* ── 중개사 - 손님 대화 ── */
-V['#/partner/rooms'] = id => {
-  if(RM.list == null && !RM.listLoading) setTimeout(rmListLoad);
-  if(id && (!RM.cur || RM.cur.id !== id)) setTimeout(() => rmLoad(id, true));
-  const C = id && RM.cur && RM.cur.id === id ? RM.cur : null;
-  const 목록 = (RM.list || []).map(r => { const 든 = Object.keys(RM_자리).filter(k => r.room && r.room[k]);
-    const 이름 = Object.entries(r.names || {}).map(([k, n]) => `${RM_자리[k]}${n ? ' ' + n : ''}`).join(' · ');
-    return `<a class="rm-li${r.id === id ? ' on' : ''}" data-go="#/partner/rooms/${esc(r.id)}"><b>${esc(r.title || '계약')}</b>
-      <span>${esc(이름)}</span><small>${든.length ? `${든.map(k => RM_자리[k]).join(' · ')} 들어옴` : '초대만 함'}${r.last ? ` · ${esc(rm때(r.last.at))}` : ''}</small></a>`; }).join('');
-  const 왼쪽 = `<div class="card rm-list"><div class="rm-lh"><b>대화방</b><span class="sub">날인본 계약서마다 하나</span></div>
-    ${RM.listErr ? `<p class="sub" style="margin:12px 16px">${esc(RM.need === '0034' ? '대화방을 준비 중입니다 - 곧 열립니다' : RM.listErr)}</p>`
+/* ── 중개사 - 손님 대화 (방은 계약서 · 당사자마다) ── */
+V['#/partner/rooms'] = (id, side) => {
+  if((RM.list == null || Date.now() - RM.listAt > 30e3) && !RM.listLoading) setTimeout(rmListLoad);
+  if(side && !Object.hasOwn(RM_자리, side)) side = '';
+  /* 계약서만 가리키는 주소(예전 메일 · 계약서 화면) - 들어온 당사자 방부터 연다 */
+  if(id && !side && RM.list){ const 방들 = RM.list.filter(r => r.id === id), 첫 = 방들.find(r => r.joined) || 방들[0];
+    if(첫) setTimeout(() => location.replace(`#/partner/rooms/${id}/${첫.side}`)); }
+  const 키 = id && side ? rm열쇠(id, side) : '';
+  if(키 && (!RM.cur || RM.cur.key !== 키)) setTimeout(() => rmLoad(id, true, side));
+  const C = 키 && RM.cur && RM.cur.key === 키 ? RM.cur : null;
+  const 목록 = (RM.list || []).map(r => { const on = r.id === id && r.side === side;
+    return `<a class="rm-li${on ? ' on' : ''}" data-go="#/partner/rooms/${esc(r.id)}/${esc(r.side)}"><b>${esc(r.title || '계약')}</b>
+      <span>${esc(RM_자리[r.side] || '')}${r.name ? ' ' + esc(r.name) : ''} ${r.joined ? '<i class="rm-in">들어옴</i>' : '<i class="rm-out">초대 전</i>'}</span>
+      <small>${r.last ? `${esc(r.last.body)} · ${esc(rm때(r.last.at))}` : '아직 나눈 말 없음'}</small></a>`; }).join('');
+  const 왼쪽 = `<div class="card rm-list"><div class="rm-lh"><b>대화방</b><span class="sub">당사자마다 따로</span></div>
+    ${RM.listErr ? `<p class="sub" style="margin:12px 16px">${esc(rm준비말(RM) || RM.listErr)}</p>`
       : RM.list == null ? `<p class="sub" style="margin:12px 16px">불러오는 중입니다…</p>`
       : 목록 || `<p class="sub" style="margin:12px 16px;line-height:1.6">아직 대화방이 없습니다. 날인본 계약서의 ‘일정·체크’에서 손님 초대 링크를 보내면 생깁니다.</p>`}</div>`;
   const M = C && C.meta;
-  const 오른쪽 = !id ? (isMo() ? '' : `<div class="card pad rm-pane rm-none"><p class="sub" style="margin:0">왼쪽에서 대화방을 고르세요.</p></div>`)
+  const 줄 = (RM.list || []).find(r => r.id === id && r.side === side) || {};
+  const 제목 = (M && M.title) || 줄.title || '계약';
+  const 이름 = (M && M.name) || 줄.name || '';
+  const 들어옴 = M ? M.joined : 줄.joined;
+  const 오른쪽 = !키 ? (isMo() ? '' : `<div class="card pad rm-pane rm-none"><p class="sub" style="margin:0">${id ? '대화방을 여는 중입니다…' : '왼쪽에서 대화방을 고르세요.'}</p></div>`)
     : `<div class="card rm-pane">
-      <div class="rm-h"><div><b>${esc((RM.list || []).find(r => r.id === id)?.title || '계약')}</b>
-        <span class="sub">${M ? Object.entries(M.names || {}).map(([k, n]) => `${RM_자리[k]}${n ? ' ' + esc(n) : ''} ${M.room && M.room[k] ? '<i class="rm-in">들어옴</i>' : '<i class="rm-out">초대 전</i>'}`).join(' · ') : ''}</span></div>
-        <a class="btn tool sm" data-go="#/partner/contract/${esc(id)}">계약서</a></div>
+      <div class="rm-h"><div><b>${esc(제목)}</b>
+        <span class="sub">${esc(RM_자리[side])}${이름 ? ' ' + esc(이름) : ''} ${들어옴 ? '<i class="rm-in">들어옴</i>' : '<i class="rm-out">초대 전</i>'} · 이 방은 ${esc(RM_자리[side])}과 사무소만 봅니다</span></div>
+        <div class="rm-hb">${isMo() ? `<button type="button" class="btn tool sm" data-go="#/partner/rooms">목록</button>` : ''}<a class="btn tool sm" data-go="#/partner/contract/${esc(id)}">계약서</a></div></div>
       ${C && C.err ? `<p class="sub" style="margin:16px">${esc(C.err)}</p>` : !M ? `<p class="sub" style="margin:16px">대화를 불러오는 중입니다…</p>`
         : `${rm일정HTML(M.steps)}${rm대화HTML(C, v => v.side === 'agent')}`}</div>`;
   return `
 <div class="scr fade" style="background:var(--n50)">
   ${navPartner('rm')}
   <div class="pad adm-page" style="flex:1;padding-top:${isMo()?18:28}px;padding-bottom:24px;width:100%;display:flex;flex-direction:column;gap:14px">
-    <div><h1 class="t" style="font-size:${isMo()?21:25}px;margin-top:8px">손님 대화</h1>
-      <p class="sub" style="font-size:14.5px">계약을 마친 손님과 잔금까지 이어지는 대화를 모읍니다. 새 말이 오면 메일로 알려 드립니다.</p></div>
-    <div class="rm-lay${id ? ' has' : ''}">${isMo() && id ? '' : 왼쪽}${오른쪽}</div>
+    ${isMo() && 키 ? '' : `<div><h1 class="t" style="font-size:${isMo()?21:25}px;margin-top:8px">손님 대화</h1>
+      <p class="sub" style="font-size:14.5px">계약을 마친 손님과 잔금까지 이어지는 대화를 모읍니다. 당사자마다 방이 따로라 매도인과 매수인은 서로의 대화를 보지 못합니다.</p></div>`}
+    <div class="rm-lay${키 ? ' has' : ''}">${isMo() && 키 ? '' : 왼쪽}${오른쪽}</div>
   </div>
-  ${tabbar('p','p')}
+  ${tabbar('rm','p')}
 </div>`;
 };
 
-/* 일정·체크 탭 - 손님 초대 (날인본만) */
+/* 일정·체크 탭 - 손님 초대 (날인본만). 당사자마다 방이 따로다 */
 function ct방HTML(doc){
   if(!CT.id || (CT_FORMS[doc.form] || {}).explain) return '';
   const 확정 = (CT.row || {}).status === 'sealed';
   const 방 = ct트랙().room || {};
   const 자리 = Object.keys(RM_자리).filter(k => (doc.parties || {})[k]);
   const 보조 = 보조원();
-  return `<div class="card pad ct-sec" id="ctRoom"><h2>손님 대화방 <span class="sub" style="font-weight:500;font-size:13.5px">당사자에게 초대 링크를 보내면 로그인해서 이 계약의 대화방에 들어옵니다</span></h2>
+  return `<div class="card pad ct-sec" id="ctRoom"><h2>손님 대화방 <span class="sub" style="font-weight:500;font-size:13.5px">당사자마다 방이 따로입니다 - 초대 링크로 로그인하면 사무소와 그분만의 방이 열립니다</span></h2>
     ${!확정 ? `<p class="sub" style="margin:0">날인본으로 확정한 뒤에 손님을 초대할 수 있습니다.</p>`
       : `<ul class="rm-inv">${자리.map(k => { const 사람 = doc.parties[k] || {}, 들 = !!방[k];
         return `<li><span><b>${RM_자리[k]}${사람.name ? ` · ${esc(사람.name)}` : ''}</b><small>${들 ? `들어옴 ${esc(String(방[k].at || '').slice(0, 10).replace(/-/g, '.'))}` : '아직 안 들어옴'}</small></span>
+          <span class="eqb rm-invb">${들 ? `<button type="button" class="btn sec sm" data-go="#/partner/rooms/${esc(CT.id)}/${k}">대화</button>` : ''}
           ${보조 ? '' : 들 ? `<button type="button" class="btn tool sm" data-act="rm-kick" data-v="${k}">${CT.rmKick === k ? '한 번 더 누르면 내보냅니다' : '내보내기'}</button>`
-            : `<button type="button" class="btn tool sm" data-act="rm-invite" data-v="${k}">초대 링크</button>`}</li>`; }).join('')}</ul>
-      <div class="eqb" style="gap:8px;flex-wrap:wrap"><button type="button" class="btn sec sm" data-go="#/partner/rooms/${esc(CT.id)}">대화방 열기</button>
-        ${보조 || !(방.n != null) ? '' : `<button type="button" class="btn tool sm" data-act="rm-cut">나간 초대 링크 끊기</button>`}</div>`}</div>`;
+            : `<button type="button" class="btn tool sm" data-act="rm-invite" data-v="${k}">초대 링크</button>`}</span></li>`; }).join('')}</ul>
+      ${보조 || !(방.n != null) ? '' : `<button type="button" class="btn tool sm" data-act="rm-cut">나간 초대 링크 모두 끊기</button>`}`}</div>`;
 }
 async function rmInvite(side, 카톡){
   if(!CT.id) return;
   const { ok, j } = await ctPost({ what:'room-invite', id: CT.id, side, kakao: !!카톡 }).catch(() => ({ ok:false, j:{} }));
-  if(!ok) return toast(j.need === '0034' ? '대화방을 준비 중입니다 - 곧 열립니다' : (j.error || '초대 링크를 만들지 못했습니다'));
-  if(!(ct트랙().room)){ CT.track = { ...(CT.track || {}), room: { n: 0 } }; }
+  if(!ok) return toast(rm준비말(j) || j.error || '초대 링크를 만들지 못했습니다');
+  CT.track = { ...(CT.track || {}), room: j.room || ct트랙().room || { n: 0 } };
+  RM.list = null;   /* 손님 대화 목록에 새 방이 바로 보이게 */
   const 주소 = `${location.origin}${location.pathname}#/invite/${j.token}`;
-  const 끝 = new Date(j.until + 9 * 3600e3).toISOString().slice(0, 10);
+  const 끝 = new Date(j.until + 9 * 3600e3).toISOString().slice(0, 10).replace(/-/g, '.');
   const 사람 = ((CT.doc || {}).parties || {})[side] || {};
   const 글 = `[비버노크] ${(S.agent && S.agent.office) || '중개사무소'}입니다. ${사람.name ? 사람.name + '님, ' : ''}계약 진행 상황과 일정을 이 대화방에서 안내드립니다. 아래 링크를 눌러 로그인해 주세요.\n${주소}`;
-  if(카톡) return toast(j.kakao ? '카카오 알림톡으로 초대를 보냈습니다' : '알림톡을 보내지 못했습니다 - 문자로 보내 주세요');
+  if(카톡){ render(); return toast(j.kakao ? '카카오 알림톡으로 초대를 보냈습니다' : '알림톡을 보내지 못했습니다 - 문자로 보내 주세요'); }
   S.modal = { type:'rm-invite', url: 주소, until: 끝, side, phone: String(사람.phone || '').replace(/[^0-9]/g, ''), text: 글, kakao: !!j.kakaoReady };
   render();
 }
@@ -12743,7 +12787,7 @@ V['#/invite'] = tok => {
           ${로그인전() ? `<button type="button" class="btn pri" data-act="rm-login" style="width:100%">로그인하고 대화방 들어가기</button>
               <p class="sub" style="margin:10px 0 0;font-size:13px;line-height:1.6">카카오 · 네이버 · 구글 계정이나 메일로 로그인합니다. 처음이시면 가입 화면이 이어집니다.</p>`
             : `<button type="button" class="btn pri" data-act="rm-join" style="width:100%" ${I.joining ? 'disabled' : ''}>${I.joining ? '들어가는 중…' : '대화방 들어가기'}</button>`}
-          <p class="sub" style="margin:12px 0 0;font-size:12.5px">${esc(new Date(R.until + 9 * 3600e3).toISOString().slice(0, 10))}까지 쓸 수 있는 링크입니다 · 대화방에는 계약서 원문과 다른 분의 연락처가 보이지 않습니다.</p>`}
+          <p class="sub" style="margin:12px 0 0;font-size:12.5px">${esc(new Date(R.until + 9 * 3600e3).toISOString().slice(0, 10).replace(/-/g, '.'))}까지 쓸 수 있는 링크입니다 · 이 대화방은 중개사무소와 나만 봅니다. 상대 당사자에게는 보이지 않습니다.</p>`}
     </div>
   </div>
 </div>`;
@@ -12768,11 +12812,11 @@ V['#/room'] = id => {
     <div class="card rm-pane rm-guest">
       <div class="rm-h"><div><b>${esc(M ? M.title : '계약 대화방')}</b>
         <span class="sub">${M ? `${esc(M.office)} · 나는 ${esc(M.role)}` : ''}</span></div>
-        ${M && M.officePhone ? `<a class="btn tool sm" href="tel:${esc(String(M.officePhone).replace(/[^0-9]/g, ''))}">전화</a>` : ''}</div>
+        ${M && M.officePhone ? `<a class="btn tool sm" style="flex:none" href="tel:${esc(String(M.officePhone).replace(/[^0-9]/g, ''))}">전화</a>` : ''}</div>
       ${C && C.err ? `<p class="sub" style="margin:16px">${esc(C.err)}</p>` : !M ? `<p class="sub" style="margin:16px">대화를 불러오는 중입니다…</p>`
         : `${rm일정HTML(M.steps)}${rm대화HTML(C, v => v.side === M.me)}`}
     </div>
-    <p class="sub" style="margin:0;font-size:12.5px;line-height:1.6">새 말이 오면 가입하신 메일로 알려 드립니다. 대화는 이 계약을 맡은 중개사무소와 당사자만 봅니다.</p>
+    <p class="sub" style="margin:0;font-size:12.5px;line-height:1.6">새 말이 오면 가입하신 메일로 알려 드립니다. 이 대화방은 중개사무소와 나만 봅니다 - 상대 당사자에게는 보이지 않습니다.</p>
   </div>
 </div>`;
 };
@@ -15566,7 +15610,7 @@ function render(){
   else if(h.startsWith('#/draft/')) html = V['#/draft'](parts[2]);
   else if(h.startsWith('#/invite/')) html = V['#/invite'](parts[2]);
   else if(h.startsWith('#/room/')) html = V['#/room'](parts[2]);
-  else if(h === '#/partner/rooms' || h.startsWith('#/partner/rooms/')) html = V['#/partner/rooms'](parts[3]);
+  else if(h === '#/partner/rooms' || h.startsWith('#/partner/rooms/')) html = V['#/partner/rooms'](parts[3], parts[4]);
   else if(h==='#/partner/join') html = V['#/partner/join']();
   else if(h==='#/partner/stats') html = V['#/partner/stats']();
   else if(h==='#/partner/settings') html = V['#/partner/settings']();
@@ -15580,6 +15624,8 @@ function render(){
   const same = S.lastRoute === h;
   const keep = same ? app.scrollTop : 0;
   const 잡고있던곳 = same ? 초점표(document.activeElement) : null;
+  /* 안쪽에서 스크롤하는 칸(data-keep - 대화 목록)은 다시 그려도 보던 자리를 지킨다 */
+  const 안쪽 = same ? [...app.querySelectorAll('[data-keep]')].map(e => [e.dataset.keep, e.scrollTop]) : [];
   /* 적던 칸이면 커서 자리도 적어 둔다 - 초점만 돌려주면 커서가 맨 앞이나 끝으로 튄다 */
   let 커서 = null;
   if(same && 적는중()){
@@ -15600,6 +15646,7 @@ function render(){
       if(b.right > a.right || b.left < a.left) 줄.scrollLeft += (b.right > a.right ? b.right - a.right + 12 : b.left - a.left - 12);
     } }
   되돌린초점(app, 잡고있던곳);
+  for(const [k, t] of 안쪽){ const e = app.querySelector(`[data-keep="${k}"]`); if(e) e.scrollTop = t; }
   /* 고른 칩이 톡 튄다 (2026-10-30 '계약서 작성 화면처럼 다른 어드민 화면도') - 누른 직후 첫 그림에서만 */
   if(S.justTap){ let 칩 = null; try{ 칩 = app.querySelector(S.justTap); }catch(_){} S.justTap = null; if(칩 && 칩.classList.contains('on')) 칩.classList.add('just'); }
   if(커서 && 적는중()){

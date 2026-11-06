@@ -139,6 +139,13 @@ export function opsAllowlist() {
   return String(process.env.BK_OPS_USERS || '')
     .split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
 }
+/* 부운영자 (2026-11-06 대표님) - BK_OPS_SUBS 쉼표로 구분한 계정 id(또는 확인된 메일).
+   운영 화면을 다 보되 연락처 · 메일은 늘 가린 것만, 승인 · 반려 · 지우기 · 임시 링크는 못 한다(demands.js · agent-status.js).
+   운영자 명단(BK_OPS_USERS)에도 있으면 운영자로 본다 */
+export function opsSublist() {
+  return String(process.env.BK_OPS_SUBS || '')
+    .split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+}
 
 /* ── 여럿이 함께 시험해 보는 기간 ──
    명단에 넣으려면 그 사람이 먼저 가입해서 메일을 알려주고, 넣고, 다시 배포해야
@@ -171,7 +178,7 @@ export function opsOpenUntil() {
  *  통과면 { user, guest } (명단이 없으면 user 는 null 일 수 있다), 아니면 { code, error }.
  *  암호보다 먼저 부른다 - 로그인도 안 한 요청에 암호를 시험할 기회를 주지 않는다. */
 export async function opsAccount(req) {
-  const allow = opsAllowlist();
+  const allow = opsAllowlist(), subs = opsSublist();
   /* 명단이 없어도 누구인지는 알아둔다 - 열람 기록에 적어야 한다 */
   const user = await userFrom(req);
   if (!allow.length) return { user };
@@ -185,6 +192,7 @@ export async function opsAccount(req) {
      각 화면은 접근 암호를 또 묻지 않는다 - 로그인이 훨씬 강한 문이기 때문이다.
      암호는 사람 사이를 돌아다니고 누가 썼는지 남지 않지만, 계정은 그렇지 않다. */
   if (allow.includes(id) || allow.includes(email)) return { user, member: true };
+  if (subs.includes(id) || (email && subs.includes(email))) return { user, member: true, sub: true };
 
   /* 시험 기간이면 명단에 없어도 들인다. 기간이 지나면 자동으로 다시 막힌다. */
   const until = opsOpenUntil();

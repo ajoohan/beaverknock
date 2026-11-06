@@ -48,6 +48,8 @@ export default async function handler(req, res) {
   const gate = await opsAccount(req);
   if (gate.error) return res.status(gate.code).json({ error: gate.error });
   const opsUser = gate.user;
+  /* 부운영자 - 원문 보기 · 임시 링크는 막고, 목록의 연락처 · 메일은 늘 가린다 */
+  const 부 = !!gate.sub;
 
   /* 로그인으로 이미 확인이 끝났으면 암호는 묻지 않는다.
      명단(BK_OPS_USERS)이 비어 있을 때만 암호가 유일한 문이라 그때는 그대로 받는다. */
@@ -61,7 +63,9 @@ export default async function handler(req, res) {
      따로 함수를 두는 편이 깔끔하지만 Vercel 함수 상한(12개)에 걸린다.
      문(계정 + 암호)이 어차피 같으니 한 지붕 아래 둔다. */
   /* 운영 임시 링크 발급 - 진짜 암호로 연 사람(또는 명단 계정)만. 링크로 들어온 사람이 링크를 또 만들어 기한을 늘리지 못하게 */
+  if (payload.what === 'whoami') return res.status(200).json({ ok: true, role: 부 ? 'sub' : 'admin' });
   if (payload.what === 'ops-link') {
+    if (부) return res.status(403).json({ error: '부운영자는 임시 링크를 만들 수 없습니다' });
     if (opsNeedsPass(gate) && !sameSecret(pass, BK_OPS_PASS)) return res.status(403).json({ error: '접근 암호로 연 뒤에 만들 수 있습니다' });
     const t = makeOpsLinkToken(BK_OPS_PASS, payload.days);
     await logOps(req, opsUser, { action: 'ops-link', detail: '기한 ' + new Date(t.until).toISOString().slice(0, 10) });
@@ -70,16 +74,16 @@ export default async function handler(req, res) {
   if (payload.what === 'log')         return readLog(req, res, payload, opsUser);
   if (payload.what === 'reports')     return readReports(req, res, payload, opsUser);
   if (payload.what === 'report-mark') return markReport(req, res, payload, opsUser);
-  if (payload.what === 'listings')    return readListings(req, res, payload, opsUser);
-  if (payload.what === 'users')       return readUsers(req, res, payload, opsUser);
+  if (payload.what === 'listings')    return readListings(req, res, { ...payload, __sub: 부 }, opsUser);
+  if (payload.what === 'users')       return readUsers(req, res, { ...payload, __sub: 부 }, opsUser);
   if (payload.what === 'stats')       return readStats(req, res, payload, opsUser);
   if (payload.what === 'mark-sent')   return markSent(req, res, payload, opsUser);
-  if (payload.what === 'agents')      return readAgents(req, res, payload, opsUser);
+  if (payload.what === 'agents')      return readAgents(req, res, { ...payload, reveal: payload.reveal === true && !부 }, opsUser);
 
   const limit  = Math.min(parseInt(payload.limit, 10) || 200, 1000);
   const kind   = payload.kind;                 // home | shop | office | storage
   const days   = parseInt(payload.days, 10) || 0;
-  const reveal = payload.reveal === true;      // 연락처 원문 보기
+  const reveal = payload.reveal === true && !부;      // 연락처 원문 보기 - 부운영자는 늘 가림
 
   const q = new URLSearchParams();
   q.set('select', '*');
@@ -127,6 +131,7 @@ export default async function handler(req, res) {
        열어둔 것을 잊는 것이 이 기능의 유일한 위험이므로, 눈에 보이게 둔다. */
     openUntil: opsOpenUntil() || null,
     guest: !!gate.guest,
+    role: 부 ? 'sub' : 'admin',
     rows: out,
   });
 }
@@ -431,7 +436,12 @@ async function readListings(req, res, p, opsUser) {
     await logOps(req, opsUser, { action: 'listings', count: rows.length });
     return res.status(200).json({
       at: new Date().toISOString(),
-      rows: rows.map(x => ({ ...x, agent: who[x.agent_id] || null })),
+      rows: rows.map(x => { const a = who[x.agent_id] || null;
+        /* 부운영자에게는 올린 사람 연락처를 가린다 */
+        if (!p.__sub) return { ...x, agent: a };
+        const y = { ...x, agent: a ? { ...a, phone: maskPhone(a.phone) } : null };
+        for (const k of Object.keys(y)) if (/phone|tel|contact/i.test(k) && typeof y[k] === 'string') y[k] = maskPhone(y[k]);
+        return y; }),
     });
   } catch (e) {
     return res.status(500).json({ error: '매물을 불러오지 못했습니다' });
@@ -470,6 +480,8 @@ async function readAgents(req, res, p, opsUser) {
 /* ── 손님 계정 ──
    조건을 낸 사람만 bk_demand 에 남는다. 가입만 하고 아직 조건을 안 건 사람은
    거기에 없다 - 계정 자체는 Supabase 가 들고 있으므로 그쪽에 물어본다. */
+/* 부운영자용 메일 가림 - 앞 두 글자와 도메인만 (ab***@gmail.com) */
+export const 메일가림 = e => { const s = String(e || ''); const i = s.indexOf('@'); return !s ? null : i < 1 ? '***' : `${s.slice(0, Math.min(2, i))}***${s.slice(i)}`; };
 async function readUsers(req, res, p, opsUser) {
   const page = Math.max(1, parseInt(p.page, 10) || 1);
   const per = Math.min(parseInt(p.per, 10) || 50, 200);
@@ -481,7 +493,7 @@ async function readUsers(req, res, p, opsUser) {
     if (!r.ok) return res.status(502).json({ error: '계정을 불러오지 못했습니다' });
     const j = await r.json();
     const users = (j.users || j || []).map(u => ({
-      id: u.id, email: u.email || null,
+      id: u.id, email: p.__sub ? 메일가림(u.email) : (u.email || null),
       /* 어떤 길로 들어온 계정인지 - 카카오를 켜기 전에 얼마나 쓰는지 봐야 한다 */
       via: (u.app_metadata && (u.app_metadata.provider || (u.app_metadata.providers||[])[0])) || 'email',
       created_at: u.created_at, last_sign_in_at: u.last_sign_in_at || null,

@@ -53,6 +53,9 @@ export default async function handler(req, res) {
   /* 지우기 전에 무엇이 함께 사라지는지 세어 본다.
      bk_proposal 과 bk_listing 이 on delete cascade 로 물려 있어서,
      신청 한 줄을 지우면 그 사람이 보낸 제안과 올린 매물이 같이 없어진다. */
+  /* 부운영자 - 지우기 · 승인 · 반려는 운영자만. '새 신청' · '연락함' 으로 돌리는 것까지 */
+  if (gate.sub && (p.op === 'preview' || p.op === 'delete')) return res.status(403).json({ error: '부운영자는 신청을 지울 수 없습니다' });
+  if (gate.sub && ['approved', 'rejected'].includes(p.status)) return res.status(403).json({ error: '승인 · 반려는 운영자만 할 수 있습니다' });
   if (p.op === 'preview' || p.op === 'delete') return agentOp(req, res, ids, p.op, opsUser);
 
   if (!STATUS.includes(p.status)) return res.status(400).json({ error: '알 수 없는 상태입니다' });

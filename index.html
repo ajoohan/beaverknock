@@ -6274,7 +6274,7 @@ function agentPanel(){
       <div class="row">
         <input class="inp" data-in="agQ" value="${esc(AG.q)}" placeholder="이름·상호·번호 찾기" autocomplete="off"
           style="flex:1;min-width:150px;max-width:320px;padding:0 14px;min-height:44px;font-size:14.5px">
-        ${chip(AG.reveal?'연락처 원문':'연락처 가림', AG.reveal, 'ag-reveal','')}
+        ${OPS.role === 'sub' ? '<span class="chip" aria-disabled="true" title="부운영자는 연락처를 가린 채로만 봅니다">연락처 가림 · 부운영자</span>' : chip(AG.reveal?'연락처 원문':'연락처 가림', AG.reveal, 'ag-reveal','')}
         <span class="sp"></span>
         <span class="eqb" style="gap:8px"><button class="btn ghost sm" data-act="ag-load">새로고침</button>
         <button class="btn sec sm" data-act="ag-csv">CSV 내려받기</button></span>
@@ -6288,12 +6288,12 @@ function agentPanel(){
       display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
       <b style="font-size:14.5px;font-weight:700;color:var(--ind)">${picked.length}건 선택됨</b>
       <div class="chips" style="gap:6px">
-        ${Object.entries(AG_STATUS).map(([k,[,t]])=>`
+        ${Object.entries(AG_STATUS).filter(([k]) => OPS.role !== 'sub' || !['approved', 'rejected'].includes(k)).map(([k,[,t]])=>`
           <button class="chip" data-act="ag-bulk" data-v="${k}" style="padding:8px 14px;font-size:13.5px"
             ${AG.busy?'disabled':''}>${t}</button>`).join('')}
         <button class="chip" data-act="ag-pick-all" style="padding:8px 14px;font-size:13.5px">선택 해제</button>
-        <button class="chip" data-act="ag-del" style="padding:8px 14px;font-size:13.5px;color:var(--danger);border-color:var(--dangerline)"
-          ${AG.busy?'disabled':''}>삭제</button>
+        ${OPS.role === 'sub' ? '<span style="font-size:13px;color:var(--n500)">승인 · 반려 · 삭제는 운영자만</span>' : `<button class="chip" data-act="ag-del" style="padding:8px 14px;font-size:13.5px;color:var(--danger);border-color:var(--dangerline)"
+          ${AG.busy?'disabled':''}>삭제</button>`}
       </div>
     </div>` : ''}
 
@@ -9564,6 +9564,8 @@ function opsFetch(){
       /* 시험 기간이 열려 있는지 - 열어둔 것을 잊는 것이 유일한 위험이라 화면에 띄운다 */
       OPS.openUntil = j.openUntil || null;
       OPS.guest = !!j.guest;
+      /* 부운영자(2026-11-06) - 연락처 원문 · 승인 · 반려 · 지우기 단추를 감춘다. 서버도 따로 막는다 */
+      OPS.role = j.role === 'sub' ? 'sub' : 'admin';
       opsPassKeep.set(OPS.pass);
     })
     .catch(e=>{ OPS.err = '서버에 닿지 못했습니다 - ' + String(e).slice(0,80); OPS.rows = null; })
@@ -9630,7 +9632,7 @@ function demandPanel(){
       <div class="row">
         <input class="inp" data-in="opsQ" value="${esc(OPS.q)}" placeholder="이름·지역·메모 찾기" autocomplete="off"
           style="flex:1;min-width:150px;max-width:320px;padding:0 14px;min-height:44px;font-size:14.5px">
-        ${chip(OPS.reveal?'연락처 원문':'연락처 가림', OPS.reveal, 'ops-reveal','')}
+        ${OPS.role === 'sub' ? '<span class="chip" aria-disabled="true" title="부운영자는 연락처를 가린 채로만 봅니다">연락처 가림 · 부운영자</span>' : chip(OPS.reveal?'연락처 원문':'연락처 가림', OPS.reveal, 'ops-reveal','')}
         <span class="sp"></span>
         <span class="eqb" style="gap:8px"><button class="btn ghost sm" data-act="ops-load">새로고침</button>
         <button class="btn sec sm" data-act="ops-csv">CSV 내려받기</button></span>
@@ -10222,7 +10224,7 @@ V[OPS_HOME] = () => {
       ${버전칸()}
     </div>
   </aside>
-  <div class="ptop">${tab === 'home' ? dzNowHTML() : adm경로([['운영'], [OPS_TITLE[tab] || '운영 화면']])}<span class="ptop-r">${tab === 'home' ? 새로고침 : ''}${S.user ? userMenu({ admin: true, sub: '운영자' }) : ''}</span></div>
+  <div class="ptop">${tab === 'home' ? dzNowHTML() : adm경로([['운영'], [OPS_TITLE[tab] || '운영 화면']])}<span class="ptop-r">${tab === 'home' ? 새로고침 : ''}${S.user ? userMenu({ admin: true, sub: OPS.role === 'sub' ? '부운영자' : '운영자' }) : ''}</span></div>
   <main class="pad dz-main">${시험}${머리}${opsPanel()}</main>
 </div>`;
 };
@@ -10920,6 +10922,8 @@ const CT_하위메뉴 = [['#/partner/contracts/new', '계약서 작성', 'pen', 
    번호는 배포한 날(연.월.일 - 같은 날 또 올리면 뒤에 .2). 화면이 version.json 을 가끔 읽어,
    더 새 버전이 올라와 있으면 메뉴 아래에서 새로고침을 권한다(버전확인) - 계약서를 띄워 둔 채 오래 일하면 고친 화면을 못 받는다 */
 const BK_변경 = [
+  { v:'26.11.06.13', 날:'2026-11-06', 줄:[
+    '운영 화면 - 부운영자 등급: 모든 목록을 보되 연락처 · 메일은 늘 가린 채로, 가입 승인 · 반려 · 삭제 · 임시 링크는 운영자만' ] },
   { v:'26.11.06.12', 날:'2026-11-06', 줄:[
     '주소로 불러오기 - 건축물대장 조회가 막혀도 토지 값은 넣습니다 · 동시에 여러 분이 불러와도 서로 섞이지 않게',
     '계약서 목록 - 터치 기기에서도 줄마다 ‘복사’ 단추가 보입니다 · 카드 속 카드는 그림자를 겹치지 않습니다' ] },
@@ -16411,7 +16415,7 @@ function handle(a,v,el){
     case 'rp-mark':  { const i=v.indexOf('|'); rpMark(v.slice(0,i), v.slice(i+1) || null); return true; }
     case 'ag-load':    agFetch(); return true;
     case 'ag-role':    AG.role = AG.role===v ? '' : v; render(); settle('tbody'); return true;
-    case 'ag-reveal':  AG.reveal = !AG.reveal; agFetch(); return true;
+    case 'ag-reveal':  if(OPS.role === 'sub') return true; AG.reveal = !AG.reveal; agFetch(); return true;
     case 'feed-retry': loadFeed(true); return true;
     case 'mine-retry': loadMine(true); return true;
     case 'mp-retry': S.mpErr = ''; loadMyProps(true); render(); return true;
@@ -16502,7 +16506,7 @@ function handle(a,v,el){
       return true; }
     case 'ops-kind':   OPS.kind = v; opsFetch(); return true;
     case 'ops-days':   OPS.days = +v; opsFetch(); return true;
-    case 'ops-reveal': OPS.reveal = !OPS.reveal; opsFetch(); return true;
+    case 'ops-reveal': if(OPS.role === 'sub') return true; OPS.reveal = !OPS.reveal; opsFetch(); return true;
     case 'ops-csv':    return opsCsv();
     case 'pick-addr': { const t=String(v||'').trim(); if(!t) return true;
       if(!d.dongs.includes(t)){ d.dongs.push(t); followMap(d, t); }
@@ -16629,7 +16633,7 @@ function handle(a,v,el){
       S.mineErr=S.mpErr=S.feedErr=''; S.feedNeed='';
       /* 운영 화면에서 보던 것도 함께 내린다 - 다음 사람이 앞사람의 목록을 보면 안 된다 */
       OPS.rows=null; OPS.tried=false; OPS.err=''; OPS.needPass=false; OPS.link=null;
-      OPS.openUntil=null; OPS.guest=false; OPS.ok=false; OPS.pass=''; opsPassKeep.set('');
+      OPS.openUntil=null; OPS.guest=false; OPS.role='admin'; OPS.ok=false; OPS.pass=''; opsPassKeep.set('');
       /* 새로고침해도 남던 것들 - 운영 암호(탭), 이름·연락처가 든 초안. 다음 사람에게 남지 않게 (2026-11-03) */
       try{ ['bk.idv.draft','bk.idv.form','bk.login.draft'].forEach(k => { sessionStorage.removeItem(k); localStorage.removeItem(k); }); }catch(e){}
       AG.rows=US.rows=LS2.rows=RP.rows=LG.rows=LG.recent=null;

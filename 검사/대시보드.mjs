@@ -134,7 +134,7 @@ const M = new Function('esc', `${js.slice(시작, 끝)}\nreturn { dzLine, dzPill
   ok(발.indexOf('사이트 가기') > 0 && 발.indexOf('${버전칸()}') > 발.indexOf('사이트 가기') && !/마이페이지|로그아웃|dz-office/.test(발),
      '왼쪽 메뉴 맨 아래는 사이트 가기, 그 아래 버전과 날짜 - 마이페이지·로그아웃은 메뉴에 없다');
   ok(옆.includes("<div class=\"ptop\">${S.route === '#/partner/home' ? dzNowHTML() : adm경로(adm위치(S.route || ''))}<span class=\"ptop-r\">${agentBadge()}${S.user ? userMenu({ admin: true }) : navAuth('partner')}</span></div>")
-     && js.includes("<div class=\"ptop\">${tab === 'home' ? dzNowHTML() : adm경로([['운영'], [OPS_TITLE[tab] || '운영 화면']])}<span class=\"ptop-r\">${tab === 'home' ? 새로고침 : ''}${S.user ? userMenu({ admin: true, sub: '운영자' }) : ''}</span></div>")
+     && js.includes("<div class=\"ptop\">${tab === 'home' ? dzNowHTML() : adm경로([['운영'], [OPS_TITLE[tab] || '운영 화면']])}<span class=\"ptop-r\">${tab === 'home' ? 새로고침 : ''}${S.user ? userMenu({ admin: true, sub: OPS.role === 'sub' ? '부운영자' : '운영자' }) : ''}</span></div>")
      && js.includes('<span class="ctx-badge">${agentBadge()}${S.user ? userMenu({ admin: true }) : \'\'}</span>'),
      '머리 줄 - 왼쪽 지금 위치, 오른쪽 프로필 (중개사 화면·운영 화면) · 계약서 작성 화면은 머리 줄 오른쪽에 프로필');
   const 메뉴 = js.slice(js.indexOf('function userMenu(opt = {}){'), js.indexOf('function docShell('));

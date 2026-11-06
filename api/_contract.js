@@ -21,6 +21,7 @@ import { sbHeaders, sbUrl, emailOf, sameSecret, overLimit, ipOf } from './_auth.
 import { notifyMany } from './_notify.js';
 import { logOps } from './_opslog.js';
 import { alimtalk } from './_kakao.js';
+import { 건축물대장, 포털오류 } from './_bld.js';
 
 /* 주택임대차 · 상가건물 임대차 · 부동산 매매 · 중개대상물 확인·설명서(주거용) (화면의 CT_FORMS 와 같은 이름) */
 /* 2026-10-30 계약서 종류 - 부동산 임대차(전세·월세·연세) · 전대차 · 분양권 · 조합원입주권 · 권리양도양수 · 상가 권리금 */
@@ -93,6 +94,17 @@ export function docCheck(form, doc) {
   return null;
 }
 
+/* 주소로 건축물대장 (2026-11-06) - api/_bld.js */
+async function 대장(res, b) {
+  try {
+    const o = await 건축물대장(b);
+    if (o.error) return res.status(200).json({ ok: false, error: o.error });
+    return res.status(200).json({ ok: true, scan: o.scan, kinds: o.kinds });
+  } catch (e) {
+    return res.status(200).json({ ok: false, error: e instanceof 포털오류 ? e.message : '건축물대장을 불러오지 못했습니다' });
+  }
+}
+
 /* 날인본 확정 전 필수 항목 (2026-11-06 대표님) - 화면(ct필수)이 먼저 막고, 서버는 핵심 다섯 가지를 다시 본다.
    확인·설명서는 계약서가 아니라 보지 않는다 */
 export function 확정필수(form, doc) {
@@ -127,6 +139,7 @@ export async function contractRoute(req, res, agent, user, b) {
       case 'contract-seal':    await seal(res, agent, b); break;
       case 'contract-revise':  await revise(res, agent, user, b); break;
       case 'contract-del':     await del(res, agent, b); break;
+      case 'contract-bld':     await 대장(res, b); break;
       case 'contract-reported': await reported(res, agent, b); break;
       case 'contract-track':   await track(res, agent, b); break;
       case 'contract-scan':    await scan(req, res, b, user); break;

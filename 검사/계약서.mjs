@@ -574,6 +574,20 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
      '임시저장 단추 + 멈춘 뒤 자동 임시저장(새 계약서는 소재지를 넣은 뒤부터)');
 }
 
+/* ── 기존 계약서 복사 · 진행률 · 목록 거르기 (2026-11-06 파트너 기획) ── */
+{
+  ok(/const CT_복사칸 = \[\['property', [^\]]+\], \['parties', [^\]]+\], \['specials', [^\]]+\], \['deal', [^\]]+\]\];/.test(js) && /const ct복사할 = \(\) => CT\.copyParts \|\| \['property', 'parties', 'specials'\];/.test(js),
+     '복사 - 목적물 · 당사자 · 특약은 기본으로 가져오고 금액 · 날짜는 고를 때만');
+  ok(/const d = ctNewDoc\(원\.form, null, \{ cat: 원\.cat, sub: 원\.sub, deal: 원\.deal && 원\.deal\.type \}\);/.test(js) && /CT\.dirty = true; CT\.mode = 'edit'; ctGo\('#\/partner\/contract\/new'\);\s*toast\(`지난 계약서에서/.test(js),
+     '복사는 같은 양식의 새 계약서(사무소 칸 · 조항은 지금 값) - 원래 계약서는 그대로');
+  ok(/종류\('copy', '기존 계약서 복사'/.test(js) && /data-act="\$\{갱신고르기 === 'copy' \? 'ct-copy'/.test(js) && /data-act="ct-copy-this"/.test(js),
+     '복사 시작 - 계약서 작성의 ‘기존 계약서 복사’ · 작성 화면의 ‘복사해서 새로’');
+  ok(/function ct진행HTML\(\)/.test(js) && /\$\{ct진행HTML\(\)\}\$\{ct필수안내HTML\(\)\}/.test(js) && /칸\.classList\.add\('ct-just'\)/.test(js),
+     '진행률(필수 항목 n / m) · 왼쪽에서 고친 칸은 서류에서 잠깐 노랗게');
+  ok(/function ct요약HTML\(전체\)/.test(js) && /CT\.qs === 'unrep' \? r\.status === 'sealed' && ct신고\(r\) && !r\.reported_at/.test(js) && /CT\.qp === 'next'\) return d >= 오늘 && d <= ct날더하기\(오늘, 30\)/.test(js),
+     '목록 - 요약 카드 · 신고 전 · 종류 · 기간(고친 날 · 계약일 · 잔금일) 거르기');
+}
+
 /* ── 화면 붙은 자리 ── */
 {
   ok(/@media print\{[\s\S]*@page\{size:A4/.test(html) && /html\.printing-ct body > \*:not\(#ctPrint\)\{display:none!important\}/.test(html),

@@ -402,7 +402,7 @@ export function 알림설정(x) {
     off: [...new Set((Array.isArray(o.off) ? o.off : []).filter(k => Object.hasOwn(알림종류, k)))], lawyer: [a, b] };
 }
 /* 계약 하나의 일정·체크(track). 날짜 칸은 ISO 날짜만, 나머지는 켜짐/꺼짐만 받는다 - 다른 것은 버린다 */
-const TRACK_DATES = ['permitDue', 'permitApplied', 'midDate', 'balanceDate', 'guideAt'];
+const TRACK_DATES = ['permitDue', 'permitApplied', 'midDate', 'balanceDate', 'guideAt', 'permitPaid', 'permitAgreed', 'permitOk'];
 export const 진행상태 = { ready: '준비', doing: '진행중', done: '완료', hold: '보류', cancel: '취소' };
 export function trackCheck(t) {
   if (!t || typeof t !== 'object' || Array.isArray(t)) return null;
@@ -419,6 +419,8 @@ export function trackCheck(t) {
   /* 초안 링크 번호 - 올리면 그 계약서의 나간 링크가 모두 끊긴다 */
   if (Number.isInteger(t.shareN) && t.shareN > 0 && t.shareN < 1e6) out.shareN = t.shareN;
   if (t.hb === true) out.hb = true;
+  /* 전자계약으로 진행(파트너 기획 [137] - 금리 우대 대상 관리용 표시) */
+  if (t.ec === true) out.ec = true;
   const x = 부속값(t.extra);
   if (x) out.extra = x;
   return out;
@@ -618,7 +620,7 @@ export function 일정목록(c, 설정 = 알림설정()) {
   const cd = 날만(c.cd), md = 날만(t.midDate) || 날만(c.md), bd = 날만(t.balanceDate) || 날만(c.bd);
   const 신청 = 날만(t.permitApplied), out = [];
   if (날만(t.permitDue)) out.push({ k: 'permitDue', 날: 날만(t.permitDue), 메모: 신청 ? `${신청} 신청함` : '아직 신청 전입니다' });
-  if (신청) out.push({ k: 'permitExpect', 날: 영업일째(신청, 15), 메모: `${신청} 신청 · 신청일 포함 15영업일` });
+  if (신청 && !t.permitOk) out.push({ k: 'permitExpect', 날: 영업일째(신청, 15), 메모: `${신청} 신청 · 신청일 포함 15영업일` });
   if (cd) out.push({ k: 'contract', 날: cd, 메모: '계약서 내용을 마지막으로 확인하세요' });
   if (md && +c.mid > 0) out.push({ k: 'mid', 날: md, 바뀜: !!날만(t.midDate), 메모: '중도금 금액과 입금 계좌를 확인하세요' });
   if (bd) out.push({ k: 'balance', 날: bd, 바뀜: !!날만(t.balanceDate),

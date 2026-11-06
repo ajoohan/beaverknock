@@ -557,7 +557,7 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
 
 /* ── 양쪽에서 적기 · 필수 항목 · 임시저장 (2026-11-06 대표님) ── */
 {
-  ok(/id="ctPv">\$\{ct책상HTML\(doc\)\}/.test(js) && /box\.innerHTML = ct보기HTML\(CT\.doc\);/.test(js) && /CT편집칸 = !ctSealed\(\) && CT\.mode !== 'extra' && !F\.explain;\s*try\{ return ct보기HTML\(doc\); \} finally \{ CT편집칸 = false; \}/.test(js),
+  ok(/id="ctPv">\$\{ct책상HTML\(doc\)\}/.test(js) && /box\.innerHTML = typeof html === 'string' \? html : ct보기HTML\(CT\.doc\);/.test(js) && /CT편집칸 = !ctSealed\(\) && CT\.mode !== 'extra' && !F\.explain;\s*try\{ return ct보기HTML\(doc\); \} finally \{ CT편집칸 = false; \}/.test(js),
      '바로 적는 칸은 PC 책상 미리보기에서만 - 인쇄 · 날인본 · 부속 서류는 종이 그대로');
   ok(/if\(pv\.contains\(document\.activeElement\)\)\{ CT\.pvStale = true; return; \}/.test(js),
      '오른쪽 서류에서 적는 중에는 미리보기를 다시 그리지 않는다(커서 지킴)');
@@ -586,6 +586,23 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
      '진행률(필수 항목 n / m) · 왼쪽에서 고친 칸은 서류에서 잠깐 노랗게');
   ok(/function ct요약HTML\(전체\)/.test(js) && /CT\.qs === 'unrep' \? r\.status === 'sealed' && ct신고\(r\) && !r\.reported_at/.test(js) && /CT\.qp === 'next'\) return d >= 오늘 && d <= ct날더하기\(오늘, 30\)/.test(js),
      '목록 - 요약 카드 · 신고 전 · 종류 · 기간(고친 날 · 계약일 · 잔금일) 거르기');
+}
+
+/* ── 서식 자료실 · 입력 도우미 · 사무소 기본값 · 토지거래허가 흐름 (2026-11-06 파트너 기획) ── */
+{
+  ok(/\['#\/partner\/contracts\/forms', '서식 자료실', 'doc', 'ctf'\]/.test(js) && /function ct빈서식HTML\(kind, key\)/.test(js) && /case 'ctf-print': \{ const \[k, key\] = String\(v\)\.split\('\|'\); return ctPrint\(ct빈서식HTML\(k, key\)\); \}/.test(js),
+     '서식 자료실 - 계약서 · 확인·설명서 · 기타 서식 빈 양식을 인쇄 · PDF');
+  ok(/CT\.mode = 앞\.mode; CT\.extraTab = 앞\.tab; CT\.extraRc = 앞\.rc; CT\.track = 앞\.track;/.test(js), '빈 부속 서류를 그린 뒤 지금 계약서의 탭 · 부속 값은 그대로 돌려놓는다');
+  ok(/function ct입력값\(doc\)/.test(js) && /data-act="ct-hb-open"/.test(js) && /https:\/\/irts\.molit\.go\.kr/.test(js) && /case 'ctk-ec':/.test(js),
+     '한방 · 전자계약 입력 도우미 - 입력 순서대로 칸마다 복사 · 전자계약 표시');
+  ok(/const EX_사무소칸 = \['ex\.trust', 'ex\.jointMortgage', 'ex\.smallRange', 'ex\.smallAmt'/.test(js) && /djSend\(\{ op:'put', name: EX_사무소이름, road: '', v: 값 \}\)/.test(js) && /DJ\.list\.filter\(d => d\.name !== EX_사무소이름\)/.test(js),
+     '확인·설명서 사무소 기본값 - 단지 목록의 한 줄로 저장, 단지 목록에는 안 보인다 · 새 확인·설명서 빈칸에 저절로');
+  ok(/const ex색안내 = /.test(js) && /CT\.filled2 && CT\.filled2\.has\(path\) \? ' dj' : ''/.test(js), '확인·설명서 칸 색 - 서류에서(남색) · 단지 · 기본값에서(보라)');
+  ok(/const CT_허가단계 = \[\['permitPaid', '약정금 입금'\], \['permitAgreed', '약정'\], \['permitApplied', '허가 신청'\], \['permitOk', '허가 승인'\]\];/.test(js)
+     && /if\(신청 && !t\.permitOk\) out\.push\(\{ k: 'permitExpect'/.test(js),
+     '토지거래허가 흐름 - 약정금 입금 → 약정 → 허가 신청 → 허가 승인 · 승인되면 승인 예정일 알림은 멈춘다');
+  ok(JSON.stringify(C.trackCheck({ permitPaid: '2026-11-01', permitAgreed: '2026-11-02', permitOk: '2026-11-20', ec: true, hb: true })) === JSON.stringify({ permitPaid: '2026-11-01', permitAgreed: '2026-11-02', permitOk: '2026-11-20', hb: true, ec: true })
+     && C.trackCheck({ permitOk: '11월' }) === null, '서버도 허가 단계 날짜 · 전자계약 표시를 받는다(날짜 모양만)');
 }
 
 /* ── 화면 붙은 자리 ── */

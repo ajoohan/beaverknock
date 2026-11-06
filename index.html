@@ -10894,6 +10894,8 @@ const CT_하위메뉴 = [['#/partner/contracts/new', '계약서 작성', 'pen', 
    번호는 배포한 날(연.월.일 - 같은 날 또 올리면 뒤에 .2). 화면이 version.json 을 가끔 읽어,
    더 새 버전이 올라와 있으면 메뉴 아래에서 새로고침을 권한다(버전확인) - 계약서를 띄워 둔 채 오래 일하면 고친 화면을 못 받는다 */
 const BK_변경 = [
+  { v:'26.11.06.5', 날:'2026-11-06', 줄:[
+    '서식 자료실 - ‘우리 사무소 서식 올리기’: 한글 · 워드 · 엑셀 · PDF · 사진(한 파일 3MB, 30개까지)을 올려 두고 어느 기기에서나 내려받습니다. 파일은 비공개로 보관합니다' ] },
   { v:'26.11.06.4', 날:'2026-11-06', 줄:[
     '확인·설명서 - ‘요율로 상한 계산해 넣기’: 주택 매매 · 임대(월세 환산) · 주거용 오피스텔 · 주택 외 요율로 중개보수 상한과 산출내역을 채웁니다',
     '날인본 확정 전 점검 - 등기부 소유자와 매도인 · 임대인 이름 대조, 확인·설명서를 아직 안 만들었는지, 계좌 줄을 뺐는지',
@@ -12240,6 +12242,49 @@ function ct빈서식HTML(kind, key){
   CT.mode = 'extra'; CT.extraTab = 탭; CT.extraRc = rc || 'down'; CT.track = {};
   try{ return ct보기HTML(d); } finally { CT.mode = 앞.mode; CT.extraTab = 앞.tab; CT.extraRc = 앞.rc; CT.track = 앞.track; }
 }
+/* ── 우리 사무소 서식 (2026-11-06 · 파트너 기획 [237]) ── 서버 api/_forms.js. 올린 파일은 비공개 저장소에, 내려받기는 5분짜리 주소 */
+const FU = { loaded:false, loading:false, list:[], need:'', err:'', busy:false, del:null };
+const FU_받음 = '.pdf,.hwp,.hwpx,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png';
+function fuLoad(){
+  if(FU.loading || !세션있음()) return;
+  FU.loading = true;
+  ctPost({ what:'forms' }).then(({ ok, j }) => { FU.loading = false; FU.loaded = true;
+    if(ok){ FU.list = j.list || []; FU.need = j.need || ''; FU.err = ''; } else FU.err = j.error || '서식을 불러오지 못했습니다'; render();
+  }).catch(() => { FU.loading = false; FU.loaded = true; FU.err = '네트워크 문제로 서식을 불러오지 못했습니다'; render(); });
+}
+async function fuUp(file){
+  if(!file || FU.busy) return;
+  if(!/\.(pdf|hwp|hwpx|docx?|xlsx?|jpe?g|png)$/i.test(file.name)) return toast('한글(hwp · hwpx) · 워드 · 엑셀 · PDF · JPG · PNG 파일만 올릴 수 있습니다');
+  if(file.size > 3 * 1024 * 1024) return toast('파일이 3MB 를 넘습니다 - PDF 로 줄이거나 나눠 올려 주세요');
+  FU.busy = true; render();
+  try{
+    const data = await 읽기(file);
+    const { ok, j } = await ctPost({ what:'form-up', name: file.name, data }).catch(() => ({ ok:false, j:{ error:'네트워크 문제로 올리지 못했습니다' } }));
+    FU.busy = false;
+    if(j && j.list) FU.list = j.list;
+    if(j && j.need) FU.need = j.need;
+    render(); toast(ok ? `‘${file.name}’을 올렸습니다` : (j.error || '올리지 못했습니다'));
+  }catch(e){ FU.busy = false; render(); toast('파일을 열지 못했습니다'); }
+}
+async function fuGet(id){
+  const { ok, j } = await ctPost({ what:'form-url', id }).catch(() => ({ ok:false, j:{ error:'네트워크 문제로 내려받지 못했습니다' } }));
+  if(!ok || !j.url) return toast(j.error || '내려받지 못했습니다');
+  const a = document.createElement('a'); a.href = j.url; a.rel = 'noopener'; document.body.appendChild(a); a.click(); a.remove();
+}
+if(typeof document !== 'undefined') document.addEventListener('change', e => { const el = e.target.closest && e.target.closest('[data-fu-file]'); if(el && el.files && el.files[0]){ fuUp(el.files[0]); el.value = ''; } });
+const fu크기 = n => n >= 1048576 ? `${(n / 1048576).toFixed(1)}MB` : `${Math.max(1, Math.round(n / 1024))}KB`;
+function ct내서식HTML(){
+  if(!세션있음()) return '';
+  if(!FU.loaded) setTimeout(fuLoad);
+  const 단추 = FU.need ? '' : `<label class="btn tool sm${FU.busy ? ' off' : ''}">${FU.busy ? '올리는 중…' : '+ 우리 사무소 서식 올리기'}<input type="file" class="sr" accept="${FU_받음}" data-fu-file ${FU.busy ? 'disabled' : ''} aria-label="우리 사무소 서식 파일 고르기"></label>`;
+  return `<div class="card pad ct-sec"><h2>우리 사무소 서식 <span class="sub" style="font-weight:500;font-size:13.5px">한글 · 워드 · 엑셀 · PDF · 사진 · 한 파일 3MB · ${FU.list.length} / 30</span></h2>
+    ${FU.need ? '<p class="ct-note">서식 올리기는 준비 중입니다 - 곧 열립니다.</p>' : FU.err ? `<p class="ct-note">${esc(FU.err)}</p>` : ''}
+    ${FU.list.length ? `<ul class="ctf-ul">${FU.list.map(f => `<li class="ctf-row"><span><b>${esc(f.name)}</b><small>${esc(f.ext.toUpperCase())} · ${fu크기(f.size)} · ${esc(String(f.at).slice(0, 10))} 올림</small></span>
+      <span class="eqb" style="gap:6px"><button type="button" class="btn tool sm" data-act="fu-get" data-v="${esc(f.id)}">내려받기</button>
+        <button type="button" class="btn tool sm" data-act="fu-del" data-v="${esc(f.id)}">${FU.del === f.id ? '한 번 더 누르면 지웁니다' : '지우기'}</button></span></li>`).join('')}</ul>`
+      : FU.loaded && !FU.need ? '<p class="sub" style="margin:0">사무소에서 쓰는 시설물 확인서 · 위임장 같은 서식을 올려 두면 어느 기기에서나 내려받습니다.</p>' : ''}
+    <div>${단추}</div></div>`;
+}
 function ctFormsPageHTML(){
   const 줄 = (kind, key, 이름, 말) => `<li class="ctf-row"><span><b>${esc(이름)}</b>${말 ? `<small>${esc(말)}</small>` : ''}</span>
     <span class="eqb" style="gap:6px"><button type="button" class="btn tool sm" data-act="ctf-view" data-v="${kind}|${esc(key)}">미리보기</button><button type="button" class="btn tool sm" data-act="ctf-print" data-v="${kind}|${esc(key)}">인쇄 · PDF</button></span></li>`;
@@ -12255,6 +12300,7 @@ function ctFormsPageHTML(){
         <div class="card pad ct-sec"><h2>계약서</h2><ul class="ctf-ul">${계약.join('')}</ul></div>
         <div class="card pad ct-sec"><h2>중개대상물 확인·설명서</h2><ul class="ctf-ul">${확인.join('')}</ul></div>
         <div class="card pad ct-sec"><h2>기타 서식</h2><ul class="ctf-ul">${기타.join('')}</ul></div>
+        ${ct내서식HTML()}
       </div>
       ${보기 ? `<aside class="ctf-view"><div class="ctf-vh"><b>미리보기</b><button type="button" class="tapx" data-act="ctf-close">닫기</button></div>
         <div class="ctx-desk"><div class="ct-sheet" style="zoom:.6">${ct빈서식HTML(보기[0], 보기[1])}</div></div></aside>` : ''}
@@ -16950,6 +16996,10 @@ function handle(a,v,el){
     case 'ctf-office': CT.formsOffice = CT.formsOffice === false; render(); return true;
     case 'ctf-view': { const [k, key] = String(v).split('|'); CT.formsView = [k, key]; render(); return true; }
     case 'ctf-close': CT.formsView = null; render(); return true;
+    case 'fu-get': fuGet(v); return true;
+    case 'fu-del': { if(FU.del !== v){ FU.del = v; render(); return true; }
+      FU.del = null; FU.list = FU.list.filter(f => f.id !== v); render();
+      ctPost({ what:'form-del', id: v }).then(({ ok, j }) => { if(j && j.list) FU.list = j.list; render(); toast(ok ? '서식을 지웠습니다' : (j.error || '지우지 못했습니다')); }); return true; }
     case 'ctf-print': { const [k, key] = String(v).split('|'); return ctPrint(ct빈서식HTML(k, key)); }
     case 'ct-copy-part': { const a = ct복사할(); CT.copyParts = a.includes(v) ? a.filter(k => k !== v) : [...a, v]; render(); return true; }
     case 'ct-copy-this':

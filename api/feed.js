@@ -11,6 +11,7 @@ import { userFrom, sbHeaders, sbUrl } from './_auth.js';
 import { dbWhy } from './_dberr.js';
 import { contractRoute, reportDueCron, draftRead, 알림설정, 특약문구들, 특약문구고침, 문자틀들, 문자기록들, 문자고침, 단지들, 단지고침 } from './_contract.js';
 import { 날씨 } from './_weather.js';
+import { 서식들, 서식확인, 서식올리기, 서식주소, 서식지우기, 서식최대 } from './_forms.js';
 
 const KIND_KO = { home: '주거', shop: '상가', office: '오피스', storage: '창고' };
 
@@ -234,6 +235,49 @@ async function saveComplex(res, agent, b) {
   return res.status(200).json({ ok: true, list: z.y.list });
 }
 
+/* 우리 사무소 서식 (2026-11-06) - 파일은 저장소 bk-forms, 목록은 settings.forms. 공인중개사만 */
+async function readForms(res, agent) {
+  if (agent.role !== 'agent') return res.status(403).json({ error: '공인중개사만 쓸 수 있습니다' });
+  const x = await 설정읽기(agent);
+  if (x.error) return res.status(502).json({ error: '서식을 불러오지 못했습니다' });
+  return res.status(200).json({ ok: true, list: 서식들(x.settings.forms), need: x.need || '' });
+}
+async function upForm(res, agent, b) {
+  if (agent.role !== 'agent') return res.status(403).json({ error: '공인중개사만 쓸 수 있습니다' });
+  const c = 서식확인(b);
+  if (c.error) return res.status(400).json({ error: c.error });
+  const 지금 = await 설정읽기(agent);
+  if (지금.error) return res.status(502).json({ error: '서식을 불러오지 못했습니다' });
+  if (서식들(지금.settings.forms).length >= 서식최대) return res.status(400).json({ error: `서식은 ${서식최대}개까지 둡니다 - 안 쓰는 서식을 지운 뒤 올려 주세요` });
+  const u = await 서식올리기(agent.id, c.ext, c.buf);
+  if (u.need) return res.status(503).json({ error: '서식 올리기를 준비 중입니다 - 곧 열립니다', need: 'forms' });
+  if (!u.id) return res.status(502).json({ error: u.error || '파일을 올리지 못했습니다' });
+  const at = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 19);
+  const 새 = { id: u.id, name: c.name, ext: c.ext, size: c.buf.length, at };
+  const z = await 설정고침(agent, s => { const L = 서식들(s.forms);
+    return L.length >= 서식최대 ? { error: `서식은 ${서식최대}개까지 둡니다`, code: 400 } : { list: [새, ...L], patch: { forms: [새, ...L] } }; });
+  if (!z.y || z.y.error) { await 서식지우기(agent.id, 새).catch(() => {}); return z.y && z.y.error ? res.status(400).json({ error: z.y.error }) : 설정실패(res, z, '서식'); }
+  return res.status(200).json({ ok: true, list: z.y.list });
+}
+async function formUrl(res, agent, b) {
+  if (agent.role !== 'agent') return res.status(403).json({ error: '공인중개사만 쓸 수 있습니다' });
+  const x = await 설정읽기(agent);
+  const f = 서식들(x.settings && x.settings.forms).find(v => v.id === String(b.id || ''));
+  if (!f) return res.status(404).json({ error: '지워졌거나 없는 서식입니다' });
+  const u = await 서식주소(agent.id, f);
+  if (!u.url) return res.status(u.need ? 503 : 502).json({ error: u.need ? '서식 올리기를 준비 중입니다' : u.error, need: u.need || '' });
+  return res.status(200).json({ ok: true, url: u.url });
+}
+async function delForm(res, agent, b) {
+  if (agent.role !== 'agent') return res.status(403).json({ error: '공인중개사만 쓸 수 있습니다' });
+  let 지운 = null;
+  const z = await 설정고침(agent, s => { const L = 서식들(s.forms); 지운 = L.find(v => v.id === String(b.id || '')) || null;
+    return { list: L.filter(v => v !== 지운), patch: { forms: L.filter(v => v !== 지운) } }; });
+  if (!z.y) return 설정실패(res, z, '서식');
+  if (지운) await 서식지우기(agent.id, 지운).catch(() => {});
+  return res.status(200).json({ ok: true, list: z.y.list });
+}
+
 async function saveOfficeAddr(res, agent, b) {
   const addr = String(b.addr || '').replace(/\s+/g, ' ').trim().slice(0, 200);
   if (!/\d/.test(addr)) return res.status(400).json({ error: '도로명 찾기로 주소를 골라 주세요' });
@@ -302,6 +346,10 @@ export default async function handler(req, res) {
   if (b.what === 'sms-save')     return saveSms(res, chk.agent, b);
   if (b.what === 'complex')      return readComplex(res, chk.agent);
   if (b.what === 'complex-save') return saveComplex(res, chk.agent, b);
+  if (b.what === 'forms')        return readForms(res, chk.agent);
+  if (b.what === 'form-up')      return upForm(res, chk.agent, b);
+  if (b.what === 'form-url')     return formUrl(res, chk.agent, b);
+  if (b.what === 'form-del')     return delForm(res, chk.agent, b);
 
   /* 계약서 (2026-10-29). 승인 전 중개사도 쓴다 - 자격 확인은 수요 전문을 여는 문이지
      양식·인쇄 도구의 문이 아니다. 갈래는 api/_contract.js 가 맡는다. */

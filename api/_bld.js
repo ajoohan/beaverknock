@@ -148,7 +148,8 @@ export async function 토지(b, 키 = process.env.VWORLD_KEY, fetchFn = fetch, �
   const out = {
     landCat: 글(최근.lndcgrCodeNm), landArea: 수(최근.lndpclAr),
     zone: 용도[0] || [글(최근.prposArea1Nm), 글(최근.prposArea2Nm)].filter(x => x && x !== '지정되지않음').join(' · '),
-    district: 지역지구.filter(n => !용도.includes(n)).slice(0, 8).join(' · ').slice(0, 80),
+    /* 80자 안에서 이름 단위로 자른다(중간에서 끊지 않는다) */
+    district: 지역지구.filter(n => !용도.includes(n)).reduce((a, n) => (a ? a + ' · ' + n : n).length <= 80 ? (a ? a + ' · ' + n : n) : a, ''),
     landPrice: 수(최근.pblntfPclnd), landPriceYear: 글(최근.stdrYear),
     permitZone: 지역지구.some(n => /토지거래(계약에관한)?허가구역/.test(n.replace(/\s/g, ''))),
   };

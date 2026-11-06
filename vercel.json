@@ -58,5 +58,12 @@
         }
       ]
     }
-  ]
+  ],
+  "functions": {
+    "api/land.js": {
+      "regions": [
+        "icn1"
+      ]
+    }
+  }
 }

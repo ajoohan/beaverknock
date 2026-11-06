@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 /* 주소로 건축물대장 불러오기 (2026-11-06 · 파트너 기획 [221] '건축물대장 업로드와 무관하게 정보를 불러와 자동 입력')
  * 국토교통부 건축HUB 건축물대장정보 서비스(공공데이터포털 15134735) - 표제부(getBrTitleInfo) · 전유공용면적(getBrExposPubuseAreaInfo).
  * 키는 DATA_GO_KEY(날씨와 같은 포털 키). 포털에서 이 서비스에 '활용신청'을 해야 열린다 - 안 했으면 포털이 XML 오류를 준다.
@@ -116,12 +117,29 @@ async function 토지묻기(path, 키, pnu, fetchFn) {
 }
 /* 실패 까닭(포털 답 앞부분) - 활용신청 전인지 가린다. 키는 답에 들어 있지 않다 */
 export const 토지사유 = [];
-export async function 토지(b, 키 = process.env.VWORLD_KEY, fetchFn = fetch) {
-  if (!키 || !/^\d{10}$/.test(글(b.admCd)) || !/^\d{1,4}$/.test(글(b.bun))) return null;
-  const pnu = 필지번호(b);
+/* 브이월드는 해외 IP 를 막는다 - 서버 함수(미국)에서 부르면 502. 서울(icn1)에서 도는 api/land.js 를 거친다(경유).
+   경유 열쇠는 서버 비밀값에서 나온다. 검사 · 로컬은 바로 부른다 */
+export const 토지열쇠 = () => crypto.createHash('sha256').update('bk-land|' + String(process.env.BK_SECRET_KEY || ''), 'utf8').digest('hex');
+export async function 토지원자료(pnu, 키, fetchFn = fetch) {
   const [특성, 이용] = await Promise.all([
     토지묻기('getLandCharacteristics', 키, pnu, fetchFn),
     토지묻기('getLandUseAttr', 키, pnu, fetchFn)]);
+  return { 특성, 이용 };
+}
+async function 토지경유(pnu, fetchFn) {
+  try {
+    const r = await fetchFn(process.env.BK_LAND_URL || 'https://beaverknock.co.kr/api/land', { method: 'POST', signal: AbortSignal.timeout(9000),
+      headers: { 'Content-Type': 'application/json', 'x-bk-land': 토지열쇠() }, body: JSON.stringify({ pnu }) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) { 토지사유.push(`land: ${r.status} ${String(j.error || '').slice(0, 120)}`); return { 특성: null, 이용: null }; }
+    if (Array.isArray(j.why)) 토지사유.push(...j.why.slice(0, 2));
+    return { 특성: j.특성 ?? null, 이용: j.이용 ?? null };
+  } catch (e) { 토지사유.push('land: ' + String(e && e.message || e).slice(0, 120)); return { 특성: null, 이용: null }; }
+}
+export async function 토지(b, 키 = process.env.VWORLD_KEY, fetchFn = fetch, 경유 = !!process.env.VERCEL) {
+  if (!키 || !/^\d{10}$/.test(글(b.admCd)) || !/^\d{1,4}$/.test(글(b.bun))) return null;
+  const pnu = 필지번호(b);
+  const { 특성, 이용 } = 경유 ? await 토지경유(pnu, fetchFn) : await 토지원자료(pnu, 키, fetchFn);
   if (!특성 && !이용) return null;
   /* 해마다 한 줄 - 가장 최근 해 */
   const 최근 = (특성 || []).slice().sort((a, c) => String(c.stdrYear || '').localeCompare(String(a.stdrYear || '')))[0] || {};

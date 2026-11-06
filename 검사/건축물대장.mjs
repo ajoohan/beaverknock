@@ -1,5 +1,5 @@
 /* 주소로 건축물대장 불러오기 (2026-11-06) - 포털 답을 흉내 내 실제로 돌린다 */
-import { 건축물대장, 동호, 포털오류 } from '../api/_bld.js';
+import { 건축물대장, 동호, 포털오류, 토지 } from '../api/_bld.js';
 import * as 길 from './길.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -42,6 +42,11 @@ ok(동호('미사강변대로 220, 101동 1203호').dong === '101' && 동호('�
      '토지 - 건물이 없으면 토지특성(최근 해) · 토지이용계획(허가구역)만으로 채운다');
   let 본 = ''; await 건축물대장({ admCd:'4145010300', bun:'5', ji:'12', mount:true }, 'k', async u => { if (/vworld/.test(u)) 본 = String(u); return /vworld/.test(u) ? new Response('{}') : 답([]); }, 'vk').catch(() => {});
   ok(/pnu=4145010300200050012/.test(본) && /api\.vworld\.kr\/ned\/data\/getLand/.test(본) && /key=vk&domain=beaverknock\.co\.kr/.test(본), 'PNU = 법정동코드 + 산(2) + 본번 4 + 부번 4 · 브이월드 키와 도메인');
+}
+{ process.env.BK_SECRET_KEY = 's'; let 본 = null;
+  const o = await 토지({ admCd:'4145010300', bun:'5', ji:'' }, 'vk', async (u, op) => { 본 = { u: String(u), op }; return new Response(JSON.stringify({ 특성: [{ stdrYear:'2025', lndcgrCodeNm:'대', lndpclAr:'10' }], 이용: [] })); }, true);
+  ok(o && o.landCat === '대' && /\/api\/land$/.test(본.u) && 본.op.headers['x-bk-land'].length === 64 && JSON.parse(본.op.body).pnu === '4145010300100050000' && !/vk/.test(본.op.body),
+     '서버(미국)에서는 서울 함수(api/land)를 거친다 - 열쇠는 서버 비밀값에서, 브이월드 키는 보내지 않는다');
 }
 ok(/case 'contract-bld':\s+await 대장\(req, res, agent, b\);/.test(fs.readFileSync(path.resolve(길.저장소, 'api/_contract.js'), 'utf8')) && /ctApplyScan\(CT\.doc, j\.scan, j\.kinds \|\| \['bld'\], true\)/.test(js) && /data-act="ct-bld-go"/.test(js),
    '화면 - 소재지를 고르면 ‘주소로 건축물대장 불러오기’ · 빈칸만 채운다');

@@ -52,6 +52,14 @@ export function 직원고침(list, b, 대표메일 = '') {
   return { error: '알 수 없는 요청입니다', code: 400 };
 }
 
+/* 이 메일이 다른 사무소 명단에 이미 있는가 - 두 사무소에 들면 어느 쪽으로 열릴지 정해지지 않는다 */
+export async function 다른사무소직원(email, 내사무소, fetchFn = fetch) {
+  const q = new URLSearchParams({ select: 'id', settings: 'cs.' + JSON.stringify({ staff: [{ email: 메일(email) }] }), id: 'neq.' + 내사무소, limit: '1' });
+  const r = await fetchFn(sbUrl('bk_agent', q.toString()), { headers: sbHeaders() });
+  if (!r.ok) return false;
+  return (await r.json().catch(() => [])).length > 0;
+}
+
 /* 처음 들어온 직원 - 명단에 계정 id 를 적는다(메일이 바뀌어도 이어지게) */
 export function 직원들어옴(list, i, uid) {
   return 직원들(list).map(x => x.i === i ? { ...x, uid, joined: x.joined || 지금() } : x);
@@ -60,8 +68,8 @@ export function 직원들어옴(list, i, uid) {
 /* 이 계정이 직원으로 든 사무소 - { agent, 첫로그인 } 또는 null. 계정 id 로 먼저, 없으면 확인된 메일로 */
 export async function 직원사무소(user, 열, fetchFn = fetch) {
   if (!user || !user.id) return null;
-  const 믿는메일 = user.email_confirmed_at || user.confirmed_at
-    || (user.app_metadata && user.app_metadata.provider && user.app_metadata.provider !== 'email');
+  /* userFrom(_auth.js) 은 provider 를 맨 위에 담는다 - opsAccount 와 같은 판정 */
+  const 믿는메일 = user.email_confirmed_at || user.confirmed_at || (user.provider && user.provider !== 'email');
   const email = 믿는메일 ? 메일(user.email) : '';
   const 찾기 = async 조각 => {
     const q = new URLSearchParams({ select: 열 + ',settings', settings: 'cs.' + JSON.stringify({ staff: [조각] }), limit: '1' });

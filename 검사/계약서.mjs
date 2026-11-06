@@ -677,7 +677,7 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
      '인쇄는 A4 · 문서만 찍는다(앱은 감춘다)');
   ok(/\$\{계약막힘\(\)\?'':`<a data-go="#\/partner\/contracts"/.test(js), '위 메뉴의 계약서 탭은 소유자·시행사 · 중개보조원에게 없다');
   ok(/\.\.\.\(계약막힘\(\)\?\[\]:\[\['#\/partner\/contracts','계약서','ct'\]\]\)/.test(js), '휴대폰 아래 탭도 중개사에게만 - 다섯 칸을 넘지 않는다');
-  ok(/p\.status==='selected' && !ownerSide\(\) \? `<button class="btn pri sm" data-act="ct-from"/.test(js), '연결된 제안에만 "계약서 만들기" 가 있다');
+  ok(/p\.status==='selected' && !계약막힘\(\) \? `<button class="btn pri sm" data-act="ct-from"/.test(js), '연결된 제안에만 "계약서 만들기" 가 있다');
   ok(/ADDR\.for === 'ct-addr' && CT\.doc[\s\S]{0,200}admCd: a\.admCd/.test(js), '주소 검색으로 고르면 법정동코드까지 담는다');
   ok(/if\(k\.startsWith\('ct'\) && ctInput\(el, k\)\) return;/.test(js), '계약서 칸은 글자마다 다시 그리지 않는다');
   ok(/저장하지 않은 고침이 있습니다/.test(js) && /addEventListener\('beforeunload'/.test(js), '저장하지 않고 떠나면 묻는다(화면 이동·창 닫기)');
@@ -686,7 +686,7 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
      '다른 계약서로 옮겨 가도 묻는다 - 화면이 새 문서를 들고 가는 길(ctGo)만 묻지 않는다');
   ok(/function ctDirty\(\)\{ CT\.dirty = true; CT\.rev = \(CT\.rev \|\| 0\) \+ 1;/.test(js) && /CT\.dirty = true; CT\.rev = \(CT\.rev \|\| 0\) \+ 1;\n  \}/.test(js),
      '고칠 때마다 판 번호가 오른다(글자·주소 검색 모두)');
-  ok(/h==='#\/partner\/proposals' && S\.agent && !ownerSide\(\)\) ctLoadList\(\)/.test(js) && /if\(!CT\.list\) await ctLoadList\(true\);/.test(js),
+  ok(/h==='#\/partner\/proposals' && S\.agent && !계약막힘\(\)\) ctLoadList\(\)/.test(js) && /if\(!CT\.list\) await ctLoadList\(true\);/.test(js),
      '제안 화면에서도 계약서 목록을 받고, 모르면 받아 본 뒤에 만든다');
   /* 2026-10-29 대표님: Lounge 계약서처럼 - 왼쪽 입력 판 | 오른쪽 책상 위 A4, 칸은 값 길이만큼, 빽빽하게 */
   ok(/if\(!isMo\(\)\)\{\s*const 신고면[\s\S]{0,200}const 판 = CT\.mode === 'scan' && !잠김 \? ctScanHTML\(\) : CT\.mode === 'plan' && !F\.explain \? ctPlanHTML\(doc\) : CT\.mode === 'extra' && !F\.explain \? ctExtraHTML\(doc\) : 신고면 \? ctReportSide\(doc\) : \(잠김 \? '' : ctScanBanner\(\)\) \+ \(F\.explain \? exEditor\(doc\) \+[\s\S]{0,260}: ctFormHTML\(doc\)\);/.test(js)

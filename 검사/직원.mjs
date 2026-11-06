@@ -22,10 +22,14 @@ ok(직원들어옴(y.list, i, '11111111-2222-3333-4444-555555555555')[0].uid ===
 const 사무소 = { id: 'a1', role: 'agent', status: 'approved', office: '대표부동산', settings: { staff: [{ i, email: 'staff@x.com', role: 'assistant', name: '김직원' }] } };
 let 물은 = [];
 const 가짜 = async u => { 물은.push(decodeURIComponent(String(u))); return new Response(JSON.stringify(/"email":"staff@x.com"/.test(decodeURIComponent(String(u))) ? [사무소] : [])); };
-let z = await 직원사무소({ id: '9f9f9f9f-0000-0000-0000-000000000001', email: 'Staff@x.com', app_metadata: { provider: 'google' } }, 'id', 가짜);
+let z = await 직원사무소({ id: '9f9f9f9f-0000-0000-0000-000000000001', email: 'Staff@x.com', provider: 'google' }, 'id', 가짜);
 ok(z && z.agent.id === 'a1' && z.agent.staff.role === 'assistant' && z.첫로그인 && !('settings' in z.agent), '소셜 로그인 메일이 명단에 있으면 대표 사무소로 든다(설정은 내보내지 않는다)');
-z = await 직원사무소({ id: '9f9f9f9f-0000-0000-0000-000000000001', email: 'staff@x.com', app_metadata: { provider: 'email' } }, 'id', 가짜);
+z = await 직원사무소({ id: '9f9f9f9f-0000-0000-0000-000000000001', email: 'staff@x.com', provider: 'email' }, 'id', 가짜);
 ok(z === null, '메일 확인을 안 마친 메일 가입 계정은 메일로 맞추지 않는다');
+
+const { 다른사무소직원 } = await import('../api/_staff.js');
+ok(await 다른사무소직원('Staff@x.com', 'b2', async u => new Response(/"email":"staff@x.com"/.test(decodeURIComponent(String(u))) && /id=neq.b2/.test(String(u)) ? '[{"id":"a1"}]' : '[]'))
+  && !(await 다른사무소직원('new@x.com', 'b2', async () => new Response('[]'))), '다른 사무소 명단에 이미 있는 메일은 알아본다');
 
 /* 3. feed.js - 권한 */
 let 찾은 = 'none';
@@ -55,5 +59,7 @@ ok(js.includes("const 계약막힘 = () => ownerSide() || 보조원();") && js.i
 ok(js.includes("if(직원() && (h === '#/partner/settings' || (보조원() && h.startsWith('#/partner/contract')))){"), '화면 - 직원이 주소로 들어와도 대시보드로 돌린다');
 ok(js.includes("${own || 직원() ? '' : 직원카드HTML()}") && js.includes("ctPost({ what:'staff' })") && js.includes("what:'staff-save'"), '화면 - 대표의 활동 설정에 직원 카드');
 ok(js.includes("staff: ct직원이름(), hand: true }"), '화면 - 소속공인중개사 직원이 쓰면 계약서 소속공인중개사 칸에 이름');
+ok(js.includes("if(!세션있음() || (S.agent && S.agent.staff && S.agent.staff.role === 'assistant')) return Promise.resolve();") && js.includes("계약없는연결 && !계약막힘() ?") && js.includes("${계약막힘() ? '' : (() => { if(!CS.loaded"), '화면 - 보조원 대시보드는 계약 목록 · 계약 할 일 · 계약체결 문자를 부르지 않는다');
+ok(js.includes("if((NEEDS_OK || h === '#/partner/verify') && 직원() && S.agent.status !== 'approved'){"), '화면 - 직원은 자격 확인 화면 대신 대표 사무소 확인 안내');
 console.log(`${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

@@ -6676,7 +6676,7 @@ function accAddrHTML(a){
       <div class="eqb" style="gap:8px;margin-top:8px"><button class="btn pri sm" data-act="acc-addr-save" ${!e.v || e.busy ? 'disabled' : ''}>${e.busy ? '저장 중…' : '저장'}</button>
         <button class="btn tool sm" data-act="acc-addr-cancel">취소</button></div></div>`;
   return `<div class="acc-addr"><span class="lab">사무소 주소 <span style="font-weight:500;color:var(--n500)">· 계약서에 자동으로 들어갑니다</span></span>
-    <div class="acc-addr-v">${쓸만 ? `<b>${esc(지금)}</b>` : `<b class="acc-addr-none">아직 등록하지 않았습니다</b>`}<button class="btn tool sm" data-act="acc-addr-edit">${쓸만 ? '바꾸기' : '등록하기'}</button></div></div>`;
+    <div class="acc-addr-v">${쓸만 ? `<b>${esc(지금)}</b>` : `<b class="acc-addr-none">아직 등록하지 않았습니다</b>`}${직원() ? '' : `<button class="btn tool sm" data-act="acc-addr-edit">${쓸만 ? '바꾸기' : '등록하기'}</button>`}</div></div>`;
 }
 function accAddrSave(full){ if(S.accAddr) S.accAddr.v = full; }
 
@@ -6697,7 +6697,8 @@ V['#/account'] = () => {
   const 날 = t => { const d = t ? new Date(t) : null; return d && !isNaN(d) ? `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}` : ''; };
   const a = S.agent, 관리 = !!a && !isMo();
   const 판 = 'M4 4 h7 v7 H4 Z M13 4 h7 v7 h-7 Z M4 13 h7 v7 H4 Z M13 13 h7 v7 h-7 Z';
-  const 역할 = a ? ({agent:'공인중개사', owner:'소유자', developer:'시행사'}[a.role] || '파트너') : '';
+  /* 직원(2026-11-06)은 대표 사무소의 직원으로 - 사무소 주소는 대표만 고친다 */
+  const 역할 = a ? (a.staff ? (직원역할KO[a.staff.role] || '직원') : ({agent:'공인중개사', owner:'소유자', developer:'시행사'}[a.role] || '파트너')) : '';
   const 광고 = !!(c && c.marketing_at);
   const 줄 = (제목, 설명, 몸) => `<section class="card acc-row"><div class="acc-l"><h2>${제목}</h2>${설명 ? `<p>${설명}</p>` : ''}</div><div class="acc-r">${몸}</div></section>`;
   const 파트너칸 = a ? `
@@ -6706,8 +6707,8 @@ V['#/account'] = () => {
       ${a.role === 'agent' ? accAddrHTML(a) : ''}
       <div class="acc-tiles">${a.status==='approved'
         ? 마이줄('#/partner/home', ownerSide() ? '파트너 화면' : '파트너 대시보드', '', 판)
-          + (ownerSide() ? '' : 마이줄('#/partner/contracts', '계약서', '', 'M6 3 h9 l4 4 v14 H6 Z M9 11 h7 M9 15 h7 M9 19 h4'))
-          + 마이줄('#/partner/settings', '활동 설정', '', 'M12 21 s-7 -6.2 -7 -11.5 a7 7 0 0 1 14 0 C19 14.8 12 21 12 21 Z M12 12.5 a2.5 2.5 0 1 0 0 -5 a2.5 2.5 0 0 0 0 5')
+          + (계약막힘() ? '' : 마이줄('#/partner/contracts', '계약서', '', 'M6 3 h9 l4 4 v14 H6 Z M9 11 h7 M9 15 h7 M9 19 h4'))
+          + (직원() ? '' : 마이줄('#/partner/settings', '활동 설정', '', 'M12 21 s-7 -6.2 -7 -11.5 a7 7 0 0 1 14 0 C19 14.8 12 21 12 21 Z M12 12.5 a2.5 2.5 0 1 0 0 -5 a2.5 2.5 0 0 0 0 5'))
         : 마이줄('#/partner/verify', '자격 확인하기', '등록번호 대조', 판)}</div>`
     : S.agentKnown ? `
       <p class="acc-note">공인중개사·소유자이신가요? 파트너로 가입하시면 손님이 걸어둔 조건에 1:1 로 제안하실 수 있습니다.</p>
@@ -7471,7 +7472,7 @@ V['#/partner/proposals'] = () => {
           <!-- 보낸 내용은 이 카드에 이미 다 있다 - 눌러도 아무 일 없던 '보낸 내용 보기' 단추는 뺐다(2026-11-03 리뷰).
                남는 단추는 상태마다 하나(계약서 만들기 · 회수) -->
           <div class="eqb" style="gap:8px">
-            ${p.status==='selected' && !ownerSide() ? `<button class="btn pri sm" data-act="ct-from" data-v="${p.id}">계약서 만들기</button>` : ''}
+            ${p.status==='selected' && !계약막힘() ? `<button class="btn pri sm" data-act="ct-from" data-v="${p.id}">계약서 만들기</button>` : ''}
             ${p.status==='sent'? `<button class="btn sec sm" data-act="withdraw" data-v="${p.id}" ${S.withdrawing?'disabled':''} style="color:var(--danger)">${S.withdrawing?'회수 중…':'회수'}</button>`:''}
           </div>
         </div>
@@ -7956,9 +7957,7 @@ function 직원카드HTML(){
         <span style="display:block;font-size:13px;color:var(--n500)">${esc(s.email)}</span></div>
       ${역할고름(s.role, `data-sf-role="${esc(s.i)}" aria-label="${esc(s.email)} 역할" style="width:auto;min-width:150px" ${SF.busy?'disabled':''}`)}
       <span class="badge ${s.uid ? 'b-ok' : 'b-warn'}">${s.uid ? '들어옴' : '초대함'}</span>
-      ${SF.del === s.i
-        ? `<span class="eqb" style="display:inline-flex;gap:6px"><button class="btn sm" data-act="sf-del-no">취소</button><button class="btn sm danger" data-act="sf-del-yes" data-v="${esc(s.i)}" ${SF.busy?'disabled':''}>빼기</button></span>`
-        : `<button class="btn sm" data-act="sf-del" data-v="${esc(s.i)}">빼기</button>`}
+      <button type="button" class="btn tool sm" data-act="sf-del" data-v="${esc(s.i)}" ${SF.busy?'disabled':''}>${SF.del === s.i ? '한 번 더 누르면 뺍니다' : '빼기'}</button>
     </div>`;
   const 이름 = t => `<span style="display:block;font-size:13px;font-weight:700;color:var(--n700);margin-bottom:5px">${t}</span>`;
   return `<div class="card pad" id="sfCard">
@@ -7970,7 +7969,7 @@ function 직원카드HTML(){
       <label>${이름('메일')}<input class="inp" id="sfMail" type="email" autocomplete="off" placeholder="staff@example.com" maxlength="120"></label>
       <label>${이름('이름')}<input class="inp" id="sfName" type="text" autocomplete="off" placeholder="홍길동" maxlength="20"></label>
       <label>${이름('역할')}${역할고름('staff', 'id="sfRole"')}</label>
-      <button class="btn pri" data-act="sf-add" ${SF.busy?'disabled':''}>${SF.busy ? '저장 중' : '초대하기'}</button>
+      <button class="btn pri" data-act="sf-add" style="min-height:46px" ${SF.busy?'disabled':''}>${SF.busy ? '저장 중' : '초대하기'}</button>
     </div>
     <div style="margin-top:12px">
       ${SF.err ? `<p style="margin:0;font-size:13.5px;color:var(--danger)">${esc(SF.err)}</p>`
@@ -8005,7 +8004,6 @@ V["#/partner/settings"] = () => {
     </div>
 
     ${meCard()}
-    ${own || 직원() ? '' : 직원카드HTML()}
     ${own ? `<p style="margin:0;font-size:13.5px;line-height:1.7;color:var(--n500)">
       소유자·시행사께는 활동 지역과 유형을 묻지 않습니다 - 올려두신 물건이 곧 조건입니다.</p>`
     : `<div style="display:grid;grid-template-columns:${isMo()?'1fr':'1fr 300px'};gap:${isMo()?14:18}px;align-items:start">
@@ -8079,6 +8077,7 @@ V["#/partner/settings"] = () => {
           <span style="display:block;font-size:13.5px;color:var(--n700);margin-top:4px">수요는 계속 쌓이며, 재개하면 그동안의 조건을 한 번에 보여드립니다.</span></div>` : ''}
       </div>
     </div>`}
+    ${own || 직원() ? '' : 직원카드HTML()}
   </div>
   ${tabbar('s','p')}
 </div>`;};
@@ -10993,6 +10992,11 @@ const CT_하위메뉴 = [['#/partner/contracts/new', '계약서 작성', 'pen', 
    번호는 배포한 날(연.월.일 - 같은 날 또 올리면 뒤에 .2). 화면이 version.json 을 가끔 읽어,
    더 새 버전이 올라와 있으면 메뉴 아래에서 새로고침을 권한다(버전확인) - 계약서를 띄워 둔 채 오래 일하면 고친 화면을 못 받는다 */
 const BK_변경 = [
+  { v:'26.11.06.16', 날:'2026-11-06', 줄:[
+    '직원 - 같은 메일은 한 사무소에만 · 초대는 하루 30통까지 · 초대 메일은 파트너 화면으로 바로 연결',
+    '중개보조원 화면 - 대시보드 · 제안 · 마이페이지에서 계약서 칸을 감추고, 직원에게는 사무소 주소 바꾸기 · 활동 설정을 감춤',
+    '대시보드 - 계약서를 쓰지 않는 계정에 ‘올려둔 물건’ 이 두 번 나오던 것을 ‘아직 안 열린 제안’ 으로',
+    '활동 설정 - 직원 카드를 맨 아래로, 빼기는 한 번 더 눌러 확인' ] },
   { v:'26.11.06.15', 날:'2026-11-06', 줄:[
     '직원 계정 - 활동 설정에서 직원 메일로 초대하면 그 메일로 로그인한 직원이 우리 사무소로 들어옵니다(계약서 · 제안 · 물건을 같이 봄)',
     '역할 - 소속공인중개사는 계약서까지, 중개보조원은 수요 · 물건 · 제안만 · 직원 관리와 활동 설정은 대표만' ] },
@@ -11233,9 +11237,9 @@ V['#/partner/home'] = () => {
   const 할일 = [
     잔금칸(잔금지연, '잔금 지연?', '잔금일이 지났는데 완료로 바꾸지 않았습니다 - 일정·체크에서 진행 상태를 고르세요'),
     잔금칸(오늘잔금, '오늘 잔금 - 완료 확인', '잔금을 마쳤으면 일정·체크에서 진행 상태를 완료로 바꾸세요'),
-    !S.agent || S.agent.status !== 'approved' ? { t:'자격 확인 마치기', s:'등록번호를 확인하면 손님 조건 전문이 열립니다', ico:'check', go:'#/partner/verify' } : null,
+    (!S.agent || S.agent.status !== 'approved') && !직원() ? { t:'자격 확인 마치기', s:'등록번호를 확인하면 손님 조건 전문이 열립니다', ico:'check', go:'#/partner/verify' } : null,
     안읽힘 ? { t:'아직 안 열린 제안', s:'손님이 보기 전입니다 - 조건을 다시 보세요', n:안읽힘, ico:'eye', go:'#/partner/proposals' } : null,
-    계약없는연결 ? { t:'연결된 손님 계약서', s:'연결됐는데 계약서를 아직 안 만들었습니다', n:계약없는연결, ico:'doc', go:'#/partner/proposals' } : null,
+    계약없는연결 && !계약막힘() ? { t:'연결된 손님 계약서', s:'연결됐는데 계약서를 아직 안 만들었습니다', n:계약없는연결, ico:'doc', go:'#/partner/proposals' } : null,
     신고전 ? { t:'신고 안 한 날인본', s:'계약일부터 30일 안에 신고 - 마쳤으면 ‘신고 마침’ 표시', n:신고전, ico:'flag', go:'#/partner/contracts' } : null,
     작성중 ? { t:'작성 중인 계약서', s:'날인받았으면 날인본으로 확정하세요', n:작성중, ico:'doc', go:'#/partner/contracts' } : null,
     계약.some(r => ct안읽은의견(r.track)) ? { t:'초안에 새 의견', s:'손님 · 공동중개 사무소가 초안 링크로 남긴 의견', n: 계약.reduce((s, r) => s + ct안읽은의견(r.track), 0), ico:'doc', go:'#/partner/contracts' } : null,
@@ -11254,7 +11258,7 @@ V['#/partner/home'] = () => {
           ${dzKpi({ ico:'users', cap: ownerSide() ? '맞는 손님' : '내 지역에 걸린 조건', v: S.feedAt ? 수요.length : null, go:'#/partner/demands' })}
           ${dzKpi({ ico:'send', cap:'보낸 제안', v: 진짜.length, go:'#/partner/proposals', pill: dzPill(뒤7 - 앞7), sub:'지난 7일 · 그 앞 7일 대비' })}
           ${dzKpi({ ico:'link', cap:'연결된 손님', v: 연결.length, go:'#/partner/proposals', sub: 진짜.length ? `열람 ${열람}건` : '' })}
-          ${ownerSide() ? dzKpi({ ico:'building', cap:'올려둔 물건', v: 물건.length, go:'#/partner/listings' })
+          ${계약막힘() ? dzKpi({ ico:'clock', cap:'아직 안 열린 제안', v: 안읽힘, go:'#/partner/proposals', sub:'손님이 보기 전입니다' })
             : dzKpi({ ico:'doc', cap:'계약서', v: CT.list ? 계약.length : null, go:'#/partner/contracts', sub: CT.list ? `날인본 ${날인} · 작성 중 ${작성중}` : '' })}
         </div>
         <div class="dz-r2">
@@ -11283,7 +11287,7 @@ V['#/partner/home'] = () => {
           : { t:'자격 확인', state: S.agent ? '확인 중' : '가입 전', pct: S.agent ? 55 : 10,
               note:'등록번호를 공공데이터로 확인하면 손님 조건 전문이 열립니다.', btn:'자격 확인하기', go:'#/partner/verify' })}
         ${dzTodo(할일, '지금 손댈 일은 없습니다. 새 조건이 오면 알려 드립니다.')}
-        ${ownerSide() ? '' : (() => { if(!CS.loaded && 세션있음()) setTimeout(csLoad);
+        ${계약막힘() ? '' : (() => { if(!CS.loaded && 세션있음()) setTimeout(csLoad);
           return `<div class="dz-card cs-dz"><div class="dz-chh"><b class="dz-ct">계약체결 문자</b><a class="dz-more" data-go="#/partner/contracts/sms">틀 고치기<i class="ar-r" aria-hidden="true"></i></a></div>
           <div class="cs-dz-b">${cs틀들().filter(t => !t.hidden).map(t => `<button type="button" class="btn tool sm" data-act="cs-go" data-v="${esc(t.id)}">${esc(t.name)}</button>`).join('')}</div></div>`; })()}
       </aside>
@@ -12025,7 +12029,8 @@ function ctPost(body){
 /* 실패하면 목록을 비워 두지 않는다(null) - 빈 배열로 두면 '계약서 0건' 으로 보이고 다시 묻지도 않는다.
    다만 화면을 그릴 때마다 다시 묻지 않게 30초는 쉰다. 기다릴 수 있게 약속을 돌려준다. */
 function ctLoadList(force){
-  if(!세션있음()) return Promise.resolve();
+  /* 중개보조원(2026-11-06)은 계약서를 쓰지 않는다 - 부르면 403 이 '불러오지 못함' 으로 보였다 */
+  if(!세션있음() || (S.agent && S.agent.staff && S.agent.staff.role === 'assistant')) return Promise.resolve();
   if(CT.loading) return CT.loadP;
   if(CT.list && !force) return Promise.resolve();
   if(!force && CT.failAt && Date.now() - CT.failAt < 30e3) return Promise.resolve();
@@ -15217,6 +15222,9 @@ function render(){
      서버도 같은 것을 본다(feed.js 가 요약만 내보내고 agent.js 가 승격을 맡는다). */
   const NEEDS_OK = h.startsWith('#/partner/demand/') || h.startsWith('#/partner/propose/')
                 || h === '#/partner/listing/new' || h.startsWith('#/partner/listing/');
+  if((NEEDS_OK || h === '#/partner/verify') && 직원() && S.agent.status !== 'approved'){
+    toast('대표 사무소의 자격 확인이 끝나면 열립니다'); location.replace('#/partner/home'); return;
+  }
   if(NEEDS_OK && S.agent && S.agent.status !== 'approved'){
     location.replace('#/partner/verify'); return;
   }
@@ -15361,7 +15369,7 @@ function render(){
      거기서 부르면 로그인한 손님 계정도 방문마다 /api/feed 를 두 번 부르고 403 을 받았다. */
   if(h==='#/partner/proposals' || h==='#/partner/stats') loadMyProps(false);
   /* 내 제안의 '계약서 만들기' 가 이미 만든 초안을 찾으려면 계약서 목록이 있어야 한다 */
-  if(h==='#/partner/proposals' && S.agent && !ownerSide()) ctLoadList();
+  if(h==='#/partner/proposals' && S.agent && !계약막힘()) ctLoadList();
   if(h.startsWith('#/partner/listing')) loadListings(false);
   /* 위치는 묻지 않는다 - 위치 기능을 통째로 걷었다(2026-10-17, detectRegion 이 있던 자리 주석 참고). */
 
@@ -17126,9 +17134,9 @@ function handle(a,v,el){
       if(!SF_메일.test(email)){ toast('직원의 메일 주소를 적어 주세요'); if(칸('sfMail').focus) 칸('sfMail').focus(); return true; }
       sfSave({ op:'add', email, name, role }, j => j.mailed ? `${email} 로 초대 메일을 보냈습니다` : '명단에 넣었습니다 - 초대 메일은 보내지 못했으니 직원에게 이 메일로 로그인하라고 알려 주세요');
       return true; }
-    case 'sf-del': SF.del = v; render(); return true;
-    case 'sf-del-no': SF.del = null; render(); return true;
-    case 'sf-del-yes': sfSave({ op:'del', i: v }, '명단에서 뺐습니다 - 그 계정은 이제 사무소 화면을 열지 못합니다'); return true;
+    case 'sf-del':
+      if(SF.del !== v){ SF.del = v; render(); return true; }
+      sfSave({ op:'del', i: v }, '명단에서 뺐습니다 - 그 계정은 이제 사무소 화면을 열지 못합니다'); return true;
     case 'scope-save': {
       if(S.scopeSaving) return true;
       S.scopeSaving = true; render();

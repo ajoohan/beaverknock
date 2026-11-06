@@ -7,12 +7,12 @@
  * 중개사는 지역·조건·메모까지만 본다.
  */
 
-import { userFrom, sbHeaders, sbUrl } from './_auth.js';
+import { userFrom, sbHeaders, sbUrl, overLimit } from './_auth.js';
 import { dbWhy } from './_dberr.js';
 import { contractRoute, reportDueCron, draftRead, draftNote, 알림설정, 특약문구들, 특약문구고침, 문자틀들, 문자기록들, 문자고침, 단지들, 단지고침 } from './_contract.js';
 import { 날씨 } from './_weather.js';
 import { 서식들, 서식확인, 서식올리기, 서식주소, 서식지우기, 서식최대 } from './_forms.js';
-import { 직원들, 직원고침, 직원사무소, 직원들어옴, 직원역할 } from './_staff.js';
+import { 직원들, 직원고침, 직원사무소, 직원들어옴, 직원역할, 다른사무소직원 } from './_staff.js';
 import { notify } from './_notify.js';
 
 const KIND_KO = { home: '주거', shop: '상가', office: '오피스', storage: '창고' };
@@ -300,6 +300,11 @@ async function readStaff(res, agent) {
 }
 async function saveStaff(req, res, agent, user, b) {
   if (agent.role !== 'agent') return res.status(403).json({ error: '공인중개사 사무소만 직원을 둘 수 있습니다' });
+  if (b.op === 'add') {
+    /* 초대 메일이 아무 주소로나 쏟아지지 않게 - 사무소당 하루 30통 */
+    if (overLimit('staff:' + agent.id, 30, 864e5)) return res.status(429).json({ error: '오늘은 더 초대할 수 없습니다 - 내일 다시 해 주세요' });
+    if (await 다른사무소직원(b.email, agent.id).catch(() => false)) return res.status(409).json({ error: '다른 사무소 직원으로 이미 초대된 메일입니다 - 그 사무소에서 먼저 빼야 합니다' });
+  }
   const z = await 설정고침(agent, s => { const y = 직원고침(s.staff, b, user && user.email);
     return y.error ? { ...y, now: 직원들(s.staff) } : { ...y, patch: { staff: y.list } }; });
   if (!z.y) return 설정실패(res, z, '직원 명단');
@@ -309,7 +314,7 @@ async function saveStaff(req, res, agent, user, b) {
     const 새 = z.y.added;
     const m = await notify(req, { to: 새.email, subject: `${agent.office || '중개사무소'}에서 비버노크로 초대했습니다`,
       rows: [['사무소', agent.office || '-'], ['역할', 직원역할[새.role]], ['로그인할 메일', 새.email]],
-      link: '/#/login', cta: '비버노크에 로그인',
+      link: '/#/partner/home', cta: '비버노크에 로그인',
       note: '이 메일 주소로 로그인(구글 · 카카오 · 메일)하면 사무소 화면이 열립니다. 모르는 사무소라면 이 메일은 지우셔도 됩니다.' });
     mailed = !!(m && m.ok);
   }

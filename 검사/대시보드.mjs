@@ -217,7 +217,7 @@ const M = new Function('esc', `${js.slice(시작, 끝)}\nreturn { dzLine, dzPill
      '휴대폰 - 만들기 줄은 아래 탭 막대 위에 붙는다(그 밑에 단추가 가려졌다)');
 
   /* 2026-10-30 '계약서 작성 화면처럼 다른 어드민 화면도 맞춰' */
-  ok(css.includes(':is(body.adm,body.ptn) .chip{background:#F0F0F6!important;border-color:transparent!important')
+  ok(css.includes(':is(body.adm,body.ptn) .chip{background:#F1F2F4!important;border-color:transparent!important')
      && css.includes(':is(body.adm,body.ptn) .chip.on{background:var(--ind)!important;border-color:var(--ind)!important;color:#fff!important')
      && css.includes(':is(body.adm,body.ptn) span.chip{background:transparent!important;border:1px dashed var(--n300)!important'),
      '어드민 칩은 옅은 면 상자, 고르면 꽉 찬 남색 · 누를 수 없는 칩(준비 중)은 점선 - 손님 화면은 그대로');

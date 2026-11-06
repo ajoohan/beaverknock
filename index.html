@@ -118,32 +118,32 @@
 <style>
 /* ===== 비버노크 디자인 토큰 (03_브랜드/tokens.css) ===== */
 :root{
-  --ind900:#2F3192; --ind700:#4144BE; --ind:#4F52D1; --ind300:#6366D6; --ind-dark:#A3A5F2; --ind200:#D5D6FA; --ind100:#EDEDFE; --ind50:#F6F6FF;
+  --ind900:#23246E; --ind700:#3335B2; --ind:#4144CE; --ind300:#5658D6; --ind-dark:#A9ABF0; --ind200:#CBCDEA; --ind100:#E8E9F5; --ind50:#F3F4F9;
   --navy900:#15163A; --navy800:#1C1D47; --navy700:#282A5A; --navy600:#3A3C70; --navy400:#575A8C;
   /* navy400 은 선·면에 쓰라고 만든 값이다. 어두운 바탕에 글씨로 얹으면 2.58:1 로
      기준(4.5:1)에 한참 못 미친다 - 글씨용으로 한 칸 밝은 것을 따로 둔다. */
   --navy300:#A9ABD6;   /* 남색 바탕 위 보조 글자 - #9395C4(5.6:1) 에서 7.2:1 로 (2026-10-30 가독성) */
   /* ind300 에 흰 글씨를 얹으면 4.46:1 로 기준에 아슬아슬하게 못 미친다.
      버튼 바탕으로 쓸 때는 이것을 쓴다 - 흰 글씨와 5.49:1 이다. */
-  --ind400:#5B5EE0;
-  --clay900:#6B3B18; --clay700:#9A5A2E; --clay:#F0A878; --clay200:#FAD9C0; --clay100:#FFF3EA;
-  --n900:#1D1C2A; --n700:#46455A; --n500:#5F5E71; --n300:#D6D5E1; --n200:#E6E5EE; --n100:#F0EFF5; --n50:#F8F7FB; --white:#fff;
-  --ok:#1B7A46; --okbg:#EAF6EF; --danger:#B22B31; --dangerbg:#FBEFEF; --warn:#A85708; --warnbg:#FEF3E7;
+  --ind400:#4B4ED4;
+  --clay900:#5E3A1E; --clay700:#8A5631; --clay:#D9986A; --clay200:#EBDCCD; --clay100:#F6F1EB;
+  --n900:#16171D; --n700:#3D3F49; --n500:#5B5E6A; --n300:#D3D5DB; --n200:#E3E5E9; --n100:#EEF0F2; --n50:#F6F7F9; --white:#fff;
+  --ok:#15703F; --okbg:#EDF5F0; --danger:#B3262C; --dangerbg:#FBF0F0; --warn:#985107; --warnbg:#F9F5ED;
   /* ── 알림 카드의 테두리 ──
      채움(okbg·warnbg)과 글자(ok·warn)는 토큰이 있었는데 **테두리만 없었다.**
      그래서 손으로 적었고, 같은 자리에 쓰는 색이 여러 가지가 됐다:
        성공 #A5CDB6 · #B9D8C6          경고 #E8D5A8 · #E3C98A · #F0DCC0
      한 카드 안에서는 안 보이지만, 같은 화면에 경고 카드가 둘 놓이면 보인다.
      인디고 카드는 --ind200 을 쓴다(따로 만들 이유가 없다). */
-  --okline:#A5CDB6; --warnline:#E8D5A8; --dangerline:#E8C4C4;
+  --okline:#B7D6C3; --warnline:#E5D6B8; --dangerline:#EBCACB;
   /* 꺼진 글자 · 아직 안 적은 칸의 안내 글자 */
-  --off:#8B8AA0; --ph:#B4B3C4;
+  --off:#868994; --ph:#A9ACB5;
   /* ── 누르는 것의 테두리 (2026-10-08) ──
      칩·입력칸은 테두리가 곧 '여기를 누르세요' 다. n200(#E6E5EE)은 흰 바탕에서
      1.25:1 이라 칩이 테두리 없는 글자처럼 보였다. WCAG 1.4.11 은 3:1.
      흰 바탕 3.36 · 연보라 바탕 3.08 · ind50 카드 3.13 - 셋 다 넘는 가장 연한 값.
      값이 --off 와 같지만 뜻이 다르다(꺼진 글자 ≠ 경계선) - 따로 둔다. */
-  --edge:#8B8AA0;
+  --edge:#868994;
   /* ── 둥글기 다섯 칸 ──
      전에는 25가지였다(2·4·5·6·7·8·9·10·11·12·14·16·18·20·22…).
      버튼 10 · 입력칸 11 · 메뉴 9 처럼 서로 한두 픽셀씩만 달랐는데,
@@ -153,17 +153,17 @@
   --r-btn:10px; --r-ctl:8px;   /* 단추 · 칩·탭 단추 (2026-10-29: 알약 → 각진 둥근 모서리) */
   /* ── 그림자 세 칸 ── (전에는 :root 가 세 군데에서 이 셋을 서로 다르게 적고 있었다)
      색을 띤 그림자는 물건이 빛나는 것처럼 보인다. 중립 남색 한 가지로만 드리운다. */
-  --sh0:0 1px 2px rgba(40,42,110,.06);
-  --sh1:0 1px 2px rgba(40,42,110,.04), 0 6px 16px rgba(40,42,110,.06);
-  --sh2:0 2px 8px rgba(40,42,110,.06), 0 16px 36px rgba(40,42,110,.10);
-  --sh3:0 10px 30px rgba(21,22,58,.10), 0 30px 64px rgba(21,22,58,.14);
-  --hair:rgba(29,28,42,.07);
-  --warm:linear-gradient(180deg,#FFFFFF 0%,#FAFAFE 55%,#F4F4FD 100%);
+  --sh0:0 1px 2px rgba(17,19,32,.06);
+  --sh1:0 1px 2px rgba(17,19,32,.04), 0 6px 16px rgba(17,19,32,.06);
+  --sh2:0 2px 8px rgba(17,19,32,.06), 0 16px 36px rgba(17,19,32,.10);
+  --sh3:0 10px 30px rgba(12,13,22,.10), 0 30px 64px rgba(12,13,22,.14);
+  --hair:rgba(22,23,29,.07);
+  --warm:linear-gradient(180deg,#FFFFFF 0%,#F9FAFB 55%,#F3F4F7 100%);
   --font:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,system-ui,"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",sans-serif;
 }
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
-body{font-family:var(--font);background:#ECEBF3;color:var(--n900);-webkit-font-smoothing:antialiased;
+body{font-family:var(--font);background:#EEF0F3;color:var(--n900);-webkit-font-smoothing:antialiased;
   -moz-osx-font-smoothing:grayscale;min-height:100vh;display:flex;flex-direction:column;align-items:center}
 /* 바닥 여백을 두지 않는다. #stage 가 이미 100dvh 라 화면을 꽉 채우는데,
    그 아래로 60px 이 더 붙으면 창이 딱 그만큼 스크롤되고 회색 바닥이 드러난다. */
@@ -658,9 +658,9 @@ body.mo .grid2.mo1{grid-template-columns:1fr;gap:30px}
 /* 첫 화면은 상단바와 본문이 같은 층(z-index 3)이라 펼친 메뉴가 본문 글자 뒤로 깔렸다 - 열려 있는 동안만 상단바를 올린다 */
 .nav:has(.umenu.open){z-index:70!important}
 .umenu-btn{position:relative;display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:4px 12px 4px 5px;
-  border:1px solid rgba(29,28,42,.12);border-radius:var(--r-full);background:#fff;font:inherit;
+  border:1px solid rgba(22,23,29,.12);border-radius:var(--r-full);background:#fff;font:inherit;
   font-size:14.5px;font-weight:700;color:var(--n700);cursor:pointer;transition:background .15s,border-color .15s}
-.umenu-btn:hover,.umenu.open .umenu-btn{background:var(--n50);border-color:rgba(29,28,42,.2)}
+.umenu-btn:hover,.umenu.open .umenu-btn{background:var(--n50);border-color:rgba(22,23,29,.2)}
 .umenu-btn .nm{max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .umenu-btn .av{position:relative;flex:none;width:32px;height:32px;border-radius:var(--r-full);overflow:hidden;
   background:var(--ind50);color:var(--ind);display:flex;align-items:center;justify-content:center;font-size:14.5px;font-weight:700}
@@ -669,7 +669,7 @@ body.mo .grid2.mo1{grid-template-columns:1fr;gap:30px}
 .umenu.open .umenu-btn .car{transform:rotate(180deg)}
 body.mo .umenu-btn{padding:5px 9px 5px 5px;gap:6px}
 .umenu-pop{position:absolute;right:0;top:calc(100% + 8px);z-index:60;width:260px;max-width:calc(100vw - 32px);
-  background:#fff;border:1px solid rgba(29,28,42,.1);border-radius:var(--r-lg);
+  background:#fff;border:1px solid rgba(22,23,29,.1);border-radius:var(--r-lg);
   box-shadow:0 14px 36px rgba(20,22,60,.14);padding:6px;animation:umenuIn .14s ease-out}
 @keyframes umenuIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){.umenu-pop{animation:none}.umenu-btn .car{transition:none}}
@@ -746,6 +746,8 @@ body.mo .acc-row{grid-template-columns:minmax(0,1fr);gap:12px;padding:18px}
 .sublinks a{padding:14px 8px;margin:-14px 0;display:inline-block}
 .b-ind{background:var(--ind100);color:var(--ind)} .b-mute{background:var(--n100);color:var(--n500)}
 .b-danger{background:var(--dangerbg);color:var(--danger)}
+/* 배지는 옅은 바탕 + 같은 색 가는 테 (2026-11-06 '파스텔 배제') - 바탕만 있으면 색 덩어리로 떠 보였다 */
+.badge{box-shadow:inset 0 0 0 1px color-mix(in srgb, currentColor 20%, transparent)}
 
 .gauge{height:6px;border-radius:var(--r-full);background:var(--n100);overflow:hidden}
 .gauge i{display:block;height:100%;border-radius:var(--r-full);background:linear-gradient(90deg,var(--ind300),var(--ind));
@@ -812,7 +814,7 @@ body.mo .foot{padding:14px 24px 24px}
 /* 모달 */
 /* 막은 화면에 붙인다(fixed). 전에는 스크롤되는 #app 안에 absolute 로 붙어, 내려 둔 화면에서 열면
    본문 맨 위 한 화면만 덮고 창도 위로 잘렸다(2026-10-30 대표님 '화면에 이런 버그'). 창이 화면보다 길면 창 안에서 스크롤 */
-.modal{position:fixed;inset:0;z-index:60;background:rgba(29,28,42,.42);display:flex;align-items:center;justify-content:center;padding:24px}
+.modal{position:fixed;inset:0;z-index:60;background:rgba(22,23,29,.42);display:flex;align-items:center;justify-content:center;padding:24px}
 body.mo .modal{align-items:flex-end;padding:0}
 .modal .box{background:var(--white);border-radius:var(--r-lg);padding:28px;width:100%;max-width:440px;box-shadow:var(--sh3);
   max-height:calc(100vh - 48px);max-height:calc(100dvh - 48px);overflow-y:auto;overscroll-behavior:contain}
@@ -851,7 +853,7 @@ body.mo .modal .box{border-radius:var(--r-lg) var(--r-lg) 0 0;max-width:none;max
 
 /* 카드 - 헤어라인 + 상단 하이라이트 */
 .card{border-color:var(--hair);box-shadow:var(--sh1);transition:box-shadow .18s ease,border-color .18s ease,transform .18s cubic-bezier(.2,.8,.2,1)}
-.card.hi{border-color:rgba(79,82,209,.45);box-shadow:var(--sh2)}
+.card.hi{border-color:rgba(65,68,206,.45);box-shadow:var(--sh2)}
 /* 들리는 높이는 아래 .card.clickable:hover 한 곳에서만 정한다.
    여기에 -3px, 위에 -2px, 아래에 -2px 이 각각 적혀 있어서 카드냐 아니냐에 따라
    들리는 양이 달랐다 - 같은 손짓에 화면이 다르게 답하면 그게 '만든 티' 다. */
@@ -868,7 +870,7 @@ body.mo .modal .box{border-radius:var(--r-lg) var(--r-lg) 0 0;max-width:none;max
 
 /* 입력 */
 .inp{transition:border-color .14s ease,box-shadow .14s ease}
-.inp:focus{border-color:var(--ind);box-shadow:0 0 0 3px rgba(79,82,209,.12)}
+.inp:focus{border-color:var(--ind);box-shadow:0 0 0 3px rgba(65,68,206,.12)}
 
 /* 접근성 포커스 */
 :focus-visible{outline:2px solid var(--ind);outline-offset:2px;border-radius:4px}
@@ -937,7 +939,7 @@ body::after{
   content:''; position:absolute; inset:0; pointer-events:none; opacity:0;
   transition:opacity var(--t-mid) ease;
   background:radial-gradient(380px circle at var(--mx,50%) var(--my,0%),
-             rgba(79,82,209,.09), transparent 62%);
+             rgba(65,68,206,.09), transparent 62%);
 }
 .card:hover::before{opacity:1}
 .card.clickable:hover{transform:translateY(-2px);box-shadow:var(--sh2)}
@@ -989,7 +991,7 @@ body::after{
 }
 /* 마우스로 찍었을 때만 테두리를 지운다. 그냥 outline:none 을 두면
    바로 위에서 준 초점 링까지 같이 지워져, 키보드로는 어디에 있는지 알 수 없다. */
-.inp:focus{border-color:var(--ind);box-shadow:0 0 0 3px rgba(79,82,209,.12)}
+.inp:focus{border-color:var(--ind);box-shadow:0 0 0 3px rgba(65,68,206,.12)}
 .inp:focus:not(:focus-visible){outline:none}
 
 /* ── 움직임을 줄이도록 설정한 사람에게는 움직이지 않는다 ── */
@@ -1004,7 +1006,7 @@ body::after{
    세 층으로 나눈다 - 주인공 / 보통 / 배경. */
 
 /* 주인공: 왼쪽에 색 기둥을 세워 시선을 잡는다 */
-.card.hi{position:relative;border-color:rgba(79,82,209,.34)}
+.card.hi{position:relative;border-color:rgba(65,68,206,.34)}
 .card.hi::after{
   content:''; position:absolute; left:0; top:0; bottom:0; width:3px;
   background:linear-gradient(180deg,var(--ind),var(--ind300));
@@ -1091,7 +1093,7 @@ table tbody tr:hover{background:var(--ind50)}
 .empty > img{margin-inline:auto}   /* 빈 화면의 비버(블록 그림)도 글과 같이 가운데 - text-align 은 블록 그림을 옮기지 못한다 (2026-10-30 대표님 '비버 가운데로') */
 .empty::before{
   content:''; position:absolute; inset:0; pointer-events:none;
-  background:radial-gradient(420px circle at 50% 0%, rgba(79,82,209,.05), transparent 70%);
+  background:radial-gradient(420px circle at 50% 0%, rgba(65,68,206,.05), transparent 70%);
 }
 
 
@@ -1873,13 +1875,13 @@ body.mo .ct-long{display:none}
 .ctw-quick .lab{margin:0;flex:none;font-size:14px;font-weight:700;color:var(--n700)}
 .ctw-qs{display:flex;flex-wrap:wrap;gap:8px}
 .ctw-q{display:inline-flex;align-items:center;gap:9px;min-height:42px;padding:0 15px 0 7px;border:1px solid var(--n200);border-radius:12px;background:var(--white);
-  font:inherit;font-size:14.5px;font-weight:600;line-height:1.3;color:var(--n900);cursor:pointer;box-shadow:0 1px 2px rgba(29,28,42,.05);
+  font:inherit;font-size:14.5px;font-weight:600;line-height:1.3;color:var(--n900);cursor:pointer;box-shadow:0 1px 2px rgba(22,23,29,.05);
   transition:border-color .15s ease-out,box-shadow .2s ease-out,transform .12s ease-out,color .15s ease-out}
 .ctw-q i{flex:none;display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:8px;background:var(--ind50);color:var(--ind700)}
-@media (hover:hover){ .ctw-q:hover{border-color:var(--ind200);color:var(--ind700);box-shadow:0 6px 16px -8px rgba(40,42,110,.3);transform:translateY(-1px)} }
+@media (hover:hover){ .ctw-q:hover{border-color:var(--ind200);color:var(--ind700);box-shadow:0 6px 16px -8px rgba(17,19,32,.3);transform:translateY(-1px)} }
 .ctw-q:active{transform:scale(.97)}
 /* 둥근 모서리 자르기는 clip - hidden 이면 그 상자가 스크롤 기준이 되어 아래 붙는 줄(sticky)이 움직이지 않는다 */
-.ctw{--ctw-fill:#F0F0F6;--ctw-fill-h:#E5E5F1;display:grid;grid-template-columns:280px minmax(0,1fr);background:var(--white);border-radius:var(--r-lg);box-shadow:var(--sh1);overflow:clip;min-height:420px}
+.ctw{--ctw-fill:#F1F2F4;--ctw-fill-h:#E6E8EC;display:grid;grid-template-columns:280px minmax(0,1fr);background:var(--white);border-radius:var(--r-lg);box-shadow:var(--sh1);overflow:clip;min-height:420px}
 .ctw-l{display:flex;flex-direction:column;gap:4px;padding:14px 12px;background:var(--n50);border-right:1px solid var(--n100)}
 .ctw-cat{display:grid;grid-template-columns:36px minmax(0,1fr);align-items:center;column-gap:12px;row-gap:1px;width:100%;padding:10px 12px;border:1px solid transparent;border-radius:12px;
   background:transparent;font:inherit;text-align:left;color:var(--n900);cursor:pointer;
@@ -1890,7 +1892,7 @@ body.mo .ct-long{display:none}
 .ctw-cat span{grid-column:2;font-size:13px;line-height:1.45;color:var(--n500)}
 @media (hover:hover){ .ctw-cat:not(.on):hover{background:var(--white)} .ctw-cat:not(.on):hover .ctw-ico{color:var(--ind700)} }
 .ctw-cat:active{transform:scale(.985)}
-.ctw-cat.on{background:var(--white);border-color:var(--ind);box-shadow:0 0 0 3px rgba(79,82,209,.1),0 2px 6px -2px rgba(40,42,110,.12)}
+.ctw-cat.on{background:var(--white);border-color:var(--ind);box-shadow:0 0 0 3px rgba(65,68,206,.1),0 2px 6px -2px rgba(17,19,32,.12)}
 .ctw-cat.on .ctw-ico{background:var(--ind);color:#fff;box-shadow:none}
 .ctw-cat.on b{color:var(--ind700);font-weight:700}
 .ctw-sep{display:block;height:1px;margin:8px 4px;background:var(--n200)}
@@ -1909,7 +1911,7 @@ body.mo .ct-long{display:none}
 .ctw-c{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:42px;padding:0 17px;border:1px solid transparent;border-radius:10px;
   background:var(--ctw-fill);font:inherit;font-size:14.5px;font-weight:600;line-height:1.3;color:var(--n700);cursor:pointer;
   transition:background-color .15s ease-out,color .15s ease-out,box-shadow .2s ease-out,transform .12s ease-out}
-.ctw-c.on{background:var(--ind);color:#fff;font-weight:700;box-shadow:0 6px 14px -6px rgba(79,82,209,.7)}
+.ctw-c.on{background:var(--ind);color:#fff;font-weight:700;box-shadow:0 6px 14px -6px rgba(65,68,206,.7)}
 .ctw-c.on::before{content:'';flex:none;width:6px;height:6px;border-radius:50%;background:currentColor}
 @media (hover:hover){ .ctw-c:not(.on):hover{background:var(--ctw-fill-h);color:var(--ind700)} .ctw-c.on:hover{background:var(--ind700)} }
 .ctw-c:active,.ctw-seg button:active{transform:scale(.97)}
@@ -1917,7 +1919,7 @@ body.mo .ct-long{display:none}
 .ctw-seg button{min-width:88px;min-height:42px;padding:0 18px;border:0;border-radius:9px;background:transparent;font:inherit;font-size:15px;font-weight:600;line-height:1.3;color:var(--n700);cursor:pointer;
   transition:background-color .15s ease-out,color .15s ease-out,box-shadow .2s ease-out,transform .12s ease-out}
 @media (hover:hover){ .ctw-seg button:not(.on):hover{background:rgba(255,255,255,.8);color:var(--ind700)} .ctw-seg button.on:hover{background:var(--ind700)} }
-.ctw-seg button.on{background:var(--ind);color:#fff;font-weight:700;box-shadow:0 6px 14px -6px rgba(79,82,209,.7)}
+.ctw-seg button.on{background:var(--ind);color:#fff;font-weight:700;box-shadow:0 6px 14px -6px rgba(65,68,206,.7)}
 .ctw-note{margin:0;font-size:14px;line-height:1.65;color:var(--n500)}
 .ctw-one{display:flex;align-items:center;gap:16px;padding:20px 22px;border-radius:12px;background:var(--n50)}
 .ctw-one .ctw-ico{flex:none;width:44px;height:44px;border-radius:12px;background:var(--ind);color:#fff;box-shadow:none}
@@ -1932,14 +1934,14 @@ body.mo .ct-long{display:none}
 .ctw-sum span{font-size:15px;line-height:1.45;color:var(--n500)}
 .ctw .ctw-foot .btn{flex:none;gap:8px;min-height:48px;padding:0 24px;border-radius:12px;font-size:15.5px;font-weight:700}
 .ctw-foot .btn svg{flex:none;transition:transform .2s ease-out}
-.ctw-foot .btn:not([disabled]){box-shadow:0 8px 18px -8px rgba(79,82,209,.75)}
+.ctw-foot .btn:not([disabled]){box-shadow:0 8px 18px -8px rgba(65,68,206,.75)}
 @media (hover:hover){ .ctw-foot .btn:not([disabled]):hover svg{transform:translateX(3px)} }
 /* 아직 못 만들 때 - 회색 상자 대신 흐린 남색: 무엇을 누르게 될지는 보이되 눌리지 않는다 */
 .ctw .ctw-foot .btn[disabled]{background:var(--ind)!important;border-color:var(--ind)!important;color:#fff!important;opacity:.38}
 @keyframes ctwIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 @keyframes ctwPop{0%{transform:scale(.9)}60%{transform:scale(1.05)}100%{transform:scale(1)}}
 @keyframes ctwRise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-@keyframes ctwGlow{0%{box-shadow:0 0 0 0 rgba(79,82,209,.5),0 8px 18px -8px rgba(79,82,209,.75)}100%{box-shadow:0 0 0 14px rgba(79,82,209,0),0 8px 18px -8px rgba(79,82,209,.75)}}
+@keyframes ctwGlow{0%{box-shadow:0 0 0 0 rgba(65,68,206,.5),0 8px 18px -8px rgba(65,68,206,.75)}100%{box-shadow:0 0 0 14px rgba(65,68,206,0),0 8px 18px -8px rgba(65,68,206,.75)}}
 .ctw-body.swap > *{animation:ctwIn .3s cubic-bezier(.2,.7,.3,1) both;animation-delay:calc(var(--i,0) * 45ms)}
 .ctw .just{animation:ctwPop .26s cubic-bezier(.3,.7,.4,1) both}
 .ctw-cat.just{animation:none}
@@ -1966,14 +1968,14 @@ body.mo .scr:has(> .tabbar) .ctw-foot{bottom:calc(74px + env(safe-area-inset-bot
 /* ── 어드민 칩·움직임을 계약서 작성 화면처럼 (2026-10-30 대표님 '계약서 작성 화면처럼 다른 어드민 화면도 맞춰') ──
    칩은 테두리 대신 옅은 면 상자, 고르면 꽉 찬 남색(하나만 = 점 · 여럿 = 체크 - 표는 원래 규칙 그대로 흰색으로).
    공용 칩 규칙이 여러 겹이라 !important 로 덮는다. 손님 화면(body.adm 아님)은 그대로 */
-:is(body.adm,body.ptn) .chip{background:#F0F0F6!important;border-color:transparent!important;box-shadow:none!important;color:var(--n700);font-weight:600}
-:is(body.adm,body.ptn) .chip.on{background:var(--ind)!important;border-color:var(--ind)!important;color:#fff!important;font-weight:700;box-shadow:0 6px 14px -6px rgba(79,82,209,.7)!important}
+:is(body.adm,body.ptn) .chip{background:#F1F2F4!important;border-color:transparent!important;box-shadow:none!important;color:var(--n700);font-weight:600}
+:is(body.adm,body.ptn) .chip.on{background:var(--ind)!important;border-color:var(--ind)!important;color:#fff!important;font-weight:700;box-shadow:0 6px 14px -6px rgba(65,68,206,.7)!important}
 @media (hover:hover){
-  :is(body.adm,body.ptn) .chip:not(.on):not(:disabled):hover{background:#E5E5F1!important;border-color:transparent!important;color:var(--ind700)!important}
+  :is(body.adm,body.ptn) .chip:not(.on):not(:disabled):hover{background:#E6E8EC!important;border-color:transparent!important;color:var(--ind700)!important}
   :is(body.adm,body.ptn) .chip.on:not(:disabled):hover{background:var(--ind700)!important;border-color:var(--ind700)!important;color:#fff!important}
 }
 /* 손가락 화면은 누른 뒤 hover 가 남는다 - 안 고른 칩은 원래 면 그대로 */
-@media (hover:none){ body.ptn .chip:not(.on):not(:disabled):hover{background:#F0F0F6!important;border-color:transparent!important;color:var(--n700)!important} }
+@media (hover:none){ body.ptn .chip:not(.on):not(:disabled):hover{background:#F1F2F4!important;border-color:transparent!important;color:var(--n700)!important} }
 :is(body.adm,body.ptn) .chip:not(:disabled):active{transform:scale(.97)}
 /* '준비 중' 처럼 누를 수 없는 칩(span)은 면 없이 점선 - 고를 수 있는 것처럼 보이면 안 된다 */
 :is(body.adm,body.ptn) span.chip{background:transparent!important;border:1px dashed var(--n300)!important;color:var(--n500)}
@@ -2007,9 +2009,9 @@ body.mo .scr:has(> .tabbar) .ctw-foot{bottom:calc(74px + env(safe-area-inset-bot
 .modal.ask p{margin:0;font-size:14.5px;line-height:1.65;color:var(--n500)}
 .ask-act{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:22px}
 .ask-act .btn{min-height:48px;padding:0 12px;border-radius:12px;font-size:15px;font-weight:700}
-.ask-act .btn.sec{background:#F0F0F6;border-color:transparent;color:var(--n700)}
+.ask-act .btn.sec{background:#F1F2F4;border-color:transparent;color:var(--n700)}
 .ask-act .btn.warn{background:var(--danger);border-color:var(--danger);color:#fff}
-@media (hover:hover){ .ask-act .btn.sec:hover{background:#E5E5F1;border-color:transparent;color:var(--ind700)} .ask-act .btn.warn:hover{background:#9A2429;border-color:#9A2429;color:#fff} }
+@media (hover:hover){ .ask-act .btn.sec:hover{background:#E6E8EC;border-color:transparent;color:var(--ind700)} .ask-act .btn.warn:hover{background:#9A2429;border-color:#9A2429;color:#fff} }
 .ask-act .btn:active{transform:scale(.97)}
 /* 빈 화면 - 비버 + 제목 + 설명 + 단추. 카드 안(.bare)은 테두리·바탕 없이 */
 .empty .em-t{margin:12px 0 6px;font-size:15.5px;font-weight:700;line-height:1.4;color:var(--n900)}
@@ -2031,15 +2033,15 @@ body.mo .ctw-foot .btn{width:100%}
 .hb-g{display:flex;flex-direction:column;gap:2px;padding-top:8px;border-top:1px solid var(--n100)}
 .ct-notes{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
 .ct-notes li{display:flex;flex-direction:column;gap:4px;padding:10px 12px;border:1px solid var(--n200);border-radius:10px;background:var(--white)}
-.ct-notes li.new{border-color:#F0C48A;background:#FFFAF2}
+.ct-notes li.new{border-color:var(--warnline);background:var(--warnbg)}
 .ct-notes li > div{display:flex;justify-content:space-between;gap:8px;font-size:13.5px}
 .ct-notes li small{color:var(--n500);font-size:12px}
 .ct-notes li p{margin:0;font-size:14px;line-height:1.6;white-space:normal}
 .ct-notes li .tapx{align-self:flex-end}
 .dr-note{gap:10px}
 .ct-won.warn{color:#C62828;font-weight:600}
-.ct-secst{display:inline-flex;align-items:center;margin-left:6px;padding:1px 8px;border-radius:99px;border:1px solid #F1C4C4;background:#FFF6F6;color:#9B2C2C;font:inherit;font-size:12px;font-weight:600;vertical-align:2px;cursor:pointer}
-.ct-secst.ok{border-color:#BFE3CC;background:#F1FAF4;color:#1E6B3A;cursor:default}
+.ct-secst{display:inline-flex;align-items:center;margin-left:6px;padding:1px 8px;border-radius:99px;border:1px solid var(--dangerline);background:var(--dangerbg);color:#9B2C2C;font:inherit;font-size:12px;font-weight:600;vertical-align:2px;cursor:pointer}
+.ct-secst.ok{border-color:var(--okline);background:var(--okbg);color:#1E6B3A;cursor:default}
 .ctdoc .ct-sp-new{color:#A4A8C2}
 .ex-fee-calc{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;grid-column:1/-1}
 .ex-fee-calc .sub{font-size:12.5px}
@@ -2048,20 +2050,20 @@ body.mo .ctw-foot .btn{width:100%}
 .pm-flow li > *{width:100%;display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:8px 10px;border:1px solid var(--n200);border-radius:10px;background:var(--white);text-align:left;font:inherit;color:inherit}
 .pm-flow button{cursor:pointer}
 .pm-flow button:disabled{cursor:default;opacity:.7}
-.pm-flow li.done > *{background:#F1FAF4;border-color:#BFE3CC}
-.pm-flow li.now > *{border-color:var(--ind,#4F52D1);box-shadow:0 0 0 1px var(--ind,#4F52D1)}
+.pm-flow li.done > *{background:var(--okbg);border-color:var(--okline)}
+.pm-flow li.now > *{border-color:var(--ind,#4144CE);box-shadow:0 0 0 1px var(--ind,#4144CE)}
 .pm-flow .pm-n{font-size:12px;font-weight:700;color:var(--n500)}
 .pm-flow li.done .pm-n{color:#2E9A5B}
 .pm-flow b{font-size:13.5px}
 .pm-flow small{font-size:12px;color:var(--n500);min-height:1em}
 .inp.dj,.ctx-side .inp.dj{background:#F4EEFF;border-color:#C6B2F2}
-.ex-pick.src-doc{background:#F6F7FF;border-radius:8px;padding:6px 8px}
-.ex-pick.src-dj{background:#F8F4FF;border-radius:8px;padding:6px 8px}
+.ex-pick.src-doc{background:var(--ind50);border-radius:8px;padding:6px 8px}
+.ex-pick.src-dj{background:var(--n50);border-radius:8px;padding:6px 8px}
 .ex-legend{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;margin:0;font-size:12.5px;color:var(--n500)}
 .ex-legend .lg{display:inline-block;width:12px;height:12px;border-radius:3px;border:1px solid}
 .ex-legend .lg.doc{background:#EEF0FF;border-color:#A9ACF0}
 .ex-legend .lg.dj{background:#F4EEFF;border-color:#C6B2F2}
-.ex-legend .lg.need{background:#FFF4E5;border-color:#F0C48A}
+.ex-legend .lg.need{background:#F9F5ED;border-color:var(--warnline)}
 .hb-g > b{font-size:13.5px;margin-bottom:2px}
 .ctf-lay{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start}
 .ctf-lay.one{grid-template-columns:minmax(0,1fr)}
@@ -2080,7 +2082,7 @@ body.mo .ctw-foot .btn{width:100%}
 .ct-sum{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:12px}
 @media (max-width:700px){.ct-sum{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .ct-sum-c{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:12px 14px;border:1px solid var(--n200);border-radius:12px;background:var(--white);text-align:left;cursor:pointer;transition:border-color .15s,background-color .15s}
-.ct-sum-c:hover{border-color:var(--ind,#4F52D1);background:#F7F7FF}
+.ct-sum-c:hover{border-color:var(--ind,#4144CE);background:var(--ind50)}
 .ct-sum-c small{font-size:12.5px;color:var(--n500)}
 .ct-sum-c b{font-size:22px;letter-spacing:-.02em}
 .ct-sum-c span{font-size:12px;color:var(--n500)}
@@ -2171,7 +2173,7 @@ body.mo .rp-l{grid-column:1/-1}
 .ct-rw:first-child > .ct-row{border-top:none}
 .ct-rcopy{position:absolute;right:12px;top:50%;transform:translateY(-50%);padding:6px 12px;border:1px solid var(--n200);border-radius:8px;background:var(--white);font:inherit;font-size:13px;font-weight:600;color:var(--ind700,#3B3EA8);cursor:pointer;opacity:0;pointer-events:none;transition:opacity .12s;box-shadow:0 2px 8px rgba(20,20,60,.08)}
 .ct-rw:hover .ct-rcopy,.ct-rcopy:focus-visible{opacity:1;pointer-events:auto}
-.ct-rcopy:hover{border-color:var(--ind,#4F52D1)}
+.ct-rcopy:hover{border-color:var(--ind,#4144CE)}
 /* 마우스가 없는 기기(터치 노트북 · 태블릿 가로)는 늘 보인다 */
 @media (hover:none){.ct-rcopy{opacity:1;pointer-events:auto}}
 .ct-row:hover{background:var(--n50)}
@@ -2184,7 +2186,7 @@ body.mo .rp-l{grid-column:1/-1}
 .ct-font{display:inline-flex;align-items:center;gap:2px;padding:2px;border-radius:var(--r-sm);background:var(--n100)}
 .ct-font-l{padding:0 6px 0 8px;font-size:13px;font-weight:700;color:var(--n500)}
 .ct-font button{min-height:28px;padding:0 10px;border-radius:6px;font-size:13.5px;font-weight:600;color:var(--n700)}
-.ct-font button.on{background:var(--white);color:var(--n900);font-weight:800;box-shadow:0 1px 2px rgba(20,18,60,.14)}
+.ct-font button.on{background:var(--white);color:var(--n900);font-weight:800;box-shadow:0 1px 2px rgba(12,13,22,.14)}
 .ct-font button:disabled{cursor:default;opacity:.6}
 .ct-font button.f-serif{font-family:'Batang','바탕','AppleMyungjo','Noto Serif KR',serif}
 body.mo .ct-font button{min-height:40px;padding:0 14px;font-size:14.5px}
@@ -2203,12 +2205,12 @@ body.mo .ct-font button{min-height:40px;padding:0 14px;font-size:14.5px}
 .ctdoc .ct-blank{display:inline-block;border-bottom:1px solid #555;height:1em;vertical-align:bottom}
 /* 미리보기에서 바로 적는 칸 (2026-11-06) - 화면에서만. 인쇄는 ct책상HTML 을 쓰지 않아 이 칸이 없다 */
 .ctdoc .ct-ed{display:inline-block;min-height:1.25em;max-width:100%;padding:0 2px;border-bottom:1px dashed #8E92DA;border-radius:2px;cursor:text;vertical-align:bottom;white-space:pre-wrap;word-break:break-all;transition:background-color .15s}
-.ctdoc .ct-ed:hover{background:rgba(79,82,209,.07)}
-.ctdoc .ct-ed:focus{background:#EEF0FF;border-bottom:1.5px solid #4F52D1}
-.ctdoc .ct-ed:focus-visible{outline:2px solid rgba(79,82,209,.55);outline-offset:1px}
+.ctdoc .ct-ed:hover{background:rgba(65,68,206,.07)}
+.ctdoc .ct-ed:focus{background:#EEF0FF;border-bottom:1.5px solid #4144CE}
+.ctdoc .ct-ed:focus-visible{outline:2px solid rgba(65,68,206,.55);outline-offset:1px}
 .ctdoc .ct-ed:empty::before{content:attr(data-ph);color:#A4A8C2}
 .ctdoc .ct-ed[data-ml]{display:inline;padding:1px 2px}
-.ctdoc .ct-ed.miss,.ctdoc td.ct-road.miss{background:#FFF0F0;border-bottom:1.5px solid #D93838}
+.ctdoc .ct-ed.miss,.ctdoc td.ct-road.miss{background:var(--dangerbg);border-bottom:1.5px solid #D93838}
 .ctdoc td.ct-road{cursor:pointer}
 .ct-flash{animation:ctFlash 1.4s ease-out}
 .ctdoc .ct-ed.ct-just{animation:ctJust 1.6s ease-out}
@@ -2217,14 +2219,14 @@ body.mo .ct-font button{min-height:40px;padding:0 14px;font-size:14.5px}
 .ct-prog-t{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;font-size:13.5px}
 .ct-prog-t span{color:var(--n500);font-size:12.5px}
 .ct-prog-b{height:6px;border-radius:99px;background:var(--n100);overflow:hidden}
-.ct-prog-b i{display:block;height:100%;border-radius:inherit;background:var(--ind,#4F52D1);transition:width .25s}
+.ct-prog-b i{display:block;height:100%;border-radius:inherit;background:var(--ind,#4144CE);transition:width .25s}
 .ct-prog.done .ct-prog-b i{background:#2E9A5B}
 @media (prefers-reduced-motion:reduce){.ctdoc .ct-ed.ct-just{animation:none;background:#FFF6C9}.ct-prog-b i{transition:none}}
 @keyframes ctFlash{0%,35%{box-shadow:0 0 0 3px rgba(217,56,56,.45)}100%{box-shadow:0 0 0 0 rgba(217,56,56,0)}}
 @media (prefers-reduced-motion:reduce){.ct-flash{animation:none;outline:2px solid #D93838}}
-.inp.miss,.ct-roadbox.miss .ct-addr,.ct-roadbox.miss .inp{border-color:#D93838 !important;background:#FFF8F8}
-.ct-req{display:flex;flex-direction:column;gap:6px;border:1px solid #F1C4C4;background:#FFF6F6;border-radius:12px;padding:12px 14px;font-size:14px;line-height:1.55;color:#7A1F1F}
-.ct-req.ok{border-color:#BFE3CC;background:#F1FAF4;color:#1E6B3A;flex-direction:row;flex-wrap:wrap;gap:4px 8px}
+.inp.miss,.ct-roadbox.miss .ct-addr,.ct-roadbox.miss .inp{border-color:#D93838 !important;background:var(--dangerbg)}
+.ct-req{display:flex;flex-direction:column;gap:6px;border:1px solid var(--dangerline);background:var(--dangerbg);border-radius:12px;padding:12px 14px;font-size:14px;line-height:1.55;color:#7A1F1F}
+.ct-req.ok{border-color:var(--okline);background:var(--okbg);color:#1E6B3A;flex-direction:row;flex-wrap:wrap;gap:4px 8px}
 .ct-req-s{font-size:13px;color:#8A4B4B}
 .ct-req-l{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}
 .ct-req-l .chip{border-color:#E8AFAF;color:#9B2C2C;background:#fff}
@@ -2246,7 +2248,7 @@ body.mo .ct-font button{min-height:40px;padding:0 14px;font-size:14.5px}
 .ct-dir{display:inline-flex;gap:6px}
 .ct-addrow{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) auto auto;gap:8px;align-items:center}
 .ct-addrow .ct-itemn{font-size:14px}
-.ct-check{background:var(--warnbg,#FFF4E5);border-radius:10px;padding:12px 14px;margin:-6px 0 16px;font-size:14px;line-height:1.6}
+.ct-check{background:var(--warnbg,#F9F5ED);border-radius:10px;padding:12px 14px;margin:-6px 0 16px;font-size:14px;line-height:1.6}
 .ct-check ul{margin:6px 0 0;padding-left:18px}
 .ct-my-base{margin-top:0;font-size:13.5px}
 .cs-wrap{display:grid;grid-template-columns:minmax(0,440px) minmax(0,1fr);gap:16px;align-items:start}
@@ -2271,11 +2273,11 @@ body.mo .ct-font button{min-height:40px;padding:0 14px;font-size:14.5px}
 .ct-party-h b{font-size:14.5px}
 .ct-co-tools{display:flex;justify-content:flex-end}
 .ct-was{display:block;font-size:12.5px;color:var(--warn);margin-top:3px}
-.ex-st{display:inline-block;margin-left:8px;font-size:12.5px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--warnbg,#FFF4E5);color:var(--warn);vertical-align:middle}
+.ex-st{display:inline-block;margin-left:8px;font-size:12.5px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--warnbg,#F9F5ED);color:var(--warn);vertical-align:middle}
 .ex-st.ok{background:var(--okbg,#E8F5EE);color:var(--ok)}
 .ex-st.none{background:var(--n100);color:var(--n500)}
 .ctx-rev{font-size:13px;font-weight:700;color:var(--ind700)}
-.ct-draftbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;background:var(--warnbg,#FFF4E5);border-radius:10px;padding:10px 14px;font-size:14px}
+.ct-draftbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;background:var(--warnbg,#F9F5ED);border-radius:10px;padding:10px 14px;font-size:14px}
 .ct-draft .ct-sheet{position:relative}
 .ct-draft .ct-sheet::after{content:'확정 전 초안';position:absolute;top:40%;left:50%;transform:translate(-50%,-50%) rotate(-24deg);font-size:72px;font-weight:800;color:rgba(200,40,40,.08);pointer-events:none;white-space:nowrap}
 .cs-dz-b{display:flex;flex-wrap:wrap;gap:8px}
@@ -2370,7 +2372,7 @@ body:not(.mo) .ctx-sub{flex:1 1 0;min-width:0;overflow:hidden;text-overflow:elli
 .ctx-vh .btn.sm{min-height:30px;padding:0 12px;font-size:13.5px}
 .ctx-desk{flex:1 1 auto;min-height:0;overflow:auto;padding:12px;background:var(--n100);border:1px solid var(--n200);border-radius:12px}
 /* 화면용 종이 여백만 줄인다(인쇄는 @page 여백을 따로 쓴다) - 같은 폭에서 글이 더 크게 보인다 */
-.ctx-desk .ct-sheet{margin:0 auto;padding:36px 50px;min-height:0;box-shadow:0 1px 3px rgba(29,28,42,.12)}
+.ctx-desk .ct-sheet{margin:0 auto;padding:36px 50px;min-height:0;box-shadow:0 1px 3px rgba(22,23,29,.12)}
 /* 좁은 데스크톱 - 두 단이 비좁으면 위아래로(판은 제 키대로, 미리보기는 아래) */
 @media (max-width:1099px){
   body:not(.mo) .ctx-scr{height:auto;overflow:visible}
@@ -2403,7 +2405,7 @@ body:not(.mo) .ctx-sub{flex:1 1 0;min-width:0;overflow:hidden;text-overflow:elli
 .scan-slot{display:flex;align-items:center;gap:12px;padding:13px 14px 13px 16px;border:1px solid var(--n200);border-radius:12px;background:var(--white);
   transition:border-color .15s,background-color .15s,box-shadow .15s}
 .scan-slot.on{border-color:var(--ind200);background:var(--ind50)}
-.scan-slot.drag{border-color:var(--ind);border-style:dashed;background:var(--ind50);box-shadow:0 0 0 3px rgba(79,82,209,.14)}
+.scan-slot.drag{border-color:var(--ind);border-style:dashed;background:var(--ind50);box-shadow:0 0 0 3px rgba(65,68,206,.14)}
 .ss-main{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:3px}
 .ss-head{display:flex;align-items:center;gap:6px 8px;flex-wrap:wrap}
 .ss-head b{font-size:15px;font-weight:700;line-height:1.35;color:var(--n900)}
@@ -2428,14 +2430,14 @@ body:not(.mo) .ctx-sub{flex:1 1 0;min-width:0;overflow:hidden;text-overflow:elli
 .scan-busy{display:flex;flex-direction:column;gap:4px;margin:0;padding:12px 14px;border-radius:10px;background:var(--ind50);color:var(--ind700)}
 .scan-busy b{font-size:14.5px}
 .scan-busy > span:not(.scan-bar){font-size:13.5px;color:var(--n700)}
-.scan-bar{position:relative;height:4px;margin-top:6px;border-radius:999px;background:rgba(79,82,209,.15);overflow:hidden}
+.scan-bar{position:relative;height:4px;margin-top:6px;border-radius:999px;background:rgba(65,68,206,.15);overflow:hidden}
 .scan-bar i{position:absolute;top:0;bottom:0;left:0;width:35%;border-radius:inherit;background:var(--ind);animation:scanBar 1.4s ease-in-out infinite}
 @keyframes scanBar{from{transform:translateX(-100%)}to{transform:translateX(290%)}}
 @media (prefers-reduced-motion:reduce){ .scan-bar i{animation:none;width:100%;opacity:.45} }
 .scan-err{margin:0;padding:10px 12px;border-radius:8px;background:var(--dangerbg);font-size:14px;line-height:1.55;color:var(--danger)}
 .scan-note{display:flex;gap:8px;margin:0;padding:10px 12px;border-radius:10px;background:var(--n50);font-size:13px;line-height:1.6;color:var(--n500)}
 .scan-note svg{flex:none;margin-top:3px}
-.scan-ai{display:inline-block;padding:0 6px;border-radius:4px;background:#E4E6FD;color:#2F3192;font-weight:700}
+.scan-ai{display:inline-block;padding:0 6px;border-radius:4px;background:var(--ind100);color:#23246E;font-weight:700}
 .inp.ai,.ctx-side .inp.ai,.ctx-side .inp.ai:not(:placeholder-shown){background:#EEF0FF;border-color:#A9ACF0}
 .scan-done,.scan-mini{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin:10px 0 0;padding:10px 12px;border-radius:10px}
 .scan-done{background:var(--ind50);border:1px solid var(--ind200)}
@@ -2462,25 +2464,25 @@ body:not(.mo) .ctx-sub{flex:1 1 0;min-width:0;overflow:hidden;text-overflow:elli
 }
 
 /* ── 대시보드 틀 (2026-10-29 대표님 시안) ── 넓은 화면만. 휴대폰은 위 머리 + 아래 탭 */
-:root{--dzbg:#ECECF4;--dzside:var(--ind);--dzsh:0 14px 34px -20px rgba(36,32,110,.30);
-  --dzcard-line:#E1E0EB;--dzcard-sh:0 1px 2px rgba(29,28,42,.05), 0 10px 26px -14px rgba(40,42,110,.18)}
+:root{--dzbg:#F0F1F4;--dzside:var(--ind700);--dzsh:0 14px 34px -20px rgba(17,19,32,.30);
+  --dzcard-line:#E2E4E9;--dzcard-sh:0 1px 2px rgba(22,23,29,.05), 0 10px 26px -14px rgba(17,19,32,.18)}
 /* 본문 바탕과 카드 · 표를 가른다 (2026-11-06 대표님 '배경과 표 영역 색 구분이 없어 이상해') - 바탕을 한 단계 내리고, 흰 카드에 또렷한 테두리 · 그림자 */
 body:not(.mo) .dz-scr .card, body:not(.mo) .scr:has(> .psb) .card, body:not(.mo) .scr:has(> .psb) .ctw,
 body:not(.mo) .scr:has(> .psb) .ct-sum-c, body:not(.mo) .scr:has(> .psb) .ctx-side{border:1px solid var(--dzcard-line);box-shadow:var(--dzcard-sh)}
-body:not(.mo) .scr:has(> .psb) .ctw-q{border-color:var(--dzcard-line);box-shadow:0 1px 2px rgba(29,28,42,.05)}
+body:not(.mo) .scr:has(> .psb) .ctw-q{border-color:var(--dzcard-line);box-shadow:0 1px 2px rgba(22,23,29,.05)}
 /* 카드 속 카드는 그림자를 겹치지 않는다 */
 body:not(.mo) .dz-scr .card .card, body:not(.mo) .scr:has(> .psb) .card .card{box-shadow:none}
 /* 계약서 입력 판 안의 구획은 카드가 아니라 가는 선으로 나눈 한 판 - 위 규칙에서 빼낸다(상자 이중 방지) */
 body:not(.mo) .scr:has(> .psb) .ctx-side .card{border:0;box-shadow:none}
 body:not(.mo) .scr:has(> .psb) .ctx-side .ct-sec + .ct-sec{border-top:1px solid var(--n100)}
 /* 미리보기 책상은 바탕보다 한 단계 더 - 흰 종이가 떠 보이게 */
-body:not(.mo) .scr:has(> .psb) .ctx-desk{background:#E3E2EC;border-color:var(--dzcard-line)}
+body:not(.mo) .scr:has(> .psb) .ctx-desk{background:#E6E8EC;border-color:var(--dzcard-line)}
 body:not(.mo) .dz-scr, body:not(.mo) .scr:has(> .psb){display:grid;grid-template-columns:200px minmax(0,1fr);
   grid-auto-rows:min-content;align-items:start;background:var(--dzbg)!important;min-height:100%}
 body:not(.mo) .dz-scr > :not(.dz-side), body:not(.mo) .scr:has(> .psb) > :not(.psb){grid-column:2;min-width:0}
 .dz-side{grid-column:1;grid-row:1 / span 60;position:sticky;top:12px;margin:12px 0 12px 12px;height:calc(100vh - 24px);
   display:flex;flex-direction:column;gap:2px;padding:18px 8px 12px;border-radius:16px;background:var(--dzside);color:#fff;
-  overflow-y:auto;box-shadow:0 22px 44px -26px rgba(36,32,110,.55);scrollbar-width:none}
+  overflow-y:auto;box-shadow:0 22px 44px -26px rgba(17,19,32,.55);scrollbar-width:none}
 /* 메뉴 스크롤바는 감춘다 - 스크롤은 그대로 된다(대표님 '두꺼워 · 다들 스크롤 되는지 안다') */
 .dz-side::-webkit-scrollbar{display:none}
 .dz-logo{display:flex;align-items:center;flex-wrap:wrap;gap:6px;padding:2px 6px 18px}   /* 좁은 메뉴(계약서 편집 180px)에서는 꼬리표가 로고 아래로 - 잘리지 않게 */
@@ -2495,7 +2497,7 @@ body:not(.mo) .dz-scr > :not(.dz-side), body:not(.mo) .scr:has(> .psb) > :not(.p
   border:none;border-radius:8px;background:transparent;color:rgba(255,255,255,.9);font:inherit;font-size:14.5px;font-weight:600;
   text-align:left;cursor:pointer;transition:background var(--t-fast) ease,color var(--t-fast) ease}
 .dz-menu > a:hover, .dz-menu > button:hover, .dz-foot > a:hover{background:rgba(255,255,255,.12);color:#fff}
-.dz-menu > a.on, .dz-menu > button.on{background:#fff;color:var(--ind);font-weight:700;box-shadow:0 8px 18px -10px rgba(20,18,60,.45)}
+.dz-menu > a.on, .dz-menu > button.on{background:#fff;color:var(--ind);font-weight:700;box-shadow:0 8px 18px -10px rgba(12,13,22,.45)}
 .dz-menu .cnt{margin-left:auto;min-width:24px;padding:1px 8px;border-radius:999px;font-size:13px;font-weight:700;text-align:center;
   background:rgba(255,255,255,.12);color:#fff;font-variant-numeric:tabular-nums}
 .dz-menu .on .cnt{background:var(--ind50);color:var(--ind)}
@@ -2511,16 +2513,16 @@ body:not(.mo) .dz-scr > :not(.dz-side), body:not(.mo) .scr:has(> .psb) > :not(.p
    크기는 화면마다 그대로 - 휴대폰·손님 화면은 손가락 과녁 44px. 어드민(body.adm - 왼쪽 메뉴가 선 화면)만 마우스일 때 34·40·44px,
    화면마다 칩에 따로 적어 둔 크기(style=)가 열 가지 넘게 섞여 있어 어드민 칩 크기만 !important 로 하나로 맞춘다 */
 .btn,.btn.sm{font-weight:600;letter-spacing:-.01em}
-.btn.pri{box-shadow:0 1px 2px rgba(40,42,110,.18),inset 0 1px 0 rgba(255,255,255,.16)}
-.btn:is(.sec,.tool){background:var(--white);border-color:var(--n300);box-shadow:0 1px 2px rgba(40,42,110,.06)}
+.btn.pri{box-shadow:0 1px 2px rgba(17,19,32,.18),inset 0 1px 0 rgba(255,255,255,.16)}
+.btn:is(.sec,.tool){background:var(--white);border-color:var(--n300);box-shadow:0 1px 2px rgba(17,19,32,.06)}
 .btn.sec{color:var(--ind700)}
 .btn.tool{color:var(--n900)}
 @media (hover:hover){
-  .btn.pri:not([disabled]):hover{background:var(--ind700);border-color:var(--ind700);box-shadow:0 6px 14px -6px rgba(79,82,209,.55),inset 0 1px 0 rgba(255,255,255,.16)}
-  .btn.pri:not([disabled]):active{box-shadow:0 1px 2px rgba(40,42,110,.2)}
+  .btn.pri:not([disabled]):hover{background:var(--ind700);border-color:var(--ind700);box-shadow:0 6px 14px -6px rgba(65,68,206,.55),inset 0 1px 0 rgba(255,255,255,.16)}
+  .btn.pri:not([disabled]):active{box-shadow:0 1px 2px rgba(17,19,32,.2)}
   .btn:is(.sec,.tool):not([disabled]):hover{background:var(--ind50);border-color:var(--ind300);color:var(--ind700)}
 }
-.chip{font-weight:500;letter-spacing:-.01em;line-height:1.2;box-shadow:0 1px 1px rgba(40,42,110,.03)}
+.chip{font-weight:500;letter-spacing:-.01em;line-height:1.2;box-shadow:0 1px 1px rgba(17,19,32,.03)}
 .chip:not(:disabled):hover{border-color:var(--ind300);background:var(--ind50);color:var(--ind700)}
 /* .ct-chips 는 고른 칩을 검게 칠했었다(계약서 고르기) - 이제 한 모양 */
 :is(.chip, .ct-chips .chip).on{background:var(--ind50);border-color:var(--ind);color:var(--ind700);font-weight:700;box-shadow:inset 0 0 0 .5px var(--ind)}
@@ -2564,7 +2566,7 @@ body.adm :is(.chips,.ct-chips,.ct-lib){gap:8px}
 .dz-vb small{font-size:12px;line-height:1.4;color:rgba(255,255,255,.88)}
 .dz-vb .vb-h{white-space:nowrap}
 .ctx-scr .dz-vb .vb-h{display:none}   /* 계약서 화면의 좁은 메뉴(180px)에서는 버전·날짜만 - 꺾여 두 줄이 되지 않게 */
-.dz-vnew{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;padding:9px 10px;border-radius:8px;background:#fff;color:var(--ind);text-align:left;box-shadow:0 8px 18px -10px rgba(20,18,60,.45)}
+.dz-vnew{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;padding:9px 10px;border-radius:8px;background:#fff;color:var(--ind);text-align:left;box-shadow:0 8px 18px -10px rgba(12,13,22,.45)}
 .dz-vnew b{font-size:14px;font-weight:800}
 .dz-vnew span{font-size:13px;font-weight:600;color:var(--n700)}
 .ver-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:14px;max-height:min(60vh,520px);overflow-y:auto}
@@ -2596,7 +2598,9 @@ body:not(.mo) .scr:has(> .psb) > .adm-page{max-width:none!important;margin:0!imp
 body:not(.mo) :is(.adm-page, .dz-main) h1.t{font-size:24px!important;margin-top:0!important;letter-spacing:-.03em}
 body:not(.mo) .dz-h1{font-size:24px}
 body:not(.mo) .dz-head{margin-bottom:20px}
-.adm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(440px,1fr));gap:16px;align-items:start}
+.adm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(440px,1fr));gap:16px;align-items:stretch}
+.adm-grid > .card{display:flex;flex-direction:column}
+.adm-grid > .card > .adm-foot{margin-top:auto!important}
 body.mo .adm-grid{grid-template-columns:minmax(0,1fr)}
 .adm-h{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .adm-h h1{margin:0}
@@ -2640,15 +2644,18 @@ body:not(.mo) .ct-table .ct-row,.ct-th{display:grid;grid-template-columns:minmax
 .dz-wx svg{width:18px;height:18px;flex:none;color:var(--ind)}
 .dz-wx b{font-weight:700;color:var(--n900)}
 .dz-hr{display:flex;align-items:center;gap:12px;font-size:13.5px;color:var(--n500)}
-.dz-grid{display:grid;grid-template-columns:minmax(0,1fr) 304px;gap:22px;align-items:start}
+.dz-grid{display:grid;grid-template-columns:minmax(0,1fr) 304px;gap:22px;align-items:stretch}
 .dz-col{display:flex;flex-direction:column;gap:18px;min-width:0}
-.dz-aside{display:flex;flex-direction:column;gap:18px;position:sticky;top:16px}
-.dz-card{position:relative;background:var(--white);border:1px solid rgba(79,82,209,.07);border-radius:14px;padding:20px 22px;box-shadow:var(--dzsh);min-width:0}
+.dz-aside{display:flex;flex-direction:column;gap:18px}
+/* 두 칸 중 짧은 쪽의 마지막 카드가 늘어나 아래 빈칸을 없앤다 - 할 일 · 새로 걸린 조건 */
+.dz-aside > .dz-todo{flex:1}
+.dz-col > .dz-recent{flex:1}
+.dz-card{position:relative;background:var(--white);border:1px solid rgba(65,68,206,.07);border-radius:14px;padding:20px 22px;box-shadow:var(--dzsh);min-width:0}
 .dz-k4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
 .dz-kpi{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;text-align:left;font:inherit;color:inherit;cursor:pointer;overflow:hidden;
   transition:transform var(--t-fast) ease,box-shadow var(--t-fast) ease}
 div.dz-kpi{cursor:default}
-button.dz-kpi:hover{transform:translateY(-2px);box-shadow:0 20px 40px -22px rgba(36,32,110,.38)}
+button.dz-kpi:hover{transform:translateY(-2px);box-shadow:0 20px 40px -22px rgba(17,19,32,.38)}
 .dz-kt{display:flex;justify-content:space-between;align-items:center;width:100%;margin-bottom:14px}
 .dz-ic{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:10px;background:var(--ind50);color:var(--ind)}
 .dz-big{font-size:30px;font-weight:800;letter-spacing:-.04em;line-height:1.1;color:var(--n900)}
@@ -2694,6 +2701,19 @@ body.mo .dz-more::after{content:"";position:absolute;left:-6px;right:-6px;top:-5
 .dz-sn{margin:0 0 14px;font-size:13.5px;line-height:1.6;color:var(--n500)}
 .dz-todo{display:flex;flex-direction:column;gap:4px}
 .dz-todo .dz-ct{margin-bottom:8px}
+.dz-quick{margin-top:auto;padding-top:16px;border-top:1px solid var(--n100)}
+.dz-todo > .dz-calm + .dz-quick, .dz-todo > .dz-ti + .dz-quick{margin-top:auto}
+.dz-qh{display:block;margin:0 0 8px;font-size:13px;font-weight:700;color:var(--n500)}
+.dz-qg{display:flex;flex-direction:column;gap:6px}
+.dz-q{display:flex;align-items:center;gap:8px;min-height:42px;padding:8px 10px;border:1px solid var(--n200);border-radius:var(--r-ctl);background:var(--white);
+  font-size:13.5px;font-weight:600;color:var(--n900);cursor:pointer;transition:background var(--t-fast) ease,border-color var(--t-fast) ease}
+.dz-q svg{flex:none;color:var(--ind)}
+.dz-q:hover{background:var(--ind50);border-color:var(--ind200)}
+.dz-q::after{content:"";margin-left:auto;width:6px;height:6px;border-top:1.5px solid var(--n500);border-right:1.5px solid var(--n500);transform:rotate(45deg)}
+/* 제안 흐름 - 옆 칸 높이만큼 그래프가 늘어난다(카드 아래 빈칸 없이) */
+.dz-chart{display:flex;flex-direction:column}
+.dz-chart .dz-lw{flex:1;display:flex;min-height:190px}
+.dz-chart .dz-line{flex:1;height:auto;min-height:190px}
 .dz-ti{display:grid;grid-template-columns:38px minmax(0,1fr) auto;gap:12px;align-items:center;width:100%;min-height:52px;padding:8px 6px;
   border:none;border-radius:8px;background:transparent;font:inherit;text-align:left;cursor:pointer}
 .dz-ti:hover{background:var(--n50)}
@@ -2755,7 +2775,7 @@ body.mo .ct-font button{min-width:4.2em}
      본문 script 가 1MB 라, 이 조각이 없으면 그것을 다 받을 때까지 흰 화면이다.
      class 를 쓰지 않고 style 로만 쓴다 - 스타일시트를 기다리지 않게. -->
 <div id="boot" style="position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;
-  align-items:center;justify-content:center;gap:18px;background:#FAFAFE;
+  align-items:center;justify-content:center;gap:18px;background:#F9FAFB;
   font-family:-apple-system,'Malgun Gothic',sans-serif;transition:opacity .28s ease">
   <!-- 첫 화면도 같은 표시를 쓴다. 자바스크립트가 아직 안 돌아 bkLoader() 를 못 부르므로
        같은 모양을 손으로 적어 둔다 - 클래스와 키프레임은 위 <style> 에 이미 있다.
@@ -3432,8 +3452,8 @@ const isMo = () => S.device==='mo';
 
 /* ══════════ 워드마크 시안 (한글 4 · 영문 3) ══════════
    공통 원칙: 앞에 심볼을 붙이지 않는다. 노크의 힘은 글자에서 만든다. */
-const WM_INK = m => m==="dark" ? "#FFFFFF" : m==="mono" ? "#1D1C2A" : "#4F52D1";
-const WM_SUB = m => m==="dark" ? "rgba(255,255,255,.5)" : m==="mono" ? "rgba(29,28,42,.45)" : "rgba(79,82,209,.42)";
+const WM_INK = m => m==="dark" ? "#FFFFFF" : m==="mono" ? "#1D1C2A" : "#4144CE";
+const WM_SUB = m => m==="dark" ? "rgba(255,255,255,.5)" : m==="mono" ? "rgba(22,23,29,.45)" : "rgba(65,68,206,.42)";
 
 /* A. 잔향 - 두드린 뒤 퍼지는 울림을 도트 3개로 */
 function wmEcho(h,m){ const ink=WM_INK(m), ec=WM_SUB(m), d=Math.max(2.4,h*.115);
@@ -3446,7 +3466,7 @@ function wmEcho(h,m){ const ink=WM_INK(m), ec=WM_SUB(m), d=Math.max(2.4,h*.115);
     </span></span>`;}
 
 /* B. 강세 - 이름의 동사부(노크)에 무게를 싣는다 */
-function wmStress(h,m){ const ink=WM_INK(m), sub=m==="dark"?"rgba(255,255,255,.62)":m==="mono"?"rgba(29,28,42,.55)":"rgba(79,82,209,.55)";
+function wmStress(h,m){ const ink=WM_INK(m), sub=m==="dark"?"rgba(255,255,255,.62)":m==="mono"?"rgba(22,23,29,.55)":"rgba(65,68,206,.55)";
   return `<b style="font-size:${h*.86}px;letter-spacing:-.052em;line-height:1;display:inline-block">
     <span style="font-weight:500;color:${sub}">비버</span><span style="font-weight:800;color:${ink}">노크</span></b>`;}
 
@@ -3493,10 +3513,10 @@ const WM_DEEP = m => m==="dark" ? "#FFFFFF"              : m==="mono" ? "#1D1C2A
    꺼진 글씨처럼 보였다 - 제품 전 화면에서 가장 여러 번 반복되던 대비 미달이다.
    로고가 실제로 얹히는 바탕(흰색 · 따뜻한 기울기의 위아래 · n50 · ind50 · n100)을
    전부 재보니 4.5:1 을 다 넘기는 값은 --ind400 뿐이었다. 한 칸 밝은 #6568B7 은
-   따뜻한 바탕 아래쪽(#FFF3EA)에서 4.29 로 떨어진다.
+   따뜻한 바탕 아래쪽(#F6F1EB)에서 4.29 로 떨어진다.
    두 톤 차이는 4.19배에서 2.09배로 줄지만, 읽히지 않는 두 톤은 두 톤이 아니다. */
-const WM_LITE = m => m==="dark" ? "rgba(255,255,255,.58)": m==="mono" ? "rgba(29,28,42,.46)"   : "var(--ind400)";
-const WM_EDGE = m => m==="dark" ? "rgba(255,255,255,.62)": m==="mono" ? "rgba(29,28,42,.5)"    : "#6366D6";
+const WM_LITE = m => m==="dark" ? "rgba(255,255,255,.58)": m==="mono" ? "rgba(22,23,29,.46)"   : "var(--ind400)";
+const WM_EDGE = m => m==="dark" ? "rgba(255,255,255,.62)": m==="mono" ? "rgba(22,23,29,.5)"    : "#5658D6";
 
 /* 한글 - 모서리 브래킷(문틀) + 노크 타격선 */
 function wmDoor(h, m, o){
@@ -3537,7 +3557,7 @@ const BURST_12 = "M50 2 L57.5 19 L74 9 L70 28 L89 26 L77 41 L96 50 L77 59 L89 74
 function wmImpact(h, m, kind, o){
   o = o || {};
   const deep = WM_DEEP(m), lite = WM_LITE(m), edge = WM_EDGE(m);
-  const soft = m==="dark" ? "rgba(255,255,255,.18)" : m==="mono" ? "rgba(29,28,42,.13)" : "rgba(110,112,188,.20)";
+  const soft = m==="dark" ? "rgba(255,255,255,.18)" : m==="mono" ? "rgba(22,23,29,.13)" : "rgba(110,112,188,.20)";
   const fs = h*.86, bw = Math.max(1.6,h*.06), bl = h*.34, pad = h*.34;
   let behind = "", front = "", tilt = "";
 
@@ -3628,7 +3648,7 @@ function bkLoader(size, mode){
    opt: {h, mode, partner, en(영문 병기), tag(태그라인), stack(세로)} */
 function logoLockup(opt){
   const o = opt||{}, h = o.h||26, m = o.mode||"light";
-  const sub = m==="dark" ? "rgba(255,255,255,.62)" : m==="mono" ? "rgba(29,28,42,.5)" : "var(--n500)";
+  const sub = m==="dark" ? "rgba(255,255,255,.62)" : m==="mono" ? "rgba(22,23,29,.5)" : "var(--n500)";
   const rule = m==="dark" ? "rgba(255,255,255,.28)" : "var(--n300)";
   /* 태그라인과 '파트너' 는 로고 크기에 비례해 줄어든다. 푸터(h=18)에서는
      7.9px · 8.3px 까지 내려가 한글이 읽히지 않았다 - 영문 부제와 달리 이 둘은
@@ -3682,7 +3702,7 @@ function beaverlyMini(h){ return `<img src="${BEAVERLY_FRONT}" alt=""
 const 빈자리 = (제목, 설명 = '', 단추 = '', 크기 = 104, 안쪽 = false) => `<div class="empty${안쪽 ? ' bare' : ''}">${beaverlyMini(크기)}<p class="em-t">${제목}</p>${설명 ? `<p class="em-d">${설명}</p>` : ''}${단추 ? `<div class="em-a">${단추}</div>` : ''}</div>`;
 
 const ICON_CHECK = `<svg viewBox="0 0 12 12"><path d="M2 6.5 L5 9.5 L10 3" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-const ICON_PHOTO = `<svg viewBox="0 0 24 24" fill="none" stroke="#6366D6" stroke-width="1.5"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.6"/><path d="M3 16 L9 11 L14 15 L17 13 L21 16"/></svg>`;
+const ICON_PHOTO = `<svg viewBox="0 0 24 24" fill="none" stroke="#5658D6" stroke-width="1.5"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.6"/><path d="M3 16 L9 11 L14 15 L17 13 L21 16"/></svg>`;
 
 /* ---------- 공통 조각 ---------- */
 /* 모바일 하단 탭바 - 수요자/공급자 각각 */
@@ -4621,8 +4641,8 @@ function bizFooter(){
 function groundSvg(){
   return `<svg viewBox="0 0 1440 120" preserveAspectRatio="none" aria-hidden="true"
     style="position:absolute;left:0;right:0;bottom:0;width:100%;height:${isMo()?58:78}px">
-    <path d="M0 44 Q 300 18 720 38 Q 1100 54 1440 32 L1440 120 L0 120 Z" fill="#EEEEFC"/>
-    <path d="M0 74 Q 360 56 780 70 Q 1120 82 1440 66 L1440 120 L0 120 Z" fill="#E3E3F8"/>
+    <path d="M0 44 Q 300 18 720 38 Q 1100 54 1440 32 L1440 120 L0 120 Z" fill="#EEF0F4"/>
+    <path d="M0 74 Q 360 56 780 70 Q 1120 82 1440 66 L1440 120 L0 120 Z" fill="#E4E7EE"/>
   </svg>`;
 }
 
@@ -4922,7 +4942,7 @@ V['#/kind'] = () => `
               ${w.slots>5?`<span class="badge b-ok" style="font-size:13px">제안 ${w.slots}건</span>`:''}
             </span>
             <span style="font-size:14.5px;line-height:1.6;color:var(--n500)">${w.d}</span></span>
-          <svg viewBox="0 0 24 24" style="width:21px;flex:none" fill="none" stroke="#4F52D1" stroke-width="2.2" stroke-linecap="round"><path d="M9 5 L16 12 L9 19"/></svg>
+          <svg viewBox="0 0 24 24" style="width:21px;flex:none" fill="none" stroke="#4144CE" stroke-width="2.2" stroke-linecap="round"><path d="M9 5 L16 12 L9 19"/></svg>
         </button>`).join('')}
       </div>
       <p style="margin:0;font-size:13.5px;line-height:1.75;color:var(--n500)">
@@ -5805,7 +5825,7 @@ function mapScene(level, sel, shop){
     const seoulBlock = isSeoulSite(i);
     const drill = seoulBlock ? 'seoul' : (topLevel && x.t==='하남시' ? 'hanam' : null);
     const act = drill ? `data-act="map-drill" data-v="${drill}"` : `data-act="dong" data-v="${esc(x.t)}"`;
-    const fill = on ? 'var(--ind)' : seoulBlock ? '#EAE7F5' : (topLevel && x.t==='하남시') ? 'var(--clay100)' : cellTint(x.t);
+    const fill = on ? 'var(--ind)' : seoulBlock ? '#E6E8EE' : (topLevel && x.t==='하남시') ? 'var(--clay100)' : cellTint(x.t);
     const stroke = on ? 'var(--ind700)' : seoulBlock ? '#D6D2E8' : 'var(--n200)';
     /* 서울 구는 하나의 덩어리로 읽혀야 하므로 사이를 벌리지 않는다 */
     const gap = seoulBlock ? 0.9 : (topLevel ? 3 : 4.4);
@@ -5875,7 +5895,7 @@ function mapScene(level, sel, shop){
       fill="#8B86C4" paint-order="stroke" stroke="rgba(255,255,255,.95)">눌러서 구 고르기</text>`;})() : '';
 
   const incheon = topLevel ? (()=>{ const p=OUT_INCHEON2.map(q=>G(q[0],q[1])); const c=G(126.638,37.468);
-    return `<path d="${d(p)}" fill="#ECEBF3" stroke="#DCDBE6" stroke-width="1" data-act="map-na" data-v="인천광역시" style="cursor:not-allowed"/>
+    return `<path d="${d(p)}" fill="#EEF0F3" stroke="#D9DCE2" stroke-width="1" data-act="map-na" data-v="인천광역시" style="cursor:not-allowed"/>
       <text x="${c[0].toFixed(1)}" y="${c[1].toFixed(1)}" text-anchor="middle" dominant-baseline="central" font-weight="700"
         style="font-size:calc(${z(10)}px / var(--mz,1))" fill="#A9A296">인천</text>
       <text x="${c[0].toFixed(1)}" y="${c[1].toFixed(1)}" text-anchor="middle" dominant-baseline="central"
@@ -6605,11 +6625,11 @@ V['#/done'] = () => `
       <div style="position:absolute;width:${isMo()?240:400}px;height:${isMo()?240:400}px;border-radius:var(--r-full);background:rgba(246,246,255,.92)"></div>
       <span style="position:absolute;left:2%;bottom:2%;z-index:2">${beaverly(isMo()?190:320)}</span>
       <svg viewBox="0 0 300 190" style="width:${isMo()?260:440}px;position:relative" aria-label="문">
-        <ellipse cx="150" cy="180" rx="120" ry="8" fill="#FAD9C0" opacity=".55"/>
+        <ellipse cx="150" cy="180" rx="120" ry="8" fill="#EBDCCD" opacity=".55"/>
         <rect x="186" y="6" width="78" height="170" rx="8" fill="var(--ind700)"/>
-        <rect x="197" y="18" width="56" height="64" rx="5" fill="#4F52D1"/>
-        <rect x="204" y="26" width="42" height="48" rx="4" fill="#FFF3EA" opacity=".95"/>
-        <rect x="197" y="94" width="56" height="70" rx="5" fill="#4F52D1"/>
+        <rect x="197" y="18" width="56" height="64" rx="5" fill="#4144CE"/>
+        <rect x="204" y="26" width="42" height="48" rx="4" fill="#F6F1EB" opacity=".95"/>
+        <rect x="197" y="94" width="56" height="70" rx="5" fill="#4144CE"/>
         <circle cx="195" cy="96" r="4" fill="#F0A878"/>
         </svg>
     </div>
@@ -6835,11 +6855,11 @@ V['#/inbox'] = () => {
   const card = p => `
     <div class="card ${p.isNew?'hi':''} clickable fade" data-go="#/proposal/${p.id}" style="overflow:hidden;${p.read&&!p.isNew?'background:var(--n50);box-shadow:none':''}">
       <div style="height:${isMo()?128:150}px;background:${p.photos?'var(--ind100)':'var(--n100)'};display:flex;align-items:center;justify-content:center;position:relative">
-        ${p.photos? `<svg viewBox="0 0 24 24" style="width:26px" fill="none" stroke="#6366D6" stroke-width="1.5"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.6"/><path d="M3 16 L9 11 L14 15 L17 13 L21 16"/></svg>`
+        ${p.photos? `<svg viewBox="0 0 24 24" style="width:26px" fill="none" stroke="#5658D6" stroke-width="1.5"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.6"/><path d="M3 16 L9 11 L14 15 L17 13 L21 16"/></svg>`
           : `<span style="font-size:13px;color:var(--n500)">사진 미첨부</span>`}
         ${p.isNew? `<span class="badge b-ind" style="position:absolute;left:12px;top:12px;background:var(--ind);color:#fff">NEW</span>`
           : `<span class="badge b-mute" style="position:absolute;left:12px;top:12px">읽음</span>`}
-        ${p.photos? `<span style="position:absolute;right:12px;bottom:10px;background:rgba(21,22,58,.62);color:#fff;font-size:13px;font-weight:700;border-radius:var(--r-full);padding:4px 10px">사진 ${p.photos}장</span>`:''}
+        ${p.photos? `<span style="position:absolute;right:12px;bottom:10px;background:rgba(12,13,22,.62);color:#fff;font-size:13px;font-weight:700;border-radius:var(--r-full);padding:4px 10px">사진 ${p.photos}장</span>`:''}
       </div>
       <div style="padding:16px 18px;display:flex;flex-direction:column;gap:10px">
         <div><b style="display:block;font-size:15px;font-weight:700;letter-spacing:-.02em">${esc(p.title)} ${demoTag(p,'vertical-align:middle')}</b>
@@ -6951,8 +6971,8 @@ V['#/proposal'] = (id) => { const p=S.props.find(x=>x.id===id); if(!p) return V[
   <div class="pad" style="flex:1;padding-top:${isMo()?0:28}px;display:flex;gap:32px;max-width:${isMo()?'none':'1180px'};margin:0 auto;width:100%;${isMo()?'flex-direction:column;padding-left:0;padding-right:0':''}">
     <div style="flex:none;width:${isMo()?'100%':'520px'};display:flex;flex-direction:column;gap:12px">
       <div style="height:${isMo()?200:360}px;${isMo()?'':'border-radius:var(--r-lg);'}background:${p.photos?'var(--ind100)':'var(--n100)'};display:flex;align-items:center;justify-content:center;position:relative">
-        ${p.photos? `<svg viewBox="0 0 24 24" style="width:38px" fill="none" stroke="#6366D6" stroke-width="1.4"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.6"/><path d="M3 16 L9 11 L14 15 L17 13 L21 16"/></svg>
-          <span style="position:absolute;right:14px;bottom:12px;background:rgba(21,22,58,.62);color:#fff;font-size:13px;font-weight:700;border-radius:var(--r-full);padding:4px 12px" class="num">1 / ${p.photos}</span>`
+        ${p.photos? `<svg viewBox="0 0 24 24" style="width:38px" fill="none" stroke="#5658D6" stroke-width="1.4"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.6"/><path d="M3 16 L9 11 L14 15 L17 13 L21 16"/></svg>
+          <span style="position:absolute;right:14px;bottom:12px;background:rgba(12,13,22,.62);color:#fff;font-size:13px;font-weight:700;border-radius:var(--r-full);padding:4px 12px" class="num">1 / ${p.photos}</span>`
         : `<span style="font-size:14.5px;color:var(--n500)">사진 미첨부</span>`}
       </div>
       ${isMo()?'':`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
@@ -7010,9 +7030,9 @@ V['#/connect'] = (id) => { const p=S.props.find(x=>x.id===id); if(!p) return V['
       <div style="position:absolute;width:${isMo()?230:390}px;height:${isMo()?230:390}px;border-radius:var(--r-full);background:rgba(246,246,255,.95)"></div>
       <span style="position:absolute;left:2%;bottom:2%;z-index:2">${beaverly(isMo()?185:310)}</span>
       <svg viewBox="0 0 300 190" style="width:${isMo()?250:420}px;position:relative">
-        <ellipse cx="150" cy="180" rx="120" ry="8" fill="#FAD9C0" opacity=".55"/>
-        <rect x="186" y="6" width="78" height="170" rx="8" fill="#2F3192"/>
-        <path d="M186 20 L120 180 L230 180 L230 20 Z" fill="#FFF3EA" opacity=".55"/>
+        <ellipse cx="150" cy="180" rx="120" ry="8" fill="#EBDCCD" opacity=".55"/>
+        <rect x="186" y="6" width="78" height="170" rx="8" fill="#23246E"/>
+        <path d="M186 20 L120 180 L230 180 L230 20 Z" fill="#F6F1EB" opacity=".55"/>
         </svg>
     </div>
     <div style="width:${isMo()?'100%':'460px'};display:flex;flex-direction:column;gap:16px;text-align:${isMo()?'center':'left'}">
@@ -7278,7 +7298,7 @@ V['#/partner/demand'] = (id) => { const d=S.demands.find(x=>x.id===id); if(!d) r
       ${d.det.map(([k,v])=>`<div class="kv"><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}
       <p style="margin:8px 0 0;font-size:13.5px;color:var(--n500)">미입력 항목은 표시하지 않습니다 - 추측하지 마세요.</p>
     </div>
-    ${d.memo? `<div class="card pad" style="background:var(--ind50);border:1.8px solid rgba(79,82,209,.35)">
+    ${d.memo? `<div class="card pad" style="background:var(--ind50);border:1.8px solid rgba(65,68,206,.35)">
       <span class="sect">손님이 직접 쓴 사정</span>
       <p style="margin:0;font-size:${isMo()?15:16}px;font-weight:500;line-height:1.75">"${esc(d.memo)}"</p></div>`:''}
     <div class="card pad">
@@ -7467,7 +7487,7 @@ V['#/partner/proposals'] = () => {
           <span class="num" style="font-size:16px;font-weight:700;color:var(--ok)">${esc(p.cphone)}</span>
           <span style="font-size:13.5px;line-height:1.55;color:var(--n700)">${esc(p.cust||'손님')}님이 연결에 동의하셨습니다 · 이 상담에만 사용해 주세요</span></div>`:''}
         ${p.reason? `<p style="margin:10px 0 0;background:var(--n50);padding:12px 16px;font-size:14.5px;line-height:1.6;color:var(--n700)">${esc(p.reason)}</p>`:''}
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;gap:10px;flex-wrap:wrap">
+        <div class="adm-foot" style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:12px;gap:10px;flex-wrap:wrap">
           <span style="font-size:13.5px;color:var(--n500)">발송 ${esc(p.at)}${p.expires!=null?` · 만료까지 ${p.expires}일`:''}</span>
           <!-- 보낸 내용은 이 카드에 이미 다 있다 - 눌러도 아무 일 없던 '보낸 내용 보기' 단추는 뺐다(2026-11-03 리뷰).
                남는 단추는 상태마다 하나(계약서 만들기 · 회수) -->
@@ -7532,7 +7552,7 @@ V["#/partner/join"] = () => {
       ${JOIN_ROLES.map(r=>`<button class="card clickable" data-act="j-role" data-v="${r.k}" style="padding:${isMo()?'20px':'24px 26px'};text-align:left;display:flex;justify-content:space-between;align-items:center;gap:14px">
         <span><b style="display:block;font-size:16px;font-weight:700;letter-spacing:-.03em;margin-bottom:4px">${r.t}</b>
         <span style="font-size:14.5px;color:var(--n500)">${r.d}</span></span>
-        <svg viewBox="0 0 24 24" style="width:21px;flex:none" fill="none" stroke="#4F52D1" stroke-width="2.2" stroke-linecap="round"><path d="M9 5 L16 12 L9 19"/></svg>
+        <svg viewBox="0 0 24 24" style="width:21px;flex:none" fill="none" stroke="#4144CE" stroke-width="2.2" stroke-linecap="round"><path d="M9 5 L16 12 L9 19"/></svg>
       </button>`).join('')}
     </div>`;
   if(step===2){
@@ -7834,7 +7854,7 @@ V["#/partner/stats"] = () => {
   const selected = P.filter(p=>p.status==='selected').length;
   const vr = sent? Math.round(viewed/sent*100) : 0;
   const sr = viewed? Math.round(selected/viewed*100) : 0;
-  const tile = (k,v,sub,avg,main) => `<div class="card" style="padding:16px 18px;${main?'border-color:rgba(79,82,209,.4);background:rgba(245,245,252,.6)':''}">
+  const tile = (k,v,sub,avg,main) => `<div class="card" style="padding:16px 18px;${main?'border-color:rgba(65,68,206,.4);background:rgba(245,245,252,.6)':''}">
     <span style="display:block;font-size:13.5px;font-weight:700;color:var(--n500)">${k}</span>
     <span class="num" style="font-size:25px;font-weight:800;letter-spacing:-.02em;${main?'color:var(--ind)':''}">${v}</span>
     ${sub?`<span style="display:block;font-size:13px;font-weight:700;color:${avg==null?'var(--n500)':avg?'var(--ok)':'var(--warn)'}">${sub}</span>`:''}</div>`;
@@ -8510,7 +8530,7 @@ V["#/brand"] = () => {
       <div class="card pad" style="margin-top:14px">
         <span class="sect">색 규칙 - 한글·영문 공통</span>
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px">
-          ${[["비버 / BEAVER","var(--ind400)","중간 인디고"],["노크 / KNOCK","var(--ind700)","진한 인디고"],["브래킷","#6366D6","연한 인디고 · 문틀은 물러선다"]]
+          ${[["비버 / BEAVER","var(--ind400)","중간 인디고"],["노크 / KNOCK","var(--ind700)","진한 인디고"],["브래킷","#5658D6","연한 인디고 · 문틀은 물러선다"]]
             .map(([k,hex,label])=>`<span style="display:flex;align-items:center;gap:10px;background:var(--n50);padding:10px 14px">
               <i style="width:18px;height:18px;border-radius:var(--r-xs);background:${hex};flex:none"></i>
               <span style="font-size:13.5px"><b style="font-weight:800">${k}</b> <span class="num" style="color:var(--n500)">${hex}</span> · ${label}</span></span>`).join("")}
@@ -8626,7 +8646,7 @@ V["#/brand"] = () => {
       <div class="card pad">
         <span class="sect">여백 (Clear space)</span>
         <div style="display:flex;align-items:center;justify-content:center;padding:12px 0">
-          <span style="position:relative;display:inline-flex;padding:24px;border:1.4px dashed rgba(79,82,209,.4);border-radius:var(--r-sm)">
+          <span style="position:relative;display:inline-flex;padding:24px;border:1.4px dashed rgba(65,68,206,.4);border-radius:var(--r-sm)">
             ${logoLockup({h:30})}
             <span style="position:absolute;left:7px;top:50%;transform:translateY(-50%);font-size:13px;font-weight:700;color:var(--ind)">글자높이</span>
           </span>
@@ -8658,7 +8678,7 @@ V["#/brand"] = () => {
     </div>
 
     <p style="margin:0;font-size:13.5px;line-height:1.75;color:var(--n500)">
-      비버노크 로고 시스템 v1.1 · 인디고 500 #4F52D1 · Pretendard 800 / 자간 −5.2% · 심볼(문 아이콘) 방향은 폐기</p>
+      비버노크 로고 시스템 v1.1 · 인디고 500 #4144CE · Pretendard 800 / 자간 −5.2% · 심볼(문 아이콘) 방향은 폐기</p>
   </div>
 </div>`;};
 
@@ -10909,13 +10929,23 @@ function dzLine(series, w = 640, h = 180){
 }
 
 /* 오른쪽 칸 - 할 일 목록과 상태 카드 */
-function dzTodo(items, 빈말){
+function dzTodo(items, 빈말, 아래 = ''){
   return `<div class="dz-card dz-todo"><b class="dz-ct">할 일</b>
     ${items.length ? items.map(t => `<button type="button" class="dz-ti" ${t.act ? `data-act="${t.act}" data-v="${esc(t.v || '')}"` : `data-go="${t.go}"`}>
       <span class="dz-tic">${dzIco(t.ico || 'check', 18)}</span>
       <span class="dz-tt"><b>${esc(t.t)}</b><span>${esc(t.s || '')}</span></span>
       ${t.n != null ? `<span class="dz-tn num">${t.n}</span>` : ''}</button>`).join('')
-    : `<p class="dz-calm">${esc(빈말 || '지금 손댈 일은 없습니다.')}</p>`}</div>`;
+    : `<p class="dz-calm">${esc(빈말 || '지금 손댈 일은 없습니다.')}</p>`}
+    ${아래}</div>`;
+}
+/* 할 일 카드 아래 바로 가기 (2026-11-06 대표님 '중간중간 여백이 없게') - 오른쪽 칸이 왼쪽 높이까지 늘어날 때 빈 곳을 자주 가는 곳으로 채운다 */
+function dz바로가기(){
+  if(!S.agent || ownerSide()) return '';
+  const 곳 = [['#/partner/demands', '수요 목록', 'users'], ['#/partner/listing/new', '물건 올리기', 'building'],
+    ...(계약막힘() ? [['#/partner/proposals', '내 제안', 'send'], ['#/partner/stats', '성과', 'chart']]
+      : [['#/partner/contracts/new', '계약서 작성', 'pen'], ['#/partner/contracts/schedule', '일정·알림', 'cal']])];
+  return `<div class="dz-quick"><span class="dz-qh">바로 가기</span><div class="dz-qg">${곳.map(([h, t, i]) =>
+    `<a class="dz-q" data-go="${h}">${dzIco(i, 16)}<span>${t}</span></a>`).join('')}</div></div>`;
 }
 function dzStatus(o){
   return `<div class="dz-card dz-status">
@@ -10992,6 +11022,10 @@ const CT_하위메뉴 = [['#/partner/contracts/new', '계약서 작성', 'pen', 
    번호는 배포한 날(연.월.일 - 같은 날 또 올리면 뒤에 .2). 화면이 version.json 을 가끔 읽어,
    더 새 버전이 올라와 있으면 메뉴 아래에서 새로고침을 권한다(버전확인) - 계약서를 띄워 둔 채 오래 일하면 고친 화면을 못 받는다 */
 const BK_변경 = [
+  { v:'26.11.06.17', 날:'2026-11-06', 줄:[
+    '색 - 연보라 · 복숭아빛 파스텔을 빼고 차분한 무채색 회색과 한 단계 깊은 인디고로 (약관 화면도 같은 색)',
+    '대시보드 - 왼쪽 · 오른쪽 칸 높이를 맞추고, 제안 흐름 그래프가 칸만큼 늘어나며 할 일 아래에 바로 가기',
+    '목록 카드(수요 · 내 제안 · 내 물건) - 한 줄의 카드는 같은 높이, 단추 줄은 맨 아래로' ] },
   { v:'26.11.06.16', 날:'2026-11-06', 줄:[
     '직원 - 같은 메일은 한 사무소에만 · 초대는 하루 30통까지 · 초대 메일은 파트너 화면으로 바로 연결',
     '중개보조원 화면 - 대시보드 · 제안 · 마이페이지에서 계약서 칸을 감추고, 직원에게는 사무소 주소 바꾸기 · 활동 설정을 감춤',
@@ -11286,7 +11320,7 @@ V['#/partner/home'] = () => {
           ? { t:'자격 확인', state:'확인 완료', pct:100, note:'손님 조건 전문과 연락 연결을 모두 쓸 수 있습니다.' }
           : { t:'자격 확인', state: S.agent ? '확인 중' : '가입 전', pct: S.agent ? 55 : 10,
               note:'등록번호를 공공데이터로 확인하면 손님 조건 전문이 열립니다.', btn:'자격 확인하기', go:'#/partner/verify' })}
-        ${dzTodo(할일, '지금 손댈 일은 없습니다. 새 조건이 오면 알려 드립니다.')}
+        ${dzTodo(할일, '지금 손댈 일은 없습니다. 새 조건이 오면 알려 드립니다.', dz바로가기())}
         ${계약막힘() ? '' : (() => { if(!CS.loaded && 세션있음()) setTimeout(csLoad);
           return `<div class="dz-card cs-dz"><div class="dz-chh"><b class="dz-ct">계약체결 문자</b><a class="dz-more" data-go="#/partner/contracts/sms">틀 고치기<i class="ar-r" aria-hidden="true"></i></a></div>
           <div class="cs-dz-b">${cs틀들().filter(t => !t.hidden).map(t => `<button type="button" class="btn tool sm" data-act="cs-go" data-v="${esc(t.id)}">${esc(t.name)}</button>`).join('')}</div></div>`; })()}
@@ -12483,7 +12517,7 @@ function dr의견칸(R){
   const F = CT_FORMS[R.form] || {}, 누구 = [...new Set([(F.a || [])[1], (F.b || [])[1]].filter(Boolean).map(ct짧은이름)), '공동중개 사무소', '기타'];
   const N = DR.note || (DR.note = { who:'', name:'', text:'', busy:false, sent:0 });
   return `<div class="card pad ct-sec dr-note"><h2>고칠 곳이나 궁금한 점 남기기 <span class="sub" style="font-weight:500;font-size:13.5px">중개사무소에만 전달됩니다 · 다른 분은 볼 수 없습니다</span></h2>
-    ${N.sent ? `<p class="ct-note" role="status" style="background:#F1FAF4">의견 ${N.sent}건을 보냈습니다. 중개사무소가 확인하고 연락드립니다.</p>` : ''}
+    ${N.sent ? `<p class="ct-note" role="status" style="background:var(--okbg)">의견 ${N.sent}건을 보냈습니다. 중개사무소가 확인하고 연락드립니다.</p>` : ''}
     <div><span class="lab">어느 분이신가요</span><div class="ct-chips" role="radiogroup" aria-label="보내는 분">${누구.map(w => `<button type="button" class="chip${N.who === w ? ' on' : ''}" role="radio" aria-checked="${N.who === w}" data-act="dr-who" data-v="${esc(w)}">${esc(w)}</button>`).join('')}</div></div>
     <label class="ct-f"><span class="lab">성함 (선택)</span><input class="inp" data-in="dr-name" value="${esc(N.name)}" maxlength="20" autocomplete="name" placeholder="예: 김비버"></label>
     <label class="ct-f"><span class="lab">의견</span><textarea class="inp" rows="4" data-in="dr-text" maxlength="500" placeholder="예: 잔금일을 12월 20일로 바꿔 주세요. 특약 3번은 빼 주세요.">${esc(N.text)}</textarea></label>
@@ -13226,7 +13260,7 @@ V['#/partner/contract'] = (id) => {
   ${navPartner('ct', false)}
   <div class="pad" style="flex:1;padding-top:16px;padding-bottom:32px;width:100%;max-width:880px;margin:0 auto;display:flex;flex-direction:column;gap:14px">
     ${bar}
-    ${잠김 ? '' : `<p class="ct-note" style="background:var(--warnbg,#FFF4E5)">아직 날인본이 아닙니다. 날인받은 뒤 '날인본으로 확정' 하고 그 판으로 신고하세요 - 신고한 내용과 계약서가 달라지면 안 됩니다.</p>`}
+    ${잠김 ? '' : `<p class="ct-note" style="background:var(--warnbg,#F9F5ED)">아직 날인본이 아닙니다. 날인받은 뒤 '날인본으로 확정' 하고 그 판으로 신고하세요 - 신고한 내용과 계약서가 달라지면 안 됩니다.</p>`}
     ${rpHTML(doc)}
     ${잠김 ? `<div class="card pad ct-sec"><h2>신고 마침</h2>${CT.row.reported_at
       ? `<p class="sub" style="margin:0"><b style="color:var(--ok)">${esc(String(CT.row.reported_at).slice(0,10))}</b> 에 신고 마침으로 표시했습니다. 기한 알림 메일이 멈췄습니다.</p>
@@ -13470,7 +13504,7 @@ function ct글꼴칸(doc, 잠김){
 /* 신고 도우미 - PC 입력 판 안 */
 function ctReportSide(doc){
   const 잠김 = CT.row && CT.row.status === 'sealed';
-  return `${잠김 ? '' : `<p class="ct-note" style="background:var(--warnbg,#FFF4E5)">아직 날인본이 아닙니다. 날인받은 뒤 '날인본으로 확정' 하고 그 판으로 신고하세요 - 신고한 내용과 계약서가 달라지면 안 됩니다.</p>`}
+  return `${잠김 ? '' : `<p class="ct-note" style="background:var(--warnbg,#F9F5ED)">아직 날인본이 아닙니다. 날인받은 뒤 '날인본으로 확정' 하고 그 판으로 신고하세요 - 신고한 내용과 계약서가 달라지면 안 됩니다.</p>`}
     ${rpHTML(doc)}
     ${잠김 ? `<div class="card pad ct-sec"><h2>신고 마침</h2>${CT.row.reported_at
       ? `<p class="sub" style="margin:0"><b style="color:var(--ok)">${esc(String(CT.row.reported_at).slice(0,10))}</b> 에 신고 마침으로 표시했습니다. 기한 알림 메일이 멈췄습니다.</p>

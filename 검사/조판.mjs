@@ -219,7 +219,7 @@ const 뿌리 = css.match(/:root\{([\s\S]*?)\n\}/)[1];
 const 토큰 = k => (뿌리.match(new RegExp(`--${k}:\\s*(#[0-9A-Fa-f]{6})`)) || [])[1];
 const 경계 = 토큰('edge');
 ok(!!경계, '--edge 토큰이 있다');
-for(const [바탕, 이름] of [['#FFFFFF','흰 바탕'], ['#F4F4FD','연보라 바탕(--warm 끝)'], [토큰('ind50'),'ind50 카드']])
+for(const [바탕, 이름] of [['#FFFFFF','흰 바탕'], ['#F3F4F7','바탕(--warm 끝)'], [토큰('ind50'),'ind50 카드']])
   ok(경계 && 대비(경계, 바탕) >= 3, `경계선이 ${이름}에서 3:1 이상 (${경계 ? 대비(경계, 바탕).toFixed(2) : '-'})`);
 ok(/\.chip\{border:1px solid var\(--edge\)/.test(css), '칩 테두리가 --edge (2026-10-30 두께만 1.5 → 1px, 색은 3:1 그대로)');
 ok(/\.inp\{width:100%;border:1\.5px solid var\(--edge\)/.test(css), '입력칸 테두리가 --edge');
@@ -406,7 +406,7 @@ ok(/\$\{partnerDoor\('onDark'\)\}/.test(js), '첫 화면 파트너 칸이 그 �
      '로고 옆 한 줄 설명과 \'파트너\' 꼬리표도 12px 아래로 줄지 않는다');
   ok(css.includes('#app{line-height:1.55}') && /#app :is\(\.btn,\.chip,[^)]*\)\{line-height:1\.3\}/.test(css),
      '본문 줄 간격 1.55 - 한 줄짜리 단추·칩만 1.3');
-  ok(css.includes('--n500:#5F5E71') && fs.readFileSync(path.join(길.저장소, 'legal-base.css'), 'utf8').includes('--n500:#5F5E71'),
+  ok(css.includes('--n500:#5B5E6A') && fs.readFileSync(path.join(길.저장소, 'legal-base.css'), 'utf8').includes('--n500:#5B5E6A'),
      '보조 글자색(n500)은 한 단계 짙게 - 화면과 약관·처리방침이 같은 값');
   ok(css.includes('--navy300:#A9ABD6'), '남색 바탕 위 보조 글자는 7.2:1 (예전 #9395C4 는 5.6:1)');
   ok(css.includes('.ctx-side .lab{font-size:13px') && css.includes('.ctx-side .ct-f .lab{font-size:13px'),

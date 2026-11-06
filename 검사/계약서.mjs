@@ -605,6 +605,24 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
      && C.trackCheck({ permitOk: '11월' }) === null, '서버도 허가 단계 날짜 · 전자계약 표시를 받는다(날짜 모양만)');
 }
 
+/* ── 중개보수 상한 · 확정 전 점검 더 (2026-11-06 파트너 기획) ── */
+{
+  const 몸 = js.slice(js.indexOf('const EX_주택매매'), js.indexOf('/* ── 사무소 기본값 (2026-11-06'));
+  const 보수 = new Function('comma', 몸 + 'return ex보수;')(s => String(s).replace(/\B(?=(\d{3})+(?!\d))/g, ','));
+  const 상 = d => 보수(d).상한;
+  ok(상({ form:'explain-home', deal:'매매ㆍ교환', ex:{ price: 650000000 } }) === 2600000 && 상({ form:'explain-home', deal:'매매ㆍ교환', ex:{ price: 1.6e8 } }) === 800000
+     && 상({ form:'explain-home', deal:'매매ㆍ교환', ex:{ price: 3e7 } }) === 180000 && 상({ form:'explain-home', deal:'매매ㆍ교환', ex:{ price: 1e9 } }) === 5000000,
+     '주택 매매 상한 - 6.5억 0.4% · 1.6억 0.5%(한도 80만) · 3천 0.6% · 10억 0.5%');
+  ok(상({ form:'explain-home', deal:'임대', ex:{ price: 5e8 } }) === 1500000 && 상({ form:'explain-home', deal:'임대', ex:{ price: 1e7, rentM: 200000 } }) === 120000
+     && 상({ form:'explain-home', deal:'임대', ex:{ price: 2e7, rentM: 500000 } }) === 280000,
+     '주택 임대 상한 - 5억 0.3% · 월세 환산(5천 미만이면 ×70, 아니면 ×100)');
+  ok(상({ form:'explain-home', house:'주거용 오피스텔', deal:'임대', ex:{ price: 2e8 } }) === 800000 && 상({ form:'explain-biz', deal:'매매ㆍ교환', ex:{ price: 1e9 } }) === 9000000,
+     '오피스텔 임대 0.4% · 주택 외 0.9% 이내');
+  ok(/const 없음 = 소유\.filter\(n => !이름들\.includes\(n\)\);/.test(js) && /CT\.list\.some\(r => r\.ci === CT\.id\)/.test(js) && /ci:doc->>contractId/.test(fs.readFileSync(new URL('../api/_contract.js', import.meta.url), 'utf8')),
+     '확정 전 점검 - 등기부 소유자 대조 · 확인·설명서를 만들었는가(목록의 contractId)');
+  ok(/const ct금액넘침 = D =>/.test(js), '계약금 + 중도금이 대금보다 크면 잔금 칸 아래 빨갛게');
+}
+
 /* ── 화면 붙은 자리 ── */
 {
   ok(/@media print\{[\s\S]*@page\{size:A4/.test(html) && /html\.printing-ct body > \*:not\(#ctPrint\)\{display:none!important\}/.test(html),

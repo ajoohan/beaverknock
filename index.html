@@ -2030,6 +2030,8 @@ body.mo .ctw-foot .btn{width:100%}
 .ct-find-more{display:flex;flex-wrap:wrap;gap:8px;width:100%}
 .hb-g{display:flex;flex-direction:column;gap:2px;padding-top:8px;border-top:1px solid var(--n100)}
 .ct-won.warn{color:#C62828;font-weight:600}
+.ct-secst{display:inline-flex;align-items:center;margin-left:6px;padding:1px 8px;border-radius:99px;border:1px solid #F1C4C4;background:#FFF6F6;color:#9B2C2C;font:inherit;font-size:12px;font-weight:600;vertical-align:2px;cursor:pointer}
+.ct-secst.ok{border-color:#BFE3CC;background:#F1FAF4;color:#1E6B3A;cursor:default}
 .ctdoc .ct-sp-new{color:#A4A8C2}
 .ex-fee-calc{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;grid-column:1/-1}
 .ex-fee-calc .sub{font-size:12.5px}
@@ -2155,6 +2157,13 @@ body.mo .rp-l{grid-column:1/-1}
 .ct-my-save{display:flex;align-items:center;gap:8px 10px;flex-wrap:wrap;padding:10px 12px;background:var(--n50);border-radius:var(--r-sm)}
 .ct-row{display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;padding:14px 18px;background:var(--white);border:none;border-top:1px solid var(--n100);cursor:pointer;min-height:56px;font:inherit}
 .ct-row:first-child{border-top:none}
+/* 줄마다 복사 (2026-11-06) - 줄 모양은 그대로, PC 에서 줄에 올리면(또는 Tab) 오른쪽 끝에 겹쳐 뜬다 */
+.ct-rw{position:relative}
+.ct-rw > .ct-row{border-top:1px solid var(--n100)}
+.ct-rw:first-child > .ct-row{border-top:none}
+.ct-rcopy{position:absolute;right:12px;top:50%;transform:translateY(-50%);padding:6px 12px;border:1px solid var(--n200);border-radius:8px;background:var(--white);font:inherit;font-size:13px;font-weight:600;color:var(--ind700,#3B3EA8);cursor:pointer;opacity:0;pointer-events:none;transition:opacity .12s;box-shadow:0 2px 8px rgba(20,20,60,.08)}
+.ct-rw:hover .ct-rcopy,.ct-rcopy:focus-visible{opacity:1;pointer-events:auto}
+.ct-rcopy:hover{border-color:var(--ind,#4F52D1)}
 .ct-row:hover{background:var(--n50)}
 .ct-sheet-wrap{margin-top:14px;overflow-x:auto}
 .ct-sheet{background:#fff;width:794px;min-height:1123px;margin:0 auto;padding:56px 52px;box-shadow:var(--sh2)}
@@ -10895,6 +10904,11 @@ const CT_하위메뉴 = [['#/partner/contracts/new', '계약서 작성', 'pen', 
    번호는 배포한 날(연.월.일 - 같은 날 또 올리면 뒤에 .2). 화면이 version.json 을 가끔 읽어,
    더 새 버전이 올라와 있으면 메뉴 아래에서 새로고침을 권한다(버전확인) - 계약서를 띄워 둔 채 오래 일하면 고친 화면을 못 받는다 */
 const BK_변경 = [
+  { v:'26.11.06.8', 날:'2026-11-06', 줄:[
+    '주소로 불러오기에 토지도 - 지목 · 면적 · 용도지역 · 지역지구 · 개별공시지가 · 토지거래허가구역 여부(건물이 없는 땅도)',
+    '계약서 목록 - 줄에 마우스를 올리면 ‘복사’ 단추(PC) · 소속공인중개사로 ‘담당’ 거르기 · ‘동의서’ 표시',
+    '계약서 입력 - 카드 제목 옆에 ‘완료 / n칸 남음’(누르면 그 칸으로)',
+    '일정 · 체크 - ‘개인정보 수집 · 이용 동의서를 받았습니다’ 체크' ] },
   { v:'26.11.06.7', 날:'2026-11-06', 줄:[
     '확정 전 점검 - 법인명처럼 띄어쓴 이름도 등기부 소유자와 맞게 대조 · 계약서로 바로 들어와도 확인·설명서 점검',
     '확인·설명서도 소재지가 없으면 날인본으로 확정되지 않습니다',
@@ -12054,6 +12068,14 @@ function ct필수안내HTML(){
     <span class="ct-req-s">누르면 그 칸으로 갑니다 · 오른쪽 서류에서 빨간 칸을 눌러 바로 적어도 됩니다</span>
     <span class="ct-req-l">${줄.map(([p, l]) => `<button type="button" class="chip" data-act="ct-req-go" data-v="${esc(p)}">${esc(l)}</button>`).join('')}</span></div>`;
 }
+/* 카드 제목 옆 단계 표시 (2026-11-06 · 파트너 기획 [89] '단계마다 완료') - 그 카드의 필수 칸이 다 차면 '완료', 아니면 'n칸 남음'(누르면 그 칸으로) */
+function ct구획(doc, 앞){
+  if(!doc || ctSealed()) return '';
+  const 칸 = ct필수(doc).filter(([p]) => 앞.some(a => p === a || p.startsWith(a + '.'))); if(!칸.length) return '';
+  const 빠짐 = ct필수빠짐(doc), 남 = 칸.filter(([p]) => 빠짐.has(p));
+  return 남.length ? ` <button type="button" class="ct-secst" data-act="ct-req-go" data-v="${esc(남[0][0])}" data-sec="${esc(앞.join(','))}">${남.length}칸 남음</button>`
+    : ` <span class="ct-secst ok" data-sec="${esc(앞.join(','))}">완료</span>`;
+}
 /* 진행률 (2026-11-06 · 파트너 기획 [89] '진행률 ○/6') - 필수 항목 몇 칸을 채웠는가. 입력 판 맨 위, 적을 때마다 바뀐다 */
 function ct진행HTML(){
   if(!CT.doc || ctSealed()) return '';
@@ -12065,6 +12087,7 @@ function ct진행HTML(){
 /* 적을 때마다 빨간 표시 · 안내를 고친다(다시 그리지 않고) */
 function ct필수갱신(){
   const pg = document.getElementById('ctProg'); if(pg && CT.doc) pg.outerHTML = ct진행HTML();
+  if(CT.doc) document.querySelectorAll('#app .ct-secst[data-sec]').forEach(el => { const 새 = ct구획(CT.doc, el.dataset.sec.split(',')).trim(); if(새) el.outerHTML = 새; });
   if(!CT.req || !CT.doc) return;
   const 빠짐 = ct필수빠짐(), 필수 = new Set(ct필수(CT.doc).map(([p]) => p));
   document.querySelectorAll('#app [data-in^="ct:"], #app [data-in^="ct$:"]').forEach(el => { const p = el.dataset.in.replace(/^ct\$?:/, '');
@@ -12446,6 +12469,7 @@ function ctFilter(rows){
   return rows.filter(r => (고름 && CT.pick.cat === 'renew' ? 임대(r) : 고름 && CT.pick.cat === 'copy' ? !(CT_FORMS[r.form] || {}).explain : true)
     && (!CT.qs || (CT.qs === 'unrep' ? r.status === 'sealed' && ct신고(r) && !r.reported_at : r.status === CT.qs))
     && 종류맞음(r) && 기간맞음(r)
+    && (!목록 || !CT.qw || (CT.qw === '__none' ? !String(r.staff || '').trim() : String(r.staff || '').trim() === CT.qw))
     && 말.every(w => [r.title, ctTitle(r), ...ct이름들(r), String(r.updated_at || '').slice(0, 10), String(r.sealed_at || '').slice(0, 10)].join(' ').toLowerCase().includes(w)));
 }
 
@@ -12840,10 +12864,14 @@ const ct찾기줄 = () => `<div class="ct-find-bar">
       ${(location.hash || '').startsWith('#/partner/contracts/new') ? '' : `<div class="ct-find-more">
         <label class="ct-sel"><span>종류</span><select class="inp" data-act-ch="ctq-kind" aria-label="계약서 종류로 거르기">${[['', '전체'], ['sale', '매매'], ['lease', '임대차'], ['etc', '분양권 · 권리 등']].map(([k, t]) => `<option value="${k}"${(CT.qk || '') === k ? ' selected' : ''}>${t}</option>`).join('')}</select></label>
         <label class="ct-sel"><span>기간</span><select class="inp" data-act-ch="ctq-base" aria-label="기간 기준">${[['u', '고친 날'], ['c', '계약일'], ['b', '잔금일']].map(([k, t]) => `<option value="${k}"${(CT.qb || 'u') === k ? ' selected' : ''}>${t}</option>`).join('')}</select>
-          <select class="inp" data-act-ch="ctq-per" aria-label="기간">${[['', '전체'], ['m', '이번 달'], ['3m', '최근 3개월'], ['y', '올해'], ['next', '앞으로 30일']].map(([k, t]) => `<option value="${k}"${(CT.qp || '') === k ? ' selected' : ''}>${t}</option>`).join('')}</select></label></div>`}</div>`;
+          <select class="inp" data-act-ch="ctq-per" aria-label="기간">${[['', '전체'], ['m', '이번 달'], ['3m', '최근 3개월'], ['y', '올해'], ['next', '앞으로 30일']].map(([k, t]) => `<option value="${k}"${(CT.qp || '') === k ? ' selected' : ''}>${t}</option>`).join('')}</select></label>${ct담당고르기()}</div>`}</div>`;
+/* 담당 거르기 (2026-11-06 · 파트너 기획 [73] '작성자') - 직원 계정 대신 계약서의 소속공인중개사 이름. 이름이 둘 이상 있을 때만 보인다 */
+const ct담당고르기 = () => { const 이름 = [...new Set((CT.list || []).map(r => String(r.staff || '').trim()).filter(Boolean))].sort();
+  if(!이름.length) return '';
+  return `<label class="ct-sel"><span>담당</span><select class="inp" data-act-ch="ctq-who" aria-label="담당 소속공인중개사로 거르기"><option value="">전체</option>${이름.map(n => `<option value="${esc(n)}"${CT.qw === n ? ' selected' : ''}>${esc(n)}</option>`).join('')}<option value="__none"${CT.qw === '__none' ? ' selected' : ''}>대표(소속 없음)</option></select></label>`; };
 /* 목록 거르기 고르기 - 고르면 바로 다시 그린다 */
 if(typeof document !== 'undefined') document.addEventListener('change', e => { const el = e.target.closest && e.target.closest('[data-act-ch]'); if(!el) return;
-  const k = el.dataset.actCh; if(k === 'ctq-kind') CT.qk = el.value; else if(k === 'ctq-base') CT.qb = el.value; else if(k === 'ctq-per') CT.qp = el.value; else return;
+  const k = el.dataset.actCh; if(k === 'ctq-who') CT.qw = el.value; else if(k === 'ctq-kind') CT.qk = el.value; else if(k === 'ctq-base') CT.qb = el.value; else if(k === 'ctq-per') CT.qp = el.value; else return;
   render(); });
 /* 목록의 잔금일 - 계약 뒤 바뀐 잔금일(일정·체크)이 있으면 그것 */
 const ct목록잔금 = r => (r.track && r.track.balanceDate) || r.bd || '';
@@ -12868,7 +12896,7 @@ function ctRowsHTML(전체, rows, 갱신고르기){
     ? (r.reported_at ? `<span class="badge b-ok">신고 마침</span>` : `<span class="badge b-warn">신고 전</span>`) : '';
   const 판 = r => `<span style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">${r.status === 'sealed'
     ? `<span class="badge b-ok">날인본 · ${esc(String(r.sealed_at||'').slice(0,10))}</span>`
-    : `<span class="badge b-warn">작성 중</span>`}${신고(r)}${r.track && CT_진행[r.track.state] ? `<span class="badge ${r.track.state === 'done' ? 'b-ok' : 'b-mute'}">${CT_진행[r.track.state]}</span>` : ''}${r.track && r.track.hb ? '<span class="badge b-mute">한방 입력</span>' : ''}${r.track && r.track.ec ? '<span class="badge b-mute">전자계약</span>' : ''}${!(CT_FORMS[r.form] || {}).explain && (CT.list || []).some(x => x.ci === r.id) ? '<span class="badge b-mute">확인·설명서</span>' : ''}${r.track && r.track.permit ? `<span class="badge b-mute">토허 · ${ct허가단계(r.track) < CT_허가단계.length ? CT_허가단계[ct허가단계(r.track)][1] + ' 전' : '승인'}</span>` : ''}</span>`;
+    : `<span class="badge b-warn">작성 중</span>`}${신고(r)}${r.track && CT_진행[r.track.state] ? `<span class="badge ${r.track.state === 'done' ? 'b-ok' : 'b-mute'}">${CT_진행[r.track.state]}</span>` : ''}${r.track && r.track.hb ? '<span class="badge b-mute">한방 입력</span>' : ''}${r.track && r.track.ec ? '<span class="badge b-mute">전자계약</span>' : ''}${!(CT_FORMS[r.form] || {}).explain && (CT.list || []).some(x => x.ci === r.id) ? '<span class="badge b-mute">확인·설명서</span>' : ''}${r.track && r.track.piAt ? '<span class="badge b-mute">동의서</span>' : ''}${r.track && r.track.permit ? `<span class="badge b-mute">토허 · ${ct허가단계(r.track) < CT_허가단계.length ? CT_허가단계[ct허가단계(r.track)][1] + ' 전' : '승인'}</span>` : ''}</span>`;
   const 표시 = r => `${r.renew ? ' · 갱신계약' : r.prev_id ? ' · 확정 후 수정' : ''}`;
   if(CT.need) return `<div class="card pad"><b>계약서 기능을 준비 중입니다.</b><p class="sub" style="margin:6px 0 0">곧 열립니다 - 잠시 뒤 다시 들어와 주세요.</p></div>`;
   /* 불러오는 동안은 글자 대신 표 모양 그대로 회색 줄 - 다 오면 그 자리에 그대로 채워진다 */
@@ -12881,11 +12909,11 @@ function ctRowsHTML(전체, rows, 갱신고르기){
         <button class="btn sec sm" data-act="ct-reload">다시 불러오기</button></div>`;
   if(rows.length) return `<div class="card ct-table" style="overflow:hidden">
       ${isMo() ? '' : `<div class="ct-th" aria-hidden="true"><span>소재지</span><span>종류</span><span>당사자</span><span>고친 날</span><span>상태</span></div>`}
-      ${rows.map(r => `<button type="button" class="ct-row" data-act="${갱신고르기 === 'copy' ? 'ct-copy' : 갱신고르기 ? 'ct-renew' : 'ct-open'}" data-v="${esc(r.id)}">
+      ${rows.map(r => `<div class="ct-rw"><button type="button" class="ct-row" data-act="${갱신고르기 === 'copy' ? 'ct-copy' : 갱신고르기 ? 'ct-renew' : 'ct-open'}" data-v="${esc(r.id)}">
         <span class="ct-c1"><b>${esc(r.title || '소재지 미입력')}</b>${isMo() ? `<span>${esc(ctTitle(r))}${ct이름들(r).length ? ` · ${esc(ct이름들(r).join(' · '))}` : ''} · 고친 날 ${esc(String(r.updated_at||'').slice(0,10))}${표시(r)}</span>` : ''}</span>
         ${isMo() ? '' : `<span class="ct-c2">${esc(ctTitle(r))}${표시(r)}</span><span class="ct-c3">${esc(ct이름들(r).join(' · ') || '-')}</span><span class="ct-c4 num">${esc(String(r.updated_at||'').slice(0,10))}</span>`}
         <span class="ct-c5">${갱신고르기 === 'copy' ? `<span class="badge b-warn">이것을 복사</span>` : 갱신고르기 ? `${r.ex && ct날차(ct오늘(), r.ex) <= 183 ? `<span class="badge ${ct날차(ct오늘(), r.ex) < 0 ? 'b-mute' : 'b-ok'}">만기 ${ct날차(ct오늘(), r.ex) < 0 ? '지남' : ct디데이(ct날차(ct오늘(), r.ex))}</span> ` : ''}<span class="badge b-warn">이것으로 갱신</span>` : 판(r)}</span>
-      </button>`).join('')}</div>`;
+      </button>${!갱신고르기 && !isMo() && !(CT_FORMS[r.form] || {}).explain ? `<button type="button" class="ct-rcopy" data-act="ct-copy" data-v="${esc(r.id)}" aria-label="${esc(r.title || '이 계약서')} 복사해서 새로">복사</button>` : ''}</div>`).join('')}</div>`;
   if(전체.length) return 갱신고르기 === 'copy' ? 빈자리('복사할 계약서가 없습니다', '다른 말로 찾아 보세요.', '', 80) : 갱신고르기 ? 빈자리('갱신할 임대차·전대차 계약서가 없습니다', '임대차·전대차 계약서를 만들어 두면 여기서 골라 갱신계약을 씁니다.', '', 80)
     : 빈자리('찾는 계약서가 없습니다', '소재지 · 이름 · 종류 · 날짜 가운데 다른 말로 찾아 보세요.', '', 80);
   return 빈자리('아직 만든 계약서가 없습니다', '양식을 골라 시작하거나, 연결된 제안에서 ‘계약서 만들기’를 누르면 물건 정보가 채워진 채로 열립니다.',
@@ -13136,7 +13164,7 @@ function ctFormHTML(doc){
       ${chipsHTML(종류들, CT_KIND[doc.kind] || CT_KIND.new, 'ct-kind', false, 잠김)}</div>` : ''}
 
     ${ct진행HTML()}${ct필수안내HTML()}
-    <div class="card pad ct-sec"><h2>${esc(표시명)}</h2>
+    <div class="card pad ct-sec"><h2>${esc(표시명)}${ct구획(doc, ['property'])}</h2>
       <div data-req="property.road" class="ct-roadbox${CT.req && !P.road ? ' miss' : ''}" tabindex="-1"><span class="lab">소재지 <span class="req">*</span></span>
         ${잠김 ? `<p style="margin:4px 0 0">${esc(P.road||'')}</p>` : P.road ? `
         <div class="ct-addr"><b>${esc(P.road)}</b><span>${esc(P.jibun||'')}${P.admCd?` · 법정동코드 ${esc(P.admCd)}`:' · <span style="color:var(--danger)">법정동코드 없음 - ‘다시 찾기’로 주소를 골라 주세요</span>'}</span>
@@ -13160,7 +13188,7 @@ function ctFormHTML(doc){
       </div></div>`}
     ${F.lease && F.fields ? F.fields.map(g => `<div class="card pad ct-sec"><h2>${esc(g.h)}</h2><div class="ct-grid">${ctFieldInputs(g.rows)}</div></div>`).join('') : ''}
 
-    <div class="card pad ct-sec"><h2>${맞춤 ? esc(F.pay.price) : 매매?'매매대금':'보증금과 차임'}</h2>
+    <div class="card pad ct-sec"><h2>${맞춤 ? esc(F.pay.price) : 매매?'매매대금':'보증금과 차임'}${ct구획(doc, ['deal'])}</h2>
       ${F.monthly === 'choose' || F.monthly === 'choose3' ? chipsHTML(F.monthly === 'choose3' ? ['전세','월세','연세'] : ['전세','월세'], CT_DEAL_KO[D.type] || '전세', 'ct-deal', false, 잠김) : ''}
       <div class="ct-grid">
         ${맞춤 ? (F.pay.pre || []).map(([p, l]) => ctIn(p, l + '(원)', {money:true, ph:'없으면 비움'})).join('') : ''}
@@ -13179,7 +13207,7 @@ function ctFormHTML(doc){
       ${F.lease && (상가 || D.type==='monthly' || D.type==='yearly') ? `<div><span class="lab">차임의 부가가치세</span>${chipsHTML(['해당 없음','별도','포함'], ct부가(doc), 'ct-vat', false, 잠김)}</div>` : ''}
       ${F.lease && +D.fee ? `<div><span class="lab">관리비의 부가가치세</span>${chipsHTML(['해당 없음','별도','포함'], D.feeVat || '해당 없음', 'ct-feevat', false, 잠김)}</div>` : ''}</div>
 
-    <div class="card pad ct-sec"><h2>${doc.form === 'premium' ? '임대차계약일과 계약일' : 매매?'인도와 계약일':doc.form === 'sublease' ? '전대차기간' : '임대차기간'}${매매 && doc.form !== 'premium'?' <span class="sub" style="font-weight:500;font-size:13.5px">인도일을 비우면 잔금일에 인도합니다</span>':''}</h2>
+    <div class="card pad ct-sec"><h2>${doc.form === 'premium' ? '임대차계약일과 계약일' : 매매?'인도와 계약일':doc.form === 'sublease' ? '전대차기간' : '임대차기간'}${매매 && doc.form !== 'premium'?' <span class="sub" style="font-weight:500;font-size:13.5px">인도일을 비우면 잔금일에 인도합니다</span>':''}${ct구획(doc, ['period', 'contractDate'])}</h2>
       <div class="ct-grid">
         ${doc.form === 'premium' ? ctIn('period.handover','신규 임대차계약일',{type:'date'})
         : 매매 ? ctIn('period.handover', doc.form === 'presale' ? '명의변경일' : '인도일',{type:'date'})
@@ -13189,10 +13217,10 @@ function ctFormHTML(doc){
       ${!매매 && !잠김 ? `<div class="ct-term"><span class="lab">종료일 바로 넣기</span>${[['2', '2년'], ['1', '1년'], ['m6', '6개월'], ['m3', '3개월']].map(([n, t]) => `<button type="button" class="chip" data-act="ct-term" data-v="${n}">${t}</button>`).join('')}
         <span class="lab">끝나는 날</span>${chipsHTML(['시작 전날', '시작과 같은 날'], ct끝표기() === 'same' ? '시작과 같은 날' : '시작 전날', 'ct-endstyle', false, false)}</div>` : ''}</div>
 
-    <div class="card pad ct-sec"><h2>당사자 <span class="sub" style="font-weight:500;font-size:13.5px">비워 두면 손으로 적을 칸이 인쇄됩니다</span></h2>
+    <div class="card pad ct-sec"><h2>당사자${ct구획(doc, ['parties'])} <span class="sub" style="font-weight:500;font-size:13.5px">주민등록번호 · 서명 칸은 비워서 인쇄됩니다</span></h2>
       <div class="ct-grid">${사람(aKey, aKo)}${사람(bKey, bKo)}</div></div>
 
-    <div class="card pad ct-sec"><h2>개업공인중개사 <span class="sub" style="font-weight:500;font-size:13.5px">가입 때 적은 값으로 채웠습니다</span></h2>
+    <div class="card pad ct-sec"><h2>개업공인중개사${ct구획(doc, ['broker'])} <span class="sub" style="font-weight:500;font-size:13.5px">가입 때 적은 값으로 채웠습니다</span></h2>
       <div class="ct-grid">
         ${ctIn('broker.office','사무소 명칭',{w:6})}${ctIn('broker.rep','대표',{w:3})}${ctIn('broker.regNo','등록번호',{w:3})}
         ${ctIn('broker.phone','전화',{w:3})}${ctIn('broker.staff','소속공인중개사',{w:3})}${ctAddrIn('broker.addr','사무소 소재지',6)}
@@ -13368,6 +13396,7 @@ function ctPlanHTML(doc){
       ${체크('ctk-ec', !!t.ec, '전자계약으로 진행합니다', '국토교통부 전자계약시스템(irts.molit.go.kr)에 입력하는 건 - 목록에 표시됩니다', '')}</div>
     ${ct입력도우미HTML(doc)}
     <div class="card pad ct-sec"><h2>체크사항</h2>
+      ${체크('ctk-pi', !!t.piAt, '개인정보 수집·이용 동의서를 받았습니다', '부속 서류 탭에서 인쇄해 양쪽 서명을 받습니다 - 받은 날이 적힙니다', t.piAt)}
       ${체크('ctk-guide', !!t.guideAt, '잔금안내를 했습니다', '이체한도 증액 · 준비서류(신분증·도장·인감증명서 등)를 미리 알렸는지', t.guideAt)}
       ${허가대상 && t.permit ? 체크('ctk-applied', !!t.permitApplied, '토지거래허가를 신청했습니다', '오늘 날짜로 적힙니다 - 다른 날이면 아래 신청일을 고치세요', t.permitApplied) : ''}
       ${ct신고(doc) ? (잠김 ? (CT.row.reported_at
@@ -14132,7 +14161,7 @@ async function ctScanGo(){
 /* ── 주소로 건축물대장 불러오기 (2026-11-06 · 파트너 기획 [221]) ── 서류를 올리지 않아도 소재지(법정동코드 · 지번)로
    표제부 · 전유부를 불러와 구조 · 용도 · 면적 · 사용승인일을 채운다. 서버 api/_bld.js. 빈칸만 채운다(이미 적은 값은 둔다) */
 const ct대장가능 = () => !!(CT.doc && CT.doc.property && CT.doc.property.admCd && CT.doc.property.bun) && !ctSealed();
-const ct대장단추 = () => `<button class="btn tool sm" data-act="ct-bld-go" ${CT.bld && CT.bld.busy ? 'disabled' : ''}>${CT.bld && CT.bld.busy ? '불러오는 중…' : '주소로 건축물대장 불러오기'}</button>`;
+const ct대장단추 = () => `<button class="btn tool sm" data-act="ct-bld-go" ${CT.bld && CT.bld.busy ? 'disabled' : ''}>${CT.bld && CT.bld.busy ? '불러오는 중…' : '주소로 건축물대장 · 토지 불러오기'}</button>`;
 const ct대장오류 = () => CT.bld && CT.bld.err && CT.bld.doc === CT.doc ? `<p class="scan-err" role="alert">${esc(CT.bld.err)}</p>` : '';
 async function ctBldGo(){
   if(!ct대장가능() || (CT.bld && CT.bld.busy)) return;
@@ -14150,7 +14179,7 @@ async function ctBldGo(){
   CT.filled = new Set([...(CT.filled || []), ...채움]);
   CT.scanWarn = j.scan.warnings || [];
   ctDirty(); render();
-  toast(채움.length ? `건축물대장에서 ${채움.length}칸을 채웠습니다 - 남색 칸을 확인하세요` : '건축물대장 값이 이미 다 들어 있습니다 - 비어 있던 칸이 없습니다');
+  toast(채움.length ? `공적장부(건축물대장 · 토지)에서 ${채움.length}칸을 채웠습니다 - 남색 칸을 확인하세요` : '건축물대장 값이 이미 다 들어 있습니다 - 비어 있던 칸이 없습니다');
 }
 /* 입력 판 맨 위 - 채운 결과·확인할 점·다시 채우기 */
 function ctScanBanner(){
@@ -17304,6 +17333,7 @@ function handle(a,v,el){
     case 'ctk-state':   if(CT_진행[v]) ctTrackSet({ state: ct트랙().state === v ? '' : v }); return true;
     case 'ctk-hb':      ctTrackSet({ hb: !ct트랙().hb }); return true;
     case 'ctk-ec':      ctTrackSet({ ec: !ct트랙().ec }); return true;
+    case 'ctk-pi':      ctTrackSet({ piAt: ct트랙().piAt ? '' : ct오늘() }); return true;
     case 'ct-hb-open':  CT.hbOpen = !CT.hbOpen; render(); return true;
     case 'ct-open-prev': if(CT.row && CT.row.prev_id) go('#/partner/contract/' + CT.row.prev_id); return true;
     /* 나간 초안 링크를 모두 끊는다 - 링크 번호를 올리면 서버가 앞 번호의 링크를 받지 않는다 */

@@ -32,7 +32,7 @@ const CT_MAX = 64 * 1024;                     /* 계약서 한 장 - 조항·특
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 /* 목록에서 찾고(당사자 이름) 문서 이름을 짓는 데(세부 종류·거래유형) 쓰는 값은 doc 에서 꺼내 같이 준다 - doc 통째로는 무겁다 */
 const LIST_COLS = 'id,created_at,updated_at,form,title,status,sealed_at,sha256,prev_id,proposal_id,reported_at,'
-  + 'cat:doc->>cat,sub:doc->>sub,dt:doc->deal->>type,parties:doc->parties,renew:doc->renewOf,ci:doc->>contractId';
+  + 'cat:doc->>cat,sub:doc->>sub,dt:doc->deal->>type,parties:doc->parties,renew:doc->renewOf,ci:doc->>contractId,staff:doc->broker->>staff';
 /* 신고가 있는 양식 - 매매(거래신고) · 주택임대차(임대차 신고). 상가 임대차·확인·설명서는 신고가 없다 */
 export const CT_REPORT_FORMS = ['sale', 'presale', 'union', 'home-lease', 'lease'];
 /* 매매 쪽 신고 - 분양권·입주권 전매도 거래신고 대상(부동산 거래신고법 제3조, 2026-11-05) */
@@ -406,7 +406,7 @@ export function 알림설정(x) {
     off: [...new Set((Array.isArray(o.off) ? o.off : []).filter(k => Object.hasOwn(알림종류, k)))], lawyer: [a, b] };
 }
 /* 계약 하나의 일정·체크(track). 날짜 칸은 ISO 날짜만, 나머지는 켜짐/꺼짐만 받는다 - 다른 것은 버린다 */
-const TRACK_DATES = ['permitDue', 'permitApplied', 'midDate', 'balanceDate', 'guideAt', 'permitPaid', 'permitAgreed', 'permitOk'];
+const TRACK_DATES = ['permitDue', 'permitApplied', 'midDate', 'balanceDate', 'guideAt', 'permitPaid', 'permitAgreed', 'permitOk', 'piAt'];
 export const 진행상태 = { ready: '준비', doing: '진행중', done: '완료', hold: '보류', cancel: '취소' };
 export function trackCheck(t) {
   if (!t || typeof t !== 'object' || Array.isArray(t)) return null;

@@ -625,6 +625,15 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
   ok(/const ct금액넘침 = D =>/.test(js), '계약금 + 중도금이 대금보다 크면 잔금 칸 아래 빨갛게');
 }
 
+/* ── 레이아웃 그대로 더한 것 (2026-11-06) ── */
+{
+  ok(js.includes('<div class="ct-rw"><button type="button" class="ct-row"') && js.includes('class="ct-rcopy" data-act="ct-copy"') && css.includes('.ct-rw:hover .ct-rcopy,.ct-rcopy:focus-visible{opacity:1;pointer-events:auto}'),
+     '목록 줄마다 복사 - 줄 모양은 그대로, 올리거나 Tab 하면 오른쪽 끝에');
+  ok(js.includes('function ct구획(doc, 앞)') && (js.match(/\$\{ct구획\(doc, \[/g) || []).length === 5, '카드 제목 옆 단계 표시(완료 · n칸 남음) - 목적물 · 금액 · 기간 · 당사자 · 사무소');
+  ok(js.includes('const ct담당고르기 = ') && /staff:doc->broker->>staff/.test(fs.readFileSync(new URL('../api/_contract.js', import.meta.url), 'utf8')), '담당 거르기 - 계약서의 소속공인중개사 이름');
+  ok(js.includes("case 'ctk-pi':") && JSON.stringify(C.trackCheck({ piAt: '2026-11-06' })) === '{"piAt":"2026-11-06"}', '개인정보 동의서 받음 - 날짜로 기록 · 목록에 표시');
+}
+
 /* ── 화면 붙은 자리 ── */
 {
   ok(/@media print\{[\s\S]*@page\{size:A4/.test(html) && /html\.printing-ct body > \*:not\(#ctPrint\)\{display:none!important\}/.test(html),

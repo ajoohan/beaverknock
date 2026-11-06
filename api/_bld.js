@@ -45,7 +45,12 @@ export async function 건축물대장(b, 키 = process.env.DATA_GO_KEY, fetchFn 
   const 곳 = { sigunguCd: admCd.slice(0, 5), bjdongCd: admCd.slice(5), platGbCd: b.mount ? '1' : '0', bun: 네자리(b.bun), ji: 네자리(b.ji) };
   const { dong, ho } = 동호(b.unit || b.road);
   const 표제 = await 묻기('getBrTitleInfo', 곳, 키, fetchFn);
-  if (!표제.length) return { error: '이 지번으로 등록된 건축물대장이 없습니다 - 건축물대장을 올려 주세요' };
+  if (!표제.length) {
+    /* 건물이 없는 땅(토지 매매 등) - 토지 값만이라도 */
+    const 땅 = await 토지(b, 키, fetchFn).catch(() => null);
+    if (!땅) return { error: '이 지번으로 등록된 건축물대장이 없습니다 - 건축물대장을 올려 주세요' };
+    return { scan: { ...땅, warnings: ['건축물대장은 없고 토지특성 · 토지이용계획 값만 넣었습니다. 소유자 · 권리관계는 등기부를 올려 채우세요', ...(땅.permitZone ? ['토지거래허가구역입니다 - 일정 · 체크에서 토지거래허가 단계를 기록하세요'] : [])] }, kinds: ['land'] };
+  }
   /* 여러 동이면 적은 동 → 주건축물 → 연면적이 가장 큰 것 */
   const 같은동 = dong ? 표제.filter(x => 글(x.dongNm).replace(/동$/, '') === dong) : [];
   const 주 = 표제.filter(x => /주건축물/.test(글(x.mainAtchGbCdNm)));
@@ -78,5 +83,50 @@ export async function 건축물대장(b, 키 = process.env.DATA_GO_KEY, fetchFn 
   if (ho && !집합) 알림.push(`${[dong && dong + '동', ho + '호'].filter(Boolean).join(' ')} 전유부를 찾지 못해 건물 전체 연면적을 넣었습니다 - 전유 면적을 확인하세요`);
   if (!ho && 표제.length > 1 && !같은동.length) 알림.push('건물이 여러 동입니다 - 소재지에 동·호를 적으면 그 호의 전유 면적을 찾습니다');
   알림.push('건축물대장 표제부(전유부) 값입니다. 토지 지목 · 공시지가 · 소유자 · 권리관계는 토지이용계획확인서 · 등기부를 올려 채우세요');
-  return { scan: { ...scan, warnings: 알림 }, kinds: 집합 ? ['bld', 'bldx'] : ['bld'] };
+  /* 토지 - 집합건물이면 필지 전체 면적은 넣지 않는다(대지권 비율 면적은 등기부에서) */
+  const 땅 = await 토지(b, 키, fetchFn).catch(() => null);
+  const kinds = 집합 ? ['bld', 'bldx'] : ['bld'];
+  if (땅) { Object.assign(scan, { landCat: 땅.landCat, zone: 땅.zone, district: 땅.district, landPrice: 땅.landPrice, landPriceYear: 땅.landPriceYear, permitZone: 땅.permitZone },
+      집합 ? {} : { landArea: 땅.landArea || scan.landArea }); kinds.push('land');
+    if (땅.permitZone) 알림.unshift('토지거래허가구역입니다 - 일정 · 체크에서 토지거래허가 단계를 기록하세요'); }
+  알림[알림.length - 1] = 땅 ? '건축물대장 · 토지특성 · 토지이용계획 값입니다. 소유자 · 권리관계는 등기부를 올려 채우세요'
+    : '건축물대장 표제부(전유부) 값입니다. 토지 지목 · 공시지가 · 소유자 · 권리관계는 토지이용계획확인서 · 등기부를 올려 채우세요';
+  return { scan: { ...scan, warnings: 알림 }, kinds };
+}
+
+/* ── 주소로 토지 (2026-11-06) ── 국가공간정보(NSDI) 서비스 - 공공데이터포털의 같은 키(DATA_GO_KEY).
+ * 토지특성(LandCharacteristicsService): 지목 · 면적 · 용도지역 · 개별공시지가. 토지이용계획(LandUseService): 지역 · 지구(토지거래허가구역 여부).
+ * PNU = 법정동코드 10 + 산(1 일반 · 2 산) + 본번 4 + 부번 4. 활용신청을 안 했거나 실패하면 null - 건축물대장 결과는 그대로 쓴다 */
+const 토지바탕 = 'https://apis.data.go.kr/1611000/nsdi/';
+export const 필지번호 = b => `${글(b.admCd)}${b.mount ? '2' : '1'}${네자리(b.bun)}${네자리(b.ji)}`;
+async function 토지묻기(path, 키, pnu, fetchFn) {
+  const p = new URLSearchParams({ serviceKey: /%[0-9A-F]{2}/i.test(키) ? decodeURIComponent(키) : 키, pnu, format: 'json', numOfRows: '100', pageNo: '1' });
+  try {
+    const r = await fetchFn(`${토지바탕}${path}?${p}`, { signal: AbortSignal.timeout(6000) });
+    const j = JSON.parse(await r.text());
+    /* { landCharacteristicss: { field: [...] } } 처럼 묶음 이름 아래 field 목록 */
+    const 묶음 = Object.values(j || {}).find(v => v && typeof v === 'object' && 'field' in v);
+    const f = 묶음 && 묶음.field;
+    return Array.isArray(f) ? f : f ? [f] : [];
+  } catch { return null; }
+}
+export async function 토지(b, 키 = process.env.DATA_GO_KEY, fetchFn = fetch) {
+  if (!키 || !/^\d{10}$/.test(글(b.admCd)) || !/^\d{1,4}$/.test(글(b.bun))) return null;
+  const pnu = 필지번호(b);
+  const [특성, 이용] = await Promise.all([
+    토지묻기('LandCharacteristicsService/attr/getLandCharacteristics', 키, pnu, fetchFn),
+    토지묻기('LandUseService/attr/getLandUseAttr', 키, pnu, fetchFn)]);
+  if (!특성 && !이용) return null;
+  /* 해마다 한 줄 - 가장 최근 해 */
+  const 최근 = (특성 || []).slice().sort((a, c) => String(c.stdrYear || '').localeCompare(String(a.stdrYear || '')))[0] || {};
+  const 지역지구 = [...new Set((이용 || []).map(x => 글(x.prposAreaDstrcCodeNm)).filter(Boolean))];
+  const 용도 = 지역지구.filter(n => /지역$/.test(n) && /주거|상업|공업|녹지|관리|농림|자연환경/.test(n));
+  const out = {
+    landCat: 글(최근.lndcgrCodeNm), landArea: 수(최근.lndpclAr),
+    zone: 용도[0] || [글(최근.prposArea1Nm), 글(최근.prposArea2Nm)].filter(x => x && x !== '지정되지않음').join(' · '),
+    district: 지역지구.filter(n => !용도.includes(n)).slice(0, 8).join(' · ').slice(0, 80),
+    landPrice: 수(최근.pblntfPclnd), landPriceYear: 글(최근.stdrYear),
+    permitZone: 지역지구.some(n => /토지거래(계약에관한)?허가구역/.test(n.replace(/\s/g, ''))),
+  };
+  return Object.values(out).some(v => v) ? out : null;
 }

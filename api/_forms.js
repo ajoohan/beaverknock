@@ -64,5 +64,8 @@ export async function 서식주소(agentId, f, fetchFn = fetch) {
 }
 export async function 서식지우기(agentId, f, fetchFn = fetch) {
   const r = await fetchFn(저장소(`object/${서식버킷}`), { method: 'DELETE', headers: { ...열쇠(), 'Content-Type': 'application/json' }, body: JSON.stringify({ prefixes: [`${agentId}/${f.id}.${f.ext}`] }) });
-  return r.ok;
+  /* 지운 것의 목록이 온다 - 빈 목록이면 저장소에 없던 것 */
+  if (!r.ok) return 0;
+  const j = await r.json().catch(() => null);
+  return Array.isArray(j) ? j.length : 1;
 }

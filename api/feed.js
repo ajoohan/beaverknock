@@ -274,8 +274,8 @@ async function delForm(res, agent, b) {
   const z = await 설정고침(agent, s => { const L = 서식들(s.forms); 지운 = L.find(v => v.id === String(b.id || '')) || null;
     return { list: L.filter(v => v !== 지운), patch: { forms: L.filter(v => v !== 지운) } }; });
   if (!z.y) return 설정실패(res, z, '서식');
-  if (지운) await 서식지우기(agent.id, 지운).catch(() => {});
-  return res.status(200).json({ ok: true, list: z.y.list });
+  const 지운수 = 지운 ? await 서식지우기(agent.id, 지운).catch(() => 0) : 0;
+  return res.status(200).json({ ok: true, list: z.y.list, removed: 지운수 });
 }
 
 async function saveOfficeAddr(res, agent, b) {

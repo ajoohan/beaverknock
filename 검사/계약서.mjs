@@ -79,9 +79,11 @@ const html = 길.html(), js = 길.js(), css = 길.css();
   ({ res } = await 돌려({ what: 'contract-seal', id: '33333333-3333-3333-3333-333333333333' }));
   ok(res.code === 400 && /계약금 · 잔금 지급일 · 계약일/.test(res.body.error) && 불린.every(x => x.m === 'GET'),
      '필수 항목(계약금·잔금일·계약일 등)이 비면 서버가 확정을 거절한다 - 잠그지 않는다');
-  ok(C.확정필수('explain-home', {}) === null && C.확정필수('sale', { property: { road: 'a' }, deal: { price: 1, down: 1, balanceDate: 'x' }, contractDate: 'y' }) === null
+  ok(/소재지/.test(C.확정필수('explain-home', {})) && C.확정필수('explain-home', { property: { road: 'a' } }) === null && C.확정필수('sale', { property: { road: 'a' }, deal: { price: 1, down: 1, balanceDate: 'x' }, contractDate: 'y' }) === null
      && /보증금/.test(C.확정필수('home-lease', {})) && /대금/.test(C.확정필수('sale', {})),
-     '확정필수 - 확인·설명서는 보지 않는다 · 임대차는 보증금, 매매는 대금');
+     '확정필수 - 확인·설명서는 소재지만 · 임대차는 보증금, 매매는 대금');
+  ok(js.includes(".split(/[,·]+/).map(s => s.replace(/\\s/g, ''))") &&js.includes('const ct한국날 = ') && js.includes('ct날차(오늘, ct목록잔금(r)) <= 30') && js.includes('CT.officeDoc !== doc') && js.includes('if(!CT.list) ctLoadList(true).then'),
+     '코드리뷰 11-06 - 소유자 이름 띄어쓰기 무시 · 이번 달 날인은 한국 날짜 · 잔금 카드는 바뀐 잔금일 · 기본값 표시는 화면 상태 · 확정 창에서 목록 받아 오기');
   답 = (u, o) => (o.method || 'GET') === 'GET'
     ? new Response(JSON.stringify([{ id: 'x', status: 'draft', doc: db도c }]), { status: 200 })
     : new Response(JSON.stringify([{ sealed_at: 'now' }]), { status: 200 });

@@ -262,7 +262,8 @@ async function upForm(res, agent, b) {
 async function formUrl(res, agent, b) {
   if (agent.role !== 'agent') return res.status(403).json({ error: '공인중개사만 쓸 수 있습니다' });
   const x = await 설정읽기(agent);
-  const f = 서식들(x.settings && x.settings.forms).find(v => v.id === String(b.id || ''));
+  if (x.error) return res.status(502).json({ error: '서식을 불러오지 못했습니다 - 잠시 뒤 다시 눌러 주세요' });
+  const f = 서식들(x.settings.forms).find(v => v.id === String(b.id || ''));
   if (!f) return res.status(404).json({ error: '지워졌거나 없는 서식입니다' });
   const u = await 서식주소(agent.id, f);
   if (!u.url) return res.status(u.need ? 503 : 502).json({ error: u.need ? '서식 올리기를 준비 중입니다' : u.error, need: u.need || '' });

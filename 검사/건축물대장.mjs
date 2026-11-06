@@ -8,7 +8,7 @@ const ok = (c, m) => { ran++; if (!c) fail++; console.log(`  ${c ? 'OK' : 'X '} 
 const js = 길.js();
 const 답 = items => new Response(JSON.stringify({ response: { header: { resultCode: '00' }, body: { items: { item: items } } } }), { status: 200 });
 
-ok(동호('미사강변대로 220, 101동 1203호').dong === '101' && 동호('미사강변대로 220, 101동 1203호').ho === '1203' && 동호('하남시 신장동 123').dong === '' && 동호('가동 101호').dong === '가',
+ok(동호('미사강변대로 220, 101동 1203호').dong === '101' && 동호('미사강변대로 220, 101동 1203호').ho === '1203' && 동호('하남시 신장동 123').dong === '' && 동호('가동 101호').dong === '가' && 동호('미사강변대로 165, 101동1203호').ho === '1203',
    '동·호 읽기 - 건물 동만(법정동 이름은 아니다)');
 
 { let 불린 = [];
@@ -33,7 +33,7 @@ ok(동호('미사강변대로 220, 101동 1203호').dong === '101' && 동호('�
   ok(/법정동코드/.test((await 건축물대장({ admCd:'', bun:'1' }, 'k', f)).error) && /연결되지/.test((await 건축물대장({ admCd:'4145010300', bun:'1' }, '', f)).error),
      '법정동코드가 없거나 키가 없으면 포털에 묻지 않는다');
 }
-ok(/case 'contract-bld':\s+await 대장\(res, b\);/.test(fs.readFileSync(path.resolve(길.저장소, 'api/_contract.js'), 'utf8')) && /ctApplyScan\(CT\.doc, j\.scan, j\.kinds \|\| \['bld'\], true\)/.test(js) && /data-act="ct-bld-go"/.test(js),
+ok(/case 'contract-bld':\s+await 대장\(req, res, agent, b\);/.test(fs.readFileSync(path.resolve(길.저장소, 'api/_contract.js'), 'utf8')) && /ctApplyScan\(CT\.doc, j\.scan, j\.kinds \|\| \['bld'\], true\)/.test(js) && /data-act="ct-bld-go"/.test(js),
    '화면 - 소재지를 고르면 ‘주소로 건축물대장 불러오기’ · 빈칸만 채운다');
 console.log(`${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

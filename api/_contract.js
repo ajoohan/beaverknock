@@ -95,7 +95,10 @@ export function docCheck(form, doc) {
 }
 
 /* 주소로 건축물대장 (2026-11-06) - api/_bld.js */
-async function 대장(res, b) {
+async function 대장(req, res, agent, b) {
+  /* 공공데이터 키는 사이트 전체가 같이 쓴다 - 한 계정 하루 200번 · 한 곳(IP) 400번 */
+  if (overLimit('bld:a:' + agent.id, 200, 864e5) || overLimit('bld:ip:' + ipOf(req), 400, 864e5))
+    return res.status(429).json({ ok: false, error: '오늘 건축물대장 조회를 많이 하셨습니다 - 내일 다시 하거나 건축물대장을 올려 주세요' });
   try {
     const o = await 건축물대장(b);
     if (o.error) return res.status(200).json({ ok: false, error: o.error });
@@ -108,7 +111,8 @@ async function 대장(res, b) {
 /* 날인본 확정 전 필수 항목 (2026-11-06 대표님) - 화면(ct필수)이 먼저 막고, 서버는 핵심 다섯 가지를 다시 본다.
    확인·설명서는 계약서가 아니라 보지 않는다 */
 export function 확정필수(form, doc) {
-  if (String(form || '').startsWith('explain')) return null;
+  /* 확인·설명서는 소재지만 본다 */
+  if (String(form || '').startsWith('explain')) return String((doc && doc.property && doc.property.road) || '').trim() ? null : '필수 항목이 비어 있어 확정할 수 없습니다 - 소재지';
   const d = (doc && doc.deal) || {}, 빈 = [];
   if (!String((doc && doc.property && doc.property.road) || '').trim()) 빈.push('소재지');
   if (!(+(d.price != null ? d.price : d.deposit) > 0)) 빈.push(임대차양식.includes(form) ? '보증금' : '대금');
@@ -139,7 +143,7 @@ export async function contractRoute(req, res, agent, user, b) {
       case 'contract-seal':    await seal(res, agent, b); break;
       case 'contract-revise':  await revise(res, agent, user, b); break;
       case 'contract-del':     await del(res, agent, b); break;
-      case 'contract-bld':     await 대장(res, b); break;
+      case 'contract-bld':     await 대장(req, res, agent, b); break;
       case 'contract-reported': await reported(res, agent, b); break;
       case 'contract-track':   await track(res, agent, b); break;
       case 'contract-scan':    await scan(req, res, b, user); break;

@@ -32,8 +32,8 @@ async function 묻기(op, q, 키, fetchFn = fetch) {
 export function 동호(s) {
   const t = 글(s);
   /* 동은 숫자 · 영문 · 한 글자(가동 · 나동)만 - '신장동' 같은 법정동 이름은 건물 동이 아니다 */
-  const 호 = [...t.matchAll(/(?:^|[\s,])(?:제\s*)?([0-9A-Za-z][0-9A-Za-z-]{0,7})\s*호(?![가-힣])/g)].pop();
-  const 동 = [...t.matchAll(/(?:^|[\s,])(?:제\s*)?([0-9A-Za-z]{1,6}|[가-힣])\s*동(?=[\s,]|$)/g)].pop();
+  const 호 = [...t.matchAll(/(?:^|[\s,동층])(?:제\s*)?([0-9A-Za-z][0-9A-Za-z-]{0,7})\s*호(?![가-힣])/g)].pop();
+  const 동 = [...t.matchAll(/(?:^|[\s,])(?:제\s*)?([0-9A-Za-z]{1,6}|[가-힣])\s*동(?=[\s,]|$|제?\s*[0-9A-Za-z])/g)].pop();
   return { dong: 동 ? 동[1] : '', ho: 호 ? 호[1] : '' };
 }
 

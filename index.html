@@ -2030,6 +2030,7 @@ body.mo .ctw-foot .btn{width:100%}
 .ct-find-more{display:flex;flex-wrap:wrap;gap:8px;width:100%}
 .hb-g{display:flex;flex-direction:column;gap:2px;padding-top:8px;border-top:1px solid var(--n100)}
 .ct-won.warn{color:#C62828;font-weight:600}
+.ctdoc .ct-sp-new{color:#A4A8C2}
 .ex-fee-calc{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;grid-column:1/-1}
 .ex-fee-calc .sub{font-size:12.5px}
 .pm-flow{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
@@ -10894,6 +10895,12 @@ const CT_하위메뉴 = [['#/partner/contracts/new', '계약서 작성', 'pen', 
    번호는 배포한 날(연.월.일 - 같은 날 또 올리면 뒤에 .2). 화면이 version.json 을 가끔 읽어,
    더 새 버전이 올라와 있으면 메뉴 아래에서 새로고침을 권한다(버전확인) - 계약서를 띄워 둔 채 오래 일하면 고친 화면을 못 받는다 */
 const BK_변경 = [
+  { v:'26.11.06.7', 날:'2026-11-06', 줄:[
+    '확정 전 점검 - 법인명처럼 띄어쓴 이름도 등기부 소유자와 맞게 대조 · 계약서로 바로 들어와도 확인·설명서 점검',
+    '확인·설명서도 소재지가 없으면 날인본으로 확정되지 않습니다',
+    '건축물대장 - ‘101동1203호’처럼 붙여 써도 동·호를 읽습니다 · 조회는 하루 횟수 제한',
+    '계약서 목록 - 이번 달 날인은 한국 날짜로, 잔금 30일 안은 바뀐 잔금일 · 완료 제외로 카드와 목록이 같게',
+    '바로 적는 미리보기의 특약 번호를 인쇄본과 같게' ] },
   { v:'26.11.06.6', 날:'2026-11-06', 줄:[
     '우리 사무소 서식 - 지울 때 저장소에서 실제로 지워졌는지 확인합니다' ] },
   { v:'26.11.06.5', 날:'2026-11-06', 줄:[
@@ -12018,7 +12025,8 @@ function ct책상HTML(doc){
 /* ── 필수 항목 (2026-11-06 대표님 '필수 사항을 적지 않으면 날인본 확정이 안 되게 · 어디가 빠졌는지 안내') ──
    [경로, 이름]. 서버(api/_contract.js 확정필수)도 소재지 · 대금 · 계약금 · 잔금일 · 계약일은 따로 본다 */
 function ct필수(doc){
-  const F = CT_FORMS[doc && doc.form] || {}; if(!doc || F.explain) return [];
+  const F = CT_FORMS[doc && doc.form] || {}; if(!doc) return [];
+  if(F.explain) return [['property.road', '소재지']];        /* 확인·설명서는 소재지만 */
   const D = doc.deal || {}, 맞춤 = !!F.fields && !F.lease, 매매 = !F.lease, 목록 = [['property.road', '소재지']];
   목록.push(맞춤 ? ['deal.price', F.pay.price] : 매매 ? ['deal.price', '매매대금'] : ['deal.deposit', '보증금']);
   목록.push(['deal.down', '계약금']);
@@ -12196,7 +12204,7 @@ function ctDocHTML(doc){
 
     <h2>[특약사항]</h2>
     <div class="ct-specials">${CT편집칸
-      ? (doc.specials || []).map((s, i) => `<p>${i+1}. <span class="ct-ed" contenteditable="plaintext-only" spellcheck="false" data-cte="cts:${i}" data-ml="1" data-ph="특약을 적으세요" style="min-width:300px">${esc(s)}</span></p>`).join('') + '<p class="line"></p>'.repeat(Math.max(1, 3 - (doc.specials || []).length))
+      ? (() => { let n = 0; return (doc.specials || []).map((s, i) => `<p>${String(s || '').trim() ? `${++n}.` : '<span class="ct-sp-new">+</span>'} <span class="ct-ed" contenteditable="plaintext-only" spellcheck="false" data-cte="cts:${i}" data-ml="1" data-ph="특약을 적으세요" style="min-width:300px">${esc(s)}</span></p>`).join(''); })() + '<p class="line"></p>'.repeat(Math.max(1, 3 - (doc.specials || []).length))
       : sp.map((s,i)=>`<p>${i+1}. ${esc(s).replace(/\n/g,'<br>')}</p>`).join('') + '<p class="line"></p>'.repeat(Math.max(2, 5 - sp.length))}${doc.acct ? `<p class="ct-acct">* ${esc(ct짧은이름(aKo))} 계좌 : ${빈칸(230)} (계약 시 기재)</p>` : ''}</div>
 
     <p class="ct-close">이 계약을 증명하기 위하여 계약 당사자가 이의 없음을 확인하고 각각 서명 또는 날인한 뒤, ${aKo}·${bKo}·개업공인중개사는 매 장마다 간인하여 각각 1통씩 보관한다.</p>
@@ -12428,12 +12436,12 @@ function ctFilter(rows){
   /* 종류 · 기간 거르기 (2026-11-06) - 목록 화면에서만 */
   const 목록 = !고름, 오늘 = ct오늘();
   const 종류맞음 = r => { const F = CT_FORMS[r.form] || {}; return !목록 || !CT.qk || (CT.qk === 'sale' ? ['sale'].includes(r.form) : CT.qk === 'lease' ? !!F.lease : !F.lease && r.form !== 'sale'); };
-  const 날 = r => CT.qb === 'c' ? r.cd : CT.qb === 'b' ? r.bd : String(r.updated_at || '').slice(0, 10);
+  const 날 = r => CT.qb === 'c' ? r.cd : CT.qb === 'b' ? ct목록잔금(r) : String(r.updated_at || '').slice(0, 10);
   const 기간맞음 = r => { if(!목록 || !CT.qp) return true; const d = 날(r) || ''; if(!d) return false;
     if(CT.qp === 'm') return d.slice(0, 7) === 오늘.slice(0, 7);
     if(CT.qp === 'y') return d.slice(0, 4) === 오늘.slice(0, 4);
     if(CT.qp === '3m') return d >= ct날더하기(오늘, -92) && d <= 오늘;
-    if(CT.qp === 'next') return d >= 오늘 && d <= ct날더하기(오늘, 30);
+    if(CT.qp === 'next') return d >= 오늘 && d <= ct날더하기(오늘, 30) && !(CT.qb === 'b' && r.track && r.track.state === 'done');
     return true; };
   return rows.filter(r => (고름 && CT.pick.cat === 'renew' ? 임대(r) : 고름 && CT.pick.cat === 'copy' ? !(CT_FORMS[r.form] || {}).explain : true)
     && (!CT.qs || (CT.qs === 'unrep' ? r.status === 'sealed' && ct신고(r) && !r.reported_at : r.status === CT.qs))
@@ -12837,14 +12845,18 @@ const ct찾기줄 = () => `<div class="ct-find-bar">
 if(typeof document !== 'undefined') document.addEventListener('change', e => { const el = e.target.closest && e.target.closest('[data-act-ch]'); if(!el) return;
   const k = el.dataset.actCh; if(k === 'ctq-kind') CT.qk = el.value; else if(k === 'ctq-base') CT.qb = el.value; else if(k === 'ctq-per') CT.qp = el.value; else return;
   render(); });
+/* 목록의 잔금일 - 계약 뒤 바뀐 잔금일(일정·체크)이 있으면 그것 */
+const ct목록잔금 = r => (r.track && r.track.balanceDate) || r.bd || '';
+/* sealed_at(UTC)을 한국 날짜로 */
+const ct한국날 = s => s ? new Date(Date.parse(s) + 9 * 3600e3).toISOString().slice(0, 10) : '';
 /* 목록 위 요약 (2026-11-06 · 파트너 기획 [73] '요약 카드') - 누르면 그 상태로 거른다 */
 function ct요약HTML(전체){
   if(!전체.length) return '';
   const 오늘 = ct오늘(), 이달 = 오늘.slice(0, 7);
   const 작성 = 전체.filter(r => r.status !== 'sealed').length;
-  const 이달확정 = 전체.filter(r => r.status === 'sealed' && String(r.sealed_at || '').slice(0, 7) === 이달).length;
+  const 이달확정 = 전체.filter(r => r.status === 'sealed' && ct한국날(r.sealed_at).slice(0, 7) === 이달).length;
   const 신고전 = 전체.filter(r => r.status === 'sealed' && ct신고(r) && !r.reported_at).length;
-  const 잔금 = 전체.filter(r => r.bd && r.bd >= 오늘 && ct날차(오늘, r.bd) <= 30 && !(r.track && r.track.state === 'done')).length;
+  const 잔금 = 전체.filter(r => ct목록잔금(r) && ct목록잔금(r) >= 오늘 && ct날차(오늘, ct목록잔금(r)) <= 30 && !(r.track && r.track.state === 'done')).length;
   const 칸 = (act, v, 이름, n, 말) => `<button type="button" class="ct-sum-c" data-act="${act}" data-v="${v}"><small>${이름}</small><b class="num">${n}</b><span>${말}</span></button>`;
   return `<div class="ct-sum">${칸('ctq-st', 'draft', '작성 중', 작성, '날인 전 계약서')}${칸('ctq-sum-m', '', '이번 달 날인', 이달확정, `${+이달.slice(5)}월에 확정`)}
     ${칸('ctq-st', 'unrep', '신고 전', 신고전, '날인본 중 신고 표시 전')}${칸('ctq-sum-b', '', '잔금 30일 안', 잔금, '완료 표시 전')}</div>`;
@@ -13553,7 +13565,7 @@ function ct확정점검(doc){
   const 소유 = ((doc.src && doc.src.owners) || []).map(o => String(o.name || '').replace(/\s/g, '')).filter(Boolean);
   const 갑 = (F.a || [])[0], 갑사람 = 갑 && (doc.parties || {})[갑];
   if(소유.length && 갑사람 && !['rights', 'premium', 'sublease'].includes(doc.form)){
-    const 이름들 = [갑사람.name, ...(갑사람.co || []).map(c => c.name)].join(',').split(/[,\s·]+/).map(s => s.trim()).filter(Boolean);
+    const 이름들 = [갑사람.name, ...(갑사람.co || []).map(c => c.name)].join(',').split(/[,·]+/).map(s => s.replace(/\s/g, '')).filter(Boolean);
     const 없음 = 소유.filter(n => !이름들.includes(n));
     if(이름들.length && 없음.length) 남음.push(`등기부 소유자(${없음.join(', ')})가 ${ct짧은이름((F.a || [])[1])} 칸에 없습니다 - 공동명의 · 대리인인지 확인하세요`);
   }
@@ -14594,7 +14606,7 @@ function ex사무소HTML(doc){
   if(!세션있음() || DJ.need) return '';
   const 잠김 = ctSealed(), s = ex사무소();
   /* 새 확인·설명서 - 한 번 저절로 */
-  if(s && !잠김 && !CT.id && CT.doc === doc && !doc.officeOn){ doc.officeOn = true; setTimeout(() => { const n = ex사무소넣기(doc); if(n){ ctDirty(); render(); toast(`사무소 기본값 ${n}칸을 넣었습니다`); } }); }
+  if(s && !잠김 && !CT.id && CT.doc === doc && CT.officeDoc !== doc){ CT.officeDoc = doc; setTimeout(() => { const n = ex사무소넣기(doc); if(n){ ctDirty(); render(); toast(`사무소 기본값 ${n}칸을 넣었습니다`); } }); }
   const 이름들 = EX_사무소칸.map(k => (k === 'ex.trust' ? '신탁등기' : k === 'ex.jointMortgage' ? '공동담보' : k === 'ex.smallRange' || k === 'ex.smallAmt' ? '최우선변제금' : k === 'ex.gas' ? '가스' : /heat/.test(k) ? '난방' : /guide/.test(k) ? '현장안내' : '보수 지급시기'));
   return `<div class="card pad ct-sec"><h2>사무소 기본값 <span class="sub" style="font-weight:500;font-size:13.5px">${esc([...new Set(이름들)].join(' · '))}</span></h2>
     <p class="sub" style="margin:0;font-size:13.5px">${s ? `저장해 둔 값이 있습니다(${esc(String(s.at || '').slice(0, 10))}). 새 확인·설명서를 열면 빈칸에 저절로 들어갑니다.` : '사무소가 늘 같게 쓰는 칸을 한 번 채우고 저장해 두면, 다음 확인·설명서부터 저절로 들어갑니다.'}</p>
@@ -17349,7 +17361,10 @@ function handle(a,v,el){
       if(빠짐.length){ CT.req = true; if(CT.mode !== 'edit'){ CT.mode = 'edit'; } render();
         toast(`필수 항목 ${빠짐.length}칸이 비어 있어 확정할 수 없습니다 - ${빠짐.slice(0, 3).map(([, l]) => l).join(' · ')}${빠짐.length > 3 ? ' 등' : ''}`);
         setTimeout(() => ct필수가기(빠짐[0][0]), 60); return true; }
-      S.modal = { type:'ct-seal' }; render(); return true; }
+      S.modal = { type:'ct-seal' }; render();
+      /* 확인·설명서 점검은 목록을 본다 - 계약서로 바로 들어와 목록이 없으면 받아 와서 다시 그린다 */
+      if(!CT.list) ctLoadList(true).then(() => { if(S.modal && S.modal.type === 'ct-seal') render(); });
+      return true; }
     case 'ct-req-go':
       if(CT.mode !== 'edit'){ CT.mode = 'edit'; render(); }
       setTimeout(() => ct필수가기(v), 30); return true;

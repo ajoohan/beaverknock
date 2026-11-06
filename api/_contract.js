@@ -21,7 +21,7 @@ import { sbHeaders, sbUrl, emailOf, sameSecret, overLimit, ipOf } from './_auth.
 import { notifyMany } from './_notify.js';
 import { logOps } from './_opslog.js';
 import { alimtalk } from './_kakao.js';
-import { 건축물대장, 포털오류 } from './_bld.js';
+import { 건축물대장, 포털오류, 토지사유 } from './_bld.js';
 
 /* 주택임대차 · 상가건물 임대차 · 부동산 매매 · 중개대상물 확인·설명서(주거용) (화면의 CT_FORMS 와 같은 이름) */
 /* 2026-10-30 계약서 종류 - 부동산 임대차(전세·월세·연세) · 전대차 · 분양권 · 조합원입주권 · 권리양도양수 · 상가 권리금 */
@@ -102,7 +102,8 @@ async function 대장(req, res, agent, b) {
   try {
     const o = await 건축물대장(b);
     if (o.error) return res.status(200).json({ ok: false, error: o.error });
-    return res.status(200).json({ ok: true, scan: o.scan, kinds: o.kinds });
+    const 까닭 = 토지사유.splice(0).slice(0, 2);
+    return res.status(200).json({ ok: true, scan: o.scan, kinds: o.kinds, ...(o.kinds.includes('land') || !까닭.length ? {} : { landWhy: 까닭 }) });
   } catch (e) {
     return res.status(200).json({ ok: false, error: e instanceof 포털오류 ? e.message : '건축물대장을 불러오지 못했습니다' });
   }

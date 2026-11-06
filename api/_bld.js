@@ -101,15 +101,20 @@ const 토지바탕 = 'https://apis.data.go.kr/1611000/nsdi/';
 export const 필지번호 = b => `${글(b.admCd)}${b.mount ? '2' : '1'}${네자리(b.bun)}${네자리(b.ji)}`;
 async function 토지묻기(path, 키, pnu, fetchFn) {
   const p = new URLSearchParams({ serviceKey: /%[0-9A-F]{2}/i.test(키) ? decodeURIComponent(키) : 키, pnu, format: 'json', numOfRows: '100', pageNo: '1' });
+  let t = '';
   try {
     const r = await fetchFn(`${토지바탕}${path}?${p}`, { signal: AbortSignal.timeout(6000) });
-    const j = JSON.parse(await r.text());
+    t = await r.text();
+    const j = JSON.parse(t);
     /* { landCharacteristicss: { field: [...] } } 처럼 묶음 이름 아래 field 목록 */
     const 묶음 = Object.values(j || {}).find(v => v && typeof v === 'object' && 'field' in v);
     const f = 묶음 && 묶음.field;
+    if (!묶음) 토지사유.push(`${path.split('/')[0]}: ${t.replace(/\s+/g, ' ').slice(0, 160)}`);
     return Array.isArray(f) ? f : f ? [f] : [];
-  } catch { return null; }
+  } catch (e) { 토지사유.push(`${path.split('/')[0]}: ${(t || String(e && e.message || e)).replace(/\s+/g, ' ').slice(0, 160)}`); return null; }
 }
+/* 실패 까닭(포털 답 앞부분) - 활용신청 전인지 가린다. 키는 답에 들어 있지 않다 */
+export const 토지사유 = [];
 export async function 토지(b, 키 = process.env.DATA_GO_KEY, fetchFn = fetch) {
   if (!키 || !/^\d{10}$/.test(글(b.admCd)) || !/^\d{1,4}$/.test(글(b.bun))) return null;
   const pnu = 필지번호(b);

@@ -634,6 +634,43 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
   ok(js.includes("case 'ctk-pi':") && JSON.stringify(C.trackCheck({ piAt: '2026-11-06' })) === '{"piAt":"2026-11-06"}', '개인정보 동의서 받음 - 날짜로 기록 · 목록에 표시');
 }
 
+/* ── 초안 의견 · track 판 번호 (2026-11-06) ── */
+{
+  const 응답 = () => { const r = { code: 0, body: null }; r.status = c => (r.code = c, r); r.json = b => (r.body = b, r); return r; };
+  let 불린 = [], 지금 = { track: null, status: 'draft' };
+  globalThis.fetch = async (u, o = {}) => { 불린.push({ u: String(u), m: o.method || 'GET', b: o.body });
+    return (o.method || 'GET') === 'GET' ? new Response(JSON.stringify([지금])) : new Response('[{"id":"x"}]'); };
+  process.env.BK_URL = 'https://x.supabase.co'; process.env.BK_SECRET_KEY = 'k';
+  const id = '33333333-3333-3333-3333-333333333333', tok = C.초안표(id, 0);
+  const 보내 = async (b, t = tok, ip = '9.9.9.' + Math.floor(Math.random() * 200)) => { const res = 응답(); 불린 = []; await C.draftNote({ query: { draft: t }, headers: { 'x-forwarded-for': ip } }, res, b); return res; };
+  let res = await 보내({ who: '매수인', name: '김비버', text: '잔금일을 바꿔 주세요' });
+  let 패 = 불린.find(x => x.m === 'PATCH'), 몸 = 패 && JSON.parse(패.b).track;
+  ok(res.code === 200 && 몸 && 몸.notes.length === 1 && 몸.notes[0].who === '매수인' && 몸.notes[0].text === '잔금일을 바꿔 주세요' && 몸.tv === 1 && !/agent_id/.test(패.u),
+     '초안 의견 - 표가 맞으면 로그인 없이 track 에 쌓인다(판 번호 1)');
+  ok((await 보내({ who: '아무개', text: 'x' })).code === 400 && (await 보내({ who: '매수인', text: '' })).code === 400 && (await 보내({ who: '매수인', text: '900101-1234567' })).code === 400,
+     '보내는 분 고르기 · 빈 의견 · 주민번호는 거절');
+  지금 = { track: { shareN: 2, tv: 5 }, status: 'draft' };
+  res = await 보내({ who: '매수인', text: '확인' });
+  ok(res.code === 404 && !불린.some(x => x.m === 'PATCH'), '끊긴 링크(링크 번호가 다름)로는 의견을 못 남긴다');
+  지금 = { track: { tv: 5 }, status: 'sealed' };
+  res = await 보내({ who: '매수인', text: '확인' });
+  ok(res.code === 409 && !불린.some(x => x.m === 'PATCH'), '날인본에는 의견을 못 남긴다');
+  /* 중개사 일정 저장은 의견을 덮지 않는다 · 읽은 판 그대로일 때만 */
+  지금 = { track: { tv: 3, notes: [{ i: 'abcdef0123', at: '2026-11-06T10:00', who: '매도인', name: '', text: '확인했습니다' }] } };
+  const agent = { id: '11111111-1111-1111-1111-111111111111', role: 'agent' };
+  res = 응답(); 불린 = [];
+  await C.contractRoute({}, res, agent, { id: 'u' }, { what: 'contract-track', id, track: { guideAt: '2026-12-10', notes: [], tv: 99 } });
+  패 = 불린.find(x => x.m === 'PATCH'); 몸 = JSON.parse(패.b).track;
+  ok(res.code === 200 && 몸.notes.length === 1 && 몸.tv === 4 && /track-%3E%3Etv=eq\.3|track->>tv=eq\.3/.test(패.u), '중개사 저장은 서버의 의견을 그대로 두고 판 번호 3 → 4');
+  res = 응답(); 불린 = [];
+  await C.contractRoute({}, res, agent, { id: 'u' }, { what: 'contract-note', id, op: 'read-all' });
+  ok(JSON.parse(불린.find(x => x.m === 'PATCH').b).track.notes[0].read === true, '모두 읽음');
+  res = 응답(); 불린 = [];
+  await C.contractRoute({}, res, agent, { id: 'u' }, { what: 'contract-note', id, op: 'del', i: 'abcdef0123' });
+  ok(!JSON.parse(불린.find(x => x.m === 'PATCH').b).track.notes, '의견 지우기');
+  ok(js.includes('function dr의견칸(R)') && js.includes("case 'ct-note-read':") && js.includes('ct안읽은의견(r.track)'), '화면 - 초안 의견 칸 · 받은 의견 · 목록 · 대시보드 표시');
+}
+
 /* ── 화면 붙은 자리 ── */
 {
   ok(/@media print\{[\s\S]*@page\{size:A4/.test(html) && /html\.printing-ct body > \*:not\(#ctPrint\)\{display:none!important\}/.test(html),
@@ -914,7 +951,7 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
   await C.contractRoute({}, res, agent, user, { what: 'contract-track', id: '33333333-3333-3333-3333-333333333333', track: { guideAt: '2026-12-10', 뭐: 1 } });
   { const 패 = 불린.find(x => x.m === 'PATCH');
   ok(res.code === 200 && 패 && /agent_id=eq\.11111111/.test(패.u) && !/status=eq/.test(패.u) && /select=id/.test(패.u)
-     && JSON.stringify(JSON.parse(패.b)) === '{"track":{"guideAt":"2026-12-10"}}', '일정·체크 저장 - 내 계약서의 track 한 칸만(날인본도 된다)'); }
+     && JSON.stringify(JSON.parse(패.b)) === '{"track":{"guideAt":"2026-12-10","tv":1}}', '일정·체크 저장 - 내 계약서의 track 한 칸만(날인본도 된다)'); }
   /* 링크 번호는 끊기만 올린다 - 오래된 track 저장(shareN 없음·0)이 끊은 링크를 되살리지 않는다(2026-11-05 리뷰) */
   { const 앞답 = 답; 답 = (u, o) => (o && o.method === 'PATCH') ? new Response('[{"id":"x"}]', { status: 200 }) : new Response('[{"track":{"shareN":3,"off":true}}]', { status: 200 });
     res = 응답(); 불린 = [];

@@ -9,7 +9,7 @@
 
 import { userFrom, sbHeaders, sbUrl } from './_auth.js';
 import { dbWhy } from './_dberr.js';
-import { contractRoute, reportDueCron, draftRead, 알림설정, 특약문구들, 특약문구고침, 문자틀들, 문자기록들, 문자고침, 단지들, 단지고침 } from './_contract.js';
+import { contractRoute, reportDueCron, draftRead, draftNote, 알림설정, 특약문구들, 특약문구고침, 문자틀들, 문자기록들, 문자고침, 단지들, 단지고침 } from './_contract.js';
 import { 날씨 } from './_weather.js';
 import { 서식들, 서식확인, 서식올리기, 서식주소, 서식지우기, 서식최대 } from './_forms.js';
 
@@ -302,6 +302,12 @@ export default async function handler(req, res) {
     return draftRead(req, res);
   }
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST 만 받습니다' });
+  /* 초안에 의견 남기기 - 로그인 없이 서명된 표로(api/_contract.js draftNote) */
+  if (req.query && req.query.draft) {
+    if (!process.env.BK_URL || !process.env.BK_SECRET_KEY) return res.status(503).json({ error: '서버에 환경변수가 설정되지 않았습니다' });
+    let nb = req.body; if (typeof nb === 'string') { try { nb = JSON.parse(nb); } catch { nb = {}; } }
+    return draftNote(req, res, nb || {});
+  }
   if (!process.env.BK_URL || !process.env.BK_SECRET_KEY) {
     return res.status(503).json({ error: '서버에 환경변수가 설정되지 않았습니다' });
   }

@@ -2029,6 +2029,14 @@ body.mo .ctw-foot .btn{width:100%}
 .ct-find-bar .inp{flex:1 1 240px;min-width:0}
 .ct-find-more{display:flex;flex-wrap:wrap;gap:8px;width:100%}
 .hb-g{display:flex;flex-direction:column;gap:2px;padding-top:8px;border-top:1px solid var(--n100)}
+.ct-notes{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.ct-notes li{display:flex;flex-direction:column;gap:4px;padding:10px 12px;border:1px solid var(--n200);border-radius:10px;background:var(--white)}
+.ct-notes li.new{border-color:#F0C48A;background:#FFFAF2}
+.ct-notes li > div{display:flex;justify-content:space-between;gap:8px;font-size:13.5px}
+.ct-notes li small{color:var(--n500);font-size:12px}
+.ct-notes li p{margin:0;font-size:14px;line-height:1.6;white-space:normal}
+.ct-notes li .tapx{align-self:flex-end}
+.dr-note{gap:10px}
 .ct-won.warn{color:#C62828;font-weight:600}
 .ct-secst{display:inline-flex;align-items:center;margin-left:6px;padding:1px 8px;border-radius:99px;border:1px solid #F1C4C4;background:#FFF6F6;color:#9B2C2C;font:inherit;font-size:12px;font-weight:600;vertical-align:2px;cursor:pointer}
 .ct-secst.ok{border-color:#BFE3CC;background:#F1FAF4;color:#1E6B3A;cursor:default}
@@ -10922,6 +10930,9 @@ const CT_하위메뉴 = [['#/partner/contracts/new', '계약서 작성', 'pen', 
    번호는 배포한 날(연.월.일 - 같은 날 또 올리면 뒤에 .2). 화면이 version.json 을 가끔 읽어,
    더 새 버전이 올라와 있으면 메뉴 아래에서 새로고침을 권한다(버전확인) - 계약서를 띄워 둔 채 오래 일하면 고친 화면을 못 받는다 */
 const BK_변경 = [
+  { v:'26.11.06.14', 날:'2026-11-06', 줄:[
+    '확정 전 초안 링크 - 받은 당사자 · 공동중개 사무소가 고칠 곳 · 궁금한 점을 남길 수 있습니다(중개사무소에만 전달, 서로 안 보임)',
+    '계약서 - 받은 의견을 일정·체크 탭에서 보고 읽음 · 지우기, 목록에 ‘의견 n’, 대시보드 할 일에 ‘초안에 새 의견’' ] },
   { v:'26.11.06.13', 날:'2026-11-06', 줄:[
     '운영 화면 - 부운영자 등급: 모든 목록을 보되 연락처 · 메일은 늘 가린 채로, 가입 승인 · 반려 · 삭제 · 임시 링크는 운영자만' ] },
   { v:'26.11.06.12', 날:'2026-11-06', 줄:[
@@ -11161,6 +11172,7 @@ V['#/partner/home'] = () => {
     계약없는연결 ? { t:'연결된 손님 계약서', s:'연결됐는데 계약서를 아직 안 만들었습니다', n:계약없는연결, ico:'doc', go:'#/partner/proposals' } : null,
     신고전 ? { t:'신고 안 한 날인본', s:'계약일부터 30일 안에 신고 - 마쳤으면 ‘신고 마침’ 표시', n:신고전, ico:'flag', go:'#/partner/contracts' } : null,
     작성중 ? { t:'작성 중인 계약서', s:'날인받았으면 날인본으로 확정하세요', n:작성중, ico:'doc', go:'#/partner/contracts' } : null,
+    계약.some(r => ct안읽은의견(r.track)) ? { t:'초안에 새 의견', s:'손님 · 공동중개 사무소가 초안 링크로 남긴 의견', n: 계약.reduce((s, r) => s + ct안읽은의견(r.track), 0), ico:'doc', go:'#/partner/contracts' } : null,
     !물건.length ? { t:'물건 올려두기', s:'올려두면 맞는 손님과 바로 대조합니다', ico:'building', go:'#/partner/listing/new' } : null,
   ].filter(Boolean);
   const 승인 = S.agent && S.agent.status === 'approved';
@@ -12388,10 +12400,53 @@ V['#/draft'] = tok => {
       : !R ? `<div class="card pad"><p class="sub" style="margin:0">초안을 불러오는 중입니다…</p></div>`
       : R.status === 'sealed' || !R.doc ? `<div class="card pad"><p class="sub" style="margin:0">이 계약서는 날인본으로 확정됐습니다. 초안은 더 보이지 않습니다 - 최종본은 중개사무소에서 받으세요.</p></div>`
       : `<p class="sub" style="margin:0;font-size:13.5px">마지막으로 고친 때 ${esc(String(R.updated_at || '').slice(0, 16).replace('T', ' '))} · 고칠 곳이 있으면 중개사무소에 말씀해 주세요.</p>
-        <div class="ct-sheet-wrap ct-draft"><div class="ct-sheet">${ctDocHTML(R.doc)}</div></div>`}
+        <div class="ct-sheet-wrap ct-draft"><div class="ct-sheet">${ctDocHTML(R.doc)}</div></div>
+        ${dr의견칸(R)}`}
   </div>
 </div>`;
 };
+/* 초안에 의견 남기기 (2026-11-06 · 파트너 기획 [111]) - 당사자 · 공동중개 사무소가 고칠 곳을 적어 보낸다. 다른 분의 의견은 보이지 않는다 */
+function dr의견칸(R){
+  const F = CT_FORMS[R.form] || {}, 누구 = [...new Set([(F.a || [])[1], (F.b || [])[1]].filter(Boolean).map(ct짧은이름)), '공동중개 사무소', '기타'];
+  const N = DR.note || (DR.note = { who:'', name:'', text:'', busy:false, sent:0 });
+  return `<div class="card pad ct-sec dr-note"><h2>고칠 곳이나 궁금한 점 남기기 <span class="sub" style="font-weight:500;font-size:13.5px">중개사무소에만 전달됩니다 · 다른 분은 볼 수 없습니다</span></h2>
+    ${N.sent ? `<p class="ct-note" role="status" style="background:#F1FAF4">의견 ${N.sent}건을 보냈습니다. 중개사무소가 확인하고 연락드립니다.</p>` : ''}
+    <div><span class="lab">어느 분이신가요</span><div class="ct-chips" role="radiogroup" aria-label="보내는 분">${누구.map(w => `<button type="button" class="chip${N.who === w ? ' on' : ''}" role="radio" aria-checked="${N.who === w}" data-act="dr-who" data-v="${esc(w)}">${esc(w)}</button>`).join('')}</div></div>
+    <label class="ct-f"><span class="lab">성함 (선택)</span><input class="inp" data-in="dr-name" value="${esc(N.name)}" maxlength="20" autocomplete="name" placeholder="예: 김비버"></label>
+    <label class="ct-f"><span class="lab">의견</span><textarea class="inp" rows="4" data-in="dr-text" maxlength="500" placeholder="예: 잔금일을 12월 20일로 바꿔 주세요. 특약 3번은 빼 주세요.">${esc(N.text)}</textarea></label>
+    <p class="sub" style="margin:0;font-size:12.5px">주민등록번호 · 계좌번호는 적지 말아 주세요.</p>
+    <div><button type="button" class="btn pri sm" data-act="dr-send" ${N.busy ? 'disabled' : ''}>${N.busy ? '보내는 중…' : '중개사무소에 보내기'}</button></div></div>`;
+}
+async function drSend(){
+  const N = DR.note; if(!N || N.busy) return;
+  if(!N.who) return toast('어느 분이신지 골라 주세요');
+  if(!String(N.text || '').trim()) return toast('의견을 적어 주세요');
+  N.busy = true; render();
+  const { ok, j } = await fetch('/api/feed?draft=' + encodeURIComponent(DR.tok), { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ who: N.who, name: N.name, text: N.text }) })
+    .then(r => r.json().catch(() => ({})).then(j => ({ ok: r.ok, j }))).catch(() => ({ ok:false, j:{ error:'네트워크 문제로 보내지 못했습니다' } }));
+  N.busy = false;
+  if(ok){ N.sent++; N.text = ''; render(); toast('중개사무소에 보냈습니다'); }
+  else { render(); toast(j.error || '보내지 못했습니다'); }
+}
+/* 중개사 쪽 - 받은 의견 (일정·체크 탭 · 계약서 목록 · 대시보드) */
+const ct안읽은의견 = t => ((t && t.notes) || []).filter(n => !n.read).length;
+function ct의견HTML(){
+  const 의견 = (ct트랙().notes || []).slice().reverse();
+  if(!CT.id) return '';
+  const 안읽음 = 의견.filter(n => !n.read).length;
+  return `<div class="card pad ct-sec" id="ctNotes"><h2>초안에 남긴 의견 <span class="sub" style="font-weight:500;font-size:13.5px">초안 링크를 받은 손님 · 공동중개 사무소가 보낸 것</span>${안읽음 ? ` <span class="ct-secst">새 의견 ${안읽음}</span>` : ''}</h2>
+    ${의견.length ? `<ul class="ct-notes">${의견.map(n => `<li class="${n.read ? '' : 'new'}"><div><b>${esc(n.who)}${n.name ? ` · ${esc(n.name)}` : ''}</b><small>${esc(String(n.at).slice(0, 16).replace('T', ' '))}</small></div>
+        <p>${esc(n.text).replace(/\n/g, '<br>')}</p><button type="button" class="tapx" data-act="ct-note-del" data-v="${esc(n.i)}" style="font-size:13px;color:var(--n500)">${CT.noteDel === n.i ? '한 번 더 누르면 지웁니다' : '지우기'}</button></li>`).join('')}</ul>
+      ${안읽음 ? `<button type="button" class="btn tool sm" data-act="ct-note-read" style="align-self:flex-start">모두 읽음으로</button>` : ''}`
+      : `<p class="sub" style="margin:0">아직 받은 의견이 없습니다. ‘초안 링크’를 손님 · 공동중개 사무소에 보내면 그쪽에서 고칠 곳을 적어 보낼 수 있습니다.</p>`}</div>`;
+}
+async function ctNoteOp(op, i){
+  if(!CT.id) return;
+  const { ok, j } = await ctPost({ what:'contract-note', id: CT.id, op, i }).catch(() => ({ ok:false, j:{} }));
+  if(!ok) return toast(j.error || '고치지 못했습니다');
+  CT.track = j.track || CT.track; const L = (CT.list || []).find(r => r.id === CT.id); if(L) L.track = CT.track;
+  render(); toast(op === 'del' ? '의견을 지웠습니다' : '모두 읽음으로 했습니다');
+}
 /* ── 계약서 작성 (2026-10-30 대표님 '이쪽 UI 가 너무 불편해 - 심플하지만 직관적이고 편할 수 있게') ──
    왼쪽에서 종류, 오른쪽에서 세부 종류·거래유형을 고르면 아래에 만들 계약서 이름이 나오고 [계약서 만들기] 하나로 연다.
    전에는 마지막 칩을 누르는 순간 바로 열려 무엇을 만들었는지 놓쳤고, 세부 종류 스물한 칸이 '부동산(…)' 을 되풀이했다.
@@ -12927,7 +12982,7 @@ function ctRowsHTML(전체, rows, 갱신고르기){
     ? (r.reported_at ? `<span class="badge b-ok">신고 마침</span>` : `<span class="badge b-warn">신고 전</span>`) : '';
   const 판 = r => `<span style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">${r.status === 'sealed'
     ? `<span class="badge b-ok">날인본 · ${esc(String(r.sealed_at||'').slice(0,10))}</span>`
-    : `<span class="badge b-warn">작성 중</span>`}${신고(r)}${r.track && CT_진행[r.track.state] ? `<span class="badge ${r.track.state === 'done' ? 'b-ok' : 'b-mute'}">${CT_진행[r.track.state]}</span>` : ''}${r.track && r.track.hb ? '<span class="badge b-mute">한방 입력</span>' : ''}${r.track && r.track.ec ? '<span class="badge b-mute">전자계약</span>' : ''}${!(CT_FORMS[r.form] || {}).explain && (CT.list || []).some(x => x.ci === r.id) ? '<span class="badge b-mute">확인·설명서</span>' : ''}${r.track && r.track.piAt ? '<span class="badge b-mute">동의서</span>' : ''}${r.track && r.track.permit ? `<span class="badge b-mute">토허 · ${ct허가단계(r.track) < CT_허가단계.length ? CT_허가단계[ct허가단계(r.track)][1] + ' 전' : '승인'}</span>` : ''}</span>`;
+    : `<span class="badge b-warn">작성 중</span>`}${신고(r)}${r.track && CT_진행[r.track.state] ? `<span class="badge ${r.track.state === 'done' ? 'b-ok' : 'b-mute'}">${CT_진행[r.track.state]}</span>` : ''}${r.track && r.track.hb ? '<span class="badge b-mute">한방 입력</span>' : ''}${r.track && r.track.ec ? '<span class="badge b-mute">전자계약</span>' : ''}${!(CT_FORMS[r.form] || {}).explain && (CT.list || []).some(x => x.ci === r.id) ? '<span class="badge b-mute">확인·설명서</span>' : ''}${r.track && r.track.piAt ? '<span class="badge b-mute">동의서</span>' : ''}${ct안읽은의견(r.track) ? `<span class="badge b-warn">의견 ${ct안읽은의견(r.track)}</span>` : ''}${r.track && r.track.permit ? `<span class="badge b-mute">토허 · ${ct허가단계(r.track) < CT_허가단계.length ? CT_허가단계[ct허가단계(r.track)][1] + ' 전' : '승인'}</span>` : ''}</span>`;
   const 표시 = r => `${r.renew ? ' · 갱신계약' : r.prev_id ? ' · 확정 후 수정' : ''}`;
   if(CT.need) return `<div class="card pad"><b>계약서 기능을 준비 중입니다.</b><p class="sub" style="margin:6px 0 0">곧 열립니다 - 잠시 뒤 다시 들어와 주세요.</p></div>`;
   /* 불러오는 동안은 글자 대신 표 모양 그대로 회색 줄 - 다 오면 그 자리에 그대로 채워진다 */
@@ -13039,6 +13094,7 @@ V['#/partner/contract'] = (id) => {
              <button class="btn pri sm" data-act="ct-seal" ${CT.saving?'disabled':''}>날인본으로 확정</button>`}
       </div>
     </div>
+    ${ct안읽은의견(CT.track) ? `<p class="ct-note noprint"><button type="button" class="tapx" data-act="ct-notes-open" style="font-weight:700;color:#B25E00">초안에 새 의견 ${ct안읽은의견(CT.track)}건 - 일정·체크에서 보기</button></p>` : ''}
     ${잠김 ? `<p class="ct-note noprint">날인본입니다 · ${esc(String(CT.row.sealed_at||'').slice(0,16).replace('T',' '))} 확정 · 지문 ${esc(String(CT.row.sha256||'').slice(0,12))}… 고칠 수 없습니다. 바꿔야 하면 ‘고쳐서 새 판 만들기’를 누르세요.</p>` : ''}
     ${CT.row && CT.row.prev_id ? `<p class="ct-note noprint">확정 후 수정한 판입니다. <button type="button" class="tapx" data-act="ct-open-prev" style="font-weight:700;color:var(--ind700)">앞 날인본 보기</button></p>` : ''}`;
 
@@ -13294,7 +13350,7 @@ function ctDeskShell(doc, side, 신고면){
     <div class="ctx-head">
       <a class="back" data-go="#/partner/contracts"><i class="ar-l" aria-hidden="true"></i>계약서 목록</a>
       <h1 class="ctx-h1">${esc(이름)}</h1>
-      <span class="badge ${잠김?'b-ok':'b-warn'}">${잠김?'날인본':'작성 중'}</span>${판줄}${!잠김 && !F.explain && CT.id ? `<button type="button" class="tapx ctx-rev" data-act="ct-share-cut">나간 초안 링크 끊기</button>` : ''}
+      <span class="badge ${잠김?'b-ok':'b-warn'}">${잠김?'날인본':'작성 중'}</span>${판줄}${ct안읽은의견(CT.track) ? `<button type="button" class="tapx ctx-rev" data-act="ct-notes-open" style="color:#B25E00;font-weight:700">초안에 새 의견 ${ct안읽은의견(CT.track)}건</button>` : ''}${!잠김 && !F.explain && CT.id ? `<button type="button" class="tapx ctx-rev" data-act="ct-share-cut">나간 초안 링크 끊기</button>` : ''}
       ${!잠김 && !F.explain ? `<span class="ctx-sub">비워 둔 칸은 밑줄 빈칸으로 인쇄됩니다 · 주민등록번호·계좌번호는 적지 않습니다</span>` : ''}
       <span class="ctx-badge">${agentBadge()}${S.user ? userMenu({ admin: true }) : ''}</span>
     </div>
@@ -13426,6 +13482,7 @@ function ctPlanHTML(doc){
       ${체크('ctk-hb', !!t.hb, '한방에도 입력했습니다', '한방은 자동 올리기 창구가 없어 기록용으로만 체크합니다', '')}
       ${체크('ctk-ec', !!t.ec, '전자계약으로 진행합니다', '국토교통부 전자계약시스템(irts.molit.go.kr)에 입력하는 건 - 목록에 표시됩니다', '')}</div>
     ${ct입력도우미HTML(doc)}
+    ${ct의견HTML()}
     <div class="card pad ct-sec"><h2>체크사항</h2>
       ${체크('ctk-pi', !!t.piAt, '개인정보 수집·이용 동의서를 받았습니다', '부속 서류 탭에서 인쇄해 양쪽 서명을 받습니다 - 받은 날이 적힙니다', t.piAt)}
       ${체크('ctk-guide', !!t.guideAt, '잔금안내를 했습니다', '이체한도 증액 · 준비서류(신분증·도장·인감증명서 등)를 미리 알렸는지', t.guideAt)}
@@ -16096,6 +16153,8 @@ document.addEventListener('input', e=>{
   /* 직접입력 - 적는 대로 아래 '만들 계약서' 이름과 [계약서 만들기] 가 따라온다 */
   if(k === 'ctp-custom'){ if(CT.pick){ CT.pick.custom = el.value; redrawKeepingCaret('ctp-custom'); } return; }
   if(k === 'acc-addr-v'){ if(S.accAddr) S.accAddr.v = el.value; return; }
+  /* 초안 의견 칸 - 적는 대로 담기만(다시 그리지 않는다) */
+  if(k === 'dr-name' || k === 'dr-text'){ if(DR.note) DR.note[k === 'dr-name' ? 'name' : 'text'] = el.value; return; }
   const v = MONEY_IN.includes(k) ? money(el) : el.value;
   if(k==='j-phone'){ S.form[k] = autoHyphen(el); refreshJoin(); return; }
   if(k==='j-reg'){ S.form[k]=v;
@@ -17365,6 +17424,11 @@ function handle(a,v,el){
     case 'ctk-hb':      ctTrackSet({ hb: !ct트랙().hb }); return true;
     case 'ctk-ec':      ctTrackSet({ ec: !ct트랙().ec }); return true;
     case 'ctk-pi':      ctTrackSet({ piAt: ct트랙().piAt ? '' : ct오늘() }); return true;
+    case 'dr-who': if(DR.note){ DR.note.who = v; render(); } return true;
+    case 'dr-send': drSend(); return true;
+    case 'ct-note-read': ctNoteOp('read-all'); return true;
+    case 'ct-note-del': if(CT.noteDel !== v){ CT.noteDel = v; render(); return true; } CT.noteDel = null; ctNoteOp('del', v); return true;
+    case 'ct-notes-open': CT.mode = 'plan'; render(); setTimeout(() => { const n = document.getElementById('ctNotes'); if(n) n.scrollIntoView({ block:'start', behavior:'smooth' }); }, 60); return true;
     case 'ct-hb-open':  CT.hbOpen = !CT.hbOpen; render(); return true;
     case 'ct-open-prev': if(CT.row && CT.row.prev_id) go('#/partner/contract/' + CT.row.prev_id); return true;
     /* 나간 초안 링크를 모두 끊는다 - 링크 번호를 올리면 서버가 앞 번호의 링크를 받지 않는다 */
@@ -17385,7 +17449,7 @@ function handle(a,v,el){
       const 주소 = `${location.origin}${location.pathname}#/draft/${j.token}`;
       const 끝 = new Date(j.until + 9 * 3600e3).toISOString().slice(0, 10);
       (navigator.clipboard ? navigator.clipboard.writeText(주소) : Promise.reject()).then(
-        () => toast(`초안 링크를 복사했습니다 - ${끝}까지 열립니다. 전화번호는 가려서 보입니다`),
+        () => toast(`초안 링크를 복사했습니다 - ${끝}까지 열립니다. 당사자 · 공동중개 사무소가 보고 의견을 남길 수 있습니다(전화번호는 가려서)`),
         () => { S.modal = { type:'ct-share', url: 주소, until: 끝 }; render(); });
     })(); return true;
     /* 버전 - 업데이트 내역 · 새 버전 받기 */

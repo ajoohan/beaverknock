@@ -112,7 +112,7 @@ const M = new Function('esc', `${js.slice(시작, 끝)}\nreturn { dzLine, dzPill
      '운영자 - 휴대폰은 가로로 미는 메뉴, 넓은 화면은 왼쪽 보라 메뉴');
   ok(운.includes("${tab === 'home' ? 새로고침 : ''}") && /data-act="ops-reload">전체 새로고침/.test(운), '운영 대시보드는 날짜·요일·시간·날씨로 연다(인사말 없이) · 기준 시각·새로고침은 머리 줄 오른쪽');
   const 옆 = js.slice(js.indexOf('function 파트너옆(active){'), js.indexOf('/* ── 중개사 대시보드 ── */'));
-  ok(/\['#\/partner\/home', '대시보드', 'home', 'h'\]/.test(옆) && 옆.includes("...(own ? [] : ['계약', ...CT_하위메뉴]),"),
+  ok(/\['#\/partner\/home', '대시보드', 'home', 'h'\]/.test(옆) && 옆.includes("...(계약막힘() ? [] : ['계약', ...CT_하위메뉴]),"),
      '중개사 세로 메뉴 첫 칸은 대시보드 · 계약서(와 그 묶음 이름)는 공인중개사에게만');
   ok(/aria-current="page"/.test(옆) && /\.dz-side :focus-visible\{outline:2px solid #fff/.test(css), '지금 화면은 aria-current · 보라 바탕에서 초점 테두리는 흰색');
   ok(/\[\['#\/partner\/home','홈','h'\]/.test(js) && /h:'M4 4 h7 v7 H4 Z/.test(js), '휴대폰 아래 탭 맨 앞은 홈(대시보드)');

@@ -419,10 +419,10 @@ ok(/\$\{partnerDoor\('onDark'\)\}/.test(js), '첫 화면 파트너 칸이 그 �
     /* 넓은 화면은 왼쪽 세로 메뉴(파트너옆, 2026-10-29)를 낸다 - 그 함수와 아이콘도 함께 꺼낸다 */
     const 아이콘 = js.slice(js.indexOf('const DZ_ICO = {'), js.indexOf('/* 대시보드 머리 (2026-10-30'));
     const 옆 = js.slice(js.indexOf('function 파트너옆(active){'), js.indexOf('/* ── 중개사 대시보드 ── */'));
-    const 그려 = (mo, 탭 = true) => new Function('isMo', 'S', 'ownerSide', 'logoLockup', 'agentBadge', 'esc', 'navAuth', '탭', 'userMenu',
+    const 그려 = (mo, 탭 = true) => new Function('isMo', 'S', 'ownerSide', 'logoLockup', 'agentBadge', 'esc', 'navAuth', '탭', 'userMenu', '직원', '계약막힘',
       `${아이콘}\n${옆}\n${몸[0]}; return navPartner('d', 탭);`)(() => mo,
       { user: { id: 'u' }, agent: { office: '하남미사부동산', status: 'approved' } },
-      () => false, () => '', () => '<span class="badge">인증됨</span>', s => s, () => '', 탭, () => '<div class="umenu">이름 메뉴</div>');
+      () => false, () => '', () => '<span class="badge">인증됨</span>', s => s, () => '', 탭, () => '<div class="umenu">이름 메뉴</div>', () => null, () => false);
     const 폰 = 그려(true), 큰 = 그려(false), 탭없는폰 = 그려(true, false);
     ok(!폰.includes('하남미사부동산') && 폰.includes('class="umenu"') && !폰.includes('data-act="logout"'),
        '휴대폰 파트너 상단바는 사무소 이름을 빼고 이름 메뉴 하나(마이페이지·로그아웃이 그 안에)만 둔다 (2026-10-30)');

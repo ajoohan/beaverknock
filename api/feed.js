@@ -12,6 +12,8 @@ import { dbWhy } from './_dberr.js';
 import { contractRoute, reportDueCron, draftRead, draftNote, 알림설정, 특약문구들, 특약문구고침, 문자틀들, 문자기록들, 문자고침, 단지들, 단지고침 } from './_contract.js';
 import { 날씨 } from './_weather.js';
 import { 서식들, 서식확인, 서식올리기, 서식주소, 서식지우기, 서식최대 } from './_forms.js';
+import { 직원들, 직원고침, 직원사무소, 직원들어옴, 직원역할 } from './_staff.js';
+import { notify } from './_notify.js';
 
 const KIND_KO = { home: '주거', shop: '상가', office: '오피스', storage: '창고' };
 
@@ -117,18 +119,25 @@ export const meAgent = a => a && {
   name: a.name || null, phone: a.phone || null,
   reg_no: a.reg_no || null, addr: a.addr || null,
   created_at: a.created_at || null,
+  /* 직원으로 든 계정 (2026-11-06) - 역할 · 이름. 화면이 메뉴 · 단추를 고르고, 서버도 따로 막는다 */
+  ...(a.staff ? { staff: { role: a.staff.role, name: a.staff.name || null } } : {}),
 };
 
+const 사무소열 = 'id,role,status,office,name,phone,reg_no,addr,owner_type,created_at,'
+  + 'scope_regions,scope_kinds,scope_excluded,scope_set,notify_paused';
 export async function approvedAgent(user) {
-  const q = new URLSearchParams({
-    select: 'id,role,status,office,name,phone,reg_no,addr,owner_type,created_at,'
-          + 'scope_regions,scope_kinds,scope_excluded,scope_set,notify_paused',
-    user_id: 'eq.' + user.id, limit: '1',
-  });
+  const q = new URLSearchParams({ select: 사무소열, user_id: 'eq.' + user.id, limit: '1' });
   const r = await fetch(sbUrl('bk_agent', q.toString()), { headers: sbHeaders() });
   if (!r.ok) return { error: await r.text() };
   const rows = await r.json();
-  if (!rows.length) return { none: true };
+  if (!rows.length) {
+    /* 직원 계정 (2026-11-06) - 내 사무소가 없으면 직원으로 든 사무소로 일한다(계약서 · 제안 · 물건을 대표와 같이 본다) */
+    const 직 = await 직원사무소(user, 사무소열).catch(() => null);
+    if (!직) return { none: true };
+    if (직.첫로그인) await 설정고침(직.agent, s => ({ patch: { staff: 직원들어옴(s.staff, 직.agent.staff.i, user.id) } })).catch(() => {});
+    const a = 직.agent;
+    return a.status === 'approved' ? { agent: a } : { pending: a.status || 'new', agent: a };
+  }
   const a = rows[0];
   return a.status === 'approved' ? { agent: a } : { pending: a.status || 'new', agent: a };
 }
@@ -167,6 +176,10 @@ const 설정실패 = (res, z, 이름) => z.need ? res.status(503).json({ error: 
   : z.error ? res.status(502).json({ error: `${이름} - 불러오지 못했습니다` })
   : z.busy ? res.status(409).json({ error: '다른 기기에서 같은 때 고쳐 저장하지 못했습니다 - 다시 눌러 주세요' })
   : res.status(502).json({ error: '저장하지 못했습니다' });
+/* 직원이 못 하는 일 - 서버가 막는다(화면은 고쳐 쓸 수 있다) */
+export const 대표만 = w => /^staff/.test(String(w || '')) || ['office-addr', 'scope-save'].includes(w);
+export const 계약기능 = w => /^(contract|form)/.test(String(w || '')) || ['forms', 'phrases', 'phrases-save', 'sms', 'sms-save',
+  'complex', 'complex-save', 'alert-settings', 'alert-settings-save', 'end-style-save'].includes(w);
 const 가린번호 = p => { const n = String(p || '').replace(/\D/g, ''); return n.length >= 10 ? `${n.slice(0, 3)}-****-${n.slice(-4)}` : ''; };
 async function readAlert(res, agent) {
   const x = await 설정읽기(agent);
@@ -279,6 +292,30 @@ async function delForm(res, agent, b) {
   return res.status(200).json({ ok: true, list: z.y.list, removed: 지운수 });
 }
 
+/* 직원 명단 - 대표만 (2026-11-06). 초대하면 그 메일로 안내를 보낸다 */
+async function readStaff(res, agent) {
+  const x = await 설정읽기(agent);
+  if (x.error) return res.status(502).json({ error: '직원 명단을 불러오지 못했습니다' });
+  return res.status(200).json({ ok: true, list: 직원들(x.settings.staff), ...(x.need ? { need: x.need } : {}) });
+}
+async function saveStaff(req, res, agent, user, b) {
+  if (agent.role !== 'agent') return res.status(403).json({ error: '공인중개사 사무소만 직원을 둘 수 있습니다' });
+  const z = await 설정고침(agent, s => { const y = 직원고침(s.staff, b, user && user.email);
+    return y.error ? { ...y, now: 직원들(s.staff) } : { ...y, patch: { staff: y.list } }; });
+  if (!z.y) return 설정실패(res, z, '직원 명단');
+  if (z.y.error) return res.status(z.y.code || 400).json({ error: z.y.error, list: z.y.now });
+  let mailed = false;
+  if (b.op === 'add' && z.y.added) {
+    const 새 = z.y.added;
+    const m = await notify(req, { to: 새.email, subject: `${agent.office || '중개사무소'}에서 비버노크로 초대했습니다`,
+      rows: [['사무소', agent.office || '-'], ['역할', 직원역할[새.role]], ['로그인할 메일', 새.email]],
+      link: '/#/login', cta: '비버노크에 로그인',
+      note: '이 메일 주소로 로그인(구글 · 카카오 · 메일)하면 사무소 화면이 열립니다. 모르는 사무소라면 이 메일은 지우셔도 됩니다.' });
+    mailed = !!(m && m.ok);
+  }
+  return res.status(200).json({ ok: true, list: z.y.list, mailed });
+}
+
 async function saveOfficeAddr(res, agent, b) {
   const addr = String(b.addr || '').replace(/\s+/g, ' ').trim().slice(0, 200);
   if (!/\d/.test(addr)) return res.status(400).json({ error: '도로명 찾기로 주소를 골라 주세요' });
@@ -331,6 +368,13 @@ export default async function handler(req, res) {
      다만 **요약만** 본다 - 아래 maskDemand 가 가린다. 전에는 403 으로 아예 막아서,
      가입해도 무엇이 있는지 볼 수 없으니 인증할 이유가 생기지 않았다. */
   if (chk.none)    return res.status(403).json({ error: '파트너 가입 후 이용하실 수 있습니다', need: 'join' });
+
+  /* 직원 권한 (2026-11-06) - 직원 관리 · 사무소 주소 · 활동 지역은 대표만. 중개보조원은 계약서 기능을 쓰지 않는다 */
+  const 직원 = chk.agent && chk.agent.staff;
+  if (직원 && 대표만(b.what)) return res.status(403).json({ error: '대표만 할 수 있습니다' });
+  if (직원 && 직원.role === 'assistant' && 계약기능(b.what)) return res.status(403).json({ error: '중개보조원은 계약서 기능을 쓸 수 없습니다' });
+  if (b.what === 'staff')      return readStaff(res, chk.agent);
+  if (b.what === 'staff-save') return saveStaff(req, res, chk.agent, user, b);
 
   /* 내가 보낸 제안 목록. 지금까지 이 목록은 그 브라우저 메모리에만 있어서
      새로고침하면 자기가 보낸 것이 사라졌다.

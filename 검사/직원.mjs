@@ -1,0 +1,59 @@
+/* 직원 계정 (2026-11-06) - 대표가 메일로 초대 · 직원은 대표 사무소로 일한다 · 보조원은 계약서 불가 · 직원 관리는 대표만 */
+import * as 길 from './길.mjs';
+let ran = 0, fail = 0;
+const ok = (c, m) => { ran++; if (!c) fail++; console.log(`  ${c ? 'OK' : 'X '}  ${m}`); };
+process.env.BK_URL = 'https://x.supabase.co'; process.env.BK_SECRET_KEY = 'k';
+delete process.env.RESEND_API_KEY;
+
+const { 직원들, 직원고침, 직원사무소, 직원들어옴 } = await import('../api/_staff.js');
+
+/* 1. 명단 고치기 */
+let y = 직원고침([], { op: 'add', email: ' Staff@X.com ', role: 'staff', name: '김직원' }, 'boss@x.com');
+ok(y.list.length === 1 && y.added.email === 'staff@x.com' && /^[0-9a-f]{10}$/.test(y.added.i), '초대 - 메일은 소문자로, 번호는 10자리');
+ok(직원고침(y.list, { op: 'add', email: 'staff@x.com', role: 'assistant' }).code === 409, '같은 메일은 두 번 넣지 않는다');
+ok(직원고침([], { op: 'add', email: 'boss@x.com', role: 'staff' }, 'BOSS@x.com').code === 400, '대표 자신의 메일은 직원으로 넣지 않는다');
+ok(직원고침([], { op: 'add', email: 'a@x.com', role: 'admin' }).code === 400 && 직원고침([], { op: 'add', email: 'nope', role: 'staff' }).code === 400, '역할 · 메일 모양이 틀리면 거절');
+const i = y.added.i;
+ok(직원고침(y.list, { op: 'role', i, role: 'assistant' }).list[0].role === 'assistant' && 직원고침(y.list, { op: 'del', i }).list.length === 0, '역할 바꾸기 · 빼기');
+ok(직원들([{ i: 'zz', email: 'a@x.com', role: 'staff' }, { i, email: 'b@x.com', role: 'boss' }]).length === 0, '모양이 틀린 줄은 버린다');
+ok(직원들어옴(y.list, i, '11111111-2222-3333-4444-555555555555')[0].uid === '11111111-2222-3333-4444-555555555555', '처음 들어오면 계정 id 를 적는다');
+
+/* 2. 사무소 찾기 - 확인된 메일만 */
+const 사무소 = { id: 'a1', role: 'agent', status: 'approved', office: '대표부동산', settings: { staff: [{ i, email: 'staff@x.com', role: 'assistant', name: '김직원' }] } };
+let 물은 = [];
+const 가짜 = async u => { 물은.push(decodeURIComponent(String(u))); return new Response(JSON.stringify(/"email":"staff@x.com"/.test(decodeURIComponent(String(u))) ? [사무소] : [])); };
+let z = await 직원사무소({ id: '9f9f9f9f-0000-0000-0000-000000000001', email: 'Staff@x.com', app_metadata: { provider: 'google' } }, 'id', 가짜);
+ok(z && z.agent.id === 'a1' && z.agent.staff.role === 'assistant' && z.첫로그인 && !('settings' in z.agent), '소셜 로그인 메일이 명단에 있으면 대표 사무소로 든다(설정은 내보내지 않는다)');
+z = await 직원사무소({ id: '9f9f9f9f-0000-0000-0000-000000000001', email: 'staff@x.com', app_metadata: { provider: 'email' } }, 'id', 가짜);
+ok(z === null, '메일 확인을 안 마친 메일 가입 계정은 메일로 맞추지 않는다');
+
+/* 3. feed.js - 권한 */
+let 찾은 = 'none';
+const 사람 = { s1: { id: '9f9f9f9f-0000-0000-0000-000000000001', email: 'staff@x.com', email_confirmed_at: 'x' } };
+let 불린 = [];
+globalThis.fetch = async (u, o = {}) => { u = String(u); const d = decodeURIComponent(u); 불린.push({ u: d, m: o.method || 'GET', b: o.body });
+  if (/auth\/v1\/user$/.test(u)) return new Response(JSON.stringify(사람.s1));
+  if (/bk_agent\?/.test(u) && /user_id=eq/.test(d)) return new Response('[]');
+  if (/bk_agent\?/.test(u) && /settings=cs/.test(d)) return new Response(JSON.stringify([{ ...사무소, settings: { staff: [{ i, email: 'staff@x.com', role: 찾은 === 'staff' ? 'staff' : 'assistant', name: '김직원' }] } }]));
+  if (/bk_agent\?/.test(u) && (o.method || 'GET') === 'GET') return new Response(JSON.stringify([{ settings: { staff: [{ i, email: 'staff@x.com', role: 'assistant' }] } }]));
+  if (/bk_agent\?/.test(u)) return new Response(JSON.stringify([{ id: 'a1' }]));
+  return new Response('[]'); };
+const { default: feed, 계약기능, 대표만 } = await import('../api/feed.js');
+const 응답 = () => { const r = { code: 0, body: null }; r.status = c => (r.code = c, r); r.json = b => (r.body = b, r); r.setHeader = () => r; r.end = () => r; return r; };
+const 부르기 = async body => { const res = 응답(); await feed({ method: 'POST', headers: { authorization: 'Bearer ' + 'x'.repeat(30) }, body }, res); return res; };
+let r = await 부르기({ what: 'contract-list' });
+ok(r.code === 403 && /보조원/.test(r.body.error), '중개보조원은 계약서 목록을 못 연다');
+ok((await 부르기({ what: 'phrases' })).code === 403 && (await 부르기({ what: 'forms' })).code === 403, '보조원은 특약 · 서식도 못 연다');
+ok((await 부르기({ what: 'staff-save', op: 'add', email: 'b@x.com', role: 'staff' })).code === 403 && (await 부르기({ what: 'scope-save' })).code === 403, '직원은 직원 관리 · 활동 지역을 못 고친다');
+ok(불린.some(x => x.m === 'PATCH' && /"uid":"9f9f9f9f/.test(x.b || '')), '처음 들어온 직원의 계정 id 를 명단에 적는다');
+ok(계약기능('contract-save') && 계약기능('form-up') && !계약기능('listings') && !계약기능('mine') && 대표만('office-addr') && !대표만('listings'), '막는 목록 - 계약 · 서식은 막고 물건 · 제안은 연다');
+
+/* 4. 화면 */
+const js = 길.js();
+ok(js.includes("const 계약막힘 = () => ownerSide() || 보조원();") && js.includes("...(계약막힘() ? [] : ['계약', ...CT_하위메뉴])")
+  && js.includes("...(계약막힘()?[]:[['#/partner/contracts','계약서','ct']])"), '화면 - 보조원에게는 계약 메뉴를 감춘다(PC · 휴대폰)');
+ok(js.includes("if(직원() && (h === '#/partner/settings' || (보조원() && h.startsWith('#/partner/contract')))){"), '화면 - 직원이 주소로 들어와도 대시보드로 돌린다');
+ok(js.includes("${own || 직원() ? '' : 직원카드HTML()}") && js.includes("ctPost({ what:'staff' })") && js.includes("what:'staff-save'"), '화면 - 대표의 활동 설정에 직원 카드');
+ok(js.includes("staff: ct직원이름(), hand: true }"), '화면 - 소속공인중개사 직원이 쓰면 계약서 소속공인중개사 칸에 이름');
+console.log(`${ran - fail} 통과 / ${fail} 실패`);
+process.exit(fail ? 1 : 0);

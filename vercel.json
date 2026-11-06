@@ -60,7 +60,7 @@
     }
   ],
   "functions": {
-    "api/land.js": {
+    "api/agent-verify.js": {
       "regions": [
         "icn1"
       ]

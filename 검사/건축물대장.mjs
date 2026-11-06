@@ -45,8 +45,8 @@ ok(동호('미사강변대로 220, 101동 1203호').dong === '101' && 동호('�
 }
 { process.env.BK_SECRET_KEY = 's'; let 본 = null;
   const o = await 토지({ admCd:'4145010300', bun:'5', ji:'' }, 'vk', async (u, op) => { 본 = { u: String(u), op }; return new Response(JSON.stringify({ 특성: [{ stdrYear:'2025', lndcgrCodeNm:'대', lndpclAr:'10' }], 이용: [] })); }, true);
-  ok(o && o.landCat === '대' && /\/api\/land$/.test(본.u) && 본.op.headers['x-bk-land'].length === 64 && JSON.parse(본.op.body).pnu === '4145010300100050000' && !/vk/.test(본.op.body),
-     '서버(미국)에서는 서울 함수(api/land)를 거친다 - 열쇠는 서버 비밀값에서, 브이월드 키는 보내지 않는다');
+  ok(o && o.landCat === '대' && /\/api\/agent-verify$/.test(본.u) && JSON.parse(본.op.body).what === 'land' && 본.op.headers['x-bk-land'].length === 64 && JSON.parse(본.op.body).pnu === '4145010300100050000' && !/vk/.test(본.op.body),
+     '서버(미국)에서는 서울 함수(agent-verify what:land)를 거친다 - 열쇠는 서버 비밀값에서, 브이월드 키는 보내지 않는다');
 }
 ok(/case 'contract-bld':\s+await 대장\(req, res, agent, b\);/.test(fs.readFileSync(path.resolve(길.저장소, 'api/_contract.js'), 'utf8')) && /ctApplyScan\(CT\.doc, j\.scan, j\.kinds \|\| \['bld'\], true\)/.test(js) && /data-act="ct-bld-go"/.test(js),
    '화면 - 소재지를 고르면 ‘주소로 건축물대장 불러오기’ · 빈칸만 채운다');

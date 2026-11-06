@@ -29,6 +29,8 @@
  *   JUSO_KEY      도로명주소 검색 승인키 (business.juso.go.kr · 무료·즉시)
  */
 
+import { 토지원자료, 토지열쇠, 토지사유 } from './_bld.js';
+import { sameSecret } from './_auth.js';
 import { findByKey, findByName, STATE_NM, STD_DATE } from './_brokers.js';
 
 const API = 'https://openapi.gg.go.kr/Rlestatebrkragofc';
@@ -266,6 +268,18 @@ export default async function handler(req, res) {
   /* 주소는 로그인 전에도 찾을 수 있어야 한다 - 가입하면서 쓰는 것이라
      여기에 문을 두면 가입 자체가 막힌다. 등록번호 조회와 같은 자리다. */
   if (b.what === 'addr') return searchAddr(req, res, b);
+
+  /* 토지 조회 경유 (2026-11-06) - 브이월드가 해외 IP 를 막아(미국 함수에서 502), 이 함수를 서울(icn1)에 둔다(vercel.json functions).
+     함수 개수 상한(Hobby 12개) 때문에 따로 두지 않고 여기 얹는다. feed.js 가 서버 비밀값에서 나온 열쇠를 붙여 부른다 - 화면은 부르지 않는다 */
+  if (b.what === 'land') {
+    if (!process.env.BK_SECRET_KEY || !sameSecret(String(req.headers['x-bk-land'] || ''), 토지열쇠())) return res.status(403).json({ error: '열쇠가 맞지 않습니다' });
+    const pnu = String(b.pnu || '');
+    if (!/^\d{19}$/.test(pnu)) return res.status(400).json({ error: 'PNU 모양이 아닙니다' });
+    if (!process.env.VWORLD_KEY) return res.status(503).json({ error: 'VWORLD_KEY 없음' });
+    토지사유.length = 0;
+    const o = await 토지원자료(pnu, process.env.VWORLD_KEY);
+    return res.status(200).json({ ...o, why: 토지사유.splice(0).slice(0, 2) });
+  }
 
   /* 번호 조회도 몰아치면 늦춘다 - 매번 명부 10만 건을 훑고 경기 API 를 부른다 (2026-11-03 보안점검) */
   if (tooMany(req)) return res.status(429).json({ error: '잠시 후 다시 확인해 주세요' });

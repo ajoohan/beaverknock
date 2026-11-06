@@ -117,7 +117,7 @@ async function 토지묻기(path, 키, pnu, fetchFn) {
 }
 /* 실패 까닭(포털 답 앞부분) - 활용신청 전인지 가린다. 키는 답에 들어 있지 않다 */
 export const 토지사유 = [];
-/* 브이월드는 해외 IP 를 막는다 - 서버 함수(미국)에서 부르면 502. 서울(icn1)에서 도는 api/land.js 를 거친다(경유).
+/* 브이월드는 해외 IP 를 막는다 - 서버 함수(미국)에서 부르면 502. 서울(icn1)에서 도는 api/agent-verify.js(what:'land')를 거친다(경유).
    경유 열쇠는 서버 비밀값에서 나온다. 검사 · 로컬은 바로 부른다 */
 export const 토지열쇠 = () => crypto.createHash('sha256').update('bk-land|' + String(process.env.BK_SECRET_KEY || ''), 'utf8').digest('hex');
 export async function 토지원자료(pnu, 키, fetchFn = fetch) {
@@ -128,8 +128,8 @@ export async function 토지원자료(pnu, 키, fetchFn = fetch) {
 }
 async function 토지경유(pnu, fetchFn) {
   try {
-    const r = await fetchFn(process.env.BK_LAND_URL || 'https://beaverknock.co.kr/api/land', { method: 'POST', signal: AbortSignal.timeout(9000),
-      headers: { 'Content-Type': 'application/json', 'x-bk-land': 토지열쇠() }, body: JSON.stringify({ pnu }) });
+    const r = await fetchFn(process.env.BK_LAND_URL || 'https://beaverknock.co.kr/api/agent-verify', { method: 'POST', signal: AbortSignal.timeout(9000),
+      headers: { 'Content-Type': 'application/json', 'x-bk-land': 토지열쇠() }, body: JSON.stringify({ what: 'land', pnu }) });
     const j = await r.json().catch(() => ({}));
     if (!r.ok) { 토지사유.push(`land: ${r.status} ${String(j.error || '').slice(0, 120)}`); return { 특성: null, 이용: null }; }
     if (Array.isArray(j.why)) 토지사유.push(...j.why.slice(0, 2));

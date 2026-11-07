@@ -2708,6 +2708,24 @@ body.mo .dz-more::after{content:"";position:absolute;left:-6px;right:-6px;top:-5
 .dz-q{display:flex;align-items:center;gap:8px;min-height:42px;padding:8px 10px;border:1px solid var(--n200);border-radius:var(--r-ctl);background:var(--white);
   font-size:13.5px;font-weight:600;color:var(--n900);cursor:pointer;transition:background var(--t-fast) ease,border-color var(--t-fast) ease}
 .dz-q svg{flex:none;color:var(--ind)}
+/* ── 운영 - 공급자 신청 표 (2026-11-07) ── */
+.agt{width:100%;border-collapse:collapse;font-size:14.5px}
+.agt th{text-align:left;padding:10px 14px;font-size:13px;font-weight:700;color:var(--n500);background:var(--n50);white-space:nowrap}
+.agt td{padding:12px 14px;border-top:1px solid var(--n100);vertical-align:top;white-space:nowrap}
+.agt tr.on td{background:var(--ind50)}
+.agt td small{display:block;margin-top:3px;font-size:13px;color:var(--n500);white-space:nowrap}
+.agt td small em{font-style:normal;font-weight:700}
+.agt .agt-pk{width:38px;padding-right:0}
+.agt .agt-pk input{width:17px;height:17px;accent-color:var(--ind);cursor:pointer}
+.agt .agt-nm{font-weight:700;color:var(--n900)}
+.agt .agt-of{display:inline-block;max-width:220px;overflow:hidden;text-overflow:ellipsis;vertical-align:bottom;color:var(--n900)}
+.agt .agt-none{color:var(--n500)}
+.agt .agt-ok{color:var(--ok)}
+.agt .agt-warn{color:var(--warn)}
+.agt .agt-r{text-align:right}
+.agt .agt-go{display:inline-flex;gap:6px}
+.agt .agt-go .btn{min-width:60px;justify-content:center}   /* 나란히 놓인 단추는 같은 폭 */
+
 /* ── 운영자 로그인 (2026-11-07) ── */
 .ol-card{padding:0;overflow:hidden}
 .ol-top{display:flex;align-items:flex-end;gap:14px;padding:22px 22px 0;background:linear-gradient(160deg,var(--ind900),#191A52);color:#fff}
@@ -6425,43 +6443,39 @@ function agentPanel(){
           <span style="font-size:13.5px;font-weight:700;color:var(--n500)">전체</span></label>` : ''}
         <b style="font-size:15px;font-weight:700">${rows.length===all.length?`신청 ${all.length}건`:`${rows.length}건 / 전체 ${all.length}건`}</b>
         </div>
-        ${AG.at ? `<span style="font-size:13px;color:var(--n500)">${esc(AG.at.replace('T',' ').slice(0,16))} 기준</span>` : ''}
+        <span style="font-size:13px;color:var(--n500)">상태: 대기(연락 전) → 연락함 → 승인 또는 보류 · 고른 뒤 위에서 바꿉니다</span>
       </div>
       ${rows.length===0 ? 빈자리(all.length?'조건에 맞는 신청이 없습니다':'아직 신청이 없습니다', all.length?'찾는 말을 바꿔보세요.':'중개사 가입 화면으로 신청이 들어오면 여기에 쌓입니다.', '', 80, true)
       : isMo() ? agentCards(rows) : `
       <div style="overflow-x:auto">
-        <table style="width:100%;border-collapse:collapse;font-size:14.5px;white-space:nowrap">
-          <thead><tr style="background:var(--n50)">
-            <th style="width:38px;padding:10px 0 10px 14px"></th>
-            ${['신청','상태','역할','성함','연락처','사무소 · 물건','등록번호 · 사업자','이메일'].map(h=>
-              `<th style="text-align:left;padding:10px 14px;font-size:13px;font-weight:700;color:var(--n500)">${h}</th>`).join('')}
+        <!-- 열 차례 (2026-11-07 대표님 '이 순서가 맞는지 · 어떤 정보를 주는지') - 누가(이름 · 자격) → 어디(사무소 · 등록번호) →
+             어떻게 닿나(연락처) → 어디까지 했나(상태) → 언제(신청일) → 바로 하기(전화 · 메일).
+             색은 상태에만 쓴다 - 자격까지 초록이면 '승인' 과 섞여 보였다. 빈 칸은 '없음' 으로 말한다 -->
+        <table class="agt">
+          <thead><tr>
+            <th class="agt-pk"></th>
+            <th>신청자</th><th>사무소 · 물건</th><th>연락처</th><th>상태</th><th>신청일</th><th class="agt-r">연락</th>
           </tr></thead>
-          <tbody>${rows.map(r=>`
-            <tr style="border-top:1px solid var(--n100);${AG.pick[r.id]?'background:var(--ind50)':''}">
-              <td style="padding:12px 0 12px 14px">
-                <label class="pickhit"><input type="checkbox" data-act="ag-pick" data-v="${esc(r.id)}" ${AG.pick[r.id]?'checked':''}
-            aria-label="${esc(r.name||'이름 없는 신청')} 신청 고르기"
-                  style="width:17px;height:17px;accent-color:var(--ind);cursor:pointer"></label></td>
-              <td style="padding:12px 14px;color:var(--n500)">${esc(String(r.created_at||'').replace('T',' ').slice(5,16))}</td>
-              <td style="padding:12px 14px"><span class="badge ${(AG_STATUS[r.status||'new']||AG_STATUS.new)[0]}">${(AG_STATUS[r.status||'new']||AG_STATUS.new)[1]}</span></td>
-              <td style="padding:12px 14px"><span class="badge ${r.role==='agent'?'b-ok':r.role==='owner'?'b-ind':'b-warn'}">${AG_ROLE[r.role]||r.role}</span></td>
-              <td style="padding:12px 14px;font-weight:700">${esc(r.name||'')}
-                ${r.user_id ? '' : `<span class="badge b-warn" style="margin-left:6px;font-size:13px;padding:2px 8px"
-                  title="계정에 이어지지 않은 신청입니다 - 승인돼도 수요 목록·제안을 쓸 수 없습니다">계정 없음</span>`}</td>
-              <td style="padding:12px 14px" class="num">${esc(r.phone||'')}</td>
-              <td style="padding:12px 14px">${esc(r.office||r.addr||'')}</td>
-              <td style="padding:12px 14px">
-                <span class="num">${esc(r.reg_no||r.biz_no||'')}</span>
-                ${r.role==='agent'&&(r.reg_no||'') ? `<span class="badge ${r.reg_verified?'b-ok':'b-warn'}" style="margin-left:6px;font-size:13px;padding:2px 8px">${r.reg_verified?'확인':'미확인'}</span>` : ''}
-              </td>
-              <td style="padding:12px 14px;color:var(--n500)">${esc(r.email||'')}</td>
-            </tr>
-            ${(r.phone && !/\*/.test(r.phone)) || r.email ? `
-            <tr style="${AG.pick[r.id]?'background:var(--ind50)':''}"><td colspan="9" style="padding:0 14px 12px 52px">
-              <div class="chips" style="gap:6px">
-                ${r.phone && !/\*/.test(r.phone) ? `<a href="tel:${esc(r.phone)}" class="chip" style="padding:6px 12px;font-size:13.5px">전화 걸기</a>` : ''}
-                ${r.email ? `<a href="mailto:${esc(r.email)}" class="chip" style="padding:6px 12px;font-size:13.5px">메일 쓰기</a>` : ''}
-              </div></td></tr>` : ''}`).join('')}</tbody>
+          <tbody>${rows.map(r=>{
+            const st = AG_STATUS[r.status||'new']||AG_STATUS.new;
+            const 날 = String(r.created_at||''), 지난 = Math.floor((Date.now() - Date.parse(날)) / 864e5);
+            const 번호 = r.reg_no || r.biz_no || '';
+            const 곳 = r.office || r.addr || '';
+            const 전화 = r.phone && !/\*/.test(r.phone);
+            return `
+            <tr class="${AG.pick[r.id]?'on':''}">
+              <td class="agt-pk"><label class="pickhit"><input type="checkbox" data-act="ag-pick" data-v="${esc(r.id)}" ${AG.pick[r.id]?'checked':''}
+                aria-label="${esc(r.name||'이름 없는 신청')} 신청 고르기"></label></td>
+              <td><b class="agt-nm">${esc(r.name||'이름 없음')}</b>
+                <small>${esc(AG_ROLE[r.role]||r.role||'')}${r.user_id ? '' : ` · <em class="agt-warn" title="계정에 이어지지 않은 신청입니다 - 승인돼도 수요 목록·제안을 쓸 수 없습니다">계정 없음</em>`}</small></td>
+              <td>${곳 ? `<span class="agt-of">${esc(곳)}</span>` : `<span class="agt-none">${r.role==='agent'?'사무소 미입력':'주소 미입력'}</span>`}
+                <small>${번호 ? `<span class="num">${esc(번호)}</span>${r.role==='agent' ? ` <em class="${r.reg_verified?'agt-ok':'agt-warn'}">${r.reg_verified?'등록 확인':'미확인'}</em>` : ''}`
+                  : r.role==='agent' ? '<em class="agt-warn">등록번호 없음</em>' : r.role==='developer' ? '<span class="agt-none">사업자번호 없음</span>' : ''}</small></td>
+              <td><span class="num">${esc(r.phone||'-')}</span><small>${esc(r.email||'메일 없음')}</small></td>
+              <td><span class="badge ${st[0]}">${st[1]}</span></td>
+              <td><span class="num">${esc(날.slice(0,10).replace(/-/g,'.'))}</span><small>${isNaN(지난) ? '' : 지난 <= 0 ? '오늘' : 지난 + '일 전'}</small></td>
+              <td class="agt-r"><span class="agt-go">${전화 ? `<a href="tel:${esc(r.phone)}" class="btn tool sm">전화</a>` : ''}${r.email ? `<a href="mailto:${esc(r.email)}" class="btn tool sm">메일</a>` : ''}</span></td>
+            </tr>`; }).join('')}</tbody>
         </table>
       </div>`}
     </div>
@@ -11135,6 +11149,10 @@ const CT_하위메뉴 = [['#/partner/contracts/new', '계약서 작성', 'pen', 
    번호는 배포한 날(연.월.일 - 같은 날 또 올리면 뒤에 .2). 화면이 version.json 을 가끔 읽어,
    더 새 버전이 올라와 있으면 메뉴 아래에서 새로고침을 권한다(버전확인) - 계약서를 띄워 둔 채 오래 일하면 고친 화면을 못 받는다 */
 const BK_변경 = [
+  { v:'26.11.07.8', 날:'2026-11-07', 줄:[
+    '운영 화면 - 공급자 신청 표를 다시 짰습니다: 신청자(이름 · 자격) → 사무소 · 등록번호 → 연락처 → 상태 → 신청일(며칠 전) → 전화 · 메일. 색은 상태에만, 빈 칸은 ‘미입력’으로 알려 드립니다',
+    '로그인 화면 - 비밀번호를 치고 엔터를 누르면 로그인됩니다(손님 · 운영자 모두) · 회원관리에 들어가면 보던 손님 계정 목록도 바로 불러옵니다',
+  ]},
   { v:'26.11.07.7', 날:'2026-11-07', 줄:[
     '운영 화면 - 왼쪽 메뉴의 하위 항목(공급자 신청 · 손님 계정 · 안 보낸 것 · 미확인만 …)을 누르면 그 화면이 열립니다. 운영자 명단으로 들어오면 눌러도 바뀌지 않던 것',
     '운영자 로그인 화면 - 비버리 캐릭터 · 운영자 전용 표시 · 이메일 기억하기 · 30일 로그인 유지 안내',
@@ -16938,7 +16956,7 @@ function handle(a,v,el){
          ⚠ 암호(OPS.pass)가 아니라 '문이 열렸나'(OPS.ok)를 본다 - 운영자 명단으로 들어오면 암호가 비어 있어
          메뉴를 눌러도 아무것도 불러오지 않았다(2026-11-07 대표님 '메뉴에서 눌러도 안 열리는 화면') */
       if(OPS.ok){
-        if(v==='member'  && !AG.rows) agFetch();
+        if(v==='member'){ if((OPS.msub||'agent')==='user'){ if(!US.rows) usFetch(); } else if(!AG.rows) agFetch(); }
         if(v==='log'     && !LG.rows) lgFetch();
         if(v==='report'  && !RP.rows) rpFetch();
         if(v==='listing' && !LS2.rows) lsFetch();
@@ -18375,6 +18393,17 @@ document.addEventListener('keydown', e=>{
   e.preventDefault();
   줄.forEach(c => c.setAttribute('tabindex', c === 다음 ? '0' : '-1'));
   다음.focus({preventScroll:true});
+});
+
+/* 로그인 칸에서 엔터 (2026-11-07 점검) - 비밀번호를 치고 엔터를 눌러도 아무 일도 없었다(손님 · 운영자 로그인 둘 다).
+   이메일 · 비밀번호 칸 어디서든 엔터면 그 화면의 로그인 단추를 누른다. 한글 조합 중 엔터는 건드리지 않는다 */
+document.addEventListener('keydown', e=>{
+  if(e.key !== 'Enter' || e.isComposing || !e.target.closest) return;
+  const el = e.target.closest('[data-in="email"],[data-in="pw"],[data-in="pw2"]');
+  if(!el) return;
+  const btn = $('#app [data-act="ops-email"]') || $('#app [data-act="login-email"]');
+  if(!btn || btn.disabled) return;
+  e.preventDefault(); btn.click();
 });
 
 /* 주소 자동완성 - 손을 마우스로 옮기지 않고도 고를 수 있어야 한다 */

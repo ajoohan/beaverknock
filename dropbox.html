@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Dropbox 연결 - 비버노크</title>
+<style>
+  body{margin:0;min-height:100vh;display:grid;place-items:center;background:#F7F6FB;color:#16112E;font:16px/1.6 -apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif}
+  main{max-width:360px;padding:28px 24px;text-align:center}
+  h1{margin:0 0 8px;font-size:18px}
+  p{margin:0;color:#5B5870;font-size:15px}
+</style>
+</head>
+<body>
+<main>
+  <h1 id="t">Dropbox 연결을 마쳤습니다</h1>
+  <p id="d">이 창은 곧 닫힙니다. 닫히지 않으면 직접 닫고 비버노크 창으로 돌아가 주세요.</p>
+</main>
+<script>
+/* 계약서 보관 (2026-11-08) - Dropbox 로그인 뒤 돌아오는 곳. 받은 확인 코드를 같은 사이트의 비버노크 창으로 넘기고 닫는다.
+   코드는 한 번 쓰면 끝나는 값이고, 비버노크 창이 가진 검증값(PKCE)이 있어야만 열쇠로 바뀐다. 서버로는 보내지 않는다 */
+(function(){
+  var q = new URLSearchParams(location.search);
+  var m = { state: q.get('state') || '', code: q.get('code') || '', error: q.get('error') || '', at: Date.now() };
+  if(!m.code){
+    document.getElementById('t').textContent = 'Dropbox 연결을 마치지 못했습니다';
+    document.getElementById('d').textContent = '비버노크 창으로 돌아가 다시 눌러 주세요.';
+  }
+  try{ if('BroadcastChannel' in window){ var c = new BroadcastChannel('bk-dropbox'); c.postMessage(m); c.close(); } }catch(e){}
+  try{ localStorage.setItem('bk_dropbox_cb', JSON.stringify(m)); }catch(e){}
+  history.replaceState(null, '', location.pathname);
+  setTimeout(function(){ try{ window.close(); }catch(e){} }, 400);
+})();
+</script>
+</body>
+</html>

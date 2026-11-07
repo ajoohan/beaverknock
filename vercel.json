@@ -28,7 +28,7 @@
         },
         {
           "key": "Content-Security-Policy",
-          "value": "frame-ancestors 'none'; object-src 'none'; base-uri 'none'; script-src 'self' 'unsafe-inline' https://cdn.portone.io https://*.portone.io; connect-src 'self' https://gmbtsucasfwqskfvugzo.supabase.co https://cdn.portone.io https://*.portone.io https://*.iamport.co https://service.iamport.kr https://*.ingest.us.sentry.io"
+          "value": "frame-ancestors 'none'; object-src 'none'; base-uri 'none'; script-src 'self' 'unsafe-inline' https://cdn.portone.io https://*.portone.io https://cdnjs.cloudflare.com https://accounts.google.com; connect-src 'self' https://gmbtsucasfwqskfvugzo.supabase.co https://cdn.portone.io https://*.portone.io https://*.iamport.co https://service.iamport.kr https://*.ingest.us.sentry.io https://www.googleapis.com https://accounts.google.com https://api.dropboxapi.com https://content.dropboxapi.com"
         },
         {
           "key": "X-Content-Type-Options",

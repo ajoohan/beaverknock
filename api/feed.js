@@ -390,6 +390,10 @@ export default async function handler(req, res) {
     if (chk.agent.role !== 'agent') return res.status(403).json({ error: '공인중개사 사무소만 쓸 수 있습니다' });
     return roomAgent(req, res, chk.agent, user, b);
   }
+  /* 계약서 보관(2026-11-08) - 중개사 본인의 Google 드라이브 · Dropbox 로 올릴 때 쓰는 공개 앱 번호. 비밀값이 아니다(브라우저 로그인 창에 그대로 보인다).
+     비어 있으면 화면이 그 단추를 '준비 중' 으로 잠근다 */
+  if (b.what === 'cloud-cfg') return res.status(200).json({ ok: true,
+    google: String(process.env.GOOGLE_DRIVE_CLIENT_ID || '').trim(), dropbox: String(process.env.DROPBOX_APP_KEY || '').trim() });
   if (b.what === 'staff')      return readStaff(res, chk.agent);
   if (b.what === 'staff-save') return saveStaff(req, res, chk.agent, user, b);
 

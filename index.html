@@ -2485,6 +2485,20 @@ body:not(.mo) .ctx-sub{flex:1 1 0;min-width:0;overflow:hidden;text-overflow:elli
 .ar-r{margin-left:.3em}
 .dirty-dot{display:inline-block;width:6px;height:6px;margin-right:6px;border-radius:50%;background:var(--warn);vertical-align:.15em}
 #ctPrint{display:none}
+/* 계약서 보관 창 (2026-11-08) - 고르는 단추 셋은 한 폭(세로로 쌓는다) */
+.cl-opts{display:grid;gap:8px}
+.cl-o{display:flex;align-items:center;gap:12px;width:100%;min-height:58px;padding:10px 14px;text-align:left;justify-content:flex-start}
+.cl-o .cl-ic{flex:none;display:grid;place-items:center;width:36px;height:36px;border-radius:10px;background:var(--n50);color:var(--n700)}
+.cl-o .cl-t{display:flex;flex-direction:column;gap:2px;min-width:0}
+.cl-o .cl-t b{font-size:15px;color:var(--n900)}
+.cl-o .cl-t small{font-size:13px;font-weight:500;color:var(--n500)}
+.cl-o:disabled{opacity:.55}
+.cl-msg{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:12px 0 0;padding:10px 12px;border-radius:10px;background:var(--n50);font-size:14px;line-height:1.6;color:var(--n700)}
+.cl-msg.ok{background:#EAF7EF;color:#14532D}
+.cl-msg.err{background:#FDECEC;color:#8A1C1C}
+.cl-msg a,.cl-msg .lnk{font-weight:700;color:inherit;text-decoration:underline;background:none;border:0;padding:0;cursor:pointer;font-size:inherit}
+.cl-spin{width:14px;height:14px;border-radius:50%;border:2px solid var(--n200);border-top-color:var(--ind);animation:clSpin .8s linear infinite}
+@keyframes clSpin{to{transform:rotate(360deg)}}
 @media print{
   @page{size:A4;margin:14mm 13mm}
   html.printing-ct body > *:not(#ctPrint){display:none!important}
@@ -8983,6 +8997,7 @@ function modalHTML(){
         ${m.kakao ? `<button class="btn sec" data-act="rm-kakao" data-v="${esc(m.side)}">알림톡으로 보내기</button>` : ''}</div>
       <button class="btn pri" data-act="modal-close" style="width:100%;margin-top:10px">닫기</button></div></div>`;
   }
+  if(S.modal.type==='ct-cloud') return 보관창HTML();
   if(S.modal.type==='ct-share'){
     return `<div class="modal" data-act="modal-bg"><div class="box" data-stop role="dialog" aria-modal="true" aria-labelledby="mdT" tabindex="-1">
       <h2 id="mdT" style="margin:0 0 6px;font-size:16px;font-weight:700;letter-spacing:-.03em">초안 링크</h2>
@@ -9493,14 +9508,16 @@ function rpMark(id, mark){
   const before = row.report_status || null;
   row.report_status = mark;            /* 먼저 바꿔 보여주고, 실패하면 되돌린다 */
   RP.busy = id; render();
+  /* 실패하면 되돌린다. 되돌리기(미확인으로)가 실패했으면 처리된 줄이 '미확인만' 목록에 섞여 남는다 - 뺀다
+     (2026-11-08 리뷰 · 서버 거절과 통신 실패 둘 다) */
+  const 실패 = msg => { RP.busy = ''; row.report_status = before;
+    if(RP.only === 'todo' && before) RP.rows = (RP.rows || []).filter(x => x !== row);
+    render(); toast(msg); };
   apiFetch('/api/demands', {method:'POST',
     body: JSON.stringify({what:'report-mark', pass: OPS.pass, id, mark})})
     .then(r => r.json().catch(()=>({})).then(j => {
+      if(!(r.ok && j.ok)) return 실패(j.error || '바꾸지 못했습니다');
       RP.busy = '';
-      if(!(r.ok && j.ok)){ row.report_status = before;
-        /* 되돌리기(미확인으로)가 실패했으면 처리된 줄이 '미확인만' 목록에 섞여 남는다 - 뺀다 (2026-11-08 리뷰) */
-        if(RP.only === 'todo' && before) RP.rows = RP.rows.filter(x => x !== row);
-        render(); return toast(j.error || '바꾸지 못했습니다'); }
       /* 미확인만 보고 있으면 처리한 건은 목록에서 빠지는 게 맞다 - 레퍼런스처럼 단추가 초록 '✓' 로 바뀐 뒤 줄이 접혀 빠지고,
          5초 동안 '되돌리기' 를 띄운다 (2026-11-07) */
       const 이름 = ((RP_MARK[mark]||[])[1] || '미확인');
@@ -9508,12 +9525,15 @@ function rpMark(id, mark){
         const 단추 = $(`#app [data-act="rp-mark"][data-v="${id}|${mark}"]`), 줄 = 단추 && 단추.closest('.card');
         const 자리 = RP.rows.findIndex(x => x.id === id);
         줄빼기(단추, 줄, () => { RP.rows = RP.rows.filter(x => x.id !== id); render();
-          toast(이름 + '으로 표시했습니다', { undo: () => { if(!RP.rows.some(x => x.id === id)) RP.rows.splice(Math.max(0, 자리), 0, row); rpMark(id, before); } }); }, 이름);
+          /* 다른 줄을 표시하는 중(RP.busy)이면 rpMark 가 그냥 돌아가 버린다 - 끝날 때까지 기다렸다가 되돌린다 (2026-11-08 리뷰) */
+          const 되돌려 = () => { if(RP.busy) return setTimeout(되돌려, 150);
+            if(!(RP.rows || []).some(x => x.id === id)) (RP.rows || (RP.rows = [])).splice(Math.max(0, 자리), 0, row); rpMark(id, before); };
+          toast(이름 + '으로 표시했습니다', { undo: 되돌려 }); }, 이름);
         return;
       }
       render(); toast(이름 + '으로 표시했습니다');
     }))
-    .catch(() => { RP.busy=''; row.report_status = before; render(); toast('네트워크 문제로 바꾸지 못했습니다'); });
+    .catch(() => 실패('네트워크 문제로 바꾸지 못했습니다'));
 }
 
 const RP_ROLE = { owner:'소유자', developer:'시행사' };
@@ -11324,11 +11344,16 @@ const CT_하위메뉴 = [['#/partner/contracts/new', '계약서 작성', 'pen', 
    번호는 배포한 날(연.월.일 - 같은 날 또 올리면 뒤에 .2). 화면이 version.json 을 가끔 읽어,
    더 새 버전이 올라와 있으면 메뉴 아래에서 새로고침을 권한다(버전확인) - 계약서를 띄워 둔 채 오래 일하면 고친 화면을 못 받는다 */
 const BK_변경 = [
+  { v:'26.11.08.3', 날:'2026-11-08', 줄:[
+    '계약서 - ‘드라이브 저장’: 보고 있는 서류를 인쇄 모양 그대로 PDF 로 만들어 내 Google 드라이브 · Dropbox 에 넣거나 바로 내려받습니다',
+    '운영 - 신고 처리를 되돌리다 실패해도 처리된 줄이 미확인 목록에 남지 않습니다',
+    '알림 - 브리핑의 ‘새 조건 · 손님 새 말’ 은 안 읽은 것만 셉니다',
+  ]},
   { v:'26.11.08.2', 날:'2026-11-08', 줄:[
     '문자 - 보낸 기록을 지운 뒤 바로 창을 닫아도 지운 것이 그대로 남습니다(다시 나타나던 것을 고쳤습니다)',
     '알림 - 브리핑 칸을 눌러 다녀오면 읽음으로 바뀝니다 · 할 일이 줄었을 때 빨간 수가 다시 늘지 않습니다',
     '알림창 · 바로 찾기 - 닫자마자 다시 열어도 바로 열립니다 · 아래 링크 이름을 ‘일정·알림’ 으로 바로잡았습니다',
-    '속도 - 비버리 그림은 첫 화면에서만 먼저 받습니다',
+    '속도 - 쓰지 않는 화면에서도 비버리 그림을 먼저 받던 것을 뺐습니다',
   ]},
   { v:'26.11.08', 날:'2026-11-08', 줄:[
     '로그인 화면 - 이 기기에서 마지막으로 들어오신 방법(카카오 · 네이버 · Google · 이메일)에 ‘최근 로그인’ 표시가 붙습니다',
@@ -11615,13 +11640,14 @@ function 버전칸(){
 /* ══ 알림 (2026-11-07 레퍼런스 'Notifications - All · Urgent · Decisions') ══
    따로 쌓는 알림함은 없다 - 이미 화면에 있는 것(할 일 · 손님 새 말 · 새로 걸린 조건)을 모아 보여 준다.
    읽음은 이 기기에만 남긴다(localStorage). 할 일은 끝날 때까지 목록에 남고, 처음 본 뒤에는 빨간 수에서 빠진다 */
-const 알림읽음 = (() => { let 봄; const 읽기 = () => { if(봄) return 봄; try{ 봄 = new Set(JSON.parse(localStorage.getItem('bk_noti_seen') || '[]')); }catch{ 봄 = new Set(); } return 봄; };
-  /* 할 일 알림은 'todo:제목:값:건수' - 본 적 있는 건수 이하이면 읽은 것이다. 건수가 줄었다고 다시 빨간 수에 넣지 않는다 (2026-11-08 리뷰) */
-  return { 있나: id => { const s = 읽기(); if(s.has(id)) return true;
-      const m = /^(todo:.*):(\d+)$/.exec(id); if(!m) return false; const 앞 = m[1] + ':';
-      for(const k of s){ if(k.startsWith(앞) && /^\d+$/.test(k.slice(앞.length)) && +k.slice(앞.length) >= +m[2]) return true; }
-      return false; },
-    넣기: ids => { const s = 읽기(); ids.forEach(i => s.add(i)); try{ localStorage.setItem('bk_noti_seen', JSON.stringify([...s].slice(-400))); }catch{} } }; })();
+/* 할 일 알림은 'todo:제목:값:건수' - 본 적 있는 건수 이하이면 읽은 것이다. 건수가 줄었다고 다시 빨간 수에 넣지 않는다 (2026-11-08 리뷰).
+   제목·값마다 본 건수의 최댓값을 모아 둔다 - 그릴 때마다 읽음 목록(400개)을 훑지 않게 */
+const 알림읽음 = (() => { let 봄, 최대; const 쪼개 = id => /^(todo:.*):(\d+)$/.exec(id);
+  const 셈 = id => { const m = 쪼개(id); if(m && +m[2] > (최대.get(m[1]) || 0)) 최대.set(m[1], +m[2]); };
+  const 읽기 = () => { if(봄) return 봄; try{ 봄 = new Set(JSON.parse(localStorage.getItem('bk_noti_seen') || '[]')); }catch{ 봄 = new Set(); }
+    최대 = new Map(); 봄.forEach(셈); return 봄; };
+  return { 있나: id => { const s = 읽기(); if(s.has(id)) return true; const m = 쪼개(id); return !!m && (최대.get(m[1]) || 0) >= +m[2]; },
+    넣기: ids => { const s = 읽기(); ids.forEach(i => { s.add(i); 셈(i); }); try{ localStorage.setItem('bk_noti_seen', JSON.stringify([...s].slice(-400))); }catch{} } }; })();
 function 알림들(){
   if(!S.user || !S.agent) return [];
   if(RM.list == null && !RM.listLoading && !ownerSide() && !계약막힘() && Date.now() - (알림들._물음 || 0) > 60e3){ 알림들._물음 = Date.now(); setTimeout(rmListLoad); }
@@ -11656,6 +11682,7 @@ function 알림창(열기){
   let box = document.getElementById('ntPanel');
   if(!열기){ if(box && !box.dataset.closing){ box.dataset.closing = '1'; box.classList.remove('in'); box._t = setTimeout(() => box.remove(), 160); } document.removeEventListener('pointerdown', 알림창._밖, true); return; }
   if(box && box.dataset.closing){ clearTimeout(box._t); box.remove(); box = null; }   /* 닫히는 중에 다시 열면 (2026-11-08 리뷰) */
+  파트너현황._c = null;
   const 목록 = 알림들(), 탭들 = [['전체', 목록.length], ['급함', 목록.filter(x => x.종류 === '급함').length], ['소식', 목록.filter(x => x.종류 === '소식').length]];
   const 보일 = NT.tab === '전체' ? 목록 : 목록.filter(x => x.종류 === NT.tab);
   const 이름 = { 전체: '전체', 급함: '급한 일', 소식: '새 소식' };
@@ -11688,7 +11715,7 @@ function 알림창(열기){
 /* 떠 있는 창인가 - 닫히는 중(움직이는 동안 남아 있는 상자)은 떠 있지 않은 것이다 */
 const 떠있나 = id => { const b = document.getElementById(id); return !!(b && !b.dataset.closing); };
 /* 종의 빨간 수만 바꾼다(화면 전체를 다시 그리지 않는다) */
-function 알림종새로(){ document.querySelectorAll('#app [data-act="noti"]').forEach(b => { const t = document.createElement('div'); t.innerHTML = 알림종(); if(t.firstElementChild) b.replaceWith(t.firstElementChild); }); }
+function 알림종새로(){ 파트너현황._c = null; document.querySelectorAll('#app [data-act="noti"]').forEach(b => { const t = document.createElement('div'); t.innerHTML = 알림종(); if(t.firstElementChild) b.replaceWith(t.firstElementChild); }); }
 
 /* ══ 바로 찾기 (2026-11-07 레퍼런스의 검색 창 - 'Which repairs are waiting on owners?') ══
    Ctrl+K(맥은 ⌘K) 또는 위쪽 찾기 칸. 뒤 화면을 흐리게 하고 상자가 그 자리에서 펼쳐진다.
@@ -11773,7 +11800,9 @@ document.addEventListener('keydown', e => {
 /* 오늘의 브리핑 (레퍼런스 '14 things handled overnight. 3 need you before noon.') - 대시보드 맨 위.
    ⚠ 인사말은 넣지 않는다(2026-10-30 대표님 '인사는 필요없고') - 머리는 '오늘의 브리핑 · 시각' */
 function dz브리핑(할일){
-  const 목록 = 알림들(), 새조건 = 목록.filter(x => x.id.startsWith('dem:')).length, 새말 = 목록.filter(x => x.id.startsWith('msg:')).length;
+  /* '새로 온' 은 안 읽은 것만 센다 - 종의 빨간 수와 같게 (2026-11-08 리뷰 · 모두 읽음 뒤에도 '새 조건 3건이 와 있습니다' 였다) */
+  const 목록 = 알림들(), 안봄 = 목록.filter(x => !알림읽음.있나(x.id)),
+    새조건 = 안봄.filter(x => x.id.startsWith('dem:')).length, 새말 = 안봄.filter(x => x.id.startsWith('msg:')).length;
   const 앞 = [새조건 ? `새 조건 ${새조건}건` : '', 새말 ? `손님 새 말 ${새말}건` : ''].filter(Boolean);
   const 첫줄 = 앞.length ? `${앞.join(' · ')}이 와 있습니다.` : '새로 온 소식은 없습니다.';
   const 둘째 = 할일.length ? `${할일.length}건은 직접 보셔야 합니다.` : '지금 손댈 일은 없습니다.';
@@ -11788,7 +11817,8 @@ function dz브리핑(할일){
 }
 
 /* 대시보드 숫자 · 할 일 (2026-11-07 알림창 · 브리핑도 쓰려고 화면에서 떼어 냈다) */
-/* 대시보드 · 종 · 브리핑이 한 번 그릴 때 각각 부른다 - 같은 그리기 안에서는 한 번 센 것을 같이 쓴다 (2026-11-08 리뷰) */
+/* 대시보드 · 종 · 브리핑이 한 번 그릴 때 각각 부른다 - 같은 그리기 안에서는 한 번 센 것을 같이 쓴다 (2026-11-08 리뷰).
+   render() · 알림종새로() · 알림창 을 시작할 때 비운다 - 같은 일 안에서 자료를 바꾸고 다시 그리면 새로 센다 */
 function 파트너현황(){
   if(파트너현황._c) return 파트너현황._c;
   const r = 파트너현황계산(); 파트너현황._c = r; queueMicrotask(() => { 파트너현황._c = null; }); return r;
@@ -12989,6 +13019,228 @@ function ctPrint(html){
   return true;
 }
 
+/* ── 계약서 보관 (2026-11-08 대표님 '중개사에 따라 자기 계약서를 자기 구글 드라이브나 드롭박스에 저장') ──
+   지금 보고 있는 서류(인쇄되는 것과 같은 ct보기HTML)를 이 브라우저에서 A4 PDF 로 만들어, 중개사 본인의 저장 공간에 바로 올린다.
+   비버노크 서버는 파일도 열쇠도 갖지 않는다 - 열쇠는 이 창의 메모리에만 두고(Google 1시간 · Dropbox 4시간) 새로고침하면 다시 묻는다.
+   · Google 드라이브: Google 로그인 창(GIS) - 권한은 drive.file(비버노크가 만든 파일만 보고 쓴다). '비버노크 계약서' 폴더에 넣는다
+   · Dropbox: PKCE 로그인 창 → /dropbox 페이지가 받은 코드를 이 창에 돌려준다. 앱 폴더(Apps/비버노크)에 넣는다
+   · 앱 번호(GOOGLE_DRIVE_CLIENT_ID · DROPBOX_APP_KEY)는 Vercel 환경변수 - 없으면 그 단추는 '준비 중' 으로 잠근다. PDF 내려받기는 언제나 된다
+   PDF 는 글자를 그림으로 담는다(html2canvas → jsPDF, 처음 누를 때만 cdnjs 에서 받는다). 쪽은 표의 줄 · 조항이 잘리지 않는 자리에서 나눈다 */
+const CL = { cfg: null, cfgP: null, busy: '', err: '', done: null, g: null, d: null, gtc: null, gtcId: '', gWait: null, 취소: null };
+const CL_LIB = {
+  h2c: ['https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js', 'sha384-ZZ1pncU3bQe8y31yfZdMFdSpttDoPmOZg2wguVK9almUodir1PghgT0eY7Mrty8H'],
+  pdf: ['https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js', 'sha384-JcnsjUPPylna1s1fvi1u12X5qjY5OL56iySh75FdtrwhO/SWXgMjoVqcKyIIWOLk'],
+  gis: ['https://accounts.google.com/gsi/client', ''] };
+const CL_폴더 = '비버노크 계약서', CL_받는중 = {};
+function 외부스크립트(k){
+  if(CL_받는중[k]) return CL_받는중[k];
+  const [src, sri] = CL_LIB[k];
+  return CL_받는중[k] = new Promise((ok, no) => { const s = document.createElement('script'); s.src = src; s.async = true;
+    if(sri){ s.integrity = sri; s.crossOrigin = 'anonymous'; }
+    s.onload = () => ok(); s.onerror = () => { delete CL_받는중[k]; s.remove(); no(new Error('도구를 받지 못했습니다 - 네트워크를 확인해 주세요')); };
+    document.head.appendChild(s); });
+}
+function cl설정(){
+  if(CL.cfg) return Promise.resolve(CL.cfg);
+  if(CL.cfgP) return CL.cfgP;
+  /* 못 받았으면 '실패' 로 적어 둔다 - '연결 확인 중' 에 멈춰 있지 않게. 창을 다시 열 때 또 묻는다 */
+  return CL.cfgP = ctPost({ what: 'cloud-cfg' }).then(({ ok, j }) => { CL.cfgP = null;
+    return CL.cfg = ok ? { google: j.google || '', dropbox: j.dropbox || '' } : { google: '', dropbox: '', 실패: true }; })
+    .catch(() => { CL.cfgP = null; return CL.cfg = { google: '', dropbox: '', 실패: true }; });
+}
+function 보관창(){
+  if(!CT.doc) return;
+  CL.err = ''; CL.done = null; if(CL.cfg && CL.cfg.실패) CL.cfg = null;
+  S.modal = { type: 'ct-cloud' }; render();
+  /* 창을 여는 동안 미리 받아 둔다 - 로그인 창은 누른 그 순간에 열어야 팝업 막기에 걸리지 않는다 */
+  cl설정().then(c => { if(c.google) 외부스크립트('gis').catch(() => {}); if(S.modal && S.modal.type === 'ct-cloud') render(); });
+  외부스크립트('h2c').catch(() => {}); 외부스크립트('pdf').catch(() => {});
+}
+const CL_곳 = { google: 'Google 드라이브', dropbox: 'Dropbox', pdf: 'PDF' };
+function 보관창HTML(){
+  const c = CL.cfg, 확인중 = !c, 일 = !!CL.busy;
+  const 단추 = (k, 이름, 그림, 켜짐, 말) => `<button type="button" class="btn sec cl-o" data-act="cl-save" data-v="${k}" ${!켜짐 || 일 ? 'disabled' : ''}>
+      <span class="cl-ic" aria-hidden="true">${그림}</span><span class="cl-t"><b>${이름}</b><small>${esc(말)}</small></span></button>`;
+  const 준비 = 확인중 ? '연결 확인 중…' : c.실패 ? '연결을 확인하지 못했습니다 - 창을 닫았다 다시 열어 주세요' : '준비 중 - 곧 열립니다';
+  return `<div class="modal" data-act="modal-bg"><div class="box" data-stop role="dialog" aria-modal="true" aria-labelledby="mdT" tabindex="-1" style="max-width:440px">
+    <h2 id="mdT" style="margin:0 0 6px;font-size:16px;font-weight:700;letter-spacing:-.03em">계약서 보관</h2>
+    <p style="margin:0 0 14px;font-size:14px;line-height:1.7;color:var(--n500)">지금 보고 있는 서류를 인쇄되는 모양 그대로 PDF 로 만들어 <b style="color:var(--n900)">내 저장 공간</b>에 넣습니다. 비버노크는 파일을 따로 갖고 있지 않습니다.</p>
+    <div class="cl-opts">
+      ${단추('google', 'Google 드라이브', CL_그림.google, c && c.google, c && c.google ? `'${CL_폴더}' 폴더에 저장` : 준비)}
+      ${단추('dropbox', 'Dropbox', CL_그림.dropbox, c && c.dropbox, c && c.dropbox ? '앱 폴더(Apps › 비버노크)에 저장' : 준비)}
+      ${단추('pdf', 'PDF 내려받기', CL_그림.pdf, true, '이 기기에 바로 저장')}
+    </div>
+    ${일 ? `<p class="cl-msg" role="status"><span class="cl-spin" aria-hidden="true"></span>${esc(CL.busy)}${CL.취소 ? ' <button type="button" class="lnk" data-act="cl-cancel">그만두기</button>' : ''}</p>` : ''}
+    ${CL.err ? `<p class="cl-msg err" role="alert">${esc(CL.err)}</p>` : ''}
+    ${CL.done ? `<p class="cl-msg ok" role="status">${esc(CL.done.t)}${CL.done.url ? ` <a href="${esc(CL.done.url)}" target="_blank" rel="noopener">${esc(CL.done.열기 || '열어 보기')}</a>` : ''}</p>` : ''}
+    <button class="btn pri" data-act="modal-close" style="width:100%;margin-top:14px">닫기</button></div></div>`;
+}
+const CL_그림 = {
+  google: '<svg viewBox="0 0 24 24" width="22" height="22"><path fill="#0F9D58" d="M8.3 3h7.4l7 12.1h-7.4z"/><path fill="#F4B400" d="M8.3 3 1.3 15.1 5 21.5l7-12.1z"/><path fill="#4285F4" d="M5 21.5h14l3.7-6.4H8.7z"/></svg>',
+  dropbox: '<svg viewBox="0 0 24 24" width="22" height="22" fill="#0061FE"><path d="m6 2.5 6 3.8-6 3.8-6-3.8zm12 0 6 3.8-6 3.8-6-3.8zM0 13.9l6-3.8 6 3.8-6 3.8zm18-3.8 6 3.8-6 3.8-6-3.8zM6 19l6-3.8 6 3.8-6 3.8z"/></svg>',
+  pdf: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6.5A1.5 1.5 0 0 0 5 4.5v15A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5V8z"/><path d="M14 3v5h5M12 11v6m-2.6-2.6L12 17l2.6-2.6"/></svg>' };
+/* 파일 이름 - 서류 제목 _ 소재지 끝 두 마디 _ 날짜 */
+function cl파일이름(html, doc){
+  const t = document.createElement('div'); t.innerHTML = html;
+  const h = t.querySelector('h1,h2');
+  let 제목 = ((h && h.textContent) || ctTitle(doc) || '계약서').replace(/\s+/g, ' ').trim();
+  if(/^(\S )+\S$/.test(제목)) 제목 = 제목.replace(/ /g, '');   /* '주 택 임 대 차 계 약 서' 처럼 한 자씩 띄운 제목 */
+  const 곳 = String((doc.property || {}).road || '').trim().split(/\s+/).slice(-2).join(' ');
+  const d = new Date(), 날 = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
+  return ([제목, 곳, 날].filter(Boolean).join('_').replace(/[\\/:*?"<>|\u0000-\u001f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 120) || '계약서') + '.pdf';
+}
+/* 서류 → A4 PDF. 화면 밖에 인쇄와 같은 폭(A4 - 양옆 13mm = 184mm)으로 그리고, 쪽 높이(297 - 위아래 14mm = 269mm)마다 자른다.
+   자르는 자리는 표의 줄 · 조항 · 문단을 가르지 않는 곳(위로 반 쪽까지 찾는다) */
+async function ctPdf(html){
+  await Promise.all([외부스크립트('h2c'), 외부스크립트('pdf')]);
+  /* 양옆 6px 은 여유 - 그림으로 옮길 때 글자 폭이 조금 달라져 오른쪽 끝 글자가 테두리에 붙었다(본문 폭은 그대로 696) */
+  const 폭 = 696, 곁 = 6, 쪽 = Math.floor(폭 * 269 / 184);
+  const 판 = document.createElement('div');
+  판.setAttribute('aria-hidden', 'true');
+  판.style.cssText = `position:absolute;left:-12000px;top:0;width:${폭 + 곁 * 2}px;padding:0 ${곁}px;box-sizing:border-box;background:#fff;color:#000`;
+  판.innerHTML = html; document.body.appendChild(판);
+  try{
+    if(document.fonts && document.fonts.ready) await document.fonts.ready;
+    const 위 = 판.getBoundingClientRect().top;
+    const 막 = [...판.querySelectorAll('tr,.ct-art,p,li,h1,h2,h3,h4,img,svg')].map(e => { const r = e.getBoundingClientRect(); return [r.top - 위, r.bottom - 위]; })
+      .filter(([a, b]) => b - a > 0 && b - a < 쪽 * .8);
+    const 높이 = Math.ceil(판.scrollHeight), 자름 = [0];
+    while(높이 - 자름[자름.length - 1] > 쪽){
+      const s = 자름[자름.length - 1]; let y = s + 쪽;
+      for(; y > s + 쪽 * .5; y -= 2) if(!막.some(([a, b]) => a < y - .5 && b > y + .5)) break;
+      if(y <= s + 쪽 * .5) y = s + 쪽;
+      자름.push(Math.floor(y));
+    }
+    자름.push(높이);
+    const 배 = Math.min(2, Math.sqrt(12e6 / ((폭 + 곁 * 2) * 높이)));   /* 휴대폰 그림 한도(약 1600만 화소) 안으로 */
+    const 그림 = await window.html2canvas(판, { scale: 배, backgroundColor: '#ffffff', logging: false, useCORS: true, windowWidth: 1280 });
+    const pdf = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4', compress: true }), mm = 184 / 폭;
+    for(let i = 0; i < 자름.length - 1; i++){
+      const y0 = Math.round(자름[i] * 배), h = Math.max(1, Math.min(그림.height - y0, Math.round((자름[i + 1] - 자름[i]) * 배)));
+      const c = document.createElement('canvas'); c.width = 그림.width; c.height = h;
+      const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, h); g.drawImage(그림, 0, y0, 그림.width, h, 0, 0, c.width, h);
+      if(i) pdf.addPage();
+      pdf.addImage(c.toDataURL('image/jpeg', .92), 'JPEG', 13 - 곁 * mm, 14, (폭 + 곁 * 2) * mm, h / 배 * mm);
+    }
+    return pdf.output('blob');
+  } finally { 판.remove(); }
+}
+const b64url = a => btoa(String.fromCharCode(...a)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+/* Google - 누른 그 순간에 로그인 창을 연다(도구는 창을 열 때 미리 받아 둔다) */
+function g열쇠(){
+  if(CL.g && CL.g.exp > Date.now() + 60e3) return Promise.resolve(CL.g.tok);
+  const id = CL.cfg && CL.cfg.google;
+  if(!id) return Promise.reject(new Error('Google 드라이브 연결은 준비 중입니다'));
+  const 요청 = () => new Promise((ok, no) => {
+    if(!CL.gtc || CL.gtcId !== id){
+      CL.gtc = google.accounts.oauth2.initTokenClient({ client_id: id, scope: 'https://www.googleapis.com/auth/drive.file',
+        callback: r => CL.gWait && CL.gWait(r), error_callback: e => CL.gWait && CL.gWait({ error: (e && e.type) || 'popup' }) });
+      CL.gtcId = id;
+    }
+    CL.gWait = r => { CL.gWait = null; CL.취소 = null;
+      if(r && r.access_token){ CL.g = { tok: r.access_token, exp: Date.now() + (+r.expires_in || 3600) * 1000 }; return ok(r.access_token); }
+      no(new Error(r && r.error === 'popup_failed_to_open' ? '팝업이 막혀 있습니다 - 이 사이트의 팝업을 허용한 뒤 다시 눌러 주세요'
+        : r && (r.error === 'popup_closed' || r.error === '취소') ? '로그인 창을 닫아 저장하지 않았습니다' : 'Google 드라이브 사용을 허락받지 못했습니다')); };
+    CL.취소 = () => CL.gWait && CL.gWait({ error: '취소' });
+    CL.gtc.requestAccessToken({ prompt: '' });
+  });
+  if(window.google && google.accounts && google.accounts.oauth2) return 요청();
+  return 외부스크립트('gis').then(요청);
+}
+async function g올리기(tok, 파일, 이름){
+  const H = { Authorization: 'Bearer ' + tok }, 끊김 = r => { if(r.status === 401){ CL.g = null; throw new Error('Google 연결이 끝났습니다 - 다시 눌러 주세요'); } };
+  const q = encodeURIComponent(`name='${CL_폴더}' and mimeType='application/vnd.google-apps.folder' and trashed=false`);
+  let r = await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id)&pageSize=1`, { headers: H }); 끊김(r);
+  let j = await r.json().catch(() => ({})), 폴더 = j.files && j.files[0] && j.files[0].id;
+  if(!폴더){
+    r = await fetch('https://www.googleapis.com/drive/v3/files?fields=id', { method: 'POST', headers: { ...H, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: CL_폴더, mimeType: 'application/vnd.google-apps.folder' }) }); 끊김(r);
+    j = await r.json().catch(() => ({})); 폴더 = j.id;
+  }
+  const 경계 = 'bk' + Math.random().toString(36).slice(2), 머리 = { name: 이름, mimeType: 'application/pdf', ...(폴더 ? { parents: [폴더] } : {}) };
+  const 몸 = new Blob([`--${경계}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(머리)}\r\n--${경계}\r\nContent-Type: application/pdf\r\n\r\n`, 파일, `\r\n--${경계}--`]);
+  r = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webViewLink', { method: 'POST',
+    headers: { ...H, 'Content-Type': `multipart/related; boundary=${경계}` }, body: 몸 }); 끊김(r);
+  j = await r.json().catch(() => ({}));
+  if(!r.ok || !j.id) throw new Error('Google 드라이브에 올리지 못했습니다' + (r.status === 403 ? ' - 저장 공간이 꽉 찼는지 확인해 주세요' : ''));
+  return j.webViewLink || 'https://drive.google.com/drive/my-drive';
+}
+/* Dropbox - 빈 창을 누른 순간에 열어 두고(팝업 막기), 확인 코드가 준비되면 그 창을 로그인 주소로 보낸다.
+   로그인 뒤 /dropbox 페이지가 코드를 같은 사이트의 이 창으로 돌려준다(BroadcastChannel · localStorage) -
+   Dropbox 쪽이 창 사이 연결(opener)을 끊어도 받을 수 있게 */
+function d열쇠(){
+  if(CL.d && CL.d.exp > Date.now() + 60e3) return Promise.resolve(CL.d.tok);
+  const key = CL.cfg && CL.cfg.dropbox;
+  if(!key) return Promise.reject(new Error('Dropbox 연결은 준비 중입니다'));
+  const 창 = window.open('', 'bkdbx', 'width=520,height=700');
+  if(!창) return Promise.reject(new Error('팝업이 막혀 있습니다 - 이 사이트의 팝업을 허용한 뒤 다시 눌러 주세요'));
+  return (async () => {
+    const 글 = n => { const a = new Uint8Array(n); crypto.getRandomValues(a); return b64url(a); };
+    const 검증 = 글(48), state = 글(16), 돌아올곳 = location.origin + '/dropbox';
+    const 도전 = b64url(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(검증))));
+    try{ 창.location.href = 'https://www.dropbox.com/oauth2/authorize?' + new URLSearchParams({ client_id: key, response_type: 'code',
+      code_challenge: 도전, code_challenge_method: 'S256', redirect_uri: 돌아올곳, state, token_access_type: 'online' }); }
+    catch(e){ throw new Error('로그인 창을 열지 못했습니다'); }
+    const code = await new Promise((ok, no) => {
+      let 다 = false; const 통 = 'BroadcastChannel' in window ? new BroadcastChannel('bk-dropbox') : null;
+      const 끝 = (f, x) => { if(다) return; 다 = true; CL.취소 = null; clearTimeout(시간); window.removeEventListener('storage', 저장소); if(통) 통.close(); f(x); };
+      const 받기 = m => { if(!m || m.state !== state) return; m.code ? 끝(ok, m.code) : 끝(no, new Error(m.error === 'access_denied' ? 'Dropbox 사용을 허락하지 않으셨습니다' : 'Dropbox 연결을 마치지 못했습니다')); };
+      const 저장소 = e => { if(e.key === 'bk_dropbox_cb' && e.newValue) try{ 받기(JSON.parse(e.newValue)); }catch{} };
+      if(통) 통.onmessage = e => 받기(e.data);
+      window.addEventListener('storage', 저장소);
+      const 시간 = setTimeout(() => 끝(no, new Error('로그인을 오래 기다려 그만두었습니다 - 다시 눌러 주세요')), 5 * 60e3);
+      CL.취소 = () => { try{ 창.close(); }catch{} 끝(no, new Error('저장하지 않았습니다')); };
+    });
+    try{ localStorage.removeItem('bk_dropbox_cb'); }catch{}
+    const r = await fetch('https://api.dropboxapi.com/oauth2/token', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ code, grant_type: 'authorization_code', client_id: key, code_verifier: 검증, redirect_uri: 돌아올곳 }) });
+    const j = await r.json().catch(() => ({}));
+    if(!j.access_token) throw new Error('Dropbox 연결을 마치지 못했습니다');
+    CL.d = { tok: j.access_token, exp: Date.now() + (+j.expires_in || 14400) * 1000 };
+    return j.access_token;
+  })();
+}
+async function d올리기(tok, 파일, 이름){
+  /* Dropbox-API-Arg 는 머리글이라 한글을 \uXXXX 로 적어야 한다 */
+  const arg = JSON.stringify({ path: '/' + 이름, mode: 'add', autorename: true, mute: false }).replace(/[\u007f-\uffff]/g, c => '\\u' + c.charCodeAt(0).toString(16).padStart(4, '0'));
+  const r = await fetch('https://content.dropboxapi.com/2/files/upload', { method: 'POST',
+    headers: { Authorization: 'Bearer ' + tok, 'Content-Type': 'application/octet-stream', 'Dropbox-API-Arg': arg }, body: 파일 });
+  if(r.status === 401){ CL.d = null; throw new Error('Dropbox 연결이 끝났습니다 - 다시 눌러 주세요'); }
+  const j = await r.json().catch(() => ({}));
+  if(!r.ok) throw new Error('Dropbox 에 올리지 못했습니다' + (/insufficient_space/.test(JSON.stringify(j)) ? ' - 저장 공간이 꽉 찼습니다' : ''));
+  return 'https://www.dropbox.com/home/Apps';
+}
+async function cl저장(곳){
+  if(CL.busy || !CT.doc) return;
+  const doc = CT.doc, html = ct보기HTML(doc), 이름 = cl파일이름(html, doc);
+  /* 로그인 창은 누른 이 자리에서(기다리기 전에) 연다 */
+  let 열쇠P = null;
+  try{ 열쇠P = 곳 === 'google' ? g열쇠() : 곳 === 'dropbox' ? d열쇠() : null; }catch(e){ 열쇠P = Promise.reject(e); }
+  if(열쇠P) 열쇠P.catch(() => {});
+  const 열쇠있음 = (x => !!(x && x.exp > Date.now() + 60e3))(곳 === 'google' ? CL.g : CL.d);
+  CL.err = ''; CL.done = null; CL.busy = 곳 === 'pdf' || 열쇠있음 ? 'PDF 를 만드는 중…' : `${CL_곳[곳]} 로그인 창에서 허락을 기다리는 중…`; render();
+  try{
+    const 파일P = ctPdf(html); 파일P.catch(() => {});
+    if(열쇠P) await 열쇠P;
+    if(곳 !== 'pdf'){ CL.busy = 'PDF 를 만드는 중…'; render(); }
+    const 파일 = await 파일P;
+    if(곳 === 'pdf'){
+      const a = document.createElement('a'), u = URL.createObjectURL(파일);
+      a.href = u; a.download = 이름; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 60e3);
+      CL.done = { t: `‘${이름}’ 파일을 내려받았습니다` };
+    } else {
+      CL.busy = `${CL_곳[곳]}에 올리는 중…`; render();
+      const 열쇠 = await 열쇠P, url = 곳 === 'google' ? await g올리기(열쇠, 파일, 이름) : await d올리기(열쇠, 파일, 이름);
+      CL.done = { t: `${CL_곳[곳]}에 ‘${이름}’ 파일을 저장했습니다.`, url, 열기: `${CL_곳[곳]}에서 열기` };
+    }
+    CL.busy = ''; CL.취소 = null;
+    if(S.modal && S.modal.type === 'ct-cloud') render(); else toast(CL.done.t.replace(/\.$/, ''));
+  } catch(e){
+    CL.busy = ''; CL.취소 = null; CL.err = (e && e.message) || '저장하지 못했습니다';
+    if(S.modal && S.modal.type === 'ct-cloud') render(); else toast(CL.err);
+  }
+}
+
 /* ── 서식 자료실 (2026-11-06 · 파트너 기획 [227] '각종 서식(빈 양식)을 다운로드') ── 계약서 · 확인·설명서 · 부속 서류의 빈 양식을
    그 자리에서 인쇄(PDF 로 저장)한다. 화면의 문서 그리기를 빈 문서로 그대로 쓴다 - 작성 화면과 같은 모양.
    '사무소 정보 넣기' 를 켜면 사무소 명칭 · 등록번호 · 주소 · 전화가 들어간다(성명은 자필). 사무소가 올리는 서식은 파일 보관이 생기면 */
@@ -13687,10 +13939,18 @@ function csLoad(){
     if(S.route === '#/partner/contracts/sms') render();
   }).catch(() => { CS.loading = false; CS.loaded = true; CS.err = '네트워크 문제로 문자 틀을 불러오지 못했습니다'; if(S.route === '#/partner/contracts/sms') render(); });
 }
-/* 되돌리기 5초를 기다리는 보낸 기록 지우기 - 그 사이 창을 닫거나 새로고침하면 바로 보낸다(keepalive) (2026-11-08 리뷰) */
-const CS_지울대기 = new Map();
+/* 되돌리기 5초를 기다리는 보낸 기록 지우기 - 그 사이 창을 닫거나 새로고침하면 바로 보낸다(keepalive) (2026-11-08 리뷰).
+   apiFetch 는 열쇠가 곧 끝나면 갱신부터 기다린다 - 창이 닫히는 동안에는 그 사이에 끊겨 요청이 아예 안 나갔다.
+   그래서 지금 가진 열쇠로 그 자리에서 바로 보낸다. 보낸 것은 CS_지운것 에 남겨, 뒤로 가기 캐시로 돌아온 뒤
+   '되돌리기' 를 누르면 이미 지웠다고 알린다(화면에만 되살아나고 서버에는 없던 것) */
+const CS_지울대기 = new Map(), CS_지운것 = new Set();
+function 떠나며보내기(path, body){
+  const s = store.get(), h = { 'Content-Type': 'application/json' };
+  if(s && s.access_token) h.Authorization = 'Bearer ' + s.access_token;
+  try{ fetch(path, { method: 'POST', keepalive: true, headers: h, body: JSON.stringify(body) }); }catch(e){}
+}
 if(typeof window !== 'undefined') window.addEventListener('pagehide', () => { CS_지울대기.forEach((t, id) => { clearTimeout(t);
-  try{ apiFetch('/api/feed', { method:'POST', keepalive: true, body: JSON.stringify({ what:'sms-save', op:'log-del', id }) }); }catch(e){} });
+  if(!CS.need){ 떠나며보내기('/api/feed', { what:'sms-save', op:'log-del', id }); CS_지운것.add(id); } });
   CS_지울대기.clear(); });
 async function csSend(body){
   if(CS.need) { toast('문자 틀 저장은 준비 중입니다 - 곧 열립니다'); return null; }
@@ -14022,6 +14282,7 @@ V['#/partner/contract'] = (id) => {
         ${!F.explain && CT.mode !== 'extra' ? `<button class="btn sec sm" data-act="ct-extra">부속 서류</button>` : ''}
         ${F.lease && CT.id ? `<button class="btn sec sm" data-act="ct-renew-this">갱신계약<span class="ct-long"> 쓰기</span></button>` : ''}
         <button class="btn sec sm" data-act="ct-print">인쇄</button>
+        <button class="btn sec sm" data-act="ct-cloud">드라이브 저장</button>
         ${잠김 || F.explain ? '' : `<button class="btn sec sm" data-act="ct-share">초안 링크</button>`}
         ${F.explain ? '' : `<button class="btn sec sm" data-act="ct-explain">확인·설명서<span class="ct-long"> 만들기</span></button>`}
         ${잠김 ? `<button class="btn sec sm" data-act="ct-revise">고쳐서 새 판 만들기</button>`
@@ -14314,7 +14575,8 @@ function ctDeskShell(doc, side, 신고면){
             ${F.explain ? '' : `<button class="btn tool sm" data-act="ct-explain">확인·설명서 만들기</button>`}
             ${F.explain || !CT.id ? '' : `<button class="btn tool sm" data-act="ct-copy-this">복사해서 새로</button>`}
             ${잠김 || F.explain ? '' : `<button class="btn tool sm" data-act="ct-share">초안 링크</button>`}
-            <button class="btn tool sm" data-act="ct-print">인쇄</button></span>
+            <button class="btn tool sm" data-act="ct-print">인쇄</button>
+            <button class="btn tool sm" data-act="ct-cloud">드라이브 저장</button></span>
           </span>
         </div>
         <div class="ctx-desk" id="ctDesk"><div class="ct-sheet" id="ctPv">${ct책상HTML(doc)}</div></div>
@@ -15937,6 +16199,7 @@ addEventListener('beforeunload', e => {
 var 기본제목 = document.title;
 function render(){
   if(IME && 적는중() && S.lastRoute === (location.hash || '#/')){ 밀린전체 = true; return; }
+  파트너현황._c = null;
   let h = location.hash || '#/';
   /* 계약서를 저장하지 않고 다른 화면으로 가려 하면 묻는다 (2026-10-29).
      다른 계약서로 옮겨 가는 것(뒤로가기로 앞 계약서 등)도 떠나는 것이다 - 그 계약서를 열면 적던 것이 덮인다.
@@ -18345,7 +18608,8 @@ function handle(a,v,el){
       줄빼기(null, 줄, () => { CS.log = CS.log.filter(x => x.id !== v); render();
         let 취소 = false; const 늦게 = setTimeout(() => { CS_지울대기.delete(v); if(!취소) csSend({ op:'log-del', id: v }).then(() => render()); }, 5200);
         CS_지울대기.set(v, 늦게);
-        toast('보낸 기록을 지웠습니다', { undo: () => { 취소 = true; clearTimeout(늦게); CS_지울대기.delete(v);
+        toast('보낸 기록을 지웠습니다', { undo: () => { if(CS_지운것.has(v)) return toast('창을 떠날 때 이미 지웠습니다 - 되돌릴 수 없습니다');
+          취소 = true; clearTimeout(늦게); CS_지울대기.delete(v);
           if(!CS.log.some(x => x.id === v)) CS.log.splice(Math.min(자리, CS.log.length), 0, 뺀); render(); } }); });
       return true; }
     case 'cs-log-ct': { const e = CS.log.find(x => x.id === v); if(e) cs계약서(e); return true; }
@@ -18477,6 +18741,9 @@ function handle(a,v,el){
       return true;
     case 'ct-edit': CT.mode = 'edit'; render(); return true;
     case 'ct-print': return ctPrint();
+    case 'ct-cloud': 보관창(); return true;
+    case 'cl-save': cl저장(v); return true;
+    case 'cl-cancel': if(CL.취소) CL.취소(); return true;
     case 'ct-save': ctSave(); return true;
     /* 필수 칸이 비면 확정 창을 열지 않고 빠진 칸을 보여 준다 (2026-11-06 대표님) */
     case 'ct-seal': {

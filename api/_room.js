@@ -114,9 +114,11 @@ export async function roomAgent(req, res, agent, user, b) {
       if (!m.r.ok) { if (표없음(m.t)) return 준비중(res, m.t); return res.status(502).json({ error: '대화방 목록을 불러오지 못했습니다' }); }
       담기(m.rows);
       if (m.rows.length >= 1000) {
-        const 본 = new Set(m.rows.map(v => v.contract_id));
-        const 더 = await Promise.all(ids.filter(c => !본.has(c)).slice(0, 30).map(c =>
-          db('bk_contract_msg', `select=contract_id,thread,id,side,body,created_at&contract_id=eq.${c}&order=id.desc&limit=100`)));
+        /* 1000개 안에 마지막 말이 없는 방(계약서 · 당사자)만 하나씩 - 한 계약서에서도 바쁜 방에 뜸한 방이 가려지지 않게 */
+        const 빈방 = [];
+        for (const r of x.rows) for (const k of 자리들) if ((r.doc_parties || {})[k] && !마지막[`${r.id}:${k}`]) 빈방.push([r.id, k]);
+        const 더 = await Promise.all(빈방.slice(0, 30).map(([c, k]) =>
+          db('bk_contract_msg', `select=contract_id,thread,id,side,body,created_at&contract_id=eq.${c}&thread=eq.${k}&order=id.desc&limit=1`)));
         for (const y of 더) 담기(y.rows || []);
       }
     }
@@ -216,10 +218,20 @@ export async function roomGuest(req, res, user, b) {
     if (overLimit('room:j:' + user.id, 20, 600e3)) return res.status(429).json({ error: '잠시 뒤 다시 해 주세요' });
     const t = 초대표읽기(b.token);
     if (!t) return res.status(404).json({ error: '초대 링크가 맞지 않거나 기한(14일)이 지났습니다 - 중개사무소에 다시 받아 주세요' });
+    /* 사무소 계정(대표 · 계약서를 쓴 분 · 직원)은 손님 자리에 들어가지 않는다 - 링크를 시험해 보다 자기 계정이 손님으로 묶이는 일을 막는다 */
+    const 계 = await 계약(t.id);
+    if (!계 || 계.오류) return res.status(404).json({ error: '계약서를 찾지 못했습니다' });
+    const 사x = await db('bk_agent', `select=user_id,staff:settings->staff&id=eq.${계.agent_id}&limit=1`);
+    const 사r = 사x.rows[0] || {};
+    if (user.id === 계.agent_user || user.id === 사r.user_id || (Array.isArray(사r.staff) && 사r.staff.some(s => s && s.uid === user.id)))
+      return res.status(409).json({ error: '중개사무소 계정으로는 손님 자리에 들어갈 수 없습니다 - 손님 본인의 계정으로 링크를 열어 주세요', office: true });
     let 이미 = false;
     const z = await track고치기(t.id, null, (n, 지금값) => {
       const 방 = { ...(지금값.room || { n: 0 }) };
       if (!링크맞음(방, t)) return { 거절: '중개사무소가 이 링크를 끊었습니다 - 새 링크를 받아 주세요', code: 404 };
+      /* 한 계정은 한 계약에서 한 자리만 - 손님 화면은 내 자리 하나로 방을 고른다 */
+      const 딴자리 = 자리들.find(k => k !== t.side && 방[k] && 방[k].uid === user.id);
+      if (딴자리) return { 거절: `이 계정은 이미 이 계약의 ${자리이름[딴자리]} 자리로 들어와 있습니다 - 다른 분의 링크라면 그분 계정으로 열어 주세요`, code: 409 };
       if (방[t.side] && 방[t.side].uid) { if (방[t.side].uid === user.id) { 이미 = true; return { ...지금값 }; } return { 거절: '이 자리에는 이미 다른 분이 들어와 있습니다 - 중개사무소에 말씀해 주세요', code: 409 }; }
       방[t.side] = { uid: user.id, at: 지금() };
       return { ...지금값, room: 방 };

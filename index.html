@@ -11101,6 +11101,11 @@ const CT_하위메뉴 = [['#/partner/contracts/new', '계약서 작성', 'pen', 
    번호는 배포한 날(연.월.일 - 같은 날 또 올리면 뒤에 .2). 화면이 version.json 을 가끔 읽어,
    더 새 버전이 올라와 있으면 메뉴 아래에서 새로고침을 권한다(버전확인) - 계약서를 띄워 둔 채 오래 일하면 고친 화면을 못 받는다 */
 const BK_변경 = [
+  { v:'26.11.07.2', 날:'2026-11-07', 줄:[
+    '손님 대화방 - 보낸 말이 바로 보입니다(전에는 새 말 확인 때까지 몇 초 늦을 때가 있었습니다)',
+    '사무소 계정(대표 · 직원)으로 초대 링크를 열면 손님 자리에 묶이지 않고 알려 드립니다 · 한 계정은 한 계약에서 한 자리만',
+    '대화방이 없는 계약서를 열면 까닭을 알려 드립니다 · 처음 열기에 실패한 방도 다시 열리면 바로 보입니다',
+  ]},
   { v:'26.11.07', 날:'2026-11-07', 줄:[
     '손님 대화방을 당사자마다 따로 - 매도인 방 · 매수인 방이 나뉘고 중개사만 양쪽을 봅니다. 손님은 상대 당사자의 말을 보지 못합니다',
     '한 손님을 내보내도 다른 당사자의 초대 링크는 그대로 · 모두 끊기는 따로',
@@ -12625,23 +12630,29 @@ function rmLoad(id, 처음, side){
   const 키 = rm열쇠(id, side);
   if(!RM.cur || RM.cur.key !== 키) RM.text = '';   /* 방을 옮기면 쓰던 글은 그 방에 두지 않는다 */
   const C = RM.cur && RM.cur.key === 키 ? RM.cur : (RM.cur = { key: 키, id, side: side || '', rows:[], meta:null, loading:false, err:'', last:0 });
-  if(C.loading) return;
+  if(C.loading){ if(!처음) C.또 = true; return; }
+  if(C.gone && !처음) return;   /* 내보내진 방은 8초마다 다시 묻지 않는다 */
   C.loading = true;
   const 손님 = rm손님();
+  const 다시 = () => { if(C.또){ C.또 = false; rmLoad(id, false, side); } };
   rmPost({ what: 손님 ? 'my-room' : 'room', id, ...(손님 ? {} : { side }), after: 처음 ? 0 : C.last }).then(({ ok, j, status }) => {
     C.loading = false;
     if(!ok){
       /* 8초마다 새 말 확인이 한 번 실패했다고 대화를 가리지 않는다 - 처음 열 때와 내보내진 때(403 · 404)만 알린다 */
+      if(status === 403 || status === 404) C.gone = true;
       if(처음 || !C.meta || status === 403 || status === 404){ C.err = rm준비말(j) || j.error || '대화방을 열지 못했습니다'; render(); }
-      return;
+      return 다시();
     }
     const 아래였나 = rm아래쪽();
-    C.err = ''; C.meta = j;
+    /* 처음 열기가 실패했다가 다음 확인에서 열렸으면 말이 없어도 다시 그린다(빈 방이 오류 글에 멈추지 않게) */
+    const 살아남 = !!C.err || !C.meta;
+    C.err = ''; C.gone = false; C.meta = j;
     const 새 = (j.rows || []).filter(v => v.id > C.last);
     if(처음) C.rows = j.rows || []; else C.rows = C.rows.concat(새);
     C.last = C.rows.length ? C.rows[C.rows.length - 1].id : C.last;
-    if(처음 || 새.length){ render(); if(처음 || 아래였나 || C.보냄){ C.보냄 = false; rm아래로(); } }
-  }).catch(() => { C.loading = false; if(처음 && !C.meta){ C.err = '네트워크 문제로 대화방을 열지 못했습니다'; render(); } });
+    if(처음 || 새.length || 살아남){ render(); if(처음 || 아래였나 || C.보냄){ C.보냄 = false; rm아래로(); } }
+    다시();
+  }).catch(() => { C.loading = false; if(처음 && !C.meta){ C.err = '네트워크 문제로 대화방을 열지 못했습니다'; render(); } 다시(); });
 }
 function rmListLoad(){
   if(RM.listLoading || !세션있음()) return;
@@ -12714,7 +12725,8 @@ V['#/partner/rooms'] = (id, side) => {
   const 제목 = (M && M.title) || 줄.title || '계약';
   const 이름 = (M && M.name) || 줄.name || '';
   const 들어옴 = M ? M.joined : 줄.joined;
-  const 오른쪽 = !키 ? (isMo() ? '' : `<div class="card pad rm-pane rm-none"><p class="sub" style="margin:0">${id ? '대화방을 여는 중입니다…' : '왼쪽에서 대화방을 고르세요.'}</p></div>`)
+  const 없는방 = id && !키 && RM.list && !RM.listLoading && !RM.list.some(r => r.id === id);
+  const 오른쪽 = !키 ? (isMo() && !없는방 ? '' : `<div class="card pad rm-pane rm-none"><p class="sub" style="margin:0;line-height:1.6">${없는방 ? '이 계약서에는 아직 대화방이 없습니다. 날인본 계약서의 ‘일정·체크’에서 손님 초대 링크를 보내면 생깁니다.' : id ? '대화방을 여는 중입니다…' : '왼쪽에서 대화방을 고르세요.'}</p></div>`)
     : `<div class="card rm-pane">
       <div class="rm-h"><div><b>${esc(제목)}</b>
         <span class="sub">${esc(RM_자리[side])}${이름 ? ' ' + esc(이름) : ''} ${들어옴 ? '<i class="rm-in">들어옴</i>' : '<i class="rm-out">초대 전</i>'} · 이 방은 ${esc(RM_자리[side])}과 사무소만 봅니다</span></div>

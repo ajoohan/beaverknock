@@ -96,6 +96,10 @@ ok((await 손(손님1, { what: 'my-room', id: CID })).code === 403 && (await 손
 ok((await 손(손님2, { what: 'my-room', id: CID })).code === 200, '다른 당사자는 계속 쓴다');
 const 새매수표 = (await 중({ what: 'room-invite', id: CID, side: 'buyer' })).body.token;
 ok(R.초대표읽기(새매수표).c === 1, '새 초대 링크는 끊긴 횟수를 담는다');
+r = await 손(손님2, { what: 'invite-join', token: 새매수표 });
+ok(r.code === 409 && /매도인/.test(r.body.error) && !계약.track.room.buyer, '한 계정은 한 계약에서 한 자리만 - 매도인으로 든 계정은 매수인 자리에 못 든다');
+r = await 손({ id: 'u-boss' }, { what: 'invite-join', token: 새매수표 });
+ok(r.code === 409 && r.body.office === true && !계약.track.room.buyer, '사무소 계정(대표 · 계약서를 쓴 분)은 손님 자리에 들어가지 않는다');
 r = await 중({ what: 'room-cut', id: CID });
 ok(r.code === 200 && 계약.track.room.n === 1 && (await 손(손님1, { what: 'invite-join', token: 새매수표 })).code === 404, '모두 끊기 - 나간 초대 링크가 전부 끊긴다');
 
@@ -117,6 +121,8 @@ ok(js.includes("['#/partner/rooms', '손님 대화', 'chat', 'rm']") && js.inclu
 ok(js.includes("const 곳 = /^(invite-join|my-)/.test(body.what) ? '/api/my' : '/api/feed';"), '화면 - 손님 요청은 /api/my, 사무소 요청은 /api/feed');
 ok(js.includes("html = V['#/partner/rooms'](parts[3], parts[4]);") && js.includes('data-go="#/partner/rooms/${esc(r.id)}/${esc(r.side)}"'), '화면 - 중개사 방 주소는 계약서/당사자');
 ok(js.includes("if(처음 || !C.meta || status === 403 || status === 404)"), '화면 - 새 말 확인이 한 번 실패해도 대화를 가리지 않는다');
+ok(js.includes("if(C.loading){ if(!처음) C.또 = true; return; }") && js.includes('if(처음 || 새.length || 살아남)') && js.includes("if(C.gone && !처음) return;"), '화면 - 보낸 말은 읽는 중이어도 곧바로 다시 읽고, 처음 실패한 빈 방도 열리면 다시 그린다 · 내보내진 방은 그만 묻는다');
+ok(js.includes("이 계약서에는 아직 대화방이 없습니다"), '화면 - 대화방이 없는 계약서 주소는 여는 중에 멈추지 않는다');
 ok(js.includes("Date.now() - RM.listAt > 30e3") && js.includes("RM.list = null;   /* 손님 대화 목록에 새 방이 바로 보이게 */"), '화면 - 목록은 30초마다 · 초대하면 바로 새로');
 ok(js.includes("data-keep=\"rm\"") && js.includes("[...app.querySelectorAll('[data-keep]')]") && js.includes('if(처음 || 아래였나 || C.보냄)'), '화면 - 다시 그려도 대화 스크롤을 지키고, 예전 말을 읽는 중이면 끌어내리지 않는다');
 ok(js.includes("${tabbar('rm','p')}") && js.includes('data-go="#/partner/rooms">목록</button>'), '화면 - 휴대폰: 엉뚱한 탭이 켜지지 않고, 방에서 목록으로 돌아간다');

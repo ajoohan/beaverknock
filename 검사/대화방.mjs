@@ -56,6 +56,8 @@ r = await 손(손님1, { what: 'invite-join', token: 표 });
 ok(r.code === 200 && r.body.id === CID && 계약.track.room.buyer.uid === 손님1.id, '손님이 링크로 들어오면 그 자리에 계정이 묶인다');
 ok((await 손(손님2, { what: 'invite-join', token: 표 })).code === 409, '다른 계정은 같은 자리에 들어오지 못한다');
 ok((await 손(손님1, { what: 'invite-join', token: 표 })).body.already === true, '같은 분이 다시 누르면 그냥 들어간다');
+{ const 앞 = 불린.filter(x => x.m === 'PATCH').length; await 손(손님1, { what: 'invite-join', token: 표 });
+  ok(불린.filter(x => x.m === 'PATCH').length === 앞, '이미 든 분이 다시 누르면 track 을 새로 쓰지 않는다(일정 저장과 부딪히지 않게)'); }
 ok((await 중({ what: 'room-invite', id: CID, side: 'buyer' })).code === 409, '들어온 자리는 다시 초대하지 않는다');
 const 매도표 = (await 중({ what: 'room-invite', id: CID, side: 'seller' })).body.token;
 ok((await 손(손님2, { what: 'invite-join', token: 매도표 })).code === 200 && 계약.track.room.seller.uid === 손님2.id, '매도인도 자기 링크로 들어온다');
@@ -112,6 +114,15 @@ ok(JSON.stringify(C.trackCheck({ room: { n: 0, c: { buyer: 2, hacker: 3, seller:
 r = await 중({ what: 'room', id: CID, side: 'seller' });
 ok(r.code === 503 && r.body.need === '0035', 'thread 칸이 없으면 0035 마이그레이션이 필요하다고 알린다');
 칸없음 = false;
+/* 6-1. 목록은 최근 말이 오간 방이 위로 */
+{ const 옛말 = 말들;
+  말들 = [{ id: 900, contract_id: CID, thread: 'seller', side: 'agent', body: '매도인께', created_at: '2026-11-07T00:00:00Z' }];
+  let x = await 중({ what: 'rooms' });
+  const 첫1 = x.body.rows[0].side;
+  말들.push({ id: 901, contract_id: CID, thread: 'buyer', side: 'buyer', body: '매수인 질문', created_at: '2026-11-07T00:01:00Z' });
+  x = await 중({ what: 'rooms' });
+  ok(첫1 === 'seller' && x.body.rows[0].side === 'buyer' && x.body.rows[0].last.id === 901, '대화방 목록 - 최근에 말이 오간 방이 위로 올라온다');
+  말들 = 옛말; }
 
 /* 7. 화면 */
 const js = 길.js();
@@ -126,5 +137,9 @@ ok(js.includes("이 계약서에는 아직 대화방이 없습니다"), '화면 
 ok(js.includes("Date.now() - RM.listAt > 30e3") && js.includes("RM.list = null;   /* 손님 대화 목록에 새 방이 바로 보이게 */"), '화면 - 목록은 30초마다 · 초대하면 바로 새로');
 ok(js.includes("data-keep=\"rm\"") && js.includes("[...app.querySelectorAll('[data-keep]')]") && js.includes('if(처음 || 아래였나 || C.보냄)'), '화면 - 다시 그려도 대화 스크롤을 지키고, 예전 말을 읽는 중이면 끌어내리지 않는다');
 ok(js.includes("${tabbar('rm','p')}") && js.includes('data-go="#/partner/rooms">목록</button>'), '화면 - 휴대폰: 엉뚱한 탭이 켜지지 않고, 방에서 목록으로 돌아간다');
+ok(js.includes("RM.mine = null; RM.cur = null; go('#/room/' + j.id);") && js.includes('if(RM.cur !== C){ if(!손님) RM.listAt = 0;')
+  && js.includes('if(status === 400 || status === 403 || status === 404) C.gone = true;'), '화면 - 다시 들어온 방은 처음부터 읽고, 보내는 중 방을 옮겨도 지금 방을 건드리지 않고, 같은 답일 실패는 그만 묻는다');
+ok(js.includes('${보조원() ? \'\' : `<a class="btn tool sm" data-go="#/partner/contract/${esc(id)}">계약서</a>`}</div></div>')
+  && js.includes("rm대화HTML(C, v => v.side === 'agent', 들어옴 ? '' :") && js.includes("const 표지 = a === 'rm-kick' ? v : '*';"), '화면 - 보조원은 계약서 단추 없음 · 안 들어온 방은 쓰는 칸 대신 까닭 · 모두 끊기도 두 번');
 console.log(`${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

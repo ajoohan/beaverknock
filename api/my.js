@@ -8,7 +8,7 @@
 
 import { userFrom, sbHeaders, sbUrl } from './_auth.js';
 import { approvedAgent, meAgent } from './feed.js';
-import { roomGuest, invitePeek } from './_room.js';
+import { roomGuest } from './_room.js';
 import { logOps } from './_opslog.js';
 
 const KIND_KO = { home: '주거', shop: '상가', office: '오피스', storage: '창고' };

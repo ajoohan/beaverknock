@@ -126,6 +126,8 @@ export async function roomAgent(req, res, agent, user, b) {
     for (const r of x.rows) { const 방 = 방값(r);
       for (const k of 자리들) if ((r.doc_parties || {})[k]) rows.push({ id: r.id, side: k, title: r.title || r.road || '', form: r.form,
         name: 당사자이름(r, k), joined: !!(방[k] && 방[k].uid), at: 방[k] ? 방[k].at : '', last: 마지막[`${r.id}:${k}`] || null }); }
+    /* 최근에 말이 오간 방이 위로 - 말 번호는 한 줄 순번이라 큰 것이 최근이다. 말 없는 방은 계약서 차례 그대로 (2026-11-07) */
+    rows.sort((a, z) => ((z.last && z.last.id) || 0) - ((a.last && a.last.id) || 0));
     return res.status(200).json({ ok: true, rows });
   }
   if (!UUID.test(id)) return res.status(400).json({ error: '어느 계약서인지 알 수 없습니다' });
@@ -225,6 +227,8 @@ export async function roomGuest(req, res, user, b) {
     const 사r = 사x.rows[0] || {};
     if (user.id === 계.agent_user || user.id === 사r.user_id || (Array.isArray(사r.staff) && 사r.staff.some(s => s && s.uid === user.id)))
       return res.status(409).json({ error: '중개사무소 계정으로는 손님 자리에 들어갈 수 없습니다 - 손님 본인의 계정으로 링크를 열어 주세요', office: true });
+    const 읽은방 = 방값(계);
+    if (링크맞음(읽은방, t) && 읽은방[t.side] && 읽은방[t.side].uid === user.id) return res.status(200).json({ ok: true, id: t.id, already: true });
     let 이미 = false;
     const z = await track고치기(t.id, null, (n, 지금값) => {
       const 방 = { ...(지금값.room || { n: 0 }) };

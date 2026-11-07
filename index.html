@@ -288,6 +288,13 @@ body.mo .footlinks{gap:10px 16px!important}
    상자를 키우면 화면만 밀린다(2026-10-15 검수에서 상자만 재고 키웠다가 되돌림). */
 body.mo .back{position:relative}
 body.mo .back::after{content:"";position:absolute;left:0;right:0;top:-9px;bottom:-9px}
+/* 체크박스 (2026-11-07 전수점검) - 크기를 따로 정하지 않은 칸은 브라우저 기본 13px 로 나와 손가락으로 맞히기 어려웠다.
+   :where 로 걸어 무게가 0 이다 - 따로 크기를 정한 곳(.ol-chk input 등)은 그대로 이긴다 */
+:where(input[type="checkbox"],input[type="radio"]){width:18px;height:18px;accent-color:var(--ind);cursor:pointer}
+/* 휴대폰 - 글자 한 줄짜리 체크 칸(계약서 대리인 · 자필, 문자 '해당 없음')은 보이는 높이가 22~24px 이다.
+   상자를 키우면 화면이 밀리니 .back 처럼 위아래 덮개로 누르는 자리만 넓힌다 */
+body.mo .ct-chk, body.mo .cs-none{position:relative}
+body.mo .ct-chk::after, body.mo .cs-none::after{content:"";position:absolute;left:0;right:0;top:-8px;bottom:-8px}
 
 /* 모든 변형이 같은 크기로 그려지도록 테두리를 항상 1px 잡아둔다(2026-10-30 1.5 → 1px, '고급스럽게') -
    활성/비활성은 두께가 아니라 색으로만 구분한다 */
@@ -2271,6 +2278,7 @@ body.mo .ct-font button{min-height:40px;padding:0 14px;font-size:14.5px}
 .cs-tpls li{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--n100)}
 .cs-tpls li.off b{color:var(--n400)}
 .cs-tpls li span{display:flex;gap:10px;flex-wrap:wrap;font-size:13.5px}
+.cs-tpls [data-act="cs-up"]{min-width:44px;justify-content:center}   /* ↑ 한 글자라 폭이 24px 이었다 (2026-11-07 전수점검) */
 .ct-party-h{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:4px}
 .ct-party-h b{font-size:14.5px}
 .ct-co-tools{display:flex;justify-content:flex-end}
@@ -11152,6 +11160,10 @@ const CT_하위메뉴 = [['#/partner/contracts/new', '계약서 작성', 'pen', 
    번호는 배포한 날(연.월.일 - 같은 날 또 올리면 뒤에 .2). 화면이 version.json 을 가끔 읽어,
    더 새 버전이 올라와 있으면 메뉴 아래에서 새로고침을 권한다(버전확인) - 계약서를 띄워 둔 채 오래 일하면 고친 화면을 못 받는다 */
 const BK_변경 = [
+  { v:'26.11.07.13', 날:'2026-11-07', 줄:[
+    '속도 - 첫 화면이 본인확인 설정 조회(최대 1.2초)를 기다리지 않고 바로 뜹니다(연락처 · 파트너 가입 화면만 기다립니다)',
+    '휴대폰 - 계약서 · 문자 화면의 체크 칸과 순서 바꾸기(↑) 단추를 손가락으로 누르기 쉽게 넓혔습니다',
+  ]},
   { v:'26.11.07.12', 날:'2026-11-07', 줄:[
     '속도 - 첫 화면이 받는 양을 절반 가까이 줄였습니다(764KB → 약 344KB). 비버리 그림을 따로 떼어 한 번 받으면 다시 받지 않습니다',
   ]},
@@ -13762,7 +13774,7 @@ function ctFormHTML(doc){
           <input type="checkbox" data-act="ct-cl-on" data-v="${i}" ${c.on?'checked':''} ${잠김?'disabled':''}> ${esc(c.title)}${고침 && c.on ? ' <span class="ct-fill">빈칸 채우기</span>' : ''}</label>
         ${잠김 || !고침 ? '' : `<button class="tapx" data-act="ct-cl-reset" data-v="${i}" style="font-size:13.5px;color:var(--n500)">기본 문구로</button>`}
       </div>
-      ${!c.on ? '' : 고침 ? `<textarea class="inp" rows="${Math.min(8, 2 + Math.ceil(c.text.length/60))}" data-in="ctc:${i}" ${잠김?'disabled':''}>${esc(c.text)}</textarea>`
+      ${!c.on ? '' : 고침 ? `<textarea class="inp" rows="${Math.min(8, 2 + Math.ceil(c.text.length/60))}" data-in="ctc:${i}" aria-label="${esc(c.title)} 문구" ${잠김?'disabled':''}>${esc(c.text)}</textarea>`
         : `<p class="ct-cltext">${esc(c.text).replace(/\{\{조:[a-z]+\}\}/g, '해당 조항').replace(/\n/g, '<br>')}</p>`}
     </div>`; }).join('');
   /* 특약마다 '내 특약으로' - 눌러 둔 특약 아래에 묶음 고르기가 열린다 */
@@ -18642,7 +18654,11 @@ function opsAuto(){
      (2026-10-13 실연동 다음 날 발견 - 전에는 로그인 화면으로 튕겼다). */
   if(readIdvRedirect(() => (store.get() ? hydrate().catch(() => false) : Promise.resolve(false))
                               .then(() => 계정다시그리기()))) return;
-  const wait = [idvReady];
+  /* 첫 화면이 본인확인 설정을 기다리는 것은 그 설정으로 모양이 갈리는 화면(연락처 · 파트너 가입 · 운영)뿐이다 (2026-11-07 속도 점검).
+     예전에는 모든 방문자가 /api/idv 답(0.6~1.2초)을 기다린 뒤에야 첫 화면을 봤다. 나머지 화면은 설정이 늦게 와도 그대로다 -
+     설정은 위에서 이미 받고 있고, 받으면 그 화면들이 다시 그린다(idvConfig 의 BOOTED 뒤 render) */
+  const 설정화면 = /^#\/(contact|partner\/join|ops)/.test(location.hash || '');
+  const wait = 설정화면 ? [idvReady] : [];
   /* 1.2초를 넘겨 끝났으면 계정다시그리기 가 정한다 - 기다림을 띄운 화면이거나
      로그아웃 모습으로 그려졌던 화면만 다시 그린다(실패면 그때 로그인으로 간다). */
   if(store.get()) wait.push(hydrate().then(ok => { 계정다시그리기(); return ok; }).catch(()=>null));

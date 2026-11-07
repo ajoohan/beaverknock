@@ -738,6 +738,13 @@ body.mo .acc-row{grid-template-columns:minmax(0,1fr);gap:12px;padding:18px}
 .lg-tabs button{min-height:40px;border:0;border-radius:var(--r-ctl);background:none;font:inherit;font-size:15px;font-weight:700;color:var(--n500);cursor:pointer}
 .lg-tabs button[aria-selected="true"]{background:var(--white);color:var(--n900);box-shadow:var(--sh1)}
 .lg-tabs button:focus-visible{outline:2px solid var(--ind);outline-offset:1px}
+/* 최근 로그인 (2026-11-08) - 이 브라우저에서 마지막으로 들어온 길에 말풍선을 단다 */
+.rl-tag{position:absolute;right:12px;top:-11px;z-index:1;display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:var(--r-full);
+  background:#16112E;color:#fff;font-size:12px;font-weight:700;letter-spacing:0;line-height:1.35;white-space:nowrap;pointer-events:none;
+  box-shadow:0 4px 10px rgba(23,15,69,.18)}
+.rl-tag::after{content:"";position:absolute;left:50%;bottom:-4px;width:8px;height:8px;margin-left:-4px;background:inherit;transform:rotate(45deg);border-radius:1px}
+@media (prefers-reduced-motion:no-preference){.rl-tag{animation:rlIn .32s var(--e-out) both .15s}}
+@keyframes rlIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 .umenu-pop .it.on{color:var(--ind)} .umenu-pop .it.on svg{color:var(--ind)}
 .umenu-pop .it .ct{margin-left:auto;font-size:13px;font-weight:700;color:var(--n500)}
 .umenu-pop .sep{height:1px;background:var(--n100);margin:4px 6px}
@@ -4928,12 +4935,16 @@ function 계정표(m, 꼬리 = ' 계정'){
 /* 버튼에 붙은 배지를 그대로 쓴다 - 배지는 '준비 중' 인데 안내는 '검수 중' 이면 안 된다 */
 const snsSoon = k => (SNS.find(x => x.k === k) || {}).soon || '준비 중';
 
-function snsButton(x){ return `
+/* 최근 로그인 - 이 브라우저에서 마지막으로 들어온 길(kakao·naver·google·email). 로그아웃해도 남긴다 -
+   다음에 어느 단추로 들어왔는지 헷갈리지 않게 하려는 표시다. 계정 정보는 담지 않는다 */
+const 최근로그인 = () => { try{ return localStorage.getItem('bk_last_login') || ''; }catch(e){ return ''; } };
+const 최근표 = () => '<span class="rl-tag">최근 로그인</span>';
+function snsButton(x, 최근 = false){ return `
   <button data-act="sns" data-v="${x.k}" style="position:relative;display:flex;align-items:center;justify-content:center;gap:10px;width:100%;
     padding:14px 16px;border-radius:var(--r-sm);cursor:${x.soon?'not-allowed':'pointer'};font-size:15px;font-weight:700;letter-spacing:-.01em;
     background:${x.bg};color:${x.fg};border:1.5px solid ${x.bd};min-height:52px;${x.soon?'opacity:.62;':''}
     transition:filter .14s ease,box-shadow .14s ease">
-    <span style="flex:none;display:flex">${x.ic}</span>${x.t}
+    <span style="flex:none;display:flex">${x.ic}</span>${x.t}${최근 && !x.soon ? 최근표() : ''}
     ${x.soon?`<span aria-label="${x.soon}" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);
       font-size:13px;font-weight:700;letter-spacing:0;padding:4px 8px;border-radius:var(--r-full);white-space:nowrap;
       background:${x.fg==='#fff'?'rgba(255,255,255,.18)':'rgba(0,0,0,.10)'};color:${x.fg}">${x.soon}</span>`:''}
@@ -5011,6 +5022,7 @@ V['#/login'] = () => {
   const toJoin = S.afterLogin === '#/partner/join';
   const toMine = S.afterLogin === '#/my' || S.afterLogin === '#/inbox';
   const bar = `<span aria-hidden="true" style="color:var(--n300)">/</span>`;
+  const 최근 = S.signup ? '' : 최근로그인();
   return `
 <div class="scr fade">
   <div class="nav pad"><a data-go="#/" style="flex:none">${logoLockup({h:25,tag:!isMo()})}</a>
@@ -5072,8 +5084,8 @@ V['#/login'] = () => {
           <span>아이디 저장하기</span>
         </label>`}
         <button class="btn ${S.signup && !agreeOk() ? 'sec' : 'pri'}" data-act="login-email"
-          style="width:100%">
-          ${S.signup?'가입하고 시작하기':'로그인'}</button>
+          style="width:100%;position:relative">
+          ${S.signup?'가입하고 시작하기':'로그인'}${최근 === 'email' ? 최근표() : ''}</button>
       </div>
 
       <!-- 찾기 줄 - 가입은 아래 칸으로 옮겼다 -->
@@ -5090,7 +5102,7 @@ V['#/login'] = () => {
         <span style="font-size:13px;color:var(--n500)">${S.signup?'간편 가입':'간편 로그인'}</span>
         <i style="flex:1;height:1px;background:var(--hair)"></i>
       </div>
-      <div style="display:flex;flex-direction:column;gap:8px">${SNS.filter(x=>!x.hide).map(snsButton).join('')}</div>
+      <div style="display:flex;flex-direction:column;gap:${최근 && 최근 !== 'email' ? 12 : 8}px">${SNS.filter(x=>!x.hide).map(x => snsButton(x, x.k === 최근)).join('')}</div>
 
       ${asPartner && !toJoin ? `
       <div style="text-align:center;font-size:14.5px;color:var(--n500)">
@@ -11310,6 +11322,9 @@ const CT_하위메뉴 = [['#/partner/contracts/new', '계약서 작성', 'pen', 
    번호는 배포한 날(연.월.일 - 같은 날 또 올리면 뒤에 .2). 화면이 version.json 을 가끔 읽어,
    더 새 버전이 올라와 있으면 메뉴 아래에서 새로고침을 권한다(버전확인) - 계약서를 띄워 둔 채 오래 일하면 고친 화면을 못 받는다 */
 const BK_변경 = [
+  { v:'26.11.08', 날:'2026-11-08', 줄:[
+    '로그인 화면 - 이 기기에서 마지막으로 들어오신 방법(카카오 · 네이버 · Google · 이메일)에 ‘최근 로그인’ 표시가 붙습니다',
+  ]},
   { v:'26.11.07.14', 날:'2026-11-07', 줄:[
     '색 - 레퍼런스에 맞춰 인디고를 보라로 바꿨습니다(왼쪽 메뉴 · 단추 · 강조색 · 표시 딱지 · 바탕)',
     '대시보드 맨 위 ‘오늘의 브리핑’ - 새 조건 · 손님 새 말 · 직접 보실 일을 한 줄로, 누르면 바로 그 화면',
@@ -16652,6 +16667,7 @@ async function hydrate(sess){
     if(!r.ok){ if(r.status === 401 || r.status === 403) store.set(null); else 계정확인실패 = true; return false; }
     S.user = meFrom(await r.json(), sess.access_token);
     계정확인실패 = false;
+    try{ if(S.user.method) localStorage.setItem('bk_last_login', S.user.method); }catch(e){}   /* 로그인 화면 '최근 로그인' 표시 */
     /* 예전 방식으로 저장소에 남은 오래 가는 열쇠는 이번에 쿠키로 옮긴다 */
     if(sess.refresh_token) store.set(sess);
     clearSeeds(true);          /* 들어온 뒤에는 예시를 지운다 - 위 주석 참고 */

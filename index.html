@@ -11344,6 +11344,9 @@ const CT_하위메뉴 = [['#/partner/contracts/new', '계약서 작성', 'pen', 
    번호는 배포한 날(연.월.일 - 같은 날 또 올리면 뒤에 .2). 화면이 version.json 을 가끔 읽어,
    더 새 버전이 올라와 있으면 메뉴 아래에서 새로고침을 권한다(버전확인) - 계약서를 띄워 둔 채 오래 일하면 고친 화면을 못 받는다 */
 const BK_변경 = [
+  { v:'26.11.08.4', 날:'2026-11-08', 줄:[
+    '계약서 보관 - Dropbox 저장 위치 안내를 바로잡았습니다(Dropbox 의 Apps 폴더)',
+  ]},
   { v:'26.11.08.3', 날:'2026-11-08', 줄:[
     '계약서 - ‘드라이브 저장’: 보고 있는 서류를 인쇄 모양 그대로 PDF 로 만들어 내 Google 드라이브 · Dropbox 에 넣거나 바로 내려받습니다',
     '운영 - 신고 처리를 되돌리다 실패해도 처리된 줄이 미확인 목록에 남지 않습니다',
@@ -13023,7 +13026,7 @@ function ctPrint(html){
    지금 보고 있는 서류(인쇄되는 것과 같은 ct보기HTML)를 이 브라우저에서 A4 PDF 로 만들어, 중개사 본인의 저장 공간에 바로 올린다.
    비버노크 서버는 파일도 열쇠도 갖지 않는다 - 열쇠는 이 창의 메모리에만 두고(Google 1시간 · Dropbox 4시간) 새로고침하면 다시 묻는다.
    · Google 드라이브: Google 로그인 창(GIS) - 권한은 drive.file(비버노크가 만든 파일만 보고 쓴다). '비버노크 계약서' 폴더에 넣는다
-   · Dropbox: PKCE 로그인 창 → /dropbox 페이지가 받은 코드를 이 창에 돌려준다. 앱 폴더(Apps/비버노크)에 넣는다
+   · Dropbox: PKCE 로그인 창 → /dropbox 페이지가 받은 코드를 이 창에 돌려준다. 앱 폴더(Apps/앱 이름)에 넣는다
    · 앱 번호(GOOGLE_DRIVE_CLIENT_ID · DROPBOX_APP_KEY)는 Vercel 환경변수 - 없으면 그 단추는 '준비 중' 으로 잠근다. PDF 내려받기는 언제나 된다
    PDF 는 글자를 그림으로 담는다(html2canvas → jsPDF, 처음 누를 때만 cdnjs 에서 받는다). 쪽은 표의 줄 · 조항이 잘리지 않는 자리에서 나눈다 */
 const CL = { cfg: null, cfgP: null, busy: '', err: '', done: null, g: null, d: null, gtc: null, gtcId: '', gWait: null, 취소: null };
@@ -13067,7 +13070,7 @@ function 보관창HTML(){
     <p style="margin:0 0 14px;font-size:14px;line-height:1.7;color:var(--n500)">지금 보고 있는 서류를 인쇄되는 모양 그대로 PDF 로 만들어 <b style="color:var(--n900)">내 저장 공간</b>에 넣습니다. 비버노크는 파일을 따로 갖고 있지 않습니다.</p>
     <div class="cl-opts">
       ${단추('google', 'Google 드라이브', CL_그림.google, c && c.google, c && c.google ? `'${CL_폴더}' 폴더에 저장` : 준비)}
-      ${단추('dropbox', 'Dropbox', CL_그림.dropbox, c && c.dropbox, c && c.dropbox ? '앱 폴더(Apps › 비버노크)에 저장' : 준비)}
+      ${단추('dropbox', 'Dropbox', CL_그림.dropbox, c && c.dropbox, c && c.dropbox ? 'Dropbox 의 Apps 폴더에 저장' : 준비)}
       ${단추('pdf', 'PDF 내려받기', CL_그림.pdf, true, '이 기기에 바로 저장')}
     </div>
     ${일 ? `<p class="cl-msg" role="status"><span class="cl-spin" aria-hidden="true"></span>${esc(CL.busy)}${CL.취소 ? ' <button type="button" class="lnk" data-act="cl-cancel">그만두기</button>' : ''}</p>` : ''}

@@ -2804,6 +2804,10 @@ body.mo .rm-msgs{max-height:58vh}
 /* 휴대폰 - 방을 열면 화면 높이에 맞춰 쓰는 칸이 늘 보이게 (2026-11-07) */
 body.mo .rm-lay.has .rm-pane{height:calc(100dvh - 190px);min-height:400px}
 body.mo .rm-guest{height:calc(100dvh - 175px);min-height:400px}
+.rm-gone{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:56px 24px;text-align:center}
+.rm-gone p{margin:0;line-height:1.6}
+.rm-gone > p:first-child{font-size:15.5px;font-weight:700;color:var(--n900)}
+.rm-gone .btn{min-width:140px;margin-top:6px}
 body.mo .rm-lay.has .rm-msgs, body.mo .rm-guest .rm-msgs{max-height:none;min-height:120px}
 body.mo .rm-steps{flex-wrap:nowrap;padding:10px 14px;gap:6px}
 body.mo .rm-steps li{flex:1 1 0;min-width:0;padding:5px 8px}
@@ -11149,6 +11153,11 @@ const CT_하위메뉴 = [['#/partner/contracts/new', '계약서 작성', 'pen', 
    번호는 배포한 날(연.월.일 - 같은 날 또 올리면 뒤에 .2). 화면이 version.json 을 가끔 읽어,
    더 새 버전이 올라와 있으면 메뉴 아래에서 새로고침을 권한다(버전확인) - 계약서를 띄워 둔 채 오래 일하면 고친 화면을 못 받는다 */
 const BK_변경 = [
+  { v:'26.11.07.9', 날:'2026-11-07', 줄:[
+    '계약 대화방 - PC에서는 엔터로 보내고 Shift+엔터로 줄을 바꿉니다 · 휴대폰 입력칸 안내가 잘리지 않습니다',
+    '손님이 들어오면 계약서 화면에 바로 ‘들어옴 · 내보내기’로 보입니다(다시 열 때 새로 읽습니다) · 뒤로 가기를 해도 초대 링크 창이 다른 화면에 남지 않습니다',
+    '들어갈 수 없는 대화방은 까닭과 함께 마이페이지로 가는 단추를 보여 드립니다',
+  ]},
   { v:'26.11.07.8', 날:'2026-11-07', 줄:[
     '운영 화면 - 공급자 신청 표를 다시 짰습니다: 신청자(이름 · 자격) → 사무소 · 등록번호 → 연락처 → 상태 → 신청일(며칠 전) → 전화 · 메일. 색은 상태에만, 빈 칸은 ‘미입력’으로 알려 드립니다',
     '로그인 화면 - 비밀번호를 치고 엔터를 누르면 로그인됩니다(손님 · 운영자 모두) · 회원관리에 들어가면 보던 손님 계정 목록도 바로 불러옵니다',
@@ -12279,7 +12288,23 @@ function ctRoute(h){
   else if(h.startsWith('#/partner/contract/')){
     const id = h.split('/')[3];
     if(id && id !== 'new' && CT.id !== id) ctOpen(id);
+    else if(id && CT.id === id && ctSealed()) ct방새로(id);
   }
+}
+/* 날인본의 대화방 상태(누가 들어왔나 · 링크 번호)만 다시 읽는다 (2026-11-07 대화방 실제 시험).
+   손님은 다른 기기에서 들어오는데 화면은 계약서를 처음 열 때의 것을 들고 있어, 들어온 손님이 '초대 링크' 로 보이고
+   내보내기 단추가 나오지 않았다. 일정 · 메모는 건드리지 않는다(서버도 저장할 때 room 은 DB 값을 지킨다) */
+function ct방새로(id){
+  if(CT.방읽는중 === id) return; CT.방읽는중 = id;
+  ctPost({what:'contract', id}).then(({ok, j}) => {
+    CT.방읽는중 = null;
+    if(!ok || CT.id !== id || !j.row || !j.row.track || typeof j.row.track !== 'object') return;
+    const 새방 = j.row.track.room || null;
+    if(JSON.stringify((CT.track || {}).room || null) === JSON.stringify(새방)) return;
+    CT.track = { ...(CT.track || {}), room: 새방 || undefined };
+    CT.row = { ...(CT.row || {}), track: { ...((CT.row || {}).track || {}), room: 새방 || undefined } };
+    render();
+  }).catch(() => { CT.방읽는중 = null; });
 }
 async function ctSave(silent){
   if(!CT.doc || CT.saving) return false;
@@ -12770,7 +12795,7 @@ function rm대화HTML(C, 내편, 막음 = ''){
     return `<li class="rm-m${내 ? ' me' : ''}"><span class="rm-who">${esc(v.name || RM_자리[v.side] || '')}</span><p>${esc(v.body).replace(/\n/g, '<br>')}</p><small>${esc(rm때(v.created_at))}</small></li>`; }).join('');
   return `<ul class="rm-msgs" data-keep="rm" aria-live="polite">${줄 || `<li class="rm-empty">${막음 ? '아직 나눈 말이 없습니다.' : '아직 나눈 말이 없습니다. 먼저 인사를 남겨 보세요.'}</li>`}</ul>
     ${막음 ? `<div class="rm-compose rm-shut"><p class="sub" style="margin:0;line-height:1.6">${막음}</p></div>` : `<div class="rm-compose"><label class="sr" for="rmText">보낼 말</label>
-      <textarea id="rmText" class="inp" rows="2" maxlength="1000" data-in="rm-text" placeholder="말을 적고 보내기를 누르세요 (주민등록번호 · 계좌번호는 적지 마세요)">${esc(RM.text)}</textarea>
+      <textarea id="rmText" class="inp" rows="2" maxlength="1000" data-in="rm-text" placeholder="${isMo() ? '주민등록번호 · 계좌번호는 빼고 적어 주세요' : '엔터로 보내고 Shift+엔터로 줄을 바꿉니다 (주민등록번호 · 계좌번호는 적지 마세요)'}">${esc(RM.text)}</textarea>
       <button type="button" class="btn pri" data-act="rm-send" ${RM.busy ? 'disabled' : ''}>${RM.busy ? '보내는 중' : '보내기'}</button></div>`}`;
 }
 /* 다가오는 일정 - 계약일 · 중도금 · 잔금 */
@@ -12864,7 +12889,7 @@ V['#/invite'] = tok => {
   <div class="pad" style="flex:1;padding-top:${isMo()?24:48}px;padding-bottom:32px;width:100%;max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:14px">
     <div class="card pad rm-invite">
       ${I.err ? `<h1 class="t" style="font-size:20px;margin:0 0 8px">초대 링크를 열 수 없습니다</h1><p class="sub" style="margin:0">${esc(I.err)}</p>
-          ${I.cut ? `<p class="sub" style="margin:12px 0 0;line-height:1.6">이미 대화방에 들어오신 분은 그대로 쓰실 수 있습니다 - 마이페이지의 ‘계약 대화방’에서 여세요.</p>
+          ${I.cut ? `<p class="sub" style="margin:12px 0 0;line-height:1.6">중개사무소가 링크만 새로 바꾼 경우라면, 이미 들어오신 분은 마이페이지의 ‘계약 대화방’에서 그대로 여실 수 있습니다.</p>
             <button type="button" class="btn sec" data-go="#/account" style="width:100%;margin-top:12px">마이페이지에서 대화방 열기</button>` : ''}`
         : !R ? `<p class="sub" style="margin:0">초대 내용을 불러오는 중입니다…</p>`
         : `<span class="badge b-ind" style="align-self:flex-start">계약 대화방 초대</span>
@@ -12901,10 +12926,13 @@ V['#/room'] = id => {
       <div class="rm-h"><div><b>${esc(M ? M.title : '계약 대화방')}</b>
         <span class="sub">${M ? `${esc(M.office)} · 나는 ${esc(M.role)}` : ''}</span></div>
         ${M && M.officePhone ? `<a class="btn tool sm" style="flex:none" href="tel:${esc(String(M.officePhone).replace(/[^0-9]/g, ''))}">전화</a>` : ''}</div>
-      ${C && C.err ? `<p class="sub" style="margin:16px">${esc(C.err)}</p>` : !M ? `<p class="sub" style="margin:16px">대화를 불러오는 중입니다…</p>`
+      ${C && C.err ? `<div class="rm-gone" role="alert"><p>${esc(C.err)}</p>
+          ${C.gone ? `<p class="sub">중개사무소에서 새 초대 링크를 받으셨다면 그 링크를 다시 눌러 주세요.</p>
+            <button type="button" class="btn sec" data-go="#/account">마이페이지로</button>` : `<p class="sub">잠시 뒤 저절로 다시 불러옵니다.</p>`}</div>`
+        : !M ? `<p class="sub" style="margin:16px">대화를 불러오는 중입니다…</p>`
         : `${rm일정HTML(M.steps)}${rm대화HTML(C, v => v.side === M.me)}`}
     </div>
-    <p class="sub" style="margin:0;font-size:12.5px;line-height:1.6">새 말이 오면 가입하신 메일로 알려 드립니다. 이 대화방은 중개사무소와 나만 봅니다 - 상대 당사자에게는 보이지 않습니다.</p>
+    ${C && C.gone ? '' : `<p class="sub" style="margin:0;font-size:12.5px;line-height:1.6">새 말이 오면 가입하신 메일로 알려 드립니다. 이 대화방은 중개사무소와 나만 봅니다 - 상대 당사자에게는 보이지 않습니다.</p>`}
   </div>
 </div>`;
 };
@@ -18406,6 +18434,16 @@ document.addEventListener('keydown', e=>{
   e.preventDefault(); btn.click();
 });
 
+/* 대화칸에서 엔터 (2026-11-07 대화방 실제 시험) - 엔터를 치면 줄만 바뀌고 보내지지 않았다. PC 채팅처럼 엔터로 보내고
+   Shift+엔터로 줄을 바꾼다. 한글 조합 중 엔터 · 휴대폰(자판의 엔터는 줄바꿈이 자연스럽다)은 그대로 둔다 */
+document.addEventListener('keydown', e=>{
+  if(e.key !== 'Enter' || e.shiftKey || e.isComposing || e.keyCode === 229 || isMo() || !e.target.closest) return;
+  if(!e.target.closest('[data-in="rm-text"]')) return;
+  e.preventDefault();
+  const btn = $('#app [data-act="rm-send"]');
+  if(btn && !btn.disabled) btn.click();
+});
+
 /* 주소 자동완성 - 손을 마우스로 옮기지 않고도 고를 수 있어야 한다 */
 /* 주소 칸에서 엔터를 치면 찾는다. 검색 칸에서 엔터를 눌러 아무 일도 안 일어나면
    대개는 고장 난 것으로 읽힌다. */
@@ -18512,7 +18550,9 @@ function bootDone(){
   setTimeout(()=>b.remove(), 320);
 }
 
-window.addEventListener('hashchange', ()=>{ S.umenu = false; render(); opsAuto(); });
+window.addEventListener('hashchange', ()=>{ S.umenu = false;
+  if(S.modal && (S.modal.type === 'rm-invite' || S.modal.type === 'ct-share')) S.modal = null;   /* 그 화면에 딸린 링크 창 (2026-11-07 시험) */
+  render(); opsAuto(); });
 
 /* 새 버전 확인 (2026-10-30) - version.json 을 처음 뜬 뒤 30초, 그 뒤 10분마다, 창으로 돌아올 때(5분에 한 번까지) 읽는다.
    올라온 버전이 이 화면의 버전(BK_VER)과 다르면 어드민 왼쪽 메뉴 아래에 '새 버전이 나왔습니다' 를 띄운다. 못 읽으면 조용히 넘어간다 */

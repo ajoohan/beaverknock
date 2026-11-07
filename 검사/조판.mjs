@@ -517,7 +517,7 @@ ok(/\$\{partnerDoor\('onDark'\)\}/.test(js), '첫 화면 파트너 칸이 그 �
      '같은 화면 항목을 눌러도 메뉴가 닫힌다 - go() 가 hashchange 없이 다시 그리기 전에 닫는다');
   ok(/\? userMenu\(\)/.test(js) && /return userMenu\(\);/.test(js) && /\$\{S\.user \? userMenu\(\) : navAuth\('guest'\)\}/.test(js),
      '손님 쪽 상단바 세 곳(첫 화면·손님 화면·제안 상세)이 같은 메뉴를 쓴다');
-  ok(/S\.umenu = false; render\(\); opsAuto\(\);/.test(js) && /if\(!S\.umenu \|\| e\.target\.closest\('\.umenu'\)\) return;/.test(js) && /e\.key !== 'Escape' \|\| !S\.umenu/.test(js),
+  ok(/S\.umenu = false;[\s\S]{0,200}?render\(\); opsAuto\(\);/.test(js) && /if\(!S\.umenu \|\| e\.target\.closest\('\.umenu'\)\) return;/.test(js) && /e\.key !== 'Escape' \|\| !S\.umenu/.test(js),
      '화면이 바뀌거나 바깥을 누르거나 Esc 를 누르면 닫힌다');
   ok(/\.nav:has\(\.umenu\.open\)\{z-index:70!important\}/.test(css), '펼친 메뉴가 첫 화면 본문 뒤로 깔리지 않는다(같은 층 z-index 3)');
   ok(/body\.mo \.umenu-btn/.test(css) && /\.umenu-btn\{[^}]*min-height:44px/.test(css), '메뉴 단추는 손가락 과녁 44px');

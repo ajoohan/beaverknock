@@ -4,8 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" type="image/x-icon" href="favicon.ico">
-<link rel="preload" as="image" href="img/beaverly-knock.v1.webp" type="image/webp">
-<link rel="preload" as="image" href="img/beaverly-front.v1.webp" type="image/webp">
+<!-- 비버리 그림 미리 받기는 뺐다 (2026-11-08 리뷰) - 운영 · 대시보드 · 계약서 링크로 들어와도 안 쓰는 그림을 먼저 받았다. 그림은 화면을 그릴 때 받는다 -->
 <meta name="description" content="찾아다니지 마세요. 조건을 걸어두면 문을 두드립니다. 서울·경기 조건매칭 부동산 - 전 과정 무료.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="비버노크">
@@ -9498,7 +9497,10 @@ function rpMark(id, mark){
     body: JSON.stringify({what:'report-mark', pass: OPS.pass, id, mark})})
     .then(r => r.json().catch(()=>({})).then(j => {
       RP.busy = '';
-      if(!(r.ok && j.ok)){ row.report_status = before; render(); return toast(j.error || '바꾸지 못했습니다'); }
+      if(!(r.ok && j.ok)){ row.report_status = before;
+        /* 되돌리기(미확인으로)가 실패했으면 처리된 줄이 '미확인만' 목록에 섞여 남는다 - 뺀다 (2026-11-08 리뷰) */
+        if(RP.only === 'todo' && before) RP.rows = RP.rows.filter(x => x !== row);
+        render(); return toast(j.error || '바꾸지 못했습니다'); }
       /* 미확인만 보고 있으면 처리한 건은 목록에서 빠지는 게 맞다 - 레퍼런스처럼 단추가 초록 '✓' 로 바뀐 뒤 줄이 접혀 빠지고,
          5초 동안 '되돌리기' 를 띄운다 (2026-11-07) */
       const 이름 = ((RP_MARK[mark]||[])[1] || '미확인');
@@ -11322,6 +11324,12 @@ const CT_하위메뉴 = [['#/partner/contracts/new', '계약서 작성', 'pen', 
    번호는 배포한 날(연.월.일 - 같은 날 또 올리면 뒤에 .2). 화면이 version.json 을 가끔 읽어,
    더 새 버전이 올라와 있으면 메뉴 아래에서 새로고침을 권한다(버전확인) - 계약서를 띄워 둔 채 오래 일하면 고친 화면을 못 받는다 */
 const BK_변경 = [
+  { v:'26.11.08.2', 날:'2026-11-08', 줄:[
+    '문자 - 보낸 기록을 지운 뒤 바로 창을 닫아도 지운 것이 그대로 남습니다(다시 나타나던 것을 고쳤습니다)',
+    '알림 - 브리핑 칸을 눌러 다녀오면 읽음으로 바뀝니다 · 할 일이 줄었을 때 빨간 수가 다시 늘지 않습니다',
+    '알림창 · 바로 찾기 - 닫자마자 다시 열어도 바로 열립니다 · 아래 링크 이름을 ‘일정·알림’ 으로 바로잡았습니다',
+    '속도 - 비버리 그림은 첫 화면에서만 먼저 받습니다',
+  ]},
   { v:'26.11.08', 날:'2026-11-08', 줄:[
     '로그인 화면 - 이 기기에서 마지막으로 들어오신 방법(카카오 · 네이버 · Google · 이메일)에 ‘최근 로그인’ 표시가 붙습니다',
   ]},
@@ -11608,13 +11616,17 @@ function 버전칸(){
    따로 쌓는 알림함은 없다 - 이미 화면에 있는 것(할 일 · 손님 새 말 · 새로 걸린 조건)을 모아 보여 준다.
    읽음은 이 기기에만 남긴다(localStorage). 할 일은 끝날 때까지 목록에 남고, 처음 본 뒤에는 빨간 수에서 빠진다 */
 const 알림읽음 = (() => { let 봄; const 읽기 = () => { if(봄) return 봄; try{ 봄 = new Set(JSON.parse(localStorage.getItem('bk_noti_seen') || '[]')); }catch{ 봄 = new Set(); } return 봄; };
-  return { 있나: id => 읽기().has(id),
+  /* 할 일 알림은 'todo:제목:값:건수' - 본 적 있는 건수 이하이면 읽은 것이다. 건수가 줄었다고 다시 빨간 수에 넣지 않는다 (2026-11-08 리뷰) */
+  return { 있나: id => { const s = 읽기(); if(s.has(id)) return true;
+      const m = /^(todo:.*):(\d+)$/.exec(id); if(!m) return false; const 앞 = m[1] + ':';
+      for(const k of s){ if(k.startsWith(앞) && /^\d+$/.test(k.slice(앞.length)) && +k.slice(앞.length) >= +m[2]) return true; }
+      return false; },
     넣기: ids => { const s = 읽기(); ids.forEach(i => s.add(i)); try{ localStorage.setItem('bk_noti_seen', JSON.stringify([...s].slice(-400))); }catch{} } }; })();
 function 알림들(){
   if(!S.user || !S.agent) return [];
-  if(RM.list == null && !RM.listLoading && !ownerSide() && !계약막힘() && !알림들._물음){ 알림들._물음 = 1; setTimeout(rmListLoad); }
+  if(RM.list == null && !RM.listLoading && !ownerSide() && !계약막힘() && Date.now() - (알림들._물음 || 0) > 60e3){ 알림들._물음 = Date.now(); setTimeout(rmListLoad); }
   const { 할일, 수요 } = 파트너현황(), 목록 = [];
-  할일.forEach(x => 목록.push({ id: 'todo:' + x.t + ':' + (x.n || 1) + ':' + (x.v || ''), 종류: /잔금|신고/.test(x.t) ? '급함' : '할일',
+  할일.forEach(x => 목록.push({ id: 'todo:' + x.t + ':' + (x.v || '') + ':' + (x.n || 1), 종류: /잔금|신고/.test(x.t) ? '급함' : '할일',
     t: x.n > 1 ? `${x.t} ${x.n}건` : x.t, s: x.s, ico: x.ico, go: x.go, act: x.act, v: x.v }));
   (RM.list || []).filter(r => r.last && r.last.side && r.last.side !== 'agent')
     .sort((p, q) => String(q.last.at).localeCompare(String(p.last.at))).slice(0, 8)
@@ -11626,8 +11638,6 @@ function 알림들(){
   return 목록;
 }
 const 알림안봄 = 목록 => 목록.filter(x => !알림읽음.있나(x.id)).length;
-const 알림때 = iso => { if(!iso) return ''; const m = Math.round((Date.now() - Date.parse(iso)) / 60e3);
-  return m < 1 ? '방금' : m < 60 ? `${m}분 전` : m < 1440 ? `${Math.floor(m / 60)}시간 전` : `${Math.floor(m / 1440)}일 전`; };
 /* 종 단추 - 위쪽 줄 오른쪽 */
 function 알림종(){
   if(!S.user || !S.agent) return '';
@@ -11644,7 +11654,8 @@ function 찾기단추(){
 const NT = { tab: '전체' };
 function 알림창(열기){
   let box = document.getElementById('ntPanel');
-  if(!열기){ if(box){ box.classList.remove('in'); setTimeout(() => box.remove(), 160); } document.removeEventListener('pointerdown', 알림창._밖, true); return; }
+  if(!열기){ if(box && !box.dataset.closing){ box.dataset.closing = '1'; box.classList.remove('in'); box._t = setTimeout(() => box.remove(), 160); } document.removeEventListener('pointerdown', 알림창._밖, true); return; }
+  if(box && box.dataset.closing){ clearTimeout(box._t); box.remove(); box = null; }   /* 닫히는 중에 다시 열면 (2026-11-08 리뷰) */
   const 목록 = 알림들(), 탭들 = [['전체', 목록.length], ['급함', 목록.filter(x => x.종류 === '급함').length], ['소식', 목록.filter(x => x.종류 === '소식').length]];
   const 보일 = NT.tab === '전체' ? 목록 : 목록.filter(x => x.종류 === NT.tab);
   const 이름 = { 전체: '전체', 급함: '급한 일', 소식: '새 소식' };
@@ -11653,10 +11664,10 @@ function 알림창(열기){
     <div class="nt-tabs" role="tablist">${탭들.map(([k, n]) => `<button type="button" role="tab" aria-selected="${NT.tab === k}" class="${NT.tab === k ? 'on' : ''}" data-nt-tab="${k}">${이름[k]}${n ? ` <span class="num">${n}</span>` : ''}</button>`).join('')}</div>
     <ul class="nt-list">${보일.length ? 보일.map((x, i) => `<li style="--i:${i}"><button type="button" class="nt-it${알림읽음.있나(x.id) ? '' : ' new'}" data-nt-i="${목록.indexOf(x)}">
         <span class="nt-ic ${x.종류 === '급함' ? 'hot' : x.종류 === '소식' ? 'news' : ''}">${dzIco(x.ico || 'list', 17)}</span>
-        <span class="nt-tx"><b>${esc(x.t)}${x.종류 === '급함' ? ' <em class="nt-hot">급함</em>' : ''}</b><span>${esc(x.s || '')}</span>${x.at ? `<small>${esc(알림때(x.at))}</small>` : ''}</span>
+        <span class="nt-tx"><b>${esc(x.t)}${x.종류 === '급함' ? ' <em class="nt-hot">급함</em>' : ''}</b><span>${esc(x.s || '')}</span>${x.at ? `<small>${esc(agoText(x.at))}</small>` : ''}</span>
         ${알림읽음.있나(x.id) ? '' : '<i class="nt-u" aria-label="안 읽음"></i>'}</button></li>`).join('')
       : `<li class="nt-empty">${NT.tab === '급함' ? '급한 일은 없습니다' : NT.tab === '소식' ? '새 소식이 없습니다' : '알림이 없습니다. 새 조건 · 손님 말이 오면 여기에 모입니다.'}</li>`}</ul>
-    <div class="nt-f"><a data-go="#/partner/contracts/schedule">${dzIco('gear', 15)}알림 설정</a><a data-go="#/partner/home">대시보드</a></div>`;
+    <div class="nt-f">${계약막힘() ? '<span></span>' : `<a data-go="#/partner/contracts/schedule">${dzIco('gear', 15)}일정·알림</a>`}<a data-go="#/partner/home">대시보드</a></div>`;
   const 종 = document.querySelector('#app [data-act="noti"]'), r = 종 ? 종.getBoundingClientRect() : { right: innerWidth - 16, bottom: 60 };
   /* 휴대폰은 양옆 12px 만 띄우고 꽉 채운다 - 종 오른쪽에 맞추면 창이 왼쪽 밖으로 나갔다(2026-11-07 시험) */
   const 폭 = Math.min(380, innerWidth - 24);
@@ -11674,6 +11685,8 @@ function 알림창(열기){
   document.addEventListener('pointerdown', 알림창._밖, true);
 }
 알림창._밖 = e => { const box = document.getElementById('ntPanel'); if(box && !box.contains(e.target) && !e.target.closest('[data-act="noti"]')) 알림창(false); };
+/* 떠 있는 창인가 - 닫히는 중(움직이는 동안 남아 있는 상자)은 떠 있지 않은 것이다 */
+const 떠있나 = id => { const b = document.getElementById(id); return !!(b && !b.dataset.closing); };
 /* 종의 빨간 수만 바꾼다(화면 전체를 다시 그리지 않는다) */
 function 알림종새로(){ document.querySelectorAll('#app [data-act="noti"]').forEach(b => { const t = document.createElement('div'); t.innerHTML = 알림종(); if(t.firstElementChild) b.replaceWith(t.firstElementChild); }); }
 
@@ -11704,7 +11717,8 @@ function 바로찾기목록(q){
 }
 function 바로찾기(열기){
   let box = document.getElementById('ck');
-  if(!열기){ if(box){ box.classList.remove('in'); setTimeout(() => box.remove(), 180); if(바로찾기._앞) try{ 바로찾기._앞.focus(); }catch{} } return; }
+  if(box && box.dataset.closing){ if(!열기) return; clearTimeout(box._t); box.remove(); box = null; }   /* 닫히는 중에 다시 열면 (2026-11-08 리뷰) */
+  if(!열기){ if(box){ box.dataset.closing = '1'; box.classList.remove('in'); box._t = setTimeout(() => box.remove(), 180); if(바로찾기._앞) try{ 바로찾기._앞.focus(); }catch{} } return; }
   if(!S.user || !S.agent) return;
   /* 찾을 거리가 아직 안 왔으면 불러 둔다 - 계약서 · 대화방 */
   if(CT.list == null && !계약막힘()) try{ ctLoadList(); }catch{}
@@ -11752,8 +11766,8 @@ function 바로찾기그리기(자리만){
 document.addEventListener('keydown', e => {
   if((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && (e.key === 'k' || e.key === 'K' || e.key === 'ㅏ')){
     if(!S.user || !S.agent) return;
-    e.preventDefault(); 바로찾기(!document.getElementById('ck'));
-  } else if(e.key === 'Escape' && document.getElementById('ntPanel')) 알림창(false);
+    e.preventDefault(); 바로찾기(!떠있나('ck'));
+  } else if(e.key === 'Escape' && 떠있나('ntPanel')) 알림창(false);
 });
 
 /* 오늘의 브리핑 (레퍼런스 '14 things handled overnight. 3 need you before noon.') - 대시보드 맨 위.
@@ -11774,7 +11788,12 @@ function dz브리핑(할일){
 }
 
 /* 대시보드 숫자 · 할 일 (2026-11-07 알림창 · 브리핑도 쓰려고 화면에서 떼어 냈다) */
+/* 대시보드 · 종 · 브리핑이 한 번 그릴 때 각각 부른다 - 같은 그리기 안에서는 한 번 센 것을 같이 쓴다 (2026-11-08 리뷰) */
 function 파트너현황(){
+  if(파트너현황._c) return 파트너현황._c;
+  const r = 파트너현황계산(); 파트너현황._c = r; queueMicrotask(() => { 파트너현황._c = null; }); return r;
+}
+function 파트너현황계산(){
   const props = S.myprops || [], 수요 = S.demands || [], 물건 = S.listings || [];
   const 진짜 = props.filter(p => !p.seed);
   const 열람 = 진짜.filter(열람됨).length;
@@ -13668,6 +13687,11 @@ function csLoad(){
     if(S.route === '#/partner/contracts/sms') render();
   }).catch(() => { CS.loading = false; CS.loaded = true; CS.err = '네트워크 문제로 문자 틀을 불러오지 못했습니다'; if(S.route === '#/partner/contracts/sms') render(); });
 }
+/* 되돌리기 5초를 기다리는 보낸 기록 지우기 - 그 사이 창을 닫거나 새로고침하면 바로 보낸다(keepalive) (2026-11-08 리뷰) */
+const CS_지울대기 = new Map();
+if(typeof window !== 'undefined') window.addEventListener('pagehide', () => { CS_지울대기.forEach((t, id) => { clearTimeout(t);
+  try{ apiFetch('/api/feed', { method:'POST', keepalive: true, body: JSON.stringify({ what:'sms-save', op:'log-del', id }) }); }catch(e){} });
+  CS_지울대기.clear(); });
 async function csSend(body){
   if(CS.need) { toast('문자 틀 저장은 준비 중입니다 - 곧 열립니다'); return null; }
   const { ok, j } = await ctPost({ what:'sms-save', ...body }).catch(() => ({ ok:false, j:{ error:'네트워크 문제로 저장하지 못했습니다' } }));
@@ -16970,6 +16994,7 @@ document.addEventListener('click', e=>{
     S.justTap = actEl.classList.contains('chip') ? 초점표(actEl) : null;
     if(handle(a,v,actEl)) { e.preventDefault(); return; } }
   if(goEl){ e.preventDefault();
+    { const nt = goEl.closest('[data-ntid]'); if(nt) 알림읽음.넣기([nt.dataset.ntid]); }   /* 브리핑 칩 - 가는 칩도 읽음 (2026-11-08 리뷰) */
     if(goEl.dataset.cond) S.inboxCond=goEl.dataset.cond;
     go(goEl.dataset.go); }
 });
@@ -17405,7 +17430,7 @@ function handle(a,v,el){
     case 'lg-only':    LG.only = v; LG.rows=null; lgFetch(); return true;
     case 'rp-load':    RP.rows=null; rpFetch(); return true;
     case 'rp-only':    RP.only = v; RP.rows=null; rpFetch(); return true;
-    case 'noti': if(document.getElementById('ntPanel')) 알림창(false); else 알림창(true); return true;
+    case 'noti': 알림창(!떠있나('ntPanel')); return true;
     case 'cmdk': 바로찾기(true); return true;
     case 'rp-mark':  { const i=v.indexOf('|'); rpMark(v.slice(0,i), v.slice(i+1) || null); return true; }
     case 'ag-load':    agFetch(); return true;
@@ -18318,8 +18343,9 @@ function handle(a,v,el){
       const 자리 = CS.log.findIndex(x => x.id === v); if(자리 < 0) return true;
       const 뺀 = CS.log[자리], 줄 = el && el.closest && el.closest('li');
       줄빼기(null, 줄, () => { CS.log = CS.log.filter(x => x.id !== v); render();
-        let 취소 = false; const 늦게 = setTimeout(() => { if(!취소) csSend({ op:'log-del', id: v }).then(() => render()); }, 5200);
-        toast('보낸 기록을 지웠습니다', { undo: () => { 취소 = true; clearTimeout(늦게);
+        let 취소 = false; const 늦게 = setTimeout(() => { CS_지울대기.delete(v); if(!취소) csSend({ op:'log-del', id: v }).then(() => render()); }, 5200);
+        CS_지울대기.set(v, 늦게);
+        toast('보낸 기록을 지웠습니다', { undo: () => { 취소 = true; clearTimeout(늦게); CS_지울대기.delete(v);
           if(!CS.log.some(x => x.id === v)) CS.log.splice(Math.min(자리, CS.log.length), 0, 뺀); render(); } }); });
       return true; }
     case 'cs-log-ct': { const e = CS.log.find(x => x.id === v); if(e) cs계약서(e); return true; }

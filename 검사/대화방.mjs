@@ -153,7 +153,8 @@ ok(js.includes("RM.mine = null; RM.cur = null; go('#/room/' + j.id);") && js.inc
 ok(js.includes('${보조원() ? \'\' : `<a class="btn tool sm" data-go="#/partner/contract/${esc(id)}">계약서</a>`}</div></div>')
   && js.includes("rm대화HTML(C, v => v.side === 'agent', 들어옴 ? '' :") && js.includes("const 표지 = CT.id + '|' + (a === 'rm-kick' ? v : '*');") && js.includes("CT.rmKick === CT.id + '|' + k ?") && js.includes("I.cut = !!j.error; } render();"), '화면 - 보조원은 계약서 단추 없음 · 안 들어온 방은 쓰는 칸 대신 까닭 · 모두 끊기도 두 번');
 ok(js.includes("if(!e.target.closest('[data-in=\"rm-text\"]')) return;") && js.includes("e.shiftKey || e.isComposing || e.keyCode === 229 || isMo()")
-  && js.includes("else if(id && CT.id === id && ctSealed()) ct방새로(id);") && js.includes("S.modal.type === 'rm-invite' || S.modal.type === 'ct-share')) S.modal = null;")
+  && js.includes("else if(id && CT.id === id && ctSealed() && S.route !== h) ct방새로(id);") && js.includes("if(JSON.stringify((CT.track || {}).room || null) !== 그때) return;")
+  && js.includes("if(Date.now() - (RM.조합끝 || 0) < 80) return;") && js.includes("S.modal.type === 'rm-invite' || S.modal.type === 'ct-share')) S.modal = null;")
   && js.includes('<div class="rm-gone" role="alert">'), '화면 - PC 엔터로 보내기 · 같은 계약서로 돌아오면 방 상태 다시 읽기 · 화면을 옮기면 링크 창 닫기 · 못 여는 방은 까닭과 마이페이지 단추');
 console.log(`${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

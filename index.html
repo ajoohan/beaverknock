@@ -11153,6 +11153,10 @@ const CT_하위메뉴 = [['#/partner/contracts/new', '계약서 작성', 'pen', 
    번호는 배포한 날(연.월.일 - 같은 날 또 올리면 뒤에 .2). 화면이 version.json 을 가끔 읽어,
    더 새 버전이 올라와 있으면 메뉴 아래에서 새로고침을 권한다(버전확인) - 계약서를 띄워 둔 채 오래 일하면 고친 화면을 못 받는다 */
 const BK_변경 = [
+  { v:'26.11.07.10', 날:'2026-11-07', 줄:[
+    '계약서 화면 - 대화방 상태는 다른 화면에서 들어올 때 한 번만 다시 읽습니다(내보낸 손님이 다시 들어온 것처럼 보이던 경우를 막았습니다)',
+    '대화방 - 한글을 치고 바로 엔터를 눌러도 마지막 글자가 입력칸에 남지 않습니다',
+  ]},
   { v:'26.11.07.9', 날:'2026-11-07', 줄:[
     '계약 대화방 - PC에서는 엔터로 보내고 Shift+엔터로 줄을 바꿉니다 · 휴대폰 입력칸 안내가 잘리지 않습니다',
     '손님이 들어오면 계약서 화면에 바로 ‘들어옴 · 내보내기’로 보입니다(다시 열 때 새로 읽습니다) · 뒤로 가기를 해도 초대 링크 창이 다른 화면에 남지 않습니다',
@@ -12288,7 +12292,7 @@ function ctRoute(h){
   else if(h.startsWith('#/partner/contract/')){
     const id = h.split('/')[3];
     if(id && id !== 'new' && CT.id !== id) ctOpen(id);
-    else if(id && CT.id === id && ctSealed()) ct방새로(id);
+    else if(id && CT.id === id && ctSealed() && S.route !== h) ct방새로(id);   /* 다른 화면에서 들어올 때만 - render 마다 부르지 않는다 */
   }
 }
 /* 날인본의 대화방 상태(누가 들어왔나 · 링크 번호)만 다시 읽는다 (2026-11-07 대화방 실제 시험).
@@ -12296,9 +12300,12 @@ function ctRoute(h){
    내보내기 단추가 나오지 않았다. 일정 · 메모는 건드리지 않는다(서버도 저장할 때 room 은 DB 값을 지킨다) */
 function ct방새로(id){
   if(CT.방읽는중 === id) return; CT.방읽는중 = id;
+  const 그때 = JSON.stringify((CT.track || {}).room || null);
   ctPost({what:'contract', id}).then(({ok, j}) => {
     CT.방읽는중 = null;
     if(!ok || CT.id !== id || !j.row || !j.row.track || typeof j.row.track !== 'object') return;
+    /* 묻는 사이 이 화면에서 내보내기 · 초대로 방이 바뀌었으면 늦게 온 답으로 덮지 않는다 (2026-11-07 리뷰) */
+    if(JSON.stringify((CT.track || {}).room || null) !== 그때) return;
     const 새방 = j.row.track.room || null;
     if(JSON.stringify((CT.track || {}).room || null) === JSON.stringify(새방)) return;
     CT.track = { ...(CT.track || {}), room: 새방 || undefined };
@@ -18440,9 +18447,13 @@ document.addEventListener('keydown', e=>{
   if(e.key !== 'Enter' || e.shiftKey || e.isComposing || e.keyCode === 229 || isMo() || !e.target.closest) return;
   if(!e.target.closest('[data-in="rm-text"]')) return;
   e.preventDefault();
+  /* 한글 조합을 끝내는 엔터 뒤에 엔터가 한 번 더 오는 브라우저(Mac Chrome 등) - 바로 보내면 마지막 글자가 빈 칸에 다시 남는다 (2026-11-07 리뷰) */
+  if(Date.now() - (RM.조합끝 || 0) < 80) return;
   const btn = $('#app [data-act="rm-send"]');
   if(btn && !btn.disabled) btn.click();
 });
+
+document.addEventListener('compositionend', e=>{ if(e.target && e.target.closest && e.target.closest('[data-in="rm-text"]')) RM.조합끝 = Date.now(); }, true);
 
 /* 주소 자동완성 - 손을 마우스로 옮기지 않고도 고를 수 있어야 한다 */
 /* 주소 칸에서 엔터를 치면 찾는다. 검색 칸에서 엔터를 눌러 아무 일도 안 일어나면

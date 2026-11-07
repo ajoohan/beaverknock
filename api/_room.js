@@ -105,25 +105,31 @@ export async function roomAgent(req, res, agent, user, b) {
     /* 방이 있는 계약서 - 초대했거나 누가 들어온 날인본. 계약서 한 장에 당사자 수만큼 방이 있다 */
     const x = await db('bk_contract', `select=id,title,form,status,track,doc_parties:doc->parties,road:doc->property->>road&agent_id=eq.${agent.id}&status=eq.sealed&track->room=not.is.null&order=updated_at.desc&limit=100`);
     if (!x.r.ok) return res.status(502).json({ error: '대화방 목록을 불러오지 못했습니다' });
-    const ids = x.rows.map(r => r.id);
+    const 계약들 = x.rows.slice();
     const 마지막 = {};
     const 담기 = rows => { for (const v of rows) { const k = `${v.contract_id}:${v.thread}`; if (!마지막[k]) 마지막[k] = 줄인말(v); } };
-    if (ids.length) {
-      /* 사무소의 최근 말 1000개로 대부분 채우고, 그 안에 하나도 없는 계약서만 따로 묻는다(30장까지) - 뜸한 방의 마지막 말이 비지 않게 */
-      const m = await db('bk_contract_msg', `select=contract_id,thread,id,side,body,created_at&agent_id=eq.${agent.id}&contract_id=in.(${ids.join(',')})&order=id.desc&limit=1000`);
+    {
+      /* 사무소의 최근 말 1000개 - 계약서를 가리지 않고 묻는다. 고친 지 오래된 계약서(위 100장 밖)라도 새 말이 오면 목록에 오게 (2026-11-07) */
+      const m = await db('bk_contract_msg', `select=contract_id,thread,id,side,body,created_at&agent_id=eq.${agent.id}&order=id.desc&limit=1000`);
       if (!m.r.ok) { if (표없음(m.t)) return 준비중(res, m.t); return res.status(502).json({ error: '대화방 목록을 불러오지 못했습니다' }); }
+      const 있음 = new Set(계약들.map(r => r.id));
+      const 밖 = [...new Set(m.rows.map(v => String(v.contract_id || '')))].filter(c => UUID.test(c) && !있음.has(c)).slice(0, 50);
+      if (밖.length) {
+        const y = await db('bk_contract', `select=id,title,form,status,track,doc_parties:doc->parties,road:doc->property->>road&agent_id=eq.${agent.id}&status=eq.sealed&id=in.(${밖.join(',')})&limit=50`);
+        for (const r of y.rows || []) if (!있음.has(r.id)) { 있음.add(r.id); 계약들.push(r); }
+      }
       담기(m.rows);
       if (m.rows.length >= 1000) {
         /* 1000개 안에 마지막 말이 없는 방(계약서 · 당사자)만 하나씩 - 한 계약서에서도 바쁜 방에 뜸한 방이 가려지지 않게 */
         const 빈방 = [];
-        for (const r of x.rows) for (const k of 자리들) if ((r.doc_parties || {})[k] && !마지막[`${r.id}:${k}`]) 빈방.push([r.id, k]);
+        for (const r of 계약들) for (const k of 자리들) if ((r.doc_parties || {})[k] && !마지막[`${r.id}:${k}`]) 빈방.push([r.id, k]);
         const 더 = await Promise.all(빈방.slice(0, 30).map(([c, k]) =>
           db('bk_contract_msg', `select=contract_id,thread,id,side,body,created_at&contract_id=eq.${c}&thread=eq.${k}&order=id.desc&limit=1`)));
         for (const y of 더) 담기(y.rows || []);
       }
     }
     const rows = [];
-    for (const r of x.rows) { const 방 = 방값(r);
+    for (const r of 계약들) { const 방 = 방값(r);
       for (const k of 자리들) if ((r.doc_parties || {})[k]) rows.push({ id: r.id, side: k, title: r.title || r.road || '', form: r.form,
         name: 당사자이름(r, k), joined: !!(방[k] && 방[k].uid), at: 방[k] ? 방[k].at : '', last: 마지막[`${r.id}:${k}`] || null }); }
     /* 최근에 말이 오간 방이 위로 - 말 번호는 한 줄 순번이라 큰 것이 최근이다. 말 없는 방은 계약서 차례 그대로 (2026-11-07) */
@@ -209,7 +215,7 @@ export async function invitePeek(res, tok) {
   const row = await 계약(t.id);
   if (!row || row.오류) return res.status(404).json({ error: '계약서를 찾지 못했습니다' });
   const 방 = 방값(row);
-  if (!링크맞음(방, t)) return res.status(404).json({ error: '중개사무소가 이 링크를 끊었습니다 - 새 링크를 받아 주세요' });
+  if (!링크맞음(방, t)) return res.status(404).json({ error: '중개사무소가 이 링크를 끊었습니다 - 새 링크를 받아 주세요', cut: true });
   const 사 = await 사무소(row.agent_id);
   return res.status(200).json({ ok: true, office: 사.office || '중개사무소', title: row.title || row.road || '계약', side: t.side, role: 자리이름[t.side],
     joined: !!(방[t.side] && 방[t.side].uid), until: t.until });
@@ -228,10 +234,12 @@ export async function roomGuest(req, res, user, b) {
     if (user.id === 계.agent_user || user.id === 사r.user_id || (Array.isArray(사r.staff) && 사r.staff.some(s => s && s.uid === user.id)))
       return res.status(409).json({ error: '중개사무소 계정으로는 손님 자리에 들어갈 수 없습니다 - 손님 본인의 계정으로 링크를 열어 주세요', office: true });
     const 읽은방 = 방값(계);
-    if (링크맞음(읽은방, t) && 읽은방[t.side] && 읽은방[t.side].uid === user.id) return res.status(200).json({ ok: true, id: t.id, already: true });
+    /* 이미 그 자리에 든 분 - 쓰지 않고 바로. '모두 끊기' 는 들어온 손님을 내보내지 않으므로 링크 번호가 달라도 들여보낸다 */
+    if (읽은방[t.side] && 읽은방[t.side].uid === user.id) return res.status(200).json({ ok: true, id: t.id, already: true });
     let 이미 = false;
     const z = await track고치기(t.id, null, (n, 지금값) => {
       const 방 = { ...(지금값.room || { n: 0 }) };
+      if (방[t.side] && 방[t.side].uid === user.id) { 이미 = true; return { ...지금값 }; }
       if (!링크맞음(방, t)) return { 거절: '중개사무소가 이 링크를 끊었습니다 - 새 링크를 받아 주세요', code: 404 };
       /* 한 계정은 한 계약에서 한 자리만 - 손님 화면은 내 자리 하나로 방을 고른다 */
       const 딴자리 = 자리들.find(k => k !== t.side && 방[k] && 방[k].uid === user.id);

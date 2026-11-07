@@ -24,6 +24,7 @@ globalThis.fetch = async (u, o = {}) => { u = String(u); const d = decodeURIComp
   }
   if (/bk_contract\?/.test(d)) {
     if (/agent_id=eq\.a2/.test(d)) return new Response('[]');
+    if (/&id=in\.\(/.test(d)) return new Response(JSON.stringify(/&id=in\.\(([^)]*)\)/.exec(d)[1].split(',').map(i => ({ ...계약, id: i, title: '오래된 계약', track: { room: { n: 0 } } }))));
     if (/track->room->\w+->>uid=eq\./.test(d)) { const [, k, uid] = /track->room->(\w+)->>uid=eq\.([0-9a-f-]+)/.exec(d); return new Response(JSON.stringify(계약.track && 계약.track.room && 계약.track.room[k] && 계약.track.room[k].uid === uid ? [계약] : [])); }
     return new Response(JSON.stringify([계약]));
   }
@@ -104,6 +105,9 @@ r = await 손({ id: 'u-boss' }, { what: 'invite-join', token: 새매수표 });
 ok(r.code === 409 && r.body.office === true && !계약.track.room.buyer, '사무소 계정(대표 · 계약서를 쓴 분)은 손님 자리에 들어가지 않는다');
 r = await 중({ what: 'room-cut', id: CID });
 ok(r.code === 200 && 계약.track.room.n === 1 && (await 손(손님1, { what: 'invite-join', token: 새매수표 })).code === 404, '모두 끊기 - 나간 초대 링크가 전부 끊긴다');
+r = await 손(손님2, { what: 'invite-join', token: 매도표 });
+{ const p = 응답(); await R.invitePeek(p, 매도표);
+  ok(r.code === 200 && r.body.already === true && p.code === 404 && p.body.cut === true, '모두 끊기 뒤에도 이미 든 손님은 자기 링크로 들어오고, 미리 보기는 끊긴 링크라고 알린다'); }
 
 /* 5. track 이 방을 지킨다 */
 ok(C.trackCheck({ room: { n: 2, buyer: { uid: 손님1.id, at: 'x' }, hacker: { uid: 'y' } } }).room.n === 2 && !('hacker' in C.trackCheck({ room: { n: 0, hacker: { uid: 'y' } } }).room), 'trackCheck - 자리 여덟 가지만 남긴다');
@@ -122,6 +126,10 @@ ok(r.code === 503 && r.body.need === '0035', 'thread 칸이 없으면 0035 마�
   말들.push({ id: 901, contract_id: CID, thread: 'buyer', side: 'buyer', body: '매수인 질문', created_at: '2026-11-07T00:01:00Z' });
   x = await 중({ what: 'rooms' });
   ok(첫1 === 'seller' && x.body.rows[0].side === 'buyer' && x.body.rows[0].last.id === 901, '대화방 목록 - 최근에 말이 오간 방이 위로 올라온다');
+  const 옛번호 = 'dddddddd-0000-0000-0000-000000000004';
+  말들.push({ id: 902, contract_id: 옛번호, thread: 'seller', side: 'seller', body: '오래된 계약 질문', created_at: '2026-11-07T00:02:00Z' });
+  x = await 중({ what: 'rooms' });
+  ok(x.body.rows[0].id === 옛번호 && x.body.rows[0].title === '오래된 계약' && x.body.rows.filter(v => v.id === CID).length === 2, '대화방 목록 - 고친 지 오래된 계약서(100장 밖)라도 새 말이 오면 나온다');
   말들 = 옛말; }
 
 /* 7. 화면 */
@@ -140,6 +148,6 @@ ok(js.includes("${tabbar('rm','p')}") && js.includes('data-go="#/partner/rooms">
 ok(js.includes("RM.mine = null; RM.cur = null; go('#/room/' + j.id);") && js.includes('if(RM.cur !== C){ if(!손님) RM.listAt = 0;')
   && js.includes('if(status === 400 || status === 403 || status === 404) C.gone = true;'), '화면 - 다시 들어온 방은 처음부터 읽고, 보내는 중 방을 옮겨도 지금 방을 건드리지 않고, 같은 답일 실패는 그만 묻는다');
 ok(js.includes('${보조원() ? \'\' : `<a class="btn tool sm" data-go="#/partner/contract/${esc(id)}">계약서</a>`}</div></div>')
-  && js.includes("rm대화HTML(C, v => v.side === 'agent', 들어옴 ? '' :") && js.includes("const 표지 = a === 'rm-kick' ? v : '*';"), '화면 - 보조원은 계약서 단추 없음 · 안 들어온 방은 쓰는 칸 대신 까닭 · 모두 끊기도 두 번');
+  && js.includes("rm대화HTML(C, v => v.side === 'agent', 들어옴 ? '' :") && js.includes("const 표지 = CT.id + '|' + (a === 'rm-kick' ? v : '*');") && js.includes("CT.rmKick === CT.id + '|' + k ?") && js.includes("I.cut = !!j.cut;"), '화면 - 보조원은 계약서 단추 없음 · 안 들어온 방은 쓰는 칸 대신 까닭 · 모두 끊기도 두 번');
 console.log(`${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

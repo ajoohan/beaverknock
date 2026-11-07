@@ -11101,6 +11101,11 @@ const CT_하위메뉴 = [['#/partner/contracts/new', '계약서 작성', 'pen', 
    번호는 배포한 날(연.월.일 - 같은 날 또 올리면 뒤에 .2). 화면이 version.json 을 가끔 읽어,
    더 새 버전이 올라와 있으면 메뉴 아래에서 새로고침을 권한다(버전확인) - 계약서를 띄워 둔 채 오래 일하면 고친 화면을 못 받는다 */
 const BK_변경 = [
+  { v:'26.11.07.4', 날:'2026-11-07', 줄:[
+    '손님 대화 목록 - 오래전에 확정한 계약서라도 새 말이 오면 목록에 나옵니다',
+    '나간 초대 링크를 모두 끊어도 이미 들어온 손님은 자기 링크로 그대로 들어옵니다 · 끊긴 링크 화면에서 마이페이지로 이어 드립니다',
+    '내보내기 · 모두 끊기의 두 번 누르기가 다른 계약서로 넘어가지 않습니다',
+  ]},
   { v:'26.11.07.3', 날:'2026-11-07', 줄:[
     '손님 대화 목록 - 최근에 말이 오간 방이 위로 올라옵니다',
     '손님이 아직 안 들어온 방(초대 전 · 내보낸 뒤)은 쓰는 칸 대신 까닭을 알려 드립니다 · 중개보조원 화면에는 계약서 단추를 두지 않습니다',
@@ -12764,9 +12769,9 @@ function ct방HTML(doc){
       : `<ul class="rm-inv">${자리.map(k => { const 사람 = doc.parties[k] || {}, 들 = !!방[k];
         return `<li><span><b>${RM_자리[k]}${사람.name ? ` · ${esc(사람.name)}` : ''}</b><small>${들 ? `들어옴 ${esc(String(방[k].at || '').slice(0, 10).replace(/-/g, '.'))}` : '아직 안 들어옴'}</small></span>
           <span class="eqb rm-invb">${들 ? `<button type="button" class="btn sec sm" data-go="#/partner/rooms/${esc(CT.id)}/${k}">대화</button>` : ''}
-          ${보조 ? '' : 들 ? `<button type="button" class="btn tool sm" data-act="rm-kick" data-v="${k}">${CT.rmKick === k ? '한 번 더 누르면 내보냅니다' : '내보내기'}</button>`
+          ${보조 ? '' : 들 ? `<button type="button" class="btn tool sm" data-act="rm-kick" data-v="${k}">${CT.rmKick === CT.id + '|' + k ? '한 번 더 누르면 내보냅니다' : '내보내기'}</button>`
             : `<button type="button" class="btn tool sm" data-act="rm-invite" data-v="${k}">초대 링크</button>`}</span></li>`; }).join('')}</ul>
-      ${보조 || !(방.n != null) ? '' : `<button type="button" class="btn tool sm" data-act="rm-cut">${CT.rmKick === '*' ? '한 번 더 누르면 모두 끊습니다' : '나간 초대 링크 모두 끊기'}</button>`}`}</div>`;
+      ${보조 || !(방.n != null) ? '' : `<button type="button" class="btn tool sm" data-act="rm-cut">${CT.rmKick === CT.id + '|*' ? '한 번 더 누르면 모두 끊습니다' : '나간 초대 링크 모두 끊기'}</button>`}`}</div>`;
 }
 async function rmInvite(side, 카톡){
   if(!CT.id) return;
@@ -12788,7 +12793,7 @@ V['#/invite'] = tok => {
   const I = RM.inv && RM.inv.tok === tok ? RM.inv : (RM.inv = { tok, row:null, err:'', loading:true, joining:false });
   if(I.loading && !I.asked){ I.asked = true;
     fetch('/api/feed?invite=' + encodeURIComponent(tok)).then(r => r.json().then(j => ({ ok: r.ok, j }))).then(({ ok, j }) => {
-      I.loading = false; if(ok && j.ok) I.row = j; else I.err = j.error || '초대 링크를 열지 못했습니다'; render();
+      I.loading = false; if(ok && j.ok) I.row = j; else { I.err = j.error || '초대 링크를 열지 못했습니다'; I.cut = !!j.cut; } render();
     }).catch(() => { I.loading = false; I.err = '네트워크 문제로 초대 링크를 열지 못했습니다'; render(); }); }
   const R = I.row;
   return `
@@ -12796,7 +12801,9 @@ V['#/invite'] = tok => {
   ${navUser ? navUser() : ''}
   <div class="pad" style="flex:1;padding-top:${isMo()?24:48}px;padding-bottom:32px;width:100%;max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:14px">
     <div class="card pad rm-invite">
-      ${I.err ? `<h1 class="t" style="font-size:20px;margin:0 0 8px">초대 링크를 열 수 없습니다</h1><p class="sub" style="margin:0">${esc(I.err)}</p>`
+      ${I.err ? `<h1 class="t" style="font-size:20px;margin:0 0 8px">초대 링크를 열 수 없습니다</h1><p class="sub" style="margin:0">${esc(I.err)}</p>
+          ${I.cut ? `<p class="sub" style="margin:12px 0 0;line-height:1.6">이미 대화방에 들어오신 분은 그대로 쓰실 수 있습니다 - 마이페이지의 ‘계약 대화방’에서 여세요.</p>
+            <button type="button" class="btn sec" data-go="#/account" style="width:100%;margin-top:12px">마이페이지에서 대화방 열기</button>` : ''}`
         : !R ? `<p class="sub" style="margin:0">초대 내용을 불러오는 중입니다…</p>`
         : `<span class="badge b-ind" style="align-self:flex-start">계약 대화방 초대</span>
           <h1 class="t" style="font-size:${isMo()?21:24}px;margin:12px 0 6px">${esc(R.office)}에서 초대했습니다</h1>
@@ -17906,7 +17913,9 @@ function handle(a,v,el){
     case 'rm-kakao': S.modal = null; rmInvite(v, true); render(); return true;
     case 'rm-copy': { const m = S.modal; if(m && navigator.clipboard) navigator.clipboard.writeText(m.text).then(() => toast('복사했습니다 - 문자 · 카톡에 붙여 넣으세요'), () => toast('복사하지 못했습니다 - 길게 눌러 복사해 주세요')); return true; }
     case 'rm-cut': case 'rm-kick': {
-      const 표지 = a === 'rm-kick' ? v : '*';   /* 내보내기도 모두 끊기도 두 번 눌러야 - 잘못 누른 한 번에 링크가 끊기지 않게 */
+      /* 내보내기도 모두 끊기도 두 번 눌러야 - 잘못 누른 한 번에 링크가 끊기지 않게.
+         계약서 번호를 함께 기억한다 - 다른 계약서에서 한 번 눌러 둔 것이 여기서 두 번째로 셈해지면 안 된다 */
+      const 표지 = CT.id + '|' + (a === 'rm-kick' ? v : '*');
       if(CT.rmKick !== 표지){ CT.rmKick = 표지; render(); return true; }
       CT.rmKick = null;
       ctPost({ what:'room-cut', id: CT.id, ...(a === 'rm-kick' ? { side: v } : {}) }).then(({ ok, j }) => {

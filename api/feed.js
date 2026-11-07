@@ -13,7 +13,7 @@ import { contractRoute, reportDueCron, draftRead, draftNote, 알림설정, 특�
 import { 날씨 } from './_weather.js';
 import { 서식들, 서식확인, 서식올리기, 서식주소, 서식지우기, 서식최대 } from './_forms.js';
 import { 직원들, 직원고침, 직원사무소, 직원들어옴, 직원역할, 다른사무소직원 } from './_staff.js';
-import { notify } from './_notify.js';
+import { notify, mailWithFile } from './_notify.js';
 import { roomAgent, invitePeek } from './_room.js';
 
 const KIND_KO = { home: '주거', shop: '상가', office: '오피스', storage: '창고' };
@@ -179,6 +179,32 @@ const 설정실패 = (res, z, 이름) => z.need ? res.status(503).json({ error: 
   : res.status(502).json({ error: '저장하지 못했습니다' });
 /* 직원이 못 하는 일 - 서버가 막는다(화면은 고쳐 쓸 수 있다) */
 export const 대표만 = w => /^staff/.test(String(w || '')) || ['office-addr', 'scope-save'].includes(w);
+/* 계약서 PDF 를 메일로 (2026-11-08) - 화면이 만든 PDF(base64)를 받아 Resend 로 붙여 보낸다. 서버에 남기지 않는다.
+   받는 사람 5명까지 · 사무소마다 한 시간에 20통 · 파일 3MB 까지(본문 4.5MB 한도 안). 회신은 중개사 메일로 */
+const 메일모양 = /^[^\s@<>,;:"'()\[\]\\]+@[^\s@<>,;:"'()\[\]\\]+\.[a-z]{2,}$/i;
+async function contractMail(req, res, agent, user, b) {
+  if (!process.env.RESEND_API_KEY) return res.status(503).json({ error: '메일 보내기는 준비 중입니다' });
+  const 받는 = [...new Set((Array.isArray(b.to) ? b.to : []).map(x => String(x || '').trim().toLowerCase()).filter(Boolean))];
+  if (!받는.length) return res.status(400).json({ error: '받는 메일 주소를 적어 주세요' });
+  if (받는.length > 5) return res.status(400).json({ error: '한 번에 5명까지 보낼 수 있습니다' });
+  const 틀린 = 받는.find(x => x.length > 120 || !메일모양.test(x));
+  if (틀린) return res.status(400).json({ error: `메일 주소를 확인해 주세요 - ${틀린.slice(0, 60)}` });
+  const pdf = String(b.pdf || '');
+  if (!pdf || pdf.length > 4.2e6 || !/^[A-Za-z0-9+/]+=*$/.test(pdf)) return res.status(400).json({ error: '파일이 비었거나 너무 큽니다(3MB 까지)' });
+  if (Buffer.from(pdf.slice(0, 12), 'base64').toString('latin1').slice(0, 5) !== '%PDF-') return res.status(400).json({ error: 'PDF 파일이 아닙니다' });
+  if (overLimit('ctmail:' + agent.id, 20, 60 * 60e3)) return res.status(429).json({ error: '메일은 한 시간에 20통까지 보낼 수 있습니다 - 잠시 뒤 보내 주세요' });
+  const 이름 = (String(b.name || '').replace(/[\u0000-\u001f\\/:*?"<>|]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 120).replace(/\.pdf$/i, '') || '계약서') + '.pdf';
+  const 제목 = 이름.replace(/\.pdf$/i, '').split('_')[0];
+  const 사무소 = String(agent.office || '').trim() || '중개사무소';
+  const 한마디 = String(b.msg || '').replace(/\r/g, '').trim().slice(0, 500);
+  const 회신 = user && user.email && 메일모양.test(user.email) ? user.email : undefined;
+  const r = await mailWithFile(req, { to: 받는, subject: `${사무소} - ${제목}`, replyTo: 회신,
+    rows: [['보낸 곳', 사무소], ['서류', 제목], ...(한마디 ? [['전하는 말', 한마디]] : [])],
+    note: `${사무소}에서 비버노크로 보낸 메일입니다. 서류는 첨부한 PDF(${이름})에 있습니다.` + (회신 ? ' 이 메일에 답장하면 사무소로 갑니다.' : ''),
+    file: { name: 이름, b64: pdf } });
+  if (!r.ok) return res.status(502).json({ error: r.error });
+  return res.status(200).json({ ok: true, sent: 받는.length });
+}
 export const 계약기능 = w => /^(contract|form)/.test(String(w || '')) || ['forms', 'phrases', 'phrases-save', 'sms', 'sms-save',
   'complex', 'complex-save', 'alert-settings', 'alert-settings-save', 'end-style-save'].includes(w);
 const 가린번호 = p => { const n = String(p || '').replace(/\D/g, ''); return n.length >= 10 ? `${n.slice(0, 3)}-****-${n.slice(-4)}` : ''; };
@@ -393,7 +419,10 @@ export default async function handler(req, res) {
   /* 계약서 보관(2026-11-08) - 중개사 본인의 Google 드라이브 · Dropbox 로 올릴 때 쓰는 공개 앱 번호. 비밀값이 아니다(브라우저 로그인 창에 그대로 보인다).
      비어 있으면 화면이 그 단추를 '준비 중' 으로 잠근다 */
   if (b.what === 'cloud-cfg') return res.status(200).json({ ok: true,
-    google: String(process.env.GOOGLE_DRIVE_CLIENT_ID || '').trim(), dropbox: String(process.env.DROPBOX_APP_KEY || '').trim() });
+    google: String(process.env.GOOGLE_DRIVE_CLIENT_ID || '').trim(), dropbox: String(process.env.DROPBOX_APP_KEY || '').trim(),
+    mail: !!process.env.RESEND_API_KEY });
+  /* 계약서 메일로 보내기 - 이름이 contract 로 시작해 중개보조원은 위에서 막힌다 */
+  if (b.what === 'contract-mail') return contractMail(req, res, chk.agent, user, b);
   if (b.what === 'staff')      return readStaff(res, chk.agent);
   if (b.what === 'staff-save') return saveStaff(req, res, chk.agent, user, b);
 

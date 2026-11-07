@@ -86,8 +86,8 @@ function build(req, { subject, rows, link, to: toArg, cta, note }) {
     <div style="font-size:12px;font-weight:800;letter-spacing:.08em;color:#4F52D1">BEAVER KNOCK</div>
     <h1 style="margin:8px 0 18px;font-size:19px;font-weight:800;letter-spacing:-.02em;color:#1D1C2A">${esc(subject)}</h1>
     <table style="border-collapse:collapse;width:100%">${body}</table>
-    <a href="${host}${link}" style="font-family:${FONT};display:inline-block;margin-top:22px;padding:12px 24px;border-radius:999px;
-      background:#4F52D1;color:#fff;font-size:14px;font-weight:700;text-decoration:none">${esc(cta || CTA)}</a>
+    ${link == null ? '' : `<a href="${host}${link}" style="font-family:${FONT};display:inline-block;margin-top:22px;padding:12px 24px;border-radius:999px;
+      background:#4F52D1;color:#fff;font-size:14px;font-weight:700;text-decoration:none">${esc(cta || CTA)}</a>`}
     <p style="margin:18px 0 0;font-size:11.5px;line-height:1.7;color:#6B6A7D">
       ${esc(note || NOTE)}</p>
   </div>`;
@@ -96,7 +96,7 @@ function build(req, { subject, rows, link, to: toArg, cta, note }) {
      HTML 을 끈 메일 앱이나 잠금화면 미리보기 첫 줄에 섞여 나올 수 있다.
      빈 값은 HTML 쪽 esc() 와 같이 빈칸으로 - 'undefined' 가 찍히면 안 된다. */
   const text = [subject, '', ...rows.map(([k, v]) => `${k ?? ''}: ${v ?? ''}`), '',
-    `${cta || CTA}: ${host}${link}`, '', note || NOTE].join('\n');
+    ...(link == null ? [] : [`${cta || CTA}: ${host}${link}`, '']), note || NOTE].join('\n');
 
   return { from, to: [to], subject: `[비버노크] ${subject}`, html, text };
 }
@@ -155,6 +155,30 @@ export async function notifyMany(req, list) {
 }
 
 export { mask };
+
+/* 계약서 PDF 를 붙여 보낸다 (2026-11-08 계약서 보관 '메일로 보내기').
+ * 알림과 달리 기다린다(15초) - 중개사가 화면에서 보냈는지 바로 알아야 한다. 던지지 않고 { ok } / { error } 로 돌려준다.
+ * 회신은 중개사 메일로 간다(reply_to) - 보내는 주소는 noreply 다 */
+export async function mailWithFile(req, { to, subject, rows, note, replyTo, file }) {
+  const key = process.env.RESEND_API_KEY;
+  if (!key) return { error: '메일 보내기는 준비 중입니다' };
+  const m = build(req, { subject, rows, note, link: null, to: to[0] });
+  m.to = to;
+  if (replyTo) m.reply_to = replyTo;
+  m.attachments = [{ filename: file.name, content: file.b64 }];
+  try {
+    const r = await withTimeout(fetch('https://api.resend.com/emails', {
+      method: 'POST', headers: { Authorization: 'Bearer ' + key, 'Content-Type': 'application/json' }, body: JSON.stringify(m),
+    }), 15000);
+    if (r && r.skipped) return { error: '메일 서버가 늦어 보내지 못했습니다 - 잠시 뒤 다시 보내 주세요' };
+    if (r.ok) return { ok: true };
+    const t = await r.text().catch(() => '');
+    console.error('[notify] 계약서 메일 실패', r.status, t.slice(0, 200));
+    return { error: '메일을 보내지 못했습니다' + (r.status === 422 ? ' - 받는 메일 주소를 확인해 주세요' : '') };
+  } catch (e) {
+    return { error: '메일을 보내지 못했습니다' };
+  }
+}
 
 /* 금액은 2026-09-21 부터 원 단위다(SQL 0024). 화면의 won() 과 같은 규칙으로 적는다 -
    메일과 화면이 다른 말을 하면 어느 쪽이 맞는지 알 수 없게 된다. */

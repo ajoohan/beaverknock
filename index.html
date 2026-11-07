@@ -2493,6 +2493,15 @@ body:not(.mo) .ctx-sub{flex:1 1 0;min-width:0;overflow:hidden;text-overflow:elli
 .cl-o .cl-t b{font-size:15px;color:var(--n900)}
 .cl-o .cl-t small{font-size:13px;font-weight:500;color:var(--n500)}
 .cl-o:disabled{opacity:.55}
+.cl-mail{display:flex;flex-direction:column;gap:10px;padding:12px 14px;border:1px solid var(--n200);border-radius:12px;background:#fff}
+.cl-mt{display:flex;align-items:center;gap:12px;font-size:15px;color:var(--n900)}
+.cl-mail .cl-ic{flex:none;display:grid;place-items:center;width:36px;height:36px;border-radius:10px;background:var(--n50);color:var(--n700)}
+.cl-f{display:flex;flex-direction:column;gap:4px;font-size:13.5px;font-weight:600;color:var(--n700)}
+.cl-f small{font-weight:500;color:var(--n500)}
+.cl-f .inp{width:100%;font-size:16px}
+.cl-f textarea.inp{resize:vertical;min-height:58px}
+.cl-hint{margin:0;font-size:13px;line-height:1.6;color:var(--n500)}
+.cl-ma{display:flex;gap:8px;justify-content:flex-end}
 .cl-msg{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:12px 0 0;padding:10px 12px;border-radius:10px;background:var(--n50);font-size:14px;line-height:1.6;color:var(--n700)}
 .cl-msg.ok{background:#EAF7EF;color:#14532D}
 .cl-msg.err{background:#FDECEC;color:#8A1C1C}
@@ -11344,6 +11353,9 @@ const CT_하위메뉴 = [['#/partner/contracts/new', '계약서 작성', 'pen', 
    번호는 배포한 날(연.월.일 - 같은 날 또 올리면 뒤에 .2). 화면이 version.json 을 가끔 읽어,
    더 새 버전이 올라와 있으면 메뉴 아래에서 새로고침을 권한다(버전확인) - 계약서를 띄워 둔 채 오래 일하면 고친 화면을 못 받는다 */
 const BK_변경 = [
+  { v:'26.11.08.5', 날:'2026-11-08', 줄:[
+    '계약서 보관 - ‘메일로 보내기’: 보고 있는 서류를 PDF 로 붙여 손님 · 법무사 등에게 바로 보냅니다(5명까지 · 답장은 내 메일로)',
+  ]},
   { v:'26.11.08.4', 날:'2026-11-08', 줄:[
     '계약서 보관 - Dropbox 저장 위치 안내를 바로잡았습니다(Dropbox 의 Apps 폴더)',
   ]},
@@ -13048,18 +13060,18 @@ function cl설정(){
   if(CL.cfgP) return CL.cfgP;
   /* 못 받았으면 '실패' 로 적어 둔다 - '연결 확인 중' 에 멈춰 있지 않게. 창을 다시 열 때 또 묻는다 */
   return CL.cfgP = ctPost({ what: 'cloud-cfg' }).then(({ ok, j }) => { CL.cfgP = null;
-    return CL.cfg = ok ? { google: j.google || '', dropbox: j.dropbox || '' } : { google: '', dropbox: '', 실패: true }; })
+    return CL.cfg = ok ? { google: j.google || '', dropbox: j.dropbox || '', mail: !!j.mail } : { google: '', dropbox: '', 실패: true }; })
     .catch(() => { CL.cfgP = null; return CL.cfg = { google: '', dropbox: '', 실패: true }; });
 }
 function 보관창(){
   if(!CT.doc) return;
-  CL.err = ''; CL.done = null; if(CL.cfg && CL.cfg.실패) CL.cfg = null;
+  CL.err = ''; CL.done = null; CL.메일 = false; if(CL.cfg && CL.cfg.실패) CL.cfg = null;
   S.modal = { type: 'ct-cloud' }; render();
   /* 창을 여는 동안 미리 받아 둔다 - 로그인 창은 누른 그 순간에 열어야 팝업 막기에 걸리지 않는다 */
   cl설정().then(c => { if(c.google) 외부스크립트('gis').catch(() => {}); if(S.modal && S.modal.type === 'ct-cloud') render(); });
   외부스크립트('h2c').catch(() => {}); 외부스크립트('pdf').catch(() => {});
 }
-const CL_곳 = { google: 'Google 드라이브', dropbox: 'Dropbox', pdf: 'PDF' };
+const CL_곳 = { google: 'Google 드라이브', dropbox: 'Dropbox', pdf: 'PDF', mail: '메일' };
 function 보관창HTML(){
   const c = CL.cfg, 확인중 = !c, 일 = !!CL.busy;
   const 단추 = (k, 이름, 그림, 켜짐, 말) => `<button type="button" class="btn sec cl-o" data-act="cl-save" data-v="${k}" ${!켜짐 || 일 ? 'disabled' : ''}>
@@ -13072,13 +13084,28 @@ function 보관창HTML(){
       ${단추('google', 'Google 드라이브', CL_그림.google, c && c.google, c && c.google ? `'${CL_폴더}' 폴더에 저장` : 준비)}
       ${단추('dropbox', 'Dropbox', CL_그림.dropbox, c && c.dropbox, c && c.dropbox ? 'Dropbox 의 Apps 폴더에 저장' : 준비)}
       ${단추('pdf', 'PDF 내려받기', CL_그림.pdf, true, '이 기기에 바로 저장')}
+      ${CL.메일 ? 메일칸HTML(일) : 단추('mail', '메일로 보내기', CL_그림.mail, c && c.mail, c && c.mail ? '손님 · 법무사 등에게 PDF 를 붙여 보내기' : 준비)}
     </div>
     ${일 ? `<p class="cl-msg" role="status"><span class="cl-spin" aria-hidden="true"></span>${esc(CL.busy)}${CL.취소 ? ' <button type="button" class="lnk" data-act="cl-cancel">그만두기</button>' : ''}</p>` : ''}
     ${CL.err ? `<p class="cl-msg err" role="alert">${esc(CL.err)}</p>` : ''}
     ${CL.done ? `<p class="cl-msg ok" role="status">${esc(CL.done.t)}${CL.done.url ? ` <a href="${esc(CL.done.url)}" target="_blank" rel="noopener">${esc(CL.done.열기 || '열어 보기')}</a>` : ''}</p>` : ''}
     <button class="btn pri" data-act="modal-close" style="width:100%;margin-top:14px">닫기</button></div></div>`;
 }
+/* 메일로 보내기 칸 - 받는 주소(쉼표로 5명까지) · 전하는 말. 보낸 뒤에도 적은 것은 남긴다(CL.메일값) */
+function 메일칸HTML(일){
+  const v = CL.메일값 || {};
+  return `<div class="cl-mail" role="group" aria-labelledby="clMailT">
+      <b id="clMailT" class="cl-mt"><span class="cl-ic" aria-hidden="true">${CL_그림.mail}</span>메일로 보내기</b>
+      <label class="cl-f"><span>받는 메일</span><input class="inp" id="clTo" type="text" inputmode="email" autocomplete="email" spellcheck="false"
+        placeholder="예: buyer@naver.com, 두 분 이상이면 쉼표로" value="${esc(v.to || '')}" ${일 ? 'disabled' : ''}></label>
+      <label class="cl-f"><span>전하는 말 <small>선택</small></span><textarea class="inp" id="clMsg" rows="2" maxlength="500"
+        placeholder="예: 내일 계약 전에 한 번 읽어 봐 주세요" ${일 ? 'disabled' : ''}>${esc(v.msg || '')}</textarea></label>
+      <p class="cl-hint">보내는 주소는 비버노크(noreply)이고, 받은 분이 답장하면 내 메일로 갑니다. 계약서에는 개인정보가 들어 있으니 주소를 한 번 더 확인해 주세요.</p>
+      <span class="eqb cl-ma"><button type="button" class="btn sec sm" data-act="cl-mail-x" ${일 ? 'disabled' : ''}>접기</button><button type="button" class="btn pri sm" data-act="cl-save" data-v="mail" ${일 ? 'disabled' : ''}>보내기</button></span>
+    </div>`;
+}
 const CL_그림 = {
+  mail: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3.5 6.5 8.5 6.5 8.5-6.5"/></svg>',
   google: '<svg viewBox="0 0 24 24" width="22" height="22"><path fill="#0F9D58" d="M8.3 3h7.4l7 12.1h-7.4z"/><path fill="#F4B400" d="M8.3 3 1.3 15.1 5 21.5l7-12.1z"/><path fill="#4285F4" d="M5 21.5h14l3.7-6.4H8.7z"/></svg>',
   dropbox: '<svg viewBox="0 0 24 24" width="22" height="22" fill="#0061FE"><path d="m6 2.5 6 3.8-6 3.8-6-3.8zm12 0 6 3.8-6 3.8-6-3.8zM0 13.9l6-3.8 6 3.8-6 3.8zm18-3.8 6 3.8-6 3.8-6-3.8zM6 19l6-3.8 6 3.8-6 3.8z"/></svg>',
   pdf: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6.5A1.5 1.5 0 0 0 5 4.5v15A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5V8z"/><path d="M14 3v5h5M12 11v6m-2.6-2.6L12 17l2.6-2.6"/></svg>' };
@@ -13215,6 +13242,18 @@ async function d올리기(tok, 파일, 이름){
 }
 async function cl저장(곳){
   if(CL.busy || !CT.doc) return;
+  /* 메일 - 처음 누르면 칸을 펼친다. 보내기를 누르면 적은 주소를 먼저 살핀다 */
+  let 받는 = null, 한마디 = '';
+  if(곳 === 'mail'){
+    if(!CL.메일){ CL.메일 = true; CL.err = ''; CL.done = null; render(); setTimeout(() => { const i = document.getElementById('clTo'); if(i) i.focus(); }, 30); return; }
+    const 칸 = document.getElementById('clTo'), 말칸 = document.getElementById('clMsg');
+    CL.메일값 = { to: 칸 ? 칸.value : '', msg: 말칸 ? 말칸.value : '' };
+    받는 = [...new Set(String(CL.메일값.to).split(/[,;\s]+/).map(x => x.trim()).filter(Boolean))]; 한마디 = String(CL.메일값.msg).trim();
+    const 틀린 = 받는.find(x => !/^[^\s@<>,;:"'()]+@[^\s@<>,;:"'()]+\.[a-z]{2,}$/i.test(x));
+    CL.done = null;
+    if(!받는.length || 틀린 || 받는.length > 5){ CL.err = !받는.length ? '받는 메일 주소를 적어 주세요' : 틀린 ? `메일 주소를 확인해 주세요 - ${틀린}` : '한 번에 5명까지 보낼 수 있습니다';
+      render(); setTimeout(() => { const i = document.getElementById('clTo'); if(i) i.focus(); }, 30); return; }
+  }
   const doc = CT.doc, html = ct보기HTML(doc), 이름 = cl파일이름(html, doc);
   /* 로그인 창은 누른 이 자리에서(기다리기 전에) 연다 */
   let 열쇠P = null;
@@ -13231,6 +13270,13 @@ async function cl저장(곳){
       const a = document.createElement('a'), u = URL.createObjectURL(파일);
       a.href = u; a.download = 이름; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 60e3);
       CL.done = { t: `‘${이름}’ 파일을 내려받았습니다` };
+    } else if(곳 === 'mail'){
+      CL.busy = '메일을 보내는 중…'; render();
+      const b64 = await new Promise((ok, no) => { const fr = new FileReader(); fr.onload = () => ok(String(fr.result).split(',')[1] || ''); fr.onerror = () => no(new Error('파일을 읽지 못했습니다')); fr.readAsDataURL(파일); });
+      if(b64.length > 4.2e6) throw new Error('서류가 커서 메일로 보낼 수 없습니다 - PDF 로 내려받아 직접 붙여 보내 주세요');
+      const { ok, j } = await ctPost({ what: 'contract-mail', to: 받는, msg: 한마디, name: 이름, pdf: b64 });
+      if(!ok) throw new Error(j.error || '메일을 보내지 못했습니다');
+      CL.done = { t: `${받는.join(', ')} 에게 ‘${이름}’ 파일을 붙여 보냈습니다` }; CL.메일 = false; CL.메일값 = null;
     } else {
       CL.busy = `${CL_곳[곳]}에 올리는 중…`; render();
       const 열쇠 = await 열쇠P, url = 곳 === 'google' ? await g올리기(열쇠, 파일, 이름) : await d올리기(열쇠, 파일, 이름);
@@ -18747,6 +18793,7 @@ function handle(a,v,el){
     case 'ct-cloud': 보관창(); return true;
     case 'cl-save': cl저장(v); return true;
     case 'cl-cancel': if(CL.취소) CL.취소(); return true;
+    case 'cl-mail-x': { const i = document.getElementById('clTo'), m = document.getElementById('clMsg'); CL.메일값 = { to: i ? i.value : '', msg: m ? m.value : '' }; CL.메일 = false; CL.err = ''; render(); return true; }
     case 'ct-save': ctSave(); return true;
     /* 필수 칸이 비면 확정 창을 열지 않고 빠진 칸을 보여 준다 (2026-11-06 대표님) */
     case 'ct-seal': {

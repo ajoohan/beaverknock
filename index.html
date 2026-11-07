@@ -2708,6 +2708,29 @@ body.mo .dz-more::after{content:"";position:absolute;left:-6px;right:-6px;top:-5
 .dz-q{display:flex;align-items:center;gap:8px;min-height:42px;padding:8px 10px;border:1px solid var(--n200);border-radius:var(--r-ctl);background:var(--white);
   font-size:13.5px;font-weight:600;color:var(--n900);cursor:pointer;transition:background var(--t-fast) ease,border-color var(--t-fast) ease}
 .dz-q svg{flex:none;color:var(--ind)}
+/* ── 운영자 로그인 (2026-11-07) ── */
+.ol-card{padding:0;overflow:hidden}
+.ol-top{display:flex;align-items:flex-end;gap:14px;padding:22px 22px 0;background:linear-gradient(160deg,var(--ind900),#191A52);color:#fff}
+.ol-bv{width:108px;height:auto;flex:none;display:block;margin-bottom:-2px;user-select:none;-webkit-user-drag:none}
+.ol-tt{display:flex;flex-direction:column;gap:6px;padding-bottom:20px;min-width:0}
+.ol-badge{align-self:flex-start;display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;background:rgba(255,255,255,.14);color:#fff;font-size:12.5px;font-weight:700}
+.ol-tt h1{margin:0;font-size:21px;font-weight:800;letter-spacing:-.03em;color:#fff}
+.ol-tt p{margin:0;font-size:13.5px;color:var(--ind-dark)}
+.ol-body{display:flex;flex-direction:column;padding:20px 22px 22px}
+.ol-note{display:flex;gap:9px;align-items:flex-start;margin:0 0 16px;padding:11px 13px;border-radius:var(--r-sm);background:var(--n50);border:1px solid var(--n100);font-size:13.5px;line-height:1.6;color:var(--n700)}
+.ol-note svg{flex:none;color:var(--ind);margin-top:1px}
+.ol-lab{font-size:13.5px;font-weight:700;color:var(--n700);margin:0 0 6px}
+.ol-body .inp{margin-bottom:12px}
+.ol-chk{display:flex;align-items:center;gap:8px;margin:0 0 14px;font-size:14.5px;color:var(--n700);cursor:pointer;user-select:none}
+.ol-chk input{width:17px;height:17px;flex:none;margin:0;accent-color:var(--ind);cursor:pointer}
+.ol-keep{margin:10px 0 0;font-size:12.5px;line-height:1.6;color:var(--n500);text-align:center}
+.ol-keep b{color:var(--n700)}
+.ol-or{display:flex;align-items:center;gap:12px;margin:16px 0 14px}
+.ol-or i{flex:1;height:1px;background:var(--hair)}
+.ol-or span{font-size:13px;color:var(--n500)}
+body.mo .ol-bv{width:88px}
+body.mo .ol-tt h1{font-size:19px}
+
 /* ── 계약 대화방 (2026-11-06) ── */
 .rm-lay{display:grid;grid-template-columns:320px minmax(0,1fr);gap:16px;align-items:stretch;min-height:520px}
 body.mo .rm-lay{display:flex;flex-direction:column}
@@ -10256,16 +10279,16 @@ function opsGateScreen(){
     <div class="right"><a class="tapx" data-go="#/" style="font-size:14.5px;font-weight:600;color:var(--n700)">사이트로</a></div></div>`;
   /* 들어가기 전 화면은 가운데에 세운다. 안에 들어가면 목록이 왼쪽부터 차지만,
      문 앞에서는 볼 것이 이 상자 하나뿐이라 왼쪽에 붙여둘 이유가 없다. */
-  const wrap = (body, wide) => `
+  const wrap = (body, wide, 맨몸) => `
 <div class="scr fade" style="background:var(--n50)">
   ${head}
   <div class="pad opsPad" style="flex:1;display:flex;align-items:${isMo()?'flex-start':'center'};justify-content:center;
     padding-top:${isMo()?24:20}px;padding-bottom:40px;width:100%">
     <div style="width:100%;max-width:${wide||400}px;display:flex;flex-direction:column;align-items:center;gap:16px">
-      <div style="text-align:center">
+      ${맨몸 ? '' : `<div style="text-align:center">
         <h1 class="t" style="font-size:${isMo()?21:25}px;margin-top:8px">운영 화면</h1>
-      </div>
-      <div class="card pad" style="width:100%">${body}</div>
+      </div>`}
+      ${맨몸 ? body : `<div class="card pad" style="width:100%">${body}</div>`}
     </div>
   </div>
 </div>`;
@@ -10281,24 +10304,35 @@ function opsGateScreen(){
      쓸 데가 없는 것들이다. 이메일과 구글, 둘만 둔다. */
   if(!S.user){
     const google = SNS.find(x => x.k === 'google');
+    /* 운영자 로그인 (2026-11-07 대표님 '비버노크 캐릭터 넣어. 운영자처럼') - 진한 머리띠에 문을 두드리는 비버리,
+       아래에 열람 기록 안내 · 이메일 기억하기 · 30일 로그인 유지 안내 */
     return wrap(`
-    <b style="display:block;text-align:center;font-size:16px;font-weight:700;color:var(--n900);margin-bottom:6px">관리자 로그인</b>
-    <p style="margin:0 0 16px;text-align:center;font-size:13.5px;line-height:1.7;color:var(--n500)">
-      접수된 조건에는 이름과 연락처가 들어 있습니다.<br>누가 무엇을 열어봤는지 남습니다.</p>
-    <div style="display:flex;flex-direction:column;gap:10px">
-      <input class="inp" data-in="email" type="email" value="${esc(S.email)}"
-        placeholder="이메일" autocomplete="username" aria-label="이메일">
-      <input class="inp" data-in="pw" type="password" value="${esc(S.pw)}"
-        placeholder="비밀번호" autocomplete="current-password" aria-label="비밀번호">
-      <button class="btn pri blk" data-act="ops-email">로그인</button>
-    </div>
-    <div style="display:flex;align-items:center;gap:12px;margin:14px 0">
-      <i style="flex:1;height:1px;background:var(--hair)"></i>
-      <span style="font-size:13px;color:var(--n500)">또는</span>
-      <i style="flex:1;height:1px;background:var(--hair)"></i>
-    </div>
-    ${google ? snsButton(google).replace('data-act="sns"', 'data-act="ops-sns"') : ''}
-    ${linkNote}`);
+    <div class="card ol-card" style="width:100%">
+      <div class="ol-top">
+        <img src="${BEAVERLY_KNOCK}" alt="문을 두드리는 비버리" class="ol-bv">
+        <div class="ol-tt">
+          <span class="ol-badge"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11 V8 a4 4 0 0 1 8 0 v3"/></svg>운영자 전용</span>
+          <h1>비버노크 운영 화면</h1>
+          <p>운영자 명단에 있는 계정만 들어옵니다</p>
+        </div>
+      </div>
+      <div class="ol-body">
+        <p class="ol-note"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 l8 3 v6 c0 4.5 -3.4 8 -8 9 c-4.6 -1 -8 -4.5 -8 -9 V6 Z"/><path d="M9 12 l2 2 l4 -4"/></svg>
+          <span>접수된 조건에는 이름과 연락처가 들어 있습니다. 누가 무엇을 열어봤는지 기록됩니다.</span></p>
+        <label class="ol-lab" for="olEmail">이메일</label>
+        <input id="olEmail" class="inp" data-in="email" type="email" value="${esc(S.email)}"
+          placeholder="admin@example.com" autocomplete="username">
+        <label class="ol-lab" for="olPw">비밀번호</label>
+        <input id="olPw" class="inp" data-in="pw" type="password" value="${esc(S.pw)}"
+          placeholder="비밀번호" autocomplete="current-password">
+        <label class="ol-chk tapx"><input type="checkbox" data-act="save-id" ${S.saveId?'checked':''}><span>이메일 기억하기</span></label>
+        <button class="btn pri blk" data-act="ops-email">로그인</button>
+        <p class="ol-keep">로그인하면 이 기기에서 <b>30일</b> 동안 다시 로그인하지 않아도 됩니다. 함께 쓰는 PC라면 쓰신 뒤 로그아웃해 주세요.</p>
+        <div class="ol-or"><i></i><span>또는</span><i></i></div>
+        ${google ? snsButton(google).replace('data-act="sns"', 'data-act="ops-sns"') : ''}
+        ${linkNote}
+      </div>
+    </div>`, 440, true);
   }
 
   /* 로그인은 되어 있고, 아직 열어보는 중 */
@@ -11101,6 +11135,10 @@ const CT_하위메뉴 = [['#/partner/contracts/new', '계약서 작성', 'pen', 
    번호는 배포한 날(연.월.일 - 같은 날 또 올리면 뒤에 .2). 화면이 version.json 을 가끔 읽어,
    더 새 버전이 올라와 있으면 메뉴 아래에서 새로고침을 권한다(버전확인) - 계약서를 띄워 둔 채 오래 일하면 고친 화면을 못 받는다 */
 const BK_변경 = [
+  { v:'26.11.07.7', 날:'2026-11-07', 줄:[
+    '운영 화면 - 왼쪽 메뉴의 하위 항목(공급자 신청 · 손님 계정 · 안 보낸 것 · 미확인만 …)을 누르면 그 화면이 열립니다. 운영자 명단으로 들어오면 눌러도 바뀌지 않던 것',
+    '운영자 로그인 화면 - 비버리 캐릭터 · 운영자 전용 표시 · 이메일 기억하기 · 30일 로그인 유지 안내',
+  ]},
   { v:'26.11.07.6', 날:'2026-11-07', 줄:[
     '손님 대화 - 사무소 이름이 아주 길어도 말이 보내집니다',
   ]},
@@ -16896,8 +16934,10 @@ function handle(a,v,el){
     case 'ops-tab':
       OPS.tab = v;
       if(v==='stats' && !ST.data) stFetch();
-      /* 들어가는 순간 한 번 불러온다 - 매번 '불러오기' 를 누르게 하지 않는다 */
-      if(OPS.pass){
+      /* 들어가는 순간 한 번 불러온다 - 매번 '불러오기' 를 누르게 하지 않는다.
+         ⚠ 암호(OPS.pass)가 아니라 '문이 열렸나'(OPS.ok)를 본다 - 운영자 명단으로 들어오면 암호가 비어 있어
+         메뉴를 눌러도 아무것도 불러오지 않았다(2026-11-07 대표님 '메뉴에서 눌러도 안 열리는 화면') */
+      if(OPS.ok){
         if(v==='member'  && !AG.rows) agFetch();
         if(v==='log'     && !LG.rows) lgFetch();
         if(v==='report'  && !RP.rows) rpFetch();
@@ -16906,7 +16946,7 @@ function handle(a,v,el){
       render(); return true;
     case 'ops-msub':
       OPS.msub = v;
-      if(OPS.pass){
+      if(OPS.ok){
         if(v==='agent' && !AG.rows) agFetch();
         if(v==='user'  && !US.rows) usFetch();
       }
@@ -16926,7 +16966,7 @@ function handle(a,v,el){
       /* 목록에서 바로 고른다 - 화면을 연 뒤 다시 거르지 않아도 되게 */
       const i = v.indexOf('|'), k = v.slice(0,i), val = v.slice(i+1);
       OPS.tab = k;
-      if(!OPS.pass){ render(); return true; }
+      if(!OPS.ok){ render(); return true; }   /* 암호가 아니라 문이 열렸는지 - 명단으로 든 운영자는 암호가 없다 */
       if(k==='member'){ OPS.msub = val;
         if(val==='agent' && !AG.rows) agFetch();
         if(val==='user'  && !US.rows) usFetch(); }

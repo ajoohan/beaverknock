@@ -90,6 +90,9 @@ let res = 응답(); await R.roomAgent({ headers: {} }, res, 보조, { id: 'u-st'
 ok(res.code === 403, '중개보조원은 초대 링크를 못 만든다');
 res = 응답(); await R.roomAgent({ headers: {} }, res, 보조, { id: 'u-st' }, { what: 'room-send', id: CID, side: 'buyer', text: '방문 일정 안내드립니다' });
 ok(res.code === 200 && 말들[3].name === '이보조', '중개보조원도 대화는 한다');
+{ const 긴 = { ...중개사, name: '', office: '가'.repeat(60) }; const res = 응답();
+  await R.roomAgent({ headers: {} }, res, 긴, 대표, { what: 'room-send', id: CID, side: 'seller', text: '긴 이름 사무소' });
+  ok(res.code === 200 && 말들[말들.length - 1].name.length === 40, '말쓴이 이름은 40자로 자른다(표의 name 칸 - 긴 사무소 이름에 말이 안 가지 않게)'); }
 res = 응답(); await R.roomAgent({ headers: {} }, res, { ...중개사, id: 'a2' }, 대표, { what: 'room', id: CID, side: 'buyer' });
 ok(res.code === 404, '다른 사무소는 방을 못 연다');
 /* 매수인을 내보내도 매도인 쪽은 그대로 */

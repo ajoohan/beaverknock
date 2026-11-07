@@ -93,7 +93,7 @@ async function 말읽기(id, thread, 뒤 = 0) {
 const 메일때 = (방, 누구) => !overLimit(`roommail:${방}:${누구}`, 1, 600e3);
 async function 말쓰기(row, thread, side, user, name, text) {
   return db('bk_contract_msg', '', { method: 'POST', headers: { Prefer: 'return=representation' },
-    body: JSON.stringify({ contract_id: row.id, agent_id: row.agent_id, thread, side, user_id: user ? user.id : null, name: name || null, body: text }) });
+    body: JSON.stringify({ contract_id: row.id, agent_id: row.agent_id, thread, side, user_id: user ? user.id : null, name: name ? String(name).slice(0, 40) : null, body: text })   /* 표의 name 칸은 40자까지(0034) - 긴 사무소 이름에 말이 안 가지 않게 */ });
 }
 const 줄인말 = v => ({ id: v.id, side: v.side, body: String(v.body || '').slice(0, 60), at: v.created_at });
 

@@ -408,7 +408,7 @@ ok(/\$\{partnerDoor\('onDark'\)\}/.test(js), '첫 화면 파트너 칸이 그 �
      '본문 줄 간격 1.55 - 한 줄짜리 단추·칩만 1.3');
   ok(css.includes('--n500:#5B5E6A') && fs.readFileSync(path.join(길.저장소, 'legal-base.css'), 'utf8').includes('--n500:#5B5E6A'),
      '보조 글자색(n500)은 한 단계 짙게 - 화면과 약관·처리방침이 같은 값');
-  ok(css.includes('--navy300:#A9ABD6'), '남색 바탕 위 보조 글자는 7.2:1 (예전 #9395C4 는 5.6:1)');
+  ok(css.includes('--navy300:#C3B8F0'), '남색 바탕 위 보조 글자는 8.3:1 (2026-11-07 보라로 바꾼 뒤 · 예전 #A9ABD6 7.2:1)');
   ok(css.includes('.ctx-side .lab{font-size:13px') && css.includes('.ctx-side .ct-f .lab{font-size:13px'),
      '계약서 입력 칸 이름표는 13px - 서식을 채우는 화면이라 이름표가 읽혀야 한다');
 
@@ -419,10 +419,10 @@ ok(/\$\{partnerDoor\('onDark'\)\}/.test(js), '첫 화면 파트너 칸이 그 �
     /* 넓은 화면은 왼쪽 세로 메뉴(파트너옆, 2026-10-29)를 낸다 - 그 함수와 아이콘도 함께 꺼낸다 */
     const 아이콘 = js.slice(js.indexOf('const DZ_ICO = {'), js.indexOf('/* 대시보드 머리 (2026-10-30'));
     const 옆 = js.slice(js.indexOf('function 파트너옆(active){'), js.indexOf('/* ── 중개사 대시보드 ── */'));
-    const 그려 = (mo, 탭 = true) => new Function('isMo', 'S', 'ownerSide', 'logoLockup', 'agentBadge', 'esc', 'navAuth', '탭', 'userMenu', '직원', '계약막힘',
+    const 그려 = (mo, 탭 = true) => new Function('isMo', 'S', 'ownerSide', 'logoLockup', 'agentBadge', 'esc', 'navAuth', '탭', 'userMenu', '직원', '계약막힘', '찾기단추', '알림종',
       `${아이콘}\n${옆}\n${몸[0]}; return navPartner('d', 탭);`)(() => mo,
       { user: { id: 'u' }, agent: { office: '하남미사부동산', status: 'approved' } },
-      () => false, () => '', () => '<span class="badge">인증됨</span>', s => s, () => '', 탭, () => '<div class="umenu">이름 메뉴</div>', () => null, () => false);
+      () => false, () => '', () => '<span class="badge">인증됨</span>', s => s, () => '', 탭, () => '<div class="umenu">이름 메뉴</div>', () => null, () => false, () => '', () => '');
     const 폰 = 그려(true), 큰 = 그려(false), 탭없는폰 = 그려(true, false);
     ok(!폰.includes('하남미사부동산') && 폰.includes('class="umenu"') && !폰.includes('data-act="logout"'),
        '휴대폰 파트너 상단바는 사무소 이름을 빼고 이름 메뉴 하나(마이페이지·로그아웃이 그 안에)만 둔다 (2026-10-30)');

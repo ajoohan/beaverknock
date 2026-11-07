@@ -46,7 +46,7 @@ const M = new Function('esc', `${js.slice(시작, 끝)}\nreturn { dzLine, dzPill
   ok(!/dzHello|좋은 저녁이에요|좋은 아침이에요/.test(js) && js.includes('<h1 class="dz-h1"><span data-dzdate>${esc(날)}</span> <span class="dz-time num" data-dzclock>')
      && js.includes('<div class="dz-now"><h1 class="dz-h1">') && !js.includes("dzNowHTML('운영 대시보드')")
      && js.includes("<div class=\"ptop\">${S.route === '#/partner/home' ? dzNowHTML() : adm경로(adm위치(S.route || ''))}")
-     && js.includes("<div class=\"ptop\">${tab === 'home' ? dzNowHTML() : adm경로(") && js.includes("${isMo() ? `<div class=\"dz-head\">${dzNowHTML()}</div>` : ''}"),
+     && js.includes("<div class=\"ptop\">${tab === 'home' ? dzNowHTML() : adm경로(") && js.includes("${isMo() ? `<div class=\"dz-head\">${dzNowHTML()}${찾기단추()}</div>` : ''}"),
      "인사말·'대시보드' 글자 없이 날짜·요일·시간, 그 오른쪽에 날씨 - 넓은 화면은 머리 줄에 올려 본문은 바로 카드부터(중개사·운영 둘 다), 휴대폰은 본문 맨 위");
   ok(['sun', 'moon', 'cloud', 'overcast', 'rain', 'snow'].every(k => M.DZ_WX[k]) && js.includes("const c = document.querySelector('#app [data-dzclock]'); if(!c) return;"),
      '날씨 아이콘 여섯(해·달·구름·흐림·비·눈) · 시계는 글자만 바꾼다(화면 전체를 다시 그리지 않는다)');
@@ -133,7 +133,7 @@ const M = new Function('esc', `${js.slice(시작, 끝)}\nreturn { dzLine, dzPill
   const 발 = 옆.slice(옆.indexOf('<div class="dz-foot">'), 옆.indexOf('</aside>'));
   ok(발.indexOf('사이트 가기') > 0 && 발.indexOf('${버전칸()}') > 발.indexOf('사이트 가기') && !/마이페이지|로그아웃|dz-office/.test(발),
      '왼쪽 메뉴 맨 아래는 사이트 가기, 그 아래 버전과 날짜 - 마이페이지·로그아웃은 메뉴에 없다');
-  ok(옆.includes("<div class=\"ptop\">${S.route === '#/partner/home' ? dzNowHTML() : adm경로(adm위치(S.route || ''))}<span class=\"ptop-r\">${agentBadge()}${S.user ? userMenu({ admin: true }) : navAuth('partner')}</span></div>")
+  ok(옆.includes("<div class=\"ptop\">${S.route === '#/partner/home' ? dzNowHTML() : adm경로(adm위치(S.route || ''))}<span class=\"ptop-r\">${찾기단추()}${알림종()}${agentBadge()}${S.user ? userMenu({ admin: true }) : navAuth('partner')}</span></div>")
      && js.includes("<div class=\"ptop\">${tab === 'home' ? dzNowHTML() : adm경로([['운영'], [OPS_TITLE[tab] || '운영 화면']])}<span class=\"ptop-r\">${tab === 'home' ? 새로고침 : ''}${S.user ? userMenu({ admin: true, sub: OPS.role === 'sub' ? '부운영자' : '운영자' }) : ''}</span></div>")
      && js.includes('<span class="ctx-badge">${agentBadge()}${S.user ? userMenu({ admin: true }) : \'\'}</span>'),
      '머리 줄 - 왼쪽 지금 위치, 오른쪽 프로필 (중개사 화면·운영 화면) · 계약서 작성 화면은 머리 줄 오른쪽에 프로필');

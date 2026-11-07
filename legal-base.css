@@ -97,9 +97,9 @@
 :root{
   /* index.html 의 :root 와 같은 값이다 (2026-10-08 개편). 한쪽을 바꾸면 여기도 바꾼다 -
      검사/조판.mjs 가 두 곳이 같은지 본다. */
-  --ind900:#23246E; --ind700:#3335B2; --ind:#4144CE; --ind300:#5658D6; --ind100:#E8E9F5; --ind50:#F3F4F9;
+  --ind900:#221962; --ind700:#4F35C2; --ind:#6A46E0; --ind300:#7C58E7; --ind100:#EEE8FD; --ind50:#F6F3FE;
   --clay700:#8A5631; --clay200:#EBDCCD; --clay100:#F6F1EB;
-  --n900:#16171D; --n700:#3D3F49; --n500:#5B5E6A; --n300:#D3D5DB; --n100:#EEF0F2; --n50:#F6F7F9; --white:#fff;
+  --n900:#16171D; --n700:#3D3F49; --n500:#5B5E6A; --n300:#D3D5DB; --n100:#EFEDF5; --n50:#F7F6FB; --white:#fff;
   --hair:rgba(22,23,29,.08);
 }
 *{box-sizing:border-box}

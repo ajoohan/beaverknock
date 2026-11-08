@@ -2429,6 +2429,12 @@ body:not(.mo) .ctx-sub{flex:1 1 0;min-width:0;overflow:hidden;text-overflow:elli
 .scan-flow li.now b{color:var(--ind700)}
 .scan-flow li.done .sf-n{background:var(--ok);color:#fff}
 .scan-flow li.done b{color:var(--n900)}
+/* 휴대폰 - 칸이 좁아 설명이 네 줄로 꺾였다. 번호 · 이름만 한 줄로 두고 설명은 지금 걸음 아래에 한 줄로 (2026-11-08 디자인) */
+body.mo .scan-flow{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+body.mo .scan-flow li{flex-direction:row;align-items:center;justify-content:center;gap:5px;padding:9px 4px;text-align:center}
+body.mo .scan-flow .sf-n{margin:0;flex:none;width:20px;height:20px;font-size:12px}
+body.mo #app .scan-flow b{font-size:13px;white-space:nowrap;text-wrap:nowrap}   /* #app b 의 text-wrap:balance 가 nowrap 을 덮는다 */
+body.mo .scan-flow small{display:none}
 @media (pointer:coarse){ .scan-flow .pf{display:none} }
 .scan-slots{display:flex;flex-direction:column;gap:8px}
 .scan-slot{display:flex;align-items:center;gap:12px;padding:13px 14px 13px 16px;border:1px solid var(--n200);border-radius:12px;background:var(--white);
@@ -2486,16 +2492,34 @@ body:not(.mo) .ctx-sub{flex:1 1 0;min-width:0;overflow:hidden;text-overflow:elli
 .dirty-dot{display:inline-block;width:6px;height:6px;margin-right:6px;border-radius:50%;background:var(--warn);vertical-align:.15em}
 #ctPrint{display:none}
 /* 계약서 보관 창 (2026-11-08) - 고르는 단추 셋은 한 폭(세로로 쌓는다) */
-.cl-opts{display:grid;gap:8px}
-.cl-o{display:flex;align-items:center;gap:12px;width:100%;min-height:58px;padding:10px 14px;text-align:left;justify-content:flex-start}
-.cl-o .cl-ic{flex:none;display:grid;place-items:center;width:36px;height:36px;border-radius:10px;background:var(--n50);color:var(--n700)}
-.cl-o .cl-t{display:flex;flex-direction:column;gap:2px;min-width:0}
-.cl-o .cl-t b{font-size:15px;color:var(--n900)}
-.cl-o .cl-t small{font-size:13px;font-weight:500;color:var(--n500)}
-.cl-o:disabled{opacity:.55}
-.cl-mail{display:flex;flex-direction:column;gap:10px;padding:12px 14px;border:1px solid var(--n200);border-radius:12px;background:#fff}
-.cl-mt{display:flex;align-items:center;gap:12px;font-size:15px;color:var(--n900)}
-.cl-mail .cl-ic{flex:none;display:grid;place-items:center;width:36px;height:36px;border-radius:10px;background:var(--n50);color:var(--n700)}
+.modal .box.cl-box{position:relative;max-width:460px;padding:26px 24px 20px}
+.cl-x{position:absolute;top:14px;right:14px;display:grid;place-items:center;width:40px;height:40px;border-radius:var(--r-btn);color:var(--n500);transition:background .15s,color .15s}
+.cl-x:hover{background:var(--n50);color:var(--n900)}
+.cl-h{margin:0 48px 4px 0;font-size:19px;font-weight:800;letter-spacing:-.035em;color:var(--n900)}
+.cl-lead{margin:0 0 6px;font-size:14px;line-height:1.6;color:var(--n500)}
+.cl-opts{display:flex;flex-direction:column;gap:8px}
+.cl-g{margin:12px 2px 0;font-size:12.5px;font-weight:700;letter-spacing:.02em;color:var(--n500)}
+.cl-o{display:flex;align-items:center;gap:14px;width:100%;min-height:64px;padding:12px 14px;text-align:left;border:1px solid var(--n200);border-radius:var(--r-sm);background:var(--white);
+  transition:border-color .15s,background .15s,box-shadow .15s,transform .1s}
+.cl-o:not(:disabled):hover{border-color:var(--ind200);background:var(--ind50);box-shadow:var(--sh0)}
+.cl-o:not(:disabled):active{transform:scale(.99)}
+.cl-o:disabled{cursor:default}
+.cl-o.off{background:var(--n50);border-color:var(--n100)}
+.cl-o.off .cl-ic{filter:grayscale(1);opacity:.6}
+.cl-ic{flex:none;display:grid;place-items:center;width:40px;height:40px;border-radius:var(--r-xs);background:var(--n50);color:var(--n700);border:1px solid var(--n100)}
+.cl-ic-pdf{background:var(--ind50);border-color:var(--ind100);color:var(--ind)}
+.cl-ic-mail{background:var(--clay100);border-color:var(--clay200);color:var(--clay700)}
+.cl-ic-google,.cl-ic-dropbox{background:var(--white)}
+.cl-o .cl-t{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
+.cl-o .cl-t b{font-size:15px;font-weight:700;color:var(--n900)}
+.cl-o .cl-t small{font-size:13px;font-weight:500;line-height:1.45;color:var(--n500)}
+.cl-o.off .cl-t b{color:var(--n700)}
+.cl-go{flex:none;color:var(--n500);transition:transform .15s,color .15s}
+.cl-o:not(:disabled):hover .cl-go{color:var(--ind);transform:translateX(2px)}
+.cl-tag{flex:none;padding:3px 8px;border-radius:var(--r-full);background:var(--white);border:1px solid var(--n200);font-size:12px;font-weight:700;color:var(--n500);white-space:nowrap}
+.cl-foot{display:flex;align-items:center;justify-content:center;gap:6px;margin:18px 0 0;padding-top:14px;border-top:1px solid var(--n100);font-size:12.5px;color:var(--n500)}
+.cl-mail{display:flex;flex-direction:column;gap:12px;padding:14px;border:1px solid var(--ind200);border-radius:var(--r-sm);background:var(--white);box-shadow:0 0 0 3px var(--ind50)}
+.cl-mt{display:flex;align-items:center;gap:14px;font-size:15px;color:var(--n900)}
 .cl-f{display:flex;flex-direction:column;gap:4px;font-size:13.5px;font-weight:600;color:var(--n700)}
 .cl-f small{font-weight:500;color:var(--n500)}
 .cl-f .inp{width:100%;font-size:16px}
@@ -2503,8 +2527,8 @@ body:not(.mo) .ctx-sub{flex:1 1 0;min-width:0;overflow:hidden;text-overflow:elli
 .cl-hint{margin:0;font-size:13px;line-height:1.6;color:var(--n500)}
 .cl-ma{display:flex;gap:8px;justify-content:flex-end}
 .cl-msg{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:12px 0 0;padding:10px 12px;border-radius:10px;background:var(--n50);font-size:14px;line-height:1.6;color:var(--n700)}
-.cl-msg.ok{background:#EAF7EF;color:#14532D}
-.cl-msg.err{background:#FDECEC;color:#8A1C1C}
+.cl-msg.ok{background:var(--okbg);color:var(--ok);border:1px solid var(--okline)}
+.cl-msg.err{background:var(--dangerbg);color:var(--danger);border:1px solid var(--dangerline)}
 .cl-msg a,.cl-msg .lnk{font-weight:700;color:inherit;text-decoration:underline;background:none;border:0;padding:0;cursor:pointer;font-size:inherit}
 .cl-spin{width:14px;height:14px;border-radius:50%;border:2px solid var(--n200);border-top-color:var(--ind);animation:clSpin .8s linear infinite}
 @keyframes clSpin{to{transform:rotate(360deg)}}
@@ -2974,6 +2998,12 @@ body.mo .rm-h{padding:12px 14px}
 .dz-chart{display:flex;flex-direction:column}
 .dz-chart .dz-lw{flex:1;display:flex;min-height:190px}
 .dz-chart .dz-line{flex:1;height:auto;min-height:190px}
+.dz-chempty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:190px;margin-top:12px;padding:20px;
+  border:1px dashed var(--n200);border-radius:var(--r-sm);background:var(--n50);text-align:center}
+.dz-chempty svg{margin-bottom:4px}
+.dz-chempty b{font-size:15px;font-weight:700;color:var(--n900)}
+.dz-chempty span{max-width:34ch;font-size:13.5px;line-height:1.55;color:var(--n500)}
+.dz-chempty .btn{margin-top:8px}
 .dz-ti{display:grid;grid-template-columns:38px minmax(0,1fr) auto;gap:12px;align-items:center;width:100%;min-height:52px;padding:8px 6px;
   border:none;border-radius:8px;background:transparent;font:inherit;text-align:left;cursor:pointer}
 .dz-ti:hover{background:var(--n50)}
@@ -3000,6 +3030,14 @@ body.mo .dz-r2{display:flex;flex-direction:column;gap:10px}
 body.mo .dz-stack{flex-direction:row;gap:10px}
 body.mo .dz-stack .dz-kpi{flex:1 1 0}
 body.mo .dz-kpi .dz-sub{display:none}
+/* 휴대폰 숫자 카드 - 그림을 오른쪽 위 구석으로 빼서 카드 높이를 절반으로 (2026-11-08 디자인 · 숫자 여섯 개가 한 화면을 다 먹었다) */
+body.mo .dz-kpi{padding:14px 14px 13px;gap:1px}
+body.mo .dz-kpi .dz-kt{position:absolute;top:12px;right:12px;width:auto;margin:0;gap:6px;flex-direction:row-reverse}
+body.mo .dz-kpi .dz-ic{width:32px;height:32px;border-radius:10px}
+body.mo .dz-kpi .dz-ic svg{width:17px;height:17px}
+body.mo .dz-kpi .dz-pill{padding:2px 8px;font-size:12px}
+body.mo .dz-kpi .dz-big{margin-top:2px}
+body.mo .dz-kpi .dz-lab{font-size:13.5px;padding-right:4px}
 /* ── 나란히 놓인 버튼은 같은 폭 (2026-11-02 대표님 '버튼 가로 사이즈가 제각각이면 이쁘지 않아. 같은 크기로 모두 맞춰') ──
    묶음(.eqb) 안의 버튼은 가장 긴 버튼의 폭에 모두 맞춘다. 칸을 1fr 로 두고 묶음 폭을 내용만큼(max-content)으로 잡으면
    칸마다 가장 넓은 버튼 폭이 되어 다 같아진다 - 줄을 꽉 채우지 않고 버튼만큼만 차지한다.
@@ -11353,6 +11391,11 @@ const CT_하위메뉴 = [['#/partner/contracts/new', '계약서 작성', 'pen', 
    번호는 배포한 날(연.월.일 - 같은 날 또 올리면 뒤에 .2). 화면이 version.json 을 가끔 읽어,
    더 새 버전이 올라와 있으면 메뉴 아래에서 새로고침을 권한다(버전확인) - 계약서를 띄워 둔 채 오래 일하면 고친 화면을 못 받는다 */
 const BK_변경 = [
+  { v:'26.11.08.6', 날:'2026-11-08', 줄:[
+    '계약서 ‘저장·보내기’ 창 새 단장 - 내 기기 · 클라우드 · 보내기로 나누고, 준비 중인 곳은 꼬리표로 · 닫기는 오른쪽 위로',
+    '대시보드 - 보낸 제안이 없을 때 빈 그래프 대신 다음에 할 일을 보여 줍니다 · 휴대폰 숫자 카드를 절반 높이로',
+    '계약서 휴대폰 - 서류로 채우기 세 걸음을 한 줄로 · 화면을 옮길 때 제목에 남던 테두리를 없앴습니다',
+  ]},
   { v:'26.11.08.5', 날:'2026-11-08', 줄:[
     '계약서 보관 - ‘메일로 보내기’: 보고 있는 서류를 PDF 로 붙여 손님 · 법무사 등에게 바로 보냅니다(5명까지 · 답장은 내 메일로)',
   ]},
@@ -11905,12 +11948,16 @@ V['#/partner/home'] = () => {
         <div class="dz-r2">
           <div class="dz-stack">
             ${dzKpi({ ico:'building', cap:'올려둔 물건', v: 물건.length, go:'#/partner/listings', sub:'맞는 손님과 늘 대조합니다' })}
-            ${dzKpi({ ico:'eye', cap:'열람률', v: 진짜.length ? `${Math.round(열람 / 진짜.length * 100)}%` : '-', go:'#/partner/stats', sub:'보낸 제안 중 손님이 연 비율' })}
+            ${dzKpi({ ico:'eye', cap:'열람률', v: 진짜.length ? `${Math.round(열람 / 진짜.length * 100)}%` : '-', go:'#/partner/stats', sub: 진짜.length ? '보낸 제안 중 손님이 연 비율' : '첫 제안을 보내면 계산됩니다' })}
           </div>
           <div class="dz-card dz-chart">
             <div class="dz-chh"><b class="dz-ct">제안 흐름</b><span class="dz-leg"><i class="a"></i>보낸 제안 ${보냄.reduce((a,b)=>a+b,0)}<i class="b"></i>그중 열람 ${열림.reduce((a,b)=>a+b,0)}</span><span class="dz-cs">최근 14일 · 보낸 날 기준</span></div>
-            ${dzLine([{ name:'보낸 제안', v:보냄 }, { name:'열람', v:열림 }])}
-            <div class="axis">${days.map((x, i) => `<span>${i === 13 ? '오늘' : i === 0 || x.lab === '1' ? `${x.mon}/${x.lab}` : (i % 2 ? '' : x.lab)}</span>`).join('')}</div>
+            ${보냄.some(Boolean) ? `${dzLine([{ name:'보낸 제안', v:보냄 }, { name:'열람', v:열림 }])}
+            <div class="axis">${days.map((x, i) => `<span>${i === 13 ? '오늘' : i === 0 || x.lab === '1' ? `${x.mon}/${x.lab}` : (i % 2 ? '' : x.lab)}</span>`).join('')}</div>`
+            /* 14일 동안 0 이면 바닥에 붙은 선 하나만 남는다 - 빈 그래프 대신 무엇을 하면 채워지는지 알려 준다 (2026-11-08 디자인) */
+            : `<div class="dz-chempty"><svg viewBox="0 0 120 48" width="120" height="48" aria-hidden="true"><path d="M4 40 26 30l18 6 22-18 20 8 30-20" fill="none" stroke="var(--ind200)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="4 5"/></svg>
+              <b>최근 14일 동안 보낸 제안이 없습니다</b><span>맞는 손님에게 제안을 보내면 보낸 수와 열람 수가 날마다 그려집니다.</span>
+              <button type="button" class="btn sec sm" data-go="#/partner/demands">맞는 손님 보기</button></div>`}
           </div>
         </div>
         <div class="dz-card dz-recent">
@@ -13074,28 +13121,34 @@ function 보관창(){
 const CL_곳 = { google: 'Google 드라이브', dropbox: 'Dropbox', pdf: 'PDF', mail: '메일' };
 function 보관창HTML(){
   const c = CL.cfg, 확인중 = !c, 일 = !!CL.busy;
-  const 단추 = (k, 이름, 그림, 켜짐, 말) => `<button type="button" class="btn sec cl-o" data-act="cl-save" data-v="${k}" ${!켜짐 || 일 ? 'disabled' : ''}>
-      <span class="cl-ic" aria-hidden="true">${그림}</span><span class="cl-t"><b>${이름}</b><small>${esc(말)}</small></span></button>`;
-  const 준비 = 확인중 ? '연결 확인 중…' : c.실패 ? '연결을 확인하지 못했습니다 - 창을 닫았다 다시 열어 주세요' : '준비 중 - 곧 열립니다';
-  return `<div class="modal" data-act="modal-bg"><div class="box" data-stop role="dialog" aria-modal="true" aria-labelledby="mdT" tabindex="-1" style="max-width:440px">
-    <h2 id="mdT" style="margin:0 0 6px;font-size:16px;font-weight:700;letter-spacing:-.03em">계약서 보관</h2>
-    <p style="margin:0 0 14px;font-size:14px;line-height:1.7;color:var(--n500)">지금 보고 있는 서류를 인쇄되는 모양 그대로 PDF 로 만들어 <b style="color:var(--n900)">내 저장 공간</b>에 넣습니다. 비버노크는 파일을 따로 갖고 있지 않습니다.</p>
+  /* 줄 하나 = 갈 곳 하나. 꺼진 줄은 흐리게 하지 않고 오른쪽에 '준비 중' 꼬리표를 단다 - 글자는 읽혀야 한다 (2026-11-08 디자인) */
+  const 단추 = (k, 이름, 그림, 켜짐, 말) => `<button type="button" class="cl-o${켜짐 ? '' : ' off'}" data-act="cl-save" data-v="${k}" ${!켜짐 || 일 ? 'disabled' : ''}>
+      <span class="cl-ic cl-ic-${k}" aria-hidden="true">${그림}</span><span class="cl-t"><b>${이름}</b><small>${esc(말)}</small></span>
+      ${켜짐 ? `<svg class="cl-go" viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="m8 5 5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>` : `<span class="cl-tag">${확인중 ? '확인 중' : '준비 중'}</span>`}</button>`;
+  const 준비 = 확인중 ? '연결을 확인하고 있습니다' : c.실패 ? '연결을 확인하지 못했습니다 - 창을 닫았다 다시 열어 주세요' : '곧 쓸 수 있습니다';
+  return `<div class="modal" data-act="modal-bg"><div class="box cl-box" data-stop role="dialog" aria-modal="true" aria-labelledby="mdT" tabindex="-1">
+    <button type="button" class="cl-x" data-act="modal-close" aria-label="닫기"><svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true"><path d="M5 5l10 10M15 5 5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+    <h2 id="mdT" class="cl-h">저장 · 보내기</h2>
+    <p class="cl-lead">지금 보고 있는 서류를 인쇄되는 모양 그대로 PDF 로 만듭니다.</p>
     <div class="cl-opts">
-      ${단추('google', 'Google 드라이브', CL_그림.google, c && c.google, c && c.google ? `'${CL_폴더}' 폴더에 저장` : 준비)}
-      ${단추('dropbox', 'Dropbox', CL_그림.dropbox, c && c.dropbox, c && c.dropbox ? 'Dropbox 의 Apps 폴더에 저장' : 준비)}
+      <p class="cl-g">내 기기</p>
       ${단추('pdf', 'PDF 내려받기', CL_그림.pdf, true, '이 기기에 바로 저장')}
+      <p class="cl-g">클라우드에 저장</p>
+      ${단추('google', 'Google 드라이브', CL_그림.google, c && c.google, c && c.google ? `‘${CL_폴더}’ 폴더에 저장` : 준비)}
+      ${단추('dropbox', 'Dropbox', CL_그림.dropbox, c && c.dropbox, c && c.dropbox ? 'Dropbox 의 Apps 폴더에 저장' : 준비)}
+      <p class="cl-g">보내기</p>
       ${CL.메일 ? 메일칸HTML(일) : 단추('mail', '메일로 보내기', CL_그림.mail, c && c.mail, c && c.mail ? '손님 · 법무사 등에게 PDF 를 붙여 보내기' : 준비)}
     </div>
     ${일 ? `<p class="cl-msg" role="status"><span class="cl-spin" aria-hidden="true"></span>${esc(CL.busy)}${CL.취소 ? ' <button type="button" class="lnk" data-act="cl-cancel">그만두기</button>' : ''}</p>` : ''}
     ${CL.err ? `<p class="cl-msg err" role="alert">${esc(CL.err)}</p>` : ''}
     ${CL.done ? `<p class="cl-msg ok" role="status">${esc(CL.done.t)}${CL.done.url ? ` <a href="${esc(CL.done.url)}" target="_blank" rel="noopener">${esc(CL.done.열기 || '열어 보기')}</a>` : ''}</p>` : ''}
-    <button class="btn pri" data-act="modal-close" style="width:100%;margin-top:14px">닫기</button></div></div>`;
+    <p class="cl-foot"><svg viewBox="0 0 20 20" width="15" height="15" aria-hidden="true"><rect x="4.5" y="9" width="11" height="8" rx="1.8" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M7 9V6.8a3 3 0 0 1 6 0V9" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>비버노크는 만든 파일을 따로 갖고 있지 않습니다</p></div></div>`;
 }
 /* 메일로 보내기 칸 - 받는 주소(쉼표로 5명까지) · 전하는 말. 보낸 뒤에도 적은 것은 남긴다(CL.메일값) */
 function 메일칸HTML(일){
   const v = CL.메일값 || {};
   return `<div class="cl-mail" role="group" aria-labelledby="clMailT">
-      <b id="clMailT" class="cl-mt"><span class="cl-ic" aria-hidden="true">${CL_그림.mail}</span>메일로 보내기</b>
+      <b id="clMailT" class="cl-mt"><span class="cl-ic cl-ic-mail" aria-hidden="true">${CL_그림.mail}</span>메일로 보내기</b>
       <label class="cl-f"><span>받는 메일</span><input class="inp" id="clTo" type="text" inputmode="email" autocomplete="email" spellcheck="false"
         placeholder="예: buyer@naver.com, 두 분 이상이면 쉼표로" value="${esc(v.to || '')}" ${일 ? 'disabled' : ''}></label>
       <label class="cl-f"><span>전하는 말 <small>선택</small></span><textarea class="inp" id="clMsg" rows="2" maxlength="500"
@@ -14331,7 +14384,7 @@ V['#/partner/contract'] = (id) => {
         ${!F.explain && CT.mode !== 'extra' ? `<button class="btn sec sm" data-act="ct-extra">부속 서류</button>` : ''}
         ${F.lease && CT.id ? `<button class="btn sec sm" data-act="ct-renew-this">갱신계약<span class="ct-long"> 쓰기</span></button>` : ''}
         <button class="btn sec sm" data-act="ct-print">인쇄</button>
-        <button class="btn sec sm" data-act="ct-cloud">드라이브 저장</button>
+        <button class="btn sec sm" data-act="ct-cloud">저장·보내기</button>
         ${잠김 || F.explain ? '' : `<button class="btn sec sm" data-act="ct-share">초안 링크</button>`}
         ${F.explain ? '' : `<button class="btn sec sm" data-act="ct-explain">확인·설명서<span class="ct-long"> 만들기</span></button>`}
         ${잠김 ? `<button class="btn sec sm" data-act="ct-revise">고쳐서 새 판 만들기</button>`
@@ -14625,7 +14678,7 @@ function ctDeskShell(doc, side, 신고면){
             ${F.explain || !CT.id ? '' : `<button class="btn tool sm" data-act="ct-copy-this">복사해서 새로</button>`}
             ${잠김 || F.explain ? '' : `<button class="btn tool sm" data-act="ct-share">초안 링크</button>`}
             <button class="btn tool sm" data-act="ct-print">인쇄</button>
-            <button class="btn tool sm" data-act="ct-cloud">드라이브 저장</button></span>
+            <button class="btn tool sm" data-act="ct-cloud">저장·보내기</button></span>
           </span>
         </div>
         <div class="ctx-desk" id="ctDesk"><div class="ct-sheet" id="ctPv">${ct책상HTML(doc)}</div></div>
@@ -16485,7 +16538,8 @@ function render(){
      복원해 주는 스크롤 위치까지 끌어당긴다. S.lastRoute 가 null 인 때가 그때다. */
   if(!same && S.lastRoute !== null){
     const 제목 = app.querySelector('h1');
-    if(제목){ 제목.setAttribute('tabindex','-1'); 제목.focus({preventScroll:true}); }
+    /* focusVisible:false - 읽기 프로그램용 초점이다. 키보드를 쓴 직후면 브라우저가 제목에 보라 테를 그려 화면마다 남았다 (2026-11-08 디자인) */
+    if(제목){ 제목.setAttribute('tabindex','-1'); 제목.focus({preventScroll:true, focusVisible:false}); }
   }
   /* .scr.fade 는 opacity 0 → 1 이라, 같은 화면을 다시 그릴 때마다 화면 전체가
      한 번 사라졌다 나타난다. 첫 진입에서 세션 확인·설정 조회로 렌더가 두세 번

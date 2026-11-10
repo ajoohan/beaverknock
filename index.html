@@ -2454,6 +2454,15 @@ body.mo .rp-l{grid-column:1/-1}
 .ct-rw:first-child > .ct-row{border-top:none}
 .ct-rcopy{position:absolute;right:12px;top:50%;transform:translateY(-50%);padding:6px 12px;border:1px solid var(--n200);border-radius:8px;background:var(--white);font:inherit;font-size:13px;font-weight:600;color:var(--ind700,#3B3EA8);cursor:pointer;opacity:0;pointer-events:none;transition:opacity .12s;box-shadow:0 2px 8px rgba(23,15,69,.08)}
 .ct-rw:hover .ct-rcopy,.ct-rcopy:focus-visible{opacity:1;pointer-events:auto}
+/* 직원 기능 스위치 (2026-11-10) */
+.sf-perm{flex-basis:100%;margin-top:6px;padding:12px 14px;border:1px solid var(--n100);border-radius:12px;background:var(--n50);display:flex;flex-direction:column;gap:2px}
+.sf-perm-h{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:4px}
+.sf-perm-h span{display:flex;gap:6px}
+.sf-sw{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 0;border-top:1px solid var(--n100);cursor:pointer}
+.sf-sw b{font-size:14px;color:var(--n900);font-weight:600}
+.sf-sw small{display:block;font-size:12px;color:var(--n500)}
+.sf-sw.lock{opacity:.6;cursor:not-allowed}
+.sf-sw input{width:40px;height:22px;accent-color:var(--ind400);flex:none}
 /* 계약현황 표 · 실적 (2026-11-10) */
 .ct-viewsw{margin:2px 0 0}
 .ct-tbl-wrap{overflow-x:auto;padding:0}
@@ -4393,7 +4402,12 @@ const ownerSide = () => !!(S.agent && S.agent.role && S.agent.role !== 'agent');
    직원은 대표 사무소로 일한다. 직원 관리 · 활동 설정은 대표만, 중개보조원은 계약서 기능을 쓰지 않는다(서버도 막는다) */
 const 직원 = () => (S.agent && S.agent.staff) || null;
 const 보조원 = () => !!(직원() && 직원().role === 'assistant');
-const 계약막힘 = () => ownerSide() || 보조원();
+/* 직원 기능별 권한 (2026-11-10) - 서버(api/_staff.js 권한목록)와 같은 키. 대표 · 직원 아님은 늘 됨. 보조원은 계약서 넷이 늘 꺼짐 */
+const CT_권한목록 = [['ct_view', '계약서 보기', '목록 · 열기 · 일정'], ['ct_edit', '계약서 작성 · 수정', '저장 · 서류로 채우기 · 일정·체크 · 보관함 · 특약 · 문자 틀'], ['ct_seal', '날인본 확정', ''], ['ct_mail', '계약서 메일 보내기', 'PDF 를 메일로'],
+  ['propose', '제안 보내기', ''], ['listing', '내 물건 등록 · 삭제', ''], ['room', '손님 대화', '계약 대화방'], ['stats', '성과 보기', '열람률 · 실적']];
+const 권한 = k => { const s = 직원(); if(!s) return true; if(s.role === 'assistant' && k.startsWith('ct_')) return false;
+  const p = s.perm || {}; return !(p[k] === false || (k.startsWith('ct_') && p.ct_view === false)); };
+const 계약막힘 = () => ownerSide() || 보조원() || !권한('ct_view');
 const 직원역할KO = { staff: '소속공인중개사', assistant: '중개보조원' };
 
 /* ── 손님 화면에서 파트너 화면으로 넘어가는 문 ──
@@ -4447,9 +4461,9 @@ function navPartner(active, 탭있음 = true){
     <a data-go="#/partner/demands" class="${active==='d'?'on':''}">${own?'맞는 손님':'수요 목록'}</a>
     <a data-go="#/partner/listings" class="${active==='l'?'on':''}">내 물건</a>
     ${own||직원()?'':`<a data-go="#/partner/settings" class="${active==='s'?'on':''}">활동 설정</a>`}
-    <a data-go="#/partner/stats" class="${active==='st'?'on':''}">성과</a>
+    ${권한('stats') ? `<a data-go="#/partner/stats" class="${active==='st'?'on':''}">성과</a>` : ''}
     <a data-go="#/partner/proposals" class="${active==='p'?'on':''}">내 제안</a>
-    ${own?'':`<a data-go="#/partner/rooms" class="${active==='rm'?'on':''}">손님 대화</a>`}
+    ${own || !권한('room') ?'':`<a data-go="#/partner/rooms" class="${active==='rm'?'on':''}">손님 대화</a>`}
     ${계약막힘()?'':`<a data-go="#/partner/contracts" class="${active==='ct'?'on':''}">계약서</a>`}
   </div>
   <div class="right" style="gap:10px">
@@ -8096,7 +8110,7 @@ V['#/partner/demand'] = (id) => { const d=S.demands.find(x=>x.id===id); if(!d) r
         </div>`).join('')}
         <p style="margin:10px 0 0;font-size:13.5px;color:var(--n700)">불러오면 금액·면적·층이 자동으로 채워집니다.</p></div>`;})()}
     <div style="margin-top:auto;padding-top:8px">
-      <button class="btn pri blk" data-act="start-propose" data-v="${d.id}">${listingsFor(d).length?'새로 작성해서 제안하기':'이 손님에게 제안하기 (약 90초)'} (약 90초)</button>
+      ${!권한('propose') ? '<p class="sub" style="margin:0;font-size:13.5px">제안 보내기는 대표님이 꺼 두셨습니다</p>' : ''}<button class="btn pri blk" data-act="start-propose" data-v="${d.id}" ${권한('propose') ? '' : 'disabled hidden'}>${listingsFor(d).length?'새로 작성해서 제안하기':'이 손님에게 제안하기 (약 90초)'} (약 90초)</button>
       <p style="margin:10px 0 0;text-align:center;font-size:13.5px;color:var(--n500)">누르면 슬롯 1건이 15분간 예약됩니다 · 손님의 성함·연락처는 연결 확정 전까지 표시되지 않습니다</p>
     </div>
   </div>
@@ -8747,6 +8761,16 @@ function sfSave(body, 됨){
   }).catch(() => { SF.busy = false; render(); toast('네트워크 문제로 저장하지 못했습니다'); });
 }
 const SF_메일 = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+/* 직원 한 사람의 기능 스위치 (2026-11-10 파트너 기획 ①-9) - 바꾸면 바로 저장 · 전체 켜기 · 끄기. 보조원의 계약서 넷과 대표 전용은 잠김 */
+const 직원권한켬 = (s, k) => !(s.role === 'assistant' && k.startsWith('ct_')) && !((s.perm || {})[k] === false);
+function 직원권한판(s){
+  const 잠 = k => s.role === 'assistant' && k.startsWith('ct_');
+  return `<div class="sf-perm"><div class="sf-perm-h"><b>${esc(s.name || s.email.split('@')[0])} 님 권한</b>
+      <span><button type="button" class="btn tool sm" data-act="sf-perm-all" data-v="${esc(s.i)}|1" ${SF.busy?'disabled':''}>전체 켜기</button><button type="button" class="btn tool sm" data-act="sf-perm-all" data-v="${esc(s.i)}|0" ${SF.busy?'disabled':''}>전체 끄기</button></span></div>
+    ${CT_권한목록.map(([k, t, d]) => `<label class="sf-sw${잠(k) ? ' lock' : ''}"><span><b>${t}</b>${잠(k) ? '<small>중개보조원은 계약서 기능을 쓸 수 없습니다(공인중개사법)</small>' : d ? `<small>${d}</small>` : ''}</span>
+      <input type="checkbox" role="switch" data-act="sf-perm" data-v="${esc(s.i)}|${k}" ${직원권한켬(s, k) ? 'checked' : ''} ${잠(k) || SF.busy ? 'disabled' : ''}></label>`).join('')}
+    <p class="sub" style="margin:4px 0 0;font-size:12.5px">대표 전용: 영구 삭제 · 직원 권한 · 사무소 주소 · 활동 지역은 대표님만 할 수 있습니다. 바꾼 권한은 직원이 다시 들어오거나 새로고침하면 적용됩니다.</p></div>`;
+}
 function 직원카드HTML(){
   if(!SF.loaded) sfLoad();
   const 역할고름 = (v, 속성) => `<select class="inp" ${속성}>${Object.entries(직원역할KO).map(([k, t]) => `<option value="${k}" ${v===k?'selected':''}>${t}</option>`).join('')}</select>`;
@@ -8755,7 +8779,9 @@ function 직원카드HTML(){
         <span style="display:block;font-size:13px;color:var(--n500)">${esc(s.email)}</span></div>
       ${역할고름(s.role, `data-sf-role="${esc(s.i)}" aria-label="${esc(s.email)} 역할" style="width:auto;min-width:150px" ${SF.busy?'disabled':''}`)}
       <span class="badge ${s.uid ? 'b-ok' : 'b-warn'}">${s.uid ? '들어옴' : '초대함'}</span>
+      <button type="button" class="btn tool sm" data-act="sf-perm-open" data-v="${esc(s.i)}" aria-expanded="${SF.open === s.i}">${SF.open === s.i ? '권한 닫기' : `권한 ${CT_권한목록.filter(([k]) => 직원권한켬(s, k)).length}/${CT_권한목록.length}`}</button>
       <button type="button" class="btn tool sm" data-act="sf-del" data-v="${esc(s.i)}" ${SF.busy?'disabled':''}>${SF.del === s.i ? '한 번 더 누르면 뺍니다' : '빼기'}</button>
+      ${SF.open === s.i ? 직원권한판(s) : ''}
     </div>`;
   const 이름 = t => `<span style="display:block;font-size:13px;font-weight:700;color:var(--n700);margin-bottom:5px">${t}</span>`;
   return `<div class="card pad" id="sfCard">
@@ -11795,10 +11821,10 @@ function 파트너옆(active){
     ['#/partner/demands', own ? '맞는 손님' : '수요 목록', 'users', 'd'],
     ['#/partner/listings', '내 물건', 'building', 'l'],
     ['#/partner/proposals', '내 제안', 'send', 'p'],
-    ...(own ? [] : [['#/partner/rooms', '손님 대화', 'chat', 'rm']]),
+    ...(own || !권한('room') ? [] : [['#/partner/rooms', '손님 대화', 'chat', 'rm']]),
     ...(계약막힘() ? [] : ['계약', ...CT_하위메뉴]),
     '내 사무소',
-    ['#/partner/stats', '성과', 'chart', 'st'],
+    ...(권한('stats') ? [['#/partner/stats', '성과', 'chart', 'st']] : []),
     ...(own || 직원() ? [] : [['#/partner/settings', '활동 설정', 'map', 's']]),
   ];
   /* 계약 묶음은 네 칸이 한 줄씩 (2026-10-30 대표님 '계약 - 계약서 작성 · 계약서 목록 · 특약 관리 · 일정·알림').
@@ -11856,6 +11882,10 @@ const CT_하위메뉴 = [['#/partner/contracts/new', '계약서 작성', 'pen', 
    번호는 배포한 날(연.월.일 - 같은 날 또 올리면 뒤에 .2). 화면이 version.json 을 가끔 읽어,
    더 새 버전이 올라와 있으면 메뉴 아래에서 새로고침을 권한다(버전확인) - 계약서를 띄워 둔 채 오래 일하면 고친 화면을 못 받는다 */
 const BK_변경 = [
+  { v:'26.11.10.18', 날:'2026-11-10', 줄:[
+    '직원 권한을 기능마다 켜고 끄기 - 활동 설정 › 직원에서 ‘권한’ 을 누르면 계약서 보기 · 작성 · 날인본 확정 · 메일 보내기 · 제안 보내기 · 내 물건 · 손님 대화 · 성과 스위치(전체 켜기 · 끄기)',
+    '끈 기능은 직원 화면에서 메뉴 · 단추가 사라지고 서버도 막습니다 · 중개보조원의 계약서 스위치는 늘 꺼져 잠겨 있습니다(공인중개사법)',
+  ]},
   { v:'26.11.10.17', 날:'2026-11-10', 줄:[
     '계약서 목록에 ‘계약현황 표’ 보기 - 상태 · 종류 · 거래 · 형태 · 목적물 · 매도인/매수인(연락처) · 약정일 · 허가 신청/승인 · 계약일 · 중도금 · 잔금(날짜 아래 금액)',
     '계약서 찾기에 진행 상태 · 거래유형(매매 · 전세 · 월세 · 연세 · 단기임대) · 형태(신규 · 갱신) 거르기',
@@ -12322,8 +12352,8 @@ function 바로찾기목록(q){
   const 낮 = String(q || '').trim().toLowerCase(), 맞나 = t => !낮 || String(t || '').toLowerCase().includes(낮);
   const own = ownerSide(), 묶음 = [];
   const 메뉴 = [['#/partner/home', '대시보드', 'home'], ['#/partner/demands', own ? '맞는 손님' : '수요 목록', 'users'], ['#/partner/listings', '내 물건', 'building'],
-    ['#/partner/listing/new', '물건 올리기', 'building'], ['#/partner/proposals', '내 제안', 'send'], ...(own ? [] : [['#/partner/rooms', '손님 대화', 'chat']]),
-    ...(계약막힘() ? [] : CT_하위메뉴.map(([h, t, i]) => [h, t, i || 'doc'])), ['#/partner/stats', '성과', 'chart'],
+    ...(권한('listing') ? [['#/partner/listing/new', '물건 올리기', 'building']] : []), ['#/partner/proposals', '내 제안', 'send'], ...(own || !권한('room') ? [] : [['#/partner/rooms', '손님 대화', 'chat']]),
+    ...(계약막힘() ? [] : CT_하위메뉴.map(([h, t, i]) => [h, t, i || 'doc'])), ...(권한('stats') ? [['#/partner/stats', '성과', 'chart']] : []),
     ...(own || 직원() ? [] : [['#/partner/settings', '활동 설정', 'map']]), ['#/account', '마이페이지', 'user']];
   묶음.push(['바로 가기', 메뉴.filter(([, t]) => 맞나(t)).slice(0, 낮 ? 6 : 8).map(([h, t, i]) => ({ t, s: '', ico: i, go: h }))]);
   if(낮){
@@ -15097,7 +15127,7 @@ V['#/partner/contract'] = (id) => {
         ${F.explain ? '' : `<button class="btn sec sm" data-act="ct-explain">확인·설명서<span class="ct-long"> 만들기</span></button>`}
         ${잠김 ? `<button class="btn sec sm" data-act="ct-revise">고쳐서 새 판 만들기</button>`
           : `<button class="btn sec sm" data-act="ct-save" ${CT.saving?'disabled':''}>${CT.saving?'저장 중…':CT.dirty||!CT.id?'<span class="dirty-dot" aria-hidden="true"></span>임시저장':'임시저장됨'}</button>
-             <button class="btn pri sm" data-act="ct-seal" ${CT.saving?'disabled':''}>날인본으로 확정</button>`}
+             ${권한('ct_seal') ? `<button class="btn pri sm" data-act="ct-seal" ${CT.saving?'disabled':''}>날인본으로 확정</button>` : '<span class="sub" style="font-size:13px">확정은 대표님 권한입니다</span>'}`}
       </div>
     </div>
     ${ct안읽은의견(CT.track) ? `<p class="ct-note noprint"><button type="button" class="tapx" data-act="ct-notes-open" style="font-weight:700;color:#B25E00">초안에 새 의견 ${ct안읽은의견(CT.track)}건 - 일정·체크에서 보기</button></p>` : ''}
@@ -15377,7 +15407,7 @@ function ctDeskShell(doc, side, 신고면){
           <div class="ctx-btns">${잠김
             ? `<button class="btn pri sm" data-act="ct-revise">고쳐서 새 판 만들기</button>`
             : `<button class="btn tool sm" data-act="ct-save" ${CT.saving?'disabled':''}>${CT.saving?'저장 중…':'임시저장'}</button>
-               <button class="btn pri sm" data-act="ct-seal" ${CT.saving?'disabled':''}>날인본으로 확정</button>`}</div>
+               ${권한('ct_seal') ? `<button class="btn pri sm" data-act="ct-seal" ${CT.saving?'disabled':''}>날인본으로 확정</button>` : '<span class="sub" style="font-size:13px">확정은 대표님 권한입니다</span>'}`}</div>
         </div>
       </section>
       <section class="ctx-view" aria-label="미리보기">
@@ -19677,6 +19707,12 @@ function handle(a,v,el){
     case 'ct-autoarch': { const A = CT.alert; if(!A || !A.loaded || A.need || A.err) return true; A.cfg = ct알림설정({ ...ct알림설정(A.cfg), autoArch: !ct알림설정(A.cfg).autoArch });
       ctAlertSave(); render(); toast(A.cfg.autoArch ? '완료 · 취소 건을 3개월 뒤 보관함으로 옮깁니다(매일 아침)' : '자동 보관을 껐습니다'); return true; }
     case 'perf-hide': { let 지금 = false; try{ 지금 = localStorage.getItem('bk.hideSales') === '1'; localStorage.setItem('bk.hideSales', 지금 ? '0' : '1'); }catch(_){} render(); return true; }
+    case 'sf-perm-open': SF.open = SF.open === v ? null : v; render(); return true;
+    case 'sf-perm': case 'sf-perm-all': { const [i, k] = String(v).split('|'), s = SF.list.find(x => x.i === i); if(!s) return true;
+      const p = { ...(s.perm || {}) };
+      if(a === 'sf-perm-all') CT_권한목록.forEach(([kk]) => { if(k === '1') delete p[kk]; else p[kk] = false; });
+      else if(직원권한켬(s, k)) p[k] = false; else delete p[k];
+      sfSave({ op:'perm', i, perm: p }, '권한을 바꿨습니다'); return true; }
     case 'ct-view': CT.view = v === 'table' ? 'table' : ''; try{ localStorage.setItem('bk.ctView', CT.view); }catch(_){} render(); return true;
     case 'ct-bin-tab': CT.bin = ['arch', 'trash'].includes(v) ? v : ''; render(); return true;
     case 'ct-bin': { const [id, 어디] = String(v).split('|'); ctBin(id, 어디 || ''); return true; }

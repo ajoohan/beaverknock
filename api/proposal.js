@@ -42,7 +42,9 @@ export default async function handler(req, res) {
   const chk = await approvedAgent(user);
   if (chk.error)   return res.status(502).json({ error: '자격을 확인하지 못했습니다' });
   if (chk.none)    return res.status(403).json({ error: '파트너 가입 후 이용하실 수 있습니다', need: 'join' });
-  if (chk.pending) return res.status(403).json({ error: '가입 확인이 끝나야 제안을 보내실 수 있습니다', need: 'approval' });
+  if (chk.pending) return res.status(403).json({ error: '가입 확인이 끝나야 제안을 보내실 수 있습니다', need: 'approval' });
+  /* 직원 기능별 권한 (2026-11-10) - 대표가 '제안 보내기' 를 끈 직원 */
+  if (chk.agent && chk.agent.staff && chk.agent.staff.perm && chk.agent.staff.perm.propose === false) return res.status(403).json({ error: '대표님이 제안 보내기를 꺼 두셨습니다', need: 'perm' });
 
   const demandId = str(b.demand_id, 40);
   if (!demandId || !UUID.test(demandId)) return res.status(400).json({ error: '어느 조건인지 알 수 없습니다' });

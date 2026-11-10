@@ -121,7 +121,7 @@ export const meAgent = a => a && {
   reg_no: a.reg_no || null, addr: a.addr || null,
   created_at: a.created_at || null,
   /* 직원으로 든 계정 (2026-11-06) - 역할 · 이름. 화면이 메뉴 · 단추를 고르고, 서버도 따로 막는다 */
-  ...(a.staff ? { staff: { role: a.staff.role, name: a.staff.name || null } } : {}),
+  ...(a.staff ? { staff: { role: a.staff.role, name: a.staff.name || null, perm: a.staff.perm || {} } } : {}),
 };
 
 const 사무소열 = 'id,role,status,office,name,phone,reg_no,addr,owner_type,created_at,'
@@ -207,6 +207,15 @@ async function contractMail(req, res, agent, user, b) {
   if (!r.ok) return res.status(r.unsure ? 504 : 502).json({ error: r.error });
   return res.status(200).json({ ok: true, sent: 받는.length });
 }
+/* 요청 → 권한 (2026-11-10 직원 기능별 권한) */
+export const 권한키 = w => { w = String(w || '');
+  if (w === 'contract-seal') return 'ct_seal';
+  if (w === 'contract-mail') return 'ct_mail';
+  if (['contracts', 'contract', 'forms', 'form-url', 'phrases', 'sms', 'complex', 'alert-settings'].includes(w)) return 'ct_view';
+  if (/^(contract|form-)/.test(w) || ['phrases-save', 'sms-save', 'complex-save', 'alert-settings-save', 'end-style-save'].includes(w)) return 'ct_edit';
+  if (/^listing-/.test(w)) return 'listing';
+  if (/^room/.test(w)) return 'room';
+  return ''; };
 export const 계약기능 = w => /^(contract|form)/.test(String(w || '')) || ['forms', 'phrases', 'phrases-save', 'sms', 'sms-save',
   'complex', 'complex-save', 'alert-settings', 'alert-settings-save', 'end-style-save'].includes(w);
 const 가린번호 = p => { const n = String(p || '').replace(/\D/g, ''); return n.length >= 10 ? `${n.slice(0, 3)}-****-${n.slice(-4)}` : ''; };
@@ -412,7 +421,10 @@ export default async function handler(req, res) {
   /* 직원 권한 (2026-11-06) - 직원 관리 · 사무소 주소 · 활동 지역은 대표만. 중개보조원은 계약서 기능을 쓰지 않는다 */
   const 직원 = chk.agent && chk.agent.staff;
   if (직원 && 대표만(b.what)) return res.status(403).json({ error: '대표만 할 수 있습니다' });
-  if (직원 && 직원.role === 'assistant' && 계약기능(b.what)) return res.status(403).json({ error: '중개보조원은 계약서 기능을 쓸 수 없습니다' });
+  if (직원 && 직원.role === 'assistant' && 계약기능(b.what)) return res.status(403).json({ error: '중개보조원은 계약서 기능을 쓸 수 없습니다' });
+  /* 기능별 권한 (2026-11-10) - 대표가 끈 기능. 계약서 보기를 끄면 계약서 일은 모두 막힌다 */
+  const 권 = 직원 && 권한키(b.what), 끔 = (직원 && 직원.perm) || {};
+  if (권 && (끔[권] === false || (권.startsWith('ct_') && 끔.ct_view === false))) return res.status(403).json({ error: '대표님이 이 기능을 꺼 두셨습니다', need: 'perm' });
   /* 계약진행 대화방 (2026-11-06 · api/_room.js) - 보조원도 대화는 한다(초대 · 내보내기는 _room.js 가 막는다) */
   if (['rooms', 'room', 'room-send', 'room-invite', 'room-cut'].includes(b.what)) {
     if (chk.agent.role !== 'agent') return res.status(403).json({ error: '공인중개사 사무소만 쓸 수 있습니다' });

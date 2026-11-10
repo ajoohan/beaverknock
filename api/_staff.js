@@ -6,7 +6,13 @@
 import crypto from 'node:crypto';
 import { sbHeaders, sbUrl } from './_auth.js';
 
-export const 직원역할 = { staff: '소속공인중개사', assistant: '중개보조원' };
+export const 직원역할 = { staff: '소속공인중개사', assistant: '중개보조원' };
+/* 기능별 권한 (2026-11-10 파트너 기획 ①-9 '기능마다 켜고 끄기') - 지금 있는 기능만. 기본은 모두 켬, 끈 것만 perm[k] = false 로 둔다.
+   중개보조원은 계약서 넷(ct_*)이 늘 꺼져 있다(공인중개사법 - 대표가 켤 수 없다). 영구 삭제 · 직원 관리 · 사무소 주소 · 활동 지역은 대표만(권한 밖) */
+export const 권한목록 = [['ct_view', '계약서 보기'], ['ct_edit', '계약서 작성 · 수정'], ['ct_seal', '날인본 확정'], ['ct_mail', '계약서 메일 보내기'],
+  ['propose', '제안 보내기'], ['listing', '내 물건 등록 · 삭제'], ['room', '손님 대화'], ['stats', '성과 보기']];
+const 권한키들 = new Set(권한목록.map(([k]) => k));
+const 권한값 = p => { const o = {}; if (p && typeof p === 'object') for (const k of Object.keys(p)) if (권한키들.has(k) && p[k] === false) o[k] = false; return o; };
 export const 직원최대 = 20;
 const 메일꼴 = /^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,}$/;
 const 메일 = v => String(v || '').trim().toLowerCase();
@@ -23,6 +29,7 @@ export function 직원들(x) {
       i: s.i, email, role: s.role, name: String(s.name || '').trim().slice(0, 20), at: String(s.at || '').slice(0, 19),
       ...(/^[0-9a-f-]{36}$/.test(String(s.uid || '')) ? { uid: s.uid } : {}),
       ...(s.joined ? { joined: String(s.joined).slice(0, 19) } : {}),
+      ...(Object.keys(권한값(s.perm)).length ? { perm: 권한값(s.perm) } : {}),
     });
     if (out.length >= 직원최대) break;
   }
@@ -45,6 +52,10 @@ export function 직원고침(list, b, 대표메일 = '') {
   const i = String(b.i || '');
   if (!L.some(s => s.i === i)) return { error: '명단에 없는 직원입니다 - 새로고침해 주세요', code: 404 };
   if (b.op === 'del') return { list: L.filter(s => s.i !== i) };
+  if (b.op === 'perm') {
+    const p = 권한값(b.perm);
+    return { list: L.map(s => s.i === i ? (({ perm, ...x }) => Object.keys(p).length ? { ...x, perm: p } : x)(s) : s) };
+  }
   if (b.op === 'role') {
     if (!Object.hasOwn(직원역할, b.role)) return { error: '역할을 골라 주세요', code: 400 };
     return { list: L.map(s => s.i === i ? { ...s, role: b.role } : s) };
@@ -83,5 +94,5 @@ export async function 직원사무소(user, 열, fetchFn = fetch) {
   const s = 직원들((row.settings || {}).staff).find(x => x.uid === user.id || (email && x.email === email));
   if (!s) return null;
   const { settings, ...a } = row;
-  return { agent: { ...a, staff: { i: s.i, role: s.role, name: s.name, email: s.email } }, 첫로그인: !s.uid };
+  return { agent: { ...a, staff: { i: s.i, role: s.role, name: s.name, email: s.email, perm: s.perm || {} } }, 첫로그인: !s.uid };
 }

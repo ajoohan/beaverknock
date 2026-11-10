@@ -2454,6 +2454,32 @@ body.mo .rp-l{grid-column:1/-1}
 .ct-rw:first-child > .ct-row{border-top:none}
 .ct-rcopy{position:absolute;right:12px;top:50%;transform:translateY(-50%);padding:6px 12px;border:1px solid var(--n200);border-radius:8px;background:var(--white);font:inherit;font-size:13px;font-weight:600;color:var(--ind700,#3B3EA8);cursor:pointer;opacity:0;pointer-events:none;transition:opacity .12s;box-shadow:0 2px 8px rgba(23,15,69,.08)}
 .ct-rw:hover .ct-rcopy,.ct-rcopy:focus-visible{opacity:1;pointer-events:auto}
+/* 대시보드 작은 달력 (2026-11-10) */
+.dz-cal{padding:16px 16px 14px}
+.dz-cal-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.dz-cal-h b{font-size:15px}
+.dz-cal-n{width:32px;height:32px;border-radius:9px;border:1px solid var(--n200);background:var(--white);font:inherit;font-size:17px;color:var(--n700);cursor:pointer}
+.dz-cal-n:hover{border-color:var(--ind200)}
+.dz-cal-g{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center}
+.dz-cal-w{font-size:12px;font-weight:600;color:var(--n500);padding:4px 0}
+.dz-cal-w.sun,.dz-cal-d.sun{color:var(--danger)}
+.dz-cal-d{position:relative;height:36px;border:0;border-radius:9px;background:none;font:inherit;font-size:13.5px;color:var(--n900);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.dz-cal-d:hover{background:var(--ind50)}
+.dz-cal-d.today span{font-weight:800;color:var(--ind700)}
+.dz-cal-d.on{background:var(--ind400);color:#fff}
+.dz-cal-d.on span{color:#fff}
+.dz-cal-d i{display:flex;gap:3px;height:5px}
+.dz-cal em,.dz-cal-d em{display:inline-block;width:5px;height:5px;border-radius:50%}
+.dz-cal em.a{background:var(--ind400)} .dz-cal em.b{background:#D9822B}
+.dz-cal-d.on em.a,.dz-cal-d.on em.b{background:#fff}
+.dz-cal-k{display:flex;gap:14px;margin-top:8px;font-size:12px;color:var(--n500)}
+.dz-cal-k span{display:inline-flex;align-items:center;gap:5px}
+.dz-cal-l{margin-top:10px;padding-top:10px;border-top:1px solid var(--n100);display:flex;flex-direction:column;gap:4px}
+.dz-cal-l > b{font-size:13.5px}
+.dz-cal-e{display:flex;align-items:flex-start;gap:8px;text-align:left;border:0;background:none;font:inherit;font-size:13.5px;color:var(--n700);padding:5px 4px;border-radius:8px;cursor:pointer}
+.dz-cal-e:hover{background:var(--ind50)}
+.dz-cal-e em{margin-top:7px;flex:none}
+.dz-cal-0{margin:0;font-size:13px;color:var(--n500)}
 /* 대시보드 잔금 완료 확인 (2026-11-10) */
 .dz-settle{margin-bottom:18px;border:1px solid var(--warnbd,#F1D9B5);background:linear-gradient(0deg,rgba(255,248,236,.9),rgba(255,248,236,.9)),var(--white)}
 .dz-settle .dz-ct{display:inline-flex;align-items:center;gap:8px}
@@ -11797,6 +11823,9 @@ const CT_하위메뉴 = [['#/partner/contracts/new', '계약서 작성', 'pen', 
    번호는 배포한 날(연.월.일 - 같은 날 또 올리면 뒤에 .2). 화면이 version.json 을 가끔 읽어,
    더 새 버전이 올라와 있으면 메뉴 아래에서 새로고침을 권한다(버전확인) - 계약서를 띄워 둔 채 오래 일하면 고친 화면을 못 받는다 */
 const BK_변경 = [
+  { v:'26.11.10.15', 날:'2026-11-10', 줄:[
+    '대시보드 오른쪽에 작은 달력 - 계약서 날짜로 잡힌 일정을 점으로(보라 계약 · 대금, 주황 신고 · 허가 · 기타), 날을 누르면 그날 일정이 보이고 누르면 그 계약서가 열립니다',
+  ]},
   { v:'26.11.10.14', 날:'2026-11-10', 줄:[
     '잔금 완료 확인 - 잔금일 15시부터 대시보드에서 ‘완료하셨나요?’ 를 묻고, ‘아직’ 을 누르면 1시간 뒤 다시 묻습니다',
     '끝 시각(기본 19시, 계약서 › 일정·알림에서 16~23시로 바꿈)이 지나도 완료가 아니면 ‘잔금 지연’, 다음 날 아침 9시에 다시 알립니다',
@@ -12404,6 +12433,31 @@ function ct잔금미루기(id){ const m = ct잔금미룸(), 지금 = Date.now();
 let ct잔금T = 0;
 function ct잔금다시그림(때들){ clearTimeout(ct잔금T); if(!때들.length) return; const 남음 = Math.max(1000, Math.min(...때들) - Date.now() + 500);
   ct잔금T = setTimeout(() => { if(S.route === '#/partner/home') render(); }, Math.min(남음, 3600e3)); }
+/* 대시보드 작은 달력 (2026-11-10 파트너 기획 '캘린더는 별도 화면 없이 알림(스케줄) 칸에 작게') - 계약서 날짜로 잡힌 일정을 점으로.
+   보라 = 계약 · 대금(계약일 · 중도금 · 잔금 · 잔금 완료 확인), 주황 = 신고 · 허가 · 기타. 날을 누르면 아래에 그날 일정, 누르면 그 계약서 */
+const CT_달력대금 = new Set(['contract', 'mid', 'balance', 'settle']);
+function dz달력(계약){
+  const 오늘 = ct오늘(), 달 = /^\d{4}-\d{2}$/.test(CT.calM || '') ? CT.calM : 오늘.slice(0, 7), 고른 = CT.calD && CT.calD.startsWith(달) ? CT.calD : (오늘.startsWith(달) ? 오늘 : '');
+  const 설정 = ct알림설정(CT.alert && CT.alert.cfg), 앞판 = new Set(계약.map(r => r.prev_id).filter(Boolean));
+  const 일정 = 계약.filter(r => !앞판.has(r.id) && !(CT_FORMS[r.form] || {}).explain && !(r.track && r.track.off))
+    .flatMap(r => ct일정목록(r, 설정).filter(e => String(e.날).startsWith(달) && !(e.k === 'report' && (r.status !== 'sealed' || r.reported_at))).map(e => ({ ...e, r })));
+  const 날별 = new Map(); 일정.forEach(e => { if(!날별.has(e.날)) 날별.set(e.날, []); 날별.get(e.날).push(e); });
+  const [y, m] = 달.split('-').map(Number), 첫요일 = new Date(Date.UTC(y, m - 1, 1)).getUTCDay(), 날수 = new Date(Date.UTC(y, m, 0)).getUTCDate();
+  const 칸 = [...Array(첫요일).fill(''), ...Array.from({ length: 날수 }, (_, i) => `${달}-${String(i + 1).padStart(2, '0')}`)];
+  const 그날 = 고른 ? (날별.get(고른) || []) : [];
+  return `<section class="dz-card dz-cal" aria-label="계약 일정 달력">
+    <div class="dz-cal-h"><button type="button" class="dz-cal-n" data-act="cal-m" data-v="-1" aria-label="지난달">‹</button>
+      <b class="num">${y}년 ${m}월</b><button type="button" class="dz-cal-n" data-act="cal-m" data-v="1" aria-label="다음달">›</button></div>
+    <div class="dz-cal-g" role="grid">${['일','월','화','수','목','금','토'].map((d, i) => `<span class="dz-cal-w${i === 0 ? ' sun' : i === 6 ? ' sat' : ''}">${d}</span>`).join('')}
+      ${칸.map(d => { if(!d) return '<span></span>'; const 것 = 날별.get(d) || [], 대금 = 것.some(e => CT_달력대금.has(e.k)), 기타 = 것.some(e => !CT_달력대금.has(e.k)), 요일 = new Date(d + 'T00:00:00Z').getUTCDay();
+        return `<button type="button" class="dz-cal-d${d === 오늘 ? ' today' : ''}${d === 고른 ? ' on' : ''}${요일 === 0 ? ' sun' : 요일 === 6 ? ' sat' : ''}" data-act="cal-d" data-v="${d}" aria-label="${+d.slice(8)}일${것.length ? ` 일정 ${것.length}건` : ''}" aria-pressed="${d === 고른}">
+          <span class="num">${+d.slice(8)}</span><i>${대금 ? '<em class="a"></em>' : ''}${기타 ? '<em class="b"></em>' : ''}</i></button>`; }).join('')}</div>
+    <div class="dz-cal-k"><span><em class="a"></em>계약 · 대금</span><span><em class="b"></em>신고 · 허가 · 기타</span></div>
+    ${고른 ? `<div class="dz-cal-l"><b>${+고른.slice(5, 7)}월 ${+고른.slice(8)}일${고른 === 오늘 ? ' · 오늘' : ''}</b>
+      ${그날.length ? 그날.map(e => `<button type="button" class="dz-cal-e" data-act="ct-open" data-v="${esc(e.r.id)}"><em class="${CT_달력대금.has(e.k) ? 'a' : 'b'}"></em><span><b>${esc(e.이름)}</b> · ${esc(e.r.title || '소재지 미입력')}</span></button>`).join('')
+        : '<p class="dz-cal-0">이날 잡힌 일정이 없습니다</p>'}</div>` : ''}
+  </section>`;
+}
 /* 대시보드 위 '잔금 완료하셨나요?' - 완료 · 아직(1시간 뒤) */
 const dz잔금물음 = rows => !rows.length ? '' : `<section class="dz-card dz-settle" aria-label="잔금 완료 확인">
     <div class="dz-chh"><b class="dz-ct">${dzIco('clock', 17)} 오늘 잔금 - 완료하셨나요?</b><span class="dz-settle-s">‘아직’ 이면 1시간 뒤 다시 묻습니다</span></div>
@@ -12458,6 +12512,7 @@ V['#/partner/home'] = () => {
           ? { t:'자격 확인', state:'확인 완료', pct:100, note:'손님 조건 전문과 연락 연결을 모두 쓸 수 있습니다.' }
           : { t:'자격 확인', state: S.agent ? '확인 중' : '가입 전', pct: S.agent ? 55 : 10,
               note:'등록번호를 공공데이터로 확인하면 손님 조건 전문이 열립니다.', btn:'자격 확인하기', go:'#/partner/verify' })}
+        ${계약막힘() ? '' : dz달력(계약)}
         ${dzTodo(할일, '지금 손댈 일은 없습니다. 새 조건이 오면 알려 드립니다.', dz바로가기())}
         ${계약막힘() ? '' : (() => { if(!CS.loaded && 세션있음()) setTimeout(csLoad);
           return `<div class="dz-card cs-dz"><div class="dz-chh"><b class="dz-ct">계약체결 문자</b><a class="dz-more" data-go="#/partner/contracts/sms">틀 고치기<i class="ar-r" aria-hidden="true"></i></a></div>
@@ -19479,6 +19534,9 @@ function handle(a,v,el){
       })();
       return true;
     case 'ct-del': S.modal = { type:'ct-del' }; render(); return true;
+    case 'cal-m': { const 지금 = /^\d{4}-\d{2}$/.test(CT.calM || '') ? CT.calM : ct오늘().slice(0, 7); const [y, m] = 지금.split('-').map(Number), t = new Date(Date.UTC(y, m - 1 + (+v || 0), 1));
+      CT.calM = t.toISOString().slice(0, 7); CT.calD = ''; render(); return true; }
+    case 'cal-d': CT.calD = /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : ''; render(); return true;
     case 'settle-later': ct잔금미루기(v); render(); toast('1시간 뒤에 다시 묻겠습니다'); return true;
     case 'settle-done': (async () => {
       const 행 = (CT.list || []).find(r => r.id === v), 전 = (행 && 행.track && 행.track.state) || '';

@@ -3471,7 +3471,7 @@ const PREFS=['문자·카톡','전화','아무거나'], TIMES=['평일 낮','평
       매물은 오직 1:1 제안 안에서만 존재한다. */
 const SEED_LISTINGS = [
   {seed:true, id:'L1', kind:'home', name:'미사강변 ○○아파트 84A', dong:'미사1동', deal:'월세',
-   dep:1000, rent:65, fee:8, feeBasis:'최근 3개월 평균', feeType:'관리규약에 따라 부과',
+   dep:10000000, rent:650000, fee:80000, feeBasis:'최근 3개월 평균', feeType:'관리규약에 따라 부과',
    feeItems:'수도료·청소비 포함 / 전기·가스 별도',
    area:59.94, areaSup:84.96, py:24.2, rooms:3, baths:2, band:'중층', floors:25, duplex:false,
    dir:'남동', dirBase:'거실 기준',
@@ -3479,14 +3479,14 @@ const SEED_LISTINGS = [
    note:'남향에 가까운 남동향이라 오후까지 볕이 듭니다. 단지 안에 어린이집이 있습니다.',
    moveIn:'10월 초 협의', photos:3, at:'2일 전', status:'active'},
   {seed:true, id:'L2', kind:'home', name:'덕풍동 ○○빌라 302호', dong:'덕풍2동', deal:'전세',
-   dep:28000, rent:0, fee:5, feeBasis:'직전 1년 평균', feeType:'임대인이 직접부과',
+   dep:280000000, rent:0, fee:50000, feeBasis:'직전 1년 평균', feeType:'임대인이 직접부과',
    feeItems:'청소비 포함 / 수도·전기 별도',
    area:49.5, areaSup:65.4, py:19.8, rooms:2, baths:1, band:'저층', floors:4, duplex:false,
    dir:'남', dirBase:'안방 기준',
    musts:[], note:'2층이라 오르내림이 가볍습니다. 작년에 샷시를 전부 교체했습니다.',
    moveIn:'즉시', photos:0, at:'5일 전', status:'active'},
   {seed:true, id:'L3', kind:'shop', name:'미사역 ○○프라자 1층', dong:'미사역 상권', deal:'월세',
-   dep:3000, rent:175, fee:12, feeBasis:'최근 3개월 평균', feeType:'관리규약에 따라 부과',
+   dep:30000000, rent:1750000, fee:120000, feeBasis:'최근 3개월 평균', feeType:'관리규약에 따라 부과',
    feeItems:'공용 전기·청소비 포함',
    area:51.2, areaSup:66.1, py:15.5, band:'1층만', floorNo:'1', floors:6, duplex:false,
    dir:'남', dirBase:'주된 출입구 기준',
@@ -3519,7 +3519,7 @@ function matchStages(L, d){
     const rentOk = (m.rentMax == null) || eff <= m.rentMax * 1.1;
     budOk = depOk && rentOk;
     const over = L.dep > m.depMax || (m.rentMax != null && eff > m.rentMax);
-    if(m.feeIncluded && L.fee) note = `관리비 포함 ${eff}`;
+    if(m.feeIncluded && L.fee) note = `관리비 포함 ${won(eff)}`;   /* 원 단위 - won() 없이 '관리비 포함 730000' 으로 나왔다 (2026-11-10) */
     if(budOk && over) note = (note?note+' · ':'') + '예산 약간 초과';
   }
   st.push({k:'예산', ok:budOk, note});
@@ -3802,71 +3802,71 @@ const blankDraft = () => ({who:'',kind:'',deal:'',dongs:[],dep:'',rent:'',htype:
 
 const SEED_PROPOSALS = [
   {seed:true, id:'p1', cond:'c1', isNew:true, read:false, photos:3, title:'미사강변 ○○아파트 · 3룸', dong:'미사1동',
-   dep:1000, rent:65, fee:8, feeType:'관리규약에 따라 부과', feeBasis:'최근 3개월 평균',
+   dep:10000000, rent:650000, fee:80000, feeType:'관리규약에 따라 부과', feeBasis:'최근 3개월 평균',
    feeItems:'수도료·청소비 포함 / 전기·가스 별도',
    area:59.94, areaSup:84.96, py:24.2, rooms:'3', baths:'2', duplex:false,
    dir:'남동', dirBase:'거실 기준', kind:'home',
    note:'남향에 가까운 남동향이라 오후까지 볕이 듭니다. 단지 안에 어린이집이 있습니다.',
    floor:'중층', parking:'세대당 1.2대', moveIn:'10월 초 협의',
-   diff:['입주일이 희망보다 2주 늦습니다'], match:['지역','예산(관리비 포함 73)','방 수','엘리베이터','주차'],
+   diff:['입주일이 희망보다 2주 늦습니다'], match:['지역','예산(관리비 포함 73만)','방 수','엘리베이터','주차'],
    msg:'지역·예산·방수는 다 맞습니다. 입주일만 10월 초라 2주 늦는데, 협의 여지가 있습니다. 아이 키우기 조용한 단지예요.',
    agency:{name:'미사중앙공인중개사사무소',rep:'김○○',reg:'41450-2019-00217',addr:'하남시 미사강변대로 220',phone:'031-123-4567'},
    at:'2시간 전', approved:'2016.06', floors:25, violation:false, loan:0, lease:false,
    risk:'보증금이 최근 전세가율 대비 안전 범위입니다', status:'sent'},
   {seed:true, id:'p2', cond:'c1', isNew:false, read:true, photos:0, title:'덕풍동 ○○빌라 · 3룸', dong:'덕풍2동',
-   dep:800, rent:60, fee:5, feeType:'임대인이 직접부과', feeBasis:'직전 1년 평균',
+   dep:8000000, rent:600000, fee:50000, feeType:'임대인이 직접부과', feeBasis:'직전 1년 평균',
    feeItems:'청소비 포함 / 수도·전기 별도',
    area:49.5, areaSup:65.4, py:19.8, rooms:'3', baths:'1', duplex:false,
    dir:'남', dirBase:'안방 기준', kind:'home',
    note:'2층이라 오르내림이 가볍습니다. 작년에 샷시를 전부 교체했습니다.',
    floor:'2층', parking:'1대 가능', moveIn:'즉시',
-   diff:['엘리베이터가 없습니다','희망 동네(미사)가 아닌 덕풍동입니다'], match:['예산(관리비 포함 65)','방 수','즉시 입주','주차'],
+   diff:['엘리베이터가 없습니다','희망 동네(미사)가 아닌 덕풍동입니다'], match:['예산(관리비 포함 65만)','방 수','즉시 입주','주차'],
    msg:'엘리베이터는 없지만 2층이라 오르내림 부담이 적습니다. 미사보다 5분 거리인데 예산이 넉넉해집니다.',
    agency:{name:'덕풍행운공인중개사사무소',rep:'박○○',reg:'41450-2021-00089',addr:'하남시 덕풍동 358-2',phone:'031-123-8900'},
-   at:'어제', approved:'2011.03', floors:4, violation:false, loan:12000, lease:false,
+   at:'어제', approved:'2011.03', floors:4, violation:false, loan:120000000, lease:false,
    risk:'융자 1억 2천이 설정돼 있습니다 (판단은 하지 않습니다 - 표시만)', status:'viewed'},
 ];
 const SEED_CONDS = [
-  {id:'c1', kind:'home', title:'미사1·2동 · 월세 · 3룸+', lines:['보증금 1,000 / 월 70 이하 (관리비 포함)','아파트·오피스텔 · 3개월 내 입주','엘리베이터 · 주차 필수'],
+  {id:'c1', kind:'home', title:'미사1·2동 · 월세 · 3룸+', lines:['보증금 1,000만 / 월 70만 이하 (관리비 포함)','아파트·오피스텔 · 3개월 내 입주','엘리베이터 · 주차 필수'],
    status:'active', slots:5, at:'3일 전', expires:27, pct:70, seed:true},
-  {id:'c2', kind:'shop', title:'미사역 상권 · 카페·디저트 · 12~18평', lines:['보증금 3,000 / 월 180 이하 · 권리금 5,000까지','1층만 · 후드·덕트 · 정화조 여유'],
+  {id:'c2', kind:'shop', title:'미사역 상권 · 카페·디저트 · 12~18평', lines:['보증금 3,000만 / 월 180만 이하 · 권리금 5,000만까지','1층만 · 후드·덕트 · 정화조 여유'],
    status:'expiring', slots:5, at:'26일 전', expires:4, pct:45, seed:true},
 ];
 const SEED_DEMANDS = [
   {seed:true, id:'d1', kind:'home', deal:'월세', region:'미사1동 · 미사2동', slotsLeft:3, at:'2시간 전', pct:70, urgent:false,
-   lines:['보증금 1,000 이하 · 월 70 이하 (관리비 포함)','아파트·오피스텔 · 3룸+ · 3개월 내 입주','엘리베이터 · 주차 필수 · 출퇴근 서울 송파'],
+   lines:['보증금 1,000만 이하 · 월 70만 이하 (관리비 포함)','아파트·오피스텔 · 3룸+ · 3개월 내 입주','엘리베이터 · 주차 필수 · 출퇴근 서울 송파'],
    memo:'아이가 있어서 조용한 곳이면 좋겠습니다. 이번 달 안에 꼭 옮겨야 하는 사정이 있습니다.',
-   m:{dongs:['미사1동','미사2동'],deal:'월세',depMax:1000,rentMax:70,feeIncluded:true,rooms:3,musts:['엘리베이터','주차 가능']},
-   req:[['지역','미사1동 · 미사2동'],['예산','보증금 1,000 이하 · 월 70 이하 (관리비 포함)'],['유형','아파트 · 오피스텔'],['방 수','3룸 이상'],['입주','3개월 이내']],
+   m:{dongs:['미사1동','미사2동'],deal:'월세',depMax:10000000,rentMax:700000,feeIncluded:true,rooms:3,musts:['엘리베이터','주차 가능']},
+   req:[['지역','미사1동 · 미사2동'],['예산','보증금 1,000만 이하 · 월 70만 이하 (관리비 포함)'],['유형','아파트 · 오피스텔'],['방 수','3룸 이상'],['입주','3개월 이내']],
    det:[['층','1층 제외 · 엘리베이터 필요'],['주차','1대 필수'],['출퇴근지','서울 송파 (30분 이내 희망)'],['대출','전세대출 예정']],
-   check:['관리비 포함 월 70 이내인지','엘리베이터','주차 1대']},
+   check:['관리비 포함 월 70만 이내인지','엘리베이터','주차 1대']},
   {seed:true, id:'d2', kind:'shop', deal:'카페·디저트', region:'미사역 상권', slotsLeft:1, at:'어제', pct:45, urgent:true,
-   lines:['12~18평 (39.7~59.5㎡) · 1층만','보증금 3,000 / 월 180 · 권리금 5,000까지','후드·덕트 · 급배수 · 정화조 여유'],
+   lines:['12~18평 (39.7~59.5㎡) · 1층만','보증금 3,000만 / 월 180만 · 권리금 5,000만까지','후드·덕트 · 급배수 · 정화조 여유'],
    memo:'프랜차이즈는 아니고 개인 브런치 카페입니다. 오픈 주방을 생각하고 있어요.',
-   m:{dongs:['미사역 상권','미사1동','미사2동'],biz:'카페·디저트',depMax:3000,rentMax:180,pyMin:12,pyMax:18,floors:['1층만'],fac:['후드·덕트','주방·급배수','정화조 여유']},
-   req:[['상권','미사역 상권'],['업종','카페·디저트'],['면적','12~18평 (39.7~59.5㎡)'],['예산','보증금 3,000 / 월 180 · 권리금 5,000'],['층','1층만']],
+   m:{dongs:['미사역 상권','미사1동','미사2동'],biz:'카페·디저트',depMax:30000000,rentMax:1800000,pyMin:12,pyMax:18,floors:['1층만'],fac:['후드·덕트','주방·급배수','정화조 여유']},
+   req:[['상권','미사역 상권'],['업종','카페·디저트'],['면적','12~18평 (39.7~59.5㎡)'],['예산','보증금 3,000만 / 월 180만 · 권리금 5,000만'],['층','1층만']],
    det:[['설비','후드·덕트 · 급배수 · 정화조 여유'],['인허가','휴게음식점 영업신고 예정']],
    check:['정화조 여유 용량','후드 배기 경로','1층 · 전면 노출']},
   {seed:true, id:'d3', kind:'home', deal:'전세', region:'덕풍동 전체', slotsLeft:5, at:'3일 전', pct:40, urgent:false, mine:'viewed',
    lines:['보증금 3억 이하','빌라·연립 가능 · 2룸+ · 시기 미정','반려동물 가능 필수 · 전세대출 예정'], memo:'고양이 두 마리와 함께 삽니다. 반려동물 가능한 곳만 봅니다.',
-   m:{dongs:['덕풍1동','덕풍2동','덕풍3동'],deal:'전세',depMax:30000,rooms:2,musts:['반려동물']},
+   m:{dongs:['덕풍1동','덕풍2동','덕풍3동'],deal:'전세',depMax:300000000,rooms:2,musts:['반려동물']},
    req:[['지역','덕풍동 전체'],['예산','보증금 3억 이하'],['유형','빌라·연립 가능'],['방 수','2룸 이상'],['입주','시기 미정']],
    det:[['층','반지하 제외'],['대출','전세대출 예정']], check:['전세대출 가능 물건인지','반지하 아님']},
   {seed:true, id:'d4', kind:'shop', deal:'학원·교습소', region:'미사2동 · 미사3동', slotsLeft:4, at:'5일 전', pct:55, urgent:false,
-   lines:['20~30평 · 2층 이상 가능','보증금 5,000 / 월 250','같은 건물 유해업소 없어야 함 (자동 필수)'],
+   lines:['20~30평 · 2층 이상 가능','보증금 5,000만 / 월 250만','같은 건물 유해업소 없어야 함 (자동 필수)'],
    memo:'초등 영어 교습소입니다. 학원 등록 가능 건물인지가 제일 중요합니다.',
-   m:{dongs:['미사2동','미사3동'],biz:'학원·교습소',depMax:5000,rentMax:250,pyMin:20,pyMax:30,floors:['2층 이상 가능'],fac:[]},
-   req:[['지역','미사2동 · 미사3동'],['업종','학원·교습소'],['면적','20~30평'],['예산','보증금 5,000 / 월 250'],['층','2층 이상 가능']],
+   m:{dongs:['미사2동','미사3동'],biz:'학원·교습소',depMax:50000000,rentMax:2500000,pyMin:20,pyMax:30,floors:['2층 이상 가능'],fac:[]},
+   req:[['지역','미사2동 · 미사3동'],['업종','학원·교습소'],['면적','20~30평'],['예산','보증금 5,000만 / 월 250만'],['층','2층 이상 가능']],
    det:[['필수','같은 건물에 노래방·PC방·주점·숙박업 없어야 함']], check:['같은 건물 유해업소 여부','교육지원청 등록 가능','정원 대비 면적']},
 ];
 const SEED_MYPROP = [
-  {seed:true, id:'mp1', title:'미사강변 ○○아파트 · 3룸', price:'보증금 1,000 / 월 65 · 관리비 8', line:'미사1·2동 · 월 70 이하 · 3룸+',
+  {seed:true, id:'mp1', title:'미사강변 ○○아파트 · 3룸', price:'보증금 1,000만 / 월 65만 · 관리비 8만', line:'미사1·2동 · 월 70만 이하 · 3룸+',
    status:'viewed', at:'2일 전', expires:5},
-  {seed:true, id:'mp3', title:'미사역 ○○프라자 1층 · 15평', price:'보증금 3,000 / 월 170', line:'미사역 상권 · 카페 · 1층',
+  {seed:true, id:'mp3', title:'미사역 ○○프라자 1층 · 15평', price:'보증금 3,000만 / 월 170만', line:'미사역 상권 · 카페 · 1층',
    status:'selected', at:'4일 전', cust:'김○○', cphone:'010-1234-5678'},
-  {seed:true, id:'mp4', title:'신장동 ○○타워 2층 · 22평', price:'보증금 4,000 / 월 200', line:'원도심 · 학원 · 2층+',
+  {seed:true, id:'mp4', title:'신장동 ○○타워 2층 · 22평', price:'보증금 4,000만 / 월 200만', line:'원도심 · 학원 · 2층+',
    status:'expired', at:'12일 전', reason:'손님이 7일간 열람하지 않아 만료됐습니다. 슬롯은 반환되었고 점수에 불이익이 없습니다'},
-  {seed:true, id:'mp5', title:'미사2동 ○○오피스텔 · 2룸', price:'보증금 1,000 / 월 70', line:'미사동 · 월 70 · 2룸+',
+  {seed:true, id:'mp5', title:'미사2동 ○○오피스텔 · 2룸', price:'보증금 1,000만 / 월 70만', line:'미사동 · 월 70만 · 2룸+',
    status:'rejected', at:'9일 전', reason:"손님이 ‘관심 없음’을 선택했습니다. 사유: 가격"},
 ];
 
@@ -11713,6 +11713,10 @@ const CT_하위메뉴 = [['#/partner/contracts/new', '계약서 작성', 'pen', 
    번호는 배포한 날(연.월.일 - 같은 날 또 올리면 뒤에 .2). 화면이 version.json 을 가끔 읽어,
    더 새 버전이 올라와 있으면 메뉴 아래에서 새로고침을 권한다(버전확인) - 계약서를 띄워 둔 채 오래 일하면 고친 화면을 못 받는다 */
 const BK_변경 = [
+  { v:'26.11.10.6', 날:'2026-11-10', 줄:[
+    '예시 데이터 금액을 원 단위로 바로잡았습니다 - ‘보증금 1,000 / 월 65’ 대신 ‘보증금 1,000만 / 월 65만’, 융자 ‘1억 2,000만’',
+    '제안 비교의 ‘관리비 포함’ 금액도 ‘73만’ 처럼 읽기 쉽게',
+  ]},
   { v:'26.11.10.5', 날:'2026-11-10', 줄:[
     '파트너 안내 새 단장 - 1:1 제안 · 계약서 관리 · 자동 알림 · 일정 체크를 실제 화면과 함께 장점으로 보여 드립니다',
   ]},

@@ -178,7 +178,7 @@ const 설정실패 = (res, z, 이름) => z.need ? res.status(503).json({ error: 
   : z.busy ? res.status(409).json({ error: '다른 기기에서 같은 때 고쳐 저장하지 못했습니다 - 다시 눌러 주세요' })
   : res.status(502).json({ error: '저장하지 못했습니다' });
 /* 직원이 못 하는 일 - 서버가 막는다(화면은 고쳐 쓸 수 있다) */
-export const 대표만 = w => /^staff/.test(String(w || '')) || ['office-addr', 'scope-save'].includes(w);
+export const 대표만 = w => /^staff/.test(String(w || '')) || ['office-addr', 'scope-save', 'contract-del'].includes(w);   /* contract-del = 영구 삭제(2026-11-10) */
 /* 계약서 PDF 를 메일로 (2026-11-08) - 화면이 만든 PDF(base64)를 받아 Resend 로 붙여 보낸다. 서버에 남기지 않는다.
    받는 사람 5명까지 · 사무소마다 한 시간에 20통 · 파일 3MB 까지(본문 4.5MB 한도 안). 회신은 중개사 메일로 */
 const 메일모양 = /^[^\s@<>,;:"'()\[\]\\]+@[^\s@<>,;:"'()\[\]\\]+\.[a-z]{2,}$/i;

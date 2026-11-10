@@ -143,6 +143,7 @@ export async function contractRoute(req, res, agent, user, b) {
       case 'contract-seal':    await seal(res, agent, b); break;
       case 'contract-revise':  await revise(res, agent, user, b); break;
       case 'contract-del':     await del(res, agent, b); break;
+      case 'contract-bin':     await bin(res, agent, b); break;
       case 'contract-bld':     await 대장(req, res, agent, b); break;
       case 'contract-reported': await reported(res, agent, b); break;
       case 'contract-track':   await track(res, agent, b); break;
@@ -439,7 +440,8 @@ export function 알림설정(x) {
     off: [...new Set((Array.isArray(o.off) ? o.off : []).filter(k => Object.hasOwn(알림종류, k)))], lawyer: [a, b] };
 }
 /* 계약 하나의 일정·체크(track). 날짜 칸은 ISO 날짜만, 나머지는 켜짐/꺼짐만 받는다 - 다른 것은 버린다 */
-const TRACK_DATES = ['permitDue', 'permitApplied', 'midDate', 'balanceDate', 'guideAt', 'permitPaid', 'permitAgreed', 'permitOk', 'piAt'];
+/* arch · trash (2026-11-10 대표님 결정 1번) - 보관함으로 내린 날 · 휴지통에 넣은 날. 날인본은 휴지통까지만, 작성 중은 휴지통 30일 뒤 지운다 */
+const TRACK_DATES = ['permitDue', 'permitApplied', 'midDate', 'balanceDate', 'guideAt', 'permitPaid', 'permitAgreed', 'permitOk', 'piAt', 'arch', 'trash'];
 export const 진행상태 = { ready: '준비', doing: '진행중', done: '완료', hold: '보류', cancel: '취소' };
 export function trackCheck(t) {
   if (!t || typeof t !== 'object' || Array.isArray(t)) return null;
@@ -728,6 +730,18 @@ async function 읽기(q) {
 }
 const 준비중32 = res => res.status(503).json({ error: '일정·알림 기능을 준비 중입니다 (0032 마이그레이션 필요)', need: '0032' });
 
+/* 보관함 · 휴지통 (2026-11-10) - bin: '' (목록으로 되돌리기) · 'arch'(내리기) · 'trash'(휴지통). track 의 다른 값은 서버에 지금 있는 그대로 둔다 */
+async function bin(res, agent, b) {
+  const id = String(b.id || ''), 어디 = String(b.bin || '');
+  if (!UUID.test(id)) return res.status(400).json({ error: '어느 계약서인지 알 수 없습니다' });
+  if (!['', 'arch', 'trash'].includes(어디)) return res.status(400).json({ error: '알 수 없는 요청입니다' });
+  const 오늘 = 한국오늘();
+  const z = await 링크번호지켜쓰기(id, agent, (n, 지금) => { const t = { ...지금 }; delete t.arch; delete t.trash;
+    if (어디) t[어디] = 오늘; if (어디 === 'trash' && 지금.arch) t.arch = 지금.arch; return t; });
+  if (z.res) return z.res(res, '옮기지 못했습니다');
+  return res.status(200).json({ ok: true, track: z.track });
+}
+
 /* 일정·체크 저장 - 날인본도 된다(트리거가 track 만 통과시킨다). 내 계약서만 */
 async function track(res, agent, b) {
   const id = String(b.id || '');
@@ -796,7 +810,10 @@ export async function reportDueCron(req, res) {
   }
   /* 고쳐 새 판을 만들었거나 갱신계약으로 이어 간 앞 계약서는 뺀다 - 같은 일정이 두 번 가지 않게 */
   const 앞판 = new Set(rows.map(c => c.prev_id).filter(Boolean));
-  const 살아있음 = rows.filter(c => c.agent_id && !앞판.has(c.id));
+  /* 보관함 · 휴지통에 넣은 계약서는 알리지 않는다(2026-11-10) */
+  const 살아있음 = rows.filter(c => c.agent_id && !앞판.has(c.id) && !(c.track && (c.track.arch || c.track.trash)));
+  /* 휴지통 30일이 지난 작성 중 계약서는 지운다 - 날인본은 휴지통에 남는다(지우지 않음) */
+  if (트랙) await db('bk_contract', `status=eq.draft&track->>trash=lt.${날더하기(오늘, -30)}`, { method: 'DELETE' }).catch(() => {});
   /* 중개사 - 이름·전화·알림 설정. 0032 전이면 설정 없이(모두 켬).
      settings 통째가 아니라 알림 설정만 꺼낸다 - 같은 칸에 내 특약 문구(최대 200개)가 쌓인다 */
   const ids = [...new Set(살아있음.map(c => c.agent_id))], 중개사 = new Map();
@@ -884,10 +901,12 @@ async function scan(req, res, b, user) {
   }
 }
 
-/* 작성 중인 것만 지운다. 날인본은 지우지 않는다(트리거도 막는다) */
+/* 작성 중인 것만 지운다(영구 삭제). 날인본은 지우지 않는다(트리거도 막는다).
+   2026-11-10 - 휴지통에 들어간 것만, 대표만 지운다(직원은 feed.js 대표만에서 막힌다) */
 async function del(res, agent, b) {
   const id = String(b.id || '');
   if (!UUID.test(id)) return res.status(400).json({ error: '어느 계약서인지 알 수 없습니다' });
+  if (agent.staff) return res.status(403).json({ error: '영구 삭제는 대표만 할 수 있습니다' });
   const { r, t, rows } = await db('bk_contract', `id=eq.${id}&agent_id=eq.${agent.id}&status=eq.draft`, {
     method: 'DELETE', headers: { Prefer: 'return=representation' },
   });

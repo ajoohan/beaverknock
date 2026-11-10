@@ -535,7 +535,7 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
   process.env.CRON_SECRET = 'cron-secret'; process.env.RESEND_API_KEY = 'test';
   res = 응답(); 불린 = [];
   await C.reportDueCron({ headers: { authorization: 'Bearer cron-secret', host: 'beaverknock.co.kr' } }, res);
-  ok(불린.filter(x => /bk_contract/.test(x.u)).length === 2 && res.body.대상 === 1005 && 불린.filter(x => /bk_agent/.test(x.u)).length === 11, '1000건이 차면 다음 쪽을 더 읽는다 · 중개사는 100명씩 묻는다');
+  ok(불린.filter(x => /bk_contract/.test(x.u) && x.m === 'GET').length === 2 && 불린.some(x => /bk_contract/.test(x.u) && x.m === 'DELETE' && /status=eq\.draft&track->>trash=lt\./.test(x.u)) && res.body.대상 === 1005 && 불린.filter(x => /bk_agent/.test(x.u)).length === 11, '1000건이 차면 다음 쪽을 더 읽는다 · 중개사는 100명씩 묻는다 · 휴지통 30일 지난 작성 중 계약서는 지운다');
   ok(묶음.length === 11 && 묶음.slice(0, 10).every(n => n === 100) && 묶음[10] === 5 && res.body.보냄 === 1005, '100통씩 나눠 보내 1005통 모두 보낸다');
   delete process.env.CRON_SECRET; delete process.env.RESEND_API_KEY;
   for (const k of ['SOLAPI_API_KEY', 'SOLAPI_API_SECRET', 'SOLAPI_PFID', 'SOLAPI_FROM', 'SOLAPI_TPL_SCHEDULE']) delete process.env[k];
@@ -627,7 +627,7 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
 
 /* ── 레이아웃 그대로 더한 것 (2026-11-06) ── */
 {
-  ok(js.includes('<div class="ct-rw"><button type="button" class="ct-row"') && js.includes('class="ct-rcopy" data-act="ct-copy"') && css.includes('.ct-rw:hover .ct-rcopy,.ct-rcopy:focus-visible{opacity:1;pointer-events:auto}'),
+  ok(js.includes('<div class="ct-rw"><button type="button" class="ct-row"') && js.includes("단('ct-copy', id, '복사'") && js.includes("${갱신고르기 ? '' : ct행단추(r)}") && css.includes('.ct-rw:hover .ct-rcopy,.ct-rcopy:focus-visible{opacity:1;pointer-events:auto}'),
      '목록 줄마다 복사 - 줄 모양은 그대로, 올리거나 Tab 하면 오른쪽 끝에');
   ok(js.includes('function ct구획(doc, 앞)') && (js.match(/\$\{ct구획\(doc, \[/g) || []).length === 5, '카드 제목 옆 단계 표시(완료 · n칸 남음) - 목적물 · 금액 · 기간 · 당사자 · 사무소');
   ok(js.includes('const ct담당고르기 = ') && /staff:doc->broker->>staff/.test(fs.readFileSync(new URL('../api/_contract.js', import.meta.url), 'utf8')), '담당 거르기 - 계약서의 소속공인중개사 이름');
@@ -739,7 +739,7 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
   ok(/const 판 = CT\.rev \|\| 0;\s*CT\.saving = true; render\(\);/.test(js) && /if\(\(CT\.rev \|\| 0\) !== 판\)\{ const id = CT\.id; CT\.id = null; ctOpen\(id\);/.test(js),
      '확정하는 사이 적은 것이 있으면 확정 뒤 날인본을 다시 불러와 화면·인쇄를 날인본과 맞춘다');
   ok(/r\.proposal_id === v && r\.status === 'draft' && !\(CT_FORMS\[r\.form\] \|\| \{\}\)\.explain/.test(js), "제안의 '계약서 만들기' 는 확인·설명서 초안을 열지 않는다");
-  ok(/F\.explain \? exEditor\(doc\) \+ \(잠김\|\|!CT\.id \? '' : `<button class="tapx" data-act="ct-del"/.test(js), 'PC 에서도 확인·설명서를 지울 수 있다');
+  ok(/F\.explain \? exEditor\(doc\) \+ \(잠김\|\|!CT\.id \? '' : `<button class="tapx" data-act="ct-trash-cur"/.test(js), 'PC 에서도 확인·설명서를 휴지통으로 옮길 수 있다');
   ok(/const 자리 = CT\.스크롤키 === 키 && CT\.스크롤문서 === doc \?/.test(js) && !/const 키 = \(CT\.id \|\| 'new'\)/.test(js), '스크롤 자리는 문서에 붙는다 - 처음 저장·확정해도 맨 위로 튀지 않는다');
   ok(/if\(새것 && \(location\.hash \|\| ''\)\.startsWith\('#\/partner\/contract\/'\)\) history\.replaceState/.test(js), '저장 중에 화면을 떠났으면 계약서 화면으로 끌고 오지 않는다');
   ok(/if\(n\)\{ 확인창\(`서식을 바꾸면 \$\{n\}칸의 값이 지워집니다`/.test(js) && /\.then\(바꿈 => \{ if\(바꿈 && CT\.doc/.test(js) && /서식을 바꾸면 새 서식에 없는 칸의 값은 지워집니다/.test(js),
@@ -994,7 +994,7 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
   ok(/function ctPlanHTML\(doc\)/.test(js) && /data-act="ct-plan">일정·체크/.test(js) && /case 'ctk-guide':/.test(js) && /case 'ctk-permit':/.test(js) && /case 'ctk-off':/.test(js)
      && /k\.startsWith\('ctk:'\)/.test(js) && /what:'contract-track'/.test(js), '화면: 일정·체크 탭 - 잔금안내·토지거래허가·알림 켜고 끄기, 날짜 칸은 바로 저장');
   ok(/function ctAlertHTML\(늘펼침\)/.test(js) && /\$\{ctAlertHTML\(true\)\}/.test(js) && /data-in="cta-a"/.test(js) && /what:'alert-settings-save'/.test(js)
-     && /function ctUpcomingHTML\(rows, 날수 = 14, 최대 = 8\)/.test(js) && /const 일정 = ctUpcomingHTML\(전체\);/.test(js) && /ctUpcomingHTML\(전체, 60, 40\)/.test(js),
+     && /function ctUpcomingHTML\(rows, 날수 = 14, 최대 = 8\)/.test(js) && /const 일정 = 칸 \? '' : ctUpcomingHTML\(전체\);/.test(js) && /ctUpcomingHTML\(전체, 60, 40\)/.test(js),
      '화면: 계약서 › 일정·알림 - 알림 설정(받는 곳·항목·법무사 예약 시점)은 늘 펼침, 60일 일정 · 목록 옆은 2주 안 일정');
   ok((js.match(/CT\.id = null; CT\.row = null; CT\.track = \{\};/g) || []).length >= 6, '새 계약서를 열 때마다 앞 계약서의 일정·체크를 비운다 - 다른 계약서에 섞여 저장되지 않게');
 
@@ -1318,6 +1318,19 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
   ok(js.includes('const id = CT.id, 그때 = CT.track;') && js.includes('(CT.id === id ? CT.track : 그때) || {}'),
      '일정 저장 대기 중 다른 계약서로 넘어가도 앞 계약서에 빈 track 을 보내지 않는다');
   ok(js.includes('function exStateHTML(doc, s)') && js.includes('${esc(s.h)}${exStateHTML(doc, s)}') && js.includes('입력 필요 ${키.length - 채움}칸'), '확인·설명서 항목마다 입력 필요 칸 수 · 서류에서 채운 칸 수');
+}
+
+/* ── 보관함 · 휴지통 (2026-11-10 대표님 결정 1번 - 날인본은 휴지통까지만, 작성 중은 30일 뒤 지움, 영구 삭제는 대표만) ── */
+{
+  const feed = fs.readFileSync(new URL('../api/feed.js', import.meta.url), 'utf8');
+  const t = C.trackCheck({ arch: '2026-11-10', trash: '2026-11-10' });
+  ok(t && t.arch === '2026-11-10' && t.trash === '2026-11-10' && C.trackCheck({ trash: '어제' }) === null, 'track 에 보관함 · 휴지통 날짜(arch · trash)가 들어가고, 날짜 모양이 아니면 거절');
+  ok(/case 'contract-bin':\s+await bin\(res, agent, b\)/.test(길.read ? '' : fs.readFileSync(new URL('../api/_contract.js', import.meta.url), 'utf8')), '서버 contract-bin - 보관함 · 휴지통으로 옮기고 되돌린다');
+  ok(/'contract-del'\]\.includes\(w\)/.test(feed), '영구 삭제(contract-del)는 대표만 - 직원은 막는다');
+  ok(js.includes("const ct보관칸 = r =>") && js.includes("data-act=\"ct-bin-tab\"") && js.includes("'ct-purge', id, '영구 삭제'") && js.includes("r.status === 'sealed' ? '' : 직원()"),
+     '목록 · 보관함 · 휴지통 칸 - 휴지통의 날인본은 영구 삭제 단추가 없고, 직원에게는 남은 날만 보인다');
+  ok(js.includes("const 계약 = (CT.list || []).filter(ct살아있음);") && js.includes("sub === 'schedule' ? ctSchedulePageHTML(살아)"), '보관함 · 휴지통 계약서는 대시보드 · 일정에서 빠진다');
+  ok(js.includes('data-act="ct-trash-cur"') && !js.includes('>이 계약서 지우기<'), '작성 화면의 지우기는 휴지통으로(바로 지우지 않는다)');
 }
 
 console.log(`${ran - fail} 통과 / ${fail} 실패`);

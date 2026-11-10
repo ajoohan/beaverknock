@@ -3,7 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="icon" type="image/x-icon" href="favicon.ico">
+<!-- 파비콘 (2026-11-10 바뀐 보라 #6A46E0 계열 · 흰 문틀) - 선명한 SVG 먼저, 못 읽는 곳은 ico -->
+<link rel="icon" type="image/svg+xml" href="favicon.svg?v=2">
+<link rel="icon" type="image/x-icon" href="favicon.ico?v=2" sizes="any">
+<link rel="apple-touch-icon" href="apple-touch-icon.png?v=2">
+<meta name="theme-color" content="#6A46E0">
 <!-- 비버리 그림 미리 받기는 뺐다 (2026-11-08 리뷰) - 운영 · 대시보드 · 계약서 링크로 들어와도 안 쓰는 그림을 먼저 받았다. 그림은 화면을 그릴 때 받는다 -->
 <meta name="description" content="찾아다니지 마세요. 조건을 걸어두면 문을 두드립니다. 서울·경기 조건매칭 부동산 - 전 과정 무료.">
 <meta property="og:type" content="website">
@@ -11,7 +15,7 @@
 <meta property="og:title" content="비버노크 - 조건을 걸어두면 문을 두드립니다">
 <meta property="og:description" content="원하는 집·가게의 조건을 남기면, 맞는 물건이 있는 공인중개사가 직접 연락합니다. 서울·경기에서 먼저 시작합니다.">
 <meta property="og:url" content="https://beaverknock.co.kr">
-<meta property="og:image" content="https://beaverknock.co.kr/og-image.png?v=3">
+<meta property="og:image" content="https://beaverknock.co.kr/og-image.png?v=4">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="문을 두드리는 공인중개사 비버리">
@@ -19,7 +23,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="비버노크 - 조건을 걸어두면 문을 두드립니다">
 <meta name="twitter:description" content="원하는 집·가게의 조건을 남기면, 맞는 물건이 있는 공인중개사가 직접 연락합니다.">
-<meta name="twitter:image" content="https://beaverknock.co.kr/og-image.png?v=3">
+<meta name="twitter:image" content="https://beaverknock.co.kr/og-image.png?v=4">
 <title>비버노크 - 조건 맞춤 부동산 매칭</title>
 <!-- Pretendard Variable v1.3.9 (SIL OFL 1.1, github.com/orioncactus/pretendard) - 쓰는 글자 묶음만 받는 조각 92개(fonts/pretendard/).
      2026-10-30 대표님 '폰트 가독성이 좋지 않아' - 예전 한 파일(fonts/pretendard-variable.woff2)은 9월 화면 글자만 담은 634자 축소판이라
@@ -1344,14 +1348,6 @@ body.mo .vcard .vbtn{width:100%;margin-top:10px}
    사무실 모니터 - 중개사·소유자다. 좁은 화면은 대개 손에 든 전화 - 집을 찾는
    손님이다. 그래서 PC 에서는 파트너 쪽에 한 칸을 내어주고, 모바일에서는
    손님만 본다. 같은 화면을 두 사람에게 똑같이 보여줄 이유가 없다. */
-.hero{display:grid;gap:clamp(28px,2.6vw,48px);align-items:center;width:100%;
-  max-width:min(1760px,94vw);margin:0 auto;padding:0 clamp(32px,3.4vw,76px);
-  grid-template-columns:minmax(0,1.08fr) minmax(0,.92fr)}
-.hero > .heroSide{grid-column:1/-1}
-@media (min-width:1360px){
-  .hero{grid-template-columns:minmax(0,1.04fr) minmax(0,.76fr) minmax(0,.82fr)}
-  .hero > .heroSide{grid-column:auto}
-}
 /* ── 첫 화면의 작은 장식 셋 ── (2026-10-01 '귀엽지만 세련되게')
    · 베타 알약: 베이지 상자 대신 흰 알약에 복숭아 점 하나. 말은 그대로다.
    · 강조어: 형광펜 밑줄을 걷었다. 2010년대 랜딩의 상징 같은 장식이라
@@ -1364,16 +1360,12 @@ body.mo .vcard .vbtn{width:100%;margin-top:10px}
   box-shadow:0 0 0 3px var(--clay100);flex:none}
 .beta b{font-weight:700;color:var(--ind);letter-spacing:-.01em}
 .accentWord{color:var(--ind)}
-.blob{position:absolute;bottom:4%;left:50%;transform:translateX(-50%);width:min(400px,90%);aspect-ratio:1;pointer-events:none}
-.blob::before,.blob::after{content:"";position:absolute;border-radius:50%}
-.blob::before{inset:0;background:radial-gradient(circle at 40% 38%,var(--ind100) 0%,rgba(240,234,254,.7) 52%,rgba(240,234,254,0) 72%)}
-.blob::after{width:46%;aspect-ratio:1;right:4%;top:6%;background:radial-gradient(circle,var(--clay100) 0%,rgba(255,243,234,.85) 45%,rgba(255,243,234,0) 72%)}
 /* ── 메인 · 리퀴드 글래스 (2026-11-10 대표님 '비버는 작게 안내 · 스크린샷과 장점 · 리퀴드 글래스로 고급스럽게') ──
    한 겹의 빛(.hm-aura: 연보라 · 복숭아 · 민트가 천천히 번진다) 위에 반투명 유리판(.lg)을 올린다.
    유리판 = 반투명 흰 바탕 + 뒤를 흐리고 채도를 올리는 필터 + 위쪽 가장자리의 반사광(::before) + 얇은 흰 테.
    글자 대비를 지키려고 유리는 흰색 58~72% 로 진하게 둔다(뒤 빛이 옅어 4.5:1 을 넘는다).
    흐림을 못 쓰는 브라우저 · '투명도 줄이기' 를 켠 분께는 흰 판으로 선다. 움직임 줄이기면 빛도 멈춘다. */
-.hm{overflow:hidden;--hm-in:min(1240px,92vw)}
+.hm{overflow:clip;--hm-in:min(1240px,92vw)}   /* hidden 이면 상단 바(sticky)가 따라 내려오지 않는다 - clip 은 스크롤 상자를 만들지 않는다 */
 body.mo .hm{overflow:visible}
 .hm > *{position:relative;z-index:2}
 .hm > .hm-aura{position:absolute;z-index:0;inset:0 0 auto 0;height:min(1100px,140vh);pointer-events:none;overflow:hidden}
@@ -1392,11 +1384,30 @@ body.mo .hm{overflow:visible}
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){ .lg{background:rgba(255,255,255,.95)} }
 @media (prefers-reduced-transparency:reduce){ .lg{background:#fff;-webkit-backdrop-filter:none;backdrop-filter:none} }
 @media (prefers-reduced-motion:reduce){ .hm-aura i,.hm-float{animation:none!important} }
+/* 휴대폰은 빛을 멈춘다 - 뒤가 움직이면 위의 유리판이 매 프레임 흐림을 다시 계산한다(2026-11-10 리뷰) */
+body.mo .hm-aura i{animation:none}
 
-/* 머리 - 떠 있는 유리 막대. 내리면 같이 내려온다 */
-.hm-navwrap{position:sticky;top:0;z-index:20!important;padding:12px clamp(16px,2.4vw,32px) 0}
-.hm .nav.hm-nav{max-width:var(--hm-in);margin:0 auto;height:64px;padding:0 14px 0 22px;border-radius:999px}
-body.mo .hm .nav.hm-nav{height:56px;padding:0 8px 0 16px}
+/* 상단 바 (2026-11-10 다시) - 화면 폭에 붙는 막대. 맨 위에서는 바탕 없이, 내리면 반투명 바탕 + 얇은 선(body.hm-scrolled) */
+.hm-navwrap{position:sticky;top:0;z-index:20!important;border-bottom:1px solid transparent;transition:background-color .25s,border-color .25s,box-shadow .25s}
+.hm .nav.hm-nav{width:var(--hm-in);max-width:none;margin:0 auto;height:72px;padding:0;gap:clamp(16px,2.4vw,40px)}
+.hm .nav.hm-nav .right{gap:12px;align-items:center}
+body.hm-scrolled .hm-navwrap{background:rgba(250,249,255,.8);-webkit-backdrop-filter:blur(18px) saturate(160%);backdrop-filter:blur(18px) saturate(160%);border-bottom-color:rgba(29,28,42,.07);box-shadow:0 6px 24px -18px rgba(29,24,80,.35)}
+/* 휴대폰 공통 상단 바 규칙(흰 바탕 · 아래 선 · 위 여백)을 메인 · 파트너 안내 막대에서는 걷는다 */
+body.mo .hm .nav.hm-nav{height:calc(60px + env(safe-area-inset-top));padding:env(safe-area-inset-top) 0 0;background:none;border-bottom:0;gap:10px}
+/* 파트너 안내 - 짙은 첫 화면 위: 흰 글 · 내리면 짙은 반투명 */
+.hp-nav .hm-nav{color:#fff}
+body.hm-scrolled .hp-nav{background:rgba(22,16,64,.82);border-bottom-color:rgba(255,255,255,.08);box-shadow:0 10px 30px -20px rgba(0,0,0,.6)}
+.hp-links{display:flex;gap:2px;margin:0 auto}
+.hp-links button{padding:9px 14px;border-radius:var(--r-btn);font-size:14.5px;font-weight:600;color:rgba(255,255,255,.72);background:none;border:0;cursor:pointer;transition:color .15s,background-color .15s}
+.hp-links button:hover{color:#fff;background:rgba(255,255,255,.08)}
+.hp-cust{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:0 6px;font-size:14.5px;font-weight:600;color:rgba(255,255,255,.78);white-space:nowrap;transition:color .15s}
+.hp-cust:hover{color:#fff}
+.hp-cust svg{transition:transform .15s}
+.hp-cust:hover svg{transform:translateX(2px)}
+.hp-nav .btn.hp-cta{background:#fff;color:var(--ind700);border:0;font-weight:700;box-shadow:0 6px 18px -10px rgba(0,0,0,.6)}
+.hp-nav .btn.hp-cta:hover{background:var(--ind50)}
+body.mo .hp-cust{font-size:13.5px;padding:0 2px}
+body.mo .hp-nav .right{gap:8px}
 
 /* 첫 화면 */
 .hm-hero{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:clamp(32px,4vw,72px);align-items:center;
@@ -1488,7 +1499,6 @@ body.mo .hm .nav.hm-nav{height:56px;padding:0 8px 0 16px}
 }
 /* 휴대폰 - 세로로 쌓는다 */
 body.mo .hm{--hm-in:calc(100vw - 40px)}
-body.mo .hm-navwrap{padding:10px 12px 0}
 body.mo .hm-hero{grid-template-columns:minmax(0,1fr);gap:28px;padding:28px 0 44px}
 body.mo .hm-copy{align-items:center;text-align:center;gap:16px}
 body.mo .hm-h1{font-size:31px;line-height:1.3;text-align:center}
@@ -1515,9 +1525,53 @@ body.mo .hm-dark .row{width:100%}
 body.mo .hm-steps{margin-top:24px;padding:18px 14px}
 body.mo .hm-end{padding:32px 20px 34px;border-radius:26px}
 body.mo .hm-end .btn{width:100%}
+/* 제안 상세 - 사진 고르기 */
+.pic-th{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:10px}
+.pic-th button{position:relative;padding:0;border:2px solid transparent;border-radius:var(--r-sm);overflow:hidden;aspect-ratio:4/3;background:var(--ind100);cursor:pointer;transition:border-color .15s,opacity .15s}
+.pic-th button img{display:block;width:100%;height:100%;object-fit:cover}
+.pic-th button:not(.on){opacity:.72}
+.pic-th button:hover{opacity:1}
+.pic-th button.on{border-color:var(--ind)}
+body.mo .pic-th{padding:0 24px;grid-template-columns:repeat(auto-fill,minmax(68px,1fr));gap:8px}
+/* 내 이름 단추 - 이름 · 메일 두 줄 (그림 · 꺾쇠 없음) */
+.umenu-btn .nm2{line-height:1.35}
+.umenu-btn .nm2 small{color:var(--ind);font-weight:500}
+.umenu-btn{padding:6px 14px}
+body.mo .umenu-btn{padding:6px 12px}
+.umenu-btn > .nbadge{left:auto;right:-6px;top:-6px}
+/* 파트너 안내 - 많은 손님을 실수 없이 */
+.hp-tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-top:36px}
+.hp-tiles article{padding:26px 24px 28px}
+.hp-tiles h3{margin:0 0 8px;font-size:17px;font-weight:800;letter-spacing:-.03em;color:var(--n900)}
+.hp-tiles p{margin:0;font-size:14.5px;line-height:1.7;color:var(--n700)}
+body.mo .hp-tiles{grid-template-columns:minmax(0,1fr);gap:12px;margin-top:24px}
+body.mo .hp-tiles article{display:grid;grid-template-columns:44px minmax(0,1fr);column-gap:14px;padding:18px}
+body.mo .hp-tiles .hm-ic{grid-row:span 2;margin:0;width:44px;height:44px}
+body.mo .hp-tiles h3{font-size:16px;margin:2px 0 4px}
+@media (max-width:1180px){ .hp-tiles{grid-template-columns:repeat(2,minmax(0,1fr))} }
+/* 공통 바닥글 */
+.sf{position:relative;z-index:2;margin-top:clamp(24px,4vh,48px);background:linear-gradient(180deg,rgba(255,255,255,.6),#fff 40%);border-top:1px solid var(--n100)}
+.sf-in{width:min(1240px,92vw);margin:0 auto;padding:56px 0 36px}
+.sf-top{display:flex;justify-content:space-between;gap:48px;padding-bottom:40px;border-bottom:1px solid var(--n100)}
+.sf-brand{display:flex;flex-direction:column;gap:16px}
+.sf-brand p{margin:0;font-size:14px;line-height:1.7;color:var(--n500)}
+.sf-cols{display:grid;grid-template-columns:repeat(3,minmax(120px,auto));gap:clamp(32px,5vw,88px)}
+.sf-col{display:flex;flex-direction:column;gap:12px}
+.sf-col b{font-size:13px;font-weight:800;letter-spacing:.04em;color:var(--n900)}
+.sf-col a{font-size:14px;color:var(--n500);cursor:pointer;transition:color .15s}
+.sf-col a:hover{color:var(--ind)}
+.sf-col a.em{font-weight:700;color:var(--n700)}
+.sf-bot{display:flex;align-items:flex-start;gap:40px;padding-top:28px}
+.sf-bot .biz{flex:1;min-width:0}
+.sf-op{flex:none;display:inline-flex;align-items:center;gap:10px}
+.sf-op small{font-size:12px;font-weight:600;color:var(--n500)}
+.sf-pt{font-size:16px;font-weight:600;letter-spacing:.14em;color:var(--n900)}
+.sf-pt b{font-weight:800;color:var(--ind)}
+.sf-mtop{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-bottom:14px;margin-bottom:12px;border-bottom:1px solid var(--n100)}
+@media (max-width:1023px){ .sf-top{flex-direction:column} .sf-bot{flex-direction:column;gap:16px} }
 /* 파트너 안내 (2026-11-10) - 메인의 유리 판 체계를 그대로 쓰고 첫 화면만 짙게 */
-.hp .hm-navwrap{margin-bottom:-88px}
-.hp-top{padding-top:calc(88px + clamp(40px,6vh,72px))}
+.hp .hm-navwrap{margin-bottom:-73px}
+.hp-top{padding-top:calc(73px + clamp(40px,6vh,72px))}
 .hp-top .hm-h1{font-size:clamp(34px,3.1vw,50px)}
 .hp-top .hm-txt .row{margin-top:28px}
 .hm-dark .hm-float{background:rgba(255,255,255,.9);border-color:rgba(255,255,255,.95)}
@@ -1531,7 +1585,7 @@ body.mo .hm-end .btn{width:100%}
 .hp-card:hover .hp-more svg{transform:translateX(3px)}
 .hp-no{display:inline-grid;place-items:center;min-width:30px;height:22px;margin-right:8px;padding:0 6px;border-radius:999px;background:var(--ind);color:#fff;font-size:12px;letter-spacing:0}
 .hp-f{scroll-margin-top:84px}
-.hp-f:nth-of-type(odd){background:linear-gradient(180deg,rgba(255,255,255,0),rgba(240,236,255,.45) 50%,rgba(255,255,255,0))}
+.hp-tint{background:linear-gradient(180deg,rgba(255,255,255,0),rgba(240,236,255,.45) 50%,rgba(255,255,255,0))}
 .hm-split.hp-rev > :last-child{order:-1}
 .hm-split.hp-rev{grid-template-columns:minmax(0,1.2fr) minmax(0,.8fr)}
 .hp-steps{list-style:none;margin:32px 0 0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;counter-reset:s}
@@ -1541,8 +1595,8 @@ body.mo .hm-end .btn{width:100%}
 .hp-n{display:grid;place-items:center;width:34px;height:34px;margin-bottom:8px;border-radius:50%;background:var(--ind);color:#fff;font-weight:800;box-shadow:0 8px 16px -8px rgba(79,82,209,.7)}
 .hp-login{margin-top:16px;font-size:13.5px;color:var(--n500)}
 .hp-login a{font-weight:700;color:var(--ind);text-decoration:underline;text-underline-offset:3px;cursor:pointer}
-body.mo .hp .hm-navwrap{margin-bottom:-76px}
-body.mo .hp-top{padding-top:calc(76px + 28px)}
+body.mo .hp .hm-navwrap{margin-bottom:-61px}
+body.mo .hp-top{padding-top:calc(61px + 28px)}
 body.mo .hp-top .hm-h1{font-size:28px;text-align:left}
 body.mo .hp-top .hm-split{gap:32px}
 body.mo .hp-top .hm-float.f1{left:4%;top:-9%}
@@ -3804,6 +3858,7 @@ const SEED_PROPOSALS = [
   {seed:true, id:'p1', cond:'c1', isNew:true, read:false, photos:3, title:'미사강변 ○○아파트 · 3룸', dong:'미사1동',
    dep:10000000, rent:650000, fee:80000, feeType:'관리규약에 따라 부과', feeBasis:'최근 3개월 평균',
    feeItems:'수도료·청소비 포함 / 전기·가스 별도',
+   pics:['img/sample/apt-living.v1.webp','img/sample/apt-kitchen.v1.webp','img/sample/apt-bed.v1.webp'],
    area:59.94, areaSup:84.96, py:24.2, rooms:'3', baths:'2', duplex:false,
    dir:'남동', dirBase:'거실 기준', kind:'home',
    note:'남향에 가까운 남동향이라 오후까지 볕이 듭니다. 단지 안에 어린이집이 있습니다.',
@@ -3813,7 +3868,7 @@ const SEED_PROPOSALS = [
    agency:{name:'미사중앙공인중개사사무소',rep:'김○○',reg:'41450-2019-00217',addr:'하남시 미사강변대로 220',phone:'031-123-4567'},
    at:'2시간 전', approved:'2016.06', floors:25, violation:false, loan:0, lease:false,
    risk:'보증금이 최근 전세가율 대비 안전 범위입니다', status:'sent'},
-  {seed:true, id:'p2', cond:'c1', isNew:false, read:true, photos:0, title:'덕풍동 ○○빌라 · 3룸', dong:'덕풍2동',
+  {seed:true, id:'p2', cond:'c1', isNew:false, read:true, photos:1, pics:['img/sample/villa-living.v1.webp'], title:'덕풍동 ○○빌라 · 3룸', dong:'덕풍2동',
    dep:8000000, rent:600000, fee:50000, feeType:'임대인이 직접부과', feeBasis:'직전 1년 평균',
    feeItems:'청소비 포함 / 수도·전기 별도',
    area:49.5, areaSup:65.4, py:19.8, rooms:'3', baths:'1', duplex:false,
@@ -4182,17 +4237,6 @@ const BEAVERLY_KNOCK = "img/beaverly-knock.v1.webp";
 
 
 
-/* 노크 장면 - 정면 비버의 든 손이 문을 향하도록 나란히 세운다.
-   h = 비버 높이(px). 문은 비버보다 살짝 높다. */
-function knockScene(h, kx, ky){
-  /* 손동작과 노크 표시는 그림 안에 있다. 파동만 그 위에 얹는다 -
-     두드리는 자리에서 퍼져야 뜻이 맞는다. */
-  return `<span class="knock" style="--kx:${kx||'74%'};--ky:${ky||'26%'};--ks:${Math.round(h*0.17)}px">
-    <i class="ring"></i><i class="ring"></i><i class="ring"></i>
-    <img src="${BEAVERLY_KNOCK}" alt="문을 두드리는 공인중개사 비버리"
-      style="height:${h}px;width:auto;display:block;user-select:none;-webkit-user-drag:none">
-  </span>`;}
-
 function beaverly(h){ return `<img src="${BEAVERLY_FRONT}" alt="공인중개사 비버리"
   style="height:${h||280}px;width:auto;display:block;user-select:none;-webkit-user-drag:none">`;}
 /* 미니 - 안내 배지용 (정면을 작게) */
@@ -4204,6 +4248,10 @@ const 빈자리 = (제목, 설명 = '', 단추 = '', 크기 = 104, 안쪽 = fals
 
 const ICON_CHECK = `<svg viewBox="0 0 12 12"><path d="M2 6.5 L5 9.5 L10 3" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 const ICON_PHOTO = `<svg viewBox="0 0 24 24" fill="none" stroke="#7C58E7" stroke-width="1.5"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.6"/><path d="M3 16 L9 11 L14 15 L17 13 L21 16"/></svg>`;
+
+/* 제안 사진 (2026-11-10) - 제안에 사진 주소(pics)가 있으면 그린다. 없으면(사진은 장수만 오는 실제 제안) 예전처럼 판만.
+   예시 제안의 사진은 생성한 샘플이다(img/sample). 목록에는 작은 판(.s.)을 쓴다 */
+const 제안사진 = (p, i = 0, 작게 = false) => { const u = (p.pics || [])[i]; return u ? (작게 ? u.replace('.v1.webp', '.s.v1.webp') : u) : ''; };
 
 /* ---------- 공통 조각 ---------- */
 /* 모바일 하단 탭바 - 수요자/공급자 각각 */
@@ -4964,7 +5012,7 @@ V['#/'] = () => `
   <div class="hm-aura" aria-hidden="true"><i class="a1"></i><i class="a2"></i><i class="a3"></i></div>
 
   <div class="hm-navwrap">
-    <div class="nav pad hm-nav lg">
+    <div class="nav hm-nav">
       <span style="flex:none">${logoLockup({h:isMo()?23:25,tag:!isMo()})}</span>
       ${isMo()?'':`<div class="items mid">
         <a data-go="#/guide">이용 안내</a>
@@ -4993,13 +5041,12 @@ V['#/'] = () => `
       ${hm안내()}
     </div>
     <div class="hm-stage">
-      <figure class="hm-phone"><img src="img/home/inbox-m.v1.webp" width="560" height="1106" alt="비버노크 제안함 화면 - 받은 제안마다 내 조건과 다른 점·일치하는 점이 표시된다" fetchpriority="high"></figure>
+      <figure class="hm-phone"><img src="img/home/inbox-m.v2.webp" width="560" height="1106" alt="비버노크 제안함 화면 - 받은 제안마다 사진 · 금액 · 내 조건과 다른 점 · 일치하는 점이 표시된다" fetchpriority="high"></figure>
       ${hm떠있는('새 제안 도착', '미사강변 ○○아파트 · 3룸', 'bell', 'f1')}
     </div>
   </section>
   ${hm장점()}
   ${hm손님()}
-  ${hm파트너()}
   <section class="hm-sec">
     <div class="hm-in">
       <p class="hm-k">이용 순서</p>
@@ -5013,16 +5060,9 @@ V['#/'] = () => `
   </section>
   ${hm마무리()}
 
-  <!-- 휴대폰 바닥글 (2026-11-02 대표님 '모바일 메인 화면 푸터가 너무 길고 보기 싫다') - 두 줄 링크 + 사업자 정보 -->
-  <footer class="mfoot">
-    <nav class="mf-links" aria-label="바닥글 메뉴">
-      <div class="mf-row">${[['#/guide','이용 안내'],['#/faq','자주 묻는 질문'],['#/partner','파트너 안내']].map(([h,t])=>`<a data-go="${h}">${t}</a>`).join('')}</div>
-      <div class="mf-row pol"><a data-go="#/brand">브랜드</a><a href="/terms" target="_blank" rel="noopener">이용약관</a><a href="/privacy" target="_blank" rel="noopener" class="em">개인정보 처리방침</a></div>
-    </nav>
-    ${bizFooter()}
-  </footer>`
+  ${siteFooter()}`
   : `
-  <!-- PC: 왼쪽 문구, 오른쪽 실제 화면 두 장(파트너 대시보드 창 + 손님 제안함 휴대폰)이 겹쳐 선다 -->
+  <!-- PC: 왼쪽 문구, 오른쪽 실제 손님 화면 두 장(제안함 창 + 제안 상세 휴대폰)이 겹쳐 선다. 파트너 화면은 파트너 안내로 옮겼다 -->
   <section class="hm-hero">
     <div class="hm-copy">
       <span class="beta"><b>Close Beta</b>서울·경기에서 먼저 시작합니다</span>
@@ -5036,17 +5076,16 @@ V['#/'] = () => `
     </div>
     <div class="hm-stage">
       <figure class="hm-win lg">
-        <div class="hm-bar" aria-hidden="true"><i></i><i></i><i></i><span>beaverknock.co.kr · 파트너 대시보드</span></div>
-        <img src="img/home/dash.v1.webp" width="1600" height="956" alt="비버노크 파트너 대시보드 - 내 지역에 걸린 조건, 보낸 제안, 열람률, 최근 14일 제안 흐름" fetchpriority="high">
+        <div class="hm-bar" aria-hidden="true"><i></i><i></i><i></i><span>beaverknock.co.kr · 제안함</span></div>
+        <img src="img/home/inbox.v2.webp" width="1600" height="975" alt="비버노크 제안함 - 내 조건 옆에 중개사가 보낸 제안이 사진 · 금액 · 다른 점 · 일치하는 점과 함께 놓인다" fetchpriority="high">
       </figure>
-      <figure class="hm-phone"><img src="img/home/inbox-m.v1.webp" width="560" height="1106" alt="비버노크 손님 제안함 화면 - 받은 제안마다 내 조건과 다른 점·일치하는 점이 표시된다"></figure>
+      <figure class="hm-phone"><img src="img/home/proposal-m.v2.webp" width="560" height="1106" alt="휴대폰 제안 상세 - 사진, 보증금 · 월세, 내 조건과 비교"></figure>
       ${hm떠있는('새 제안 도착', '미사강변 ○○아파트 · 3룸', 'bell', 'f1')}
       ${hm떠있는('연락처는 가려서', '연결을 누를 때만 오갑니다', 'lock', 'f2')}
     </div>
   </section>
   ${hm장점()}
   ${hm손님()}
-  ${hm파트너()}
 
   <!-- 네 걸음: 이어진 한 줄. 눈에 들어오면 왼쪽부터 채워진다(runSteps) -->
   <section class="hm-sec">
@@ -5071,23 +5110,7 @@ V['#/'] = () => `
   </section>
   ${hm마무리()}
 
-  <!-- 바닥글은 밝게 둔다 (2026-10-01) - 조용히 정보만 건넨다 -->
-  <div style="flex:none;position:relative;z-index:3;background:var(--n50);color:var(--n700);border-top:1px solid var(--n100)">
-    <div class="heroBand" style="padding-top:22px;padding-bottom:24px;display:flex;flex-direction:column;gap:12px">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap">
-        ${logoLockup({h:18,en:true,tag:true,stack:true})}
-        <div class="footlinks" style="display:flex;gap:18px;flex-wrap:wrap">
-          ${[['#/guide','이용 안내'],['#/faq','자주 묻는 질문'],['#/partner','파트너 안내']]
-            .map(([h,t])=>`<a class="tapx" data-go="${h}" style="font-size:13.5px;color:var(--n500)">${t}</a>`).join('')}
-          <a class="tapx" href="/terms" target="_blank" rel="noopener" style="font-size:13.5px;color:var(--n500)">이용약관</a>
-          <a class="tapx" href="/privacy" target="_blank" rel="noopener" style="font-size:13.5px;font-weight:700;color:var(--n700)">개인정보 처리방침</a>
-          <a class="tapx" data-go="#/brand" style="font-size:13.5px;color:var(--n500)">브랜드</a>
-        </div>
-      </div>
-      <div style="height:1px;background:var(--n200)"></div>
-      ${bizFooter()}
-    </div>
-  </div>`}
+  ${siteFooter()}`}
 </div>`;
 
 /* ── 메인 조각들 (2026-11-10) ── 문구는 이용 안내 · 자주 묻는 질문에 적힌 사실만 쓴다 */
@@ -5102,6 +5125,9 @@ const HM_그림 = {
   doc: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/>',
   cal: '<rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M8 3v4M16 3v4M3.5 10h17"/><path d="m9 15 2 2 4-4"/>',
   arrow: '<path d="M5 12h14M13 6l6 6-6 6"/>',
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  flag: '<path d="M5 21V4"/><path d="M5 4h11l-2 4 2 4H5"/>',
+  chat: '<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/><path d="M8.5 11h7M8.5 14.5h4"/>',
 };
 const hm그림 = (k, s = 22) => `<svg viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${HM_그림[k]}</svg>`;
 /* 비버는 주인공이 아니라 안내 - 작은 얼굴 하나와 말풍선 한 줄 */
@@ -5133,35 +5159,7 @@ function hm손님(){
         ${hm목록(['일치 · 다름이 제안마다 한눈에', '새 제안은 카카오톡과 메일로 바로 알림', '조건은 3개월 뒤 자동으로 지워집니다'])}
         <button class="btn sec" data-go="#/guide">이용 안내 보기</button>
       </div>
-      <figure class="hm-shot lg"><img src="img/home/proposal.v1.webp" width="1400" height="830" loading="lazy" decoding="async" alt="제안 상세 화면 - 보증금·월세, 내 조건과 비교(다름·일치), 매물 특징, 중개사님의 한마디"></figure>
-    </div>
-  </section>`;
-}
-function hm파트너(){
-  return `<section class="hm-sec hm-dark">
-    <div class="hm-in hm-split rev">
-      <div class="hm-txt">
-        <p class="hm-k">FOR PARTNERS</p>
-${S.agent ? `
-        <!-- 이미 들어와 계신 분께 '먼저 두드리세요' 라고 말하지 않는다 -->
-        <h2 class="hm-h2">${esc(S.agent.office || '파트너')} 님,<br>맞는 손님이 기다립니다</h2>
-        <p class="hm-p">${S.agent.status === 'approved'
-          ? '걸어둔 조건 중 맞는 것만 골라 보여드립니다. 바로 제안하실 수 있습니다.'
-          : '자격 확인만 끝나면 손님의 조건 전문을 보고 제안하실 수 있습니다.'}</p>
-        ${hm목록(['매칭 적합도 순 수요 목록 - 선착순이 아닙니다', '계약서 작성 · 서류로 채우기 · 저장과 메일 보내기', '광고비 · 제안 비용 0원'])}
-        <div class="row eqb">${partnerDoor('onDark')}<button class="btn onDark" data-go="#/partner">파트너 안내</button></div>` : `
-        <h2 class="hm-h2">수요가 확인된 손님에게만<br>1:1 로 제안하세요</h2>
-        <p class="hm-p">손님이 조건을 걸어두고 기다립니다. 맞는 조건에만 제안하면 됩니다 - 전단도, 광고비도 없습니다.</p>
-        ${hm목록(['매칭 적합도 순 수요 목록 - 선착순이 아닙니다', '계약서 작성 · 서류로 채우기 · 저장과 메일 보내기', '광고비 · 제안 비용 0원'])}
-        <div class="row eqb"><button class="btn partner" data-go="#/partner/join">파트너로 시작하기</button><button class="btn onDark" data-go="#/partner">먼저 둘러보기</button></div>`}
-        <!-- 상단바에서 파트너 로그인을 뺐으므로 돌아온 분의 길은 여기에 둔다 -->
-        ${S.user?'':`<span class="hm-login">이미 파트너이신가요?
-          <a class="tapx" data-act="nav-login" data-v="partner">로그인</a></span>`}
-      </div>
-      <div class="hm-pair">
-        <figure class="hm-shot lg back"><img src="img/home/demands.v1.webp" width="1400" height="914" loading="lazy" decoding="async" alt="파트너 수요 목록 - 내 조건에 맞는 손님 카드, 남은 슬롯, 손님이 남긴 한마디"></figure>
-        <figure class="hm-shot lg front"><img src="img/home/contract.v1.webp" width="1500" height="1028" loading="lazy" decoding="async" alt="계약서 작성 화면 - 서류로 빠르게 채우기와 계약서 미리보기"></figure>
-      </div>
+      <figure class="hm-shot lg"><img src="img/home/proposal.v2.webp" width="1400" height="830" loading="lazy" decoding="async" alt="제안 상세 화면 - 보증금·월세, 내 조건과 비교(다름·일치), 매물 특징, 중개사님의 한마디"></figure>
     </div>
   </section>`;
 }
@@ -5176,6 +5174,36 @@ function hm마무리(){
       </div>
     </div>
   </section>`;
+}
+
+/* 공통 바닥글 (2026-11-10 대표님 '푸터가 왼쪽으로 너무 초라하게 있어 · 비버노크 로고 · 플러스토닉 로고 · 정렬').
+   본문과 같은 폭(--hm-in)에 맞춰 선다. 위: 비버노크 로고 + 한 줄 소개 | 링크 세 묶음. 아래: 운영사 표기 + 사업자 정보(bizFooter).
+   휴대폰은 예전 두 줄 링크(.mfoot)를 그대로 두고 맨 위에 로고만 더한다(2026-11-02 '모바일 푸터가 너무 길다').
+   플러스토닉 로고 파일은 아직 없다 - 글자 표기로 쓴다(파일이 오면 .sf-pt 를 그림으로 바꾼다) */
+function siteFooter(){
+  const 운영 = `<span class="sf-op"><small>운영</small><span class="sf-pt" aria-label="PLUSTONIC">PLUS<b>TONIC</b></span></span>`;
+  if(isMo()) return `<footer class="mfoot">
+    <div class="sf-mtop">${logoLockup({h:20,tag:false})}${운영}</div>
+    <nav class="mf-links" aria-label="바닥글 메뉴">
+      <div class="mf-row">${[['#/guide','이용 안내'],['#/faq','자주 묻는 질문'],['#/partner','파트너 안내']].map(([h,t])=>`<a data-go="${h}">${t}</a>`).join('')}</div>
+      <div class="mf-row pol"><a data-go="#/brand">브랜드</a><a href="/terms" target="_blank" rel="noopener">이용약관</a><a href="/privacy" target="_blank" rel="noopener" class="em">개인정보 처리방침</a></div>
+    </nav>
+    ${bizFooter()}
+  </footer>`;
+  const 묶음 = (제목, 줄) => `<div class="sf-col"><b>${제목}</b>${줄.join('')}</div>`;
+  return `<footer class="sf">
+    <div class="sf-in">
+      <div class="sf-top">
+        <div class="sf-brand">${logoLockup({h:22,tag:false})}<p>조건을 걸어두면, 맞는 물건을 가진<br>공인중개사가 먼저 문을 두드립니다.</p></div>
+        <nav class="sf-cols" aria-label="바닥글 메뉴">
+          ${묶음('서비스', ['<a data-go="#/guide">이용 안내</a>', '<a data-go="#/faq">자주 묻는 질문</a>', '<a data-go="#/kind">내 조건 걸어두기</a>'])}
+          ${묶음('파트너', ['<a data-go="#/partner">파트너 안내</a>', '<a data-go="#/partner/join">파트너 가입</a>'])}
+          ${묶음('정책', ['<a href="/terms" target="_blank" rel="noopener">이용약관</a>', '<a href="/privacy" target="_blank" rel="noopener" class="em">개인정보 처리방침</a>', '<a data-go="#/brand">브랜드</a>'])}
+        </nav>
+      </div>
+      <div class="sf-bot">${운영}${bizFooter()}</div>
+    </div>
+  </footer>`;
 }
 
 /* ── 사업자 정보 ──
@@ -5202,15 +5230,7 @@ function bizFooter(){
     <!-- 우리가 무엇이 아닌지 밝히는 한 줄 - 연락처에 딸린 말처럼 읽히지 않게 따로 세운다 -->
     <p class="bz-note">비버노크는 공인중개사가 아닌, 조건을 전달하는 서비스입니다.</p>
   </div>`;
-}/* 발밑 지면 - 캐릭터가 떠 보이지 않게 */
-function groundSvg(){
-  return `<svg viewBox="0 0 1440 120" preserveAspectRatio="none" aria-hidden="true"
-    style="position:absolute;left:0;right:0;bottom:0;width:100%;height:${isMo()?58:78}px">
-    <path d="M0 44 Q 300 18 720 38 Q 1100 54 1440 32 L1440 120 L0 120 Z" fill="#EEF0F4"/>
-    <path d="M0 74 Q 360 56 780 70 Q 1120 82 1440 66 L1440 120 L0 120 Z" fill="#E4E7EE"/>
-  </svg>`;
 }
-
 
 /* ══════════ D-00 로그인 ══════════
    수요자 계정은 소셜 4종 + 이메일로 만든다.
@@ -7421,8 +7441,9 @@ V['#/inbox'] = () => {
   const list = cond? S.props.filter(p=>p.cond===cond.id && p.status!=='hidden') : [];
   const card = p => `
     <div class="card ${p.isNew?'hi':''} clickable fade" data-go="#/proposal/${p.id}" style="overflow:hidden;${p.read&&!p.isNew?'background:var(--n50);box-shadow:none':''}">
-      <div style="height:${isMo()?128:150}px;background:${p.photos?'var(--ind100)':'var(--n100)'};display:flex;align-items:center;justify-content:center;position:relative">
-        ${p.photos? `<svg viewBox="0 0 24 24" style="width:26px" fill="none" stroke="#7C58E7" stroke-width="1.5"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.6"/><path d="M3 16 L9 11 L14 15 L17 13 L21 16"/></svg>`
+      <div style="height:${isMo()?128:150}px;background:${p.photos?'var(--ind100)':'var(--n100)'};display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden">
+        ${제안사진(p) ? `<img src="${제안사진(p, 0, true)}" alt="" loading="lazy" decoding="async" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">`
+          : p.photos? `<svg viewBox="0 0 24 24" style="width:26px" fill="none" stroke="#7C58E7" stroke-width="1.5"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.6"/><path d="M3 16 L9 11 L14 15 L17 13 L21 16"/></svg>`
           : `<span style="font-size:13px;color:var(--n500)">사진 미첨부</span>`}
         ${p.isNew? `<span class="badge b-ind" style="position:absolute;left:12px;top:12px;background:var(--ind);color:#fff">NEW</span>`
           : `<span class="badge b-mute" style="position:absolute;left:12px;top:12px">읽음</span>`}
@@ -7537,12 +7558,17 @@ V['#/proposal'] = (id) => { const p=S.props.find(x=>x.id===id); if(!p) return V[
     <div class="right">${S.user ? userMenu() : navAuth('guest')}</div></div>
   <div class="pad" style="flex:1;padding-top:${isMo()?0:28}px;display:flex;gap:32px;max-width:${isMo()?'none':'1180px'};margin:0 auto;width:100%;${isMo()?'flex-direction:column;padding-left:0;padding-right:0':''}">
     <div style="flex:none;width:${isMo()?'100%':'520px'};display:flex;flex-direction:column;gap:12px">
-      <div style="height:${isMo()?200:360}px;${isMo()?'':'border-radius:var(--r-lg);'}background:${p.photos?'var(--ind100)':'var(--n100)'};display:flex;align-items:center;justify-content:center;position:relative">
-        ${p.photos? `<svg viewBox="0 0 24 24" style="width:38px" fill="none" stroke="#7C58E7" stroke-width="1.4"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.6"/><path d="M3 16 L9 11 L14 15 L17 13 L21 16"/></svg>
+      ${(() => { if(S.picFor !== p.id){ S.picFor = p.id; S.picI = 0; } return ''; })()}
+      <div style="height:${isMo()?240:360}px;${isMo()?'':'border-radius:var(--r-lg);'}background:${p.photos?'var(--ind100)':'var(--n100)'};display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden">
+        ${제안사진(p) ? `<img src="${제안사진(p, S.picI || 0)}" alt="${esc(p.title)} 사진 ${(S.picI || 0) + 1}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
+          <span style="position:absolute;right:14px;bottom:12px;background:rgba(12,13,22,.62);color:#fff;font-size:13px;font-weight:700;border-radius:var(--r-full);padding:4px 12px" class="num">${(S.picI || 0) + 1} / ${p.pics.length}</span>`
+        : p.photos? `<svg viewBox="0 0 24 24" style="width:38px" fill="none" stroke="#7C58E7" stroke-width="1.4"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.6"/><path d="M3 16 L9 11 L14 15 L17 13 L21 16"/></svg>
           <span style="position:absolute;right:14px;bottom:12px;background:rgba(12,13,22,.62);color:#fff;font-size:13px;font-weight:700;border-radius:var(--r-full);padding:4px 12px" class="num">1 / ${p.photos}</span>`
         : `<span style="font-size:14.5px;color:var(--n500)">사진 미첨부</span>`}
       </div>
-      ${isMo()?'':`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+      ${제안사진(p) && p.pics.length > 1 ? `<div class="pic-th" role="group" aria-label="사진 고르기">
+        ${p.pics.map((u, i) => `<button type="button" class="${i === (S.picI || 0) ? 'on' : ''}" data-act="pic" data-v="${i}" aria-label="사진 ${i + 1}" aria-pressed="${i === (S.picI || 0)}"><img src="${제안사진(p, i, true)}" alt="" loading="lazy"></button>`).join('')}</div>`
+        : isMo() || 제안사진(p) ? '' : `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
         ${[0,1,2].map(i=>`<div style="height:88px;background:var(--ind100);${i===0?'border:2px solid var(--ind)':''}"></div>`).join('')}</div>`}
     </div>
     <div style="flex:1;display:flex;flex-direction:column;gap:14px;min-width:0;${isMo()?'padding:16px 24px 0':''}">
@@ -7702,15 +7728,19 @@ V['#/partner'] = () => `
        첫 화면(짙은 띠 + 실제 대시보드) → 장점 넷 요약 → 장점마다 실제 화면 한 장 → 시작하는 법 → 마무리.
        문구는 실제 기능(계약서 메뉴 · 일정·알림 · CT_알림종류)에 있는 것만 쓴다. 카카오톡 알림은 템플릿 심사 뒤에 열리므로 그렇게 적는다. -->
   <div class="hm-aura" aria-hidden="true"><i class="a1"></i><i class="a2"></i><i class="a3"></i></div>
-  <div class="hm-navwrap">
-    <div class="nav pad hm-nav lg">
-      <span style="flex:none">${logoLockup({h:isMo()?22:25,partner:true,tag:!isMo()})}</span>
-      <div class="right" style="gap:${isMo()?10:16}px">
-        <a class="tapx" data-go="#/" style="font-size:${isMo()?13.5:14.5}px;font-weight:600;color:var(--n500)">${isMo()?'손님 화면':'손님 화면 보기'}</a>
+  <!-- 상단 바 (2026-11-10 대표님 '완성도가 떨어져 보여 · 상단 바를 전부 뜯어고쳐 · 손님 화면 보기 → 손님 화면 가기').
+       짙은 첫 화면 위에 뿌연 유리 알약이 떠 있었다. 이제 화면 폭에 붙는 막대 - 맨 위에서는 투명(흰 로고 · 흰 글),
+       내리면 짙은 반투명 바탕과 얇은 선이 생긴다(body.hm-scrolled). 가운데는 장점 넷 바로 가기 -->
+  <div class="hm-navwrap hp-nav">
+    <div class="nav hm-nav">
+      <span style="flex:none">${logoLockup({h:isMo()?20:24,mode:'dark',partner:!isMo(),tag:false})}</span>
+      ${isMo() ? '' : `<nav class="hp-links" aria-label="기능 바로 가기">${HP_장점.map(([, t], i) => `<button type="button" data-act="hp-jump" data-v="hp-f${i + 1}">${t}</button>`).join('')}</nav>`}
+      <div class="right">
+        <a class="hp-cust tapx" data-go="#/">${isMo() ? '손님 화면' : '손님 화면 가기'}${hm그림('arrow', 15)}</a>
         ${S.agent
-          ? `<button class="btn pri sm" data-go="${S.agent.status === 'approved' ? '#/partner/demands' : '#/partner/verify'}">${isMo() ? '파트너 화면' : '내 파트너 화면'}</button>`
+          ? `<button class="btn sm hp-cta" data-go="${S.agent.status === 'approved' ? '#/partner/demands' : '#/partner/verify'}">${isMo() ? '파트너 화면' : '내 파트너 화면'}</button>`
           : S.user ? ''   /* 로그인했지만 파트너가 아니면 갈 파트너 화면이 없다 - 아래 '가입하기' 가 길이다 */
-          : `<button class="btn pri sm" data-act="nav-login" data-v="partner">파트너 로그인</button>`}
+          : `<button class="btn sm hp-cta" data-act="nav-login" data-v="partner">파트너 로그인</button>`}
       </div>
     </div>
   </div>
@@ -7719,7 +7749,8 @@ V['#/partner'] = () => `
     <div class="hm-in hm-split">
       <div class="hm-txt">
         <p class="hm-k">FOR PARTNERS</p>
-        <h1 class="t hm-h1" style="color:#fff">조건을 걸어둔 손님에게<br>1:1 로 제안하고,<br><span style="color:var(--clay200)">계약까지 한곳에서</span></h1>
+        <!-- 이미 들어와 계신 분께 '가입하세요' 라고 하지 않는다 - 자기 사무소 이름으로 부른다 -->
+        <h1 class="t hm-h1" style="color:#fff">${S.agent ? `${esc(S.agent.office || '파트너')} 님,<br><span style="color:var(--clay200)">맞는 손님이 기다립니다</span>` : `조건을 걸어둔 손님에게<br>1:1 로 제안하고,<br><span style="color:var(--clay200)">계약까지 한곳에서</span>`}</h1>
         <p class="hm-p">서울·경기에서 집·가게를 구하는 손님이 조건을 걸어두고 기다립니다. 맞는 손님에게 제안하고, 계약서 · 알림 · 일정까지 비버노크 안에서 챙기세요. <b style="color:#fff">제안 비용은 없습니다.</b></p>
         <div class="row eqb">${S.agent ? `${partnerDoor('onDark')}` : `<button class="btn partner" data-go="#/partner/join">파트너로 가입하기</button>`}<button class="btn onDark" data-act="hp-jump" data-v="hp-f1">기능 살펴보기</button></div>
         <span class="hm-login">공인중개사 · 소유자(개인 · 법인 · 신탁 위탁자) 모두 가입하실 수 있습니다</span>
@@ -7727,9 +7758,9 @@ V['#/partner'] = () => `
       <div class="hm-stage">
         <figure class="hm-win lg">
           <div class="hm-bar" aria-hidden="true"><i></i><i></i><i></i><span>파트너 대시보드</span></div>
-          <img src="img/home/dash.v1.webp" width="1600" height="956" alt="파트너 대시보드 - 오늘의 브리핑, 내 지역에 걸린 조건, 보낸 제안, 열람률, 할 일" fetchpriority="high">
+          <img src="img/home/dash.v2.webp" width="1600" height="956" alt="파트너 대시보드 - 오늘의 브리핑, 내 지역에 걸린 조건, 보낸 제안, 열람률, 할 일" fetchpriority="high">
         </figure>
-        ${hm떠있는('D-2 중도금', '미사강변 ○○아파트 · 아침 9시 알림', 'bell', 'f1')}
+        ${hm떠있는('D-2 중도금', '아침 9시 카카오톡 알림', 'bell', 'f1')}
         ${isMo() ? '' : hm떠있는('잔금 완료 확인', '잔금일 다음 날 챙겨 드립니다', 'check', 'f2')}
       </div>
     </div>
@@ -7746,19 +7777,29 @@ V['#/partner'] = () => `
   ${hp기능(1, '1:1 제안', '수요가 확인된 손님에게만<br>1:1 로 제안합니다',
     '매물을 올려두고 연락을 기다리는 방식이 아닙니다. 이미 원하는 것이 정해진 손님의 조건 전문을 보고, 맞는 물건이 있을 때만 제안합니다.',
     ['조건 1건에 최대 5곳만 제안 - 남은 슬롯이 보입니다', '매칭 적합도 순으로 보여 드립니다 - 선착순이 아닙니다', '손님 연락처는 연결이 확정된 뒤에 열립니다', '제안을 보내는 데 비용이 없습니다'],
-    [['demand.v1.webp', 1300, 1040, '손님 조건 화면 - 필수 조건, 상세 조건, 손님이 직접 쓴 사정, 남은 슬롯 3/5']], false)}
+    [['demands.v2.webp', 1400, 914, '수요 목록 - 내 조건에 맞는 손님 카드, 남은 슬롯, 손님이 남긴 한마디'], ['demand.v2.webp', 1300, 1040, '손님 조건 화면 - 필수 조건, 상세 조건, 손님이 직접 쓴 사정, 남은 슬롯 3/5']], false)}
   ${hp기능(2, '계약서 관리', '계약서 작성부터 보관까지<br>한 화면에서',
     '양식을 고르고 서류를 올리면 칸이 채워집니다. 고친 내용은 인쇄되는 모양 그대로 미리 보고, 확정한 날인본은 목록에서 상태별로 관리합니다.',
     ['매매 · 전월세 · 상가 · 분양권 · 권리양도 등 양식', '등기부 · 건축물대장을 올리면 AI 가 계약서 · 확인·설명서 칸을 채움', '초안 링크로 손님 · 공동중개 사무소 의견 받기', '특약 관리 · 계약체결 문자 · PDF 저장과 메일 보내기'],
-    [['contract.v1.webp', 1500, 1028, '계약서 작성 화면 - 서류로 빠르게 채우기와 계약서 미리보기'], ['ctlist.v1.webp', 1500, 868, '계약서 목록 - 작성 중 · 날인본 · 신고 전 · 잔금 30일 안 현황과 다가오는 일정']], true)}
-  ${hp기능(3, '자동 알림', '챙길 날짜는<br>비버노크가 먼저 알려 드립니다',
-    '계약서에 넣은 날짜로 알림이 저절로 잡힙니다. 매일 아침 9시, 오늘과 다가오는 일을 메일로 보내 드립니다. 카카오톡 알림은 카카오 템플릿 심사가 끝나면 함께 갑니다.',
-    ['계약일 · 중도금 · 잔금(7일 · 3일 전 · 당일)', '실거래 · 임대차 신고 기한 · 법무사 예약 시점 · 임대차 만기 6개월 전', '받을 항목과 받는 곳은 직접 고릅니다', '내 지역에 맞는 손님 조건이 들어오면 메일로 알림'],
-    [['noti.v1.webp', 1500, 842, '알림창 - 아직 안 열린 제안, 연결된 손님 계약서, 신고 안 한 날인본, 작성 중인 계약서']], false)}
+    [['contract.v2.webp', 1500, 1028, '계약서 작성 화면 - 서류로 빠르게 채우기와 계약서 미리보기'], ['ctlist.v2.webp', 1500, 868, '계약서 목록 - 작성 중 · 날인본 · 신고 전 · 잔금 30일 안 현황과 다가오는 일정']], true)}
+  ${hp기능(3, '자동 알림', '챙길 날짜는<br>카카오톡으로 먼저 알려 드립니다',
+    '계약서에 넣은 날짜로 알림이 저절로 잡힙니다. 매일 아침 9시, 오늘과 다가오는 일을 카카오톡 알림으로 보내 드립니다. 휴대폰만 보면 오늘 할 일이 정리돼 있습니다.',
+    ['매일 아침 9시 카카오톡 알림 - 메일로도 함께 받을 수 있습니다', '계약일 · 중도금 · 잔금(7일 · 3일 전 · 당일)', '실거래 · 임대차 신고 기한 · 법무사 예약 시점 · 임대차 만기 6개월 전', '받을 항목과 받는 곳은 직접 고릅니다'],
+    [['noti.v2.webp', 1500, 842, '알림창 - 아직 안 열린 제안, 연결된 손님 계약서, 신고 안 한 날인본, 작성 중인 계약서']], false)}
   ${hp기능(4, '일정 체크', '앞으로 60일 일정을<br>D-day 로 한눈에',
     '계약마다 흩어진 날짜를 한 줄로 모읍니다. 잔금일이 지나면 완료했는지 묻고, 신고하지 않은 날인본은 대시보드 할 일에 올려 둡니다.',
     ['다가오는 일정을 D-day 순으로 - 누르면 그 계약서가 열립니다', '진행 상태(준비 · 진행중 · 완료 · 보류 · 취소)로 계약 현황 관리', '잔금 완료 확인 · 잔금 지연 표시', '대시보드 브리핑에 오늘 손댈 일을 모아 보여 드립니다'],
-    [['schedule.v1.webp', 1500, 908, '일정·알림 화면 - 다가오는 60일 일정 D-day 목록과 알림 설정(받는 곳 · 받을 항목 · 법무사 예약 시점)']], true)}
+    [['schedule.v2.webp', 1500, 908, '일정·알림 화면 - 다가오는 60일 일정 D-day 목록과 알림 설정(받는 곳 · 받을 항목 · 법무사 예약 시점)']], true)}
+
+  <!-- 많은 손님을 실수 없이 (2026-11-10 대표님 '실수 없이 많은 고객을 응대할 수 있음을 잘 정리해서') - 실제로 있는 기능만 -->
+  <section class="hm-sec hp-many">
+    <div class="hm-in">
+      <p class="hm-k">손님이 많아져도</p>
+      <h2 class="hm-h2">여러 손님을 한꺼번에 맡아도<br>빠뜨리는 일이 없습니다</h2>
+      <p class="hm-p">기억에 기대지 않아도 되게 만들었습니다. 할 일은 화면이 먼저 꺼내 놓고, 날짜는 계약서가 기억하고, 알림은 카카오톡이 챙깁니다.</p>
+      <div class="hp-tiles">${HP_실수없이.map(([g, t, d]) => `<article class="lg"><span class="hm-ic">${hm그림(g)}</span><h3>${t}</h3><p>${d}</p></article>`).join('')}</div>
+    </div>
+  </section>
 
   <section class="hm-sec">
     <div class="hm-in">
@@ -7782,19 +7823,27 @@ V['#/partner'] = () => `
       </div>
     </div>
   </section>
-  ${isMo() ? `<footer class="mfoot">${bizFooter()}</footer>` : `<div class="heroBand" style="padding-top:22px;padding-bottom:24px;background:var(--n50);border-top:1px solid var(--n100);max-width:none">${bizFooter()}</div>`}
+  ${siteFooter()}
 </div>`;
 /* 파트너 안내의 장점 넷 - 아래 자세한 칸(hp-f1~4)과 같은 순서 */
 const HP_장점 = [
   ['target', '1:1 제안', '조건을 걸어둔 손님에게만 제안합니다. 조건 1건에 최대 5곳 · 제안 비용 0원.'],
   ['doc', '계약서 관리', '양식 · 서류로 채우기 · 초안 링크 · 특약 · 저장과 보내기까지 한 화면에서.'],
-  ['bell', '자동 알림', '계약서 날짜로 계약일 · 중도금 · 잔금 · 신고 기한을 매일 아침 알려 드립니다.'],
+  ['bell', '자동 알림', '계약일 · 중도금 · 잔금 · 신고 기한을 매일 아침 카카오톡으로 알려 드립니다.'],
   ['cal', '일정 체크', '앞으로 60일 일정을 D-day 로 · 잔금 완료 확인과 진행 상태 관리.'],
+];
+const HP_실수없이 = [
+  ['sun', '오늘의 브리핑', '대시보드 맨 위에 오늘 손댈 일을 먼저 모아 둡니다. 아침에 한 번 보면 하루가 정리됩니다.'],
+  ['flag', '급한 일은 따로', '알림창이 급한 일과 새 소식을 나눕니다. 신고 기한 같은 일이 소식에 묻히지 않습니다.'],
+  ['cal', '날짜는 계약서가 기억', '계약서에 넣은 날짜로 일정과 알림이 저절로 잡힙니다. 달력에 옮겨 적을 필요가 없습니다.'],
+  ['doc', '계약 현황을 한 표로', '작성 중 · 날인본 · 신고 전 · 잔금 30일 안이 한눈에 보이고, 진행 상태로 걸러 봅니다.'],
+  ['chat', '손님마다 대화방', '손님과 주고받은 말이 대화방에 남습니다. 누구와 어디까지 얘기했는지 헷갈리지 않습니다.'],
+  ['search', '한 칸에서 바로 찾기', '손님 · 주소 · 계약서를 Ctrl K 한 번으로 찾습니다. 전화가 와도 바로 꺼내 봅니다.'],
 ];
 /* 장점 하나 = 글 + 실제 화면(한 장, 또는 두 장 겹침). rev 면 화면이 왼쪽 */
 function hp기능(n, 이름, 제목, 말, 목록, 그림들, rev){
   const 그림 = ([f, w, h, alt], cls = '') => `<figure class="hm-shot lg ${cls}"><img src="img/home/${f}" width="${w}" height="${h}" loading="lazy" decoding="async" alt="${alt}"></figure>`;
-  return `<section class="hm-sec hp-f" id="hp-f${n}">
+  return `<section class="hm-sec hp-f${n % 2 ? ' hp-tint' : ''}" id="hp-f${n}">
     <div class="hm-in hm-split${rev ? ' hp-rev' : ''}">
       <div class="hm-txt">
         <p class="hm-k"><span class="hp-no">0${n}</span>${이름}</p>
@@ -11229,10 +11278,9 @@ function userMenu(opt = {}){
   return `<div class="umenu ${S.umenu?'open':''}">
     <button class="umenu-btn" data-act="umenu" aria-controls="umenuPop" aria-expanded="${S.umenu?'true':'false'}"
       aria-label="${esc(who)} 님 메뉴${새 ? ` · 새 제안 ${새}건` : ''}">
-      <span class="av">${esc(who.slice(0,1))}${S.user.avatar ? `<img src="${esc(S.user.avatar)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}</span>
+      <!-- 프로필 그림 · 꺾쇠는 뺀다 (2026-11-10 대표님 '프로필 이미지는 빼고 · 이름이랑 메일주소만'). 휴대폰은 폭이 좁아 이름 한 줄 -->
       ${관리 ? '' : 새제안표(새)}
-      ${isMo() ? '' : 관리 ? `<span class="nm2"><b>${esc(who)} 님</b>${소속 ? `<small>${esc(소속)}</small>` : ''}</span>` : `<span class="nm">${esc(who)} 님</span>`}
-      <svg class="car" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3.8 5 6.8 8 3.8"/></svg>
+      <span class="nm2"><b>${isMo() ? `${esc(who)} 님` : `안녕하세요, ${esc(who)} 님`}</b>${!isMo() && S.user.email ? `<small>${esc(S.user.email)}</small>` : ''}</span>
     </button>
     ${S.umenu ? `<div class="umenu-pop" id="umenuPop">
       <div class="umenu-head">
@@ -11713,6 +11761,12 @@ const CT_하위메뉴 = [['#/partner/contracts/new', '계약서 작성', 'pen', 
    번호는 배포한 날(연.월.일 - 같은 날 또 올리면 뒤에 .2). 화면이 version.json 을 가끔 읽어,
    더 새 버전이 올라와 있으면 메뉴 아래에서 새로고침을 권한다(버전확인) - 계약서를 띄워 둔 채 오래 일하면 고친 화면을 못 받는다 */
 const BK_변경 = [
+  { v:'26.11.10.7', 날:'2026-11-10', 줄:[
+    '상단 바 새로 - 화면 폭 막대로, 내리면 반투명 바탕 · 파트너 안내는 기능 바로 가기와 ‘손님 화면 가기’ · 내 이름 단추는 이름과 메일 두 줄',
+    '메인은 손님 이야기만 - 파트너 내용은 파트너 안내로 합치고 ‘많은 손님도 실수 없이’ · 카카오톡 알림 안내를 더했습니다',
+    '제안 카드 · 제안 상세에 사진 · 바닥글 새 단장(비버노크 · 운영 PLUSTONIC) · 파비콘과 공유 그림을 새 보라 색으로',
+    '파트너 가입 - 본인인증에서 뒤로 가기를 누르면 역할 선택으로 돌아갑니다',
+  ]},
   { v:'26.11.10.6', 날:'2026-11-10', 줄:[
     '예시 데이터 금액을 원 단위로 바로잡았습니다 - ‘보증금 1,000 / 월 65’ 대신 ‘보증금 1,000만 / 월 65만’, 융자 ‘1억 2,000만’',
     '제안 비교의 ‘관리비 포함’ 금액도 ‘73만’ 처럼 읽기 쉽게',
@@ -16857,6 +16911,9 @@ function render(){
       if(typeof a.selectionStart === 'number') 커서 = [a.selectionStart, a.selectionEnd]; }catch(_){}
   }
   app.innerHTML = html + modalHTML();
+  /* 메인 · 파트너 안내 상단 바 - 내린 만큼 바탕을 깐다 (2026-11-10). 스크롤 상자는 #app 하나라 듣는 것도 한 번 */
+  document.body.classList.toggle('hm-scrolled', app.scrollTop > 8);
+  if(!app._hmScroll){ app._hmScroll = true; app.addEventListener('scroll', () => document.body.classList.toggle('hm-scrolled', app.scrollTop > 8), { passive: true }); }
   /* 가로로 누운 운영 메뉴 - 고른 메뉴가 화면 밖(오른쪽)에 있으면 보이게 민다 (2026-11-10 디자인 · '신고' 를 골라도 메뉴 줄에 안 보였다) */
   { const 줄 = app.querySelector('.opsNav'), 고른 = 줄 && 줄.querySelector('button.on');
     if(고른 && 줄.scrollWidth > 줄.clientWidth) { const a = 고른.getBoundingClientRect(), b = 줄.getBoundingClientRect();
@@ -18149,6 +18206,7 @@ function handle(a,v,el){
     case 'rp-load':    RP.rows=null; rpFetch(); return true;
     case 'rp-only':    RP.only = v; RP.rows=null; rpFetch(); return true;
     case 'noti': 알림창(!떠있나('ntPanel')); return true;
+    case 'pic': S.picI = +v || 0; render(); return true;
     /* 파트너 안내 - 장점 카드에서 아래 자세한 칸으로 (#app 이 스크롤 상자라 주소를 바꾸지 않고 민다) */
     case 'hp-jump': { const t = document.getElementById(v); if(t) t.scrollIntoView({ behavior: REDUCED() ? 'auto' : 'smooth', block: 'start' }); return true; }
     case 'cmdk': 바로찾기(true); return true;
@@ -18664,7 +18722,7 @@ function handle(a,v,el){
     case 'pick-tag': S.tagline = v; toast('한 줄 설명을 바꿨습니다 - 헤더를 확인해 보세요'); render(); return true;
 
     /* ── S-02 가입·인증 ── */
-    case 'j-role': S.form.jRole = v; S.form.jStep = 2; render(); return true;
+    case 'j-role': S.form.jRole = v; 가입걸음(2); render(); return true;
     case 'j-pass': {
       const f = S.form;
       /* 실계약 채널이 붙어 있으면 확인을 받지 않고는 넘어갈 수 없다.
@@ -18705,7 +18763,8 @@ function handle(a,v,el){
       S.form.jStep = 3; S.form.jSent = 'sending'; render();
       sendAgent(S.form); return true; }
     case 'j-otype': S.form.jOwnerType = v; render(); return true;
-    case 'j-back': S.form.jStep = Math.max(1, (S.form.jStep||1) - 1); S.form.jCheck = null; S.form.jRegErr=''; render(); return true;
+    case 'j-back': if(history.state && history.state.jStep){ history.back(); return true; }   /* 기록을 남긴 걸음이면 브라우저 뒤로와 같은 길 */
+      S.form.jStep = Math.max(1, (S.form.jStep||1) - 1); S.form.jCheck = null; S.form.jRegErr=''; render(); return true;
     case 'j-retry': S.form.jSent = 'sending'; render(); sendAgent(S.form); return true;
 
     /* ── S-03 활동 조건 ── */
@@ -19686,6 +19745,18 @@ function bootDone(){
   setTimeout(()=>b.remove(), 320);
 }
 
+/* 파트너 가입 걸음 (2026-11-10 대표님 '본인인증에서 뒤로가기 누르면 왜 메인으로 가지 - 역할 선택으로 가야지').
+   걸음은 주소가 아니라 화면 안의 값(jStep)이라, 브라우저 뒤로는 가입 앞 화면(메인)으로 나갔다.
+   앞으로 갈 때 같은 주소로 기록을 한 칸 남기고, 뒤로 오면 그 칸의 걸음을 되살린다. 보낸 뒤(완료)는 되돌리지 않는다 */
+function 가입걸음(n){
+  const 전 = S.form.jStep || 1; S.form.jStep = n;
+  if(n > 전 && S.route === '#/partner/join') try { history.pushState({ jStep: n }, '', location.hash); } catch(_){}
+}
+window.addEventListener('popstate', e => {
+  if(S.route !== '#/partner/join' || location.hash !== '#/partner/join') return;
+  if(['ok', 'already', 'sending'].includes(S.form.jSent)) return;
+  S.form.jStep = (e.state && e.state.jStep) || 1; S.form.jCheck = null; S.form.jRegErr = ''; render();
+});
 window.addEventListener('hashchange', ()=>{ S.umenu = false; 알림창(false);
   if(S.modal && (S.modal.type === 'rm-invite' || S.modal.type === 'ct-share')) S.modal = null;   /* 그 화면에 딸린 링크 창 (2026-11-07 시험) */
   render(); opsAuto(); });

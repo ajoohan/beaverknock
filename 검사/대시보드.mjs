@@ -139,8 +139,8 @@ const M = new Function('esc', `${js.slice(시작, 끝)}\nreturn { dzLine, dzPill
      '머리 줄 - 왼쪽 지금 위치, 오른쪽 프로필 (중개사 화면·운영 화면) · 계약서 작성 화면은 머리 줄 오른쪽에 프로필');
   const 메뉴 = js.slice(js.indexOf('function userMenu(opt = {}){'), js.indexOf('function docShell('));
   ok(/관리 \? '' : `\$\{줄\('#\/my', '내 조건'/.test(메뉴) && 메뉴.includes("${줄('#/account', '마이페이지'") && 메뉴.includes('data-act="logout"')
-     && 메뉴.includes('<span class="nm2"><b>${esc(who)} 님</b>${소속 ? `<small>${esc(소속)}</small>` : \'\'}</span>'),
-     '어드민 프로필 드롭다운은 마이페이지 · 로그아웃만 - 단추에 이름과 사무소(운영자는 운영자)');
+     && 메뉴.includes('<span class="nm2"><b>') && 메뉴.includes('안녕하세요, ${esc(who)} 님') && 메뉴.includes('<small>${esc(S.user.email)}</small>') && !메뉴.includes('<span class="av">'),
+     '어드민 프로필 드롭다운은 마이페이지 · 로그아웃만 - 단추는 이름 · 메일 두 줄, 프로필 그림 없음 (2026-11-10 대표님)');
   ok(js.includes("const CT_하위메뉴 = [['#/partner/contracts/new', '계약서 작성', 'pen', 'ctn'], ['#/partner/contracts', '계약서 목록', 'doc', 'ct'],\n  ['#/partner/contracts/sms', '계약체결 문자', 'send', 'cms'],\n  ['#/partner/contracts/phrases', '특약 관리', 'list', 'ctp'], ['#/partner/contracts/forms', '서식 자료실', 'doc', 'ctf'], ['#/partner/contracts/schedule', '일정·알림', 'cal', 'cts']];")
      && 옆.includes("S.route === '#/partner/contract/new' ? 'ctn' : ((CT_하위메뉴.find(([h]) => h === S.route) || [])[3] || 'ct')")
      && js.includes("else if(h==='#/partner/contracts' || h.startsWith('#/partner/contracts/')) html = V['#/partner/contracts'](parts[3]);")

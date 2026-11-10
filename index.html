@@ -1543,7 +1543,8 @@ body.mo .umenu-btn{padding:6px 6px 6px 8px;gap:6px}
 /* 휴대폰 - 이름이 길어도 상단 바를 넘치지 않게(360px 에서 '주식회사플러스토닉 님' 이 바를 11px 밀었다 · 2026-11-10 리뷰) */
 body.mo .umenu-btn .nm2{max-width:84px}
 #app .umenu-btn .nm2 b,#app .umenu-btn .nm2 small{text-wrap:nowrap}   /* #app b 의 text-wrap:balance 가 nowrap 을 덮어 두 줄로 꺾였다 - 말줄임으로 */
-body.mo .nav .back{white-space:nowrap;flex:none}   /* 360px 에서 '← 제안함으로' 가 두 줄로 꺾였다 */
+body.mo .nav .back{white-space:nowrap;flex:none}
+.badge.slotT{display:inline-flex;align-items:center;gap:5px;flex-wrap:nowrap}   /* 360px 에서 '← 제안함으로' 가 두 줄로 꺾였다 */
 .umenu-btn > .nbadge{left:auto;right:-6px;top:-6px}
 /* 파트너 안내 - 많은 손님을 실수 없이 */
 .hp-tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-top:36px}
@@ -8031,12 +8032,13 @@ V['#/partner/propose'] = (id) => { const d=S.demands.find(x=>x.id===id); if(!d) 
   const mm=String(Math.floor(S.timeLeft/60)).padStart(2,'0'), ss=String(S.timeLeft%60).padStart(2,'0');
   return `
 <div class="scr fade" style="background:var(--n50)">
-  <div class="nav solid pad" style="gap:18px">
-    <a data-go="#/partner" style="flex:none">${logoLockup({h:25,partner:true,tag:!isMo()})}</a>
+  <div class="nav solid pad" style="gap:${isMo()?10:18}px">
+    <!-- 휴대폰은 PARTNERS 꼬리표를 빼고 남은 시간을 '시계 + 분:초' 로 줄인다 - 375px 에서 '슬롯 예약 14:58' 이 화면 밖으로 밀렸다 (2026-11-10 전수점검) -->
+    <a data-go="#/partner" style="flex:none">${logoLockup({h:isMo()?22:25,partner:!isMo(),tag:!isMo()})}</a>
     <a class="back" data-go="#/partner/demand/${d.id}"><i class="ar-l" aria-hidden="true"></i>수요 상세</a>
     <div class="right">
       ${isMo()?'':`<span style="font-size:14.5px;line-height:1.7">손님 조건: ${esc(d.region)} · ${esc(d.lines[0])}</span>`}
-      <span class="badge num" style="background:${S.timeLeft<180?'var(--dangerbg)':'var(--ind50)'};color:${S.timeLeft<180?'var(--danger)':'var(--ind)'};padding:8px 14px;font-size:14.5px">슬롯 예약 ${mm}:${ss}</span>
+      <span class="badge num slotT" role="timer" aria-label="슬롯 예약 남은 시간" style="background:${S.timeLeft<180?'var(--dangerbg)':'var(--ind50)'};color:${S.timeLeft<180?'var(--danger)':'var(--ind)'};padding:8px ${isMo()?10:14}px;font-size:14.5px;white-space:nowrap">${isMo() ? `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" style="flex:none"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9 3h6"/></svg>` : '슬롯 예약 '}<span class="tl">${mm}:${ss}</span></span>
     </div>
   </div>
   <div class="pad" style="flex:1;padding-top:20px;padding-bottom:24px;max-width:${isMo()?'none':'1180px'};margin:0 auto;width:100%;display:flex;gap:20px;${isMo()?'flex-direction:column':''}">
@@ -11772,6 +11774,9 @@ const CT_하위메뉴 = [['#/partner/contracts/new', '계약서 작성', 'pen', 
    번호는 배포한 날(연.월.일 - 같은 날 또 올리면 뒤에 .2). 화면이 version.json 을 가끔 읽어,
    더 새 버전이 올라와 있으면 메뉴 아래에서 새로고침을 권한다(버전확인) - 계약서를 띄워 둔 채 오래 일하면 고친 화면을 못 받는다 */
 const BK_변경 = [
+  { v:'26.11.10.10', 날:'2026-11-10', 줄:[
+    '휴대폰 제안 보내기 - 상단의 남은 시간(슬롯 예약)이 화면 밖으로 밀리던 것을 시계와 분:초로 줄여 보이게',
+  ]},
   { v:'26.11.10.9', 날:'2026-11-10', 줄:[
     '바닥글 - 비버노크 로고의 모서리가 가장자리 · 구분선에 붙지 않게 둘레를 띄웠습니다',
   ]},
@@ -17045,8 +17050,8 @@ function render(){
 }
 function startTimer(){ if(S.timer) return;
   S.timer=setInterval(()=>{ S.timeLeft=Math.max(0,S.timeLeft-1);
-    const el=$('#app .badge.num'); if(el){const m=String(Math.floor(S.timeLeft/60)).padStart(2,'0'),s=String(S.timeLeft%60).padStart(2,'0');
-      el.textContent=`슬롯 예약 ${m}:${s}`; if(S.timeLeft<180){el.style.background='var(--dangerbg)';el.style.color='var(--danger)';}}
+    const el=$('#app .badge.slotT'); if(el){const m=String(Math.floor(S.timeLeft/60)).padStart(2,'0'),s=String(S.timeLeft%60).padStart(2,'0');
+      const t=el.querySelector('.tl'); if(t) t.textContent=`${m}:${s}`; if(S.timeLeft<180){el.style.background='var(--dangerbg)';el.style.color='var(--danger)';}}
     if(S.timeLeft===0){ stopTimer(); toast('시간이 지나 슬롯을 반환했습니다 · 작성 내용은 저장돼 있습니다'); render(); }
   },1000);}
 function stopTimer(){ if(S.timer){clearInterval(S.timer); S.timer=null;} }

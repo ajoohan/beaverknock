@@ -170,7 +170,8 @@ export async function mailWithFile(req, { to, subject, rows, note, replyTo, file
     const r = await withTimeout(fetch('https://api.resend.com/emails', {
       method: 'POST', headers: { Authorization: 'Bearer ' + key, 'Content-Type': 'application/json' }, body: JSON.stringify(m),
     }), 15000);
-    if (r && r.skipped) return { error: '메일 서버가 늦어 보내지 못했습니다 - 잠시 뒤 다시 보내 주세요' };
+    /* 기다림이 끝나도 요청은 그대로 가고 있다 - 실제로는 나갔을 수 있다. '못 보냈다' 고 하면 다시 눌러 같은 계약서가 두 번 간다 (2026-11-10 리뷰) */
+    if (r && r.skipped) return { unsure: true, error: '메일 서버 응답이 늦어 보냈는지 확인하지 못했습니다 - 받는 분께 먼저 확인한 뒤 다시 보내 주세요' };
     if (r.ok) return { ok: true };
     const t = await r.text().catch(() => '');
     console.error('[notify] 계약서 메일 실패', r.status, t.slice(0, 200));

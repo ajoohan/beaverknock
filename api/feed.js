@@ -192,7 +192,8 @@ async function contractMail(req, res, agent, user, b) {
   const pdf = String(b.pdf || '');
   if (!pdf || pdf.length > 4.2e6 || !/^[A-Za-z0-9+/]+=*$/.test(pdf)) return res.status(400).json({ error: '파일이 비었거나 너무 큽니다(3MB 까지)' });
   if (Buffer.from(pdf.slice(0, 12), 'base64').toString('latin1').slice(0, 5) !== '%PDF-') return res.status(400).json({ error: 'PDF 파일이 아닙니다' });
-  if (overLimit('ctmail:' + agent.id, 20, 60 * 60e3)) return res.status(429).json({ error: '메일은 한 시간에 20통까지 보낼 수 있습니다 - 잠시 뒤 보내 주세요' });
+  /* 한도는 세기만 하고, 나갔거나 나갔을 수 있을 때만 늘린다 - 메일 서버가 거절한 것까지 세면 한 통도 안 갔는데 한도가 준다 (2026-11-10 리뷰) */
+  if (overLimit('ctmail:' + agent.id, 20, 60 * 60e3, false)) return res.status(429).json({ error: '메일은 한 시간에 20통까지 보낼 수 있습니다 - 잠시 뒤 보내 주세요' });
   const 이름 = (String(b.name || '').replace(/[\u0000-\u001f\\/:*?"<>|]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 120).replace(/\.pdf$/i, '') || '계약서') + '.pdf';
   const 제목 = 이름.replace(/\.pdf$/i, '').split('_')[0];
   const 사무소 = String(agent.office || '').trim() || '중개사무소';
@@ -202,7 +203,8 @@ async function contractMail(req, res, agent, user, b) {
     rows: [['보낸 곳', 사무소], ['서류', 제목], ...(한마디 ? [['전하는 말', 한마디]] : [])],
     note: `${사무소}에서 비버노크로 보낸 메일입니다. 서류는 첨부한 PDF(${이름})에 있습니다.` + (회신 ? ' 이 메일에 답장하면 사무소로 갑니다.' : ''),
     file: { name: 이름, b64: pdf } });
-  if (!r.ok) return res.status(502).json({ error: r.error });
+  if (r.ok || r.unsure) overLimit('ctmail:' + agent.id, 20, 60 * 60e3);
+  if (!r.ok) return res.status(r.unsure ? 504 : 502).json({ error: r.error });
   return res.status(200).json({ ok: true, sent: 받는.length });
 }
 export const 계약기능 = w => /^(contract|form)/.test(String(w || '')) || ['forms', 'phrases', 'phrases-save', 'sms', 'sms-save',

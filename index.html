@@ -4437,13 +4437,14 @@ function loadListings(force){
     .catch(() => { S.lsLoading = false; S.lsReady = true; render(); });
 }
 
+/* 제안 금액 한 줄 - 원 단위를 '1억 / 월 100만' 으로(운영 표 · 카드와 같은 won). 보내자마자 넣는 줄과 서버가 다시 준 줄이 같은 말을 하게 (2026-11-10 리뷰) */
+const 제안값 = (dep, rent, fee) => `보증금 ${won(+dep||0)}${+rent?` / 월 ${won(+rent)}`:''}${+fee?` · 관리비 ${won(+fee)}`:''}`;
 function myPropFromRow(x){
-  const won = v => (+v||0).toLocaleString();
-  const want = x.want ? `보증금 ${won(x.want.dep)}${x.want.rent?` / 월 ${won(x.want.rent)}`:''}` : '';
+  const want = x.want ? 제안값(x.want.dep, x.want.rent) : '';
   return {
     id: x.id,
     title: x.bname || x.addr || '물건',
-    price: `보증금 ${won(x.dep)}${x.rent?` / 월 ${won(x.rent)}`:''}${x.fee?` · 관리비 ${won(x.fee)}`:''}`,
+    price: 제안값(x.dep, x.rent, x.fee),
     line: [x.dongs, want].filter(Boolean).join(' · '),
     status: MP_STATUS[x.status] || x.status,
     at: agoText(x.created_at),
@@ -10288,8 +10289,7 @@ function dashFlow(days){
         <span><i style="display:inline-block;width:9px;height:9px;border-radius:2px;background:var(--ind200);vertical-align:-1px;margin-right:5px"></i>매물 ${tot2}</span>
       </span>
     </div>
-    ${tot + tot2 === 0 ? `<div class="dz-chempty"><svg viewBox="0 0 120 48" width="120" height="48" aria-hidden="true"><path d="M4 40 26 30l18 6 22-18 20 8 30-20" fill="none" stroke="var(--ind200)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="4 5"/></svg>
-      <b>최근 ${DASH_DAYS}일 동안 새로 들어온 조건 · 매물이 없습니다</b><span>손님이 조건을 걸거나 중개사가 매물을 올리면 날마다 그려집니다.</span></div>` : `${dzLine([{ name:'조건', v:dem }, { name:'매물', v:lst }])}
+    ${tot + tot2 === 0 ? dzEmpty(`최근 ${DASH_DAYS}일 동안 새로 들어온 조건 · 매물이 없습니다`, '손님이 조건을 걸거나 중개사가 매물을 올리면 날마다 그려집니다.') : `${dzLine([{ name:'조건', v:dem }, { name:'매물', v:lst }])}
     <!-- 처음과 끝만 숫자이고 사이는 점이라 '어느 날 막대인지' 를 셀 수가 없었다(2026-10-15).
          날마다 날짜를 단다 - 휴대폰은 하루 걸러, 끝은 '오늘', 처음과 달이 바뀌는 날은 월도 함께. -->
     <!-- 월은 '보이는 첫 날짜' 와 '달이 바뀐 뒤 처음 보이는 날짜' 에 붙인다. 처음·1일에만 붙이면
@@ -11277,6 +11277,9 @@ function dzKpi(o){
 }
 
 /* 선 그래프 - 두 줄까지. 점과 점 사이를 부드럽게(Catmull-Rom → 베지어). 값이 모두 0 이면 바닥에 깐다 */
+/* 그래프에 그릴 것이 없을 때 - 바닥에 붙은 선 하나 대신 무엇을 하면 채워지는지 (파트너 · 운영 대시보드가 같이 쓴다, 2026-11-10 리뷰) */
+const dzEmpty = (제목, 말, 단추 = '') => `<div class="dz-chempty"><svg viewBox="0 0 120 48" width="120" height="48" aria-hidden="true"><path d="M4 40 26 30l18 6 22-18 20 8 30-20" fill="none" stroke="var(--ind200)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="4 5"/></svg>
+  <b>${esc(제목)}</b><span>${esc(말)}</span>${단추}</div>`;
 function dzLine(series, w = 640, h = 180){
   const all = series.flatMap(s => s.v), max = Math.max(1, ...all);
   const n = Math.max(2, (series[0] || { v: [] }).v.length);
@@ -11397,6 +11400,10 @@ const CT_하위메뉴 = [['#/partner/contracts/new', '계약서 작성', 'pen', 
    번호는 배포한 날(연.월.일 - 같은 날 또 올리면 뒤에 .2). 화면이 version.json 을 가끔 읽어,
    더 새 버전이 올라와 있으면 메뉴 아래에서 새로고침을 권한다(버전확인) - 계약서를 띄워 둔 채 오래 일하면 고친 화면을 못 받는다 */
 const BK_변경 = [
+  { v:'26.11.10.2', 날:'2026-11-10', 줄:[
+    '계약서 메일 - 메일 서버 응답이 늦을 때 ‘못 보냈다’ 대신 ‘보냈는지 확인하지 못했다’ 고 알려 같은 서류가 두 번 가지 않게 · 적던 주소가 화면이 바뀌어도 남게',
+    '보낸 제안 목록 - 금액을 ‘1억 / 월 100만’ 처럼 읽기 쉽게, 관리비가 없으면 빼고 보여 줍니다',
+  ]},
   { v:'26.11.10', 날:'2026-11-10', 줄:[
     '운영 대시보드 - 숫자 카드의 작은 그래프가 검은 삼각형으로 칠해지던 것을 고쳤습니다 · 들어온 것이 없을 때 빈 그래프 대신 안내',
     '운영 조건 · 매물 표 - 금액을 ‘월 1000000’ 대신 ‘월 100만’ 처럼 읽기 쉽게, 금액이 없으면 ‘-’',
@@ -11966,9 +11973,8 @@ V['#/partner/home'] = () => {
             ${보냄.some(Boolean) ? `${dzLine([{ name:'보낸 제안', v:보냄 }, { name:'열람', v:열림 }])}
             <div class="axis">${days.map((x, i) => `<span>${i === 13 ? '오늘' : i === 0 || x.lab === '1' ? `${x.mon}/${x.lab}` : (i % 2 ? '' : x.lab)}</span>`).join('')}</div>`
             /* 14일 동안 0 이면 바닥에 붙은 선 하나만 남는다 - 빈 그래프 대신 무엇을 하면 채워지는지 알려 준다 (2026-11-08 디자인) */
-            : `<div class="dz-chempty"><svg viewBox="0 0 120 48" width="120" height="48" aria-hidden="true"><path d="M4 40 26 30l18 6 22-18 20 8 30-20" fill="none" stroke="var(--ind200)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="4 5"/></svg>
-              <b>최근 14일 동안 보낸 제안이 없습니다</b><span>맞는 손님에게 제안을 보내면 보낸 수와 열람 수가 날마다 그려집니다.</span>
-              <button type="button" class="btn sec sm" data-go="#/partner/demands">맞는 손님 보기</button></div>`}
+            : dzEmpty('최근 14일 동안 보낸 제안이 없습니다', '맞는 손님에게 제안을 보내면 보낸 수와 열람 수가 날마다 그려집니다.',
+                '<button type="button" class="btn sec sm" data-go="#/partner/demands">맞는 손님 보기</button>')}
           </div>
         </div>
         <div class="dz-card dz-recent">
@@ -13313,7 +13319,8 @@ async function cl저장(곳){
     const 칸 = document.getElementById('clTo'), 말칸 = document.getElementById('clMsg');
     CL.메일값 = { to: 칸 ? 칸.value : '', msg: 말칸 ? 말칸.value : '' };
     받는 = [...new Set(String(CL.메일값.to).split(/[,;\s]+/).map(x => x.trim()).filter(Boolean))]; 한마디 = String(CL.메일값.msg).trim();
-    const 틀린 = 받는.find(x => !/^[^\s@<>,;:"'()]+@[^\s@<>,;:"'()]+\.[a-z]{2,}$/i.test(x));
+    /* 서버(api/feed.js 메일모양)와 같은 식 - 화면을 통과하고 PDF 를 다 만든 뒤 서버에서 막히지 않게 */
+    const 틀린 = 받는.find(x => x.length > 120 || !/^[^\s@<>,;:"'()\[\]\\]+@[^\s@<>,;:"'()\[\]\\]+\.[a-z]{2,}$/i.test(x));
     CL.done = null;
     if(!받는.length || 틀린 || 받는.length > 5){ CL.err = !받는.length ? '받는 메일 주소를 적어 주세요' : 틀린 ? `메일 주소를 확인해 주세요 - ${틀린}` : '한 번에 5명까지 보낼 수 있습니다';
       render(); setTimeout(() => { const i = document.getElementById('clTo'); if(i) i.focus(); }, 30); return; }
@@ -15355,6 +15362,9 @@ function ctPvInput(el){
   ctDirty();
 }
 document.addEventListener('input', e => { const el = e.target && e.target.closest && e.target.closest('#ctPv [data-cte]'); if(el) ctPvInput(el); });
+/* 메일로 보내기 칸 - 적는 대로 담아 둔다. 그 사이 화면을 다시 그려도(새 버전 알림 등) 적던 주소가 지워지지 않게 (2026-11-10 리뷰) */
+document.addEventListener('input', e => { const id = e.target && e.target.id; if(id !== 'clTo' && id !== 'clMsg') return;
+  CL.메일값 = { ...(CL.메일값 || {}), [id === 'clTo' ? 'to' : 'msg']: e.target.value }; });
 /* 한 줄 칸에서 Enter 는 줄바꿈 대신 칸 나가기. Tab 은 다음 칸으로(브라우저 기본) */
 document.addEventListener('keydown', e => { const el = e.target && e.target.closest && e.target.closest('#ctPv [data-cte]');
   if(el && e.key === 'Enter' && !el.dataset.ml && !e.isComposing){ e.preventDefault(); el.blur(); } });
@@ -18314,7 +18324,7 @@ function handle(a,v,el){
           if(d2) d2.slotsLeft = j.slots_left;
           S.myprops.unshift({id:j.id,
             title:`${f.bname||f.addr}${(f.pkind||'home')==='home' && f.rooms ? ` · ${f.rooms}룸` : ''}`,
-            price:`보증금 ${(+f.dep||0).toLocaleString()} / 월 ${(+f.rent||0).toLocaleString()} · 관리비 ${(+f.fee||0).toLocaleString()}`,   /* 서버가 다시 줄 때와 같은 서식 */
+            price: 제안값(f.dep, f.rent, f.fee),   /* 서버가 다시 줄 때와 같은 서식 */
             line: d2 ? `${d2.region} · ${d2.lines[0]||''}` : '', status:'sent', at:'방금', expires:7});
           stopTimer(); S.form={ptab:'sent'}; S.feedAt=0; S.mpAt=0;
           toast('제안을 보냈습니다 - 손님 제안함으로 전달됐습니다');

@@ -444,9 +444,10 @@ body.mo .scr .pad.opsPad{padding-left:16px;padding-right:16px}
 .kpi .dl{font-variant-numeric:tabular-nums;font-weight:700}
 .kpi .dl.up{color:var(--ok)} .kpi .dl.flat{color:var(--n500)}
 .kpi .spark{display:block;width:100%;height:38px;margin-top:8px}
-.kpi .spark path.ln{fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;
+/* .dz-kpi(운영 대시보드 숫자 카드)에도 건다 - 빠져 있어 선 안쪽이 검게 칠해졌다(하루만 값이 있으면 검은 삼각형) (2026-11-10 디자인) */
+:is(.kpi,.dz-kpi) .spark path.ln{fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;
   stroke-dasharray:1;stroke-dashoffset:1;animation:draw .8s var(--e-out) .12s both}
-.kpi .spark path.ar{opacity:0;animation:fade .5s ease .55s both}
+:is(.kpi,.dz-kpi) .spark path.ar{opacity:0;animation:fade .5s ease .55s both}
 @keyframes draw{to{stroke-dashoffset:0}}
 
 /* 세로 막대 - 자라는 것은 growBars 가 맡는다(i 의 height:%) */
@@ -500,7 +501,9 @@ body.mo .scr .pad.opsPad{padding-left:16px;padding-right:16px}
 @media (max-width:1023px){
   .opsWrap{grid-template-columns:minmax(0,1fr)}
   .opsNav{position:static;flex-direction:row;overflow-x:auto;padding:8px;gap:6px;
-    -webkit-overflow-scrolling:touch}
+    -webkit-overflow-scrolling:touch;scrollbar-width:none}
+  /* 가로로 누운 메뉴는 밀어서 넘긴다 - 회색 막대가 메뉴 밑에 떠 보였다 (2026-11-10 디자인) */
+  .opsNav::-webkit-scrollbar{display:none}
   .opsNav .grp{display:none}
   .opsNav button{width:auto;flex:none;white-space:nowrap;padding:10px 14px;min-height:44px}
   /* 가로로 누우면 세로선은 자리를 잡지 못한다 - 옆에 나란히 붙인다 */
@@ -4702,7 +4705,7 @@ function draftLines(d){
     if(d.kind==='storage'){ const t=[d.ceilH&&`층고 ${d.ceilH}m 이상`, said(d.dock), said(d.temp)].filter(Boolean); if(t.length) L.push(t.join(' · ')); }
     if(d.facFree) L.push(`설비 - ${d.facFree}`);
   } else {
-    L.push(`보증금 ${won(+d.dep||0)}${+d.rent?` / 월 ${d.rent}`:''}`);
+    L.push(`보증금 ${won(+d.dep||0)}${+d.rent?` / 월 ${won(+d.rent)}`:''}`);
     L.push(d.htype.join(' · ')||'유형 무관');
     if(d.musts.length) L.push(d.musts.join(' · '));
   }
@@ -9678,7 +9681,7 @@ function listingPanel(){
             <td class="num" style="padding:10px 12px;white-space:nowrap">${
               +r.area ? `전용 ${r.area}㎡` : +r.py ? `${r.py}평` : '-'}${
               +r.area_sup ? ` / ${r.area_sup}㎡` : ''}</td>
-            <td class="num" style="padding:10px 12px;white-space:nowrap">보증금 ${(+r.dep||0).toLocaleString()}${r.rent?` / 월 ${r.rent}`:''}</td>
+            <td class="num" style="padding:10px 12px;white-space:nowrap">${+r.dep || +r.rent ? `보증금 ${won(+r.dep||0)}${+r.rent?` / 월 ${won(+r.rent)}`:''}` : '-'}</td>
             <td style="padding:10px 12px">${r.agent?`${esc(r.agent.office||r.agent.name||'-')}<br><span style="font-size:13px;color:var(--n500)">${esc(ROLE_KO2[r.agent.role]||'공인중개사')}${r.agent.status!=='approved'?` · ${esc(r.agent.status)}`:''}</span>`:'-'}</td>
             <td style="padding:10px 12px">${r.status==='active'?'<span class="badge b-ok">올림</span>':'<span class="badge b-mute">내림</span>'}</td>
           </tr>`).join('')}</tbody>
@@ -9902,7 +9905,7 @@ function logPanel(){
   if(!rows) return `<div class="card pad"><button class="btn pri md" data-act="lg-load">기록 불러오기</button></div>`;
   const chip = (label,on,v) => `<button class="chip ${on?'on':''}" data-act="lg-only" data-v="${v}" style="padding:8px 14px;font-size:13.5px">${label}</button>`;
   const when = t => { const d=new Date(t); return isNaN(d)?'-':
-    `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; };
+    `${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; };   /* 대시보드 '최근 움직임' 과 같은 꼴 (2026-11-10) */
   return `
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px">
       <div class="chips" style="gap:6px">${LG_ONLY.map(o => chip(o.t, (LG.only||'')===o.v, o.v)).join('')}</div>
@@ -9911,19 +9914,20 @@ function logPanel(){
     </div>
     ${LG.note?`<p style="margin:0 0 12px;background:var(--warnbg);padding:12px 16px;font-size:13.5px;color:var(--n700)">${esc(LG.note)}</p>`:''}
     ${!rows.length ? 빈자리('남은 기록이 없습니다', '', '', 80, true) : `
-    <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13.5px;min-width:620px">
+    <!-- 다른 운영 표(매물관리 등)처럼 흰 카드에 담는다 - 바탕에 바로 놓여 이 표만 떠 보였다 (2026-11-10 디자인) -->
+    <div class="card pad" style="padding:0;overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13.5px;min-width:620px">
       <thead><tr style="text-align:left;color:var(--n500)">
-        <th style="padding:8px 10px;font-weight:800">시각</th><th style="padding:8px 10px;font-weight:800">누가</th>
-        <th style="padding:8px 10px;font-weight:800">무엇을</th><th style="padding:8px 10px;font-weight:800">연락처</th>
-        <th style="padding:8px 10px;font-weight:800">건수</th><th style="padding:8px 10px;font-weight:800">비고</th></tr></thead>
+        <th style="padding:10px 12px;font-weight:800">시각</th><th style="padding:10px 12px;font-weight:800">누가</th>
+        <th style="padding:10px 12px;font-weight:800">무엇을</th><th style="padding:10px 12px;font-weight:800">연락처</th>
+        <th style="padding:10px 12px;font-weight:800">건수</th><th style="padding:10px 12px;font-weight:800">비고</th></tr></thead>
       <tbody>${rows.map(r=>`
         <tr style="border-top:1px solid var(--n100)${r.reveal?';background:var(--warnbg)':''}">
-          <td class="num" style="padding:8px 10px;white-space:nowrap">${when(r.at)}</td>
-          <td style="padding:8px 10px">${esc(logWho(r)||'(로그인 없음)')}</td>
-          <td style="padding:8px 10px">${esc(LOG_KO[r.action]||r.action)}</td>
-          <td style="padding:8px 10px;font-weight:800;color:${r.reveal?'var(--warn)':'var(--n500)'}">${r.reveal?'열어봄':'가림'}</td>
-          <td class="num" style="padding:8px 10px">${r.count==null?'-':r.count}</td>
-          <td style="padding:8px 10px;color:var(--n500)">${esc(r.detail||'')}</td>
+          <td class="num" style="padding:10px 12px;white-space:nowrap">${when(r.at)}</td>
+          <td style="padding:10px 12px">${esc(logWho(r)||'(로그인 없음)')}</td>
+          <td style="padding:10px 12px">${esc(LOG_KO[r.action]||r.action)}</td>
+          <td style="padding:10px 12px;font-weight:800;color:${r.reveal?'var(--warn)':'var(--n500)'}">${r.reveal?'열어봄':'가림'}</td>
+          <td class="num" style="padding:10px 12px">${r.count==null?'-':r.count}</td>
+          <td style="padding:10px 12px;color:var(--n500)">${esc(r.detail||'')}</td>
         </tr>`).join('')}</tbody>
     </table></div>`}`;
 }
@@ -10099,9 +10103,10 @@ function demandPanel(){
           </tr></thead>
           <tbody>${rows.map(r=>{
             const shop = NONHOME(r.kind);
-            const money = shop
-              ? `보증 ${won(+r.dep||0)} / 월 ${r.rent||0}`
-              : `${r.deal||''} ${won(+r.dep||0)}${+r.rent?` / 월 ${r.rent}`:''}`;
+            /* 월세도 원 단위다 - won() 을 빼먹어 '월 1000000' 으로 나왔다. 둘 다 0 이면 '-' (2026-11-10 디자인) */
+            const money = !(+r.dep || +r.rent) ? '-' : shop
+              ? `보증 ${won(+r.dep||0)} / 월 ${won(+r.rent||0)}`
+              : `${r.deal||''} ${won(+r.dep||0)}${+r.rent?` / 월 ${won(+r.rent)}`:''}`;
             const key = shop
               ? [r.biz, (r.area_min?`전용 ${r.area_min}~${r.area_max||''}평`:''), r.shop_floor_free, r.facilities_free].filter(Boolean).join(' · ')
               : [(r.htype||[]).join('·'), r.rooms,
@@ -10283,7 +10288,8 @@ function dashFlow(days){
         <span><i style="display:inline-block;width:9px;height:9px;border-radius:2px;background:var(--ind200);vertical-align:-1px;margin-right:5px"></i>매물 ${tot2}</span>
       </span>
     </div>
-    ${dzLine([{ name:'조건', v:dem }, { name:'매물', v:lst }])}
+    ${tot + tot2 === 0 ? `<div class="dz-chempty"><svg viewBox="0 0 120 48" width="120" height="48" aria-hidden="true"><path d="M4 40 26 30l18 6 22-18 20 8 30-20" fill="none" stroke="var(--ind200)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="4 5"/></svg>
+      <b>최근 ${DASH_DAYS}일 동안 새로 들어온 조건 · 매물이 없습니다</b><span>손님이 조건을 걸거나 중개사가 매물을 올리면 날마다 그려집니다.</span></div>` : `${dzLine([{ name:'조건', v:dem }, { name:'매물', v:lst }])}
     <!-- 처음과 끝만 숫자이고 사이는 점이라 '어느 날 막대인지' 를 셀 수가 없었다(2026-10-15).
          날마다 날짜를 단다 - 휴대폰은 하루 걸러, 끝은 '오늘', 처음과 달이 바뀌는 날은 월도 함께. -->
     <!-- 월은 '보이는 첫 날짜' 와 '달이 바뀐 뒤 처음 보이는 날짜' 에 붙인다. 처음·1일에만 붙이면
@@ -10294,7 +10300,7 @@ function dashFlow(days){
       if(건너뜀) return `<span></span>`;
       const 글 = 끝 ? '오늘' : x.mon !== 앞달 ? `${x.mon}/${x.lab}` : x.lab;
       앞달 = x.mon;
-      return `<span>${esc(글)}</span>`; }).join(''); })()}</div>
+      return `<span>${esc(글)}</span>`; }).join(''); })()}</div>`}
     ${OPS.rows && !OPS.rows.length ? `<p style="margin:12px 0 0;font-size:13.5px;color:var(--n500)">아직 접수된 조건이 없습니다.</p>` : ''}
   </div>`;
 }
@@ -11391,6 +11397,11 @@ const CT_하위메뉴 = [['#/partner/contracts/new', '계약서 작성', 'pen', 
    번호는 배포한 날(연.월.일 - 같은 날 또 올리면 뒤에 .2). 화면이 version.json 을 가끔 읽어,
    더 새 버전이 올라와 있으면 메뉴 아래에서 새로고침을 권한다(버전확인) - 계약서를 띄워 둔 채 오래 일하면 고친 화면을 못 받는다 */
 const BK_변경 = [
+  { v:'26.11.10', 날:'2026-11-10', 줄:[
+    '운영 대시보드 - 숫자 카드의 작은 그래프가 검은 삼각형으로 칠해지던 것을 고쳤습니다 · 들어온 것이 없을 때 빈 그래프 대신 안내',
+    '운영 조건 · 매물 표 - 금액을 ‘월 1000000’ 대신 ‘월 100만’ 처럼 읽기 쉽게, 금액이 없으면 ‘-’',
+    '운영 열람 기록 - 다른 표처럼 카드에 담고 시각 표기를 맞췄습니다 · 휴대폰 메뉴 줄의 스크롤 막대를 없애고 고른 메뉴가 보이게',
+  ]},
   { v:'26.11.08.6', 날:'2026-11-08', 줄:[
     '계약서 ‘저장·보내기’ 창 새 단장 - 내 기기 · 클라우드 · 보내기로 나누고, 준비 중인 곳은 꼬리표로 · 닫기는 오른쪽 위로',
     '대시보드 - 보낸 제안이 없을 때 빈 그래프 대신 다음에 할 일을 보여 줍니다 · 휴대폰 숫자 카드를 절반 높이로',
@@ -16509,6 +16520,10 @@ function render(){
       if(typeof a.selectionStart === 'number') 커서 = [a.selectionStart, a.selectionEnd]; }catch(_){}
   }
   app.innerHTML = html + modalHTML();
+  /* 가로로 누운 운영 메뉴 - 고른 메뉴가 화면 밖(오른쪽)에 있으면 보이게 민다 (2026-11-10 디자인 · '신고' 를 골라도 메뉴 줄에 안 보였다) */
+  { const 줄 = app.querySelector('.opsNav'), 고른 = 줄 && 줄.querySelector('button.on');
+    if(고른 && 줄.scrollWidth > 줄.clientWidth) { const a = 고른.getBoundingClientRect(), b = 줄.getBoundingClientRect();
+      줄.scrollLeft = Math.max(0, a.left - b.left + 줄.scrollLeft - (b.width - a.width) / 2); } }
   /* 넓은 화면 어드민(왼쪽 메뉴가 선 화면)이면 표시 - 단추·칩을 어드민 크기·모양으로 (2026-10-30) */
   document.body.classList.toggle('adm', !!app.querySelector('.dz-side'));
   /* 휴대폰의 중개사·운영 화면도 어드민과 같은 칩·움직임 (2026-11-02 '휴대폰 메뉴도 같은 모양으로') */

@@ -420,9 +420,9 @@ export const 날짜글 = d => { const t = new Date(d + 'T00:00:00Z');
   return `${t.getUTCFullYear()}. ${t.getUTCMonth() + 1}. ${t.getUTCDate()}.(${'일월화수목금토'[t.getUTCDay()]})`; };
 
 export const 알림종류 = { permitDue: '토지거래허가 약정일', permitExpect: '토지거래허가 승인 예정일', contract: '계약일', mid: '중도금',
-  balance: '잔금', report: '실거래신고 기한', lawyer: '법무사 예약', expiry: '임대차 만기 6개월 전', settle: '잔금 완료 확인' };
+  balance: '잔금', report: '실거래신고 기한', lawyer: '법무사 예약', expiry: '임대차 만기 6개월 전', settle: '잔금 완료 확인', prep: '잔금 준비물 안내' };
 /* 며칠 전 아침에 알리는가 - 0 은 당일. 법무사 예약은 예약할 때가 시작되는 날(잔금 b영업일 전) 한 번 */
-export const 알림날 = { permitDue: [3, 0], permitExpect: [0], contract: [1, 0], mid: [3, 0], balance: [7, 3, 0], report: [7, 3, 1, 0], lawyer: [0], expiry: [0], settle: [0] };
+export const 알림날 = { permitDue: [3, 0], permitExpect: [0], contract: [1, 0], mid: [3, 0], balance: [7, 3, 0], report: [7, 3, 1, 0], lawyer: [0], expiry: [0], settle: [0], prep: [0] };
 /* 임대차 만기 6개월 전 - 갱신 의사를 물을 때(파트너 리뷰 2026-11-05). 임대차·전대차만, 한 번 */
 export const 임대차양식 = ['home-lease', 'shop-lease', 'lease', 'sublease'];
 export function 달빼기(d, n) {
@@ -488,6 +488,13 @@ export function 방값(x) {
   if (x.c && typeof x.c === 'object' && !Array.isArray(x.c)) { const c = {};
     for (const k of 방자리) if (Number.isInteger(x.c[k]) && x.c[k] > 0 && x.c[k] < 1e6) c[k] = x.c[k];
     if (Object.keys(c).length) out.c = c; }
+  /* 대리인 (2026-11-10 파트너 기획 '대화방에 손님 대리인 1명') - 자리마다 한 분(p), 대리인 링크만 끊은 횟수(pc) */
+  if (x.p && typeof x.p === 'object' && !Array.isArray(x.p)) { const p = {};
+    for (const k of 방자리) { const v = x.p[k]; if (v && /^[0-9a-f-]{36}$/.test(String(v.uid || ''))) p[k] = { uid: v.uid, at: String(v.at || '').slice(0, 19) }; }
+    if (Object.keys(p).length) out.p = p; }
+  if (x.pc && typeof x.pc === 'object' && !Array.isArray(x.pc)) { const c = {};
+    for (const k of 방자리) if (Number.isInteger(x.pc[k]) && x.pc[k] > 0 && x.pc[k] < 1e6) c[k] = x.pc[k];
+    if (Object.keys(c).length) out.pc = c; }
   return out;
 }
 export const 의견누구 = ['매도인', '매수인', '임대인', '임차인', '전대인', '전차인', '양도인', '양수인', '공동중개 사무소', '기타'];
@@ -706,6 +713,9 @@ export function 일정목록(c, 설정 = 알림설정()) {
     메모: 날만(t.guideAt) ? '잔금안내 마침 · 준비서류를 확인하세요' : '잔금안내(이체한도·준비서류) 전입니다' });
   if (cd && 신고대상(c.form, { sub: c.sub })) out.push({ k: 'report', 이름: 매매신고(c.form) ? '실거래신고 기한' : '임대차 신고 기한',
     날: 날더하기(cd, 30), 마침: !!c.reported_at, 메모: c.reported_at ? '신고 마침' : '부동산거래관리시스템에서 신고하세요' });
+  /* 잔금 10일 전 - 매도인 · 매수인께 준비물 안내(2026-11-10 파트너 기획). 매매만, 잔금안내를 마쳤으면 마침 */
+  if (bd && ['sale', 'presale', 'union'].includes(c.form)) out.push({ k: 'prep', 날: 날더하기(bd, -10), 마침: !!날만(t.guideAt),
+    메모: 날만(t.guideAt) ? '잔금안내 마침' : '매도인 · 매수인께 잔금 준비물을 안내하세요 - 대화방이나 문자로' });
   if (bd && ['sale', 'union'].includes(c.form)) {
     const [a, b] = 설정.lawyer;
     out.push({ k: 'lawyer', 날: 영업일전(bd, b), 끝: 영업일전(bd, a), 메모: `잔금 ${bd} 기준 ${a}~${b}영업일 전에 예약하세요` });
@@ -720,7 +730,7 @@ export function 일정목록(c, 설정 = 알림설정()) {
 export function 오늘알림(c, 설정, 오늘) {
   if (c.track && c.track.off) return [];
   return 일정목록(c, 설정)
-    .filter(e => !설정.off.includes(e.k) && !(e.k === 'report' && (c.status !== 'sealed' || c.reported_at)) && !((e.k === 'expiry' || e.k === 'settle') && c.status !== 'sealed'))
+    .filter(e => !설정.off.includes(e.k) && !(e.k === 'report' && (c.status !== 'sealed' || c.reported_at)) && !((e.k === 'expiry' || e.k === 'settle' || e.k === 'prep') && c.status !== 'sealed') && !(e.k === 'prep' && e.마침))
     .map(e => ({ ...e, 남음: 날차(오늘, e.날) }))
     .filter(e => (알림날[e.k] || []).includes(e.남음));
 }
@@ -770,7 +780,8 @@ async function track(res, agent, b) {
   /* 초안 의견은 화면이 보낸 것으로 덮지 않는다 - 서버에 지금 있는 것을 그대로 둔다(읽음 · 지우기는 contract-note) */
   delete t.notes; delete t.tv; delete t.room;
   /* 읽은 링크 번호가 그대로일 때만 쓴다 - 그 사이 끊기가 번호를 올렸으면 다시 읽는다(2026-11-05 재검토) */
-  const z = await 링크번호지켜쓰기(id, agent, (n, 지금) => ({ ...t, ...(지금.notes ? { notes: 지금.notes } : {}), ...(지금.room ? { room: 지금.room } : {}) }));
+  const z = await 링크번호지켜쓰기(id, agent, (n, 지금) => ({ ...t, ...(지금.notes ? { notes: 지금.notes } : {}), ...(지금.room ? { room: 지금.room } : {}),
+    ...(b.guideOff !== true && 지금.guideAt && !t.guideAt ? { guideAt: 지금.guideAt } : {}) }));   /* 잔금안내 체크를 끈 것은 guideOff 로 온다 */
   if (z.res) return z.res(res, '일정을 저장하지 못했습니다');
   return res.status(200).json({ ok: true, track: z.track });
 }
@@ -830,6 +841,9 @@ export async function reportDueCron(req, res) {
   const 살아있음 = rows.filter(c => c.agent_id && !앞판.has(c.id) && !(c.track && (c.track.arch || c.track.trash)));
   /* 휴지통 30일이 지난 작성 중 계약서는 지운다 - 날인본은 휴지통에 남는다(지우지 않음) */
   if (트랙) await db('bk_contract', `status=eq.draft&track->>trash=lt.${날더하기(오늘, -30)}`, { method: 'DELETE' }).catch(() => {});
+  /* 대화방 사진 · 파일 - 잔금 뒤 1년이 지난 것을 지운다(2026-11-10 파트너 기획 '잔금 후 1년 보관') */
+  let 파일지움 = 0;
+  try { 파일지움 = await (await import('./_room.js')).방파일정리(오늘); } catch { /* 0036 전이면 넘어간다 */ }
   /* 중개사 - 이름·전화·알림 설정. 0032 전이면 설정 없이(모두 켬).
      settings 통째가 아니라 알림 설정만 꺼낸다 - 같은 칸에 내 특약 문구(최대 200개)가 쌓인다 */
   const ids = [...new Set(살아있음.map(c => c.agent_id))], 중개사 = new Map();
@@ -856,6 +870,20 @@ export async function reportDueCron(req, res) {
     if (!오늘것.length) continue;
     if (!사람별.has(a.id)) 사람별.set(a.id, { a, 설정, uid: c.agent_user, 목록: [] });
     사람별.get(a.id).목록.push(...오늘것.map(e => ({ ...e, title: c.title || '소재지 미입력' })));
+  }
+  /* 다른 사무소가 쓴 계약서(공동중개 · 2026-11-10) - 사무소 설정의 목록. 계약일 · 중도금 · 잔금만 */
+  {
+    const x = await db('bk_agent', `select=id,name,phone,user_id,alert:settings->alert,ext:settings->ext&settings->ext=not.is.null&limit=1000`).catch(() => null);
+    const { 외부들, 외부일정 } = await import('./_ext.js');
+    for (const a of (x && x.r.ok ? x.rows : [])) {
+      const 설정 = 알림설정(a.alert);
+      const 오늘것 = 외부들(a.ext).flatMap(e => 외부일정(e).filter(v => !설정.off.includes(v.k)).map(v => ({ ...v, 남음: 날차(오늘, v.날), title: `${e.title} (공동중개)` })))
+        .filter(v => (알림날[v.k] || []).includes(v.남음));
+      if (!오늘것.length) continue;
+      if (!사람별.has(a.id)) 사람별.set(a.id, { a, 설정, uid: a.user_id, 목록: [] });
+      const p = 사람별.get(a.id); if (!p.uid) p.uid = a.user_id;
+      p.목록.push(...오늘것);
+    }
   }
   const 사람 = [...사람별.values()];
   for (const p of 사람) p.목록.sort((x, y) => x.남음 - y.남음 || (x.날 > y.날) - (x.날 < y.날));
@@ -884,7 +912,7 @@ export async function reportDueCron(req, res) {
   /* notifyMany 는 한 번에 100통까지다(Resend 묶음 상한) - 100통씩 나눠 보낸다 */
   let 보냄 = 0;
   for (let i = 0; i < 메일.length; i += 100) 보냄 += (await notifyMany(req, 메일.slice(i, i + 100))).sent || 0;
-  return res.status(200).json({ ok: true, 대상: 살아있음.length, 알림: 사람.reduce((s, p) => s + p.목록.length, 0), 보냄, 카톡: 카톡보냄 });
+  return res.status(200).json({ ok: true, 대상: 살아있음.length, 알림: 사람.reduce((s, p) => s + p.목록.length, 0), 보냄, 카톡: 카톡보냄, 파일지움 });
 }
 
 /* 서류 판독 - 등기부등본·건축물대장·토지이용계획확인서를 읽어 칸 값을 돌려준다(_scan.js).
@@ -938,3 +966,63 @@ async function del(res, agent, b) {
   if (!rows.length) return res.status(409).json({ error: '날인본은 지울 수 없습니다' });
   return res.status(200).json({ ok: true });
 }
+
+/* ════════ 일정 달력 구독 (2026-11-10 파트너 기획 '구글 · 휴대폰 달력에 계약 일정') ════════
+   사무소마다 서명한 주소(C1.사무소.번호.서명) - 휴대폰 · 구글 달력이 이 주소를 몇 시간마다 다시 읽는다.
+   번호(settings.icsN)를 올리면 예전 주소는 끊긴다(대표가 '주소 바꾸기'). 로그인이 없으므로 주소를 아는 사람은 일정을 본다 - 화면이 그렇게 알린다 */
+const 달력열쇠 = () => crypto.createHash('sha256').update('bk-ics|' + String(process.env.BK_SECRET_KEY || ''), 'utf8').digest();
+const 달력서명 = (a, n) => crypto.createHmac('sha256', 달력열쇠()).update(`${a}.${n}`).digest('base64url').slice(0, 32);
+export const 달력표 = (agentId, n = 0) => `C1.${agentId}.${n}.${달력서명(agentId, n)}`;
+export function 달력표읽기(tok) {
+  const m = /^C1\.([0-9a-f-]{36})\.(\d{1,6})\.([A-Za-z0-9_-]{32})$/.exec(String(tok || ''));
+  if (!m || !UUID.test(m[1])) return null;
+  return sameSecret(m[3], 달력서명(m[1], +m[2])) ? { a: m[1], n: +m[2] } : null;
+}
+const ics글 = v => String(v || '').replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
+/* 한 줄 75바이트 - 넘으면 접는다(RFC 5545). 한글은 3바이트라 글자 단위로 센다 */
+function ics접기(줄) {
+  const out = []; let 지금 = '', 길이 = 0;
+  for (const ch of 줄) { const b = Buffer.byteLength(ch); if (길이 + b > (out.length ? 74 : 75)) { out.push(지금); 지금 = ''; 길이 = 0; } 지금 += ch; 길이 += b; }
+  out.push(지금); return out.join('\r\n ');
+}
+const ics날 = d => d.replace(/-/g, '');
+export function 달력글(이름, 일들, 지금 = new Date()) {
+  const 찍 = 지금.toISOString().replace(/[-:]/g, '').slice(0, 15) + 'Z';
+  const 줄 = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//BeaverKnock//Contract Schedule//KO', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
+    `X-WR-CALNAME:${ics글(이름)}`, 'X-WR-TIMEZONE:Asia/Seoul', 'REFRESH-INTERVAL;VALUE=DURATION:PT6H', 'X-PUBLISHED-TTL:PT6H'];
+  for (const e of 일들) {
+    줄.push('BEGIN:VEVENT', `UID:${e.uid}@beaverknock.co.kr`, `DTSTAMP:${찍}`, `DTSTART;VALUE=DATE:${ics날(e.날)}`,
+      `DTEND;VALUE=DATE:${ics날(날더하기(e.끝 || e.날, 1))}`, `SUMMARY:${ics글(e.제목)}`, `DESCRIPTION:${ics글(e.설명)}`, 'TRANSP:TRANSPARENT', 'END:VEVENT');
+  }
+  줄.push('END:VCALENDAR');
+  return 줄.map(ics접기).join('\r\n') + '\r\n';
+}
+export async function icsFeed(req, res) {
+  const t = 달력표읽기(req.query.ics);
+  const 없음 = () => res.status(404).json({ error: '구독 주소가 맞지 않거나 바뀌었습니다 - 비버노크에서 새 주소를 받아 주세요' });
+  if (!t) return 없음();
+  const a = await db('bk_agent', `select=id,office,alert:settings->alert,icsN:settings->icsN,ext:settings->ext&id=eq.${t.a}&limit=1`);
+  const 사 = a.r.ok ? a.rows[0] : null;
+  if (!사 || (Number.isInteger(사.icsN) ? 사.icsN : 0) !== t.n) return 없음();
+  const 설정 = 알림설정(사.alert), 오늘 = 한국오늘(), 부터 = 날더하기(오늘, -90);
+  const x = await 읽기(`select=id,form,title,status,reported_at,prev_id,sub:doc->>sub${일정열}{track}&agent_id=eq.${t.a}&form=not.like.explain*&created_at=gte.${날더하기(오늘, -1200)}&order=updated_at.desc&limit=1000`);
+  if (!x.r.ok) return res.status(502).json({ error: '일정을 읽지 못했습니다' });
+  const 앞판 = new Set(x.rows.map(c => c.prev_id).filter(Boolean));
+  const 일들 = [];
+  for (const c of x.rows) {
+    if (앞판.has(c.id) || (c.track && (c.track.arch || c.track.trash || c.track.off))) continue;
+    for (const e of 일정목록(c, 설정)) {
+      if (e.날 < 부터 || (e.k === 'report' && (c.status !== 'sealed' || c.reported_at)) || (['expiry', 'settle', 'prep'].includes(e.k) && c.status !== 'sealed')) continue;
+      if (e.k === 'settle' && c.track && ['done', 'cancel'].includes(c.track.state)) continue;
+      일들.push({ uid: `${c.id}-${e.k}-${e.날}`, 날: e.날, 끝: e.끝 && e.끝 > e.날 ? e.끝 : '', 제목: `${e.마침 ? '[마침] ' : ''}${e.이름} · ${c.title || '소재지 미입력'}`,
+        설명: `${e.메모}\n${c.status === 'sealed' ? '날인본' : '작성 중'} 계약서 - https://beaverknock.co.kr/#/partner/contract/${c.id}` });
+    }
+  }
+  const { 외부들, 외부일정 } = await import('./_ext.js');
+  for (const e of 외부들(사.ext)) for (const v of 외부일정(e)) if (v.날 >= 부터)
+    일들.push({ uid: `x${e.id}-${v.k}-${v.날}`, 날: v.날, 끝: '', 제목: `${v.이름} · ${e.title} (공동중개)`, 설명: `${e.office ? e.office + ' 작성 · ' : ''}다른 사무소가 쓴 계약서` });
+  일들.sort((p, q) => (p.날 > q.날) - (p.날 < q.날));
+  res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
+  res.setHeader('Content-Disposition', 'inline; filename="beaverknock.ics"');
+  return res.status(200).send(달력글(`비버노크 계약 일정${사.office ? ' · ' + 사.office : ''}`, 일들.slice(0, 2000)));
+}

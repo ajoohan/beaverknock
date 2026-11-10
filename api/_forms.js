@@ -69,3 +69,28 @@ export async function 서식지우기(agentId, f, fetchFn = fetch) {
   const j = await r.json().catch(() => null);
   return Array.isArray(j) ? j.length : 1;
 }
+/* 대화방 사진 · 파일, 다른 사무소 계약서 (2026-11-10 파트너 기획) - bk-files 버킷(비공개, 0036). 받는 파일 확인은 서식확인과 같다.
+   대화방 파일은 room/계약서/번호.확장자, 다른 사무소 계약서는 ext/사무소/번호.확장자 */
+export const 파일버킷 = 'bk-files';
+export const 바로보기 = ext => ['jpg', 'jpeg', 'png', 'pdf'].includes(ext);
+export async function 버킷올리기(bucket, path, ext, buf, fetchFn = fetch) {
+  const r = await fetchFn(저장소(`object/${bucket}/${path}`), { method: 'POST', headers: { ...열쇠(), 'Content-Type': 종류[ext], 'x-upsert': 'false' }, body: buf });
+  if (r.ok) return { ok: true };
+  const t = await r.text().catch(() => '');
+  return 버킷없음(t) ? { need: 'files' } : { error: '파일을 올리지 못했습니다' };
+}
+/* 5분짜리 서명 주소 - 사진 · PDF 는 창에서 바로 열고, 그 밖은 내려받는다 */
+export async function 버킷주소(bucket, path, 이름, ext, fetchFn = fetch) {
+  const r = await fetchFn(저장소(`object/sign/${bucket}/${path}`), { method: 'POST', headers: { ...열쇠(), 'Content-Type': 'application/json' }, body: JSON.stringify({ expiresIn: 300 }) });
+  const j = await r.json().catch(() => ({}));
+  const s = j.signedURL || j.signedUrl;
+  if (!r.ok || !s) return 버킷없음(JSON.stringify(j)) ? { need: 'files' } : { error: '여는 주소를 만들지 못했습니다' };
+  return { url: `${저장소(String(s).replace(/^\/+/, ''))}${바로보기(ext) ? '' : `&download=${encodeURIComponent(이름)}`}` };
+}
+export async function 버킷지우기(bucket, paths, fetchFn = fetch) {
+  if (!paths.length) return 0;
+  const r = await fetchFn(저장소(`object/${bucket}`), { method: 'DELETE', headers: { ...열쇠(), 'Content-Type': 'application/json' }, body: JSON.stringify({ prefixes: paths }) });
+  if (!r.ok) return 0;
+  const j = await r.json().catch(() => null);
+  return Array.isArray(j) ? j.length : paths.length;
+}

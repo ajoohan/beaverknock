@@ -7,11 +7,13 @@
  * 중개사는 지역·조건·메모까지만 본다.
  */
 
+import crypto from 'node:crypto';
 import { userFrom, sbHeaders, sbUrl, overLimit } from './_auth.js';
 import { dbWhy } from './_dberr.js';
-import { contractRoute, reportDueCron, draftRead, draftNote, 알림설정, 특약문구들, 특약문구고침, 문자틀들, 문자기록들, 문자고침, 단지들, 단지고침 } from './_contract.js';
+import { contractRoute, reportDueCron, draftRead, draftNote, icsFeed, 달력표, 알림설정, 특약문구들, 특약문구고침, 문자틀들, 문자기록들, 문자고침, 단지들, 단지고침 } from './_contract.js';
 import { 날씨 } from './_weather.js';
-import { 서식들, 서식확인, 서식올리기, 서식주소, 서식지우기, 서식최대 } from './_forms.js';
+import { 서식들, 서식확인, 서식올리기, 서식주소, 서식지우기, 서식최대, 파일버킷, 버킷올리기, 버킷주소, 버킷지우기 } from './_forms.js';
+import { 외부들, 외부하나, 외부최대, 외부경로 } from './_ext.js';
 import { 직원들, 직원고침, 직원사무소, 직원들어옴, 직원역할, 다른사무소직원 } from './_staff.js';
 import { notify, mailWithFile } from './_notify.js';
 import { roomAgent, invitePeek } from './_room.js';
@@ -178,7 +180,7 @@ const 설정실패 = (res, z, 이름) => z.need ? res.status(503).json({ error: 
   : z.busy ? res.status(409).json({ error: '다른 기기에서 같은 때 고쳐 저장하지 못했습니다 - 다시 눌러 주세요' })
   : res.status(502).json({ error: '저장하지 못했습니다' });
 /* 직원이 못 하는 일 - 서버가 막는다(화면은 고쳐 쓸 수 있다) */
-export const 대표만 = w => /^staff/.test(String(w || '')) || ['office-addr', 'scope-save', 'contract-del'].includes(w);   /* contract-del = 영구 삭제(2026-11-10) */
+export const 대표만 = w => /^staff/.test(String(w || '')) || ['office-addr', 'scope-save', 'contract-del', 'ics-reset'].includes(w);   /* contract-del = 영구 삭제(2026-11-10) */
 /* 계약서 PDF 를 메일로 (2026-11-08) - 화면이 만든 PDF(base64)를 받아 Resend 로 붙여 보낸다. 서버에 남기지 않는다.
    받는 사람 5명까지 · 사무소마다 한 시간에 20통 · 파일 3MB 까지(본문 4.5MB 한도 안). 회신은 중개사 메일로 */
 const 메일모양 = /^[^\s@<>,;:"'()\[\]\\]+@[^\s@<>,;:"'()\[\]\\]+\.[a-z]{2,}$/i;
@@ -211,13 +213,13 @@ async function contractMail(req, res, agent, user, b) {
 export const 권한키 = w => { w = String(w || '');
   if (w === 'contract-seal') return 'ct_seal';
   if (w === 'contract-mail') return 'ct_mail';
-  if (['contracts', 'contract', 'forms', 'form-url', 'phrases', 'sms', 'complex', 'alert-settings'].includes(w)) return 'ct_view';
+  if (['contracts', 'contract', 'forms', 'form-url', 'phrases', 'sms', 'complex', 'alert-settings', 'ics-link', 'contract-ext', 'contract-ext-url'].includes(w)) return 'ct_view';
   if (/^(contract|form-)/.test(w) || ['phrases-save', 'sms-save', 'complex-save', 'alert-settings-save', 'end-style-save'].includes(w)) return 'ct_edit';
   if (/^listing-/.test(w)) return 'listing';
   if (/^room/.test(w)) return 'room';
   return ''; };
 export const 계약기능 = w => /^(contract|form)/.test(String(w || '')) || ['forms', 'phrases', 'phrases-save', 'sms', 'sms-save',
-  'complex', 'complex-save', 'alert-settings', 'alert-settings-save', 'end-style-save'].includes(w);
+  'complex', 'complex-save', 'alert-settings', 'alert-settings-save', 'end-style-save', 'ics-link', 'ics-reset'].includes(w);
 const 가린번호 = p => { const n = String(p || '').replace(/\D/g, ''); return n.length >= 10 ? `${n.slice(0, 3)}-****-${n.slice(-4)}` : ''; };
 async function readAlert(res, agent) {
   const x = await 설정읽기(agent);
@@ -369,6 +371,76 @@ async function saveOfficeAddr(res, agent, b) {
   return res.status(200).json({ ok: true, addr });
 }
 
+/* ── 다른 사무소가 쓴 계약서 (2026-11-10 파트너 기획 · api/_ext.js) - settings.ext, 파일은 bk-files 버킷 ── */
+const 외부준비중 = res => res.status(503).json({ error: '다른 사무소 계약서 올리기를 준비 중입니다 - 곧 열립니다', need: 'files' });
+async function readExt(res, agent) {
+  const x = await 설정읽기(agent);
+  if (x.error) return res.status(502).json({ error: '목록을 불러오지 못했습니다' });
+  return res.status(200).json({ ok: true, list: 외부들(x.settings.ext), need: x.need || '' });
+}
+async function saveExt(res, agent, b) {
+  const 입력 = b.item && typeof b.item === 'object' ? b.item : {};
+  const id = /^[0-9a-f]{12}$/.test(String(입력.id || '')) ? String(입력.id) : crypto.randomBytes(6).toString('hex');
+  let 새파일 = null;
+  if (b.data) {
+    if (overLimit('extup:' + agent.id, 30, 600e3)) return res.status(429).json({ error: '잠시 뒤 다시 올려 주세요' });
+    const c = 서식확인(b);
+    if (c.error) return res.status(400).json({ error: c.error });
+    const f = { id: crypto.randomBytes(6).toString('hex'), ext: c.ext, size: c.buf.length, name: c.name };
+    const u = await 버킷올리기(파일버킷, 외부경로(agent.id, f), c.ext, c.buf);
+    if (u.need) return 외부준비중(res);
+    if (!u.ok) return res.status(502).json({ error: u.error || '파일을 올리지 못했습니다' });
+    새파일 = f;
+  }
+  const at = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 19);
+  let 옛파일 = null;
+  const z = await 설정고침(agent, s => {
+    const L = 외부들(s.ext), 옛 = L.find(e => e.id === id);
+    if (!옛 && L.length >= 외부최대) return { error: `다른 사무소 계약서는 ${외부최대}건까지 둡니다 - 끝난 건을 지운 뒤 올려 주세요`, code: 400 };
+    const v = 외부하나({ ...입력, id, file: 새파일 || (옛 && 옛.file) || null, at: (옛 && 옛.at) || at });
+    if (!v) return { error: '소재지(이름)를 적어 주세요', code: 400 };
+    옛파일 = 새파일 && 옛 && 옛.file ? 옛.file : null;
+    const 목록 = 옛 ? L.map(e => e.id === id ? v : e) : [v, ...L];
+    return { list: 목록, item: v, patch: { ext: 목록 } };
+  });
+  if (!z.y || z.y.error) {
+    if (새파일) await 버킷지우기(파일버킷, [외부경로(agent.id, 새파일)]).catch(() => {});
+    return z.y && z.y.error ? res.status(z.y.code || 400).json({ error: z.y.error }) : 설정실패(res, z, '계약서');
+  }
+  if (옛파일) await 버킷지우기(파일버킷, [외부경로(agent.id, 옛파일)]).catch(() => {});
+  return res.status(200).json({ ok: true, list: z.y.list, item: z.y.item });
+}
+async function delExt(res, agent, b) {
+  let 지운 = null;
+  const z = await 설정고침(agent, s => { const L = 외부들(s.ext); 지운 = L.find(e => e.id === String(b.id || '')) || null;
+    return { list: L.filter(e => e !== 지운), patch: { ext: L.filter(e => e !== 지운) } }; });
+  if (!z.y) return 설정실패(res, z, '계약서');
+  if (지운 && 지운.file) await 버킷지우기(파일버킷, [외부경로(agent.id, 지운.file)]).catch(() => {});
+  return res.status(200).json({ ok: true, list: z.y.list });
+}
+async function extUrl(res, agent, b) {
+  const x = await 설정읽기(agent);
+  if (x.error) return res.status(502).json({ error: '목록을 불러오지 못했습니다 - 잠시 뒤 다시 눌러 주세요' });
+  const e = 외부들(x.settings.ext).find(v => v.id === String(b.id || ''));
+  if (!e || !e.file) return res.status(404).json({ error: '지워졌거나 파일이 없는 계약서입니다' });
+  const u = await 버킷주소(파일버킷, 외부경로(agent.id, e.file), `${e.file.name}.${e.file.ext}`, e.file.ext);
+  if (!u.url) return u.need ? 외부준비중(res) : res.status(502).json({ error: u.error });
+  return res.status(200).json({ ok: true, url: u.url, ext: e.file.ext });
+}
+/* ── 일정 달력 구독 주소 (2026-11-10 · api/_contract.js icsFeed) - 사무소 하나에 주소 하나. 바꾸기는 대표만 ── */
+const 달력주소 = (req, agentId, n) => `${String((req.headers && req.headers['x-forwarded-proto']) || 'https').split(',')[0]}://${(req.headers && (req.headers['x-forwarded-host'] || req.headers.host)) || 'beaverknock.co.kr'}/api/feed?ics=${달력표(agentId, n)}`;
+async function icsLink(req, res, agent, 바꾸기) {
+  if (!바꾸기) {
+    const x = await 설정읽기(agent);
+    if (x.error) return res.status(502).json({ error: '구독 주소를 만들지 못했습니다' });
+    const n = Number.isInteger(x.settings.icsN) ? x.settings.icsN : 0;
+    return res.status(200).json({ ok: true, url: 달력주소(req, agent.id, n) });
+  }
+  const z = await 설정고침(agent, s => { const n = (Number.isInteger(s.icsN) ? s.icsN : 0) + 1; return { n, patch: { icsN: n } }; });
+  if (!z.y) return 설정실패(res, z, '구독 주소');
+  return res.status(200).json({ ok: true, url: 달력주소(req, agent.id, z.y.n) });
+}
+
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
   /* 매일 아침 신고 기한 알림(Vercel 예약 실행). CRON_SECRET 으로만 열린다 - api/_contract.js */
@@ -386,6 +458,12 @@ export default async function handler(req, res) {
     if (!process.env.BK_URL || !process.env.BK_SECRET_KEY) return res.status(503).json({ error: '서버에 환경변수가 설정되지 않았습니다' });
     if (overLimit('invite:' + String((req.headers && (req.headers['x-forwarded-for'] || '')) || '').split(',')[0].trim(), 60, 600e3)) return res.status(429).json({ error: '잠시 뒤 다시 열어 주세요' });
     return invitePeek(res, req.query.invite);
+  }
+  /* 일정 달력 구독(휴대폰 · 구글 달력이 몇 시간마다 읽는다) - 사무소마다 서명한 주소로만. api/_contract.js icsFeed */
+  if (req.method === 'GET' && req.query && req.query.ics) {
+    if (!process.env.BK_URL || !process.env.BK_SECRET_KEY) return res.status(503).json({ error: '서버에 환경변수가 설정되지 않았습니다' });
+    if (overLimit('ics:' + String((req.headers && (req.headers['x-forwarded-for'] || '')) || '').split(',')[0].trim(), 120, 600e3)) return res.status(429).json({ error: '잠시 뒤 다시 읽어 주세요' });
+    return icsFeed(req, res);
   }
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST 만 받습니다' });
   /* 초안에 의견 남기기 - 로그인 없이 서명된 표로(api/_contract.js draftNote) */
@@ -426,7 +504,7 @@ export default async function handler(req, res) {
   const 권 = 직원 && 권한키(b.what), 끔 = (직원 && 직원.perm) || {};
   if (권 && (끔[권] === false || (권.startsWith('ct_') && 끔.ct_view === false))) return res.status(403).json({ error: '대표님이 이 기능을 꺼 두셨습니다', need: 'perm' });
   /* 계약진행 대화방 (2026-11-06 · api/_room.js) - 보조원도 대화는 한다(초대 · 내보내기는 _room.js 가 막는다) */
-  if (['rooms', 'room', 'room-send', 'room-invite', 'room-cut'].includes(b.what)) {
+  if (['rooms', 'room', 'room-send', 'room-file', 'room-file-url', 'room-invite', 'room-cut'].includes(b.what)) {
     if (chk.agent.role !== 'agent') return res.status(403).json({ error: '공인중개사 사무소만 쓸 수 있습니다' });
     return roomAgent(req, res, chk.agent, user, b);
   }
@@ -474,6 +552,17 @@ export default async function handler(req, res) {
 
   /* 계약서 (2026-10-29). 승인 전 중개사도 쓴다 - 자격 확인은 수요 전문을 여는 문이지
      양식·인쇄 도구의 문이 아니다. 갈래는 api/_contract.js 가 맡는다. */
+  /* 다른 사무소 계약서 · 달력 구독 (2026-11-10) - 공인중개사 사무소만. 직원 권한은 위에서 걸렀다 */
+  if (/^contract-ext/.test(b.what || '') || b.what === 'ics-link' || b.what === 'ics-reset') {
+    if (chk.agent.role !== 'agent') return res.status(403).json({ error: '공인중개사만 쓸 수 있습니다' });
+    if (b.what === 'contract-ext')      return readExt(res, chk.agent);
+    if (b.what === 'contract-ext-save') return saveExt(res, chk.agent, b);
+    if (b.what === 'contract-ext-del')  return delExt(res, chk.agent, b);
+    if (b.what === 'contract-ext-url')  return extUrl(res, chk.agent, b);
+    if (b.what === 'ics-link')          return icsLink(req, res, chk.agent, false);
+    if (b.what === 'ics-reset')         return icsLink(req, res, chk.agent, true);
+    return res.status(400).json({ error: '알 수 없는 요청입니다' });
+  }
   if (await contractRoute(req, res, chk.agent, user, b)) return;
 
   /* 올려둔 물건. 지금까지 이 목록도 그 브라우저에만 있어서 창을 닫으면

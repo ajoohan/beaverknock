@@ -2493,6 +2493,38 @@ body.mo .rp-l{grid-column:1/-1}
 .dz-memo-s{font-size:12.5px;color:var(--n500)}
 .ct-autoarch{font-size:13.5px;color:var(--n700);margin:2px 0}
 .ct-autoarch .sub{font-size:12.5px}
+/* 대화방 사진 · 파일 · 잔금 준비물 (2026-11-10) */
+.rm-tools{display:flex;gap:6px;flex-wrap:wrap;padding:10px 14px 0;border-top:1px solid var(--n100);background:var(--white)}
+.rm-tools + .rm-compose{border-top:0}
+.rm-att{display:inline-flex;align-items:center;gap:5px}
+.rm-att svg{width:17px;height:17px;flex:none}
+.rm-filep{margin:0}
+.rm-file{display:flex;align-items:center;gap:10px;border:1px solid var(--n200);background:var(--white);border-radius:12px;padding:10px 12px;font:inherit;text-align:left;cursor:pointer;max-width:100%;color:var(--n900)}
+button.rm-file:hover{border-color:var(--ind200);background:var(--ind50)}
+.rm-file > svg,.rm-fconf > svg{width:22px;height:22px;flex:none;color:var(--ind700)}
+.rm-file > span,.rm-fconf > span{display:flex;flex-direction:column;min-width:0}
+.rm-file b,.rm-fconf b{font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rm-file small,.rm-fconf small{font-size:12px;color:var(--n500)}
+.rm-file.gone{opacity:.7;cursor:default}
+.rm-fconf{display:flex;align-items:center;gap:10px;padding:12px;border:1px solid var(--n200);border-radius:12px;margin:10px 0 12px}
+/* 다른 사무소가 쓴 계약서 · 달력 구독 (2026-11-10) */
+.ct-ext,.ct-ics{display:flex;flex-direction:column;gap:12px}
+.ct-extl{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.ct-extl li{display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--n100);flex-wrap:wrap}
+.ct-extl li:first-child{border-top:0;padding-top:0}
+.ct-extm{flex:1;min-width:200px;display:flex;flex-direction:column;gap:3px}
+.ct-extm b{font-size:15px;font-weight:600}
+.ct-extm span{font-size:13.5px;color:var(--n700)}
+.ct-extm small{font-size:12.5px;color:var(--n500)}
+.ct-exta{display:flex;gap:6px;flex-wrap:wrap}
+.ct-extst{font-style:normal;font-size:12px;font-weight:600;padding:1px 8px;border-radius:999px;background:var(--n100);color:var(--n700);vertical-align:2px}
+.ct-extst.done{background:var(--okbg);color:var(--ok)}
+.modal .box.ext-box{max-width:620px;max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);overflow:auto}
+.ext-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 14px}
+.ext-grid .wide{grid-column:1/-1}
+@media (max-width:640px){.ext-grid{grid-template-columns:1fr}}
+.ext-file{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:14px}
+.ct-icsb{display:flex;gap:6px;flex-wrap:wrap}
 /* 대시보드 작은 달력 (2026-11-10) */
 .dz-cal{padding:16px 16px 14px}
 .dz-cal-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
@@ -9520,7 +9552,7 @@ function modalHTML(){
   if(S.modal.type==='rm-invite'){
     const m = S.modal, 문자 = `sms:${m.phone || ''}${/iPhone|iPad/.test(navigator.userAgent) ? '&' : '?'}body=${encodeURIComponent(m.text)}`;
     return `<div class="modal" data-act="modal-bg"><div class="box" data-stop role="dialog" aria-modal="true" aria-labelledby="mdT" tabindex="-1">
-      <h2 id="mdT" style="margin:0 0 6px;font-size:16px;font-weight:700;letter-spacing:-.03em">${esc(RM_자리[m.side] || '손님')} 초대 링크</h2>
+      <h2 id="mdT" style="margin:0 0 6px;font-size:16px;font-weight:700;letter-spacing:-.03em">${esc(RM_자리[m.side] || '손님')}${m.proxy ? ' 대리인' : ''} 초대 링크</h2>
       <p style="margin:0 0 12px;font-size:14.5px;line-height:1.7;color:var(--n500)">${esc(m.until)}까지 쓸 수 있습니다. 한 분이 로그인해 들어오면 그 자리는 닫힙니다.</p>
       <textarea class="inp" rows="4" readonly style="width:100%;font-size:13px">${esc(m.text)}</textarea>
       <div class="eqb" style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
@@ -9529,6 +9561,16 @@ function modalHTML(){
         ${m.kakao ? `<button class="btn sec" data-act="rm-kakao" data-v="${esc(m.side)}">알림톡으로 보내기</button>` : ''}</div>
       <button class="btn pri" data-act="modal-close" style="width:100%;margin-top:10px">닫기</button></div></div>`;
   }
+  if(S.modal.type==='rm-file'){
+    const Pd = RM.pending || {}, fl = Pd.file, C = RM.cur, M = C && C.meta, 손님 = rm손님();
+    const 받는 = 손님 ? ((M && M.office) || '중개사무소') : `${RM_자리[C && C.side] || '손님'}${M && M.name ? ' ' + M.name : ''}${M && M.proxy ? ' · 대리인' : ''}`;
+    return `<div class="modal" data-act="modal-bg"><div class="box" data-stop role="dialog" aria-modal="true" aria-labelledby="mdT" tabindex="-1">
+      <h2 id="mdT" style="margin:0 0 6px;font-size:16px;font-weight:700;letter-spacing:-.03em">이 파일을 보낼까요?</h2>
+      <div class="rm-fconf">${RM_종이}<span><b>${esc(fl ? fl.name : '')}</b><small>${fl ? fu크기(fl.size) : ''}${fl && /\.(jpe?g|png)$/i.test(fl.name) && fl.size > 1.5 * 1024 * 1024 ? ' · 보내기 전에 크기를 줄입니다' : ''}</small></span></div>
+      <p style="margin:0;font-size:14.5px;line-height:1.7;color:var(--n500)">받는 분: <b style="color:var(--n900)">${esc(받는)}</b><br>보낸 파일은 지울 수 없고, 잔금 뒤 1년까지 보관한 다음 지웁니다. 주민등록번호 · 계좌번호가 보이는 서류는 가리고 보내 주세요.</p>
+      <div class="eqb" style="display:flex;gap:8px;margin-top:16px"><button class="btn sec" data-act="modal-close" style="flex:1">취소</button><button class="btn pri" data-act="rm-fsend" style="flex:1">보내기</button></div></div></div>`;
+  }
+  if(S.modal.type==='ct-ext') return ctExt창HTML();
   if(S.modal.type==='ct-cloud') return 보관창HTML();
   if(S.modal.type==='ct-share'){
     return `<div class="modal" data-act="modal-bg"><div class="box" data-stop role="dialog" aria-modal="true" aria-labelledby="mdT" tabindex="-1">
@@ -11882,6 +11924,13 @@ const CT_하위메뉴 = [['#/partner/contracts/new', '계약서 작성', 'pen', 
    번호는 배포한 날(연.월.일 - 같은 날 또 올리면 뒤에 .2). 화면이 version.json 을 가끔 읽어,
    더 새 버전이 올라와 있으면 메뉴 아래에서 새로고침을 권한다(버전확인) - 계약서를 띄워 둔 채 오래 일하면 고친 화면을 못 받는다 */
 const BK_변경 = [
+  { v:'26.11.10.19', 날:'2026-11-10', 줄:[
+    '계약 대화방에 손님 대리인 한 분 - 일정·체크의 손님 대화방에서 ‘대리인 초대’ · ‘대리인 내보내기’. 대리인은 그 당사자 방에서 같이 대화합니다',
+    '대화방에서 사진 · 파일 보내기 - 보내기 전에 받는 분 · 보관 기간을 한 번 더 묻고, 큰 사진은 줄여 보냅니다. 잔금 뒤 1년이 지나면 지웁니다(저장소 SQL 실행 뒤 켜짐)',
+    '잔금 10일 전 ‘잔금 준비물 안내’ 일정 · 대시보드 할 일 - 매매 대화방의 ‘잔금 준비물 안내’ 단추로 매도인 · 매수인 몫을 채워 보내면 ‘잔금안내를 했습니다’ 가 저절로 체크됩니다',
+    '일정·알림에 ‘휴대폰 · 구글 달력에서 보기’ - 구독 주소 하나로 계약 일정이 쓰시는 달력에 들어갑니다(대표는 주소 바꾸기)',
+    '계약서 목록에 ‘다른 사무소가 쓴 계약서’ - 공동중개로 받은 계약서를 올려 두면 계약일 · 중도금 · 잔금이 달력 · 다가오는 일정 · 아침 알림에 같이 듭니다',
+  ] },
   { v:'26.11.10.18', 날:'2026-11-10', 줄:[
     '직원 권한을 기능마다 켜고 끄기 - 활동 설정 › 직원에서 ‘권한’ 을 누르면 계약서 보기 · 작성 · 날인본 확정 · 메일 보내기 · 제안 보내기 · 내 물건 · 손님 대화 · 성과 스위치(전체 켜기 · 끄기)',
     '끈 기능은 직원 화면에서 메뉴 · 단추가 사라지고 서버도 막습니다 · 중개보조원의 계약서 스위치는 늘 꺼져 잠겨 있습니다(공인중개사법)',
@@ -12473,6 +12522,8 @@ function 파트너현황계산(){
   /* 지연은 잔금일이 60일 안에 지난 것만 - 진행 상태가 없던 예전 날인본이 끝없이 쌓이지 않게 */
   const 육십일전 = new Date(지금시.getTime() - 60 * 864e5).toISOString().slice(0, 10);
   const 잔금지연 = 계약.filter(r => 끝안남(r) && 잔금날(r) && 잔금날(r) >= 육십일전 && (잔금날(r) < 오늘글 ? 시 >= 9 : 잔금날(r) === 오늘글 && 시 >= 끝시));
+  /* 잔금 10일 안 - 매매 날인본인데 잔금안내(준비물)를 아직 안 했다 (2026-11-10 파트너 기획) */
+  const 준비물전 = 계약.filter(r => 끝안남(r) && ct매매신고(r.form) && 잔금날(r) && !(r.track || {}).guideAt && (n => n >= 0 && n <= 10)(ct날차(오늘글, 잔금날(r))));
   const 잔금칸 = (rows, t, s) => !rows.length ? null : rows.length === 1
     ? { t, s: `${rows[0].title || '소재지 미입력'} · ${s}`, n: 1, ico: 'clock', act: 'ct-open', v: rows[0].id }
     : { t, s, n: rows.length, ico: 'clock', go: '#/partner/contracts' };
@@ -12489,6 +12540,7 @@ function 파트너현황계산(){
   const 할일 = [
     잔금칸(잔금지연, '잔금 지연?', '잔금일이 지났는데 완료로 바꾸지 않았습니다 - 일정·체크에서 진행 상태를 고르세요'),
     잔금칸(오늘잔금, '오늘 잔금 - 완료 확인', '잔금을 마쳤으면 일정·체크에서 진행 상태를 완료로 바꾸세요'),
+    잔금칸(준비물전, '잔금 준비물 안내', '잔금 10일 안 - 매도인 · 매수인께 준비물을 알려 주세요(대화방이나 문자)'),
     (!S.agent || S.agent.status !== 'approved') && !직원() ? { t:'자격 확인 마치기', s:'등록번호를 확인하면 손님 조건 전문이 열립니다', ico:'check', go:'#/partner/verify' } : null,
     안읽힘 ? { t:'아직 안 열린 제안', s:'손님이 보기 전입니다 - 조건을 다시 보세요', n:안읽힘, ico:'eye', go:'#/partner/proposals' } : null,
     계약없는연결 && !계약막힘() ? { t:'연결된 손님 계약서', s:'연결됐는데 계약서를 아직 안 만들었습니다', n:계약없는연결, ico:'doc', go:'#/partner/proposals' } : null,
@@ -12514,7 +12566,8 @@ function dz달력(계약){
   const 오늘 = ct오늘(), 달 = /^\d{4}-\d{2}$/.test(CT.calM || '') ? CT.calM : 오늘.slice(0, 7), 고른 = CT.calD && CT.calD.startsWith(달) ? CT.calD : (오늘.startsWith(달) ? 오늘 : '');
   const 설정 = ct알림설정(CT.alert && CT.alert.cfg), 앞판 = new Set(계약.map(r => r.prev_id).filter(Boolean));
   const 일정 = 계약.filter(r => !앞판.has(r.id) && !(CT_FORMS[r.form] || {}).explain && !(r.track && r.track.off))
-    .flatMap(r => ct일정목록(r, 설정).filter(e => String(e.날).startsWith(달) && !(e.k === 'report' && (r.status !== 'sealed' || r.reported_at))).map(e => ({ ...e, r })));
+    .flatMap(r => ct일정목록(r, 설정).filter(e => String(e.날).startsWith(달) && !(e.k === 'report' && (r.status !== 'sealed' || r.reported_at)) && !(e.k === 'prep' && r.status !== 'sealed')).map(e => ({ ...e, r })))
+    .concat(ct외부일정들().filter(e => String(e.날).startsWith(달)));
   const 날별 = new Map(); 일정.forEach(e => { if(!날별.has(e.날)) 날별.set(e.날, []); 날별.get(e.날).push(e); });
   const [y, m] = 달.split('-').map(Number), 첫요일 = new Date(Date.UTC(y, m - 1, 1)).getUTCDay(), 날수 = new Date(Date.UTC(y, m, 0)).getUTCDate();
   const 칸 = [...Array(첫요일).fill(''), ...Array.from({ length: 날수 }, (_, i) => `${달}-${String(i + 1).padStart(2, '0')}`)];
@@ -12528,7 +12581,7 @@ function dz달력(계약){
           <span class="num">${+d.slice(8)}</span><i>${대금 ? '<em class="a"></em>' : ''}${기타 ? '<em class="b"></em>' : ''}</i></button>`; }).join('')}</div>
     <div class="dz-cal-k"><span><em class="a"></em>계약 · 대금</span><span><em class="b"></em>신고 · 허가 · 기타</span></div>
     ${고른 ? `<div class="dz-cal-l"><b>${+고른.slice(5, 7)}월 ${+고른.slice(8)}일${고른 === 오늘 ? ' · 오늘' : ''}</b>
-      ${그날.length ? 그날.map(e => `<button type="button" class="dz-cal-e" data-act="ct-open" data-v="${esc(e.r.id)}"><em class="${CT_달력대금.has(e.k) ? 'a' : 'b'}"></em><span><b>${esc(e.이름)}</b> · ${esc(e.r.title || '소재지 미입력')}</span></button>`).join('')
+      ${그날.length ? 그날.map(e => `<button type="button" class="dz-cal-e" data-act="${e.ext ? 'ext-edit' : 'ct-open'}" data-v="${esc(e.ext || e.r.id)}"><em class="${CT_달력대금.has(e.k) ? 'a' : 'b'}"></em><span><b>${esc(e.이름)}</b> · ${esc(e.r.title || '소재지 미입력')}</span></button>`).join('')
         : '<p class="dz-cal-0">이날 잡힌 일정이 없습니다</p>'}</div>` : ''}
   </section>`;
 }
@@ -13248,8 +13301,8 @@ const ct오늘 = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 
 const ct날짜글 = d => { const t = new Date(d + 'T00:00:00Z');
   return `${t.getUTCFullYear()}. ${t.getUTCMonth() + 1}. ${t.getUTCDate()}.(${'일월화수목금토'[t.getUTCDay()]})`; };
 const CT_알림종류 = { permitDue: '토지거래허가 약정일', permitExpect: '토지거래허가 승인 예정일', contract: '계약일', mid: '중도금',
-  balance: '잔금', report: '실거래신고 기한', lawyer: '법무사 예약', expiry: '임대차 만기 6개월 전', settle: '잔금 완료 확인' };
-const CT_알림날 = { permitDue: [3, 0], permitExpect: [0], contract: [1, 0], mid: [3, 0], balance: [7, 3, 0], report: [7, 3, 1, 0], lawyer: [0], expiry: [0], settle: [0] };
+  balance: '잔금', report: '실거래신고 기한', lawyer: '법무사 예약', expiry: '임대차 만기 6개월 전', settle: '잔금 완료 확인', prep: '잔금 준비물 안내' };
+const CT_알림날 = { permitDue: [3, 0], permitExpect: [0], contract: [1, 0], mid: [3, 0], balance: [7, 3, 0], report: [7, 3, 1, 0], lawyer: [0], expiry: [0], settle: [0], prep: [0] };
 /* 진행 상태 (파트너 리뷰 '계약현황') - 서버(_contract.js 진행상태)와 같은 값 */
 const CT_진행 = { ready: '준비', doing: '진행중', done: '완료', hold: '보류', cancel: '취소' };
 /* 임대차 만기 6개월 전 (파트너 리뷰 2026-11-05) - 서버(_contract.js 달빼기)와 같은 규칙. 31일이 없는 달은 그 달 말일 */
@@ -13284,6 +13337,9 @@ function ct일정목록(c, 설정 = ct알림설정()){
     메모: ct날만(t.guideAt) ? '잔금안내 마침 · 준비서류를 확인하세요' : '잔금안내(이체한도·준비서류) 전입니다' });
   if(cd && ct신고({ form: c.form, sub: c.sub })) out.push({ k: 'report', 이름: ct매매신고(c.form) ? '실거래신고 기한' : '임대차 신고 기한',
     날: ct날더하기(cd, 30), 마침: !!c.reported_at, 메모: c.reported_at ? '신고 마침' : '부동산거래관리시스템에서 신고하세요' });
+  /* 잔금 10일 전 - 매도인 · 매수인께 준비물 안내(2026-11-10 파트너 기획). 매매만, 잔금안내를 마쳤으면 마침 */
+  if(bd && ['sale', 'presale', 'union'].includes(c.form)) out.push({ k: 'prep', 날: ct날더하기(bd, -10), 마침: !!ct날만(t.guideAt),
+    메모: ct날만(t.guideAt) ? '잔금안내 마침' : '매도인 · 매수인께 잔금 준비물을 안내하세요 - 대화방이나 문자로' });
   if(bd && ['sale', 'union'].includes(c.form)){
     const [a, b] = 설정.lawyer;
     out.push({ k: 'lawyer', 날: ct영업일전(bd, b), 끝: ct영업일전(bd, a), 메모: `잔금 ${bd} 기준 ${a}~${b}영업일 전에 예약하세요` });
@@ -14135,7 +14191,7 @@ const rm아래쪽 = () => { const b = document.querySelector('.rm-msgs'); return
 const rm아래로 = () => setTimeout(() => { const b = document.querySelector('.rm-msgs'); if(b) b.scrollTop = b.scrollHeight; }, 0);
 function rmLoad(id, 처음, side){
   const 키 = rm열쇠(id, side);
-  if(!RM.cur || RM.cur.key !== 키) RM.text = '';   /* 방을 옮기면 쓰던 글은 그 방에 두지 않는다 */
+  if(!RM.cur || RM.cur.key !== 키){ RM.text = ''; RM.kind = ''; }   /* 방을 옮기면 쓰던 글은 그 방에 두지 않는다 */
   const C = RM.cur && RM.cur.key === 키 ? RM.cur : (RM.cur = { key: 키, id, side: side || '', rows:[], meta:null, loading:false, err:'', last:0 });
   if(C.loading){ if(!처음) C.또 = true; return; }
   if(C.gone && !처음) return;   /* 내보내진 방은 8초마다 다시 묻지 않는다 */
@@ -14180,13 +14236,17 @@ async function rmSend(){
   if(!text) return toast('보낼 말을 적어 주세요');
   RM.busy = true; render();
   const 손님 = rm손님();
-  const { ok, j } = await rmPost({ what: 손님 ? 'my-room-send' : 'room-send', id: C.id, ...(손님 ? {} : { side: C.side }), text })
+  const { ok, j } = await rmPost({ what: 손님 ? 'my-room-send' : 'room-send', id: C.id, ...(손님 ? {} : { side: C.side }), text, ...(!손님 && RM.kind === 'prep' ? { kind:'prep' } : {}) })
     .catch(() => ({ ok:false, j:{ error:'네트워크 문제로 보내지 못했습니다' } }));
   RM.busy = false;
   if(!ok){ render(); return toast(rm준비말(j) || j.error || '보내지 못했습니다'); }
   /* 보내는 사이 다른 방으로 옮겼으면 지금 방의 쓰던 글 · 화면은 그대로 둔다(예전 방을 다시 읽어 지금 방을 밀어내지 않게) */
   if(RM.cur !== C){ if(!손님) RM.listAt = 0; return toast('보냈습니다'); }
-  RM.text = ''; C.보냄 = true; render(); rmLoad(C.id, false, C.side || undefined);
+  RM.text = ''; RM.kind = ''; C.보냄 = true;
+  /* 잔금 준비물 안내를 보냈으면 서버가 '잔금안내를 했습니다' 를 적었다 - 열어 둔 계약서 · 목록에도 */
+  if(j.track){ if(C.meta) C.meta.guided = true; const 행 = (CT.list || []).find(r => r.id === C.id); if(행) 행.track = j.track;
+    if(CT.id === C.id){ CT.track = j.track; CT.row = { ...(CT.row || {}), track: j.track }; } toast('보냈습니다 - 일정·체크의 ‘잔금안내를 했습니다’도 표시했습니다'); }
+  render(); rmLoad(C.id, false, C.side || undefined);
   if(!손님) RM.listAt = 0;   /* 목록의 마지막 말도 새로 */
   setTimeout(() => { const t = document.querySelector('[data-in="rm-text"]'); if(t) t.focus(); }, 0);
 }
@@ -14200,13 +14260,78 @@ if(typeof window !== 'undefined' && !window.__rmPoll) window.__rmPoll = setInter
 }, 8000);
 
 /* 말 목록 + 쓰는 칸 - 손님 · 중개사 같은 모양. 내 말은 오른쪽 */
-function rm대화HTML(C, 내편, 막음 = ''){
+function rm대화HTML(C, 내편, 막음 = '', 도구 = ''){
   const 줄 = C.rows.map(v => { const 내 = 내편(v);
-    return `<li class="rm-m${내 ? ' me' : ''}"><span class="rm-who">${esc(v.name || RM_자리[v.side] || '')}</span><p>${esc(v.body).replace(/\n/g, '<br>')}</p><small>${esc(rm때(v.created_at))}</small></li>`; }).join('');
+    return `<li class="rm-m${내 ? ' me' : ''}"><span class="rm-who">${esc(v.name || RM_자리[v.side] || '')}</span>${v.file ? rm파일HTML(v) : `<p>${esc(v.body).replace(/\n/g, '<br>')}</p>`}<small>${esc(rm때(v.created_at))}</small></li>`; }).join('');
   return `<ul class="rm-msgs" data-keep="rm" aria-live="polite">${줄 || `<li class="rm-empty">${막음 ? '아직 나눈 말이 없습니다.' : '아직 나눈 말이 없습니다. 먼저 인사를 남겨 보세요.'}</li>`}</ul>
-    ${막음 ? `<div class="rm-compose rm-shut"><p class="sub" style="margin:0;line-height:1.6">${막음}</p></div>` : `<div class="rm-compose"><label class="sr" for="rmText">보낼 말</label>
+    ${막음 ? `<div class="rm-compose rm-shut"><p class="sub" style="margin:0;line-height:1.6">${막음}</p></div>` : `${도구 ? `<div class="rm-tools">${도구}</div>` : ''}<div class="rm-compose"><label class="sr" for="rmText">보낼 말</label>
       <textarea id="rmText" class="inp" rows="2" maxlength="1000" data-in="rm-text" placeholder="${isMo() ? '주민등록번호 · 계좌번호는 빼고 적어 주세요' : '엔터로 보내고 Shift+엔터로 줄을 바꿉니다 (주민등록번호 · 계좌번호는 적지 마세요)'}">${esc(RM.text)}</textarea>
       <button type="button" class="btn pri" data-act="rm-send" ${RM.busy ? 'disabled' : ''}>${RM.busy ? '보내는 중' : '보내기'}</button></div>`}`;
+}
+/* ── 사진 · 파일 (2026-11-10 파트너 기획 '대화방 사진 · 파일 보내기 - 보내기 전 확인, 잔금 후 1년 보관') ──
+   서버 api/_room.js. 보내기 전에 받는 분 · 보관 기간을 보여 주고 한 번 더 묻는다. 큰 사진은 보내기 전에 줄인다(2000px · 한 파일 3MB) */
+const RM_종이 = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg>';
+const RM_클립 = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5 12.6 19.9a5 5 0 0 1-7.1-7.1l8.4-8.4a3.3 3.3 0 0 1 4.7 4.7l-8.4 8.4a1.7 1.7 0 0 1-2.4-2.4L15.6 7.3"/></svg>';
+const 바로보는파일 = ext => ['jpg', 'jpeg', 'png', 'pdf'].includes(String(ext || '').toLowerCase());
+const rm파일HTML = v => v.file.gone
+  ? `<p class="rm-filep"><span class="rm-file gone">${RM_종이}<span><b>${esc(v.body)}</b><small>보관 기간(잔금 뒤 1년)이 지나 지운 파일</small></span></span></p>`
+  : `<p class="rm-filep"><button type="button" class="rm-file" data-act="rm-fopen" data-v="${v.id}|${esc(v.file.ext)}">${RM_종이}<span><b>${esc(v.body)}</b><small>${esc(String(v.file.ext).toUpperCase())} · ${fu크기(v.file.size)} · ${바로보는파일(v.file.ext) ? '눌러서 보기' : '눌러서 내려받기'}</small></span></button></p>`;
+/* 사진 · PDF 는 새 창에서 바로(창을 먼저 열어야 팝업 차단에 걸리지 않는다), 그 밖은 내려받기 */
+async function 파일열기(요청, 바로){
+  const w = 바로 ? window.open('about:blank', '_blank') : null;
+  const { ok, j } = await 요청().catch(() => ({ ok:false, j:{ error:'네트워크 문제로 열지 못했습니다' } }));
+  if(!ok || !j.url){ if(w) w.close(); return toast(j.need === 'files' || j.need === '0036' ? '파일 기능을 준비 중입니다 - 곧 열립니다' : (j.error || '열지 못했습니다')); }
+  if(w){ try{ w.opener = null; }catch(_){} w.location.href = j.url; return; }
+  const a = document.createElement('a'); a.href = j.url; a.rel = 'noopener'; document.body.appendChild(a); a.click(); a.remove();
+}
+/* 보낼 말 위 도구 - 사진 · 파일, (중개사 · 매매의 매도인 · 매수인 방) 잔금 준비물 안내 */
+function rm도구HTML(손님, side, M){
+  const 파일 = `<label class="btn tool sm rm-att${RM.fileBusy ? ' off' : ''}">${RM_클립}${RM.fileBusy ? '보내는 중…' : '사진 · 파일'}<input type="file" class="sr" accept="${FU_받음}" data-rm-file ${RM.fileBusy ? 'disabled' : ''} aria-label="보낼 사진 · 파일 고르기"></label>`;
+  const 준비 = !손님 && M && ['seller', 'buyer'].includes(side) && ct매매신고(M.form)
+    ? `<button type="button" class="btn tool sm" data-act="rm-prep" title="${RM_자리[side]} 준비물 안내 글을 채웁니다 - 고쳐서 보내세요">잔금 준비물 안내${M.guided ? ' (안내 마침)' : ''}</button>` : '';
+  return 파일 + 준비;
+}
+/* 잔금 준비물 - 손님께 문자 틀(잔금 준비물 안내)과 같은 목록을 그 방의 당사자 몫만 */
+const RM_준비물 = { seller: ['등기권리증', '신분증', '매도용 인감증명서(매수인 인적사항 기재, 본인 발급)', '인감도장', '주민등록초본(상세)'],
+  buyer: ['신분증', '도장', '주민등록등본', '가족관계증명서(상세)', '매매계약서', '잔금 이체 한도(미리 은행에서 늘려 두세요)'] };
+function rm준비물글(side, M){
+  const 잔금 = ((M.steps || []).find(s => s.이름 === '잔금') || {}).날 || '';
+  return `[잔금 준비물 안내]\n*목적물: ${M.title || ''}\n*잔금일: ${잔금 ? String(잔금).replace(/-/g, '.') : '계약서 참고'}\n\n■ ${RM_자리[side]} 준비물\n${(RM_준비물[side] || []).map(x => '- ' + x).join('\n')}\n\n잔금일에 위 서류를 꼭 챙겨 주세요. 궁금한 점은 이 대화방에 남겨 주세요.${S.agent && S.agent.office ? '\n\n' + S.agent.office : ''}`;
+}
+if(typeof document !== 'undefined') document.addEventListener('change', e => { const el = e.target.closest && e.target.closest('[data-rm-file]'); if(el && el.files && el.files[0]){ rmFilePick(el.files[0]); el.value = ''; } });
+function rmFilePick(file){
+  const C = RM.cur; if(!C || RM.fileBusy) return;
+  if(!/\.(pdf|hwp|hwpx|docx?|xlsx?|jpe?g|png)$/i.test(file.name)) return toast('한글(hwp · hwpx) · 워드 · 엑셀 · PDF · JPG · PNG 파일만 보낼 수 있습니다');
+  const 사진 = /\.(jpe?g|png)$/i.test(file.name);
+  if(file.size > (사진 ? 20 : 3) * 1024 * 1024) return toast(사진 ? '사진이 너무 큽니다 - 다른 사진을 골라 주세요' : '파일이 3MB 를 넘습니다 - PDF 로 줄이거나 나눠 보내 주세요');
+  RM.pending = { file, key: C.key }; S.modal = { type:'rm-file' }; render();
+}
+/* 큰 사진은 긴 변 2000px · JPEG 로 줄인다 - 휴대폰 사진(4~10MB)도 3MB 안에 들게 */
+async function rm사진줄이기(file){
+  if(!/\.(jpe?g|png)$/i.test(file.name) || file.size <= 1.5 * 1024 * 1024 || typeof createImageBitmap !== 'function') return file;
+  try{
+    const bmp = await createImageBitmap(file), 배 = Math.min(1, 2000 / Math.max(bmp.width, bmp.height));
+    const cv = document.createElement('canvas'); cv.width = Math.round(bmp.width * 배); cv.height = Math.round(bmp.height * 배);
+    cv.getContext('2d').drawImage(bmp, 0, 0, cv.width, cv.height);
+    const blob = await new Promise(ok => cv.toBlob(ok, 'image/jpeg', 0.85));
+    if(!blob || blob.size >= file.size) return file;
+    return new File([blob], file.name.replace(/\.(jpe?g|png)$/i, '') + '.jpg', { type:'image/jpeg' });
+  }catch(_){ return file; }
+}
+async function rmFileSend(){
+  const P = RM.pending, C = RM.cur; S.modal = null; RM.pending = null;
+  if(!P || !C || C.key !== P.key){ render(); return; }
+  RM.fileBusy = true; render();
+  try{
+    const f = await rm사진줄이기(P.file);
+    if(f.size > 3 * 1024 * 1024){ RM.fileBusy = false; render(); return toast('파일이 3MB 를 넘습니다 - 줄이거나 나눠 보내 주세요'); }
+    const data = await 읽기(f), 손님 = rm손님();
+    const { ok, j } = await rmPost({ what: 손님 ? 'my-room-file' : 'room-file', id: C.id, ...(손님 ? {} : { side: C.side }), name: f.name, data })
+      .catch(() => ({ ok:false, j:{ error:'네트워크 문제로 보내지 못했습니다' } }));
+    RM.fileBusy = false;
+    if(!ok){ render(); return toast(j.need === 'files' || j.need === '0036' ? '사진 · 파일 보내기는 준비 중입니다 - 곧 열립니다' : (rm준비말(j) || j.error || '보내지 못했습니다')); }
+    C.보냄 = true; render(); rmLoad(C.id, false, C.side || undefined); if(!손님) RM.listAt = 0;
+  }catch(_){ RM.fileBusy = false; render(); toast('파일을 열지 못했습니다'); }
 }
 /* 다가오는 일정 - 계약일 · 중도금 · 잔금 */
 const rm일정HTML = steps => !(steps || []).length ? '' : `<ol class="rm-steps">${steps.map(s => `<li class="${s.됨 ? 'done' : ''}"><b>${esc(s.이름)}</b><span>${esc((isMo() ? String(s.날).slice(5) : String(s.날)).replace(/-/g, '.'))}${s.됨 ? ' · 마침' : ''}</span></li>`).join('')}</ol>`;
@@ -14223,7 +14348,7 @@ V['#/partner/rooms'] = (id, side) => {
   const C = 키 && RM.cur && RM.cur.key === 키 ? RM.cur : null;
   const 목록 = (RM.list || []).map(r => { const on = r.id === id && r.side === side;
     return `<a class="rm-li${on ? ' on' : ''}" data-go="#/partner/rooms/${esc(r.id)}/${esc(r.side)}"><b>${esc(r.title || '계약')}</b>
-      <span>${esc(RM_자리[r.side] || '')}${r.name ? ' ' + esc(r.name) : ''} ${r.joined ? '<i class="rm-in">들어옴</i>' : '<i class="rm-out">초대 전</i>'}</span>
+      <span>${esc(RM_자리[r.side] || '')}${r.name ? ' ' + esc(r.name) : ''} ${r.joined ? '<i class="rm-in">들어옴</i>' : '<i class="rm-out">초대 전</i>'}${r.proxy ? ' <i class="rm-in">대리인</i>' : ''}</span>
       <small>${r.last ? `${esc(r.last.body)} · ${esc(rm때(r.last.at))}` : '아직 나눈 말 없음'}</small></a>`; }).join('');
   const 왼쪽 = `<div class="card rm-list"><div class="rm-lh"><b>대화방</b><span class="sub">당사자마다 따로</span></div>
     ${RM.listErr ? `<p class="sub" style="margin:12px 16px">${esc(rm준비말(RM) || RM.listErr)}</p>`
@@ -14233,15 +14358,15 @@ V['#/partner/rooms'] = (id, side) => {
   const 줄 = (RM.list || []).find(r => r.id === id && r.side === side) || {};
   const 제목 = (M && M.title) || 줄.title || '계약';
   const 이름 = (M && M.name) || 줄.name || '';
-  const 들어옴 = M ? M.joined : 줄.joined;
+  const 들어옴 = M ? M.joined : 줄.joined, 대리들 = M ? !!M.proxy : !!줄.proxy;
   const 없는방 = id && !키 && RM.list && !RM.listLoading && !RM.list.some(r => r.id === id);
   const 오른쪽 = !키 ? (isMo() && !없는방 ? '' : `<div class="card pad rm-pane rm-none"><p class="sub" style="margin:0;line-height:1.6">${없는방 ? '이 계약서에는 아직 대화방이 없습니다. 날인본 계약서의 ‘일정·체크’에서 손님 초대 링크를 보내면 생깁니다.' : id ? '대화방을 여는 중입니다…' : '왼쪽에서 대화방을 고르세요.'}</p></div>`)
     : `<div class="card rm-pane">
       <div class="rm-h"><div><b>${esc(제목)}</b>
-        <span class="sub">${esc(RM_자리[side])}${이름 ? ' ' + esc(이름) : ''} ${들어옴 ? '<i class="rm-in">들어옴</i>' : '<i class="rm-out">초대 전</i>'} · 이 방은 ${esc(RM_자리[side])}과 사무소만 봅니다</span></div>
+        <span class="sub">${esc(RM_자리[side])}${이름 ? ' ' + esc(이름) : ''} ${들어옴 ? '<i class="rm-in">들어옴</i>' : '<i class="rm-out">초대 전</i>'}${대리들 ? ' <i class="rm-in">대리인 들어옴</i>' : ''} · 이 방은 ${esc(RM_자리[side])}${대리들 ? '(과 대리인)' : ''}과 사무소만 봅니다</span></div>
         <div class="rm-hb">${isMo() ? `<button type="button" class="btn tool sm" data-go="#/partner/rooms">목록</button>` : ''}${보조원() ? '' : `<a class="btn tool sm" data-go="#/partner/contract/${esc(id)}">계약서</a>`}</div></div>
       ${C && C.err ? `<p class="sub" style="margin:16px">${esc(C.err)}</p>` : !M ? `<p class="sub" style="margin:16px">대화를 불러오는 중입니다…</p>`
-        : `${rm일정HTML(M.steps)}${rm대화HTML(C, v => v.side === 'agent', 들어옴 ? '' : `${esc(RM_자리[side])}이 대화방에 들어와 있지 않아 말을 보낼 수 없습니다. ${보조원() ? '공인중개사에게 초대 링크를 부탁해 주세요.' : '계약서의 ‘일정·체크’에서 초대 링크를 보내 주세요.'}`)}`}</div>`;
+        : `${rm일정HTML(M.steps)}${rm대화HTML(C, v => v.side === 'agent', 들어옴 || 대리들 ? '' : `${esc(RM_자리[side])}이 대화방에 들어와 있지 않아 말을 보낼 수 없습니다. ${보조원() ? '공인중개사에게 초대 링크를 부탁해 주세요.' : '계약서의 ‘일정·체크’에서 초대 링크를 보내 주세요.'}`, rm도구HTML(false, side, M))}`}</div>`;
   return `
 <div class="scr fade" style="background:var(--n50)">
   ${navPartner('rm')}
@@ -14263,25 +14388,29 @@ function ct방HTML(doc){
   const 보조 = 보조원();
   return `<div class="card pad ct-sec" id="ctRoom"><h2>손님 대화방 <span class="sub" style="font-weight:500;font-size:13.5px">당사자마다 방이 따로입니다 - 초대 링크로 로그인하면 사무소와 그분만의 방이 열립니다</span></h2>
     ${!확정 ? `<p class="sub" style="margin:0">날인본으로 확정한 뒤에 손님을 초대할 수 있습니다.</p>`
-      : `<ul class="rm-inv">${자리.map(k => { const 사람 = doc.parties[k] || {}, 들 = !!방[k];
-        return `<li><span><b>${RM_자리[k]}${사람.name ? ` · ${esc(사람.name)}` : ''}</b><small>${들 ? `들어옴 ${esc(String(방[k].at || '').slice(0, 10).replace(/-/g, '.'))}` : '아직 안 들어옴'}</small></span>
-          <span class="eqb rm-invb">${들 ? `<button type="button" class="btn sec sm" data-go="#/partner/rooms/${esc(CT.id)}/${k}">대화</button>` : ''}
+      : `<ul class="rm-inv">${자리.map(k => { const 사람 = doc.parties[k] || {}, 들 = !!방[k], 대 = (방.p || {})[k], 날 = x => esc(String(x.at || '').slice(0, 10).replace(/-/g, '.'));
+        return `<li><span><b>${RM_자리[k]}${사람.name ? ` · ${esc(사람.name)}` : ''}</b><small>${들 ? `들어옴 ${날(방[k])}` : '아직 안 들어옴'}${대 ? ` · 대리인 들어옴 ${날(대)}` : ''}</small></span>
+          <span class="eqb rm-invb">${들 || 대 ? `<button type="button" class="btn sec sm" data-go="#/partner/rooms/${esc(CT.id)}/${k}">대화</button>` : ''}
           ${보조 ? '' : 들 ? `<button type="button" class="btn tool sm" data-act="rm-kick" data-v="${k}">${CT.rmKick === CT.id + '|' + k ? '한 번 더 누르면 내보냅니다' : '내보내기'}</button>`
-            : `<button type="button" class="btn tool sm" data-act="rm-invite" data-v="${k}">초대 링크</button>`}</span></li>`; }).join('')}</ul>
+            : `<button type="button" class="btn tool sm" data-act="rm-invite" data-v="${k}">초대 링크</button>`}
+          ${보조 ? '' : 대 ? `<button type="button" class="btn tool sm" data-act="rm-kick-p" data-v="${k}">${CT.rmKick === CT.id + '|p' + k ? '한 번 더 누르면 내보냅니다' : '대리인 내보내기'}</button>`
+            : `<button type="button" class="btn tool sm" data-act="rm-invite-p" data-v="${k}" title="본인 대신 계약을 챙기는 분 한 명 - 같은 방에서 대화합니다">대리인 초대</button>`}</span></li>`; }).join('')}</ul>
       ${보조 || !(방.n != null) ? '' : `<button type="button" class="btn tool sm" data-act="rm-cut">${CT.rmKick === CT.id + '|*' ? '한 번 더 누르면 모두 끊습니다' : '나간 초대 링크 모두 끊기'}</button>`}`}</div>`;
 }
-async function rmInvite(side, 카톡){
+async function rmInvite(side, 카톡, 대리 = false){
   if(!CT.id) return;
-  const { ok, j } = await ctPost({ what:'room-invite', id: CT.id, side, kakao: !!카톡 }).catch(() => ({ ok:false, j:{} }));
+  const { ok, j } = await ctPost({ what:'room-invite', id: CT.id, side, kakao: !!카톡, ...(대리 ? { proxy: true } : {}) }).catch(() => ({ ok:false, j:{} }));
   if(!ok) return toast(rm준비말(j) || j.error || '초대 링크를 만들지 못했습니다');
   CT.track = { ...(CT.track || {}), room: j.room || ct트랙().room || { n: 0 } };
   RM.list = null;   /* 손님 대화 목록에 새 방이 바로 보이게 */
   const 주소 = `${location.origin}${location.pathname}#/invite/${j.token}`;
   const 끝 = new Date(j.until + 9 * 3600e3).toISOString().slice(0, 10).replace(/-/g, '.');
   const 사람 = ((CT.doc || {}).parties || {})[side] || {};
-  const 글 = `[비버노크] ${(S.agent && S.agent.office) || '중개사무소'}입니다. ${사람.name ? 사람.name + '님, ' : ''}계약 진행 상황과 일정을 이 대화방에서 안내드립니다. 아래 링크를 눌러 로그인해 주세요.\n${주소}`;
+  const 글 = 대리
+    ? `[비버노크] ${(S.agent && S.agent.office) || '중개사무소'}입니다. ${RM_자리[side]}${사람.name ? ' ' + 사람.name + '님' : ''}의 대리인으로 계약 대화방에 초대합니다. 계약 진행 상황과 일정을 이 대화방에서 안내드립니다. 아래 링크를 눌러 로그인해 주세요.\n${주소}`
+    : `[비버노크] ${(S.agent && S.agent.office) || '중개사무소'}입니다. ${사람.name ? 사람.name + '님, ' : ''}계약 진행 상황과 일정을 이 대화방에서 안내드립니다. 아래 링크를 눌러 로그인해 주세요.\n${주소}`;
   if(카톡){ render(); return toast(j.kakao ? '카카오 알림톡으로 초대를 보냈습니다' : '알림톡을 보내지 못했습니다 - 문자로 보내 주세요'); }
-  S.modal = { type:'rm-invite', url: 주소, until: 끝, side, phone: String(사람.phone || '').replace(/[^0-9]/g, ''), text: 글, kakao: !!j.kakaoReady };
+  S.modal = { type:'rm-invite', url: 주소, until: 끝, side, proxy: !!대리, phone: 대리 ? '' : String(사람.phone || '').replace(/[^0-9]/g, ''), text: 글, kakao: !대리 && !!j.kakaoReady };
   render();
 }
 
@@ -14340,7 +14469,7 @@ V['#/room'] = id => {
           ${C.gone ? `<p class="sub">중개사무소에서 새 초대 링크를 받으셨다면 그 링크를 다시 눌러 주세요.</p>
             <button type="button" class="btn sec" data-go="#/account">마이페이지로</button>` : `<p class="sub">잠시 뒤 저절로 다시 불러옵니다.</p>`}</div>`
         : !M ? `<p class="sub" style="margin:16px">대화를 불러오는 중입니다…</p>`
-        : `${rm일정HTML(M.steps)}${rm대화HTML(C, v => v.side === M.me)}`}
+        : `${rm일정HTML(M.steps)}${rm대화HTML(C, v => v.mine != null ? v.mine : v.side === M.me, '', rm도구HTML(true, M.me, M))}`}
     </div>
     ${C && C.gone ? '' : `<p class="sub" style="margin:0;font-size:12.5px;line-height:1.6">새 말이 오면 가입하신 메일로 알려 드립니다. 이 대화방은 중개사무소와 나만 봅니다 - 상대 당사자에게는 보이지 않습니다.</p>`}
   </div>
@@ -15047,9 +15176,128 @@ function ctListPageHTML(모두){
     <div class="ct-lay${일정 ? '' : ' one'}">
       <div class="ct-main">${칸줄}${자동칸}${칸말}${칸 ? '' : ct요약HTML(전체)}${전체.length ? ct찾기줄() : ''}
         ${전체.length && !isMo() ? `<div class="ct-chips ct-viewsw" role="group" aria-label="보는 방식">${[['', '목록'], ['table', '계약현황 표']].map(([k, t]) => `<button type="button" class="chip${(CT.view || '') === k ? ' on' : ''}" aria-pressed="${(CT.view || '') === k}" data-act="ct-view" data-v="${k}">${t}</button>`).join('')}</div>` : ''}
-        ${CT.view === 'table' && !isMo() && 전체.length ? ct현황표(ctFilter(전체).filter(r => !(CT_FORMS[r.form] || {}).explain)) : ctRowsHTML(전체, ctFilter(전체), false)}</div>
+        ${CT.view === 'table' && !isMo() && 전체.length ? ct현황표(ctFilter(전체).filter(r => !(CT_FORMS[r.form] || {}).explain)) : ctRowsHTML(전체, ctFilter(전체), false)}
+        ${칸 ? '' : ctExtHTML()}</div>
       ${일정 ? `<aside class="ct-aside">${일정}</aside>` : ''}
     </div>`;
+}
+/* ── 일정 달력 구독 (2026-11-10 파트너 기획 '구글 · 휴대폰 달력에 계약 일정') ── 서버 api/_contract.js icsFeed.
+   사무소마다 주소 하나 - 달력 앱이 몇 시간마다 읽는다. 대표가 '주소 바꾸기' 를 누르면 예전 주소는 끊긴다 */
+async function ctIcsGet(바꾸기){
+  CT.ics = { ...(CT.ics || {}), busy: true }; render();
+  const { ok, j } = await ctPost({ what: 바꾸기 ? 'ics-reset' : 'ics-link' }).catch(() => ({ ok:false, j:{ error:'네트워크 문제로 주소를 만들지 못했습니다' } }));
+  CT.ics = { ...(CT.ics || {}), busy: false, ...(ok ? { url: j.url } : {}) }; render();
+  toast(ok ? (바꾸기 ? '주소를 바꿨습니다 - 예전 주소는 끊겼습니다. 달력 앱에 새 주소를 다시 넣어 주세요' : '구독 주소를 만들었습니다') : (j.error || '주소를 만들지 못했습니다'));
+}
+function ctIcsHTML(){
+  if(!세션있음() || 계약막힘()) return '';
+  const I = CT.ics || {}, webcal = I.url ? I.url.replace(/^https?:/, 'webcal:') : '';
+  return `<div class="card pad ct-sec ct-ics"><h2>휴대폰 · 구글 달력에서 보기</h2>
+    <p class="sub" style="margin:0;line-height:1.6">구독 주소를 한 번 넣어 두면 계약일 · 중도금 · 잔금 · 신고 기한이 쓰시는 달력에 저절로 들어갑니다. 달력 앱이 몇 시간마다 새로 읽어 옵니다.</p>
+    ${!I.url ? `<button type="button" class="btn sec sm" data-act="ics-get" style="align-self:flex-start" ${I.busy ? 'disabled' : ''}>${I.busy ? '만드는 중…' : '구독 주소 받기'}</button>`
+      : `<input class="inp" readonly value="${esc(I.url)}" aria-label="달력 구독 주소" style="font-size:12.5px">
+        <div class="eqb ct-icsb"><button type="button" class="btn sec sm" data-act="ics-copy">주소 복사</button>
+          <a class="btn sec sm" href="${esc(webcal)}">아이폰 · 맥 달력에 추가</a>
+          <a class="btn sec sm" href="https://calendar.google.com/calendar/render?cid=${encodeURIComponent(webcal)}" target="_blank" rel="noopener">구글 달력에 추가</a></div>
+        <p class="sub" style="margin:0;font-size:12.5px;line-height:1.6">이 주소를 아는 사람은 일정을 볼 수 있습니다. 주소가 새 나갔거나 직원이 그만두었으면 대표님이 ‘주소 바꾸기’를 누르세요 - 예전 주소는 바로 끊깁니다.</p>
+        ${직원() ? '' : `<button type="button" class="tapx" data-act="ics-reset" style="align-self:flex-start;font-size:13.5px;color:var(--n500)" ${I.busy ? 'disabled' : ''}>${CT.icsReset ? '한 번 더 누르면 바꿉니다 (예전 주소 끊김)' : '주소 바꾸기'}</button>`}`}
+  </div>`;
+}
+/* ── 다른 사무소가 쓴 계약서 (2026-11-10 파트너 기획 '공동중개 - 상대 사무소가 작성한 계약서를 올려 목록에 추가') ── 서버 api/_ext.js.
+   우리 계약서와 섞지 않고 목록 아래에 따로 모은다. 계약일 · 중도금 · 잔금은 달력 · 다가오는 일정 · 아침 알림 · 달력 구독에 같이 든다 */
+const CT_외부거래 = ['매매', '전세', '월세', '연세', '단기임대', '분양권', '기타'];
+function ctExtLoad(){
+  if(CT.extLoading || !세션있음()) return;
+  CT.extLoading = true;
+  ctPost({ what:'contract-ext' }).then(({ ok, j }) => { CT.extLoading = false; CT.extLoaded = true;
+    if(ok){ CT.ext = j.list || []; CT.extErr = ''; } else CT.extErr = j.error || '다른 사무소 계약서를 불러오지 못했습니다'; render();
+  }).catch(() => { CT.extLoading = false; CT.extLoaded = true; CT.extErr = '네트워크 문제로 불러오지 못했습니다'; render(); });
+}
+/* 일정 - 서버 _ext.js 외부일정과 같게. 취소한 건은 뺀다 */
+function ct외부일정(e){
+  if(!e || e.state === 'cancel') return [];
+  const out = [];
+  if(e.cd) out.push({ k: 'contract', 이름: '계약일', 날: e.cd, 메모: '공동중개 계약입니다' });
+  if(e.md) out.push({ k: 'mid', 이름: '중도금', 날: e.md, 메모: '중도금 입금을 확인하세요' });
+  if(e.bd) out.push({ k: 'balance', 이름: '잔금', 날: e.bd, 메모: e.state === 'done' ? '잔금 마침' : '잔금 준비를 확인하세요' });
+  return out;
+}
+function ct외부일정들(){
+  if(typeof 세션있음 !== 'function' || !세션있음() || 계약막힘()) return [];
+  if(!CT.extLoaded && !CT.extLoading) setTimeout(ctExtLoad);
+  return (CT.ext || []).flatMap(x => ct외부일정(x).map(v => ({ ...v, r: { id: '', title: `${x.title} (공동중개)` }, ext: x.id })));
+}
+const ct점날 = d => String(d || '').replace(/-/g, '.');
+function ctExtHTML(){
+  if(!세션있음()) return '';
+  if(!CT.extLoaded && !CT.extLoading) setTimeout(ctExtLoad);
+  const L = CT.ext || [], 편집 = 권한('ct_edit'), q = String(CT.q || '').trim();
+  const 보일 = q ? L.filter(e => [e.title, e.office, e.kind, e.memo].join(' ').includes(q)) : L;
+  return `<div class="card pad ct-sec ct-ext"><h2>다른 사무소가 쓴 계약서 <span class="sub" style="font-weight:500;font-size:13.5px">공동중개 · ${L.length}건 · 일정이 달력 · 알림에 같이 들어갑니다</span></h2>
+    ${CT.extNeed ? '<p class="ct-note">다른 사무소 계약서 올리기는 준비 중입니다 - 곧 열립니다. 파일 없이 일정만 적어 두는 것은 지금도 됩니다.</p>' : CT.extErr ? `<p class="ct-note">${esc(CT.extErr)}</p>` : ''}
+    ${보일.length ? `<ul class="ct-extl">${보일.map(e => `<li><div class="ct-extm"><b>${esc(e.title)}${e.state ? ` <i class="ct-extst ${e.state}">${e.state === 'done' ? '완료' : '취소'}</i>` : ''}</b>
+        <span>${esc([e.kind, e.office ? e.office + ' 작성' : '', e.price ? won(e.price) + '원' : ''].filter(Boolean).join(' · '))}</span>
+        <small>${esc([e.cd ? '계약 ' + ct점날(e.cd) : '', e.md ? '중도금 ' + ct점날(e.md) : '', e.bd ? '잔금 ' + ct점날(e.bd) : ''].filter(Boolean).join(' · ') || '날짜 없음')}${e.memo ? ` · ${esc(e.memo)}` : ''}</small></div>
+      <div class="ct-exta eqb">${e.file ? `<button type="button" class="btn sec sm" data-act="ext-file" data-v="${esc(e.id)}">파일 보기</button>` : ''}${편집 ? `<button type="button" class="btn tool sm" data-act="ext-edit" data-v="${esc(e.id)}">고치기</button><button type="button" class="btn tool sm" data-act="ext-del" data-v="${esc(e.id)}">${CT.extDel === e.id ? '한 번 더 누르면 지웁니다' : '지우기'}</button>` : ''}</div></li>`).join('')}</ul>`
+      : `<p class="sub" style="margin:0;line-height:1.6">${q && L.length ? '찾는 말에 맞는 계약서가 없습니다.' : '상대 사무소가 작성한 계약서를 올려 두면 여기 모이고, 계약일 · 중도금 · 잔금 일정을 같이 챙깁니다.'}</p>`}
+    ${편집 ? `<button type="button" class="btn tool sm" data-act="ext-new" style="align-self:flex-start">+ 다른 사무소 계약서 올리기</button>` : ''}
+  </div>`;
+}
+function ctExt창HTML(){
+  const E = CT.extEdit || {};
+  const 칩 = (k, 목록) => 목록.map(([v, t]) => `<button type="button" class="chip${(E[k] || '') === v ? ' on' : ''}" aria-pressed="${(E[k] || '') === v}" data-act="ext-chip" data-v="${k}|${v}">${t}</button>`).join('');
+  const 칸 = (k, 이름, o = {}) => `<label class="ct-f${o.wide ? ' wide' : ''}"><span class="lab">${이름}${o.req ? ' <span class="req" aria-label="필수">*</span>' : ''}</span>
+    <input class="inp" data-in="ext:${k}" type="${o.type || 'text'}" ${o.num ? 'inputmode="numeric"' : ''} value="${esc(String(o.num && +E[k] ? comma(String(+E[k])) : (E[k] ?? '')))}" ${o.ph ? `placeholder="${esc(o.ph)}"` : ''} ${o.max ? `maxlength="${o.max}"` : ''} autocomplete="off">${o.num ? `<span class="ct-won" data-extwon>${+E[k] ? `금 ${esc(한글금액(+E[k]))}원` : ''}</span>` : ''}</label>`;
+  const 파일 = E.newFile ? `<b>${esc(E.newFile.name)}</b> <span class="sub">${fu크기(E.newFile.size)} · 저장하면 올라갑니다</span>`
+    : E.file ? `<b>${esc(E.file.name)}.${esc(E.file.ext)}</b> <span class="sub">${fu크기(E.file.size)}</span>` : '<span class="sub">아직 없음 - PDF · 사진 · 한글 · 워드</span>';
+  return `<div class="modal" data-act="modal-bg"><div class="box ext-box" data-stop role="dialog" aria-modal="true" aria-labelledby="mdT" tabindex="-1">
+    <h2 id="mdT" style="margin:0 0 6px;font-size:16px;font-weight:700;letter-spacing:-.03em">${E.id ? '다른 사무소 계약서 고치기' : '다른 사무소 계약서 올리기'}</h2>
+    <p style="margin:0 0 14px;font-size:14px;line-height:1.7;color:var(--n500)">공동중개로 상대 사무소가 쓴 계약서를 올려 두면 목록에서 찾고, 계약일 · 중도금 · 잔금 일정을 같이 챙깁니다.</p>
+    <div class="ext-grid">
+      ${칸('title', '소재지 (물건 이름)', { req: true, wide: true, ph: '예: 잠실엘스 101동 1203호', max: 80 })}
+      ${칸('office', '작성한 사무소', { ph: '예: 행복공인중개사사무소', max: 40 })}
+      ${칸('price', '금액 (원)', { num: true, ph: '매매대금 또는 보증금' })}
+      <div class="ct-f wide"><span class="lab">거래</span><div class="ct-chips">${칩('kind', CT_외부거래.map(x => [x, x]))}</div></div>
+      ${칸('cd', '계약일', { type: 'date' })}${칸('md', '중도금일', { type: 'date' })}${칸('bd', '잔금일', { type: 'date' })}
+      <div class="ct-f wide"><span class="lab">진행</span><div class="ct-chips">${칩('state', [['', '진행중'], ['done', '완료'], ['cancel', '취소']])}</div></div>
+      ${칸('memo', '메모', { wide: true, ph: '200자까지', max: 200 })}
+      <div class="ct-f wide"><span class="lab">계약서 파일 (선택 · 한 파일 3MB)</span>
+        <div class="ext-file">${파일}
+          <label class="btn tool sm">${E.newFile || E.file ? '바꾸기' : '파일 고르기'}<input type="file" class="sr" accept="${FU_받음}" data-ext-file aria-label="계약서 파일 고르기"></label>
+          ${isMo() ? `<label class="btn tool sm">사진 찍기<input type="file" class="sr" accept="image/*" capture="environment" data-ext-file aria-label="계약서 사진 찍기"></label>` : ''}</div></div>
+    </div>
+    <p class="sub" style="font-size:12.5px;line-height:1.6;margin:12px 0 0">주민등록번호 · 계좌번호가 보이는 면은 가리고 올려 주세요. 파일은 우리 사무소만 열 수 있습니다.</p>
+    <div class="eqb" style="display:flex;gap:8px;margin-top:14px">
+      <button class="btn sec" data-act="modal-close" style="flex:1">취소</button>
+      <button class="btn pri" data-act="ext-save" style="flex:1" ${CT.extBusy ? 'disabled' : ''}>${CT.extBusy ? '저장하는 중…' : '저장'}</button></div>
+  </div></div>`;
+}
+if(typeof document !== 'undefined') document.addEventListener('change', e => { const el = e.target.closest && e.target.closest('[data-ext-file]'); if(!el || !el.files || !el.files[0] || !CT.extEdit) return;
+  const file = el.files[0]; el.value = '';
+  if(!/\.(pdf|hwp|hwpx|docx?|xlsx?|jpe?g|png)$/i.test(file.name)) return toast('한글(hwp · hwpx) · 워드 · 엑셀 · PDF · JPG · PNG 파일만 올릴 수 있습니다');
+  if(file.size > (/\.(jpe?g|png)$/i.test(file.name) ? 20 : 3) * 1024 * 1024) return toast('파일이 3MB 를 넘습니다 - PDF 로 줄이거나 나눠 올려 주세요');
+  CT.extEdit.newFile = file; render(); });
+async function ctExtSave(){
+  const E = CT.extEdit; if(!E || CT.extBusy) return;
+  if(!String(E.title || '').trim()) return toast('소재지(물건 이름)를 적어 주세요');
+  CT.extBusy = true; render();
+  try{
+    const item = { id: E.id, title: E.title, office: E.office, kind: E.kind, price: E.price, cd: E.cd, md: E.md, bd: E.bd, memo: E.memo, state: E.state || '' };
+    let 파일 = {};
+    if(E.newFile){ const fl = await rm사진줄이기(E.newFile);
+      if(fl.size > 3 * 1024 * 1024){ CT.extBusy = false; render(); return toast('파일이 3MB 를 넘습니다 - PDF 로 줄이거나 나눠 올려 주세요'); }
+      파일 = { name: fl.name, data: await 읽기(fl) }; }
+    const { ok, j } = await ctPost({ what:'contract-ext-save', item, ...파일 }).catch(() => ({ ok:false, j:{ error:'네트워크 문제로 저장하지 못했습니다' } }));
+    CT.extBusy = false;
+    if(j && j.need === 'files') CT.extNeed = true;
+    if(!ok){ render(); return toast(j.need === 'files' ? '파일 올리기는 준비 중입니다 - 파일을 빼고 저장해 주세요' : (j.error || '저장하지 못했습니다')); }
+    CT.ext = j.list || CT.ext; S.modal = null; CT.extEdit = null; render(); toast('저장했습니다');
+  }catch(_){ CT.extBusy = false; render(); toast('파일을 열지 못했습니다'); }
+}
+async function ctExtDel(id){
+  const { ok, j } = await ctPost({ what:'contract-ext-del', id }).catch(() => ({ ok:false, j:{ error:'네트워크 문제로 지우지 못했습니다' } }));
+  if(!ok) return toast(j.error || '지우지 못했습니다');
+  CT.ext = j.list || []; render(); toast('지웠습니다');
 }
 /* 계약서 작성 - 자주 쓰는 계약서 · 종류(왼쪽) | 세부 종류·거래유형(오른쪽) · 만들 계약서 이름과 [계약서 만들기] */
 function ctNewPageHTML(전체){
@@ -15063,7 +15311,7 @@ function ctSchedulePageHTML(전체){
     ${ct머리('일정·알림', '계약서에 넣은 날짜로 일정을 만들고, 매일 아침 9시에 카카오톡·메일로 알려 드립니다.')}
     <div class="ct-lay half">
       <div class="ct-main">${ctUpcomingHTML(전체, 60, 40) || `<div class="card pad ct-up"><h2>다가오는 일정</h2>${빈자리('앞으로 60일 안에 잡힌 일정이 없습니다', '계약서에 계약일·중도금·잔금일을 넣으면 여기에 모입니다.', '', 80, true)}</div>`}</div>
-      <aside class="ct-aside">${ctAlertHTML(true)}</aside>
+      <aside class="ct-aside">${ctAlertHTML(true)}${ctIcsHTML()}</aside>
     </div>`;
 }
 
@@ -15564,7 +15812,8 @@ function ctTrackSave(바로){
   const id = CT.id, 그때 = CT.track; if(!id) return;
   ctTrackT = setTimeout(async () => {
     const 보낼 = { ...((CT.id === id ? CT.track : 그때) || {}) };
-    const { ok, j } = await ctPost({ what:'contract-track', id, track: 보낼 }).catch(() => ({ ok:false, j:{} }));
+    const 끔 = CT.guideOff === id && !보낼.guideAt; if(CT.guideOff === id) CT.guideOff = null;
+    const { ok, j } = await ctPost({ what:'contract-track', id, track: 보낼, ...(끔 ? { guideOff: true } : {}) }).catch(() => ({ ok:false, j:{} }));
     if(!ok){ if(j.need === '0032') CT.need32 = true; toast(j.error || '일정을 저장하지 못했습니다'); render(); return; }
     const 새것 = j.track || 보낼;
     if(CT.id === id){ CT.track = 새것; CT.row = { ...(CT.row || {}), track: 새것 }; }
@@ -16059,14 +16308,15 @@ function ctUpcomingHTML(rows, 날수 = 14, 최대 = 8){
   const 앞판 = new Set(rows.map(r => r.prev_id).filter(Boolean));
   const 일 = rows.filter(r => !앞판.has(r.id) && !(CT_FORMS[r.form] || {}).explain && !(r.track && r.track.off))
     .flatMap(r => ct일정목록(r, 설정).map(e => ({ ...e, r, n: ct날차(오늘, e.날) })))
-    .filter(e => e.n >= 0 && e.n <= 날수 && !(e.k === 'report' && (e.r.status !== 'sealed' || e.r.reported_at)))
+    .filter(e => e.n >= 0 && e.n <= 날수 && !(e.k === 'report' && (e.r.status !== 'sealed' || e.r.reported_at)) && !(e.k === 'prep' && (e.r.status !== 'sealed' || e.마침)))
+    .concat(ct외부일정들().map(e => ({ ...e, n: ct날차(오늘, e.날) })).filter(e => e.n >= 0 && e.n <= 날수))
     .sort((a, b) => a.n - b.n || (a.날 > b.날) - (a.날 < b.날)).slice(0, 최대);
   if(!일.length) return '';
   return `
     <div class="card pad ct-up"><h2>다가오는 일정 <span class="sub" style="font-weight:500;font-size:13.5px">${날수 > 14 ? `${날수}일 안` : '2주 안'}</span></h2>
-      <ul class="pl-list">${일.map(e => `<li><button type="button" class="pl-go" data-act="ct-open" data-v="${esc(e.r.id)}">
+      <ul class="pl-list">${일.map(e => `<li><button type="button" class="pl-go" data-act="${e.ext ? 'ext-edit' : 'ct-open'}" data-v="${esc(e.ext || e.r.id)}">
         <span class="pl-d${e.n <= 3 ? ' hot' : ''}">${ct디데이(e.n)}</span>
-        <span class="pl-b"><b>${esc(e.이름)}</b><span>${esc(e.r.title || '소재지 미입력')} · ${esc(ct날짜글(e.날))}${e.k === 'balance' && !(e.r.track && e.r.track.guideAt) ? ' · 잔금안내 전' : ''}</span></span></button></li>`).join('')}</ul>
+        <span class="pl-b"><b>${esc(e.이름)}</b><span>${esc(e.r.title || '소재지 미입력')} · ${esc(ct날짜글(e.날))}${e.k === 'balance' && !e.ext && !(e.r.track && e.r.track.guideAt) ? ' · 잔금안내 전' : ''}</span></span></button></li>`).join('')}</ul>
     </div>`;
 }
 
@@ -18269,6 +18519,8 @@ document.addEventListener('input', e=>{
   if(k === 'acc-addr-v'){ if(S.accAddr) S.accAddr.v = el.value; return; }
   /* 초안 의견 칸 - 적는 대로 담기만(다시 그리지 않는다) */
   if(k === 'rm-text'){ RM.text = el.value; return; }
+  if(k.startsWith('ext:')){ if(CT.extEdit){ const key = k.slice(4); CT.extEdit[key] = key === 'price' ? el.value.replace(/[^0-9]/g, '') : el.value;
+    if(key === 'price'){ const w = document.querySelector('[data-extwon]'); if(w) w.textContent = +CT.extEdit.price ? `금 ${한글금액(+CT.extEdit.price)}원` : ''; } } return; }
   if(k === 'dr-name' || k === 'dr-text'){ if(DR.note) DR.note[k === 'dr-name' ? 'name' : 'text'] = el.value; return; }
   const v = MONEY_IN.includes(k) ? money(el) : el.value;
   if(k==='j-phone'){ S.form[k] = autoHyphen(el); refreshJoin(); return; }
@@ -19566,7 +19818,7 @@ function handle(a,v,el){
       if(list.length >= 30) return toast('품목은 30개까지 넣습니다'), true;
       ct부속고침({ items: [...list, { n, q:'', s:'' }], itemsSet: true }); return true; }
     case 'cte-attach': ct부속고침({ attach: !ct부속().attach }); return true;
-    case 'ctk-guide':   ctTrackSet({ guideAt: ct트랙().guideAt ? '' : ct오늘() }); return true;
+    case 'ctk-guide':   if(ct트랙().guideAt) CT.guideOff = CT.id; ctTrackSet({ guideAt: ct트랙().guideAt ? '' : ct오늘() }); return true;
     case 'ctk-applied': ctTrackSet({ permitApplied: ct트랙().permitApplied ? '' : ct오늘() }); return true;
     case 'ctk-pm': if(CT_허가단계.some(([k]) => k === v)) ctTrackSet({ [v]: ct트랙()[v] ? '' : ct오늘() }); return true;
     case 'ctk-permit':  ctTrackSet(ct트랙().permit ? { permit: false, permitDue: '', permitApplied: '', permitPaid: '', permitAgreed: '', permitOk: '' } : { permit: true }); return true;
@@ -19582,18 +19834,36 @@ function handle(a,v,el){
     case 'rm-login': S.loginAs='guest'; S.afterLogin = S.route; go('#/login'); return true;
     case 'rm-join': rmJoin(); return true;
     case 'rm-invite': rmInvite(v, false); return true;
+    case 'rm-invite-p': rmInvite(v, false, true); return true;
+    case 'rm-fsend': rmFileSend(); return true;
+    case 'rm-fopen': { const [mid, ext] = String(v).split('|'), C = RM.cur, 손님 = rm손님(); if(!C) return true;
+      파일열기(() => rmPost({ what: 손님 ? 'my-room-file-url' : 'room-file-url', id: C.id, ...(손님 ? {} : { side: C.side }), msg: mid }), 바로보는파일(ext)); return true; }
+    case 'rm-prep': { const C = RM.cur, M = C && C.meta; if(!M) return true;
+      const 쓰던 = String(RM.text || '').trim() && RM.kind !== 'prep';
+      RM.text = rm준비물글(C.side, M); RM.kind = 'prep'; render(); if(쓰던) toast('쓰던 말 대신 잔금 준비물 안내 글을 채웠습니다 - 고쳐서 보내세요');
+      setTimeout(() => { const t = document.querySelector('[data-in="rm-text"]'); if(t){ t.focus(); t.scrollTop = 0; } }, 0); return true; }
+    /* ── 달력 구독 · 다른 사무소 계약서 (2026-11-10) ── */
+    case 'ics-get': ctIcsGet(false); return true;
+    case 'ics-reset': if(!CT.icsReset){ CT.icsReset = true; render(); return true; } CT.icsReset = false; ctIcsGet(true); return true;
+    case 'ics-copy': { const u = CT.ics && CT.ics.url; if(u && navigator.clipboard) navigator.clipboard.writeText(u).then(() => toast('구독 주소를 복사했습니다'), () => toast('복사하지 못했습니다 - 주소 칸을 길게 눌러 복사해 주세요')); return true; }
+    case 'ext-new': CT.extEdit = { kind:'매매', state:'' }; S.modal = { type:'ct-ext' }; render(); return true;
+    case 'ext-edit': { const e = (CT.ext || []).find(x => x.id === v); if(!e) return true; CT.extEdit = { ...e, price: e.price ? String(e.price) : '' }; S.modal = { type:'ct-ext' }; render(); return true; }
+    case 'ext-chip': { const [k, val] = String(v).split('|'); if(CT.extEdit && ['kind', 'state'].includes(k)){ CT.extEdit[k] = val || ''; render(); } return true; }
+    case 'ext-save': ctExtSave(); return true;
+    case 'ext-del': if(CT.extDel !== v){ CT.extDel = v; render(); return true; } CT.extDel = null; ctExtDel(v); return true;
+    case 'ext-file': { const e = (CT.ext || []).find(x => x.id === v); 파일열기(() => ctPost({ what:'contract-ext-url', id: v }), e && e.file && 바로보는파일(e.file.ext)); return true; }
     case 'rm-kakao': S.modal = null; rmInvite(v, true); render(); return true;
     case 'rm-copy': { const m = S.modal; if(m && navigator.clipboard) navigator.clipboard.writeText(m.text).then(() => toast('복사했습니다 - 문자 · 카톡에 붙여 넣으세요'), () => toast('복사하지 못했습니다 - 길게 눌러 복사해 주세요')); return true; }
-    case 'rm-cut': case 'rm-kick': {
+    case 'rm-cut': case 'rm-kick': case 'rm-kick-p': {
       /* 내보내기도 모두 끊기도 두 번 눌러야 - 잘못 누른 한 번에 링크가 끊기지 않게.
          계약서 번호를 함께 기억한다 - 다른 계약서에서 한 번 눌러 둔 것이 여기서 두 번째로 셈해지면 안 된다 */
-      const 표지 = CT.id + '|' + (a === 'rm-kick' ? v : '*');
+      const 표지 = CT.id + '|' + (a === 'rm-kick' ? v : a === 'rm-kick-p' ? 'p' + v : '*');
       if(CT.rmKick !== 표지){ CT.rmKick = 표지; render(); return true; }
       CT.rmKick = null;
-      ctPost({ what:'room-cut', id: CT.id, ...(a === 'rm-kick' ? { side: v } : {}) }).then(({ ok, j }) => {
+      ctPost({ what:'room-cut', id: CT.id, ...(a === 'rm-kick' ? { side: v } : a === 'rm-kick-p' ? { side: v, proxy: true } : {}) }).then(({ ok, j }) => {
         if(!ok) return toast(j.error || '고치지 못했습니다');
         CT.track = { ...(CT.track || {}), room: j.room }; RM.list = null; render();
-        toast(a === 'rm-kick' ? `${RM_자리[v]}을 대화방에서 내보냈습니다 - 다시 부르려면 새 초대 링크를 보내세요` : '나간 초대 링크를 모두 끊었습니다');
+        toast(a === 'rm-kick' ? `${RM_자리[v]}을 대화방에서 내보냈습니다 - 다시 부르려면 새 초대 링크를 보내세요` : a === 'rm-kick-p' ? `${RM_자리[v]} 대리인을 내보냈습니다 - 그 대리인 링크도 끊겼습니다` : '나간 초대 링크를 모두 끊었습니다');
       }).catch(() => toast('네트워크 문제로 고치지 못했습니다'));
       return true; }
     case 'ct-note-read': ctNoteOp('read-all'); return true;

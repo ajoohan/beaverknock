@@ -493,7 +493,7 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
      && !메일[0].html.includes('알릴 날 아님') && !메일[0].html.includes('새 판으로 바뀐 앞 판') && !메일[0].html.includes('작성 중인 새 판'),
      '메일은 중개사별 하루 한 통 - 신고 기한(날인본·신고 전) · 잔금 3일 전(작성 중도) · 새 판으로 바뀐 앞 판은 뺀다');
   ok(메일[0].html.includes('잔금안내(이체한도·준비서류) 전입니다') && /알림 설정/.test(메일[0].text), '잔금 알림에 잔금안내 여부 · 메일에 알림 설정 안내');
-  ok(불린.filter(x => /bk_agent/.test(x.u)).every(x => /select=id,name,phone,alert:settings->alert&/.test(decodeURIComponent(x.u))),
+  ok(불린.filter(x => /bk_agent/.test(x.u) && !/ext:settings->ext/.test(decodeURIComponent(x.u))).every(x => /select=id,name,phone,alert:settings->alert&/.test(decodeURIComponent(x.u))),
      '중개사는 알림 설정만 꺼내 읽는다 - settings 통째(내 특약 문구 최대 200개)를 날마다 끌어오지 않는다');
   ok(카톡.length === 3 && 카톡.every(m => m.to === '01012345678' && m.kakaoOptions.templateId === 'KA01TP-SCHEDULE')
      && 카톡.some(m => m.kakaoOptions.variables['#{일정}'] === '실거래신고 기한 7일 전' && m.kakaoOptions.variables['#{물건}'] === '잠실 아파트')
@@ -521,7 +521,7 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
     : new Response('{}', { status: 404 });
   메일 = null; res = 응답(); 불린 = [];
   await C.reportDueCron({ headers: { authorization: 'Bearer cron-secret', host: 'beaverknock.co.kr' } }, res);
-  ok(res.code === 200 && 메일 && /3건/.test(메일[0].subject) && 불린.filter(x => /bk_contract/.test(x.u)).length === 2, '0032 전이어도 돈다 - track·settings 없이(설정은 모두 켬)');
+  ok(res.code === 200 && 메일 && /3건/.test(메일[0].subject) && 불린.filter(x => /bk_contract\?/.test(x.u)).length === 2, '0032 전이어도 돈다 - track·settings 없이(설정은 모두 켬)');
 
   /* 1000건 넘게 걸리면 쪽으로 나눠 다 읽고, 알릴 중개사가 100명을 넘으면 100통씩 나눠 보낸다 */
   const 많은 = Array.from({ length: 1000 }, (_, i) => ({ id: 'm' + i, agent_id: 'A' + i, agent_user: 'u' + i, form: 'sale', status: 'sealed', title: 't' + i, cd: 며칠전(23) }));
@@ -535,7 +535,7 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
   process.env.CRON_SECRET = 'cron-secret'; process.env.RESEND_API_KEY = 'test';
   res = 응답(); 불린 = [];
   await C.reportDueCron({ headers: { authorization: 'Bearer cron-secret', host: 'beaverknock.co.kr' } }, res);
-  ok(불린.filter(x => /bk_contract/.test(x.u) && x.m === 'GET').length === 2 && 불린.some(x => /bk_contract/.test(x.u) && x.m === 'DELETE' && /status=eq\.draft&track->>trash=lt\./.test(x.u)) && res.body.대상 === 1005 && 불린.filter(x => /bk_agent/.test(x.u)).length === 11, '1000건이 차면 다음 쪽을 더 읽는다 · 중개사는 100명씩 묻는다 · 휴지통 30일 지난 작성 중 계약서는 지운다');
+  ok(불린.filter(x => /bk_contract\?/.test(x.u) && x.m === 'GET').length === 2 && 불린.some(x => /bk_contract/.test(x.u) && x.m === 'DELETE' && /status=eq\.draft&track->>trash=lt\./.test(x.u)) && res.body.대상 === 1005 && 불린.filter(x => /bk_agent/.test(x.u) && !/ext:settings->ext/.test(decodeURIComponent(x.u))).length === 11, '1000건이 차면 다음 쪽을 더 읽는다 · 중개사는 100명씩 묻는다 · 휴지통 30일 지난 작성 중 계약서는 지운다');
   ok(묶음.length === 11 && 묶음.slice(0, 10).every(n => n === 100) && 묶음[10] === 5 && res.body.보냄 === 1005, '100통씩 나눠 보내 1005통 모두 보낸다');
   delete process.env.CRON_SECRET; delete process.env.RESEND_API_KEY;
   for (const k of ['SOLAPI_API_KEY', 'SOLAPI_API_SECRET', 'SOLAPI_PFID', 'SOLAPI_FROM', 'SOLAPI_TPL_SCHEDULE']) delete process.env[k];
@@ -1326,7 +1326,7 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
   const t = C.trackCheck({ arch: '2026-11-10', trash: '2026-11-10' });
   ok(t && t.arch === '2026-11-10' && t.trash === '2026-11-10' && C.trackCheck({ trash: '어제' }) === null, 'track 에 보관함 · 휴지통 날짜(arch · trash)가 들어가고, 날짜 모양이 아니면 거절');
   ok(/case 'contract-bin':\s+await bin\(res, agent, b\)/.test(길.read ? '' : fs.readFileSync(new URL('../api/_contract.js', import.meta.url), 'utf8')), '서버 contract-bin - 보관함 · 휴지통으로 옮기고 되돌린다');
-  ok(/'contract-del'\]\.includes\(w\)/.test(feed), '영구 삭제(contract-del)는 대표만 - 직원은 막는다');
+  ok(/'contract-del'[^\]]*\]\.includes\(w\)/.test(feed), '영구 삭제(contract-del)는 대표만 - 직원은 막는다');
   ok(js.includes("const ct보관칸 = r =>") && js.includes("data-act=\"ct-bin-tab\"") && js.includes("'ct-purge', id, '영구 삭제'") && js.includes("r.status === 'sealed' ? '' : 직원()"),
      '목록 · 보관함 · 휴지통 칸 - 휴지통의 날인본은 영구 삭제 단추가 없고, 직원에게는 남은 날만 보인다');
   ok(js.includes("const 계약 = (CT.list || []).filter(ct살아있음);") && js.includes("sub === 'schedule' ? ctSchedulePageHTML(살아)"), '보관함 · 휴지통 계약서는 대시보드 · 일정에서 빠진다');

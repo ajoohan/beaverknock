@@ -151,7 +151,7 @@ ok(js.includes("${tabbar('rm','p')}") && js.includes('data-go="#/partner/rooms">
 ok(js.includes("RM.mine = null; RM.cur = null; go('#/room/' + j.id);") && js.includes('if(RM.cur !== C){ if(!손님) RM.listAt = 0;')
   && js.includes('if(status === 400 || status === 403 || status === 404) C.gone = true;'), '화면 - 다시 들어온 방은 처음부터 읽고, 보내는 중 방을 옮겨도 지금 방을 건드리지 않고, 같은 답일 실패는 그만 묻는다');
 ok(js.includes('${보조원() ? \'\' : `<a class="btn tool sm" data-go="#/partner/contract/${esc(id)}">계약서</a>`}</div></div>')
-  && js.includes("rm대화HTML(C, v => v.side === 'agent', 들어옴 ? '' :") && js.includes("const 표지 = CT.id + '|' + (a === 'rm-kick' ? v : '*');") && js.includes("CT.rmKick === CT.id + '|' + k ?") && js.includes("I.cut = !!j.error; } render();"), '화면 - 보조원은 계약서 단추 없음 · 안 들어온 방은 쓰는 칸 대신 까닭 · 모두 끊기도 두 번');
+  && js.includes("rm대화HTML(C, v => v.side === 'agent', 들어옴 || 대리들 ? '' :") && js.includes("const 표지 = CT.id + '|' + (a === 'rm-kick' ? v : a === 'rm-kick-p' ? 'p' + v : '*');") && js.includes("CT.rmKick === CT.id + '|' + k ?") && js.includes("I.cut = !!j.error; } render();"), '화면 - 보조원은 계약서 단추 없음 · 안 들어온 방은 쓰는 칸 대신 까닭 · 모두 끊기도 두 번');
 ok(js.includes("if(!e.target.closest('[data-in=\"rm-text\"]')) return;") && js.includes("e.shiftKey || e.isComposing || e.keyCode === 229 || isMo()")
   && js.includes("else if(id && CT.id === id && ctSealed() && S.route !== h) ct방새로(id);") && js.includes("if(JSON.stringify((CT.track || {}).room || null) !== 그때) return;")
   && !js.includes("RM.조합끝") && js.includes("setTimeout(() => { const btn = $('#app [data-act=\"rm-send\"]'); if(btn && !btn.disabled) btn.click(); }, 0);") && js.includes("S.modal.type === 'rm-invite' || S.modal.type === 'ct-share')) S.modal = null;")

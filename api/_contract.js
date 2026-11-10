@@ -144,6 +144,7 @@ export async function contractRoute(req, res, agent, user, b) {
       case 'contract-revise':  await revise(res, agent, user, b); break;
       case 'contract-del':     await del(res, agent, b); break;
       case 'contract-bin':     await bin(res, agent, b); break;
+      case 'contract-state':   await state(res, agent, b); break;
       case 'contract-bld':     await 대장(req, res, agent, b); break;
       case 'contract-reported': await reported(res, agent, b); break;
       case 'contract-track':   await track(res, agent, b); break;
@@ -436,8 +437,10 @@ export function 알림설정(x) {
   let [a, b] = Array.isArray(o.lawyer) ? [범위(o.lawyer[0]), 범위(o.lawyer[1])] : [7, 10];
   if (!a || !b) [a, b] = [7, 10];
   if (a > b) [a, b] = [b, a];
+  /* 잔금 완료 확인 끝 시각(2026-11-10 파트너 기획 '종료 시각은 사무소별') - 16~23시, 기본 19시. 그때까지 완료가 아니면 잔금 지연 */
+  const 끝 = Math.round(+o.settleEnd);
   return { kakao: o.kakao !== false, mail: o.mail !== false,
-    off: [...new Set((Array.isArray(o.off) ? o.off : []).filter(k => Object.hasOwn(알림종류, k)))], lawyer: [a, b] };
+    off: [...new Set((Array.isArray(o.off) ? o.off : []).filter(k => Object.hasOwn(알림종류, k)))], lawyer: [a, b], settleEnd: 끝 >= 16 && 끝 <= 23 ? 끝 : 19 };
 }
 /* 계약 하나의 일정·체크(track). 날짜 칸은 ISO 날짜만, 나머지는 켜짐/꺼짐만 받는다 - 다른 것은 버린다 */
 /* arch · trash (2026-11-10 대표님 결정 1번) - 보관함으로 내린 날 · 휴지통에 넣은 날. 날인본은 휴지통까지만, 작성 중은 휴지통 30일 뒤 지운다 */
@@ -739,6 +742,16 @@ async function bin(res, agent, b) {
   const z = await 링크번호지켜쓰기(id, agent, (n, 지금) => { const t = { ...지금 }; delete t.arch; delete t.trash;
     if (어디) t[어디] = 오늘; if (어디 === 'trash' && 지금.arch) t.arch = 지금.arch; return t; });
   if (z.res) return z.res(res, '옮기지 못했습니다');
+  return res.status(200).json({ ok: true, track: z.track });
+}
+
+/* 진행 상태만 바꾸기 (2026-11-10 대시보드 '잔금 완료하셨나요? → 완료') - track 의 다른 값은 서버에 있는 그대로 둔다 */
+async function state(res, agent, b) {
+  const id = String(b.id || ''), s = String(b.state || '');
+  if (!UUID.test(id)) return res.status(400).json({ error: '어느 계약서인지 알 수 없습니다' });
+  if (s && !Object.hasOwn(진행상태, s)) return res.status(400).json({ error: '알 수 없는 진행 상태입니다' });
+  const z = await 링크번호지켜쓰기(id, agent, (n, 지금) => { const t = { ...지금 }; if (s) t.state = s; else delete t.state; return t; });
+  if (z.res) return z.res(res, '진행 상태를 바꾸지 못했습니다');
   return res.status(200).json({ ok: true, track: z.track });
 }
 

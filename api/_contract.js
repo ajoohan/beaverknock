@@ -692,6 +692,8 @@ export function 일정목록(c, 설정 = 알림설정()) {
   if (신청 && !t.permitOk) out.push({ k: 'permitExpect', 날: 영업일째(신청, 15), 메모: `${신청} 신청 · 신청일 포함 15영업일` });
   if (cd) out.push({ k: 'contract', 날: cd, 메모: '계약서 내용을 마지막으로 확인하세요' });
   if (md && +c.mid > 0) out.push({ k: 'mid', 날: md, 바뀜: !!날만(t.midDate), 메모: '중도금 금액과 입금 계좌를 확인하세요' });
+  /* 2차 중도금 (2026-11-10) - 1차가 있을 때만 */
+  if (날만(c.md2) && +c.mid > 0 && +c.m2 > 0) out.push({ k: 'mid', 이름: '2차 중도금', 날: 날만(c.md2), 메모: '2차 중도금 금액과 입금 계좌를 확인하세요' });
   if (bd) out.push({ k: 'balance', 날: bd, 바뀜: !!날만(t.balanceDate),
     메모: 날만(t.guideAt) ? '잔금안내 마침 · 준비서류를 확인하세요' : '잔금안내(이체한도·준비서류) 전입니다' });
   if (cd && 신고대상(c.form, { sub: c.sub })) out.push({ k: 'report', 이름: 매매신고(c.form) ? '실거래신고 기한' : '임대차 신고 기한',
@@ -718,7 +720,7 @@ export const 알림제목 = e => e.k === 'lawyer' ? '법무사 예약할 때입�
   : `${e.이름} ${e.남음 === 0 ? '당일' : e.남음 === 1 ? '전날' : `${e.남음}일 전`}`;
 
 /* 목록·한 장 읽기 - 일정 계산에 쓰는 날짜를 doc 에서 꺼내 같이 준다. track 칸이 아직 없으면(0032 전) 빼고 다시 읽는다 */
-const 일정열 = ',cd:doc->>contractDate,mid:doc->deal->>mid,md:doc->deal->>midDate,bd:doc->deal->>balanceDate,ex:doc->period->>to';
+const 일정열 = ',cd:doc->>contractDate,mid:doc->deal->>mid,md:doc->deal->>midDate,m2:doc->deal->>mid2,md2:doc->deal->>mid2Date,bd:doc->deal->>balanceDate,ex:doc->period->>to';
 async function 읽기(q) {
   const x = await db('bk_contract', q.replace('{track}', ',track'));
   if (x.r.ok || !/track/.test(x.t || '')) return x;

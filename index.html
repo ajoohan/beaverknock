@@ -1543,8 +1543,8 @@ body.mo .umenu-btn{padding:6px 6px 6px 8px;gap:6px}
 /* 휴대폰 - 이름이 길어도 상단 바를 넘치지 않게(360px 에서 '주식회사플러스토닉 님' 이 바를 11px 밀었다 · 2026-11-10 리뷰) */
 body.mo .umenu-btn .nm2{max-width:84px}
 #app .umenu-btn .nm2 b,#app .umenu-btn .nm2 small{text-wrap:nowrap}   /* #app b 의 text-wrap:balance 가 nowrap 을 덮어 두 줄로 꺾였다 - 말줄임으로 */
-body.mo .nav .back{white-space:nowrap;flex:none}
-.badge.slotT{display:inline-flex;align-items:center;gap:5px;flex-wrap:nowrap}   /* 360px 에서 '← 제안함으로' 가 두 줄로 꺾였다 */
+body.mo .nav .back{white-space:nowrap;flex:none}   /* 360px 에서 '← 제안함으로' 가 두 줄로 꺾였다 */
+.badge.slotT{display:inline-flex;align-items:center;gap:5px;flex-wrap:nowrap}   /* 제안 보내기 남은 시간 - 시계 + 분:초가 한 줄 */
 .umenu-btn > .nbadge{left:auto;right:-6px;top:-6px}
 /* 파트너 안내 - 많은 손님을 실수 없이 */
 .hp-tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-top:36px}
@@ -11774,6 +11774,13 @@ const CT_하위메뉴 = [['#/partner/contracts/new', '계약서 작성', 'pen', 
    번호는 배포한 날(연.월.일 - 같은 날 또 올리면 뒤에 .2). 화면이 version.json 을 가끔 읽어,
    더 새 버전이 올라와 있으면 메뉴 아래에서 새로고침을 권한다(버전확인) - 계약서를 띄워 둔 채 오래 일하면 고친 화면을 못 받는다 */
 const BK_변경 = [
+  { v:'26.11.10.11', 날:'2026-11-10', 줄:[
+    '계약서 특약 - 새로 넣는 특약은 ‘그 밖의 사항은…’ · 계약서 작성일 · 신고 안내 줄 앞에 들어가고, 특약마다 위·아래로 옮길 수 있습니다',
+    '2차 중도금 - 계약서 · 영수증 · 잔금정산서 · 신고 도우미 · 일정 알림까지',
+    '잔금정산서 - 돌려줄 돈이 더 많으면 지급 방향이 저절로 바뀌고, 일할 계산 줄의 이름과 방향을 고칠 수 있습니다',
+    '부속 서류 - 영수증 지급 방법 · 계약 금액, 보증금 반환 영수증 공제 · 영수 금액 · 발행일, 위임장 주민등록번호 · 신분증 사본, 개인정보 동의서 제3자 제공 · 수집자 서명',
+    '아파트 · 오피스텔 · 상가 임대차 계약서에도 대지권 칸',
+  ]},
   { v:'26.11.10.10', 날:'2026-11-10', 줄:[
     '휴대폰 제안 보내기 - 상단의 남은 시간(슬롯 예약)이 화면 밖으로 밀리던 것을 시계와 분:초로 줄여 보이게',
   ]},
@@ -12689,6 +12696,8 @@ const CT_CATS = [
 const CT_DEAL_KO = { jeonse:'전세', monthly:'월세', yearly:'연세' };
 /* 세부 종류로 법을 가른다 - 주거면 주택임대차보호법, 상가·사무실 등은 상가건물 임대차보호법, 그 밖(토지·직접입력)은 민법 */
 const ct주거 = s => { s = String(s || '').trim(); return CT_SUB_HOME.includes(s) || /주택|아파트|빌라|원룸|오피스텔|주상복합/.test(s) && !/상가/.test(s); };
+/* 집합건물(대지권이 있는 것) - 한방 아파트 · 상가 임대차 양식에도 대지권 칸이 있다 (2026-11-10) */
+const ct집합 = s => { s = String(s || '').trim(); return /아파트|오피스텔|주상복합|도시형|연립|다세대|빌라|지식산업|상가/.test(s) && !/상가주택|상가건물|단독|다가구/.test(s); };
 const ct상가 = s => { s = String(s || '').trim(); return CT_SUB_SHOP.includes(s) || /상가|점포|사무|공장|창고|건물|센터/.test(s); };
 function ct군(doc){
   if(doc.form === 'home-lease') return 'home';
@@ -12752,6 +12761,16 @@ const CT_기본특약 = {
     CT_신고특약,
   ],
 };
+/* 특약 끝 줄 (2026-11-10 파트너 자료 대조) - '그 밖의 사항은…' · 계약서 작성일 · 신고 안내 · 첨부서류 줄은 늘 맨 끝에 둔다.
+   새로 넣는 특약(기본 다시 넣기 · 고르기 · 내 특약 · 서류로 채운 승계 특약)은 이 끝 줄들 앞에 끼운다 - 전에는 맨 뒤에 붙어 '그 밖의 사항' 아래로 갔다 */
+const CT_특약끝 = /^(그 밖의 사항은|이 특약에 적지 않은 사항은|첨부서류|계약서\s*작성일|주택 임대차계약 신고는)/;
+function ct특약넣기(doc, ...글){
+  const 목록 = doc.specials || (doc.specials = []);
+  let 끝 = 목록.length; while(끝 > 0 && CT_특약끝.test(String(목록[끝 - 1] || '').trim())) 끝--;
+  const 앞 = 글.filter(t => !CT_특약끝.test(String(t || '').trim())), 뒤 = 글.filter(t => CT_특약끝.test(String(t || '').trim()));
+  목록.splice(끝, 0, ...앞); 목록.push(...뒤);
+  return 끝;        /* 처음 끼운 자리 */
+}
 /* 갱신계약에서는 '계약서 작성일 / 계약 체결일' 줄을 뺀다(파트너 규칙) */
 const CT_계약일조항 = /계약서\s*작성일|계약\s*체결일/;
 /* 갱신 특약이 만든 줄 - '지금 금액으로 다시 쓰기' 때 이 줄들만 바꿔 끼운다 */
@@ -12973,7 +12992,10 @@ function ctSet(o, path, v){ const ks = path.split('.'); const last = ks.pop();
 /* 잔금은 적지 않는다 - 전체(보증금 또는 매매대금)에서 계약금·중도금을 빼면 나온다.
    따로 적게 하면 합이 안 맞는 계약서가 나간다 */
 const ctTotal = d => +(d.price != null ? d.price : d.deposit) || 0;
-const ctBalance = d => Math.max(0, ctTotal(d) - (+d.down||0) - (+d.mid||0));
+/* 2차 중도금 (2026-11-10 파트너 자료 - 한방 권리양도양수 · 잔금정산서는 1차 · 2차) - 1차가 있을 때만 센다(1차를 지우면 숨은 2차가 잔금을 깎지 않게) */
+const ct중도2 = d => +(d && d.mid) ? (+d.mid2 || 0) : 0;
+const ct중도합 = d => (+(d && d.mid) || 0) + ct중도2(d);
+const ctBalance = d => Math.max(0, ctTotal(d) - (+d.down||0) - ct중도합(d));
 
 /* ── 계약 일정·알림 (2026-10-30 대표님 '카카오 알림설정') ──
    서버(api/_contract.js)와 같은 규칙 한 벌 - 공휴일·영업일·일정 목록. 검사(계약서.mjs)가 둘의 답을 맞춰 본다.
@@ -13040,6 +13062,7 @@ function ct일정목록(c, 설정 = ct알림설정()){
   if(신청 && !t.permitOk) out.push({ k: 'permitExpect', 날: ct영업일째(신청, 15), 메모: `${신청} 신청 · 신청일 포함 15영업일` });
   if(cd) out.push({ k: 'contract', 날: cd, 메모: '계약서 내용을 마지막으로 확인하세요' });
   if(md && +c.mid > 0) out.push({ k: 'mid', 날: md, 바뀜: !!ct날만(t.midDate), 메모: '중도금 금액과 입금 계좌를 확인하세요' });
+  if(ct날만(c.md2) && +c.mid > 0 && +c.m2 > 0) out.push({ k: 'mid', 이름: '2차 중도금', 날: ct날만(c.md2), 메모: '2차 중도금 금액과 입금 계좌를 확인하세요' });
   if(bd) out.push({ k: 'balance', 날: bd, 바뀜: !!ct날만(t.balanceDate),
     메모: ct날만(t.guideAt) ? '잔금안내 마침 · 준비서류를 확인하세요' : '잔금안내(이체한도·준비서류) 전입니다' });
   if(cd && ct신고({ form: c.form, sub: c.sub })) out.push({ k: 'report', 이름: ct매매신고(c.form) ? '실거래신고 기한' : '임대차 신고 기한',
@@ -13055,7 +13078,7 @@ function ct일정목록(c, 설정 = ct알림설정()){
 }
 /* 화면의 계약서 → 일정 계산 모양 */
 const ct일정자료 = (doc, row, track) => ({ form: doc.form, sub: doc.sub, status: row && row.status, reported_at: row && row.reported_at,
-  cd: doc.contractDate, mid: doc.deal && doc.deal.mid, md: doc.deal && doc.deal.midDate, bd: doc.deal && doc.deal.balanceDate, ex: doc.period && doc.period.to, track: track || {} });
+  cd: doc.contractDate, mid: doc.deal && doc.deal.mid, md: doc.deal && doc.deal.midDate, m2: doc.deal && doc.deal.mid2, md2: doc.deal && doc.deal.mid2Date, bd: doc.deal && doc.deal.balanceDate, ex: doc.period && doc.period.to, track: track || {} });
 
 /* 고른 종류로 새 계약서를 연다 */
 function ctMake(catK, sub, deal){
@@ -13230,7 +13253,7 @@ async function ctSave(silent){
     const 대금 = 문서.deal || {};
     ctListPut({ id: j.id, status:'draft', updated_at: j.updated_at, form: 문서.form, proposal_id: 제안,
       title: (문서.property && 문서.property.road) || '', cat: 문서.cat, sub: 문서.sub, dt: 대금.type, parties: 문서.parties,
-      cd: 문서.contractDate, mid: 대금.mid, md: 대금.midDate, bd: 대금.balanceDate, ex: 문서.period && 문서.period.to, ...(CT.row && CT.row.track ? { track: CT.row.track } : {}) });
+      cd: 문서.contractDate, mid: 대금.mid, md: 대금.midDate, m2: 대금.mid2, md2: 대금.mid2Date, bd: 대금.balanceDate, ex: 문서.period && 문서.period.to, ...(CT.row && CT.row.track ? { track: CT.row.track } : {}) });
     if(새것 && (location.hash || '').startsWith('#/partner/contract/')) history.replaceState(null, '', '#/partner/contract/' + j.id), S.route = S.lastRoute = '#/partner/contract/' + j.id;
     render(); if(!silent || CT.dirty) toast(CT.dirty ? '임시저장했습니다 - 그 뒤에 고친 것은 아직 저장 전입니다' : '임시저장했습니다');
     return !CT.dirty;
@@ -13289,6 +13312,7 @@ function ct필수(doc){
   목록.push(맞춤 ? ['deal.price', F.pay.price] : 매매 ? ['deal.price', '매매대금'] : ['deal.deposit', '보증금']);
   목록.push(['deal.down', '계약금']);
   if(+D.mid) 목록.push(['deal.midDate', '중도금 지급일']);
+  if(ct중도2(D)) 목록.push(['deal.mid2Date', '2차 중도금 지급일']);
   목록.push(['deal.balanceDate', '잔금 지급일']);
   if(F.lease && (D.type === 'monthly' || D.type === 'yearly')) 목록.push(['deal.rent', D.type === 'yearly' ? '연 차임' : '월 차임']);
   if(F.lease) 목록.push(['period.handover', '인도일(입주일)'], ['period.to', '종료일']);
@@ -13424,7 +13448,7 @@ function ctDocHTML(doc){
     <table>
       <tr><th class="w">소재지</th><td colspan="5"${CT편집칸 ? ` class="ct-road${CT.req && !P.road ? ' miss' : ''}" data-act="ct-req-go" data-v="property.road" title="소재지는 왼쪽 ‘도로명 찾기’로 넣습니다"` : ''}>${ct값(P.road, 300)}${P.jibun ? `<br><span class="sm">(지번) ${esc(P.jibun)}</span>`:''}</td></tr>
       <tr><th class="w">토지</th><th>지목</th><td>${ct칸('property.landCat', P.landCat, 70)}</td><th>면적</th><td colspan="2">${ct칸('property.landArea', P.landArea, 70, 'area')}</td></tr>
-      ${매매 ? `<tr><th class="w">대지권</th><td colspan="5">${ct칸('property.landRight', P.landRight, 200)}</td></tr>` : ''}
+      ${매매 || (F.lease && ct집합(doc.sub)) ? `<tr><th class="w">대지권</th><td colspan="5">${ct칸('property.landRight', P.landRight, 200)}</td></tr>` : ''}
       <tr><th class="w">건물</th><th>구조·용도</th><td>${CT편집칸 ? `${ct칸('property.bldStruct', P.bldStruct, 60, 'text', { ph:'구조' })} · ${ct칸('property.bldUse', P.bldUse, 50, 'text', { ph:'용도' })}` : ct값([P.bldStruct,P.bldUse].filter(Boolean).join(' · '), 90)}</td><th>면적</th><td colspan="2">${ct칸('property.bldArea', P.bldArea, 70, 'area')}</td></tr>
       ${F.lease ? `<tr><th class="w">임차할 부분</th><td colspan="3">${ct칸('property.part', P.part, 160)}</td><th>면적</th><td>${ct칸('property.partArea', P.partArea, 60, 'area')}</td></tr>` : ''}
       ${doc.form === 'shop-lease' ? `<tr><th class="w">용도(업종)</th><td colspan="5">${ct칸('property.use', P.use, 200)}</td></tr>` : ''}
@@ -13442,7 +13466,8 @@ function ctDocHTML(doc){
       ${(F.pay.pre || []).filter(([p]) => +ctGet(doc, p)).map(([p, l]) => `<tr><th class="w">${esc(l)}</th><td>${돈(p, ctGet(doc, p), '')}</td></tr>`).join('')}
       <tr><th class="w">${esc(F.pay.price)}</th><td>${돈('deal.price', D.price, `금 ${빈칸(160)}원정(₩${빈칸(90)})`)}</td></tr>
       <tr><th class="w">계약금</th><td>${돈('deal.down', D.down, `금 ${빈칸(140)}원정`)} 은 계약할 때 지급하고 영수함. 영수자 ${빈칸(70)} (인)</td></tr>
-      ${+D.mid ? `<tr><th class="w">중도금</th><td>${돈('deal.mid', D.mid, '')} 은 ${날('deal.midDate', D.midDate)}에 지급하며</td></tr>` : ''}
+      ${+D.mid ? `<tr><th class="w">${ct중도2(D) ? '1차 중도금' : '중도금'}</th><td>${돈('deal.mid', D.mid, '')} 은 ${날('deal.midDate', D.midDate)}에 지급하며</td></tr>` : ''}
+      ${ct중도2(D) ? `<tr><th class="w">2차 중도금</th><td>${돈('deal.mid2', D.mid2, '')} 은 ${날('deal.mid2Date', D.mid2Date)}에 지급하며</td></tr>` : ''}
       <tr><th class="w">잔금</th><td>${잔금글()} 은 ${날('deal.balanceDate', D.balanceDate)}에 지급한다</td></tr>
     </table>
     <p class="ct-art"><b>제2조(${esc(F.art2t)})</b> ${F.art2(doc)}</p>`
@@ -13451,7 +13476,8 @@ function ctDocHTML(doc){
     <table>
       <tr><th class="w">매매대금</th><td>${돈('deal.price', D.price, `금 ${빈칸(160)}원정(₩${빈칸(90)})`)}</td></tr>
       <tr><th class="w">계약금</th><td>${돈('deal.down', D.down, `금 ${빈칸(140)}원정`)} 은 계약할 때 지급하고 영수함. 영수자 ${빈칸(70)} (인)</td></tr>
-      ${+D.mid ? `<tr><th class="w">중도금</th><td>${돈('deal.mid', D.mid, '')} 은 ${날('deal.midDate', D.midDate)}에 지급하며</td></tr>` : ''}
+      ${+D.mid ? `<tr><th class="w">${ct중도2(D) ? '1차 중도금' : '중도금'}</th><td>${돈('deal.mid', D.mid, '')} 은 ${날('deal.midDate', D.midDate)}에 지급하며</td></tr>` : ''}
+      ${ct중도2(D) ? `<tr><th class="w">2차 중도금</th><td>${돈('deal.mid2', D.mid2, '')} 은 ${날('deal.mid2Date', D.mid2Date)}에 지급하며</td></tr>` : ''}
       <tr><th class="w">잔금</th><td>${잔금글()} 은 ${날('deal.balanceDate', D.balanceDate)}에 지급한다</td></tr>
     </table>
     <p class="ct-art"><b>제2조(소유권 이전 등)</b> 매도인은 매매대금의 잔금을 받음과 동시에 매수인에게 소유권이전등기에 필요한 모든 서류를 교부하고 등기 절차에 협력하며, 위 부동산을 ${CT편집칸 ? 날('period.handover', R.handover, D.balanceDate ? `${ct날짜(D.balanceDate)}(잔금일)` : '') : ct날짜(R.handover || D.balanceDate)}에 인도한다.</p>`
@@ -13460,7 +13486,8 @@ function ctDocHTML(doc){
     <table>
       <tr><th class="w">보증금</th><td>${돈('deal.deposit', D.deposit, `금 ${빈칸(160)}원정(₩${빈칸(90)})`)}</td></tr>
       <tr><th class="w">계약금</th><td>${돈('deal.down', D.down, `금 ${빈칸(140)}원정`)} 은 계약할 때 지급하고 영수함. 영수자 ${빈칸(70)} (인)</td></tr>
-      ${+D.mid ? `<tr><th class="w">중도금</th><td>${돈('deal.mid', D.mid, '')} 은 ${날('deal.midDate', D.midDate)}에 지급하며</td></tr>` : ''}
+      ${+D.mid ? `<tr><th class="w">${ct중도2(D) ? '1차 중도금' : '중도금'}</th><td>${돈('deal.mid', D.mid, '')} 은 ${날('deal.midDate', D.midDate)}에 지급하며</td></tr>` : ''}
+      ${ct중도2(D) ? `<tr><th class="w">2차 중도금</th><td>${돈('deal.mid2', D.mid2, '')} 은 ${날('deal.mid2Date', D.mid2Date)}에 지급하며</td></tr>` : ''}
       <tr><th class="w">잔금</th><td>${잔금글()} 은 ${날('deal.balanceDate', D.balanceDate)}에 지급한다</td></tr>
       ${월세 ? `<tr><th class="w">차임(월세)</th><td>${돈('deal.rent', D.rent, `금 ${빈칸(140)}원정`)}${ct부가글(ct부가(doc))} 은 매월 ${CT편집칸 ? ct칸('deal.rentDay', String(D.rentDay || '').replace(/^매월\s*/, '').replace(/일$/, ''), 30) : D.rentDay?esc(String(D.rentDay).replace(/^매월\s*/, '').replace(/일$/, '')):빈칸(30)}일에 지급한다(${esc(D.rentWhen||'선불')}). 입금계좌: ${빈칸(200)}</td></tr>` : ''}
       ${연세 ? `<tr><th class="w">차임(연세)</th><td>${돈('deal.rent', D.rent, `금 ${빈칸(140)}원정`)}${ct부가글(ct부가(doc))} 은 ${CT편집칸 ? ct칸('deal.rentDay', D.rentDay, 90) : D.rentDay?esc(D.rentDay):빈칸(90)}에 1년분을 한꺼번에 지급한다(${esc(D.rentWhen||'선불')}). 입금계좌: ${빈칸(200)}</td></tr>` : ''}
@@ -14514,7 +14541,7 @@ function cs계약서(e){
   if(최고 && d.specials.some(근저당)) d.specials = d.specials.map(t => 근저당(t) ? t.replace(/금 \(\s+\)원/, `금 ${한글금액(최고)}원`) : t);
   else if(최고) d.specials.unshift(`${매매 ? '매도인' : '임대인'}은 등기사항증명서상 설정되어 있는 근저당권(채권최고액 금 ${한글금액(최고)}원)을 잔금일까지 전액 상환하고 말소한다.`);
   else if(none.has('채권최고액')) d.specials = d.specials.filter(t => !근저당(t));
-  if(+v.임차보증금 && !none.has('임차보증금')) d.specials.push(`현 임차인의 임대차(보증금 금 ${한글금액(v.임차보증금)}원${+v.임차월세 ? ` / 월차임 금 ${한글금액(v.임차월세)}원` : ''})는 매수인이 승계한다.`);
+  if(+v.임차보증금 && !none.has('임차보증금')) ct특약넣기(d, `현 임차인의 임대차(보증금 금 ${한글금액(v.임차보증금)}원${+v.임차월세 ? ` / 월차임 금 ${한글금액(v.임차월세)}원` : ''})는 매수인이 승계한다.`);
   CT.filled = new Set(); CT.scan = null; CT.scanWarn = [];
   CT.dirty = true; CT.mode = 'edit'; ctGo('#/partner/contract/new');
   toast('문자 내용으로 계약서를 열었습니다 - 주소는 ‘다시 찾기’로 골라 주세요');
@@ -14938,6 +14965,8 @@ function ctFormHTML(doc){
   const 특약 = doc.specials.map((s, i) => `
     <div class="ct-clause"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b style="font-size:14.5px">${i+1}.</b>
       ${잠김?'':`<span class="ct-sp-tools">${세션있음() ? `<button class="tapx" data-act="phr-pick" data-v="${i}" aria-expanded="${저장할 === i}" style="font-size:13.5px;font-weight:700;color:var(--ind700)">내 특약으로</button>` : ''}
+        <button class="tapx" data-act="ct-sp-up" data-v="${i}" ${i ? '' : 'disabled'} aria-label="${i+1}번 특약 위로" title="위로" style="font-size:13.5px;color:var(--n500)">▲</button>
+        <button class="tapx" data-act="ct-sp-down" data-v="${i}" ${i < doc.specials.length - 1 ? '' : 'disabled'} aria-label="${i+1}번 특약 아래로" title="아래로" style="font-size:13.5px;color:var(--n500)">▼</button>
         <button class="tapx" data-act="ct-sp-del" data-v="${i}" style="font-size:13.5px;color:var(--danger)">빼기</button></span>`}</div>
       <textarea class="inp" rows="3" data-in="cts:${i}" ${잠김?'disabled':''}>${esc(s)}</textarea>
       ${!잠김 && 저장할 === i ? ctPhrPickHTML(doc) : ''}</div>`).join('');
@@ -14988,7 +15017,7 @@ function ctFormHTML(doc){
         ${상가 ? ctIn('property.use','용도(업종)',{w:3, ph:'예: 카페'}) : ''}
         ${ctIn('property.landCat','토지 지목',{w: 상가?2:3, ph:'예: 대'})}
         ${ctIn('property.landArea', 상가?'토지 면적':'토지 면적(㎡)',{w: 상가?2:3, ph: 상가?'㎡':''})}
-        ${매매 ? ctIn('property.landRight','대지권 종류·비율',{w:6, ph:'예: 소유권대지권 12345.6분의 45.67'}) : ''}
+        ${매매 || (F.lease && ct집합(doc.sub)) ? ctIn('property.landRight','대지권 종류·비율',{w:6, ph:'예: 소유권대지권 12345.6분의 45.67'}) : ''}
         ${ctIn('property.bldStruct','건물 구조',{w: 매매?4:3, ph:'예: 철근콘크리트조'})}
         ${ctIn('property.bldUse','건물 용도',{w: 매매?4:3, ph: 상가?'예: 근린생활시설':'예: 아파트'})}
         ${ctIn('property.bldArea', 상가?'건물 면적':'건물 면적(㎡)',{w: 매매?4:상가?2:3, ph: 상가?'㎡':''})}
@@ -15003,6 +15032,8 @@ function ctFormHTML(doc){
         ${ctIn('deal.down','계약금(원)',{money:true})}
         ${ctIn('deal.mid','중도금(원)',{money:true, ph:'없으면 비움'})}
         ${+D.mid ? ctIn('deal.midDate','중도금 지급일',{type:'date'}) : ''}
+        ${+D.mid ? ctIn('deal.mid2','2차 중도금(원)',{money:true, ph:'없으면 비움'}) : ''}
+        ${ct중도2(D) ? ctIn('deal.mid2Date','2차 중도금 지급일',{type:'date'}) : ''}
         <label class="ct-f w4"><span class="lab">잔금(원) · 자동 계산</span><input class="inp" value="${esc(ctBalance(D)?comma(String(ctBalance(D))):'')}" disabled data-ctbal>
           <span class="ct-won${ct금액넘침(D) ? ' warn' : ''}" data-ctbalwon>${esc(ct금액넘침(D) || (한글금액(ctBalance(D))?`금 ${한글금액(ctBalance(D))}원정`:''))}</span></label>
         ${ctIn('deal.balanceDate','잔금 지급일',{type:'date'})}
@@ -15145,7 +15176,7 @@ function ct입력값(doc){
   const 줄 = [['목적물', [['소재지(도로명)', P.road], ['지번', P.jibun], ['건물명', P.bdNm], ['토지 지목', P.landCat], ['토지 면적(㎡)', P.landArea],
       ...(F.lease ? [] : [['대지권', P.landRight]]), ['건물 구조', P.bldStruct], ['건물 용도', P.bldUse], ['건물 면적(㎡)', P.bldArea],
       ...(F.lease ? [['임차할 부분', P.part], ['그 면적(㎡)', P.partArea]] : [])]],
-    ['금액', [['거래 종류', `${ctTitle(doc)} · ${거래}`], [F.lease ? '보증금' : '매매대금', 원(ctTotal(D))], ['계약금', 원(D.down)], ['중도금', 원(D.mid)], ['중도금 지급일', +D.mid ? D.midDate : ''],
+    ['금액', [['거래 종류', `${ctTitle(doc)} · ${거래}`], [F.lease ? '보증금' : '매매대금', 원(ctTotal(D))], ['계약금', 원(D.down)], ['중도금', 원(D.mid)], ['중도금 지급일', +D.mid ? D.midDate : ''], ...(ct중도2(D) ? [['2차 중도금', 원(D.mid2)], ['2차 중도금 지급일', D.mid2Date]] : []),
       ['잔금', 원(ctBalance(D))], ['잔금 지급일', D.balanceDate], ...(F.lease && +D.rent ? [[D.type === 'yearly' ? '연 차임' : '월 차임', 원(D.rent)], ['차임 지급일', D.rentDay]] : []), ...(F.lease && +D.fee ? [['관리비', 원(D.fee)]] : [])]],
     ['기간', [['계약일', doc.contractDate], [F.lease ? '인도일(시작일)' : '인도일', R.handover || (F.lease ? '' : D.balanceDate)], ...(F.lease ? [['종료일', R.to]] : [])]]];
   for(const [k, ko] of [F.a || [], F.b || []]){ if(!k) continue; const x = 사람[k] || {}, 짧 = ct짧은이름(ko);
@@ -15413,7 +15444,7 @@ function ct확정점검(doc){
   if((doc.form === 'sale' || F.lease) && !doc.acct) 남음.push('특약 마지막 줄의 계좌 줄을 뺐습니다 - 계좌는 계약서에 손으로 적어 주세요');
   const 총 = ctTotal(D);
   if(!총) 남음.push(`${F.lease ? '보증금' : '대금'}이 비어 있습니다`);
-  if(총 && (+D.down || 0) + (+D.mid || 0) > 총) 남음.push('계약금과 중도금을 더한 금액이 전체 금액보다 큽니다');
+  if(총 && (+D.down || 0) + ct중도합(D) > 총) 남음.push('계약금과 중도금을 더한 금액이 전체 금액보다 큽니다');
   if(!D.balanceDate) 남음.push('잔금 지급일이 비어 있습니다');
   if(!doc.contractDate) 남음.push('계약일이 비어 있습니다');
   if(F.lease && !(doc.period && doc.period.to)) 남음.push(`${F.verb || '임대차'} 종료일이 비어 있습니다`);
@@ -15445,11 +15476,14 @@ function ct부속고침(patch, 그리기 = true){
   if(!Object.keys(x).length) delete CT.track.extra;
   if(CT.id && !CT.need32) ctTrackSave(false);
   if(그리기) render();
-  else { ctPvRefresh(); const b = document.querySelector('#app [data-cte-sum]'); if(b && CT.doc) b.textContent = `${comma(String(Math.round(ct정산(CT.doc).합)))}원`; }
+  else { ctPvRefresh(); const b = document.querySelector('#app [data-cte-sum]'), s = CT.doc && ct정산(CT.doc);
+    if(b && s){ b.textContent = `${comma(String(Math.round(s.금액)))}원`; const d = document.querySelector('#app [data-cte-dir]'); if(d) d.textContent = `(${s.보내는} → ${s.받는})`; } }
 }
 function ct부속입력(el, key){
   const x = ct부속();
   if(key === 'fee' || key === 'prepaid' || key === 'ltm'){ money(el); ct부속고침({ [key]: +(el.value.replace(/[^0-9]/g, '')) || 0 }, false); return; }
+  if(key === 'name.fee' || key === 'name.rent'){ const k = key.slice(5), n = { ...(x.names || {}) }; n[k] = el.value.slice(0, 30); if(!n[k].trim()) delete n[k];
+    ct부속고침({ names: Object.keys(n).length ? n : '' }, false); return; }
   let m = /^add\.(\d+)\.(n|amt)$/.exec(key);
   if(m){ const a = (x.adds || []).slice(), i = +m[1]; if(!a[i]) return;
     if(m[2] === 'amt'){ money(el); a[i] = { ...a[i], amt: +(el.value.replace(/[^0-9]/g, '')) || 0 }; } else a[i] = { ...a[i], n: el.value.slice(0, 30) };
@@ -15470,17 +15504,21 @@ function ct정산(doc){
   const 앞 = x.dayOwner === 'a' ? 날 : 날 - 1;          /* 매도인·임대인이 부담하는 날수 (당일분은 기본 매수인·임차인) */
   const aKo = ct짧은이름((F.a || [])[1] || '매도인'), bKo = ct짧은이름((F.b || [])[1] || '매수인');
   const 줄 = [], 방향 = k => (x.dirs || {})[k] || '+';
-  if(+x.fee && 일수) 줄.push({ n:`관리비 일할 - ${aKo} 부담분`, amt: Math.round(x.fee * 앞 / 일수), dir:'-',
+  /* 일할 두 줄도 이름 · 방향을 고칠 수 있다(2026-11-10 파트너 예시 '모든 항목 수정 가능') - x.names.fee/rent · x.dirs.fee/rent */
+  const 이름 = (k, 기본) => String(((x.names || {})[k]) || '').trim() || 기본, 방향2 = (k, 기본) => (x.dirs || {})[k] || 기본;
+  if(+x.fee && 일수) 줄.push({ n: 이름('fee', `관리비 일할 - ${aKo} 부담분`), amt: Math.round(x.fee * 앞 / 일수), dir: 방향2('fee', '-'),
     식:`월 ${comma(String(x.fee))}원 × ${앞}/${일수}일 (${+m[2]}월 1일~${앞 ? 앞 + '일' : '없음'})` });
   if(F.lease && D.type === 'monthly' && +D.rent && 일수 && (D.rentWhen || '선불') === '선불')
-    줄.push({ n:'월차임 일할 - 입주일부터 말일까지', amt: Math.round(D.rent * (일수 - 앞) / 일수), dir:'+',
+    줄.push({ n: 이름('rent', '월차임 일할 - 입주일부터 말일까지'), amt: Math.round(D.rent * (일수 - 앞) / 일수), dir: 방향2('rent', '+'),
       식:`월 ${comma(String(D.rent))}원 × ${일수 - 앞}/${일수}일 (${+m[2]}월 ${앞 + 1}일~${일수}일)` });
   if(+x.prepaid) 줄.push({ n:'선수관리비', amt: +x.prepaid, dir: 방향('prepaid'), 식:'' });
   if(+x.ltm) 줄.push({ n:'장기수선충당금', amt: +x.ltm, dir: 방향('ltm'), 식:'' });
   (x.adds || []).forEach(a => { if(a.n || +a.amt) 줄.push({ n: a.n || '(이름 없는 항목)', amt: +a.amt || 0, dir: a.dir === '-' ? '-' : '+', 식:'' }); });
   const 잔금 = ctBalance(D);
   const 합 = 줄.reduce((s, r) => s + (r.dir === '-' ? -r.amt : r.amt), 잔금);
-  return { 잔금일, 일수, 날, 줄, 잔금, 합, aKo, bKo };
+  /* 합이 마이너스면 돈이 거꾸로 간다(매도인·임대인 → 매수인·임차인) - 방향과 금액(절댓값)을 따로 둔다 */
+  const 거꾸로 = 합 < 0, 보내는 = 거꾸로 ? aKo : bKo, 받는 = 거꾸로 ? bKo : aKo;
+  return { 잔금일, 일수, 날, 줄, 잔금, 합, aKo, bKo, 거꾸로, 보내는, 받는, 금액: Math.abs(합) };
 }
 /* 오른쪽 미리보기·인쇄 - 부속 서류 탭이면 고른 서류 */
 function ct보기HTML(doc){
@@ -15504,12 +15542,16 @@ function ctPrivacyDocHTML(doc){
       <tr><th class="w">부동산의 표시</th><td>${ct값(ct부동산글(doc), 300)}</td></tr>
       <tr><th class="w">수집·이용 목적</th><td>거래계약서 · 중개대상물 확인·설명서 작성과 교부, 부동산 거래신고, 공인중개사법에 따른 서류 보존, 계약 진행 연락</td></tr>
       <tr><th class="w">수집 항목</th><td>성명, 주민등록번호, 주소, 연락처 (법인은 상호 · 대표자 · 사업자등록번호 · 본점 소재지, 대리인은 대리인의 같은 항목)</td></tr>
+      <tr><th class="w">수집 방법</th><td>계약 당사자 본인(또는 대리인)이 직접 적거나 신분증 · 등기사항증명서 등으로 확인</td></tr>
       <tr><th class="w">보유·이용 기간</th><td>거래계약서 5년, 중개대상물 확인·설명서 3년(공인중개사법 제26조 · 제25조) - 그 뒤 지체 없이 파기합니다</td></tr>
+      <tr><th class="w">제3자 제공</th><td>받는 곳: 거래 상대방, 공동중개 개업공인중개사, 신고 관청(시·군·구, 부동산거래관리시스템) · 목적: 계약 체결과 이행 · 공동중개 · 부동산 거래신고 · 항목: 성명, 주소, 연락처(주민등록번호는 신고 관청에만) · 기간: 위 보유 기간과 같음</td></tr>
+      <tr><th class="w">처리 위탁</th><td>비버노크(운영 주식회사 플러스토닉) - 계약서 작성 · 보관 시스템 운영</td></tr>
       <tr><th class="w">동의를 거부할 권리</th><td>동의를 거부할 수 있습니다. 다만 거부하면 거래계약서 작성과 거래신고 등 중개 업무를 진행할 수 없습니다.</td></tr>
     </table>
-    <p class="ct-close">주민등록번호는 부동산 거래신고 등 법령이 정한 경우에만 처리합니다(개인정보 보호법 제24조의2). 위 내용을 읽고 동의합니다.</p>
-    <p class="ct-date">${ct날짜(doc.contractDate)}</p>
-    <table class="ct-sign">${칸}</table>
+    <p class="ct-close">주민등록번호는 부동산 거래신고 등 법령이 정한 경우에만 처리합니다(개인정보 보호법 제24조의2). 위 내용을 읽고 수집·이용과 제3자 제공에 동의합니다.</p>
+    <p class="ct-date">수집일시 ${ct날짜(doc.contractDate)}</p>
+    <table class="ct-sign">${칸}
+      <tr><th class="w">수집자</th><td class="sign">${ct값(B.office, 120)} ${ct값(B.rep, 70)} <span class="ct-seal">(서명 또는 날인)</span></td><td></td></tr></table>
   </div>`;
 }
 /* 위임장 (대리인 계약용 - 인수인계 서식 '기타서식_위임장') - 대리인이 있는 쪽을 쓴다. 없으면 빈 칸으로 */
@@ -15523,16 +15565,19 @@ function ctProxyDocHTML(doc){
     <table>
       <tr><th class="w">부동산의 표시</th><td>${ct값(ct부동산글(doc), 300)}</td></tr>
       <tr><th class="w">위임 내용</th><td>위 부동산의 ${esc(동사)}계약에 관하여 계약 체결 · 서명날인 · 대금 지급 · 수령 일체의 권한</td></tr>
+      <tr><th class="w">기타</th><td>${빈칸(300)}</td></tr>
     </table>
     <p class="ct-close">본인은 위 내용의 권한을 아래 수임인에게 위임합니다.</p>
     <p class="ct-date">${ct날짜(doc.contractDate)}</p>
     <table class="ct-sign">
-      <tr><th rowspan="2" class="w">위임인<br>(${esc(ct짧은이름(쪽[1]))})</th><th>주소</th><td colspan="3">${ct값(본인.addr, 260)}</td></tr>
+      <tr><th rowspan="3" class="w">위임인<br>(${esc(ct짧은이름(쪽[1]))})</th><th>주소</th><td colspan="3">${ct값(본인.addr, 260)}</td></tr>
+      <tr><th>주민등록번호</th><td colspan="3">${빈칸(70)} - ${빈칸(80)}</td></tr>
       <tr><th>연락처</th><td>${ct값(본인.phone, 110)}</td><th>성명</th><td class="sign">${ct값(본인.name, 90)} <span class="ct-seal">(인감 날인)</span></td></tr>
-      <tr><th rowspan="2" class="w">수임인<br>(대리인)</th><th>주소</th><td colspan="3">${ct값(대.addr, 260)}</td></tr>
+      <tr><th rowspan="3" class="w">수임인<br>(대리인)</th><th>주소</th><td colspan="3">${ct값(대.addr, 260)}</td></tr>
+      <tr><th>주민등록번호</th><td colspan="3">${빈칸(70)} - ${빈칸(80)}</td></tr>
       <tr><th>연락처</th><td>${ct값(대.phone, 110)}</td><th>성명</th><td class="sign">${ct값(대.name, 90)} <span class="ct-seal">(서명 또는 날인)</span></td></tr>
     </table>
-    <p class="ct-foot">첨부: 위임인의 인감증명서 1통(위임용 · 본인 발급). 주민등록번호는 손으로 적습니다.</p>
+    <p class="ct-foot">첨부: 위임인의 인감증명서 1통(위임용 · 본인 발급), 위임인·수임인 신분증 사본 각 1부. 주민등록번호는 손으로 적고 서버에 남기지 않습니다.</p>
   </div>`;
 }
 /* 보증금 반환 영수증 - 임대차가 끝나 임차인이 보증금을 돌려받았을 때 */
@@ -15542,17 +15587,20 @@ function ctReturnDocHTML(doc){
   return `${ct부속머리(doc)}
     <h1>보 증 금 반 환 영 수 증</h1>
     <table>
-      <tr><th class="w">금액</th><td>${금액글(D.deposit) || `금 ${빈칸(160)}원정(₩${빈칸(90)})`}</td></tr>
+      <tr><th class="w">보증금</th><td>${금액글(D.deposit) || `금 ${빈칸(160)}원정(₩${빈칸(90)})`}</td></tr>
+      <tr><th class="w">공제한 금액</th><td>금 ${빈칸(140)}원정 (내용: 밀린 차임 · 관리비 · 원상복구비 등 ${빈칸(120)})</td></tr>
+      <tr><th class="w">영수 금액</th><td>금 ${빈칸(160)}원정(₩${빈칸(90)})</td></tr>
       <tr><th class="w">부동산의 표시</th><td>${ct값(ct부동산글(doc), 300)}</td></tr>
       <tr><th class="w">임대차기간</th><td>${ct날짜(R.handover)} ~ ${ct날짜(R.to)}</td></tr>
+      <tr><th class="w">받은 방법</th><td>□ 계좌이체 (은행 ${빈칸(70)} 계좌번호 ${빈칸(120)} 예금주 ${빈칸(60)}) &nbsp; □ 현금</td></tr>
     </table>
-    <p class="ct-close">위 부동산 임대차계약의 보증금을 ${esc(ct짧은이름(aKo))}으로부터 틀림없이 반환받았음을 확인합니다.</p>
-    <p class="ct-date">${빈칸(46)}년 ${빈칸(26)}월 ${빈칸(26)}일</p>
+    <p class="ct-close">위 부동산 임대차계약의 보증금(공제한 금액을 뺀 영수 금액)을 ${esc(ct짧은이름(aKo))}으로부터 틀림없이 반환받았음을 확인합니다.</p>
+    <p class="ct-date">발행일 ${빈칸(46)}년 ${빈칸(26)}월 ${빈칸(26)}일</p>
     <table class="ct-sign">
       ${ct영수칸(`영수인<br>(${esc(ct짧은이름(bKo))})`, 사람[bKey] || {})}
       ${ct영수칸(`지급인<br>(${esc(ct짧은이름(aKo))})`, 사람[aKey] || {})}
     </table>
-    <p class="ct-foot">보증금에서 공제한 금액(밀린 차임·원상복구비 등)이 있으면 아래에 적습니다: ${빈칸(260)}</p>
+    <p class="ct-foot">공제한 금액이 없으면 ‘없음’ 으로 적고, 영수 금액은 보증금과 같게 적습니다.</p>
   </div>`;
 }
 const ct부속머리 = doc => `<div class="ctdoc${ct글꼴(doc) === 'sans' ? ' f-sans' : ''}">`;
@@ -15561,13 +15609,15 @@ const ct부동산글 = doc => { const P = doc.property || {}; return [P.road, P.
 const ct영수칸 = (label, x) => `
     <tr><th rowspan="2" class="w">${label}</th><th>주소</th><td colspan="3">${ct값(x.addr, 260)}</td></tr>
     <tr><th>연락처</th><td>${ct값(x.phone, 110)}</td><th>성명</th><td class="sign">${ct값(x.name, 90)} <span class="ct-seal">(서명 또는 날인)</span></td></tr>`;
+/* 영수증 고른 돈 - 없는 중도금을 골라 두었으면 계약금으로 */
+const ct영수고름 = D => { const k = CT.extraRc || 'down'; return (k === 'mid' && !+D.mid) || (k === 'mid2' && !ct중도2(D)) ? 'down' : k; };
 function ctReceiptDocHTML(doc){
   const F = CT_FORMS[doc.form] || {}, D = doc.deal || {}, t = CT.track || {};
   const [aKey, aKo] = F.a || ['', ''], [bKey, bKo] = F.b || ['', ''], 사람 = doc.parties || {};
-  const 무엇 = CT.extraRc === 'mid' && !+D.mid ? 'down' : (CT.extraRc || 'down');
-  const 항목 = { down:'계약금', mid:'중도금', bal:'잔금' }[무엇];
-  const 금액 = 무엇 === 'down' ? D.down : 무엇 === 'mid' ? D.mid : ctBalance(D);
-  const 날 = 무엇 === 'down' ? doc.contractDate : 무엇 === 'mid' ? (t.midDate || D.midDate) : (t.balanceDate || D.balanceDate);
+  const 무엇 = ct영수고름(D);
+  const 항목 = { down:'계약금', mid: ct중도2(D) ? '1차 중도금' : '중도금', mid2:'2차 중도금', bal:'잔금' }[무엇];
+  const 금액 = 무엇 === 'down' ? D.down : 무엇 === 'mid' ? D.mid : 무엇 === 'mid2' ? D.mid2 : ctBalance(D);
+  const 날 = 무엇 === 'down' ? doc.contractDate : 무엇 === 'mid' ? (t.midDate || D.midDate) : 무엇 === 'mid2' ? D.mid2Date : (t.balanceDate || D.balanceDate);
   const 동사 = F.verb || (F.lease ? '임대차' : '매매');
   return `${ct부속머리(doc)}
     <h1>영 수 증</h1>
@@ -15575,7 +15625,9 @@ function ctReceiptDocHTML(doc){
       <tr><th class="w">금액</th><td>${금액글(금액) || `금 ${빈칸(160)}원정(₩${빈칸(90)})`}</td></tr>
       <tr><th class="w">내용</th><td>${esc(동사)}계약의 ${항목}</td></tr>
       <tr><th class="w">부동산의 표시</th><td>${ct값(ct부동산글(doc), 300)}</td></tr>
+      <tr><th class="w">계약 금액(전체)</th><td>${금액글(ctTotal(D)) || `금 ${빈칸(160)}원정`}</td></tr>
       <tr><th class="w">계약일</th><td>${ct날짜(doc.contractDate)}</td></tr>
+      <tr><th class="w">지급 방법</th><td>□ 계좌이체 (은행 ${빈칸(70)} 계좌번호 ${빈칸(120)} 예금주 ${빈칸(60)}) &nbsp; □ 현금</td></tr>
     </table>
     <p class="ct-close">위 금액을 위 부동산 ${esc(동사)}계약의 ${항목}으로 정히 영수합니다.</p>
     <p class="ct-date">${ct날짜(날)}</p>
@@ -15612,7 +15664,8 @@ function ctSettleDocHTML(doc){
     <table class="ct-settle">
       <tr><th class="w">${esc(총)}</th><td class="r">${원(ctTotal(D))}</td><td></td></tr>
       <tr><th class="w">계약금</th><td class="r">${원(D.down)}</td><td class="sm">${doc.renewOf ? '기존 보증금으로 갈음' : `${ct날짜(doc.contractDate)} 지급`}</td></tr>
-      ${+D.mid ? `<tr><th class="w">중도금</th><td class="r">${원(D.mid)}</td><td class="sm">${ct날짜((CT.track || {}).midDate || D.midDate)} 지급</td></tr>` : ''}
+      ${+D.mid ? `<tr><th class="w">${ct중도2(D) ? '1차 중도금' : '중도금'}</th><td class="r">${원(D.mid)}</td><td class="sm">${ct날짜((CT.track || {}).midDate || D.midDate)} 지급</td></tr>` : ''}
+      ${ct중도2(D) ? `<tr><th class="w">2차 중도금</th><td class="r">${원(D.mid2)}</td><td class="sm">${ct날짜(D.mid2Date)} 지급</td></tr>` : ''}
       <tr><th class="w">잔금</th><td class="r"><b>${원(S0.잔금)}</b></td><td></td></tr>
     </table>
     <h2>[관리비 등 정산]</h2>
@@ -15621,7 +15674,7 @@ function ctSettleDocHTML(doc){
         : `<tr><th class="w">${빈칸(90)}</th><td class="r">${빈칸(90)}</td><td></td></tr>`}
     </table>
     <table class="ct-settle mt">
-      <tr><th class="w">최종 지급액</th><td class="r"><b>${원(S0.합)}</b></td><td class="sm">${esc(S0.bKo)} → ${esc(S0.aKo)}${S0.합 > 0 ? ` · 금 ${esc(한글금액(S0.합))}원정` : ''}</td></tr>
+      <tr><th class="w">최종 지급액</th><td class="r"><b>${원(S0.금액)}</b></td><td class="sm">지급 방향: ${esc(S0.보내는)} → ${esc(S0.받는)}${S0.금액 > 0 ? ` · 금 ${esc(한글금액(S0.금액))}원정` : ''}</td></tr>
     </table>
     ${x.attach ? `<h2>[물품 인계]</h2>${ctHandTable()}` : ''}
     <p class="ct-close">위와 같이 정산하였음을 확인합니다.</p>
@@ -15655,7 +15708,7 @@ function ctHandDocHTML(doc){
 function ctExtraHTML(doc){
   const F = CT_FORMS[doc.form] || {}, D = doc.deal || {}, x = ct부속(), 탭 = CT.extraTab || 'rc';
   const 금액칸 = (k, l, ph) => `<label class="ct-f w4"><span class="lab">${l}</span><input class="inp" inputmode="numeric" data-in="cte:${k}" value="${+x[k] ? comma(String(x[k])) : ''}" placeholder="${ph || '없으면 비움'}"></label>`;
-  const 방향칩 = k => { const d = (x.dirs || {})[k] || '+'; return `<span class="ct-dir"><button type="button" class="chip${d === '+' ? ' on' : ''}" data-act="cte-dir" data-v="${k}|+">더 냄</button><button type="button" class="chip${d === '-' ? ' on' : ''}" data-act="cte-dir" data-v="${k}|-">뺌</button></span>`; };
+  const 방향칩 = (k, 기본 = '+') => { const d = (x.dirs || {})[k] || 기본; return `<span class="ct-dir"><button type="button" class="chip${d === '+' ? ' on' : ''}" data-act="cte-dir" data-v="${k}|+">더 냄</button><button type="button" class="chip${d === '-' ? ' on' : ''}" data-act="cte-dir" data-v="${k}|-">뺌</button></span>`; };
   const S0 = ct정산(doc);
   const 안내 = !CT.id ? '<p class="ct-note">계약서를 먼저 저장하면 여기 적은 값이 남습니다. 지금은 인쇄만 됩니다.</p>'
     : CT.need32 ? '<p class="ct-note">부속 서류 값 저장은 준비 중입니다 - 지금은 인쇄만 됩니다.</p>' : '';
@@ -15663,9 +15716,9 @@ function ctExtraHTML(doc){
     `<button type="button" role="tab" class="chip${탭 === k ? ' on' : ''}" aria-selected="${탭 === k}" data-act="cte-tab" data-v="${k}">${t}</button>`).join('')}</div>`;
   let 본 = '';
   if(탭 === 'rc'){
-    const 무엇 = CT.extraRc === 'mid' && !+D.mid ? 'down' : (CT.extraRc || 'down');
+    const 무엇 = ct영수고름(D);
     본 = `<div class="card pad ct-sec"><h2>어느 돈의 영수증인가요</h2>
-      <div class="ct-chips">${[['down','계약금'], ...(+D.mid ? [['mid','중도금']] : []), ['bal','잔금']].map(([k, t]) =>
+      <div class="ct-chips">${[['down','계약금'], ...(+D.mid ? [['mid', ct중도2(D) ? '1차 중도금' : '중도금']] : []), ...(ct중도2(D) ? [['mid2','2차 중도금']] : []), ['bal','잔금']].map(([k, t]) =>
         `<button type="button" class="chip${무엇 === k ? ' on' : ''}" data-act="cte-rc" data-v="${k}">${t}</button>`).join('')}</div>
       <p class="sub" style="margin:0;font-size:13.5px">금액·날짜·부동산·당사자는 계약서에서 가져옵니다. 영수인·지급인 모두 성명·주소·연락처를 적고 날인합니다 - 거래신고 때 대금 지급 증빙으로 냅니다.</p></div>`;
   } else if(탭 === 'pw' || 탭 === 'rt' || 탭 === 'pi'){
@@ -15679,9 +15732,11 @@ function ctExtraHTML(doc){
       <div><span class="lab">잔금일 당일분 관리비·차임</span><div class="ct-chips">
         <button type="button" class="chip${x.dayOwner === 'a' ? '' : ' on'}" data-act="cte-day" data-v="b">${esc(S0.bKo)} 부담</button>
         <button type="button" class="chip${x.dayOwner === 'a' ? ' on' : ''}" data-act="cte-day" data-v="a">${esc(S0.aKo)} 부담</button></div></div>
+      ${+x.fee && S0.일수 ? `<div class="ct-dirrow"><input class="inp" data-in="cte:name.fee" value="${esc((x.names || {}).fee || '')}" placeholder="관리비 일할 - ${esc(S0.aKo)} 부담분" aria-label="관리비 일할 항목 이름" style="flex:1;min-width:0">${방향칩('fee', '-')}</div>` : ''}
+      ${S0.줄.some(r => r.n === ((x.names || {}).rent || '월차임 일할 - 입주일부터 말일까지')) ? `<div class="ct-dirrow"><input class="inp" data-in="cte:name.rent" value="${esc((x.names || {}).rent || '')}" placeholder="월차임 일할 - 입주일부터 말일까지" aria-label="월차임 일할 항목 이름" style="flex:1;min-width:0">${방향칩('rent', '+')}</div>` : ''}
       ${+x.prepaid ? `<div class="ct-dirrow"><span class="lab">선수관리비</span>${방향칩('prepaid')}</div>` : ''}
       ${+x.ltm ? `<div class="ct-dirrow"><span class="lab">장기수선충당금</span>${방향칩('ltm')}</div>` : ''}
-      <p class="sub" style="margin:0;font-size:13.5px">‘더 냄’은 ${esc(S0.bKo)}이 잔금에 더해 내는 돈, ‘뺌’은 잔금에서 빼는 돈입니다.${F.lease && D.type === 'monthly' ? ' 월차임(선불)은 입주일부터 말일까지 일할로 더합니다.' : ''}</p></div>
+      <p class="sub" style="margin:0;font-size:13.5px">‘더 냄’은 ${esc(S0.bKo)}이 잔금에 더해 내는 돈, ‘뺌’은 잔금에서 빼는 돈입니다.${F.lease && D.type === 'monthly' ? ((D.rentWhen || '선불') === '선불' ? ' 월차임(선불)은 입주일부터 말일까지 일할로 더합니다.' : ' 후불 월세는 잔금 때 일할 정산하지 않습니다 - 필요하면 아래 ‘항목 더하기’로 적으세요.') : ''} 일할 두 줄은 이름과 방향을 고칠 수 있습니다.</p></div>
     <div class="card pad ct-sec"><h2>항목 더하기</h2>
       ${(x.adds || []).map((a, i) => `<div class="ct-addrow">
         <input class="inp" data-in="cte:add.${i}.n" value="${esc(a.n || '')}" placeholder="항목 이름 (예: 수도요금)" aria-label="항목 이름">
@@ -15690,7 +15745,8 @@ function ctExtraHTML(doc){
         <button type="button" class="tapx" data-act="cte-add-del" data-v="${i}" style="font-size:13.5px;color:var(--danger)">빼기</button></div>`).join('')}
       <button type="button" class="btn tool sm" data-act="cte-add" style="align-self:flex-start">+ 항목</button></div>
     <div class="card pad ct-sec"><h2>최종 지급액</h2>
-      <p style="margin:0;font-size:15px"><b data-cte-sum>${comma(String(Math.round(S0.합)))}원</b> <span class="sub">(${esc(S0.bKo)} → ${esc(S0.aKo)})</span></p>
+      <p style="margin:0;font-size:15px"><b data-cte-sum>${comma(String(Math.round(S0.금액)))}원</b> <span class="sub" data-cte-dir>(${esc(S0.보내는)} → ${esc(S0.받는)})</span></p>
+      ${S0.거꾸로 ? `<p class="sub" style="margin:0;font-size:13.5px;color:var(--warn,#9a5b00)">빼는 돈이 잔금보다 많아 ${esc(S0.aKo)}이 ${esc(S0.bKo)}에게 돌려주는 정산입니다.</p>` : ''}
       <label class="ct-chk"><input type="checkbox" data-act="cte-attach" ${x.attach ? 'checked' : ''}> 정산서 아래에 물품 인계 표를 붙입니다</label></div>`;
   } else {
     const list = ct인계목록(x), 이름들 = new Set(list.map(o => o.n));
@@ -15751,7 +15807,7 @@ function ctPvInput(el){
     ct잔금표시();
     const b = ctBalance(CT.doc.deal), 잔 = 금액글(b) || `금 ${빈칸(140)}원정`;
     document.querySelectorAll('#ctPv [data-ctbalpv]').forEach(x => x.innerHTML = 잔);
-    if(path === 'deal.mid') CT.pvRender = true;          /* 중도금 줄 · 지급일 칸이 생기고 없어진다 - 서류를 떠날 때 다시 그린다 */
+    if(path === 'deal.mid' || path === 'deal.mid2') CT.pvRender = true;          /* 중도금 줄 · 지급일 칸이 생기고 없어진다 - 서류를 떠날 때 다시 그린다 */
   } else if(kind === 'ctd'){
     const iso = ct날짜읽기(글); if(iso === null) return;   /* 아직 다 못 적었다 */
     ctSet(CT.doc, path, iso); const L = 왼('ct:' + path); if(L) L.value = iso;
@@ -16580,7 +16636,7 @@ function rpItems(doc){
         : [['⑧ 물건별 거래가격', '권리가격', rp원(D.rightValue)], ['⑧ 물건별 거래가격', '추가 지불액 등(추가분담금·프리미엄)', rp원((+D.extra || 0) + (+D.premium || 0))]]),
       ['⑨ 총 실제 거래가격', '합계', rp원(D.price)], ['⑨ 총 실제 거래가격', '계약금', rp원(D.down)],
       ['⑨ 총 실제 거래가격', '계약 체결일', rp날(doc.contractDate)],
-      ['⑨ 총 실제 거래가격', '중도금', rp원(D.mid)], ['⑨ 총 실제 거래가격', '중도금 지급일', rp날(D.midDate)],
+      ['⑨ 총 실제 거래가격', '중도금', rp원(ct중도합(D)), ct중도2(D) ? '1차 + 2차 합계' : ''], ['⑨ 총 실제 거래가격', '중도금 지급일', rp날(D.midDate), ct중도2(D) ? `2차 ${rp날(D.mid2Date)}` : ''],
       ['⑨ 총 실제 거래가격', '잔금', rp원(ctBalance(D))], ['⑨ 총 실제 거래가격', '잔금 지급일', rp날(D.balanceDate)],
       ['⑪ 계약의 조건 및 참고사항', '승계할 대출', rp원(D.loan), '중도금·이주비 대출을 승계하면 적습니다'],
       ['⑪ 계약의 조건 및 참고사항', '특약 요약', 특약, '조건·기한을 붙인 경우에만'],
@@ -16597,7 +16653,7 @@ function rpItems(doc){
     ['⑧ 물건별 거래가격', '거래가격', rp원(D.price)],
     ['⑨ 총 실제 거래가격', '합계', rp원(D.price)], ['⑨ 총 실제 거래가격', '계약금', rp원(D.down)],
     ['⑨ 총 실제 거래가격', '계약 체결일', rp날(doc.contractDate)],
-    ['⑨ 총 실제 거래가격', '중도금', rp원(D.mid)], ['⑨ 총 실제 거래가격', '중도금 지급일', rp날(D.midDate)],
+    ['⑨ 총 실제 거래가격', '중도금', rp원(ct중도합(D)), ct중도2(D) ? '1차 + 2차 합계' : ''], ['⑨ 총 실제 거래가격', '중도금 지급일', rp날(D.midDate), ct중도2(D) ? `2차 ${rp날(D.mid2Date)}` : ''],
     ['⑨ 총 실제 거래가격', '잔금', rp원(ctBalance(D))], ['⑨ 총 실제 거래가격', '잔금 지급일', rp날(D.balanceDate)],
     ['⑪ 계약의 조건 및 참고사항', '특약 요약', 특약, '조건·기한을 붙인 경우에만'],
   ];
@@ -16682,7 +16738,7 @@ function ct잔금표시(){
   /* 계약금 + 중도금이 대금보다 크면 잔금 칸 아래에 빨갛게 (파트너 기획 [95] '오류 방지') */
   const b = $('#app [data-ctbalwon]'); if(b){ const 넘침 = ct금액넘침(CT.doc.deal); b.textContent = 넘침 || (한글금액(n) ? `금 ${한글금액(n)}원정` : ''); b.classList.toggle('warn', !!넘침); }
 }
-const ct금액넘침 = D => { const 총 = ctTotal(D || {}); return 총 && (+D.down || 0) + (+D.mid || 0) > 총 ? '계약금 + 중도금이 전체 금액보다 큽니다' : ''; };
+const ct금액넘침 = D => { const 총 = ctTotal(D || {}); return 총 && (+D.down || 0) + ct중도합(D) > 총 ? '계약금 + 중도금이 전체 금액보다 큽니다' : ''; };
 function ctInput(el, k){
   if(!CT.doc || (CT.row && CT.row.status === 'sealed')) return false;
   const at = k.indexOf(':'); if(at < 0) return false;
@@ -16710,7 +16766,7 @@ function ctInput(el, k){
     const w = $(`#app [data-ctwon="${path}"]`); if(w) w.textContent = 한글금액(n) ? `금 ${한글금액(n)}원정` : '';
     ct잔금표시();
     /* 중도금을 처음 넣거나 지우면 지급일 칸이 생기고 없어진다 - 그때만 다시 그린다 */
-    if(path === 'deal.mid' && !!전 !== !!n){ ctDirty(); render(); return true; }
+    if((path === 'deal.mid' || path === 'deal.mid2') && !!전 !== !!n){ ctDirty(); render(); return true; }
   }
   else if(kind === 'ctc'){ const c = CT.doc.clauses[+path]; if(c) c.text = el.value; }
   else if(kind === 'cts'){ CT.doc.specials[+path] = el.value; }
@@ -19048,7 +19104,7 @@ function handle(a,v,el){
     case 'ct-base-sp': if(CT.doc && !ctSealed()){ const 있음 = new Set(CT.doc.specials.map(t => String(t).trim()));
       const 넣을 = ct기본특약(CT.doc).filter(t => !있음.has(t.trim()));
       if(!넣을.length) return toast('기본 특약이 이미 다 들어 있습니다'), true;
-      CT.doc.specials.push(...넣을); ctDirty(); render(); toast(`기본 특약 ${넣을.length}개를 넣었습니다`); } return true;
+      ct특약넣기(CT.doc, ...넣을); ctDirty(); render(); toast(`기본 특약 ${넣을.length}개를 넣었습니다`); } return true;
     case 'ct-deal': if(CT.doc && !ctSealed()){ CT.doc.deal.type = v === '월세' ? 'monthly' : v === '연세' ? 'yearly' : 'jeonse'; ctDirty(); render(); } return true;
     case 'ct-rentwhen': if(CT.doc && !ctSealed()){ CT.doc.deal.rentWhen = v === '후불' ? '후불' : '선불'; ctDirty(); render(); } return true;
     case 'ct-font': if(CT.doc && !ctSealed() && CT_글꼴[v] && ct글꼴(CT.doc) !== v){
@@ -19063,8 +19119,11 @@ function handle(a,v,el){
       if(base){ c.text = base.text; c.title = base.title; ctDirty(); render(); } return true;
     }
     case 'ct-sp-add': if(CT.doc){
-      CT.doc.specials.push(v === '' ? '' : ((ctSpecialSet(CT.doc)[+v] || [])[1] || '')); ctDirty(); render(); } return true;
+      ct특약넣기(CT.doc, v === '' ? '' : ((ctSpecialSet(CT.doc)[+v] || [])[1] || '')); ctDirty(); render(); } return true;
     case 'ct-sp-del': if(CT.doc){ CT.doc.specials.splice(+v, 1); CT.phrSave = null; ctDirty(); render(); } return true;
+    /* 특약 위·아래로 (2026-11-10) - 번호는 그릴 때 다시 매긴다 */
+    case 'ct-sp-up': case 'ct-sp-down': if(CT.doc && !ctSealed()){ const L = CT.doc.specials, i = +v, j = a === 'ct-sp-up' ? i - 1 : i + 1;
+      if(i in L && j >= 0 && j < L.length){ [L[i], L[j]] = [L[j], L[i]]; CT.phrSave = null; ctDirty(); render(); } } return true;
     /* 내 특약 문구함 (2026-10-30) */
     case 'phr-tab': if(CT.doc && CT_특약묶음[v]){ CT.phrTab = { doc: CT.doc, g: v }; CT.phrDel = null; render(); } return true;
     /* 계약서 › 내 특약 화면 - 묶음 탭 · 새 문구 */
@@ -19082,7 +19141,7 @@ function handle(a,v,el){
     case 'phr-reload': CT.phr = null; ctPhrLoad(); render(); return true;
     case 'phr-add': {
       const p = CT.doc && !ctSealed() && CT.phr && (CT.phr.list || []).find(x => x.id === v);
-      if(p){ CT.doc.specials.push(p.t); ctDirty(); render(); toast('특약에 넣었습니다'); } return true; }
+      if(p){ ct특약넣기(CT.doc, p.t); ctDirty(); render(); toast('특약에 넣었습니다'); } return true; }
     case 'phr-pick':
       CT.phrSave = v === '' || !CT.doc || (CT.phrSave && CT.phrSave.doc === CT.doc && CT.phrSave.i === +v) ? null : { doc: CT.doc, i: +v };
       if(CT.phrSave && !CT.phr) ctPhrLoad();
@@ -19184,7 +19243,7 @@ function handle(a,v,el){
     case 'cs-paste': { const el = document.getElementById('csPaste'), n = cs붙여넣기(el ? el.value : '');
       if(!n) return toast('문자에서 칸을 찾지 못했습니다 - 같은 틀로 보낸 문자인지 확인해 주세요'), true;
       render(); toast(`붙여 넣은 문자에서 ${n}칸을 채웠습니다`); return true; }
-    case 'cte-rc': if(['down','mid','bal'].includes(v)){ CT.extraRc = v; render(); } return true;
+    case 'cte-rc': if(['down','mid','mid2','bal'].includes(v)){ CT.extraRc = v; render(); } return true;
     case 'cte-day': ct부속고침({ dayOwner: v === 'a' ? 'a' : '' }); return true;
     case 'cte-dir': { const [k, d] = String(v).split('|'); const x = ct부속(); ct부속고침({ dirs: { ...(x.dirs || {}), [k]: d === '-' ? '-' : '+' } }); return true; }
     case 'cte-add-dir': { const i = +v, a = (ct부속().adds || []).slice(); if(a[i]){ a[i] = { ...a[i], dir: a[i].dir === '-' ? '+' : '-' }; ct부속고침({ adds: a }); } return true; }

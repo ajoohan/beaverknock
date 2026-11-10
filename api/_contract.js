@@ -440,7 +440,8 @@ export function 알림설정(x) {
   /* 잔금 완료 확인 끝 시각(2026-11-10 파트너 기획 '종료 시각은 사무소별') - 16~23시, 기본 19시. 그때까지 완료가 아니면 잔금 지연 */
   const 끝 = Math.round(+o.settleEnd);
   return { kakao: o.kakao !== false, mail: o.mail !== false,
-    off: [...new Set((Array.isArray(o.off) ? o.off : []).filter(k => Object.hasOwn(알림종류, k)))], lawyer: [a, b], settleEnd: 끝 >= 16 && 끝 <= 23 ? 끝 : 19 };
+    off: [...new Set((Array.isArray(o.off) ? o.off : []).filter(k => Object.hasOwn(알림종류, k)))], lawyer: [a, b], settleEnd: 끝 >= 16 && 끝 <= 23 ? 끝 : 19,
+    autoArch: o.autoArch === true };   /* 완료 · 취소 건 3개월 뒤 자동 보관함(2026-11-10 파트너 기획) */
 }
 /* 계약 하나의 일정·체크(track). 날짜 칸은 ISO 날짜만, 나머지는 켜짐/꺼짐만 받는다 - 다른 것은 버린다 */
 /* arch · trash (2026-11-10 대표님 결정 1번) - 보관함으로 내린 날 · 휴지통에 넣은 날. 날인본은 휴지통까지만, 작성 중은 휴지통 30일 뒤 지운다 */
@@ -836,8 +837,16 @@ export async function reportDueCron(req, res) {
     if (!x.r.ok && /settings/.test(x.t || '')) x = await db('bk_agent', `select=id,name,phone&id=in.(${묶음})`);
     if (x.r.ok) for (const a of x.rows) 중개사.set(a.id, a);
   }
+  /* 자동 보관 (2026-11-10 파트너 기획 '완료 · 취소 건은 3개월 뒤 자동으로 보관함으로' - 사무소가 켠 경우만).
+     완료는 잔금일, 취소는 계약일에서 90일 지난 것. 한 번에 200건까지 */
+  const 석달전 = 날더하기(오늘, -90);
+  const 보관할 = 살아있음.filter(c => { const a = 중개사.get(c.agent_id), t = c.track || {}; if (!a || !알림설정(a.alert).autoArch) return false;
+    const 잔 = 날만(t.balanceDate) || 날만(c.bd), 계 = 날만(c.cd);
+    return (t.state === 'done' && 잔 && 잔 < 석달전) || (t.state === 'cancel' && 계 && 계 < 석달전); }).slice(0, 200);
+  for (const c of 보관할) await 링크번호지켜쓰기(c.id, { id: c.agent_id }, (n, 지금) => ({ ...지금, arch: 오늘 })).catch(() => {});
+  const 보관됨 = new Set(보관할.map(c => c.id));
   const 사람별 = new Map();
-  for (const c of 살아있음) {
+  for (const c of 살아있음.filter(c => !보관됨.has(c.id))) {
     const a = 중개사.get(c.agent_id);
     if (!a) continue;
     const 설정 = 알림설정(a.alert);

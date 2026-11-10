@@ -2454,6 +2454,11 @@ body.mo .rp-l{grid-column:1/-1}
 .ct-rw:first-child > .ct-row{border-top:none}
 .ct-rcopy{position:absolute;right:12px;top:50%;transform:translateY(-50%);padding:6px 12px;border:1px solid var(--n200);border-radius:8px;background:var(--white);font:inherit;font-size:13px;font-weight:600;color:var(--ind700,#3B3EA8);cursor:pointer;opacity:0;pointer-events:none;transition:opacity .12s;box-shadow:0 2px 8px rgba(23,15,69,.08)}
 .ct-rw:hover .ct-rcopy,.ct-rcopy:focus-visible{opacity:1;pointer-events:auto}
+/* 사무소 메모 · 자동 보관 (2026-11-10) */
+.dz-memo textarea{width:100%;resize:vertical;min-height:96px;font-size:14px;line-height:1.6}
+.dz-memo-s{font-size:12.5px;color:var(--n500)}
+.ct-autoarch{font-size:13.5px;color:var(--n700);margin:2px 0}
+.ct-autoarch .sub{font-size:12.5px}
 /* 대시보드 작은 달력 (2026-11-10) */
 .dz-cal{padding:16px 16px 14px}
 .dz-cal-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
@@ -7375,6 +7380,8 @@ V['#/account'] = () => {
         ? 마이줄('#/partner/home', ownerSide() ? '파트너 화면' : '파트너 대시보드', '', 판)
           + (계약막힘() ? '' : 마이줄('#/partner/contracts', '계약서', '', 'M6 3 h9 l4 4 v14 H6 Z M9 11 h7 M9 15 h7 M9 19 h4'))
           + (직원() ? '' : 마이줄('#/partner/settings', '활동 설정', '', 'M12 21 s-7 -6.2 -7 -11.5 a7 7 0 0 1 14 0 C19 14.8 12 21 12 21 Z M12 12.5 a2.5 2.5 0 1 0 0 -5 a2.5 2.5 0 0 0 0 5'))
+          /* 운영사에 문의 (2026-11-10 파트너 기획 '운영사 상담') - 휴대폰은 왼쪽 메뉴가 없어 여기에도 둔다 */
+          + `<a class="acc-go" href="mailto:support@plustonic.com?subject=${encodeURIComponent('[비버노크 파트너 문의] ')}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6 h16 v12 H4 Z M4 7 l8 6 8-6"/></svg><span class="acc-gn">운영사에 문의</span><span class="acc-gv">support@plustonic.com</span><i class="ar-r" aria-hidden="true"></i></a>`
         : 마이줄('#/partner/verify', '자격 확인하기', '등록번호 대조', 판)}</div>`
     : S.agentKnown ? `
       <p class="acc-note">공인중개사·소유자이신가요? 파트너로 가입하시면 손님이 걸어둔 조건에 1:1 로 제안하실 수 있습니다.</p>
@@ -11780,6 +11787,7 @@ function 파트너옆(active){
       `<a data-go="${h}" class="${켬===k?'on':''}" ${켬===k?'aria-current="page"':''}>${dzIco(i)}<span>${t}</span></a>`)(x)).join('')}</nav>
     <div class="dz-foot">
       <a data-go="#/">${dzIco('site')}<span>사이트 가기</span></a>
+      <a href="mailto:support@plustonic.com?subject=${encodeURIComponent('[비버노크 파트너 문의] ')}&body=${encodeURIComponent(`\n\n- 사무소: ${(S.agent && (S.agent.name || '')) || ''}\n- 화면: ${typeof location !== 'undefined' ? location.hash : ''}\n- 버전: ${BK_변경[0].v}`)}">${dzIco('send')}<span>운영사에 문의</span></a>
       ${버전칸()}
     </div>
   </aside>
@@ -11823,6 +11831,12 @@ const CT_하위메뉴 = [['#/partner/contracts/new', '계약서 작성', 'pen', 
    번호는 배포한 날(연.월.일 - 같은 날 또 올리면 뒤에 .2). 화면이 version.json 을 가끔 읽어,
    더 새 버전이 올라와 있으면 메뉴 아래에서 새로고침을 권한다(버전확인) - 계약서를 띄워 둔 채 오래 일하면 고친 화면을 못 받는다 */
 const BK_변경 = [
+  { v:'26.11.10.16', 날:'2026-11-10', 줄:[
+    '계약서 목록 - ‘완료 · 취소 건은 3개월 뒤 자동으로 보관함으로’ 를 켤 수 있습니다(매일 아침 옮김)',
+    '대시보드 사무소 메모 - 직원끼리만 보이고, 쓰다 멈추면 저장됩니다',
+    '확인 · 설명서 - 최우선변제금 칸 옆 ‘지역별 최우선변제금 확인’, 주거용 취득세 칸 ‘1주택 세율로 채우기’(취득세 · 지방교육세 · 농어촌특별세)',
+    '휴대폰 서류 올리기에 ‘사진 찍기’ · 왼쪽 메뉴와 마이페이지에 ‘운영사에 문의’',
+  ]},
   { v:'26.11.10.15', 날:'2026-11-10', 줄:[
     '대시보드 오른쪽에 작은 달력 - 계약서 날짜로 잡힌 일정을 점으로(보라 계약 · 대금, 주황 신고 · 허가 · 기타), 날을 누르면 그날 일정이 보이고 누르면 그 계약서가 열립니다',
   ]},
@@ -12458,6 +12472,20 @@ function dz달력(계약){
         : '<p class="dz-cal-0">이날 잡힌 일정이 없습니다</p>'}</div>` : ''}
   </section>`;
 }
+/* 사무소 메모 (2026-11-10 파트너 기획 대시보드 'memo - 사무소 직원끼리만') - 서버 settings.memo. 쓰다 멈추면 저장 */
+const MEMO = { t: '', loaded: false, busy: false, s: '' };
+function memoLoad(){ if(MEMO.busy || !세션있음()) return; MEMO.busy = true;
+  ctPost({ what:'memo' }).then(({ ok, j }) => { MEMO.busy = false; MEMO.loaded = true; if(ok){ MEMO.t = j.memo || ''; MEMO.need = !!j.need; } else MEMO.err = true;
+    if(S.route === '#/partner/home' && document.activeElement?.dataset?.in !== 'dz-memo') render(); }).catch(() => { MEMO.busy = false; MEMO.loaded = true; MEMO.err = true; }); }
+let memoT = 0;
+function memoTyped(v){ MEMO.t = v; clearTimeout(memoT); const s = document.querySelector('#app [data-memo-s]'); if(s) s.textContent = '쓰는 중…';
+  memoT = setTimeout(async () => { const { ok, j } = await ctPost({ what:'memo-save', memo: MEMO.t }).catch(() => ({ ok:false, j:{} }));
+    const el = document.querySelector('#app [data-memo-s]'); if(el) el.textContent = ok ? '저장했습니다' : (j.error || '저장하지 못했습니다'); }, 900); }
+function dz메모(){
+  if(!MEMO.loaded && !MEMO.busy && 세션있음()) setTimeout(memoLoad);
+  return `<section class="dz-card dz-memo" aria-label="사무소 메모"><div class="dz-chh"><b class="dz-ct">사무소 메모</b><span class="dz-memo-s" data-memo-s>${MEMO.need ? '준비 중입니다' : '사무소 직원끼리만 보입니다'}</span></div>
+    <textarea class="inp" rows="4" maxlength="2000" data-in="dz-memo" placeholder="자유 메모 - 사무소 직원끼리만 보입니다" ${!MEMO.loaded || MEMO.need || MEMO.err ? 'disabled' : ''} aria-label="사무소 메모">${esc(MEMO.t)}</textarea></section>`;
+}
 /* 대시보드 위 '잔금 완료하셨나요?' - 완료 · 아직(1시간 뒤) */
 const dz잔금물음 = rows => !rows.length ? '' : `<section class="dz-card dz-settle" aria-label="잔금 완료 확인">
     <div class="dz-chh"><b class="dz-ct">${dzIco('clock', 17)} 오늘 잔금 - 완료하셨나요?</b><span class="dz-settle-s">‘아직’ 이면 1시간 뒤 다시 묻습니다</span></div>
@@ -12513,6 +12541,7 @@ V['#/partner/home'] = () => {
           : { t:'자격 확인', state: S.agent ? '확인 중' : '가입 전', pct: S.agent ? 55 : 10,
               note:'등록번호를 공공데이터로 확인하면 손님 조건 전문이 열립니다.', btn:'자격 확인하기', go:'#/partner/verify' })}
         ${계약막힘() ? '' : dz달력(계약)}
+        ${dz메모()}
         ${dzTodo(할일, '지금 손댈 일은 없습니다. 새 조건이 오면 알려 드립니다.', dz바로가기())}
         ${계약막힘() ? '' : (() => { if(!CS.loaded && 세션있음()) setTimeout(csLoad);
           return `<div class="dz-card cs-dz"><div class="dz-chh"><b class="dz-ct">계약체결 문자</b><a class="dz-more" data-go="#/partner/contracts/sms">틀 고치기<i class="ar-r" aria-hidden="true"></i></a></div>
@@ -13163,7 +13192,7 @@ function ct알림설정(x){
   if(a > b) [a, b] = [b, a];
   const 끝 = Math.round(+o.settleEnd);   /* 잔금 완료 확인 끝 시각 - 서버 알림설정과 같게(16~23, 기본 19) */
   return { kakao: o.kakao !== false, mail: o.mail !== false,
-    off: [...new Set((Array.isArray(o.off) ? o.off : []).filter(k => k in CT_알림종류))], lawyer: [a, b], settleEnd: 끝 >= 16 && 끝 <= 23 ? 끝 : 19 };
+    off: [...new Set((Array.isArray(o.off) ? o.off : []).filter(k => k in CT_알림종류))], lawyer: [a, b], settleEnd: 끝 >= 16 && 끝 <= 23 ? 끝 : 19, autoArch: o.autoArch === true };
 }
 /* 계약 하나의 일정. c = { form, sub, status, reported_at, cd(계약일), mid(중도금액), md(중도금일), bd(잔금일), track } - 서버 목록 행과 같은 이름 */
 function ct일정목록(c, 설정 = ct알림설정()){
@@ -14896,6 +14925,9 @@ function ctListPageHTML(모두){
   const 수 = k => 모두.filter(r => ct보관칸(r) === k).length;
   const 칸줄 = 모두.length ? `<div class="ct-chips ct-bins" role="tablist" aria-label="계약서 보관 위치">${[['', '목록'], ['arch', '보관함'], ['trash', '휴지통']].map(([k, t]) =>
     `<button type="button" role="tab" class="chip${칸 === k ? ' on' : ''}" aria-selected="${칸 === k}" data-act="ct-bin-tab" data-v="${k}">${t} <span class="num">${수(k)}</span></button>`).join('')}</div>` : '';
+  if(!CT.alert && 세션있음()) setTimeout(ctAlertLoad);
+  const 자동 = ct알림설정(CT.alert && CT.alert.cfg).autoArch, 자동막힘 = !(CT.alert && CT.alert.loaded) || CT.alert.need || CT.alert.err;
+  const 자동칸 = 모두.length && !칸 ? `<label class="ct-chk ct-autoarch"><input type="checkbox" data-act="ct-autoarch" ${자동 ? 'checked' : ''} ${자동막힘 ? 'disabled' : ''}> 완료 · 취소 건은 3개월 뒤 자동으로 보관함으로 <span class="sub">(완료는 잔금일, 취소는 계약일부터)</span></label>` : '';
   const 칸말 = 칸 === 'trash' ? '<p class="sub ct-binnote">작성 중 계약서는 휴지통에 넣은 지 30일이 지나면 지워집니다(대표는 바로 영구 삭제할 수 있습니다). 날인본은 휴지통에 남고 지워지지 않습니다.</p>'
     : 칸 === 'arch' ? '<p class="sub ct-binnote">끝난 계약을 목록에서 내려 둔 곳입니다. 찾기로 찾을 수 있고 언제든 목록으로 되돌릴 수 있습니다. 일정 알림은 가지 않습니다.</p>' : '';
   const 일정 = 칸 ? '' : ctUpcomingHTML(전체);
@@ -14906,7 +14938,7 @@ function ctListPageHTML(모두){
     ${ct머리('계약서 목록', '양식을 골라 고치고, 기본 정보를 채워 바로 인쇄하세요. 주민등록번호·계좌·서명 칸은 비워서 인쇄되니 만나서 손으로 적으시면 됩니다.',
       `<button class="btn pri sm" data-go="#/partner/contracts/new">계약서 작성</button>`)}
     <div class="ct-lay${일정 ? '' : ' one'}">
-      <div class="ct-main">${칸줄}${칸말}${칸 ? '' : ct요약HTML(전체)}${전체.length ? ct찾기줄() : ''}${ctRowsHTML(전체, ctFilter(전체), false)}</div>
+      <div class="ct-main">${칸줄}${자동칸}${칸말}${칸 ? '' : ct요약HTML(전체)}${전체.length ? ct찾기줄() : ''}${ctRowsHTML(전체, ctFilter(전체), false)}</div>
       ${일정 ? `<aside class="ct-aside">${일정}</aside>` : ''}
     </div>`;
 }
@@ -16051,7 +16083,7 @@ function ctScanHTML(){
           <div class="ss-side">${f
             ? (sc.busy ? '' : `<label class="tapx ss-re">바꾸기${고르기}</label>
               <button type="button" class="tapx ss-del" data-act="ct-scan-del" data-v="${k}" aria-label="${esc(이름)} 빼기">빼기</button>`)
-            : `<label class="btn sec sm ss-up${sc.busy ? ' off' : ''}">${스캔그림('up')}올리기${고르기}</label>`}</div>
+            : `<label class="btn sec sm ss-up${sc.busy ? ' off' : ''}">${스캔그림('up')}올리기${고르기}</label>${typeof isMo === 'function' && isMo() && !sc.busy ? `<label class="btn sec sm ss-up">사진 찍기<input type="file" class="sr" accept="image/*" capture="environment" data-scanfile="${k}" aria-label="${esc(이름)} 사진 찍어 올리기"></label>` : ''}`}</div>
         </div>`; }).join('')}</div>
       ${sc.busy ? `<div class="scan-busy" role="status"><b>AI가 서류를 읽고 있습니다</b><span>보통 20~40초 걸립니다 · 이 화면을 닫지 마세요</span><span class="scan-bar" aria-hidden="true"><i></i></span></div>` : ''}
       ${sc.err && !sc.busy ? `<p class="scan-err" role="alert">${esc(sc.err)}</p>` : ''}
@@ -16580,7 +16612,10 @@ function exEditPart(doc, p){
     const 출처 = CT.filled && CT.filled.has(p.k) ? ' src-doc' : CT.filled2 && CT.filled2.has(p.k) ? ' src-dj' : '';
     return `<div class="ex-pick${출처}">${p.pre ? `<span class="lab">${esc(p.pre.replace(/[:(]\s*$/,''))}</span>` : ''}${exChips(p.k, p.o, v, p.t === 'many')}${덧칸}</div>`;
   }
-  if(p.t === 'text') return ctIn(p.k, [p.pre, p.suf].filter(Boolean).join(' … ').replace(/[(:]\s*$/,'') || '내용', { ph: p.ph || '' });
+  if(p.t === 'text') return ctIn(p.k, [p.pre, p.suf].filter(Boolean).join(' … ').replace(/[(:]\s*$/,'') || '내용', { ph: p.ph || '' })
+    /* 2026-11-10 파트너 기획 - 최우선변제금 칸 옆에 지역별 기준 확인, 취득세 칸에 1주택 세율 계산 */
+    + (p.k === 'ex.smallAmt' ? `<div class="ex-fee-calc"><a class="btn tool sm" href="https://www.law.go.kr/법령/주택임대차보호법시행령" target="_blank" rel="noopener">지역별 최우선변제금 확인<span class="sr"> (새 창 · 국가법령정보센터 주택임대차보호법 시행령 제10조 · 제11조)</span></a><span class="sub">시행령 제10조(소액임차인 범위) · 제11조(최우선변제금액) - 선순위 담보 설정 당시 기준</span></div>` : '')
+    + (p.k === 'ex.taxAcq' && doc.form === 'explain-home' && !ctSealed() ? `<div class="ex-fee-calc"><button type="button" class="btn tool sm" data-act="ex-tax-calc">1주택 세율로 채우기</button><span class="sub">유상 취득 · 1주택 기준(다주택 · 조정지역 중과 · 생애최초 감면은 반영 안 함)</span></div>` : '');
   if(p.t === 'money') return ctIn(p.k, (p.pre || '금액').replace(/:\s*$/,'') + '(원)', { money:true })
     + (p.k === 'ex.fee' && !ctSealed() ? `<div class="ex-fee-calc"><button type="button" class="btn tool sm" data-act="ex-fee-calc">요율로 상한 계산해 넣기</button><span class="sub">${esc(ex보수(doc).설명)}</span></div>` : '');
   if(p.t === 'area'){
@@ -16591,6 +16626,15 @@ function exEditPart(doc, p){
   if(p.t === 'sign') return '';
   if(p.t === 'sum'){ const n = (+ctGet(doc,'ex.fee')||0) + (+ctGet(doc,'ex.cost')||0); return `<p class="sub" style="margin:0">계: ${n ? n.toLocaleString() + '원' : '-'} (중개보수 + 실비)</p>`; }
   return '';   /* addr 는 위에서 따로 그린다 */
+}
+/* 주택 유상 취득 · 1주택 세율 (지방세법 제11조 제1항 제8호) - 6억 이하 1%, 6억~9억 (가액 × 2/3억 − 3)%, 9억 초과 3%.
+   지방교육세 = 취득세율의 10%, 농어촌특별세 = 전용 85㎡ 초과 0.2%. 퍼센트는 소수 둘째 자리까지 */
+function ex취득세(doc){
+  const 가 = +ctGet(doc, 'ex.price') || +((doc.deal || {}).price) || 0; if(!(가 > 0)) return null;
+  const 율 = 가 <= 6e8 ? 1 : 가 <= 9e8 ? Math.round((가 / 1e8 * 2 / 3 - 3) * 100) / 100 : 3;
+  const 면 = parseFloat(String(ctGet(doc, 'property.bldArea') || (doc.property || {}).partArea || '').replace(/[^0-9.]/g, '')) || 0;
+  const 숫 = n => String(Math.round(n * 100) / 100);
+  return { 취득: 숫(율), 교육: 숫(율 / 10), 농특: 면 > 85 ? '0.2' : '0' };
 }
 /* ── 자주 쓰는 단지 (2026-11-05 파트너 리뷰 · 10/30 대표님 '같은 단지면 늘 같은 값') ──
    확인·설명서의 입지조건 · 관리에 관한 사항 · 비선호시설 · 환경조건은 같은 단지면 거의 같다. 단지로 저장해 두고 불러온다
@@ -18098,6 +18142,7 @@ document.addEventListener('input', e=>{
   if(k.startsWith('cs-to:')){ cs입력(el, 'to:' + k.slice(6)); return; }
   if(k === 'cs-name'){ if(CS.edit) CS.edit.name = el.value; return; }
   if(k === 'cs-text'){ if(CS.edit) CS.edit.text = el.value; return; }
+  if(k === 'dz-memo'){ memoTyped(el.value.slice(0, 2000)); return; }
   /* 부속 서류 - 정산서 금액 · 추가 항목 · 인계 품목 */
   if(k.startsWith('cte:')){ ct부속입력(el, k.slice(4)); return; }
   /* 알림 설정 - 법무사 예약 시점(1~20영업일) */
@@ -19172,6 +19217,10 @@ function handle(a,v,el){
     case 'ex-fee-calc': { const d = CT.doc; if(!d || ctSealed()) return true; const r = ex보수(d);
       if(!r.상한) return toast('거래예정금액(⑧)을 먼저 넣어 주세요'), true;
       ctSet(d, 'ex.fee', r.상한); ctSet(d, 'ex.feeCalc', r.식); ctDirty(); render(); toast(`중개보수 상한 ${comma(String(r.상한))}원을 넣었습니다 - 협의한 금액으로 고쳐 쓰세요`); return true; }
+    case 'ex-tax-calc': { const d = CT.doc; if(!d || ctSealed()) return true; const r = ex취득세(d);
+      if(!r) return toast('거래예정금액(⑧)을 먼저 넣어 주세요'), true;
+      ctSet(d, 'ex.taxAcq', r.취득); ctSet(d, 'ex.taxEdu', r.교육); ctSet(d, 'ex.taxFarm', r.농특); ctDirty(); render();
+      toast(`취득세 ${r.취득}% · 지방교육세 ${r.교육}% · 농어촌특별세 ${r.농특}% (1주택 기준)`); return true; }
     case 'ex-of-load': { const n = ex사무소넣기(CT.doc, true); ctDirty(); render(); toast(n ? `사무소 기본값 ${n}칸을 넣었습니다` : '이 서식에 맞는 칸이 없습니다'); return true; }
     case 'ex-of-save': { const d = CT.doc; if(!d || ctSealed()) return true; const 값 = {};
       for(const k of EX_사무소칸){ const x = ctGet(d, k); if(x != null && x !== '' && !(Array.isArray(x) && !x.length)) 값[k.slice(3)] = x; }
@@ -19546,6 +19595,8 @@ function handle(a,v,el){
       toast('잔금 완료로 표시했습니다', { undo: async () => { const x = await ctPost({ what:'contract-state', id: v, state: 전 }).catch(() => ({ ok:false, j:{} }));
         if(x.ok && 행){ 행.track = x.j.track; render(); } } });
     })(); return true;
+    case 'ct-autoarch': { const A = CT.alert; if(!A || !A.loaded || A.need || A.err) return true; A.cfg = ct알림설정({ ...ct알림설정(A.cfg), autoArch: !ct알림설정(A.cfg).autoArch });
+      ctAlertSave(); render(); toast(A.cfg.autoArch ? '완료 · 취소 건을 3개월 뒤 보관함으로 옮깁니다(매일 아침)' : '자동 보관을 껐습니다'); return true; }
     case 'ct-bin-tab': CT.bin = ['arch', 'trash'].includes(v) ? v : ''; render(); return true;
     case 'ct-bin': { const [id, 어디] = String(v).split('|'); ctBin(id, 어디 || ''); return true; }
     case 'ct-purge': S.modal = { type:'ct-del', id: v }; render(); return true;

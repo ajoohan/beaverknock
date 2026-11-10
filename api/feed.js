@@ -439,7 +439,13 @@ export default async function handler(req, res) {
 
   /* 계약 일정 알림 설정 - 받는 곳 · 항목 · 법무사 예약 시점 */
   if (b.what === 'alert-settings')      return readAlert(res, chk.agent);
-  if (b.what === 'alert-settings-save') return saveAlert(res, chk.agent, b);
+  if (b.what === 'alert-settings-save') return saveAlert(res, chk.agent, b);
+  /* 사무소 메모 (2026-11-10 파트너 기획 대시보드 'memo') - settings.memo, 2000자. 대표 · 직원 모두 보고 고친다(같은 사무소) */
+  if (b.what === 'memo') { const x = await 설정읽기(chk.agent); if (x.error) return res.status(502).json({ error: '메모를 불러오지 못했습니다' });
+    return res.status(200).json({ ok: true, memo: String(x.settings.memo || ''), at: String(x.settings.memoAt || ''), need: x.need || '' }); }
+  if (b.what === 'memo-save') { const memo = String(b.memo || '').slice(0, 2000), at = new Date().toISOString();
+    const z = await 설정고침(chk.agent, () => ({ patch: { memo, memoAt: at } })); if (!z.y) return 설정실패(res, z, '메모');
+    return res.status(200).json({ ok: true, at }); }
   if (b.what === 'end-style-save')      return saveEndStyle(res, chk.agent, b);
 
   /* 내 특약 문구함 - 자주 쓰는 특약을 매매·임대차·갱신계약·기타로 */

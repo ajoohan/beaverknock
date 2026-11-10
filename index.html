@@ -7804,7 +7804,7 @@ V['#/partner/proposals'] = () => {
           <b style="font-size:15px;font-weight:700;letter-spacing:-.02em">${esc(p.title)} ${demoTag(p,'vertical-align:middle')}</b>
           <span class="badge ${b[0]}">${esc(b[1])}</span></div>
         <span class="num" style="font-size:14.5px;color:var(--n700)">${esc(p.price)}</span>
-        <span style="display:block;font-size:13.5px;color:var(--n500);margin-top:2px">손님 조건: ${esc(p.line)}</span>
+        ${p.line ? `<span style="display:block;font-size:13.5px;color:var(--n500);margin-top:2px">손님 조건: ${esc(p.line)}</span>` : ''}
         ${p.status==='selected'&&p.cphone? `<div style="margin-top:10px;background:var(--okbg);padding:12px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
           <span style="font-size:13px;font-weight:700;color:var(--ok)">손님 연락처</span>
           <span class="num" style="font-size:16px;font-weight:700;color:var(--ok)">${esc(p.cphone)}</span>
@@ -11400,6 +11400,9 @@ const CT_하위메뉴 = [['#/partner/contracts/new', '계약서 작성', 'pen', 
    번호는 배포한 날(연.월.일 - 같은 날 또 올리면 뒤에 .2). 화면이 version.json 을 가끔 읽어,
    더 새 버전이 올라와 있으면 메뉴 아래에서 새로고침을 권한다(버전확인) - 계약서를 띄워 둔 채 오래 일하면 고친 화면을 못 받는다 */
 const BK_변경 = [
+  { v:'26.11.10.3', 날:'2026-11-10', 줄:[
+    '보낸 제안 목록 - 손님 조건이 없는 카드에 빈 ‘손님 조건:’ 꼬리표가 붙던 것을 뺐습니다',
+  ]},
   { v:'26.11.10.2', 날:'2026-11-10', 줄:[
     '계약서 메일 - 메일 서버 응답이 늦을 때 ‘못 보냈다’ 대신 ‘보냈는지 확인하지 못했다’ 고 알려 같은 서류가 두 번 가지 않게 · 적던 주소가 화면이 바뀌어도 남게',
     '보낸 제안 목록 - 금액을 ‘1억 / 월 100만’ 처럼 읽기 쉽게, 관리비가 없으면 빼고 보여 줍니다',

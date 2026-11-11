@@ -845,7 +845,7 @@ async function readFitting(res, agent, pending) {
 /* ── 내가 보낸 제안 ── */
 const P_STATUS_KO = {
   sent: '보냄', read: '열람', accepted: '연결', rejected: '관심 없음',
-  reported: '신고', withdrawn: '회수',
+  reported: '신고', withdrawn: '회수', expired: '미열람 만료',
 };
 
 async function readMine(req, res, agent) {

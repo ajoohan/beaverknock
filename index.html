@@ -3923,7 +3923,8 @@ const 적합도배지 = st => { const n = 적합도(st);
 const 열람됨 = p => ['viewed','selected','rejected'].includes(p.status);
 /* 품질 점수 - 열람률 40% · 선택률 40% · 무신고 20% (S-09 공개 산식과 동일) */
 function qualityScore(){
-  const P=S.myprops, sent=P.length||1;
+  /* 미열람 만료는 손님 쪽 사정이라 분모에서 뺀다 - 성과 화면의 안내와 같게(2026-11-11) */
+  const P=S.myprops.filter(p=>p.status!=='expired'), sent=P.length||1;
   const viewed=P.filter(열람됨).length;
   const sel=P.filter(p=>p.status==='selected').length;
   const vr=viewed/sent, sr=viewed?sel/viewed:0, clean=1;
@@ -4857,7 +4858,7 @@ function condFromRow(d){
    회수를 서버로 잇고서 이 줄을 안 고쳤으면, 거둔 제안이 손님에게는
    그대로 남아 있었을 것이다. */
 const P_STATUS = { read:'viewed', accepted:'selected', rejected:'hidden',
-  reported:'hidden', withdrawn:'hidden' };
+  reported:'hidden', withdrawn:'hidden', expired:'hidden' };   /* expired - 7일 동안 열지 않아 만료(2026-11-11) */
 /* 중개사가 보낸 제안 - 서버에서 가져온다.
    지금까지 이 목록은 그 브라우저 메모리에만 있어서, 새로고침하면 방금 보낸
    제안이 사라지고 예시만 남았다. */
@@ -4926,7 +4927,8 @@ function myPropFromRow(x){
            kind: x.kind || '', deal: x.deal || '' },
     reason: x.status==='reported' ? `손님이 신고했습니다${x.report_type?` · ${x.report_type}`:''}`
           : x.status==='rejected' ? '손님이 ‘관심 없음’을 선택했습니다'
-          : x.status==='withdrawn' ? '회수하셨습니다 · 슬롯이 반환됐습니다' : '',
+          : x.status==='withdrawn' ? '회수하셨습니다 · 슬롯이 반환됐습니다'
+          : x.status==='expired' ? '손님이 7일간 열람하지 않아 만료됐습니다. 슬롯은 반환되었고 점수에 불이익이 없습니다' : '',
   };
 }
 
@@ -8138,7 +8140,7 @@ V['#/partner/demands'] = () => {
         S.feedByListing ? `올려두신 물건에 맞는 손님` : `내 조건에 맞는 손님`} <span style="color:var(--ind)">${list.length}건</span></h1>
       <p class="sub" style="font-size:14.5px">${S.feedByListing
         ? `올려두신 물건과 <b style="color:var(--n900)">지역 · 유형 · 거래방식 · 예산</b>이 모두 맞는 손님만 보여드립니다. 손님 연락처는 연결 확정 전까지 표시되지 않습니다.`
-        : `매칭 적합도 순 - 선착순이 아닙니다 · 내 품질 점수 <b style="color:var(--n900)">${qualityScore()}점</b>이 노출 순위에 반영됩니다. 손님 연락처는 연결 확정 전까지 표시되지 않습니다.`}</p></div>
+        : `매칭 적합도 순 - 선착순이 아닙니다. 손님 연락처는 연결 확정 전까지 표시되지 않습니다.`}</p></div>
       ${S.feedByListing?'':`<div class="chips">${['전체', ...Object.values(WHO).map(w=>w.tag)].map(x=>`<button class="chip ${f===x?'on':''}" data-act="dfilter" data-v="${x}" aria-pressed="${f===x}">${x}</button>`).join('')}</div>`}
     </div>
     ${S.feedErr ? `<div class="card pad" style="border-color:var(--warnline);background:var(--warnbg);box-shadow:none;
@@ -8796,7 +8798,8 @@ V["#/partner/stats"] = () => {
   const sent = P.length;
   const viewed = P.filter(열람됨).length;
   const selected = P.filter(p=>p.status==='selected').length;
-  const vr = sent? Math.round(viewed/sent*100) : 0;
+  const 분모 = P.filter(p=>p.status!=='expired').length;   /* 미열람 만료는 열람률 분모에서 뺀다(품질 점수와 같은 셈) */
+  const vr = 분모? Math.round(viewed/분모*100) : 0;
   const sr = viewed? Math.round(selected/viewed*100) : 0;
   const tile = (k,v,sub,avg,main) => `<div class="card" style="padding:16px 18px;${main?'border-color:rgba(106,70,224,.4);background:rgba(247,245,253,.6)':''}">
     <span style="display:block;font-size:13.5px;font-weight:700;color:var(--n500)">${k}</span>
@@ -12312,6 +12315,10 @@ const CT_하위메뉴 = [['#/partner/contracts/new', '계약서 작성', 'pen', 
    번호는 배포한 날(연.월.일 - 같은 날 또 올리면 뒤에 .2). 화면이 version.json 을 가끔 읽어,
    더 새 버전이 올라와 있으면 메뉴 아래에서 새로고침을 권한다(버전확인) - 계약서를 띄워 둔 채 오래 일하면 고친 화면을 못 받는다 */
 const BK_변경 = [
+  { v:'26.11.11.7', 날:'2026-11-11', 줄:[
+    '보낸 지 7일이 지나도록 손님이 열지 않은 제안은 만료되고 자리가 돌아옵니다 - 품질 점수에는 불이익이 없습니다',
+    '제안 회수는 손님이 열기 전에만 됩니다 - 서버도 화면 안내와 같게 맞췄습니다',
+    '손님 찾기 화면에서 ‘품질 점수가 노출 순위에 반영됩니다’ 문구를 뺐습니다 - 목록은 적합도 순입니다' ] },
   { v:'26.11.11.6', 날:'2026-11-11', 줄:[
     '대화방 파일 정리 - 보관 기간(잔금 뒤 1년)이 지난 파일을 하루에 더 많이(1만 건까지) 살펴 지웁니다' ] },
   { v:'26.11.11.5', 날:'2026-11-11', 줄:[
@@ -20591,7 +20598,8 @@ function handle(a,v,el){
       apiFetch('/api/proposal', {method:'PATCH', body: JSON.stringify({id:v, status:'withdrawn'})})
         .then(r => r.json().catch(()=>({})).then(j => {
           S.withdrawing = false;
-          if(!(r.ok && j.ok)){ render(); return toast(j.error || '회수하지 못했습니다'); }
+          if(!(r.ok && j.ok)){ if(j.status === 'read') p.status = 'viewed'; else if(j.status === 'expired') p.status = 'expired';
+            S.mpAt=0; render(); return toast(j.error || '회수하지 못했습니다'); }
           p.status='withdrawn'; p.reason='회수하셨습니다 · 슬롯이 반환됐습니다';
           S.mpAt=0; S.feedAt=0; render();
           toast('회수했습니다 · 슬롯이 반환됐습니다');

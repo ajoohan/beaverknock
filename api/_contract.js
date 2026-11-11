@@ -844,6 +844,9 @@ export async function reportDueCron(req, res) {
   /* 대화방 사진 · 파일 - 잔금 뒤 1년이 지난 것을 지운다(2026-11-10 파트너 기획 '잔금 후 1년 보관') */
   let 파일지움 = 0;
   try { 파일지움 = await (await import('./_room.js')).방파일정리(오늘); } catch { /* 0036 전이면 넘어간다 */ }
+  /* 7일 동안 안 열린 제안은 만료로 바꾸고 자리를 돌려준다(2026-11-11) - 0038 전이면 need 만 남긴다 */
+  let 제안만료 = { 만료: 0 };
+  try { 제안만료 = await (await import('./proposal.js')).미열람만료(); } catch { /* 넘어간다 */ }
   /* 중개사 - 이름·전화·알림 설정. 0032 전이면 설정 없이(모두 켬).
      settings 통째가 아니라 알림 설정만 꺼낸다 - 같은 칸에 내 특약 문구(최대 200개)가 쌓인다 */
   const ids = [...new Set(살아있음.map(c => c.agent_id))], 중개사 = new Map();
@@ -912,7 +915,7 @@ export async function reportDueCron(req, res) {
   /* notifyMany 는 한 번에 100통까지다(Resend 묶음 상한) - 100통씩 나눠 보낸다 */
   let 보냄 = 0;
   for (let i = 0; i < 메일.length; i += 100) 보냄 += (await notifyMany(req, 메일.slice(i, i + 100))).sent || 0;
-  return res.status(200).json({ ok: true, 대상: 살아있음.length, 알림: 사람.reduce((s, p) => s + p.목록.length, 0), 보냄, 카톡: 카톡보냄, 파일지움 });
+  return res.status(200).json({ ok: true, 대상: 살아있음.length, 알림: 사람.reduce((s, p) => s + p.목록.length, 0), 보냄, 카톡: 카톡보냄, 파일지움, 제안만료: 제안만료.만료 || 0, ...(제안만료.need ? { need: 제안만료.need } : {}) });
 }
 
 /* 서류 판독 - 등기부등본·건축물대장·토지이용계획확인서를 읽어 칸 값을 돌려준다(_scan.js).

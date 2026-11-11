@@ -305,6 +305,8 @@ async function patch(req, res, user, b) {
 
     /* 중개사가 회수한 제안에는 손님이 답할 수 없다 - 연결하면 회수한 쪽에 번호가 가고, 거절하면 자리가 두 번 돌아갔다 (2026-11-03) */
     if (p.status === 'withdrawn') return res.status(409).json({ error: '중개사가 회수한 제안입니다' });
+    /* 7일 동안 열지 않아 만료된 제안 - 자리가 이미 돌아갔다 (2026-11-11) */
+    if (p.status === 'expired') return res.status(409).json({ error: '받은 지 7일이 지나 만료된 제안입니다' });
 
     /* 슬롯을 돌려줄 자리인지만 먼저 정해둔다. 실제로 돌려주는 것은
        저장이 끝난 뒤다 - 저장이 실패했는데 자리만 돌아가 있으면 안 된다. */
@@ -471,12 +473,17 @@ async function withdraw(req, res, user, b) {
     if (p.status === 'accepted') {
       return res.status(409).json({ error: '손님이 이미 연결하셨습니다 - 회수할 수 없습니다' });
     }
+    /* 회수는 손님이 열기 전에만 (2026-11-11) - 화면은 처음부터 그렇게 안내했는데 서버는 연 뒤에도 받아 줘서, 손님이 보던 제안이 사라질 수 있었다 */
+    if (p.status === 'read') return res.status(409).json({ error: '손님이 이미 열어 본 제안이라 회수할 수 없습니다', status: 'read' });
+    if (p.status === 'expired') return res.status(409).json({ error: '7일 동안 열리지 않아 이미 만료된 제안입니다 - 자리는 돌아갔습니다', status: 'expired' });
 
-    const ur = await fetch(sbUrl('bk_proposal', 'id=eq.' + id), {
-      method: 'PATCH', headers: { ...sbHeaders(), Prefer: 'return=minimal' },
+    /* 아직 '보냄' 일 때만 바꾼다 - 확인과 저장 사이에 손님이 열면 회수하지 않는다 */
+    const ur = await fetch(sbUrl('bk_proposal', `id=eq.${id}&status=eq.sent`), {
+      method: 'PATCH', headers: { ...sbHeaders(), Prefer: 'return=representation' },
       body: JSON.stringify({ status: 'withdrawn' }),
     });
     if (!ur.ok) return res.status(502).json({ error: '회수하지 못했습니다' });
+    if (!(await ur.json().catch(() => [])).length) return res.status(409).json({ error: '방금 손님이 열어 본 제안이라 회수할 수 없습니다', status: 'read' });
 
     /* 자리를 돌려준다. 손님이 물린 것이 아니라 보낸 쪽이 거두는 것이므로
        손님 몫의 반환 상한(2회)은 건드리지 않는다. */
@@ -506,4 +513,45 @@ async function withdraw(req, res, user, b) {
     console.error('[proposal:withdraw]', e && e.message);
     return res.status(502).json({ error: 'DB에 닿지 못했습니다' });
   }
+}
+
+/* ════════ 7일 미열람 만료 (2026-11-11) ════════
+   화면은 처음부터 '손님이 7일간 열람하지 않으면 만료 · 슬롯 반환 · 점수 불이익 없음' 이라고 안내했는데 서버에 그 처리가 없어,
+   안 열린 제안이 자리(조건당 5곳)를 계속 차지하고 보낸 쪽 열람률만 깎였다. 매일 아침 예약 실행(_contract.js)이 부른다.
+   '보냄' 인 채 7일이 지난 것만 - 저장할 때도 status=sent 를 다시 걸어, 그 사이 손님이 열었으면 건드리지 않는다.
+   expired 상태는 0038 뒤에 받는다 - 그 전이면 아무것도 바꾸지 않고 need 로 알린다 */
+export const 만료일수 = 7;
+export async function 미열람만료(지금 = Date.now(), fetchFn = fetch) {
+  const 전 = new Date(지금 - 만료일수 * 864e5).toISOString();
+  const r = await fetchFn(sbUrl('bk_proposal', `select=id,demand_id&status=eq.sent&created_at=lt.${encodeURIComponent(전)}&order=created_at&limit=300`), { headers: sbHeaders() });
+  if (!r.ok) return { 만료: 0, error: true };
+  let 만료 = 0;
+  for (const p of await r.json()) {
+    const u = await fetchFn(sbUrl('bk_proposal', `id=eq.${p.id}&status=eq.sent`), {
+      method: 'PATCH', headers: { ...sbHeaders(), Prefer: 'return=representation' }, body: JSON.stringify({ status: 'expired' }) });
+    if (!u.ok) { const t = await u.text().catch(() => ''); if (/bk_proposal_status_check|23514/.test(t)) return { 만료, need: '0038' }; continue; }
+    if (!(await u.json().catch(() => [])).length) continue;
+    만료++;
+    await 자리반환(p.demand_id, fetchFn).catch(() => null);
+  }
+  return { 만료 };
+}
+/* 자리 하나를 돌려준다(보낸 쪽 사정 - 손님 몫의 반환 상한은 건드리지 않는다). 돌아간 뒤 남은 자리 수, 못 돌렸으면 null */
+export async function 자리반환(demandId, fetchFn = fetch) {
+  const dr = await fetchFn(sbUrl('bk_demand', `select=id,slots,slots_left&id=eq.${demandId}&limit=1`), { headers: sbHeaders() });
+  if (!dr.ok) return null;
+  const d = (await dr.json())[0];
+  if (!d) return null;
+  for (let i = 0; i < 4; i++) {
+    if (!(d.slots_left < d.slots)) return d.slots_left;
+    const rr = await fetchFn(sbUrl('bk_demand', `id=eq.${d.id}&slots_left=eq.${d.slots_left}`), {
+      method: 'PATCH', headers: { ...sbHeaders(), Prefer: 'return=representation' }, body: JSON.stringify({ slots_left: d.slots_left + 1 }) });
+    if (!rr.ok) return null;
+    if ((await rr.json().catch(() => [])).length) return d.slots_left + 1;
+    const again = await fetchFn(sbUrl('bk_demand', `select=slots,slots_left&id=eq.${d.id}&limit=1`), { headers: sbHeaders() });
+    if (!again.ok) return null;
+    const row = (await again.json())[0]; if (!row) return null;
+    d.slots_left = row.slots_left; d.slots = row.slots;
+  }
+  return null;
 }

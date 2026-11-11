@@ -116,7 +116,7 @@ body{margin:0;background:var(--n50);color:var(--n700);
 .brand b{font-size:17px;font-weight:760;letter-spacing:-.03em;color:var(--ind700)}
 .brand span{font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--ind300)}
 .top nav{display:flex;gap:16px;font-size:13px;font-weight:600}
-.top nav a{color:var(--n700);text-decoration:none}
+.top nav a{color:var(--n700);text-decoration:none;display:inline-flex;align-items:center;min-height:40px}
 .top nav a:hover{color:var(--ind);text-decoration:underline;text-underline-offset:3px}
 .top nav a[aria-current]{color:var(--ind);font-weight:800}
 

@@ -1614,6 +1614,10 @@ body.mo .hp-top .hm-h1{font-size:28px;text-align:left}
 body.mo .hp-top .hm-split{gap:32px}
 body.mo .hp-top .hm-float.f1{left:4%;top:-9%}
 body.mo .hp-card .hp-more{grid-column:2;padding-top:8px}
+/* 휴대폰 누름 자리(2026-11-11 휴대폰 전수점검) - 파트너 안내 '자세히' · 계약서 'n칸 남음' · 특약 위/아래 */
+body.mo .hp-card .hp-more{min-height:44px;padding-top:0}
+body.mo .ct-secst:not(.ok){min-height:30px;padding:3px 10px}
+.ct-sp-tools .tapx[data-act="ct-sp-up"],.ct-sp-tools .tapx[data-act="ct-sp-down"]{min-width:34px;justify-content:center}
 body.mo .hm-split.hp-rev{grid-template-columns:minmax(0,1fr)}
 body.mo .hm-split.hp-rev > :last-child{order:0}
 body.mo .hp-steps{grid-template-columns:minmax(0,1fr);gap:12px;margin-top:24px}
@@ -11862,7 +11866,9 @@ function 투어그리기(){
   document.querySelectorAll('.tour-hi').forEach(e => e.classList.remove('tour-hi'));
   let box = document.getElementById('tourBox');
   const 단계 = 투어단계();
-  if(TOUR.i < 0 || TOUR.i >= 단계.length || !(S.route || '').startsWith('#/partner/')){ if(box) box.remove(); return; }
+  /* 대시보드에서만 띄운다 - 다른 화면으로 가거나 창이 뜨면 숨긴다(끝낸 것은 아니다 - 대시보드로 돌아오면 이어서).
+     전에는 파트너 화면 어디서나 떠 있어, 휴대폰에서 창의 입력 칸과 대화방 보낼 말 칸을 가렸다(2026-11-11 휴대폰 전수점검) */
+  if(TOUR.i < 0 || TOUR.i >= 단계.length || S.route !== '#/partner/home' || document.querySelector('.modal')){ if(box) box.remove(); return; }
   const [t, s, sel] = 단계[TOUR.i], 끝 = TOUR.i === 단계.length - 1, el = sel && document.querySelector(sel);
   if(el){ el.classList.add('tour-hi'); try{ el.scrollIntoView({ block:'nearest' }); }catch(_){} }
   if(!box){ box = document.createElement('div'); box.id = 'tourBox'; box.setAttribute('role', 'dialog'); box.setAttribute('aria-label', '처음 쓸 때 안내'); document.body.appendChild(box); }
@@ -12315,6 +12321,9 @@ const CT_하위메뉴 = [['#/partner/contracts/new', '계약서 작성', 'pen', 
    번호는 배포한 날(연.월.일 - 같은 날 또 올리면 뒤에 .2). 화면이 version.json 을 가끔 읽어,
    더 새 버전이 올라와 있으면 메뉴 아래에서 새로고침을 권한다(버전확인) - 계약서를 띄워 둔 채 오래 일하면 고친 화면을 못 받는다 */
 const BK_변경 = [
+  { v:'26.11.11.9', 날:'2026-11-11', 줄:[
+    '처음 쓸 때 말풍선은 대시보드에서만 뜹니다 - 다른 화면의 창과 대화방 보낼 말 칸을 가리던 것을 고쳤습니다',
+    '휴대폰에서 누르기 작던 단추를 키웠습니다 - 파트너 안내 ‘자세히’ · 계약서 ‘n칸 남음’ · 특약 위/아래 · 약관 화면 위쪽 링크' ] },
   { v:'26.11.11.8', 날:'2026-11-11', 줄:[
     '대시보드 열람률도 미열람 만료 건을 빼고 셉니다 - 성과 화면과 같은 숫자가 나옵니다' ] },
   { v:'26.11.11.7', 날:'2026-11-11', 줄:[

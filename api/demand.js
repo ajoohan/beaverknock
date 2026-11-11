@@ -191,7 +191,8 @@ export default async function handler(req, res) {
 
   /* ── 값 검사 — 화면을 우회해 들어오는 요청도 여기서 걸린다 ── */
   const kind = KINDS.includes(b.kind) ? b.kind : null;
-  const dongs = arr(b.dongs);
+  /* 희망 지역은 5곳까지 (2026-11-11 파트너 기획) - 넓게 걸수록 맞지 않는 중개사에게까지 간다 */
+  const dongs = arr(b.dongs, 5);
 
   /* 본인확인이 붙어 있으면 화면에서 적은 이름을 쓰지 않는다.
      처리방침에 '본인확인된 이름을 전달한다' 고 적어둔 이상, 손으로 고친 이름이

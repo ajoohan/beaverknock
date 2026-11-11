@@ -2493,6 +2493,50 @@ body.mo .rp-l{grid-column:1/-1}
 .dz-memo-s{font-size:12.5px;color:var(--n500)}
 .ct-autoarch{font-size:13.5px;color:var(--n700);margin:2px 0}
 .ct-autoarch .sub{font-size:12.5px}
+/* 적합도 · 비공개 메모 · 연락 방법 · 손님 내 계약 (2026-11-11) */
+.fit-b{display:inline-flex;align-items:baseline;gap:2px;font-size:12.5px;font-weight:600;padding:2px 9px;border-radius:999px;background:var(--ind50);color:var(--ind700);white-space:nowrap}
+.fit-b b{font-size:13.5px;font-weight:800}
+.fit-b.hi{background:var(--okbg);color:var(--ok)}
+.fit-b.lo{background:var(--n100);color:var(--n700)}
+.lm-card{display:flex;flex-direction:column;gap:12px;border-color:var(--ind100)}
+.lm-h{margin:0;font-size:16px;font-weight:700;display:flex;flex-wrap:wrap;align-items:baseline;gap:8px}
+.lm-h .sub{font-size:13px;font-weight:500}
+.lm-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px}
+.lm-grid .wide{grid-column:1/-1}
+.lm-grid textarea{resize:vertical;min-height:72px;font-size:14.5px}
+@media (max-width:640px){.lm-grid{grid-template-columns:1fr}}
+.dong-n{align-self:center;margin-left:4px;font-size:13px;font-weight:600;color:var(--n500)}
+.cn-pref{display:flex;flex-direction:column;gap:8px}
+.cn-pref > b{font-size:15px}
+.cn-pref .chips{gap:6px}
+.cn-pref-t{font-size:13.5px;font-weight:600;color:var(--n700);background:var(--white);padding:3px 10px;border-radius:999px}
+.gm-wrap{display:flex;flex-direction:column;gap:14px}
+.gm-list{display:flex;flex-direction:column;gap:10px}
+.gm-card{display:flex;flex-direction:column;gap:10px;border:1px solid var(--n200);border-radius:var(--r-lg);padding:16px}
+.gm-card .btn{align-self:flex-start}
+.gm-h{display:flex;flex-direction:column;gap:2px}
+.gm-h b{font-size:15.5px}
+.gm-h span{font-size:13px;color:var(--n500)}
+.gm-bar{list-style:none;margin:0;padding:0;display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:4px}
+.gm-bar li{display:flex;flex-direction:column;gap:3px;min-width:0}
+.gm-bar i{height:6px;border-radius:999px;background:var(--n100)}
+.gm-bar li.done i{background:var(--ind400)}
+.gm-bar li.now i{background:var(--ind200)}
+.gm-bar b{font-size:13.5px;font-weight:700;color:var(--n700)}
+.gm-bar li.done b{color:var(--ind700)}
+.gm-bar span{font-size:12.5px;color:var(--n500)}
+.gm-next{margin:0;font-size:14px;color:var(--n700)}
+.gm-cal{border:1px solid var(--n200);border-radius:var(--r-lg)}
+.gm-cal .dz-cal-d{cursor:default}
+.gm-cal .dz-cal-d:hover{background:none}
+.gm-cal-l{list-style:none;margin:10px 0 0;padding:10px 0 0;border-top:1px solid var(--n100);display:flex;flex-direction:column;gap:4px;font-size:13.5px;color:var(--n700)}
+.gm-cal-l span{color:var(--n500)}
+.gm-past{display:flex;flex-direction:column;gap:6px}
+.gm-past > b{font-size:14.5px}
+.gm-pr{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border:1px solid var(--n200);border-radius:12px;cursor:pointer;color:var(--n900)}
+.gm-pr:hover{border-color:var(--ind200)}
+.gm-pr span{display:flex;flex-direction:column;min-width:0}
+.gm-pr small{font-size:12.5px;color:var(--n500)}
 /* 쉬운 사용 안내 - 큰 글씨 카드 (2026-11-10) */
 .hp-idx{display:flex;flex-direction:column;gap:22px}
 .hp-idx section{display:flex;flex-direction:column;gap:10px}
@@ -3833,6 +3877,16 @@ function matchStages(L, d){
            miss, missWeight});
   return st;
 }
+/* 적합도 점수 (2026-11-11 파트너 기획 '매물 점수') - 1~4단계(유형 · 지역 · 예산 · 필수)는 이미 통과한 짝만 온다.
+   100점에서 '확인' 단계의 어긋난 무게(우선순위가 높을수록 크다)만큼 깎고, 예산을 조금 넘으면 5점 더 깎는다. 40점 밑으로는 내리지 않는다.
+   손님에게 자동으로 보내지 않는다 - 중개사가 보고 1:1 로 제안한다 */
+function 적합도(st){
+  let s = 100 - Math.min(50, Math.round(((st[4] || {}).missWeight || 0) * 3));
+  if(/예산 약간 초과/.test((st[2] || {}).note || '')) s -= 5;
+  return Math.max(40, s);
+}
+const 적합도배지 = st => { const n = 적합도(st);
+  return `<span class="fit-b${n >= 90 ? ' hi' : n < 75 ? ' lo' : ''}" title="유형 · 지역 · 예산 · 필수 조건은 모두 맞습니다. 나머지 확인 항목이 어긋날수록 점수가 내려갑니다">적합도 <b class="num">${n}</b>점</span>`; };
 /* 물건 → 맞는 수요 (슬롯 남고 미제안인 것만) */
 /* 손님이 연 제안 - 관심 없음(rejected)도 연 뒤에 누른 것이다. 성과·품질 점수·대시보드가 같은 셈을 쓴다 */
 const 열람됨 = p => ['viewed','selected','rejected'].includes(p.status);
@@ -4835,7 +4889,7 @@ function myPropFromRow(x){
     line: [x.dongs, want].filter(Boolean).join(' · '),
     status: MP_STATUS[x.status] || x.status,
     at: agoText(x.created_at),
-    cust: x.cust || undefined, cphone: x.cphone || undefined,
+    cust: x.cust || undefined, cphone: x.cphone || undefined, cpref: x.cpref || undefined,
     createdAt: x.created_at || null,
     raw: { addr: x.addr || '', bname: x.bname || '', dep: +x.dep || 0, rent: +x.rent || 0, fee: +x.fee || 0,
            kind: x.kind || '', deal: x.deal || '' },
@@ -5738,7 +5792,7 @@ V['#/register'] = () => {
              ① 고른 것 ② 지도 ③ 검색 순으로 바꾼다 -
              내가 무엇을 골랐는지 먼저 보이고, 그다음이 라벨이 약속한 지도다. -->
         ${d.dongs.length?`<div class="chips tags" style="margin-bottom:12px">${d.dongs.map(x=>`
-          <button class="chip on" data-act="dong" data-v="${esc(x)}">${esc(x)} ✕</button>`).join('')}</div>`:''}
+          <button class="chip on" data-act="dong" data-v="${esc(x)}">${esc(x)} ✕</button>`).join('')}<span class="dong-n num" aria-label="고른 지역 ${d.dongs.length}곳, 최대 5곳">${d.dongs.length} / 5곳</span></div>`:''}
         <!-- 검색은 지도 바로 위에 둔다. 지도를 뒤지지 않고 이름을 치면 끝나는
              길이라, 지도와 붙어 있어야 '두 가지 방법' 으로 읽힌다.
              아래에 두었더니 안내문 뒤에 떨어져 덤처럼 보였다. -->
@@ -5801,7 +5855,7 @@ ${gDeal ? `<div data-req="dongs"><span class="lab">찾으시는 동네 <span cla
              ① 고른 것 ② 지도 ③ 검색 순으로 바꾼다 -
              내가 무엇을 골랐는지 먼저 보이고, 그다음이 라벨이 약속한 지도다. -->
         ${d.dongs.length?`<div class="chips tags" style="margin-bottom:12px">${d.dongs.map(x=>`
-          <button class="chip on" data-act="dong" data-v="${esc(x)}">${esc(x)} ✕</button>`).join('')}</div>`:''}
+          <button class="chip on" data-act="dong" data-v="${esc(x)}">${esc(x)} ✕</button>`).join('')}<span class="dong-n num" aria-label="고른 지역 ${d.dongs.length}곳, 최대 5곳">${d.dongs.length} / 5곳</span></div>`:''}
         <!-- 검색은 지도 바로 위에 둔다. 지도를 뒤지지 않고 이름을 치면 끝나는
              길이라, 지도와 붙어 있어야 '두 가지 방법' 으로 읽힌다.
              아래에 두었더니 안내문 뒤에 떨어져 덤처럼 보였다. -->
@@ -6192,6 +6246,8 @@ const MOVE_PART = ['월초', '월중', '월말'];
 /* 월초·월중·월말이 며칠인지는 사람마다 다르게 잡는다. 우리가 정해서 보여준다 -
    손님도 중개사도 같은 날을 떠올려야 헛걸음이 없다. */
 const MOVE_RANGE = { '월초':'1~9일', '월중':'10~19일', '월말':'20일~말일' };
+/* 그 시기에서 얼마나 당기거나 미룰 수 있는지 (2026-11-11 파트너 기획 '입주일 - 달 → 초·중·하순 → 여유') - 중개사가 맞출 폭을 안다 */
+const MOVE_FLEX = ['딱 그때', '앞뒤 2주', '한두 달 여유'];
 
 function moveMonths(){
   const now = new Date(), out = [];
@@ -6234,7 +6290,7 @@ function moveText(d){
   if(d.moveWhen === '최대한 빠르게' || d.moveWhen === '아무때나') return d.moveWhen;
   if(!d.moveMonth) return '';
   const [y, m] = d.moveMonth.split('-');
-  return `${y}년 ${+m}월${d.movePart ? ' ' + d.movePart.replace('월','') : ''}`;
+  return `${y}년 ${+m}월${d.movePart ? ' ' + d.movePart.replace('월','') : ''}${d.moveFlex ? ' · ' + d.moveFlex : ''}`;
 }
 
 function movePicker(d){
@@ -6269,6 +6325,10 @@ function movePicker(d){
         }).join('')}</div>
         ${MOVE_PART.some(pt=>movePartPast(d.moveMonth, pt))
           ? '<span style="display:block;margin-top:7px;font-size:13.5px;color:var(--n500)">이미 지난 시기는 고를 수 없습니다.</span>' : ''}
+      </div>
+      <div style="margin-top:12px">
+        <span style="display:block;margin-bottom:6px;font-size:13.5px;font-weight:700;color:var(--n700)">날짜 여유 <span style="font-weight:500;color:var(--n500)">(선택)</span></span>
+        <div class="chips" style="gap:6px">${MOVE_FLEX.map(x => `<button class="chip ${d.moveFlex===x?'on':''}" data-act="move-flex" data-v="${x}" aria-pressed="${d.moveFlex===x}" style="padding:8px 16px">${x}</button>`).join('')}</div>
       </div>` : ''}` : ''}
       ${moveText(d) ? `<p style="margin:10px 0 0;background:var(--n50);padding:10px 14px;font-size:13.5px;color:var(--n700)">
         중개사에게 <b style="color:var(--n900)">${esc(moveText(d))}</b> 로 전달됩니다.</p>`
@@ -7764,7 +7824,7 @@ V['#/proposal'] = (id) => { const p=S.props.find(x=>x.id===id); if(!p) return V[
 V['#/connect'] = (id) => { const p=S.props.find(x=>x.id===id); if(!p) return V['#/inbox']();
   /* 연결 표시와 동의는 이 제안 것만 - 전에는 전역이라 A 에서 연결하면 B 를 열자마자 '연결되었습니다' 가 뜨고
      동의도 이미 켜져 있었다(서버엔 연결 요청이 안 갔다 · 2026-11-03 리뷰) */
-  if(S.form.connectFor !== id){ S.form.connectFor = id; S.form.connectAgree = false; S.form.connected = false; }
+  if(S.form.connectFor !== id){ S.form.connectFor = id; S.form.connectAgree = false; S.form.connected = false; S.form.cnHow = ''; S.form.cnWhen = ''; }
   const agreed = !!S.form.connectAgree;
   /* 연결한 뒤에 보여줄 상대 연락처.
      서버가 준 것이 먼저다. 예시 카드는 서버에 없으니 시드의 사무소를 쓴다. */
@@ -7812,10 +7872,17 @@ V['#/connect'] = (id) => { const p=S.props.find(x=>x.id===id); if(!p) return V['
       <h1 class="t" style="font-size:${isMo()?21:25}px">${esc(p.agency.name)}와<br>연결할까요?</h1>
       <div style="display:flex;flex-direction:column;gap:10px">
         ${[['서로 연락처가 오갑니다','상대 연락처를 바로 보여드리고, 내 이름과 연락처도 함께 전달됩니다'],
-           ['이후 상담은 전화로 진행됩니다','비버노크는 상담과 계약에 관여하지 않습니다'],
+           ['이후 상담은 중개사무소와 직접 합니다','고르신 방법(전화 · 문자)으로 연락드립니다. 비버노크는 상담과 계약에 관여하지 않습니다'],
            ['지금 취소하셔도 됩니다','연결을 누르기 전까지 내 연락처는 어느 쪽에도 넘어가지 않습니다']].map(([t,d])=>`
           <div style="background:var(--n50);padding:14px 18px">
             <b style="display:block;font-size:14.5px">${t}</b>${d?`<span style="font-size:13.5px;color:var(--n500)">${d}</span>`:''}</div>`).join('')}
+      </div>
+      <div class="card pad cn-pref">
+        <b>어떻게 연락드리면 좋을까요? <span class="opt">(선택)</span></b>
+        <div class="chips" role="group" aria-label="연락 방법">${['전화', '문자', '상관없음'].map(x => `<button type="button" class="chip ${S.form.cnHow===x?'on':''}" aria-pressed="${S.form.cnHow===x}" data-act="cn-how" data-v="${x}">${x === '상관없음' ? '둘 다 괜찮아요' : x + ' 먼저'}</button>`).join('')}</div>
+        <span class="lab" style="margin-top:4px">편한 때</span>
+        <div class="chips" role="group" aria-label="편한 때">${['아무때나', '오전', '오후', '저녁'].map(x => `<button type="button" class="chip ${S.form.cnWhen===x?'on':''}" aria-pressed="${S.form.cnWhen===x}" data-act="cn-when" data-v="${x}">${x}</button>`).join('')}</div>
+        <small class="sub">연결하면 중개사무소에 연락처와 함께 전해집니다.</small>
       </div>
       <div class="card" style="padding:2px 18px">
         <div class="chk ${agreed?'on':''}" data-act="connect-agree">
@@ -8156,7 +8223,7 @@ V['#/partner/demand'] = (id) => { const d=S.demands.find(x=>x.id===id); if(!d) r
       return `<div class="card pad" style="border-color:rgba(27,122,70,.35);background:var(--okbg);box-shadow:none">
         <span class="sect" style="color:var(--ok)">내 물건 중 ${fit.length}건이 맞습니다</span>
         ${fit.map(({L,st})=>`<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-top:1px solid rgba(27,122,70,.18);flex-wrap:wrap">
-          <div><b style="font-size:14.5px">${esc(L.name)}</b>
+          <div><b style="font-size:14.5px">${esc(L.name)}</b> ${적합도배지(st)}
             <span class="num" style="display:block;font-size:13.5px;color:var(--n700)">${priceOf(L)} · ${esc(specOf(L))}</span></div>
           <button class="btn pri sm" data-act="propose-with" data-v="${L.id}|${d.id}">이 물건으로 제안</button>
         </div>`).join('')}
@@ -8328,7 +8395,7 @@ V['#/partner/proposals'] = () => {
         ${p.line ? `<span style="display:block;font-size:13.5px;color:var(--n500);margin-top:2px">손님 조건: ${esc(p.line)}</span>` : ''}
         ${p.status==='selected'&&p.cphone? `<div style="margin-top:10px;background:var(--okbg);padding:12px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
           <span style="font-size:13px;font-weight:700;color:var(--ok)">손님 연락처</span>
-          <span class="num" style="font-size:16px;font-weight:700;color:var(--ok)">${esc(p.cphone)}</span>
+          <span class="num" style="font-size:16px;font-weight:700;color:var(--ok)">${esc(p.cphone)}</span>${p.cpref ? `<span class="cn-pref-t">손님 희망: ${esc(p.cpref)}</span>` : ''}
           <span style="font-size:13.5px;line-height:1.55;color:var(--n700)">${esc(p.cust||'손님')}님이 연결에 동의하셨습니다 · 이 상담에만 사용해 주세요</span></div>`:''}
         ${p.reason? `<p style="margin:10px 0 0;background:var(--n50);padding:12px 16px;font-size:14.5px;line-height:1.6;color:var(--n700)">${esc(p.reason)}</p>`:''}
         <div class="adm-foot" style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:12px;gap:10px;flex-wrap:wrap">
@@ -8988,12 +9055,13 @@ const specOf = L => (L.kind==='home'
   ).filter(Boolean).join(' · ');
 
 V["#/partner/listings"] = () => {
+  if(!LM.loaded && !LM.loading && 세션있음()) setTimeout(lmLoad);
   const rows = S.listings.map(L=>{
     const ms = matchesFor(L);
     return `<div class="card pad clickable fade" data-go="#/partner/listing/${L.id}" style="display:flex;flex-direction:column;gap:10px">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
         <span style="font-size:14.5px;font-weight:700;color:var(--ind)">${L.kind==='home'?'주거':'상가'} · ${esc(L.deal||'')}</span>
-        ${ms.length? `<span class="badge b-ok">맞는 손님 ${ms.length}명</span>` : `<span class="badge b-mute">대기 중</span>`}
+        <span style="display:flex;gap:6px;align-items:center">${LM.memos[L.id] ? '<span class="badge b-mute">메모</span>' : ''}${ms.length? `<span class="badge b-ok">맞는 손님 ${ms.length}명 · 최고 ${적합도(ms[0].st)}점</span>` : `<span class="badge b-mute">대기 중</span>`}</span>
       </div>
       <b style="font-size:${isMo()?15:16}px;font-weight:700;letter-spacing:-.02em">${esc(L.name)} ${demoTag(L,'vertical-align:middle')}</b>
       <div class="lines"><span class="num">${priceOf(L)}</span><br>${esc(specOf(L))}</div>
@@ -9264,6 +9332,41 @@ V["#/partner/listing/new"] = () => {
   </div>
 </div>`;};
 
+/* ── 내 물건 비공개 메모 (2026-11-11 파트너 기획 '매물장부 - 의뢰인 비공개 칸') ── 서버 api/feed.js 물건메모.
+   의뢰인 · 연락처 · 조정 가능 금액 · 특이사항. 우리 사무소만 보고, 손님 · 제안에는 나가지 않는다(물건 값과 다른 곳에 둔다) */
+const LM = { loaded:false, loading:false, memos:{}, edit:{}, busy:'' };
+function lmLoad(){
+  if(LM.loading || !세션있음()) return;
+  LM.loading = true;
+  ctPost({ what:'listing-memo' }).then(({ ok, j }) => { LM.loading = false; LM.loaded = true; if(ok) LM.memos = j.memos || {}; render(); })
+    .catch(() => { LM.loading = false; LM.loaded = true; });
+}
+const LM_비번 = /(비밀번호|비번|현관|공동현관|도어락)[^\n]{0,12}\d{3,}/;
+function 물건메모HTML(L){
+  if(L.seed || !/^[0-9a-f-]{36}$/i.test(String(L.id || ''))) return '';
+  if(!LM.loaded && !LM.loading) setTimeout(lmLoad);
+  const m = LM.edit[L.id] || LM.memos[L.id] || {}, 저장된 = LM.memos[L.id];
+  const 칸 = (k, 이름, o = {}) => `<label class="ct-f${o.wide ? ' wide' : ''}"><span class="lab">${이름}</span>
+    ${o.area ? `<textarea class="inp" rows="3" data-in="lm:${L.id}:${k}" maxlength="${o.max}" placeholder="${esc(o.ph || '')}">${esc(m[k] || '')}</textarea>`
+      : `<input class="inp" data-in="lm:${L.id}:${k}" value="${esc(o.num && +m[k] ? comma(String(+m[k])) : (m[k] || ''))}" maxlength="${o.max}" ${o.num ? 'inputmode="numeric"' : o.tel ? 'inputmode="tel"' : ''} placeholder="${esc(o.ph || '')}" autocomplete="off">`}
+    ${o.num ? `<span class="ct-won" data-lmwon="${L.id}">${+m[k] ? `금 ${esc(한글금액(+m[k]))}원` : ''}</span>` : ''}</label>`;
+  return `<div class="card pad lm-card"><h2 class="lm-h">비공개 메모 <span class="sub">우리 사무소만 봅니다 · 손님과 제안에는 나가지 않습니다</span></h2>
+    <div class="lm-grid">${칸('who', '의뢰인', { max: 30, ph: '예: 김○○ (집주인)' })}${칸('phone', '의뢰인 연락처', { max: 20, tel: true, ph: '010-0000-0000' })}
+      ${칸('nego', '조정 가능 금액 (원)', { max: 20, num: true, ph: '예: 5,000,000' })}${칸('note', '특이사항', { wide: true, area: true, max: 500, ph: '예: 오후에만 방문 가능, 반려동물 협의 가능' })}</div>
+    <p class="sub" style="margin:0;font-size:13px;line-height:1.6">현관 · 공동현관 비밀번호는 적지 마세요.${저장된 && 저장된.at ? ` · 마지막 저장 ${esc(String(저장된.at).slice(0, 16).replace('T', ' '))}` : ''}</p>
+    <button type="button" class="btn sec sm" data-act="lm-save" data-v="${L.id}" style="align-self:flex-start" ${LM.busy === L.id ? 'disabled' : ''}>${LM.busy === L.id ? '저장하는 중…' : '메모 저장'}</button>
+  </div>`;
+}
+async function lmSave(id){
+  const m = LM.edit[id] || LM.memos[id] || {};
+  if(LM_비번.test(String(m.note || ''))) return toast('현관 비밀번호로 보이는 숫자가 있습니다 - 빼고 저장해 주세요');
+  LM.busy = id; render();
+  const { ok, j } = await ctPost({ what:'listing-memo-save', id, memo: m }).catch(() => ({ ok:false, j:{ error:'네트워크 문제로 저장하지 못했습니다' } }));
+  LM.busy = '';
+  if(!ok){ render(); return toast(j.error || '메모를 저장하지 못했습니다'); }
+  if(j.memo) LM.memos[id] = j.memo; else delete LM.memos[id];
+  delete LM.edit[id]; render(); toast(j.memo ? '메모를 저장했습니다' : '메모를 비웠습니다');
+}
 /* 매물 상세 + 역매칭 결과 */
 V["#/partner/listing"] = (id) => {
   const L = S.listings.find(x=>x.id===id); if(!L) return V["#/partner/listings"]();
@@ -9273,6 +9376,7 @@ V["#/partner/listing"] = (id) => {
       <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
         <span style="font-size:14.5px;font-weight:700;color:var(--ind)">${d.kind==='home'?'주거':'상가'} · ${esc(d.deal)}</span>
         <span style="display:flex;gap:8px;align-items:center">
+          ${적합도배지(st)}
           ${d.urgent?'<span class="badge b-warn">마감 임박</span>':''}
           <span style="font-size:13.5px;font-weight:700;color:var(--n700)">슬롯 <span class="num">${d.slotsLeft}/5</span></span></span>
       </div>
@@ -9305,6 +9409,7 @@ V["#/partner/listing"] = (id) => {
       </div>
       <button class="btn sec sm" data-act="del-listing" data-v="${L.id}" style="color:var(--danger)">내리기</button>
     </div>
+    ${물건메모HTML(L)}
 
     <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;margin-top:4px">
       <div><h2 style="margin:8px 0 0;font-size:${isMo()?16:21}px;font-weight:800;letter-spacing:-.03em">이 물건에 맞는 손님 <span style="color:var(--ind)">${ms.length}명</span></h2></div>
@@ -12018,6 +12123,13 @@ const CT_하위메뉴 = [['#/partner/contracts/new', '계약서 작성', 'pen', 
    번호는 배포한 날(연.월.일 - 같은 날 또 올리면 뒤에 .2). 화면이 version.json 을 가끔 읽어,
    더 새 버전이 올라와 있으면 메뉴 아래에서 새로고침을 권한다(버전확인) - 계약서를 띄워 둔 채 오래 일하면 고친 화면을 못 받는다 */
 const BK_변경 = [
+  { v:'26.11.11.2', 날:'2026-11-11', 줄:[
+    '내 물건에 비공개 메모 - 의뢰인 · 연락처 · 조정 가능 금액 · 특이사항. 우리 사무소만 보고 손님 · 제안에는 나가지 않습니다(현관 비밀번호는 받지 않음)',
+    '맞는 손님에 적합도 점수 - 물건 · 수요 화면에 점수, 최근 3일 새 조건이 내 물건과 맞으면 대시보드 할 일과 알림에 적합도와 함께',
+    '손님 조건 입력 - 희망 지역은 5곳까지, 입주 시기에 날짜 여유(딱 그때 · 앞뒤 2주 · 한두 달 여유)',
+    '연결할 때 손님이 연락 방법(전화 · 문자)과 편한 때를 고르면 중개사 메일과 내 제안 화면에 함께 보입니다',
+    '손님 마이페이지 ‘내 계약’ - 계약일 · 중도금 · 잔금 단계 막대, 다음 일정 D-day, 작은 달력, 지난 계약',
+  ] },
   { v:'26.11.11', 날:'2026-11-11', 줄:[
     '손님용 ‘쉬운 사용 안내’ - 큰 글씨 카드로 한 화면에 한 단계, ‘듣기’로 소리로도 읽어 드립니다. 집 구하는 중 · 계약 진행 중 · 잔금 후 안내 6개',
     '대화방 초대 문자 · 초대 화면 · 손님 대화방 · 이용 안내 · 바닥글에 ‘사용 방법 보기’ 링크 - 로그인 없이 열립니다',
@@ -12432,8 +12544,10 @@ function 알림들(){
     .forEach(r => 목록.push({ id: 'msg:' + r.last.id, 종류: '소식', t: `${RM_자리[r.side] || '손님'}${r.name ? ' ' + r.name : ''}님의 새 말`,
       s: r.last.body, at: r.last.at, ico: 'chat', go: `#/partner/rooms/${r.id}/${r.side}` }));
   (수요 || []).filter(d => d.createdAt && Date.now() - Date.parse(d.createdAt) < 3 * 864e5).slice(0, 8)
-    .forEach(d => 목록.push({ id: 'dem:' + d.id, 종류: '소식', t: `새로 걸린 조건 · ${d.region}`, s: [d.deal, (d.lines || [])[0]].filter(Boolean).join(' · '),
-      at: d.createdAt, ico: NONHOME(d.kind) ? 'building' : 'home', go: `#/partner/demand/${d.id}` }));
+    .forEach(d => { const 맞음 = !d.mine && d.slotsLeft > 0 && (S.listings || []).length ? listingsFor(d)[0] : null;   /* 내 물건과 맞으면 적합도와 함께 (2026-11-11) */
+      목록.push({ id: 'dem:' + d.id, 종류: '소식', t: 맞음 ? `내 물건과 맞는 새 손님 · ${d.region}` : `새로 걸린 조건 · ${d.region}`,
+        s: 맞음 ? `${맞음.L.name} · 적합도 ${적합도(맞음.st)}점` : [d.deal, (d.lines || [])[0]].filter(Boolean).join(' · '),
+        at: d.createdAt, ico: NONHOME(d.kind) ? 'building' : 'home', go: `#/partner/demand/${d.id}` }); });
   return 목록;
 }
 const 알림안봄 = 목록 => 목록.filter(x => !알림읽음.있나(x.id)).length;
@@ -12640,6 +12754,9 @@ function 파트너현황계산(){
     잔금칸(오늘잔금, '오늘 잔금 - 완료 확인', '잔금을 마쳤으면 일정·체크에서 진행 상태를 완료로 바꾸세요'),
     잔금칸(준비물전, '잔금 준비물 안내', '잔금 10일 안 - 매도인 · 매수인께 준비물을 알려 주세요(대화방이나 문자)'),
     (!S.agent || S.agent.status !== 'approved') && !직원() ? { t:'자격 확인 마치기', s:'등록번호를 확인하면 손님 조건 전문이 열립니다', ico:'check', go:'#/partner/verify' } : null,
+    (() => { const 새맞음 = 수요.filter(d => d.createdAt && Date.now() - Date.parse(d.createdAt) < 3 * 864e5 && d.slotsLeft > 0 && !d.mine && (S.listings || []).length && listingsFor(d).length);
+      return 새맞음.length && 권한('propose') ? { t:'내 물건과 맞는 새 손님', s:'최근 3일 새로 걸린 조건 - 적합도가 높은 물건으로 제안해 보세요', n:새맞음.length, ico:'home',
+        go: 새맞음.length === 1 ? `#/partner/demand/${새맞음[0].id}` : '#/partner/demands' } : null; })(),
     안읽힘 ? { t:'아직 안 열린 제안', s:'손님이 보기 전입니다 - 조건을 다시 보세요', n:안읽힘, ico:'eye', go:'#/partner/proposals' } : null,
     계약없는연결 && !계약막힘() ? { t:'연결된 손님 계약서', s:'연결됐는데 계약서를 아직 안 만들었습니다', n:계약없는연결, ico:'doc', go:'#/partner/proposals' } : null,
     신고전 ? { t:'신고 안 한 날인본', s:'계약일부터 30일 안에 신고 - 마쳤으면 ‘신고 마침’ 표시', n:신고전, ico:'flag', go:'#/partner/contracts' } : null,
@@ -14575,12 +14692,44 @@ V['#/room'] = id => {
 </div>`;
 };
 /* 마이페이지 - 내 계약 대화방 */
+/* 마이페이지 - 내 계약 (2026-11-11 파트너 기획 '손님 대시보드 - 진행 단계 막대 · 작은 달력 · 지난 계약')
+   계약 대화방에 든 계약만. 단계는 서버가 준 계약일 · 중도금 · 잔금(사무소가 체크한 것은 마침). 잔금을 마쳤으면 지난 계약으로 */
+const gm오늘 = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
+const gm끝남 = r => { const 잔 = (r.steps || []).find(s => s.이름 === '잔금'); return !!잔 && (!!잔.됨 || 잔.날 < gm오늘()); };
+const gm날 = d => { const [, m, dd] = String(d || '').split('-'); return m ? `${+m}.${+dd}` : ''; };
+function gm막대(r){
+  const s = r.steps || []; if(!s.length) return '';
+  const 다음 = s.find(x => !x.됨);
+  return `<ol class="gm-bar" aria-label="계약 단계">${s.map(x => `<li class="${x.됨 ? 'done' : x === 다음 ? 'now' : ''}"><i aria-hidden="true"></i><b>${esc(x.이름)}</b><span class="num">${esc(gm날(x.날))}${x.됨 ? ' · 마침' : ''}</span></li>`).join('')}</ol>`;
+}
+function gm달력(rows){
+  const 오늘 = gm오늘(), 달 = /^\d{4}-\d{2}$/.test(RM.calM || '') ? RM.calM : 오늘.slice(0, 7);
+  const 일 = rows.flatMap(r => (r.steps || []).filter(s => String(s.날).startsWith(달)).map(s => ({ ...s, r })));
+  const 날별 = new Map(); 일.forEach(e => { if(!날별.has(e.날)) 날별.set(e.날, []); 날별.get(e.날).push(e); });
+  const [y, m] = 달.split('-').map(Number), 첫 = new Date(Date.UTC(y, m - 1, 1)).getUTCDay(), 수 = new Date(Date.UTC(y, m, 0)).getUTCDate();
+  const 칸 = [...Array(첫).fill(''), ...Array.from({ length: 수 }, (_, i) => `${달}-${String(i + 1).padStart(2, '0')}`)];
+  return `<div class="dz-cal gm-cal"><div class="dz-cal-h"><button type="button" class="dz-cal-n" data-act="gm-cal" data-v="-1" aria-label="지난달">‹</button>
+      <b class="num">${y}년 ${m}월</b><button type="button" class="dz-cal-n" data-act="gm-cal" data-v="1" aria-label="다음달">›</button></div>
+    <div class="dz-cal-g">${['일','월','화','수','목','금','토'].map((w, i) => `<span class="dz-cal-w${i === 0 ? ' sun' : i === 6 ? ' sat' : ''}">${w}</span>`).join('')}
+      ${칸.map(d => { if(!d) return '<span></span>'; const 것 = 날별.get(d) || [], 요일 = new Date(d + 'T00:00:00Z').getUTCDay();
+        return `<span class="dz-cal-d${d === 오늘 ? ' today' : ''}${요일 === 0 ? ' sun' : 요일 === 6 ? ' sat' : ''}"${것.length ? ` title="${esc(것.map(e => e.이름).join(', '))}"` : ''}><span class="num">${+d.slice(8)}</span><i>${것.length ? '<em class="a"></em>' : ''}</i></span>`; }).join('')}</div>
+    ${일.length ? `<ul class="gm-cal-l">${일.sort((p, q) => (p.날 > q.날) - (p.날 < q.날)).map(e => `<li><b class="num">${esc(gm날(e.날))}</b> ${esc(e.이름)}${e.됨 ? ' · 마침' : ''} <span>${esc(e.r.title)}</span></li>`).join('')}</ul>`
+      : '<p class="dz-cal-0">이달에는 잡힌 일정이 없습니다</p>'}</div>`;
+}
 function rm내방HTML(){
   if(!세션있음()) return '';
   if(RM.mine == null){ setTimeout(rmMineLoad); return ''; }
   if(!RM.mine.length) return '';
-  return `<section class="card acc-row"><div class="acc-l"><h2>계약 대화방</h2><p>중개사무소와 잔금까지</p></div><div class="acc-r"><div class="acc-tiles">
-    ${RM.mine.map(r => 마이줄('#/room/' + r.id, esc(r.title), esc(`${r.office} · ${r.role || ''}`), 'M4 5 h16 v11 H9 l-5 4 Z')).join('')}</div></div></section>`;
+  const 진행 = RM.mine.filter(r => !gm끝남(r)), 지난 = RM.mine.filter(gm끝남), 오늘 = gm오늘();
+  const 카드 = r => { const 다음 = (r.steps || []).find(s => !s.됨 && s.날 >= 오늘), n = 다음 ? Math.round((Date.parse(다음.날) - Date.parse(오늘)) / 864e5) : null;
+    return `<div class="gm-card"><div class="gm-h"><b>${esc(r.title)}</b><span>${esc(`${r.office} · 나는 ${r.role || ''}`)}</span></div>${gm막대(r)}
+      ${다음 ? `<p class="gm-next">다음 일정 <b>${esc(다음.이름)}</b> · ${n === 0 ? '오늘' : `${n}일 남음`} <span class="num">(${esc(String(다음.날).replace(/-/g, '.'))})</span></p>` : ''}
+      <button type="button" class="btn sec sm" data-go="#/room/${esc(r.id)}">계약 대화방 열기</button></div>`; };
+  return `<section class="card acc-row"><div class="acc-l"><h2>내 계약</h2><p>진행 단계와 일정 · 중개사무소와 잔금까지</p></div><div class="acc-r gm-wrap">
+    ${진행.length ? `<div class="gm-list">${진행.map(카드).join('')}</div>${gm달력(진행)}` : ''}
+    ${지난.length ? `<div class="gm-past"><b>지난 계약</b>${지난.map(r => `<a class="gm-pr" data-go="#/room/${esc(r.id)}"><span><b>${esc(r.title)}</b><small>${esc(r.office)} · 잔금 ${esc(String(((r.steps || []).find(s => s.이름 === '잔금') || {}).날 || '').replace(/-/g, '.'))}</small></span><i class="ar-r" aria-hidden="true"></i></a>`).join('')}
+      <small class="sub">대화와 받은 파일은 대화방에 남아 있습니다. 파일은 잔금 뒤 1년까지 보관됩니다.</small></div>` : ''}
+  </div></section>`;
 }
 
 /* 초안에 의견 남기기 (2026-11-06 · 파트너 기획 [111]) - 당사자 · 공동중개 사무소가 고칠 곳을 적어 보낸다. 다른 분의 의견은 보이지 않는다 */
@@ -18619,6 +18768,9 @@ document.addEventListener('input', e=>{
   if(k === 'acc-addr-v'){ if(S.accAddr) S.accAddr.v = el.value; return; }
   /* 초안 의견 칸 - 적는 대로 담기만(다시 그리지 않는다) */
   if(k === 'rm-text'){ RM.text = el.value; return; }
+  if(k.startsWith('lm:')){ const [, id, key] = k.split(':'); const 값 = key === 'nego' ? el.value.replace(/[^0-9]/g, '') : el.value;
+    LM.edit[id] = { ...(LM.memos[id] || {}), ...(LM.edit[id] || {}), [key]: 값 };
+    if(key === 'nego'){ const w = document.querySelector(`[data-lmwon="${id}"]`); if(w) w.textContent = +값 ? `금 ${한글금액(+값)}원` : ''; } return; }
   if(k.startsWith('ext:')){ if(CT.extEdit){ const key = k.slice(4); CT.extEdit[key] = key === 'price' ? el.value.replace(/[^0-9]/g, '') : el.value;
     if(key === 'price'){ const w = document.querySelector('[data-extwon]'); if(w) w.textContent = +CT.extEdit.price ? `금 ${한글금액(+CT.extEdit.price)}원` : ''; } } return; }
   if(k === 'dr-name' || k === 'dr-text'){ if(DR.note) DR.note[k === 'dr-name' ? 'name' : 'text'] = el.value; return; }
@@ -18790,7 +18942,7 @@ function handle(a,v,el){
       d.moveWhen = v;
       /* 날짜를 지정하지 않기로 했으면 골라둔 달도 함께 치운다 -
          화면에 없는 값이 조건으로 나가면 안 된다. */
-      if(d.moveWhen !== '날짜 지정'){ d.moveMonth=''; d.movePart=''; }
+      if(d.moveWhen !== '날짜 지정'){ d.moveMonth=''; d.movePart=''; d.moveFlex=''; }
       d.openWhen = moveText(d); render(); return true;
     case 'move-month':
       d.moveMonth = d.moveMonth===v ? '' : v;
@@ -18811,6 +18963,7 @@ function handle(a,v,el){
 
     case 'dong': {
       const had = d.dongs.includes(v);
+      if(!had && d.dongs.length >= 5) return toast('지역은 5곳까지 고를 수 있습니다 - 하나를 빼고 골라 주세요'), true;   /* 2026-11-11 파트너 기획 */
       toggleIn(d.dongs, v);
       if(!had) followMap(d, v);          /* 새로 고른 곳으로 지도를 옮긴다 */
       render(); return true; }
@@ -19043,6 +19196,7 @@ function handle(a,v,el){
     case 'ops-reveal': if(OPS.role === 'sub') return true; OPS.reveal = !OPS.reveal; opsFetch(); return true;
     case 'ops-csv':    return opsCsv();
     case 'pick-addr': { const t=String(v||'').trim(); if(!t) return true;
+      if(!d.dongs.includes(t) && d.dongs.length >= 5) return toast('지역은 5곳까지 고를 수 있습니다 - 하나를 빼고 골라 주세요'), true;
       if(!d.dongs.includes(t)){ d.dongs.push(t); followMap(d, t); }
       d.dongFree=''; render(); return true; }
     case 'elev': d.elev = v; render(); return true;
@@ -19371,7 +19525,7 @@ function handle(a,v,el){
       if(p.seed){ p.status='selected'; S.form.connected=true; toast('연결되었습니다'); render(); return true; }
       /* 실번호가 오가는 요청이다. 두 번 눌러 두 번 나가지 않게 잠근다. */
       S.connecting=true; render();
-      apiFetch('/api/proposal', {method:'PATCH', body: JSON.stringify({id:v, status:'accepted'})})
+      apiFetch('/api/proposal', {method:'PATCH', body: JSON.stringify({id:v, status:'accepted', pref: { how: S.form.cnHow || '', when: S.form.cnWhen || '' }})})
         .then(r => r.json().catch(()=>({})).then(j => {
           S.connecting=false;
           if(!(r.ok && j.ok)){ render(); return toast(j.error || '연결하지 못했습니다'); }
@@ -19939,6 +20093,12 @@ function handle(a,v,el){
     case 'help-say': help듣기(); return true;
     case 'rm-invite-p': rmInvite(v, false, true); return true;
     case 'rm-fsend': rmFileSend(); return true;
+    case 'lm-save': lmSave(v); return true;
+    case 'cn-how': S.form.cnHow = S.form.cnHow === v ? '' : v; render(); return true;
+    case 'cn-when': S.form.cnWhen = S.form.cnWhen === v ? '' : v; render(); return true;
+    case 'gm-cal': { const 지금 = /^\d{4}-\d{2}$/.test(RM.calM || '') ? RM.calM : new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 7);
+      const [y, m] = 지금.split('-').map(Number); RM.calM = new Date(Date.UTC(y, m - 1 + (+v || 0), 1)).toISOString().slice(0, 7); render(); return true; }
+    case 'move-flex': d.moveFlex = d.moveFlex === v ? '' : v; d.openWhen = moveText(d); render(); return true;
     case 'rm-fopen': { const [mid, ext] = String(v).split('|'), C = RM.cur, 손님 = rm손님(); if(!C) return true;
       파일열기(() => rmPost({ what: 손님 ? 'my-room-file-url' : 'room-file-url', id: C.id, ...(손님 ? {} : { side: C.side }), msg: mid }), 바로보는파일(ext)); return true; }
     case 'rm-prep': { const C = RM.cur, M = C && C.meta; if(!M) return true;

@@ -155,5 +155,16 @@ ok(!/confirm\(|alert\(|prompt\(/.test(js.slice(js.indexOf('function rm도구HTML
      '쉬운 사용 안내 - 세 상황 · 안내 6개, 우리에게 없는 화면(맞춤매물 · 매물지도)은 쓰지 않는다'); }
 ok(길.html().includes(".hp-t{margin:0;font-size:26px") && 길.html().includes(".hp-s{margin:0;font-size:20px") && js.includes("u.lang = 'ko-KR'") && js.includes("!h.startsWith('#/help')") && js.includes('#/help/room`'),
    '큰 글씨(26 · 20px) · 소리로 듣기 · 로그인 없이 열림 · 초대 문자에 사용 방법 링크');
+/* 7. 2026-11-11 B 묶음 - 비공개 메모 · 적합도 · 지역 5곳 · 연락 방법 · 손님 내 계약 */
+{ const F = await import('../api/feed.js'), PR = await import('../api/proposal.js');
+  const 메 = F.물건메모({ who: '  박집주인 ', phone: '010-99a99-8888', nego: '5,000,000원', note: 'x'.repeat(900) });
+  ok(메.who === '박집주인' && 메.phone === '010-9999-8888' && 메.nego === 5000000 && 메.note.length === 500 && F.물건메모({ who: ' ' }) === null
+     && Object.keys(F.물건메모들({ 'bad-id': { who: 'a' }, '0b1c2d3e-4f50-4617-8899-aabbccddeeff': { note: '오후' } })).length === 1, '비공개 메모 다듬기 - 글 길이 · 번호 모양 · 빈 메모는 버린다');
+  ok(PR.연락방법({ how: '문자', when: '저녁' }) === '문자 먼저 · 저녁에 편함' && PR.연락방법({ how: '해킹', when: '새벽' }) === '' && PR.연락방법({ how: '상관없음' }) === '전화 · 문자 상관없음', '연락 방법 - 고른 것만 한 줄로');
+  const feed2 = fs.readFileSync(path.resolve(길.저장소, 'api/feed.js'), 'utf8'), pr2 = fs.readFileSync(path.resolve(길.저장소, 'api/proposal.js'), 'utf8'), dm = fs.readFileSync(path.resolve(길.저장소, 'api/demand.js'), 'utf8');
+  ok(/settings\.lmemo/.test(feed2) && !/lmemo/.test(pr2) && /cpref:  connected \? /.test(feed2) && /contact_pref\|42703/.test(pr2) && /arr\(b\.dongs, 5\)/.test(dm),
+     '서버 - 메모는 사무소 설정에만(제안 쪽 코드에 없음) · 연락 방법은 연결된 건에만 · 칸이 없어도 연결은 된다 · 새 조건 지역 5곳'); }
+ok(js.includes('function 적합도(st)') && js.includes('내 물건과 맞는 새 손님') && js.includes("d.dongs.length >= 5") && js.includes("MOVE_FLEX = ['딱 그때', '앞뒤 2주', '한두 달 여유']")
+   && js.includes("data-act=\"cn-how\"") && js.includes('function gm막대(r)') && js.includes('LM_비번'), '화면 - 적합도 · 새 손님 알림 · 지역 5곳 · 날짜 여유 · 연락 방법 · 내 계약 단계 · 비밀번호 거르기');
 console.log(`${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

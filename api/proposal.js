@@ -18,7 +18,15 @@ const int = v => { const n = parseInt(v, 10); return Number.isFinite(n) ? n : nu
 const num = v => { const n = parseFloat(v); return Number.isFinite(n) ? n : null; };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const MINE = ['read', 'accepted', 'rejected', 'reported'];   /* 손님이 바꿀 수 있는 상태 */
+const MINE = ['read', 'accepted', 'rejected', 'reported'];   /* 손님이 바꿀 수 있는 상태 */
+/* 연락 방법 - 고른 것만 받는다. 둘 다 비면 빈 글 */
+export const 연락수단 = ['전화', '문자', '상관없음'], 연락때 = ['아무때나', '오전', '오후', '저녁'];
+export function 연락방법(x) {
+  const o = x && typeof x === 'object' ? x : {};
+  const 수단 = 연락수단.includes(o.how) ? o.how : '', 때 = 연락때.includes(o.when) ? o.when : '';
+  if (!수단 && !때) return '';
+  return [수단 === '상관없음' ? '전화 · 문자 상관없음' : 수단 ? `${수단} 먼저` : '', 때 && 때 !== '아무때나' ? `${때}에 편함` : 때].filter(Boolean).join(' · ');
+}
 const ROLE_KO = { agent: '공인중개사', owner: '소유자', developer: '시행사' };
 
 export default async function handler(req, res) {
@@ -283,6 +291,9 @@ async function patch(req, res, user, b) {
        개인정보 제공은 시점이 곧 근거다. */
     const first = status === 'accepted' && !p.connected_at;
     if (first) body.connected_at = new Date().toISOString();
+    /* 연락 방법 (2026-11-11 파트너 기획 '손님이 안내 받을 방법 고르기') - 전화 · 문자 · 상관없음 + 편한 때. 연결할 때만 */
+    const 연락 = status === 'accepted' ? 연락방법(b.pref) : '';
+    if (first && 연락) body.contact_pref = 연락;
 
     /* 신고면 무엇이 문제였는지 함께 남긴다. 사유 없는 신고는 운영자가
        확인할 수가 없다 - 화면에서도 유형을 고르기 전에는 못 누르게 해뒀다. */
@@ -312,9 +323,13 @@ async function patch(req, res, user, b) {
       if (!agent) return res.status(404).json({ error: '연결할 곳을 찾지 못했습니다' });
     }
 
-    const ur = await fetch(sbUrl('bk_proposal', 'id=eq.' + id), {
+    let ur = await fetch(sbUrl('bk_proposal', 'id=eq.' + id), {
       method: 'PATCH', headers: { ...sbHeaders(), Prefer: 'return=minimal' }, body: JSON.stringify(body),
     });
+    /* contact_pref 칸(0037)이 아직 없으면 빼고 다시 쓴다 - 연결은 막지 않고, 연락 방법은 메일로만 간다 */
+    if (!ur.ok && body.contact_pref) { const t = await ur.clone().text().catch(() => '');
+      if (/contact_pref|42703|PGRST204/.test(t)) { const { contact_pref, ...rest } = body;
+        ur = await fetch(sbUrl('bk_proposal', 'id=eq.' + id), { method: 'PATCH', headers: { ...sbHeaders(), Prefer: 'return=minimal' }, body: JSON.stringify(rest) }); } }
     if (!ur.ok) {
       const t = await ur.text().catch(() => '');
       if (/report_|reported_at|bk_proposal_status_check/.test(t)) {
@@ -363,6 +378,7 @@ async function patch(req, res, user, b) {
         rows: [
           ['손님', d.name || '-'],
           ['연락처', d.phone || '-'],
+          ...(연락 ? [['연락 방법', 연락]] : []),
           ['물건', p.bname || p.addr || '-'],
           ['지역', where],
           /* 메일 주소를 안 남긴 파트너면 이 메일은 운영자에게 간다.

@@ -569,7 +569,9 @@ export default async function handler(req, res) {
      사라졌다. 함수 상한(12개) 때문에 여기 함께 둔다. */
   if (b.what === 'listings')    return readListings(req, res, chk.agent);
   if (b.what === 'listing-add') return addListing(req, res, chk.agent, user, b);
-  if (b.what === 'listing-del') return delListing(req, res, chk.agent, b);
+  if (b.what === 'listing-del') return delListing(req, res, chk.agent, b);
+  if (b.what === 'listing-memo')      return readListingMemos(res, chk.agent);
+  if (b.what === 'listing-memo-save') return saveListingMemo(res, chk.agent, b);
 
   /* 활동 조건을 저장한다.
      지금까지 이 화면은 "저장됐습니다" 라고 말하고 아무 데도 넣지 않았다.
@@ -848,12 +850,10 @@ const P_STATUS_KO = {
 
 async function readMine(req, res, agent) {
   try {
-    const q = new URLSearchParams({
-      select: 'id,created_at,status,addr,bname,dep,rent,fee,demand_id,connected_at,'
-            + 'report_type,read_at',
-      agent_id: 'eq.' + agent.id, order: 'created_at.desc', limit: '200',
-    });
-    const r = await fetch(sbUrl('bk_proposal', q.toString()), { headers: sbHeaders() });
+    const 열 = 'id,created_at,status,addr,bname,dep,rent,fee,demand_id,connected_at,report_type,read_at';
+    const 묻기 = s => fetch(sbUrl('bk_proposal', new URLSearchParams({ select: s, agent_id: 'eq.' + agent.id, order: 'created_at.desc', limit: '200' }).toString()), { headers: sbHeaders() });
+    let r = await 묻기(열 + ',contact_pref');
+    if (!r.ok) { const t = await r.clone().text().catch(() => ''); if (/contact_pref|42703/.test(t)) r = await 묻기(열); }
     if (!r.ok) {
       const t = await r.text();
       if (/does not exist|PGRST205/i.test(t)) {
@@ -890,6 +890,7 @@ async function readMine(req, res, agent) {
           report_type: x.status === 'reported' ? (x.report_type || null) : null,
           cust:   connected ? (d.name || null)  : null,
           cphone: connected ? (d.phone || null) : null,
+          cpref:  connected ? (x.contact_pref || null) : null,   /* 손님이 고른 연락 방법 (2026-11-11) */
         };
       }),
     });
@@ -1032,6 +1033,38 @@ async function addListing(req, res, agent, user, b) {
   }
 }
 
+/* 내 물건 비공개 메모 (2026-11-11 파트너 기획 '매물장부 - 의뢰인 비공개 칸') - 사무소 설정 settings.lmemo { 물건id: {...} }.
+   물건 표(bk_listing)에 두지 않는다 - 물건 값은 제안 · 수요 대조로 손님 쪽에 흘러가는 길이 여럿이라, 메모는 아예 다른 곳에 둔다.
+   현관 비밀번호 같은 것은 받지 않는다(화면이 그렇게 안내한다). 사무소 직원 중 '내 물건' 권한이 있는 사람만 본다 */
+const 메모최대 = 300;
+const 메모글 = (v, n) => String(v ?? '').replace(/[\u0000-\u0008\u000b-\u001f\u007f]/g, ' ').trim().slice(0, n);
+export function 물건메모(m) {
+  if (!m || typeof m !== 'object' || Array.isArray(m)) return null;
+  const 값 = { who: 메모글(m.who, 30), phone: 메모글(m.phone, 20).replace(/[^0-9-]/g, ''), nego: Math.max(0, Math.min(1e13, Math.round(+String(m.nego ?? '').replace(/[^0-9]/g, '')) || 0)), note: 메모글(m.note, 500) };
+  if (!값.who && !값.phone && !값.nego && !값.note) return null;
+  return { ...값, at: String(m.at || '').slice(0, 19) };
+}
+export function 물건메모들(x) {
+  const out = {};
+  if (!x || typeof x !== 'object' || Array.isArray(x)) return out;
+  for (const [k, v] of Object.entries(x).slice(0, 메모최대)) { const m = LUUID.test(k) && 물건메모(v); if (m) out[k] = m; }
+  return out;
+}
+async function readListingMemos(res, agent) {
+  const x = await 설정읽기(agent);
+  if (x.error) return res.status(502).json({ error: '메모를 불러오지 못했습니다' });
+  return res.status(200).json({ ok: true, memos: 물건메모들(x.settings.lmemo), need: x.need || '' });
+}
+async function saveListingMemo(res, agent, b) {
+  const id = String(b.id || '');
+  if (!LUUID.test(id)) return res.status(400).json({ error: '어느 물건인지 알 수 없습니다' });
+  const 새 = 물건메모({ ...(b.memo || {}), at: new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 19) });
+  const z = await 설정고침(agent, s => { const L = 물건메모들(s.lmemo);
+    if (새) { if (!L[id] && Object.keys(L).length >= 메모최대) return { error: `메모는 물건 ${메모최대}개까지 둡니다`, code: 400 }; L[id] = 새; } else delete L[id];
+    return { memos: L, patch: { lmemo: L } }; });
+  if (!z.y || z.y.error) return z.y && z.y.error ? res.status(400).json({ error: z.y.error }) : 설정실패(res, z, '메모');
+  return res.status(200).json({ ok: true, memo: 새 });
+}
 async function delListing(req, res, agent, b) {
   const id = String(b.id || '');
   if (!LUUID.test(id)) return res.status(400).json({ error: '어느 물건인지 알 수 없습니다' });

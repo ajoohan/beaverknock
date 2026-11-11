@@ -526,7 +526,10 @@ export async function 미열람만료(지금 = Date.now(), fetchFn = fetch) {
   const r = await fetchFn(sbUrl('bk_proposal', `select=id,demand_id&status=eq.sent&created_at=lt.${encodeURIComponent(전)}&order=created_at&limit=300`), { headers: sbHeaders() });
   if (!r.ok) return { 만료: 0, error: true };
   let 만료 = 0;
+  const 시작 = Date.now();
   for (const p of await r.json()) {
+    /* 25초까지만 - 밀린 건이 많아도 뒤따르는 아침 알림 발송 시간을 잡아먹지 않는다. 남은 것은 다음 날 */
+    if (Date.now() - 시작 > 25e3) return { 만료, 남음: true };
     const u = await fetchFn(sbUrl('bk_proposal', `id=eq.${p.id}&status=eq.sent`), {
       method: 'PATCH', headers: { ...sbHeaders(), Prefer: 'return=representation' }, body: JSON.stringify({ status: 'expired' }) });
     if (!u.ok) { const t = await u.text().catch(() => ''); if (/bk_proposal_status_check|23514/.test(t)) return { 만료, need: '0038' }; continue; }

@@ -8820,7 +8820,7 @@ V["#/partner/stats"] = () => {
 
     <div style="display:grid;grid-template-columns:repeat(${isMo()?2:4},minmax(0,1fr));gap:12px">
       ${tile('보낸 제안', sent+'건', null, null)}
-      ${tile('열람률', sent?vr+'%':'-', sent?`${viewed}건 열람`:'제안을 보내면 쌓입니다', null)}
+      ${tile('열람률', 분모?vr+'%':'-', sent?`${viewed}건 열람`:'제안을 보내면 쌓입니다', null)}
       ${tile('선택률', viewed?sr+'%':'-', viewed?`${selected}건 연결`:'열람이 있어야 계산됩니다', null)}
       ${tile('품질 점수', sent?qualityScore()+'점':'-', '아래 산식대로', null, true)}
     </div>
@@ -12315,6 +12315,8 @@ const CT_하위메뉴 = [['#/partner/contracts/new', '계약서 작성', 'pen', 
    번호는 배포한 날(연.월.일 - 같은 날 또 올리면 뒤에 .2). 화면이 version.json 을 가끔 읽어,
    더 새 버전이 올라와 있으면 메뉴 아래에서 새로고침을 권한다(버전확인) - 계약서를 띄워 둔 채 오래 일하면 고친 화면을 못 받는다 */
 const BK_변경 = [
+  { v:'26.11.11.8', 날:'2026-11-11', 줄:[
+    '대시보드 열람률도 미열람 만료 건을 빼고 셉니다 - 성과 화면과 같은 숫자가 나옵니다' ] },
   { v:'26.11.11.7', 날:'2026-11-11', 줄:[
     '보낸 지 7일이 지나도록 손님이 열지 않은 제안은 만료되고 자리가 돌아옵니다 - 품질 점수에는 불이익이 없습니다',
     '제안 회수는 손님이 열기 전에만 됩니다 - 서버도 화면 안내와 같게 맞췄습니다',
@@ -12925,6 +12927,7 @@ function 파트너현황계산(){
   const props = S.myprops || [], 수요 = S.demands || [], 물건 = S.listings || [];
   const 진짜 = props.filter(p => !p.seed);
   const 열람 = 진짜.filter(열람됨).length;
+  const 열람분모 = 진짜.filter(p => p.status !== 'expired').length;   /* 미열람 만료는 열람률 분모에서 뺀다 - 성과 화면 · 품질 점수와 같은 셈(2026-11-11) */
   const 연결 = 진짜.filter(p => p.status === 'selected');
   const 안읽힘 = 진짜.filter(p => p.status === 'sent').length;
   const 계약 = (CT.list || []).filter(ct살아있음);
@@ -12975,7 +12978,7 @@ function 파트너현황계산(){
     계약.some(r => ct안읽은의견(r.track)) ? { t:'초안에 새 의견', s:'손님 · 공동중개 사무소가 초안 링크로 남긴 의견', n: 계약.reduce((s, r) => s + ct안읽은의견(r.track), 0), ico:'doc', go:'#/partner/contracts' } : null,
     !물건.length ? { t:'물건 올려두기', s:'올려두면 맞는 손님과 바로 대조합니다', ico:'building', go:'#/partner/listing/new' } : null,
   ].filter(Boolean);
-  return { props, 수요, 물건, 진짜, 열람, 연결, 안읽힘, 계약, 작성중, 날인, days, 보냄, 열림, 앞7, 뒤7, 할일, 잔금물음 };
+  return { props, 수요, 물건, 진짜, 열람, 열람분모, 연결, 안읽힘, 계약, 작성중, 날인, days, 보냄, 열림, 앞7, 뒤7, 할일, 잔금물음 };
 }
 /* 잔금 '아직' - 계약서마다 1시간 뒤까지 묻지 않는다(이 기기에 기억). 지난 것은 지운다 */
 function ct잔금미룸(){ try{ const m = JSON.parse(localStorage.getItem('bk.settleLater') || '{}'); return m && typeof m === 'object' ? m : {}; }catch(_){ return {}; } }
@@ -13047,7 +13050,7 @@ const dz잔금물음 = rows => !rows.length ? '' : `<section class="dz-card dz-s
       <span class="dz-settle-b"><button type="button" class="btn pri sm" data-act="settle-done" data-v="${esc(r.id)}">완료</button><button type="button" class="btn sec sm" data-act="settle-later" data-v="${esc(r.id)}">아직 (1시간 뒤)</button></span></div>`).join('')}
   </section>`;
 V['#/partner/home'] = () => {
-  const { 수요, 물건, 진짜, 열람, 연결, 안읽힘, 계약, 작성중, 날인, days, 보냄, 열림, 앞7, 뒤7, 할일, 잔금물음 } = 파트너현황();
+  const { 수요, 물건, 진짜, 열람, 열람분모, 연결, 안읽힘, 계약, 작성중, 날인, days, 보냄, 열림, 앞7, 뒤7, 할일, 잔금물음 } = 파트너현황();
   const 승인 = S.agent && S.agent.status === 'approved';
 
   return `
@@ -13069,7 +13072,7 @@ V['#/partner/home'] = () => {
         <div class="dz-r2">
           <div class="dz-stack">
             ${dzKpi({ ico:'building', cap:'올려둔 물건', v: 물건.length, go:'#/partner/listings', sub:'맞는 손님과 늘 대조합니다' })}
-            ${dzKpi({ ico:'eye', cap:'열람률', v: 진짜.length ? `${Math.round(열람 / 진짜.length * 100)}%` : '-', go:'#/partner/stats', sub: 진짜.length ? '보낸 제안 중 손님이 연 비율' : '첫 제안을 보내면 계산됩니다' })}
+            ${dzKpi({ ico:'eye', cap:'열람률', v: 열람분모 ? `${Math.round(열람 / 열람분모 * 100)}%` : '-', go:'#/partner/stats', sub: 진짜.length ? '보낸 제안 중 손님이 연 비율' : '첫 제안을 보내면 계산됩니다' })}
           </div>
           <div class="dz-card dz-chart">
             <div class="dz-chh"><b class="dz-ct">제안 흐름</b><span class="dz-leg"><i class="a"></i>보낸 제안 ${보냄.reduce((a,b)=>a+b,0)}<i class="b"></i>그중 열람 ${열림.reduce((a,b)=>a+b,0)}</span><span class="dz-cs">최근 14일 · 보낸 날 기준</span></div>

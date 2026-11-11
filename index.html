@@ -2537,6 +2537,32 @@ body.mo .rp-l{grid-column:1/-1}
 .gm-pr:hover{border-color:var(--ind200)}
 .gm-pr span{display:flex;flex-direction:column;min-width:0}
 .gm-pr small{font-size:12.5px;color:var(--n500)}
+/* 중개사 도움말 · ? 단추 · 처음 쓸 때 말풍선 (2026-11-11) */
+.ph-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.ph-bar .inp{flex:1;min-width:220px}
+.ph-grp{display:flex;flex-direction:column;gap:10px}
+.ph-grp h2{margin:6px 0 0;font-size:16px;font-weight:700;color:var(--n900)}
+.ph-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,280px),1fr));gap:10px}
+.ph-tile{display:flex;flex-direction:column;gap:6px;padding:16px 18px;border:1px solid var(--n200);border-radius:var(--r-lg);background:var(--white);cursor:pointer;color:var(--n900)}
+.ph-tile:hover{border-color:var(--ind200);background:var(--ind50)}
+.ph-tile b{font-size:15px;font-weight:700}
+.ph-tile span{font-size:13px;line-height:1.55;color:var(--n500)}
+.ph-g{font-size:12.5px;font-weight:700;color:var(--ind700)}
+.ph-one h2{margin:4px 0 14px;font-size:20px;font-weight:800;letter-spacing:-.03em}
+.ph-steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px}
+.ph-steps li{display:flex;gap:12px;align-items:flex-start}
+.ph-n{flex:none;width:26px;height:26px;border-radius:50%;background:var(--ind50);color:var(--ind700);font-size:13.5px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-top:1px}
+.ph-steps b{display:block;font-size:15px;font-weight:700;color:var(--n900)}
+.ph-steps p{margin:3px 0 0;font-size:14.5px;line-height:1.65;color:var(--n700)}
+.modal .box.ph-box{max-width:520px;max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);overflow:auto}
+.tour-hi{outline:3px solid var(--ind400) !important;outline-offset:3px;border-radius:10px;position:relative;z-index:61}
+#tourBox{position:fixed;z-index:120;width:300px;background:var(--n900);color:#fff;border-radius:14px;padding:16px 16px 14px;box-shadow:0 14px 40px rgba(20,16,50,.35);display:flex;flex-direction:column;gap:6px}
+#tourBox.mo{left:12px;right:12px;bottom:calc(84px + env(safe-area-inset-bottom));width:auto}
+#tourBox b{font-size:16px}
+#tourBox p{margin:0;font-size:14px;line-height:1.6;color:rgba(255,255,255,.85)}
+.tour-n{font-size:12.5px;font-weight:700;color:var(--ind200)}
+.tour-b{display:flex;justify-content:flex-end;gap:8px;margin-top:6px}
+#tourBox .btn.tool{color:#fff;border-color:rgba(255,255,255,.35);background:transparent}
 /* 쉬운 사용 안내 - 큰 글씨 카드 (2026-11-10) */
 .hp-idx{display:flex;flex-direction:column;gap:22px}
 .hp-idx section{display:flex;flex-direction:column;gap:10px}
@@ -4578,7 +4604,7 @@ function navPartner(active, 탭있음 = true){
          글자 링크 둘(내 정보·로그아웃) 대신 손님 화면과 같은 이름 메뉴를 둔다(2026-10-30) -
          얼굴 하나 자리에 마이페이지·내 조건·파트너·로그아웃이 다 들어 있다. -->
     ${S.agent && S.agent.office && !isMo() ? `<span class="nav-office">${esc(S.agent.office)}</span>` : ''}
-    ${알림종()}
+    ${도움말단추()}${알림종()}
     ${S.agent && S.agent.status === 'approved' && !ownerSide() ? '' : agentBadge()}   <!-- 2026-11-07 종이 들어오며 한 줄에 안 들어갔다(434px > 375px) -->
     ${S.user ? userMenu() : navAuth('partner')}
   </div>
@@ -7531,6 +7557,7 @@ V['#/account'] = () => {
       <div class="acc-tiles">${a.status==='approved'
         ? 마이줄('#/partner/home', ownerSide() ? '파트너 화면' : '파트너 대시보드', '', 판)
           + (계약막힘() ? '' : 마이줄('#/partner/contracts', '계약서', '', 'M6 3 h9 l4 4 v14 H6 Z M9 11 h7 M9 15 h7 M9 19 h4'))
+          + 마이줄('#/partner/help', '도움말', '화면마다 ? 단추', 'M12 21 a9 9 0 1 0 0 -18 a9 9 0 0 0 0 18 Z M9.4 9.2 a2.7 2.7 0 1 1 3.8 2.5 c-.8 .4 -1.2 1 -1.2 1.8 v.5 M12 16.7 v.3')
           + (직원() ? '' : 마이줄('#/partner/settings', '활동 설정', '', 'M12 21 s-7 -6.2 -7 -11.5 a7 7 0 0 1 14 0 C19 14.8 12 21 12 21 Z M12 12.5 a2.5 2.5 0 1 0 0 -5 a2.5 2.5 0 0 0 0 5'))
           /* 운영사에 문의 (2026-11-10 파트너 기획 '운영사 상담') - 휴대폰은 왼쪽 메뉴가 없어 여기에도 둔다 */
           + `<a class="acc-go" href="mailto:support@plustonic.com?subject=${encodeURIComponent('[비버노크 파트너 문의] ')}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6 h16 v12 H4 Z M4 7 l8 6 8-6"/></svg><span class="acc-gn">운영사에 문의</span><span class="acc-gv">support@plustonic.com</span><i class="ar-r" aria-hidden="true"></i></a>`
@@ -9696,6 +9723,14 @@ function modalHTML(){
       <p style="margin:0;font-size:14.5px;line-height:1.7;color:var(--n500)">받는 분: <b style="color:var(--n900)">${esc(받는)}</b><br>보낸 파일은 지울 수 없고, 잔금 뒤 1년까지 보관한 다음 지웁니다. 주민등록번호 · 계좌번호가 보이는 서류는 가리고 보내 주세요.</p>
       <div class="eqb" style="display:flex;gap:8px;margin-top:16px"><button class="btn sec" data-act="modal-close" style="flex:1">취소</button><button class="btn pri" data-act="rm-fsend" style="flex:1">보내기</button></div></div></div>`;
   }
+  if(S.modal.type==='ph'){
+    const a = PHELP보임().find(x => x.id === S.modal.id);
+    if(!a){ S.modal = null; return ''; }
+    return `<div class="modal" data-act="modal-bg"><div class="box ph-box" data-stop role="dialog" aria-modal="true" aria-labelledby="mdT" tabindex="-1">
+      <span class="ph-g">${esc(a.g)} · 이 화면 도움말</span>
+      <h2 id="mdT" style="margin:4px 0 12px;font-size:18px;font-weight:700;letter-spacing:-.03em">${esc(a.t)}</h2>${ph단계HTML(a)}
+      <div class="eqb" style="display:flex;gap:8px;margin-top:16px"><button class="btn sec" data-go="#/partner/help" style="flex:1">도움말 목록</button><button class="btn pri" data-act="modal-close" style="flex:1">닫기</button></div></div></div>`;
+  }
   if(S.modal.type==='ct-ext') return ctExt창HTML();
   if(S.modal.type==='ct-cloud') return 보관창HTML();
   if(S.modal.type==='ct-share'){
@@ -11690,6 +11725,152 @@ const HELP = [
     ['전세 · 월세는 만기 안내', '계약이 끝나기 6개월쯤 전에 중개사무소에서 연장할지 여쭤봅니다.'] ] },
 ];
 const HP = { id:'', i:0 };
+/* ══════════ 중개사 도움말 (2026-11-11 파트너 기획 ④ '중개사 6묶음 · 화면 속 ? 단추 · 처음 쓸 때 말풍선 · 권한별 표시')
+   파트너 초안(문서/4_매뉴얼_중개사_안내문안.md)은 매물장부 · 매칭 관리처럼 우리에게 없는 화면 기준이라, 지금 파트너 화면의 메뉴 · 단추 이름으로 다시 썼다.
+   ⚠ 화면 이름 · 단추 이름을 바꾸면 여기 문구도 같이 고친다. ct:true 는 계약서 안내 - 중개보조원 · 계약서 권한이 꺼진 직원에게는 안 보인다 ══════════ */
+const PHELP = [
+  { g:'시작하기', id:'start', t:'비버노크 파트너 처음 시작하기', steps:[
+    ['자격 확인', '대시보드의 ‘자격 확인 마치기’에서 중개사무소 등록번호를 확인합니다. 확인되면 손님 조건 전문이 열립니다.'],
+    ['활동 지역 정하기', '내 사무소 › 활동 설정에서 활동 지역을 고르세요. 그 지역에 걸린 손님 조건이 수요 목록에 모입니다.'],
+    ['대시보드 보기', '대시보드의 할 일 · 알림(종 단추)에 지금 챙길 일이 모입니다. 새 조건 · 손님 말 · 잔금 일정이 여기에 뜹니다.'] ] },
+  { g:'시작하기', id:'staff', boss:true, t:'직원 초대하고 권한 정하기', steps:[
+    ['직원 초대', '활동 설정 › 직원에서 메일 주소로 초대합니다. 초대받은 분이 그 메일로 로그인하면 우리 사무소로 들어옵니다.'],
+    ['역할 고르기', '공인중개사 또는 중개보조원을 고릅니다. 중개보조원은 법에 따라 계약서 기능을 쓸 수 없습니다.'],
+    ['기능마다 켜고 끄기', '‘권한’을 누르면 계약서 보기 · 작성 · 날인본 확정 · 메일, 제안 보내기, 내 물건, 손님 대화, 성과를 하나씩 켜고 끌 수 있습니다.'],
+    ['대표만 하는 일', '직원 관리, 사무소 주소, 활동 지역, 영구 삭제는 대표만 할 수 있습니다.'] ] },
+  { g:'내 물건', id:'listing', t:'물건 올려두고 맞는 손님 찾기', steps:[
+    ['물건 올리기', '영업 › 내 물건에서 ‘물건 올리기’를 누르고 금액 · 면적 · 층 · 입주 가능일을 적습니다.'],
+    ['맞는 손님 보기', '올리면 걸려 있는 손님 조건과 바로 견줍니다. 목록에 ‘맞는 손님 N명 · 최고 N점’이 보입니다.'],
+    ['적합도 보고 제안', '물건을 누르면 맞는 손님과 적합도 점수가 나옵니다. 점수가 높은 손님부터 ‘이 물건으로 제안’을 누르세요.'],
+    ['새 손님 알림', '새로 걸린 조건이 내 물건과 맞으면 대시보드 할 일과 알림에 적합도와 함께 뜹니다.'] ] },
+  { g:'내 물건', id:'lmemo', t:'물건에 비공개 메모 남기기', steps:[
+    ['물건 상세 열기', '내 물건에서 물건을 누르면 아래에 ‘비공개 메모’ 칸이 있습니다.'],
+    ['적고 저장', '의뢰인, 의뢰인 연락처, 조정 가능 금액, 특이사항을 적고 ‘메모 저장’을 누릅니다.'],
+    ['밖으로 나가지 않습니다', '메모는 우리 사무소만 봅니다. 손님 화면과 제안에는 나가지 않습니다. 현관 비밀번호는 적지 마세요.'] ] },
+  { g:'손님 조건과 제안', id:'propose', t:'손님 조건 보고 1:1 제안 보내기', steps:[
+    ['수요 목록 보기', '영업 › 수요 목록에 활동 지역의 손님 조건이 모입니다. 내 물건과 맞는 조건이 위로 옵니다.'],
+    ['조건 전문 보기', '조건을 누르면 지역 · 예산 · 입주 시기 · 원하는 점이 나옵니다. 손님 이름과 연락처는 연결 전까지 가려져 있습니다.'],
+    ['제안 보내기', '‘이 물건으로 제안’을 누르면 금액 · 면적 · 층이 채워집니다. 맞는 물건이 없으면 ‘이 손님에게 제안하기’로 새로 씁니다.'],
+    ['한 조건에 다섯 곳', '조건 1건에는 최대 5곳만 제안할 수 있습니다. 남은 자리가 조건마다 보입니다.'] ] },
+  { g:'손님 조건과 제안', id:'connect', t:'손님이 연결하면', steps:[
+    ['알림 받기', '손님이 ‘연락하기’를 누르면 메일이 오고, 영업 › 내 제안에 손님 이름과 전화번호가 열립니다.'],
+    ['희망 연락 방법', '손님이 고른 연락 방법(전화 먼저 · 문자 먼저)과 편한 때가 번호 옆에 보입니다. 그 방법으로 연락하세요.'],
+    ['계약서로 이어가기', '계약이 되면 내 제안에서 그 손님으로 계약서를 시작할 수 있습니다. 손님 이름과 번호가 채워집니다.'] ] },
+  { g:'계약서', id:'ct-new', ct:true, t:'새 계약서 쓰기', steps:[
+    ['종류 고르기', '계약 › 계약서 작성에서 종류와 거래유형을 고르고 ‘계약서 만들기’를 누릅니다.'],
+    ['서류로 먼저 채우기', '‘서류로 채우기’ 탭에 등기부 · 건축물대장 · 토지이용계획을 올리면 계약서와 확인·설명서 칸이 함께 채워집니다. 휴대폰은 ‘사진 찍기’로 바로 올립니다.'],
+    ['입력하고 확인', '‘입력’ 탭에서 남은 칸을 채웁니다. PC 는 오른쪽에 미리보기가 늘 보이고, 금액은 한글로도 보여 줍니다.'],
+    ['인쇄', '주민등록번호 · 계좌번호 · 서명 칸은 비워서 인쇄됩니다. 만나서 손으로 적으세요.'] ] },
+  { g:'계약서', id:'ct-special', ct:true, t:'특약 넣고 순서 바꾸기', steps:[
+    ['내 특약 저장', '계약 › 특약 관리에서 자주 쓰는 문구를 묶음별로 저장해 둡니다.'],
+    ['계약서에 넣기', '계약서 특약 칸에서 기본 특약 · 내 특약을 골라 넣습니다. 새 특약은 끝 문장(그 밖의 사항 등) 앞에 들어갑니다.'],
+    ['순서 바꾸기', '특약마다 있는 ▲ ▼ 단추로 순서를 바꿉니다.'] ] },
+  { g:'계약서', id:'ct-seal', ct:true, t:'초안 보내고 날인본으로 확정하기', steps:[
+    ['초안 링크로 의견 받기', '확정 전에 초안 링크를 손님 · 공동중개 사무소에 보내면, 고칠 곳을 의견으로 남겨 줍니다(전화번호는 가려집니다).'],
+    ['날인 받기', '인쇄해서 날인까지 받습니다.'],
+    ['날인본으로 확정', '‘날인본으로 확정’을 누르면 고칠 수도 지울 수도 없습니다. 바꿔야 하면 그 판을 두고 새 판을 만듭니다.'] ] },
+  { g:'계약 진행', id:'ct-plan', ct:true, t:'일정 · 알림 받기', steps:[
+    ['날짜만 넣으면', '계약서에 계약일 · 중도금일 · 잔금일을 넣으면 신고 기한 · 법무사 예약 · 잔금 준비물 안내까지 일정이 생깁니다.'],
+    ['아침 9시 알림', '매일 아침 9시에 카카오톡 · 메일로 알려 드립니다. 계약 › 일정·알림에서 받을 항목을 고릅니다.'],
+    ['휴대폰 달력에', '일정·알림의 ‘휴대폰 · 구글 달력에서 보기’에서 구독 주소를 받으면 쓰시는 달력에 일정이 들어갑니다.'],
+    ['잔금 완료 확인', '잔금일 오후 3시부터 대시보드가 ‘잔금 완료하셨나요?’를 묻습니다. 완료로 바꾸면 알림이 멈춥니다.'] ] },
+  { g:'계약 진행', id:'room', ct:true, room:true, t:'손님을 대화방에 초대하기', steps:[
+    ['초대 링크 보내기', '날인본 계약서의 ‘일정·체크’ 탭 › 손님 대화방에서 당사자마다 ‘초대 링크’를 눌러 문자 · 카톡으로 보냅니다.'],
+    ['대리인 초대', '본인 대신 챙기는 분이 있으면 ‘대리인 초대’로 한 분을 더 부릅니다. 같은 방에서 대화합니다.'],
+    ['대화 · 사진 · 파일', '영업 › 손님 대화에서 당사자마다 따로 대화합니다. ‘사진 · 파일’로 서류를 보냅니다(잔금 뒤 1년 보관).'],
+    ['잔금 준비물 안내', '매매 방에서는 ‘잔금 준비물 안내’ 단추가 매도인 · 매수인 몫의 글을 채웁니다. 보내면 잔금안내 체크도 됩니다.'] ] },
+  { g:'계약 진행', id:'extra', ct:true, t:'영수증 · 잔금정산서 만들기', steps:[
+    ['부속 서류 탭', '계약서의 ‘부속 서류’ 탭에서 영수증 · 잔금정산서 · 위임장 · 보증금 반환 영수증 · 개인정보 동의서를 고릅니다.'],
+    ['계약서 값으로 채움', '금액 · 날짜 · 당사자가 계약서 값으로 채워집니다. 날인본이 된 뒤에도 씁니다.'],
+    ['인쇄', '‘이 서류 인쇄’를 누릅니다.'] ] },
+  { g:'정리', id:'bin', ct:true, t:'보관함 · 휴지통', steps:[
+    ['내리기 · 휴지통', '계약서 목록의 줄마다 ‘내리기’(보관함) · ‘휴지통’ 단추가 있습니다. 언제든 ‘되돌리기’로 목록에 올립니다.'],
+    ['지워지는 것', '작성 중 계약서는 휴지통에 넣은 지 30일이 지나면 지워집니다. 날인본은 지워지지 않습니다.'],
+    ['자동 보관', '목록 위 ‘완료 · 취소 건은 3개월 뒤 자동으로 보관함으로’를 켜 두면 알아서 내려갑니다.'],
+    ['영구 삭제', '휴지통의 작성 중 계약서를 바로 지우는 ‘영구 삭제’는 대표만 할 수 있습니다.'] ] },
+  { g:'정리', id:'ext', ct:true, t:'다른 사무소가 쓴 계약서 올리기', steps:[
+    ['목록 아래에서', '계약서 목록 아래 ‘다른 사무소가 쓴 계약서’에서 ‘+ 다른 사무소 계약서 올리기’를 누릅니다.'],
+    ['적고 파일 올리기', '소재지 · 거래 · 작성한 사무소 · 계약일 · 중도금일 · 잔금일을 적고, 계약서 파일(PDF · 사진)을 올립니다.'],
+    ['일정도 같이', '날짜는 대시보드 달력 · 다가오는 일정 · 아침 알림 · 달력 구독에 같이 들어갑니다.'] ] },
+];
+/* 지금 사람에게 보일 안내 - 계약서 안내는 계약서 권한이 있을 때만, 직원 관리는 대표만, 대화방은 손님 대화 권한 */
+const PHELP보임 = () => PHELP.filter(a => !(a.ct && 계약막힘()) && !(a.boss && (직원() || ownerSide())) && !(a.room && !권한('room')));
+/* 화면 → 그 화면 안내 (? 단추) */
+function 화면도움말(h = S.route || ''){
+  const 맵 = [['#/partner/home', 'start'], ['#/partner/demand', 'propose'], ['#/partner/listing', 'listing'], ['#/partner/proposals', 'connect'],
+    ['#/partner/rooms', 'room'], ['#/partner/settings', 'staff'], ['#/partner/contracts/new', 'ct-new'], ['#/partner/contracts/phrases', 'ct-special'],
+    ['#/partner/contracts/schedule', 'ct-plan'], ['#/partner/contracts', 'bin'],
+    ['#/partner/contract/', CT.mode === 'plan' ? 'room' : CT.mode === 'extra' ? 'extra' : CT.mode === 'scan' || CT.mode === 'edit' ? 'ct-new' : 'ct-seal']];
+  const id = (맵.find(([p]) => h.startsWith(p)) || [])[1];
+  return PHELP보임().find(a => a.id === id) || null;
+}
+const PH = { q:'' };
+const ph단계HTML = a => `<ol class="ph-steps">${a.steps.map(([t, s], i) => `<li><span class="ph-n num">${i + 1}</span><div><b>${esc(t)}</b><p>${esc(s)}</p></div></li>`).join('')}</ol>`;
+V['#/partner/help'] = id => {
+  const 보임 = PHELP보임(), a = 보임.find(x => x.id === id);
+  const 머리 = `<div><h1 class="t" style="font-size:${isMo()?21:25}px;margin-top:8px">도움말</h1>
+    <p class="sub" style="font-size:14.5px">할 일 하나에 안내 하나 - 화면마다 오른쪽 위 <b style="color:var(--n900)">?</b> 단추를 누르면 그 화면 안내가 바로 열립니다.</p></div>`;
+  let 본문;
+  if(a){
+    본문 = `<a class="back" data-go="#/partner/help"><i class="ar-l" aria-hidden="true"></i>도움말 목록</a>
+      <div class="card pad ph-one"><span class="ph-g">${esc(a.g)}</span><h2>${esc(a.t)}</h2>${ph단계HTML(a)}</div>`;
+  } else {
+    const q = PH.q.trim(), 맞음 = x => !q || [x.t, x.g, ...x.steps.flat()].join(' ').includes(q);
+    const 묶음 = [...new Set(보임.map(x => x.g))];
+    본문 = `<div class="ph-bar"><input class="inp" type="search" data-in="ph-q" value="${esc(PH.q)}" placeholder="찾기 - 예: 특약, 대화방, 휴지통" aria-label="도움말 찾기" autocomplete="off">
+        <button type="button" class="btn sec sm" data-act="tour-start">처음 쓸 때 안내 다시 보기</button></div>
+      ${묶음.map(g => { const L = 보임.filter(x => x.g === g && 맞음(x)); return L.length ? `<section class="ph-grp"><h2>${esc(g)}</h2>
+        <div class="ph-tiles">${L.map(x => `<a class="ph-tile" data-go="#/partner/help/${x.id}"><b>${esc(x.t)}</b><span>${esc(x.steps.map(s => s[0]).join(' → '))}</span></a>`).join('')}</div></section>` : ''; }).join('')
+        || `<p class="sub">‘${esc(q)}’에 맞는 안내가 없습니다.</p>`}
+      <p class="sub" style="font-size:13.5px">찾는 안내가 없거나 화면이 안내와 다르면 왼쪽 아래 ‘운영사에 문의’로 알려 주세요.</p>`;
+  }
+  return `
+<div class="scr fade" style="background:var(--n50)">
+  ${navPartner('help')}
+  <div class="pad adm-page" style="flex:1;padding-top:${isMo()?18:28}px;padding-bottom:24px;width:100%;max-width:${isMo()?'none':'980px'};display:flex;flex-direction:column;gap:14px">
+    ${a && isMo() ? '' : 머리}${본문}
+  </div>
+  ${tabbar('', 'p')}
+</div>`;
+};
+/* ? 단추 - 그 화면 안내를 옆 창으로. 맞는 안내가 없는 화면은 도움말 목록으로 */
+function 도움말단추(){
+  if(!S.user || !S.agent) return '';
+  return `<button type="button" class="nt-bell ph-q" data-act="ph-open" aria-label="이 화면 도움말">${dzIco('help', isMo() ? 20 : 19)}</button>`;
+}
+/* 처음 쓸 때 말풍선 - 첫 로그인 한 번. 메뉴를 차례로 짚는다(이 기기에 기억). 도움말에서 다시 본다 */
+const TOUR = { i:-1 };
+function 투어단계(){
+  const 메뉴 = h => isMo() ? `.ptn-nav .items a[data-go="${h}"]` : `.dz-menu a[data-go="${h}"]`;
+  return [
+    ['수요 목록', '활동 지역에 걸린 손님 조건이 모입니다. 조건마다 최대 5곳이 1:1 로 제안합니다.', 메뉴('#/partner/demands')],
+    ['내 물건', '물건을 올려 두면 맞는 손님을 적합도 점수와 함께 찾아 줍니다.', 메뉴('#/partner/listings')],
+    ['내 제안', '보낸 제안과 손님이 연결한 건(이름 · 번호 · 희망 연락 방법)이 모입니다.', 메뉴('#/partner/proposals')],
+    ...(계약막힘() ? [] : [['계약서', '계약서 작성부터 날인본 · 일정 알림 · 손님 대화방까지 여기서 합니다.', isMo() ? 메뉴('#/partner/contracts') : '.dz-menu a[data-go="#/partner/contracts/new"]']]),
+    ['도움말 ?', '화면마다 이 단추를 누르면 그 화면 안내가 열립니다. 이 안내도 도움말에서 다시 볼 수 있습니다.', '.ph-q'],
+  ];
+}
+function 투어그리기(){
+  document.querySelectorAll('.tour-hi').forEach(e => e.classList.remove('tour-hi'));
+  let box = document.getElementById('tourBox');
+  const 단계 = 투어단계();
+  if(TOUR.i < 0 || TOUR.i >= 단계.length || !(S.route || '').startsWith('#/partner/')){ if(box) box.remove(); return; }
+  const [t, s, sel] = 단계[TOUR.i], 끝 = TOUR.i === 단계.length - 1, el = sel && document.querySelector(sel);
+  if(el){ el.classList.add('tour-hi'); try{ el.scrollIntoView({ block:'nearest' }); }catch(_){} }
+  if(!box){ box = document.createElement('div'); box.id = 'tourBox'; box.setAttribute('role', 'dialog'); box.setAttribute('aria-label', '처음 쓸 때 안내'); document.body.appendChild(box); }
+  box.innerHTML = `<span class="tour-n num">${TOUR.i + 1} / ${단계.length}</span><b>${esc(t)}</b><p>${esc(s)}</p>
+    <div class="tour-b"><button type="button" class="btn tool sm" data-tour="skip">건너뛰기</button><button type="button" class="btn pri sm" data-tour="next">${끝 ? '다 봤습니다' : '다음'}</button></div>`;
+  if(el && !isMo()){ const r = el.getBoundingClientRect(); box.style.top = Math.max(12, Math.min(window.innerHeight - box.offsetHeight - 12, r.top)) + 'px'; box.style.left = Math.min(window.innerWidth - box.offsetWidth - 12, r.right + 14) + 'px'; box.classList.remove('mo'); }
+  else { box.style.top = ''; box.style.left = ''; box.classList.add('mo'); }
+}
+function 투어끝(){ TOUR.i = -1; try{ localStorage.setItem('bk.tour', '1'); }catch(_){} 투어그리기(); }
+function 투어확인(){
+  if(TOUR.i >= 0 || !S.agent || S.route !== '#/partner/home') return;
+  let 봄 = true; try{ 봄 = localStorage.getItem('bk.tour') === '1'; }catch(_){}
+  if(!봄){ TOUR.i = 0; setTimeout(투어그리기, 300); }
+}
+if(typeof document !== 'undefined') document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-tour]'); if(!b) return;
+  if(b.dataset.tour === 'skip') return 투어끝(); TOUR.i++; if(TOUR.i >= 투어단계().length) 투어끝(); else 투어그리기(); });
 const help말 = () => { try{ if(window.speechSynthesis) window.speechSynthesis.cancel(); }catch(_){} HP.말중 = false; };
 function help듣기(){
   const a = HELP.find(x => x.id === HP.id); if(!a || !window.speechSynthesis) return;
@@ -11917,6 +12098,7 @@ const 적는중 = () => {
    운영자·중개사 화면이 같은 틀을 쓴다. 넓은 화면(PC)에서만 왼쪽 메뉴를 세운다 - 휴대폰은 지금처럼
    위 머리 + 아래 탭(중개사) / 가로로 미는 메뉴(운영자)다. 휴대폰에서 세로 메뉴는 화면 폭을 다 먹는다. */
 const DZ_ICO = {
+  help:'M12 21 a9 9 0 1 0 0 -18 a9 9 0 0 0 0 18 Z M9.4 9.2 a2.7 2.7 0 1 1 3.8 2.5 c-.8 .4 -1.2 1 -1.2 1.8 v.5 M12 16.7 v.3',
   home:'M4 11 L12 4 L20 11 M6.5 9.5 V19 h11 V9.5',
   chart:'M4 19 V5 M4 19 H20 M8 15 l3.5 -4 3 2.5 L19 8',
   users:'M9 11 a3.5 3.5 0 1 0 0 -7 a3.5 3.5 0 0 0 0 7 M2.5 20 c.8 -3.6 3.4 -5.5 6.5 -5.5 s5.7 1.9 6.5 5.5 M16 4.6 a3.3 3.3 0 0 1 0 6.3 M18.5 14.8 c1.6 .8 2.6 2.5 3 5.2',
@@ -12080,11 +12262,12 @@ function 파트너옆(active){
       `<a data-go="${h}" class="${켬===k?'on':''}" ${켬===k?'aria-current="page"':''}>${dzIco(i)}<span>${t}</span></a>`)(x)).join('')}</nav>
     <div class="dz-foot">
       <a data-go="#/">${dzIco('site')}<span>사이트 가기</span></a>
+      <a data-go="#/partner/help" class="${active === 'help' ? 'on' : ''}">${dzIco('help')}<span>도움말</span></a>
       <a href="mailto:support@plustonic.com?subject=${encodeURIComponent('[비버노크 파트너 문의] ')}&body=${encodeURIComponent(`\n\n- 사무소: ${(S.agent && (S.agent.name || '')) || ''}\n- 화면: ${typeof location !== 'undefined' ? location.hash : ''}\n- 버전: ${BK_변경[0].v}`)}">${dzIco('send')}<span>운영사에 문의</span></a>
       ${버전칸()}
     </div>
   </aside>
-  <div class="ptop">${S.route === '#/partner/home' ? dzNowHTML() : adm경로(adm위치(S.route || ''))}<span class="ptop-r">${찾기단추()}${알림종()}${agentBadge()}${S.user ? userMenu({ admin: true }) : navAuth('partner')}</span></div>`;
+  <div class="ptop">${S.route === '#/partner/home' ? dzNowHTML() : adm경로(adm위치(S.route || ''))}<span class="ptop-r">${찾기단추()}${도움말단추()}${알림종()}${agentBadge()}${S.user ? userMenu({ admin: true }) : navAuth('partner')}</span></div>`;
 }
 /* ── 어드민 머리 줄 (2026-10-30 대표님 '어드민 UIUX 를 상용서비스 수준으로') ──
    위쪽 줄 왼쪽에 지금 어디인지(묶음 › 화면), 오른쪽에 자격 배지와 프로필. 스크롤해도 붙어 있다.
@@ -12124,6 +12307,12 @@ const CT_하위메뉴 = [['#/partner/contracts/new', '계약서 작성', 'pen', 
    번호는 배포한 날(연.월.일 - 같은 날 또 올리면 뒤에 .2). 화면이 version.json 을 가끔 읽어,
    더 새 버전이 올라와 있으면 메뉴 아래에서 새로고침을 권한다(버전확인) - 계약서를 띄워 둔 채 오래 일하면 고친 화면을 못 받는다 */
 const BK_변경 = [
+  { v:'26.11.11.4', 날:'2026-11-11', 줄:[
+    '중개사 도움말 - 6묶음 14개 안내(우리 화면 기준), 찾기. 왼쪽 메뉴 아래 · 마이페이지에서 열고, 중개보조원 · 계약서 권한이 꺼진 직원에게는 계약서 안내가 안 보입니다',
+    '화면마다 위쪽 ? 단추 - 그 화면 안내가 바로 열립니다',
+    '처음 쓸 때 말풍선 - 첫 로그인 때 수요 목록 · 내 물건 · 내 제안 · 계약서 · ? 단추를 한 번 짚어 드립니다(건너뛰기 · 도움말에서 다시 보기)',
+    '고침 - 26.11.11.3 에서 쉬운 사용 안내의 개별 안내(#/help/…)가 첫 화면으로 열리던 것',
+  ] },
   { v:'26.11.11.3', 날:'2026-11-11', 줄:[
     '전수점검 - 넘겨받은 조건 초안의 지역이 5곳을 넘으면 접수 전에 알림 · 투명한 PNG 를 줄여 보낼 때 흰 바탕 · 쉬운 사용 안내 듣기는 화면을 떠나면 멈춤',
     '계약서 작성 권한이 꺼진 직원이 달력에서 다른 사무소 계약서를 누르면 파일 보기로 · 대화방 파일 1년 정리가 하루 2,500건까지 이어서 확인',
@@ -17776,7 +17965,7 @@ function render(){
   else if(h.startsWith('#/invite/')) html = V['#/invite'](parts[2]);
   else if(h.startsWith('#/room/')) html = V['#/room'](parts[2]);
   else if(h === '#/help' || h.startsWith('#/help/')) html = V['#/help'](parts[2]);
-  if(!h.startsWith('#/help') && HP.말중) help말();   /* 듣던 안내는 화면을 떠나면 멈춘다 */
+  else if(h === '#/partner/help' || h.startsWith('#/partner/help/')) html = V['#/partner/help'](parts[3]);
   else if(h === '#/partner/rooms' || h.startsWith('#/partner/rooms/')) html = V['#/partner/rooms'](parts[3], parts[4]);
   else if(h==='#/partner/join') html = V['#/partner/join']();
   else if(h==='#/partner/stats') html = V['#/partner/stats']();
@@ -17784,6 +17973,9 @@ function render(){
   else if(h==='#/partner/listing/new') html = V['#/partner/listing/new']();
   else if(h.startsWith('#/partner/listing/')) html = V['#/partner/listing'](parts[3]);
   else html = (V[h] || V['#/'])();
+  /* ⚠ 위 if … else if 줄 사이에 다른 문장을 끼우지 않는다 - 갈래가 끊겨 뒤쪽 화면이 첫 화면으로 덮인다(2026-11-11 실수) */
+  if(!h.startsWith('#/help') && HP.말중) help말();   /* 듣던 안내는 화면을 떠나면 멈춘다 */
+  setTimeout(() => { 투어확인(); if(TOUR.i >= 0) 투어그리기(); }, 0);   /* 처음 쓸 때 말풍선 - 그린 뒤에 */
   /* 칩 하나 고를 때마다 render() 가 다시 도는 구조라,
      여기서 무조건 맨 위로 올리면 길게 스크롤한 폼에서 화면이 튄다.
      화면이 실제로 바뀔 때만 위로 올리고, 같은 화면이면 보던 위치를 지킨다. */
@@ -18775,6 +18967,7 @@ document.addEventListener('input', e=>{
   if(k === 'acc-addr-v'){ if(S.accAddr) S.accAddr.v = el.value; return; }
   /* 초안 의견 칸 - 적는 대로 담기만(다시 그리지 않는다) */
   if(k === 'rm-text'){ RM.text = el.value; return; }
+  if(k === 'ph-q'){ PH.q = el.value; redrawKeepingCaret('ph-q'); return; }
   if(k.startsWith('lm:')){ const [, id, key] = k.split(':'); const 값 = key === 'nego' ? el.value.replace(/[^0-9]/g, '') : el.value;
     LM.edit[id] = { ...(LM.memos[id] || {}), ...(LM.edit[id] || {}), [key]: 값 };
     if(key === 'nego'){ const w = document.querySelector(`[data-lmwon="${id}"]`); if(w) w.textContent = +값 ? `금 ${한글금액(+값)}원` : ''; } return; }
@@ -20096,6 +20289,8 @@ function handle(a,v,el){
     case 'rm-join': rmJoin(); return true;
     case 'rm-invite': rmInvite(v, false); return true;
     case 'help-next': help말(); HP.i++; render(); return true;
+    case 'ph-open': { const a = 화면도움말(); if(a){ S.modal = { type:'ph', id: a.id }; render(); } else go('#/partner/help'); return true; }
+    case 'tour-start': try{ localStorage.removeItem('bk.tour'); }catch(_){} go('#/partner/home'); TOUR.i = 0; setTimeout(투어그리기, 400); return true;
     case 'help-prev': help말(); HP.i = Math.max(0, HP.i - 1); render(); return true;
     case 'help-say': help듣기(); return true;
     case 'rm-invite-p': rmInvite(v, false, true); return true;

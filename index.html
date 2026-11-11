@@ -6745,6 +6745,7 @@ function regMiss(d){
   if(shop && !String(d.biz||'').trim()) return {k:'biz',     m:`${w.what}${josa(w.what,'을','를')} 적어주세요`};
   if(shop && !+d.areaMin)               return {k:'areaMin', m:'희망 면적(전용)을 적어주세요'};
   if(!shop && !d.deal)                  return {k:'deal',    m:'거래 방식을 선택해 주세요'};
+  if((d.dongs||[]).length > 5)          return {k:'dongs',   m:'지역은 5곳까지 고를 수 있습니다 - 하나를 빼 주세요'};   /* 2026-11-11 - 서버가 말없이 자르지 않게 */
   if(!(d.dongs||[]).length)             return {k:'dongs',   m: shop?`${w.area}${josa(w.area,'을','를')} 하나 이상 선택해 주세요`:'동네를 하나 이상 선택해 주세요'};
   if(!+d.dep)                           return {k:'dep',     m:'보증금을 입력해 주세요'};
   if(shop && !+d.rent)                  return {k:'rent',    m:'월세를 입력해 주세요'};
@@ -12123,6 +12124,10 @@ const CT_하위메뉴 = [['#/partner/contracts/new', '계약서 작성', 'pen', 
    번호는 배포한 날(연.월.일 - 같은 날 또 올리면 뒤에 .2). 화면이 version.json 을 가끔 읽어,
    더 새 버전이 올라와 있으면 메뉴 아래에서 새로고침을 권한다(버전확인) - 계약서를 띄워 둔 채 오래 일하면 고친 화면을 못 받는다 */
 const BK_변경 = [
+  { v:'26.11.11.3', 날:'2026-11-11', 줄:[
+    '전수점검 - 넘겨받은 조건 초안의 지역이 5곳을 넘으면 접수 전에 알림 · 투명한 PNG 를 줄여 보낼 때 흰 바탕 · 쉬운 사용 안내 듣기는 화면을 떠나면 멈춤',
+    '계약서 작성 권한이 꺼진 직원이 달력에서 다른 사무소 계약서를 누르면 파일 보기로 · 대화방 파일 1년 정리가 하루 2,500건까지 이어서 확인',
+  ] },
   { v:'26.11.11.2', 날:'2026-11-11', 줄:[
     '내 물건에 비공개 메모 - 의뢰인 · 연락처 · 조정 가능 금액 · 특이사항. 우리 사무소만 보고 손님 · 제안에는 나가지 않습니다(현관 비밀번호는 받지 않음)',
     '맞는 손님에 적합도 점수 - 물건 · 수요 화면에 점수, 최근 3일 새 조건이 내 물건과 맞으면 대시보드 할 일과 알림에 적합도와 함께',
@@ -14527,7 +14532,8 @@ async function rm사진줄이기(file){
   try{
     const bmp = await createImageBitmap(file), 배 = Math.min(1, 2000 / Math.max(bmp.width, bmp.height));
     const cv = document.createElement('canvas'); cv.width = Math.round(bmp.width * 배); cv.height = Math.round(bmp.height * 배);
-    cv.getContext('2d').drawImage(bmp, 0, 0, cv.width, cv.height);
+    const g = cv.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, cv.width, cv.height);   /* 투명한 PNG 가 JPEG 에서 검게 되지 않게 */
+    g.drawImage(bmp, 0, 0, cv.width, cv.height);
     const blob = await new Promise(ok => cv.toBlob(ok, 'image/jpeg', 0.85));
     if(!blob || blob.size >= file.size) return file;
     return new File([blob], file.name.replace(/\.(jpe?g|png)$/i, '') + '.jpg', { type:'image/jpeg' });
@@ -17770,6 +17776,7 @@ function render(){
   else if(h.startsWith('#/invite/')) html = V['#/invite'](parts[2]);
   else if(h.startsWith('#/room/')) html = V['#/room'](parts[2]);
   else if(h === '#/help' || h.startsWith('#/help/')) html = V['#/help'](parts[2]);
+  if(!h.startsWith('#/help') && HP.말중) help말();   /* 듣던 안내는 화면을 떠나면 멈춘다 */
   else if(h === '#/partner/rooms' || h.startsWith('#/partner/rooms/')) html = V['#/partner/rooms'](parts[3], parts[4]);
   else if(h==='#/partner/join') html = V['#/partner/join']();
   else if(h==='#/partner/stats') html = V['#/partner/stats']();
@@ -20110,7 +20117,8 @@ function handle(a,v,el){
     case 'ics-reset': if(!CT.icsReset){ CT.icsReset = true; render(); return true; } CT.icsReset = false; ctIcsGet(true); return true;
     case 'ics-copy': { const u = CT.ics && CT.ics.url; if(u && navigator.clipboard) navigator.clipboard.writeText(u).then(() => toast('구독 주소를 복사했습니다'), () => toast('복사하지 못했습니다 - 주소 칸을 길게 눌러 복사해 주세요')); return true; }
     case 'ext-new': CT.extEdit = { kind:'매매', state:'' }; S.modal = { type:'ct-ext' }; render(); return true;
-    case 'ext-edit': { const e = (CT.ext || []).find(x => x.id === v); if(!e) return true; CT.extEdit = { ...e, price: e.price ? String(e.price) : '' }; S.modal = { type:'ct-ext' }; render(); return true; }
+    case 'ext-edit': { const e = (CT.ext || []).find(x => x.id === v); if(!e) return true;
+      if(!권한('ct_edit')){ if(e.file) 파일열기(() => ctPost({ what:'contract-ext-url', id: v }), 바로보는파일(e.file.ext)); else toast('계약서 작성 권한이 꺼져 있어 고칠 수 없습니다'); return true; } CT.extEdit = { ...e, price: e.price ? String(e.price) : '' }; S.modal = { type:'ct-ext' }; render(); return true; }
     case 'ext-chip': { const [k, val] = String(v).split('|'); if(CT.extEdit && ['kind', 'state'].includes(k)){ CT.extEdit[k] = val || ''; render(); } return true; }
     case 'ext-save': ctExtSave(); return true;
     case 'ext-del': if(CT.extDel !== v){ CT.extDel = v; render(); return true; } CT.extDel = null; ctExtDel(v); return true;

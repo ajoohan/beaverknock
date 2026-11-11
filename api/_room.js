@@ -146,16 +146,25 @@ async function 파일주소(res, id, thread, msgId) {
 /* 매일 아침 예약 실행(_contract.js) - 잔금일(없으면 계약일)에서 1년이 지난 계약의 파일을 지운다. 말은 남기고 '지운 파일' 로 바꾼다 */
 export async function 방파일정리(오늘) {
   const 해전 = new Date(Date.parse(오늘 + 'T00:00:00Z') - 365 * 864e5).toISOString().slice(0, 10);
-  const x = await db('bk_contract_msg', `select=id,contract_id,file&file=not.is.null&file->>gone=is.null&created_at=lt.${해전}T00:00:00Z&order=id&limit=500`);
-  if (!x.r.ok || !x.rows.length) return 0;
+  /* 500건씩 다섯 쪽까지 - 아직 기한이 안 된 앞쪽 파일에 막혀 뒤쪽이 밀리지 않게 */
+  const x = { rows: [] };
+  for (let 쪽 = 0; 쪽 < 5; 쪽++) {
+    const y = await db('bk_contract_msg', `select=id,contract_id,file&file=not.is.null&file->>gone=is.null&created_at=lt.${해전}T00:00:00Z&order=id&limit=500&offset=${쪽 * 500}`);
+    if (!y.r.ok) break;
+    x.rows.push(...y.rows);
+    if (y.rows.length < 500) break;
+  }
+  if (!x.rows.length) return 0;
   const ids = [...new Set(x.rows.map(v => String(v.contract_id || '')))].filter(c => UUID.test(c));
   if (!ids.length) return 0;
-  const c = await db('bk_contract', `select=id,track,bd:doc->deal->>balanceDate,cd:doc->>contractDate&id=in.(${ids.join(',')})`);
+  const c = { rows: [] };
+  for (let i = 0; i < ids.length; i += 100) c.rows.push(...((await db('bk_contract', `select=id,track,bd:doc->deal->>balanceDate,cd:doc->>contractDate&id=in.(${ids.slice(i, i + 100).join(',')})`)).rows || []));
   const 기준 = new Map((c.rows || []).map(r => [r.id, String(((r.track || {}).balanceDate) || r.bd || r.cd || '').slice(0, 10)]));
   const 지울 = x.rows.filter(v => { const d = 기준.get(v.contract_id); return v.file && v.file.id && /^\d{4}-\d{2}-\d{2}$/.test(d || '') && d < 해전; });
   if (!지울.length) return 0;
-  await 버킷지우기(파일버킷, 지울.map(v => 파일경로(v.contract_id, v.file)));
-  await db('bk_contract_msg', `id=in.(${지울.map(v => v.id).join(',')})`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ file: { gone: true } }) });
+  for (let i = 0; i < 지울.length; i += 200) { const 몫 = 지울.slice(i, i + 200);
+    await 버킷지우기(파일버킷, 몫.map(v => 파일경로(v.contract_id, v.file)));
+    await db('bk_contract_msg', `id=in.(${몫.map(v => v.id).join(',')})`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ file: { gone: true } }) }); }
   return 지울.length;
 }
 /* 잔금 준비물 안내를 대화방으로 보냈으면 일정·체크의 '잔금안내를 했습니다' 를 오늘로 (이미 했으면 그대로) */

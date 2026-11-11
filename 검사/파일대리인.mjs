@@ -150,5 +150,10 @@ ok(/'ics-link', 'contract-ext', 'contract-ext-url'\]\.includes\(w\)\) return 'ct
 ok(js.includes('data-rm-file') && js.includes("S.modal.type==='rm-file'") && js.includes('잔금 뒤 1년까지 보관한 다음 지웁니다') && js.includes('rm사진줄이기'), '화면 - 보내기 전에 받는 분 · 보관 기간을 묻고, 큰 사진은 줄여 보낸다');
 ok(js.includes('data-act="rm-invite-p"') && js.includes('data-act="rm-kick-p"') && js.includes("kind:'prep'") && js.includes('function ctIcsHTML()') && js.includes('function ctExtHTML()'), '화면 - 대리인 초대 · 내보내기, 준비물 안내, 달력 구독, 다른 사무소 계약서');
 ok(!/confirm\(|alert\(|prompt\(/.test(js.slice(js.indexOf('function rm도구HTML'), js.indexOf('function rm도구HTML') + 4000)), '화면 - 브라우저 기본 확인창을 쓰지 않는다');
+{ const 안내 = js.slice(js.indexOf('const HELP = ['), js.indexOf('const HP = {'));
+  ok((안내.match(/ id:'/g) || []).length === 6 && ['집 구하는 중', '계약 진행 중', '잔금 후'].every(g => 안내.includes(`g:'${g}'`)) && !/맞춤매물|매물지도|보고 싶어요/.test(안내),
+     '쉬운 사용 안내 - 세 상황 · 안내 6개, 우리에게 없는 화면(맞춤매물 · 매물지도)은 쓰지 않는다'); }
+ok(길.html().includes(".hp-t{margin:0;font-size:26px") && 길.html().includes(".hp-s{margin:0;font-size:20px") && js.includes("u.lang = 'ko-KR'") && js.includes("!h.startsWith('#/help')") && js.includes('#/help/room`'),
+   '큰 글씨(26 · 20px) · 소리로 듣기 · 로그인 없이 열림 · 초대 문자에 사용 방법 링크');
 console.log(`${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

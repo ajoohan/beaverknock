@@ -2493,6 +2493,26 @@ body.mo .rp-l{grid-column:1/-1}
 .dz-memo-s{font-size:12.5px;color:var(--n500)}
 .ct-autoarch{font-size:13.5px;color:var(--n700);margin:2px 0}
 .ct-autoarch .sub{font-size:12.5px}
+/* 쉬운 사용 안내 - 큰 글씨 카드 (2026-11-10) */
+.hp-idx{display:flex;flex-direction:column;gap:22px}
+.hp-idx section{display:flex;flex-direction:column;gap:10px}
+.hp-g{margin:0;font-size:20px;font-weight:700;color:var(--n900);letter-spacing:-.03em}
+.hp-tile{position:relative;display:flex;flex-direction:column;gap:6px;text-align:left;width:100%;padding:20px 52px 20px 22px;border:1px solid var(--n200);border-radius:var(--r-lg);background:var(--white);font:inherit;cursor:pointer;color:var(--n900)}
+.hp-tile:hover{border-color:var(--ind200);background:var(--ind50)}
+.hp-tile b{font-size:21px;font-weight:700;letter-spacing:-.03em}
+.hp-tile span{font-size:17px;line-height:1.55;color:var(--n700)}
+.hp-tile .ar-r{position:absolute;right:22px;top:50%;transform:translateY(-50%)}
+.hp-card{background:var(--white);border:1px solid var(--n200);border-radius:var(--r-lg);padding:28px 24px 30px;display:flex;flex-direction:column;gap:12px;min-height:280px}
+.hp-dots{display:flex;gap:6px}
+.hp-dots span{flex:1;height:6px;border-radius:999px;background:var(--n100)}
+.hp-dots span.done{background:var(--ind200)}
+.hp-dots span.on{background:var(--ind400)}
+.hp-step{font-size:17px;font-weight:700;color:var(--ind700);margin-top:6px}
+.hp-t{margin:0;font-size:26px;line-height:1.35;font-weight:800;letter-spacing:-.03em;color:var(--n900)}
+.hp-s{margin:0;font-size:20px;line-height:1.65;color:var(--n800,#2b2b33)}
+.hp-btns{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:10px;margin-top:16px}
+.hp-btns .btn{width:100%;min-height:58px;font-size:19px;font-weight:700;padding:0 8px}
+.hp-next{margin:12px 0 0;font-size:16px;color:var(--n500)}
 /* 대화방 사진 · 파일 · 잔금 준비물 (2026-11-10) */
 .rm-tools{display:flex;gap:6px;flex-wrap:wrap;padding:10px 14px 0;border-top:1px solid var(--n100);background:var(--white)}
 .rm-tools + .rm-compose{border-top:0}
@@ -5332,7 +5352,7 @@ function siteFooter(){
       <div class="sf-top">
         <div class="sf-brand"><b>조건 맞춤 부동산 매칭 서비스</b><p>조건을 걸어두면, 맞는 물건을 가진<br>공인중개사가 먼저 문을 두드립니다.</p></div>
         <nav class="sf-cols" aria-label="바닥글 메뉴">
-          ${묶음('서비스', ['<a data-go="#/guide">이용 안내</a>', '<a data-go="#/faq">자주 묻는 질문</a>', '<a data-go="#/kind">내 조건 걸어두기</a>'])}
+          ${묶음('서비스', ['<a data-go="#/guide">이용 안내</a>', '<a data-go="#/help">쉬운 사용 안내</a>', '<a data-go="#/faq">자주 묻는 질문</a>', '<a data-go="#/kind">내 조건 걸어두기</a>'])}
           ${묶음('파트너', ['<a data-go="#/partner">파트너 안내</a>', '<a data-go="#/partner/join">파트너 가입</a>'])}
           ${묶음('정책', ['<a href="/terms" target="_blank" rel="noopener">이용약관</a>', '<a href="/privacy" target="_blank" rel="noopener" class="em">개인정보 처리방침</a>', '<a data-go="#/brand">브랜드</a>'])}
         </nav>
@@ -11522,6 +11542,7 @@ V['#/guide'] = () => docShell('HOW IT WORKS', '어떻게 쓰나요',
       </div>`).join('')}
   </div>
 
+  <button type="button" class="btn sec" data-go="#/help" style="margin-top:14px;width:100%">큰 글씨로 한 단계씩 보기 · 소리로 듣기</button>
   <div class="card pad hi" style="margin-top:18px">
     <b style="display:block;font-size:15px;font-weight:700;color:var(--n900);margin-bottom:10px">저희가 하지 않는 것</b>
     <div class="kv"><dt>매물 목록</dt><dd>매물을 늘어놓고 고르게 하지 않습니다. 매물은 중개사가 보내는 1:1 제안 안에만 있습니다.</dd></div>
@@ -11529,6 +11550,79 @@ V['#/guide'] = () => docShell('HOW IT WORKS', '어떻게 쓰나요',
     <div class="kv"><dt>비용 청구</dt><dd>이용자와 중개사 모두에게 어떤 비용도 받지 않습니다.</dd></div>
   </div>`);
 
+/* ══════════ 쉬운 사용 안내 - 큰 글씨 카드 (2026-11-10 파트너 기획 ④ '손님 3상황 · 안내 6개 · 큰 글씨 · 소리로 듣기 · 초대 문자의 사용 방법 보기')
+   로그인 없이 열린다(초대 문자 링크로 먼저 본다). 한 화면에 한 단계 - 제목 26px · 본문 20px, 이전 · 듣기 · 다음. 안내가 끝나면 다음 안내로 이어진다.
+   문안은 파트너 초안(01_기획/중개플랫폼_인수인계/문서/5_매뉴얼_손님_안내문안.md)을 지금 비버노크 화면(조건 걸기 → 1:1 제안 → 계약 대화방)에 맞춰 고쳐 썼다 ══════════ */
+const HELP = [
+  { g:'집 구하는 중', id:'want', t:'원하는 집 조건 남기기', s:'조건을 남겨 두면 맞는 집이 있는 중개사무소가 먼저 연락해 옵니다.', steps:[
+    ['‘내 조건 걸어두기’ 누르기', '첫 화면의 ‘내 조건 걸어두기’ 단추를 누르세요.'],
+    ['원하는 것 차례로 고르기', '집 종류, 전세 · 월세 · 매매, 동네, 금액, 들어갈 때를 차례로 누르세요. 모르는 칸은 비워 두셔도 됩니다.'],
+    ['휴대폰으로 본인확인', '장난 문의를 막기 위해 한 번만 확인합니다. 주민등록번호는 받지 않습니다.'],
+    ['기다리기', '맞는 집이 있는 중개사무소가 최대 5곳까지 제안을 보냅니다. 이름과 전화번호는 가려진 채로 갑니다.'] ] },
+  { g:'집 구하는 중', id:'offer', t:'받은 제안 보고 연락하기', s:'마음에 드는 제안에만 연락처가 넘어갑니다.', steps:[
+    ['알림이 오면 ‘받은 제안’ 열기', '제안이 오면 카카오톡과 메일로 알려 드립니다. 마이페이지의 ‘받은 제안’을 누르세요.'],
+    ['제안 자세히 보기', '제안을 누르면 사진, 금액, 중개사무소의 설명이 나옵니다.'],
+    ['마음에 안 들면 ‘관심 없음’', '‘관심 없음’을 누르면 그 중개사무소에는 아무것도 넘어가지 않습니다.'],
+    ['마음에 들면 ‘연락하기’', '‘이 중개사무소와 연락하기’를 누르면 그때 서로의 연락처가 전달되고, 중개사무소에서 연락드립니다.'] ] },
+  { g:'계약 진행 중', id:'room', t:'계약 대화방 들어가기', s:'계약을 마치면 중개사무소가 대화방으로 초대합니다. 앱은 깔지 않아도 됩니다.', steps:[
+    ['초대 문자의 링크 누르기', '중개사무소가 보낸 문자나 카카오톡의 링크를 누르세요.'],
+    ['로그인하기', '카카오, 네이버, 구글 계정이나 메일로 로그인합니다. 처음이시면 가입 화면이 이어집니다.'],
+    ['‘대화방 들어가기’ 누르기', '들어가면 위쪽에 계약일, 중도금, 잔금 날짜가 보입니다. 이 대화방은 중개사무소와 나만 봅니다.'],
+    ['다음부터는 마이페이지에서', '마이페이지의 ‘계약 대화방’을 누르면 바로 열립니다.'] ] },
+  { g:'계약 진행 중', id:'chat', t:'대화방에서 묻고 사진 보내기', s:'궁금한 것은 글로 묻고, 서류 사진도 바로 보낼 수 있습니다.', steps:[
+    ['글 쓰고 ‘보내기’', '아래 칸에 글을 쓰고 ‘보내기’를 누르세요. 답이 오면 메일로 알려 드립니다.'],
+    ['‘사진 · 파일’ 누르기', '사진을 바로 찍거나 휴대폰에 있는 사진, 서류 파일을 고를 수 있습니다. 보내기 전에 한 번 더 물어봅니다.'],
+    ['이것만 조심하세요', '주민등록번호와 계좌번호는 적지 마세요. 서류 사진에 보이면 가리고 보내 주세요.'] ] },
+  { g:'계약 진행 중', id:'prep', t:'잔금 날 준비물 챙기기', s:'잔금 열흘쯤 전에 대화방으로 준비물 안내가 옵니다.', steps:[
+    ['대화방의 준비물 안내 보기', '중개사무소가 보내 드린 ‘잔금 준비물 안내’를 확인하세요.'],
+    ['파시는 분 준비물', '등기권리증, 신분증, 매도용 인감증명서, 인감도장, 주민등록초본입니다.'],
+    ['사시는 분 준비물', '신분증, 도장, 주민등록등본, 가족관계증명서입니다. 잔금을 보낼 수 있게 이체 한도도 미리 늘려 두세요.'],
+    ['모르는 것은 바로 묻기', '준비물이 집마다 조금씩 다를 수 있습니다. 궁금하면 대화방에 물어보세요.'] ] },
+  { g:'잔금 후', id:'after', t:'대화와 파일 다시 보기', s:'잔금이 끝난 뒤에도 대화와 받은 파일을 다시 볼 수 있습니다.', steps:[
+    ['마이페이지 ‘계약 대화방’', '마이페이지에서 계약을 누르면 그동안 나눈 대화가 그대로 있습니다.'],
+    ['필요한 파일은 저장해 두기', '받은 파일은 눌러서 보거나 내려받습니다. 파일은 잔금 뒤 1년까지 보관되니 필요한 것은 휴대폰에 저장해 두세요.'],
+    ['전세 · 월세는 만기 안내', '계약이 끝나기 6개월쯤 전에 중개사무소에서 연장할지 여쭤봅니다.'] ] },
+];
+const HP = { id:'', i:0 };
+const help말 = () => { try{ if(window.speechSynthesis) window.speechSynthesis.cancel(); }catch(_){} HP.말중 = false; };
+function help듣기(){
+  const a = HELP.find(x => x.id === HP.id); if(!a || !window.speechSynthesis) return;
+  if(HP.말중){ help말(); render(); return; }
+  const [t, s] = a.steps[HP.i];
+  const u = new SpeechSynthesisUtterance(`${HP.i + 1}단계. ${t}. ${s}`);
+  u.lang = 'ko-KR'; u.rate = 0.9;
+  const ko = (window.speechSynthesis.getVoices() || []).find(v => /^ko/i.test(v.lang)); if(ko) u.voice = ko;
+  u.onend = u.onerror = () => { HP.말중 = false; render(); };
+  window.speechSynthesis.cancel(); window.speechSynthesis.speak(u); HP.말중 = true; render();
+}
+V['#/help'] = id => {
+  const a = HELP.find(x => x.id === id);
+  if(!a){ help말(); HP.id = '';
+    const 묶음 = [...new Set(HELP.map(x => x.g))];
+    return docShell('EASY GUIDE', '쉬운 사용 안내', '큰 글씨로 한 단계씩 보여 드립니다. ‘듣기’를 누르면 소리로도 읽어 드립니다.',
+      `<div class="hp-idx">${묶음.map(g => `<section><h2 class="hp-g">${g}</h2>${HELP.filter(x => x.g === g).map(x =>
+        `<button type="button" class="hp-tile" data-go="#/help/${x.id}"><b>${x.t}</b><span>${x.s}</span><i class="ar-r" aria-hidden="true"></i></button>`).join('')}</section>`).join('')}</div>`);
+  }
+  if(HP.id !== id){ help말(); HP.id = id; HP.i = 0; }
+  const n = a.steps.length, i = Math.min(HP.i, n - 1), [t, s] = a.steps[i], 끝 = i === n - 1;
+  const 다음안내 = HELP[HELP.indexOf(a) + 1];
+  const 소리 = typeof window !== 'undefined' && 'speechSynthesis' in window;
+  return docShell('EASY GUIDE', a.t, a.s, `
+    <div class="hp-card" aria-live="polite">
+      <div class="hp-dots" aria-label="${n}단계 중 ${i + 1}단계">${a.steps.map((_, k) => `<span class="${k === i ? 'on' : k < i ? 'done' : ''}"></span>`).join('')}</div>
+      <span class="hp-step">${i + 1} / ${n} 단계</span>
+      <h2 class="hp-t">${esc(t)}</h2>
+      <p class="hp-s">${esc(s)}</p>
+    </div>
+    <div class="hp-btns">
+      <button type="button" class="btn sec" data-act="help-prev" ${i === 0 ? 'disabled' : ''}>이전</button>
+      ${소리 ? `<button type="button" class="btn sec" data-act="help-say" aria-pressed="${!!HP.말중}">${HP.말중 ? '멈추기' : '듣기'}</button>` : ''}
+      ${끝 ? (다음안내 ? `<button type="button" class="btn pri" data-go="#/help/${다음안내.id}">다음 안내</button>` : `<button type="button" class="btn pri" data-go="#/help">처음으로</button>`)
+        : `<button type="button" class="btn pri" data-act="help-next">다음</button>`}
+    </div>
+    ${끝 && 다음안내 ? `<p class="hp-next">다음 안내: ${esc(다음안내.t)}</p>` : ''}
+    <a class="back" data-go="#/help" style="margin-top:22px;display:inline-flex"><i class="ar-l" aria-hidden="true"></i>안내 목록</a>`);
+};
 const FAQ = [
   ['정말 무료인가요',
    '네. 이용자에게도 중개사에게도 어떤 비용도 받지 않습니다. 성사돼도 수수료를 떼지 않습니다. 중개보수는 중개사와 직접 정하시는 것이고 저희는 관여하지 않습니다.'],
@@ -11924,6 +12018,10 @@ const CT_하위메뉴 = [['#/partner/contracts/new', '계약서 작성', 'pen', 
    번호는 배포한 날(연.월.일 - 같은 날 또 올리면 뒤에 .2). 화면이 version.json 을 가끔 읽어,
    더 새 버전이 올라와 있으면 메뉴 아래에서 새로고침을 권한다(버전확인) - 계약서를 띄워 둔 채 오래 일하면 고친 화면을 못 받는다 */
 const BK_변경 = [
+  { v:'26.11.11', 날:'2026-11-11', 줄:[
+    '손님용 ‘쉬운 사용 안내’ - 큰 글씨 카드로 한 화면에 한 단계, ‘듣기’로 소리로도 읽어 드립니다. 집 구하는 중 · 계약 진행 중 · 잔금 후 안내 6개',
+    '대화방 초대 문자 · 초대 화면 · 손님 대화방 · 이용 안내 · 바닥글에 ‘사용 방법 보기’ 링크 - 로그인 없이 열립니다',
+  ] },
   { v:'26.11.10.19', 날:'2026-11-10', 줄:[
     '계약 대화방에 손님 대리인 한 분 - 일정·체크의 손님 대화방에서 ‘대리인 초대’ · ‘대리인 내보내기’. 대리인은 그 당사자 방에서 같이 대화합니다',
     '대화방에서 사진 · 파일 보내기 - 보내기 전에 받는 분 · 보관 기간을 한 번 더 묻고, 큰 사진은 줄여 보냅니다. 잔금 뒤 1년이 지나면 지웁니다(저장소 SQL 실행 뒤 켜짐)',
@@ -14407,8 +14505,8 @@ async function rmInvite(side, 카톡, 대리 = false){
   const 끝 = new Date(j.until + 9 * 3600e3).toISOString().slice(0, 10).replace(/-/g, '.');
   const 사람 = ((CT.doc || {}).parties || {})[side] || {};
   const 글 = 대리
-    ? `[비버노크] ${(S.agent && S.agent.office) || '중개사무소'}입니다. ${RM_자리[side]}${사람.name ? ' ' + 사람.name + '님' : ''}의 대리인으로 계약 대화방에 초대합니다. 계약 진행 상황과 일정을 이 대화방에서 안내드립니다. 아래 링크를 눌러 로그인해 주세요.\n${주소}`
-    : `[비버노크] ${(S.agent && S.agent.office) || '중개사무소'}입니다. ${사람.name ? 사람.name + '님, ' : ''}계약 진행 상황과 일정을 이 대화방에서 안내드립니다. 아래 링크를 눌러 로그인해 주세요.\n${주소}`;
+    ? `[비버노크] ${(S.agent && S.agent.office) || '중개사무소'}입니다. ${RM_자리[side]}${사람.name ? ' ' + 사람.name + '님' : ''}의 대리인으로 계약 대화방에 초대합니다. 계약 진행 상황과 일정을 이 대화방에서 안내드립니다. 아래 링크를 눌러 로그인해 주세요.\n${주소}\n\n사용 방법 보기(큰 글씨): ${location.origin}${location.pathname}#/help/room`
+    : `[비버노크] ${(S.agent && S.agent.office) || '중개사무소'}입니다. ${사람.name ? 사람.name + '님, ' : ''}계약 진행 상황과 일정을 이 대화방에서 안내드립니다. 아래 링크를 눌러 로그인해 주세요.\n${주소}\n\n사용 방법 보기(큰 글씨): ${location.origin}${location.pathname}#/help/room`;
   if(카톡){ render(); return toast(j.kakao ? '카카오 알림톡으로 초대를 보냈습니다' : '알림톡을 보내지 못했습니다 - 문자로 보내 주세요'); }
   S.modal = { type:'rm-invite', url: 주소, until: 끝, side, proxy: !!대리, phone: 대리 ? '' : String(사람.phone || '').replace(/[^0-9]/g, ''), text: 글, kakao: !대리 && !!j.kakaoReady };
   render();
@@ -14439,6 +14537,7 @@ V['#/invite'] = tok => {
           ${로그인전() ? `<button type="button" class="btn pri" data-act="rm-login" style="width:100%">로그인하고 대화방 들어가기</button>
               <p class="sub" style="margin:10px 0 0;font-size:13px;line-height:1.6">카카오 · 네이버 · 구글 계정이나 메일로 로그인합니다. 처음이시면 가입 화면이 이어집니다.</p>`
             : `<button type="button" class="btn pri" data-act="rm-join" style="width:100%" ${I.joining ? 'disabled' : ''}>${I.joining ? '들어가는 중…' : '대화방 들어가기'}</button>`}
+          <button type="button" class="btn sec" data-go="#/help/room" style="width:100%;margin-top:10px">사용 방법 보기 (큰 글씨)</button>
           <p class="sub" style="margin:12px 0 0;font-size:12.5px">${esc(new Date(R.until + 9 * 3600e3).toISOString().slice(0, 10).replace(/-/g, '.'))}까지 쓸 수 있는 링크입니다 · 이 대화방은 중개사무소와 나만 봅니다. 상대 당사자에게는 보이지 않습니다.</p>`}
     </div>
   </div>
@@ -14471,7 +14570,7 @@ V['#/room'] = id => {
         : !M ? `<p class="sub" style="margin:16px">대화를 불러오는 중입니다…</p>`
         : `${rm일정HTML(M.steps)}${rm대화HTML(C, v => v.mine != null ? v.mine : v.side === M.me, '', rm도구HTML(true, M.me, M))}`}
     </div>
-    ${C && C.gone ? '' : `<p class="sub" style="margin:0;font-size:12.5px;line-height:1.6">새 말이 오면 가입하신 메일로 알려 드립니다. 이 대화방은 중개사무소와 나만 봅니다 - 상대 당사자에게는 보이지 않습니다.</p>`}
+    ${C && C.gone ? '' : `<p class="sub" style="margin:0;font-size:12.5px;line-height:1.6">새 말이 오면 가입하신 메일로 알려 드립니다. 이 대화방은 중개사무소와 나만 봅니다 - 상대 당사자에게는 보이지 않습니다. <a data-go="#/help/chat" style="color:var(--ind700);font-weight:600">사용 방법 보기</a></p>`}
   </div>
 </div>`;
 };
@@ -17430,7 +17529,7 @@ function render(){
     bootDone();
     return;
   }
-  if(S.user && consentNeeded() && !OPEN.includes(h)){
+  if(S.user && consentNeeded() && !OPEN.includes(h) && !h.startsWith('#/help')){
     if(!S.afterLogin) S.afterLogin = h;
     location.replace('#/agree'); return;
   }
@@ -17521,6 +17620,7 @@ function render(){
   else if(h.startsWith('#/draft/')) html = V['#/draft'](parts[2]);
   else if(h.startsWith('#/invite/')) html = V['#/invite'](parts[2]);
   else if(h.startsWith('#/room/')) html = V['#/room'](parts[2]);
+  else if(h === '#/help' || h.startsWith('#/help/')) html = V['#/help'](parts[2]);
   else if(h === '#/partner/rooms' || h.startsWith('#/partner/rooms/')) html = V['#/partner/rooms'](parts[3], parts[4]);
   else if(h==='#/partner/join') html = V['#/partner/join']();
   else if(h==='#/partner/stats') html = V['#/partner/stats']();
@@ -19834,6 +19934,9 @@ function handle(a,v,el){
     case 'rm-login': S.loginAs='guest'; S.afterLogin = S.route; go('#/login'); return true;
     case 'rm-join': rmJoin(); return true;
     case 'rm-invite': rmInvite(v, false); return true;
+    case 'help-next': help말(); HP.i++; render(); return true;
+    case 'help-prev': help말(); HP.i = Math.max(0, HP.i - 1); render(); return true;
+    case 'help-say': help듣기(); return true;
     case 'rm-invite-p': rmInvite(v, false, true); return true;
     case 'rm-fsend': rmFileSend(); return true;
     case 'rm-fopen': { const [mid, ext] = String(v).split('|'), C = RM.cur, 손님 = rm손님(); if(!C) return true;

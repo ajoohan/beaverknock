@@ -2538,6 +2538,11 @@ body.mo .rp-l{grid-column:1/-1}
 .gm-pr span{display:flex;flex-direction:column;min-width:0}
 .gm-pr small{font-size:12.5px;color:var(--n500)}
 /* 중개사 도움말 · ? 단추 · 처음 쓸 때 말풍선 (2026-11-11) */
+/* 휴대폰 파트너 위쪽 줄 - ? 단추가 들어오며 375px 에서 이름 메뉴가 25px 밀려났다(2026-11-11 전수점검). 간격 · 단추를 줄이고 이름은 말줄임 */
+@media (max-width:420px){.ptn-nav .right{gap:2px !important}.ptn-nav .nt-bell{width:36px;height:36px}
+  body.mo .ptn-nav .umenu-btn{padding:4px 6px 4px 4px;gap:4px}.ptn-nav .umenu-btn .nm{max-width:56px}
+  .ptn-nav.pad{padding-left:16px;padding-right:16px}}
+@media (max-width:370px){.ptn-nav > a:first-child{transform:scale(.86);transform-origin:left center;margin-right:-22px}}
 .ph-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .ph-bar .inp{flex:1;min-width:220px}
 .ph-grp{display:flex;flex-direction:column;gap:10px}
@@ -12307,6 +12312,9 @@ const CT_하위메뉴 = [['#/partner/contracts/new', '계약서 작성', 'pen', 
    번호는 배포한 날(연.월.일 - 같은 날 또 올리면 뒤에 .2). 화면이 version.json 을 가끔 읽어,
    더 새 버전이 올라와 있으면 메뉴 아래에서 새로고침을 권한다(버전확인) - 계약서를 띄워 둔 채 오래 일하면 고친 화면을 못 받는다 */
 const BK_변경 = [
+  { v:'26.11.11.5', 날:'2026-11-11', 줄:[
+    '전수점검 - 휴대폰(360 · 375px) 파트너 위쪽 줄에서 ? 단추가 들어오며 이름 메뉴가 화면 밖으로 밀리던 것(간격 · 여백을 줄이고 긴 이름은 말줄임)',
+  ] },
   { v:'26.11.11.4', 날:'2026-11-11', 줄:[
     '중개사 도움말 - 6묶음 14개 안내(우리 화면 기준), 찾기. 왼쪽 메뉴 아래 · 마이페이지에서 열고, 중개보조원 · 계약서 권한이 꺼진 직원에게는 계약서 안내가 안 보입니다',
     '화면마다 위쪽 ? 단추 - 그 화면 안내가 바로 열립니다',

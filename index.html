@@ -1616,6 +1616,16 @@ body.mo .hp-top .hm-float.f1{left:4%;top:-9%}
 body.mo .hp-card .hp-more{grid-column:2;padding-top:8px}
 /* 휴대폰 누름 자리(2026-11-11 휴대폰 전수점검) - 파트너 안내 '자세히' · 계약서 'n칸 남음' · 특약 위/아래 */
 body.mo .hp-card .hp-more{min-height:44px;padding-top:0}
+/* 휴대폰 모양 전수점검(2026-11-11) */
+body.mo .hm-card.hp-card{min-height:0;row-gap:0}
+.ct-row{text-align:left}
+body.mo .ctf-row{flex-direction:column;align-items:stretch;gap:8px}
+body.mo .ctf-row > .eqb{align-self:flex-start}
+.ctf-row .btn{white-space:nowrap}
+.acc-gn{white-space:nowrap}
+.acc-go > .acc-gn{flex:1 0 auto}
+.acc-gv{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+body.mo .rm-h > .rm-hb{display:grid;grid-auto-flow:column;grid-auto-columns:1fr}
 body.mo .ct-secst:not(.ok){min-height:30px;padding:3px 10px}
 .ct-sp-tools .tapx[data-act="ct-sp-up"],.ct-sp-tools .tapx[data-act="ct-sp-down"]{min-width:34px;justify-content:center}
 body.mo .hm-split.hp-rev{grid-template-columns:minmax(0,1fr)}
@@ -7571,7 +7581,7 @@ V['#/account'] = () => {
           + 마이줄('#/partner/help', '도움말', '화면마다 ? 단추', 'M12 21 a9 9 0 1 0 0 -18 a9 9 0 0 0 0 18 Z M9.4 9.2 a2.7 2.7 0 1 1 3.8 2.5 c-.8 .4 -1.2 1 -1.2 1.8 v.5 M12 16.7 v.3')
           + (직원() ? '' : 마이줄('#/partner/settings', '활동 설정', '', 'M12 21 s-7 -6.2 -7 -11.5 a7 7 0 0 1 14 0 C19 14.8 12 21 12 21 Z M12 12.5 a2.5 2.5 0 1 0 0 -5 a2.5 2.5 0 0 0 0 5'))
           /* 운영사에 문의 (2026-11-10 파트너 기획 '운영사 상담') - 휴대폰은 왼쪽 메뉴가 없어 여기에도 둔다 */
-          + `<a class="acc-go" href="mailto:support@plustonic.com?subject=${encodeURIComponent('[비버노크 파트너 문의] ')}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6 h16 v12 H4 Z M4 7 l8 6 8-6"/></svg><span class="acc-gn">운영사에 문의</span><span class="acc-gv">support@plustonic.com</span><i class="ar-r" aria-hidden="true"></i></a>`
+          + `<a class="acc-go" href="mailto:support@plustonic.com?subject=${encodeURIComponent('[비버노크 파트너 문의] ')}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6 h16 v12 H4 Z M4 7 l8 6 8-6"/></svg><span class="acc-gn">운영사에 문의</span>${isMo() ? '' : '<span class="acc-gv">support@plustonic.com</span>'}<i class="ar-r" aria-hidden="true"></i></a>`
         : 마이줄('#/partner/verify', '자격 확인하기', '등록번호 대조', 판)}</div>`
     : S.agentKnown ? `
       <p class="acc-note">공인중개사·소유자이신가요? 파트너로 가입하시면 손님이 걸어둔 조건에 1:1 로 제안하실 수 있습니다.</p>
@@ -7753,7 +7763,7 @@ V['#/inbox'] = () => {
     <div style="flex:1;display:flex;flex-direction:column;gap:14px;min-width:0;padding-bottom:24px">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
         <h1 style="margin:0;font-size:${isMo()?15:16}px;font-weight:700">제안 ${list.length}건</h1>
-        ${isMo()? `<select class="inp" data-act="pick-cond-sel" aria-label="조건 고르기" style="width:auto;min-height:44px;padding:8px 10px;font-weight:700">
+        ${isMo()? !S.conds.length ? '' : `<select class="inp" data-act="pick-cond-sel" aria-label="조건 고르기" style="width:auto;max-width:62%;min-height:44px;padding:8px 10px;font-weight:700">
           ${S.conds.map(c=>`<option value="${c.id}" ${c.id===S.inboxCond?'selected':''}>${esc(c.title)}</option>`).join('')}</select>`
         : `<span style="font-size:13.5px;color:var(--n500)">${esc(cond?cond.title:'')} · 다른 점을 먼저 보여드립니다</span>`}
       </div>
@@ -7801,7 +7811,7 @@ V['#/proposal'] = (id) => { const p=S.props.find(x=>x.id===id); if(!p) return V[
       <span class="sect">건물 정보</span>
       <div style="display:grid;grid-template-columns:repeat(${isMo()?1:2},minmax(0,1fr));gap:4px 24px">${bldRows}</div>
       <p style="margin:8px 0 0;padding-top:10px;border-top:1px solid var(--n100);font-size:13.5px;line-height:1.6;color:var(--n500)">
-        ${p.risk?`${esc(p.risk)}<br class="mbr">`:''}중개사가 적어 보낸 내용입니다 - 계약 전 등기사항증명서와 건축물대장을 직접 확인하세요.</p></div>` : ''}
+        ${p.risk?`${esc(p.risk)}<br class="mbr"> `:''}중개사가 적어 보낸 내용입니다 - 계약 전 등기사항증명서와 건축물대장을 직접 확인하세요.</p></div>` : ''}
     <div class="card pad" style="display:flex;justify-content:space-between;align-items:center;gap:12px">
       <div><b style="display:block;font-size:14.5px;font-weight:700">${esc(p.agency.name)}가 보낸 제안입니다</b>
       <span style="font-size:13.5px;line-height:1.6;color:var(--n500)">${p.agency.reg
@@ -8268,7 +8278,7 @@ V['#/partner/demand'] = (id) => { const d=S.demands.find(x=>x.id===id); if(!d) r
         </div>`).join('')}
         <p style="margin:10px 0 0;font-size:13.5px;color:var(--n700)">불러오면 금액·면적·층이 자동으로 채워집니다.</p></div>`;})()}
     <div style="margin-top:auto;padding-top:8px">
-      ${!권한('propose') ? '<p class="sub" style="margin:0;font-size:13.5px">제안 보내기는 대표님이 꺼 두셨습니다</p>' : ''}<button class="btn pri blk" data-act="start-propose" data-v="${d.id}" ${권한('propose') ? '' : 'disabled hidden'}>${listingsFor(d).length?'새로 작성해서 제안하기':'이 손님에게 제안하기 (약 90초)'} (약 90초)</button>
+      ${!권한('propose') ? '<p class="sub" style="margin:0;font-size:13.5px">제안 보내기는 대표님이 꺼 두셨습니다</p>' : ''}<button class="btn pri blk" data-act="start-propose" data-v="${d.id}" ${권한('propose') ? '' : 'disabled hidden'}>${listingsFor(d).length?'새로 작성해서 제안하기':'이 손님에게 제안하기'} (약 90초)</button>
       <p style="margin:10px 0 0;text-align:center;font-size:13.5px;color:var(--n500)">누르면 슬롯 1건이 15분간 예약됩니다 · 손님의 성함·연락처는 연결 확정 전까지 표시되지 않습니다</p>
     </div>
   </div>
@@ -8852,7 +8862,7 @@ V["#/partner/stats"] = () => {
              '관리비를 정확히 적으십시오. 나중에 달라지면 신고로 이어지고 점수가 깎입니다',
              '<b style="color:var(--n900)">내 물건</b>을 미리 올려두면 새 손님이 올 때 바로 제안할 수 있어 선택률이 높습니다']
             .map(t=>`<span style="display:flex;gap:10px;font-size:14.5px;line-height:1.6;color:var(--n700)">
-              <i style="flex:none;width:6px;height:6px;border-radius:50%;background:var(--ind);margin-top:8px"></i>${t}</span>`).join('')}
+              <i style="flex:none;width:6px;height:6px;border-radius:50%;background:var(--ind);margin-top:8px"></i><span>${t}</span></span>`).join('')}
         </div>
       </div>
     </div>
@@ -12321,6 +12331,10 @@ const CT_하위메뉴 = [['#/partner/contracts/new', '계약서 작성', 'pen', 
    번호는 배포한 날(연.월.일 - 같은 날 또 올리면 뒤에 .2). 화면이 version.json 을 가끔 읽어,
    더 새 버전이 올라와 있으면 메뉴 아래에서 새로고침을 권한다(버전확인) - 계약서를 띄워 둔 채 오래 일하면 고친 화면을 못 받는다 */
 const BK_변경 = [
+  { v:'26.11.11.10', 날:'2026-11-11', 줄:[
+    '휴대폰 화면 모양을 다듬었습니다 - 서식 자료실 단추 · 계약서 목록 글 정렬 · 마이페이지 ‘운영사에 문의’ · 성과 화면 글머리 · 대화방 단추와 보낼 말 칸',
+    '파트너 안내 화면의 카드에 생기던 빈 공간을 없앴습니다(휴대폰)',
+    '수요 상세의 제안 단추에 ‘(약 90초)’가 두 번 나오던 것, 제안 상세 안내 문장이 붙어 나오던 것을 고쳤습니다' ] },
   { v:'26.11.11.9', 날:'2026-11-11', 줄:[
     '처음 쓸 때 말풍선은 대시보드에서만 뜹니다 - 다른 화면의 창과 대화방 보낼 말 칸을 가리던 것을 고쳤습니다',
     '휴대폰에서 누르기 작던 단추를 키웠습니다 - 파트너 안내 ‘자세히’ · 계약서 ‘n칸 남음’ · 특약 위/아래 · 약관 화면 위쪽 링크' ] },
@@ -14702,8 +14716,8 @@ function rm대화HTML(C, 내편, 막음 = '', 도구 = ''){
   const 줄 = C.rows.map(v => { const 내 = 내편(v);
     return `<li class="rm-m${내 ? ' me' : ''}"><span class="rm-who">${esc(v.name || RM_자리[v.side] || '')}</span>${v.file ? rm파일HTML(v) : `<p>${esc(v.body).replace(/\n/g, '<br>')}</p>`}<small>${esc(rm때(v.created_at))}</small></li>`; }).join('');
   return `<ul class="rm-msgs" data-keep="rm" aria-live="polite">${줄 || `<li class="rm-empty">${막음 ? '아직 나눈 말이 없습니다.' : '아직 나눈 말이 없습니다. 먼저 인사를 남겨 보세요.'}</li>`}</ul>
-    ${막음 ? `<div class="rm-compose rm-shut"><p class="sub" style="margin:0;line-height:1.6">${막음}</p></div>` : `${도구 ? `<div class="rm-tools">${도구}</div>` : ''}<div class="rm-compose"><label class="sr" for="rmText">보낼 말</label>
-      <textarea id="rmText" class="inp" rows="2" maxlength="1000" data-in="rm-text" placeholder="${isMo() ? '주민등록번호 · 계좌번호는 빼고 적어 주세요' : '엔터로 보내고 Shift+엔터로 줄을 바꿉니다 (주민등록번호 · 계좌번호는 적지 마세요)'}">${esc(RM.text)}</textarea>
+    ${막음 ? `<div class="rm-compose rm-shut"><p class="sub" style="margin:0;line-height:1.6">${막음}</p></div>` : `${도구 ? `<div class="rm-tools">${isMo() ? `<span class="eqb" style="gap:6px">${도구}</span>` : 도구}</div>` : ''}<div class="rm-compose"><label class="sr" for="rmText">보낼 말</label>
+      <textarea id="rmText" class="inp" rows="2" maxlength="1000" data-in="rm-text" placeholder="${isMo() ? '주민번호 · 계좌번호는 적지 마세요' : '엔터로 보내고 Shift+엔터로 줄을 바꿉니다 (주민등록번호 · 계좌번호는 적지 마세요)'}">${esc(RM.text)}</textarea>
       <button type="button" class="btn pri" data-act="rm-send" ${RM.busy ? 'disabled' : ''}>${RM.busy ? '보내는 중' : '보내기'}</button></div>`}`;
 }
 /* ── 사진 · 파일 (2026-11-10 파트너 기획 '대화방 사진 · 파일 보내기 - 보내기 전 확인, 잔금 후 1년 보관') ──

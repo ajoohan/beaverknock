@@ -146,13 +146,15 @@ async function 파일주소(res, id, thread, msgId) {
 /* 매일 아침 예약 실행(_contract.js) - 잔금일(없으면 계약일)에서 1년이 지난 계약의 파일을 지운다. 말은 남기고 '지운 파일' 로 바꾼다 */
 export async function 방파일정리(오늘) {
   const 해전 = new Date(Date.parse(오늘 + 'T00:00:00Z') - 365 * 864e5).toISOString().slice(0, 10);
-  /* 500건씩 다섯 쪽까지 - 아직 기한이 안 된 앞쪽 파일에 막혀 뒤쪽이 밀리지 않게 */
+  /* 500건씩 스무 쪽(1만 건)까지, 번호를 이어 가며 읽는다 - 아직 기한이 안 된 앞쪽 파일에 막혀 뒤쪽이 밀리지 않게 */
   const x = { rows: [] };
-  for (let 쪽 = 0; 쪽 < 5; 쪽++) {
-    const y = await db('bk_contract_msg', `select=id,contract_id,file&file=not.is.null&file->>gone=is.null&created_at=lt.${해전}T00:00:00Z&order=id&limit=500&offset=${쪽 * 500}`);
+  let 뒤 = 0;
+  for (let 쪽 = 0; 쪽 < 20; 쪽++) {
+    const y = await db('bk_contract_msg', `select=id,contract_id,file&file=not.is.null&file->>gone=is.null&created_at=lt.${해전}T00:00:00Z&id=gt.${뒤}&order=id&limit=500`);
     if (!y.r.ok) break;
     x.rows.push(...y.rows);
     if (y.rows.length < 500) break;
+    뒤 = y.rows[y.rows.length - 1].id;
   }
   if (!x.rows.length) return 0;
   const ids = [...new Set(x.rows.map(v => String(v.contract_id || '')))].filter(c => UUID.test(c));

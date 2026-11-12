@@ -2168,6 +2168,12 @@ body.mo .ct-long{display:none}
    - 움직임은 세 곳만(150~300ms): 종류를 바꾸면 오른쪽 걸음이 아래에서 45ms 간격으로 올라오고, 고른 단추가 톡 튀고, 다 고르면 만들기 줄이 켜진다.
      누르면 .97 로 살짝 줄어든다. 움직임 줄이기 설정이면 모두 끈다 */
 .ctw-quick{display:flex;align-items:center;gap:10px 16px;flex-wrap:wrap}
+/* 현장 체크리스트 (2026-11-12) */
+.exf-go{flex-direction:row!important;align-items:center;justify-content:space-between;gap:12px}
+.exf-go > div{display:flex;flex-direction:column;gap:2px} .exf-go b{font-size:15px;color:var(--n900)} .exf-go .sub{font-size:13px}
+.exf-bar{height:6px;border-radius:999px;background:var(--n100);overflow:hidden} .exf-bar i{display:block;height:100%;border-radius:999px;background:var(--ind);transition:width .2s}
+.exf-acts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+body.mo .exf-top{position:sticky;top:0;z-index:5}
 /* 맞춤매물 (2026-11-12) */
 .mt-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
 body.mo .mt-grid{grid-template-columns:minmax(0,1fr)}
@@ -12565,6 +12571,8 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
+  { v:'26.11.12.6', 날:'2026-11-12', 줄:[
+    '확인·설명서에 ‘현장 체크리스트’ - 집을 보면서 휴대폰으로 ⑩~⑭(실제 권리관계 · 시설물 · 벽면·도배 · 환경 · 현장안내)만 모아 누릅니다. 누른 값이 그대로 확인·설명서에 들어가고, A4 한 장으로 인쇄해 서명받을 수 있습니다' ] },
   { v:'26.11.12.5', 날:'2026-11-12', 줄:[
     '계약 메뉴 맨 위에 ‘계약현황’ - 계약서 목록을 상태 · 당사자 · 날짜 · 금액 표로 바로 엽니다',
     '대시보드 매물장부 칸에 노출 · 장부만 건수, 손님 마이페이지에 맞춤매물 바로가기' ] },
@@ -14172,7 +14180,7 @@ function ctOpen(id){
     /* 그 사이 다른 계약서로 옮겨 갔으면 늦게 온 답으로 지금 화면을 덮지 않는다 */
     if((location.hash || '') !== '#/partner/contract/' + id) return;
     if(!ok){ CT.err = j.error || '계약서를 불러오지 못했습니다'; CT.need = j.need || ''; render(); return; }
-    CT.id = j.row.id; CT.row = j.row; CT.doc = j.row.doc; CT.dirty = false; CT.mode = 'edit'; CT.prevId = null;
+    CT.id = j.row.id; CT.row = j.row; CT.doc = j.row.doc; CT.dirty = false; CT.mode = 'edit'; CT.prevId = null; CT.field = false;
     CT.track = j.row.track && typeof j.row.track === 'object' ? j.row.track : {}; CT.need32 = !!j.need32;
     CT.filled = new Set(); CT.scan = null; CT.scanWarn = [];
     render();
@@ -17936,11 +17944,50 @@ function exStateHTML(doc, s){
   const 채움 = 키.filter(k => 참(ctGet(doc, k))).length, 판독 = 키.filter(k => CT.filled && CT.filled.has(k)).length, 단지 = 키.filter(k => CT.filled2 && CT.filled2.has(k)).length;
   return ` <span class="ex-st${채움 === 키.length ? ' ok' : 채움 ? '' : ' none'}">${채움 === 키.length ? '다 채움' : `입력 필요 ${키.length - 채움}칸`}${판독 ? ` · 서류에서 ${판독}칸` : ''}${단지 ? ` · 단지·기본값 ${단지}칸` : ''}</span>`;
 }
+/* ── 현장 체크리스트 (2026-11-12 파트너 기획 D5-2) ── 집을 보면서 휴대폰으로 누르는 칸만 모은다.
+   확인·설명서의 '실제 권리관계 · 시설물 상태 · 벽면·바닥면·도배 · 환경조건 · 현장안내' 절 그대로라, 누른 값이 곧 확인·설명서 값이다(따로 옮기지 않는다) */
+const EX_현장절 = /실제 권리관계|시설물의 상태|벽면|환경조건|현장안내/;
+function exField(doc){
+  const E = EX_FORMS[doc.form] || EX_FORMS['explain-home'], 절 = E.spec.filter(s => !s.g && EX_현장절.test(s.h));
+  const 칸 = 절.flatMap(s => s.rows.flatMap(r => r.p.filter(p => p.k && ['one', 'many', 'area', 'text'].includes(p.t))));
+  const 찬 = 칸.filter(p => { const v = ctGet(doc, p.k); return Array.isArray(v) ? v.length : v != null && String(v).trim() !== ''; }).length;
+  return { 절, 다: 칸.length, 찬 };
+}
+function exFieldHTML(doc){
+  const f = exField(doc), 잠김 = CT.row && CT.row.status === 'sealed';
+  let html = `<div class="card pad ct-sec exf-top"><h2>현장 체크리스트 <span class="badge ${f.찬 === f.다 ? 'b-ok' : 'b-ind'}">${f.찬} / ${f.다}</span></h2>
+      <div class="exf-bar"><i style="width:${f.다 ? Math.round(f.찬 / f.다 * 100) : 0}%"></i></div>
+      <p class="sub" style="margin:0">${esc(doc.property.road || '소재지 미입력')} · 누른 값은 확인·설명서에 그대로 들어갑니다. 다 누른 뒤 ‘임시저장’을 눌러 주세요.</p></div>`;
+  for(const s of f.절){
+    const rows = s.rows.map(r => { const 칸 = r.p.filter(p => p.t !== 'addr' && p.t !== 'note' && p.t !== 'sign').map(p => exEditPart(doc, p)).join('');
+      return 칸 ? `<div class="ex-row">${r.l ? `<b class="ex-rl">${esc(r.l)}</b>` : ''}<div class="ct-grid">${칸}</div></div>` : ''; }).join('');
+    if(rows) html += `<div class="card pad ct-sec"><h2>${esc(s.h)}</h2>${rows}</div>`;
+  }
+  return html + `<div class="exf-acts"><button type="button" class="btn tool" data-act="exf-print">체크리스트 인쇄</button><button type="button" class="btn sec" data-act="exf-off">전체 칸 보기</button></div>`;
+}
+/* 현장 확인 체크리스트 A4 - 계약서에 붙이는 종이. 당사자 확인 서명 칸 */
+function exFieldDocHTML(doc){
+  const f = exField(doc), 값 = p => { const v = ctGet(doc, p.k); const 덧 = p.x && !Array.isArray(v) && p.x[v] ? ctGet(doc, p.x[v][0]) : ''; return (Array.isArray(v) ? v.join(' · ') : String(v ?? '')) + (덧 ? ` (${덧})` : ''); };
+  const 줄 = f.절.flatMap(s => s.rows.filter(r => r.p.some(p => p.k)).map(r => [`${s.h.split(' ')[0]} ${r.l || s.h.replace(/^\S+\s*/, '')}`, r.p.filter(p => p.k).map(값).filter(Boolean).join(' / ')]));
+  const B = doc.broker || {};
+  return `<div class="ctdoc exdoc${ct글꼴(doc) === 'sans' ? ' f-sans' : ''}"><h1>현장 확인 체크리스트</h1>
+    <p class="ex-kind">계약서 첨부용 · ${ct날짜(doc.date || ct오늘())} 현장 확인</p>
+    <table class="ex-t"><tr><th class="ex-l">소재지</th><td>${doc.property.road ? esc(doc.property.road) : 빈칸(300)}</td></tr>
+      <tr><th class="ex-l">확인자</th><td>${esc([B.office, B.rep].filter(Boolean).join(' ')) || 빈칸(200)}</td></tr></table>
+    <table class="ex-t">${줄.map(([l, v]) => `<tr><th class="ex-l" style="width:34%">${esc(l)}</th><td>${v ? esc(v).replace(/\n/g, '<br>') : '&nbsp;'}</td></tr>`).join('')}</table>
+    <p class="ct-close">위 내용을 현장에서 함께 확인하였습니다.</p>
+    <table class="ex-t"><tr><th class="ex-l" style="width:34%">매도인(임대인)</th><td>성명 ${ct값((doc.parties.a || {}).name, 100)} <span class="ct-seal">(서명 또는 날인)</span></td></tr>
+      <tr><th class="ex-l">매수인(임차인)</th><td>성명 ${ct값((doc.parties.b || {}).name, 100)} <span class="ct-seal">(서명 또는 날인)</span></td></tr>
+      <tr><th class="ex-l">개업공인중개사</th><td>${esc(B.office || '')} ${B.hand ? 빈칸(80) : ct값(B.rep, 80)} <span class="ct-seal">(서명 및 날인)</span></td></tr></table>
+    <p class="ct-foot">비버노크 작성 도구로 만든 현장 확인 체크리스트입니다. 항목은 중개대상물 확인·설명서와 같습니다.</p></div>`;
+}
 function exEditor(doc){
+  if(CT.field) return exFieldHTML(doc);
   const E = EX_FORMS[doc.form] || EX_FORMS['explain-home'];
   const 잠김 = CT.row && CT.row.status === 'sealed';
   const P = doc.property;
   let html = `
+    ${잠김 ? '' : (() => { const f = exField(doc); return `<div class="card pad ct-sec exf-go"><div><b>현장 체크리스트</b><span class="sub">집을 보면서 누르는 칸만 모아 봅니다 · ${f.찬} / ${f.다}</span></div><button type="button" class="btn sec sm" data-act="exf-on">열기</button></div>`; })()}
     ${잠김 ? '' : `<div class="card pad ct-sec"><h2>서식</h2>
       <div class="chips one" role="radiogroup">${Object.entries(EX_FORMS).map(([k, f]) =>
         `<button class="chip ${doc.form===k?'on':''}" data-act="ex-form" data-v="${k}" role="radio" aria-checked="${doc.form===k}" tabindex="${doc.form===k?0:-1}">${esc(f.short)}</button>`).join('')}</div>
@@ -20949,6 +20996,9 @@ function handle(a,v,el){
         }))
         .catch(()=>{ S.lsBusy=false; render(); toast('네트워크 문제로 물건을 저장하지 못했습니다'); });
       return true; }
+    case 'exf-on': CT.field = true; render(); try{ window.scrollTo(0, 0); }catch(_){} return true;
+    case 'exf-off': CT.field = false; render(); return true;
+    case 'exf-print': return CT.doc ? ctPrint(exFieldDocHTML(CT.doc)) : true;
     case 'mt-cond': MT.cond = v; render(); return true;
     case 'mt-open': MT.open[v] = !MT.open[v]; render(); return true;
     case 'mt-want': { const [did, lid] = String(v).split('|'); mtWant(did, lid); return true; }

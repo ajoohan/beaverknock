@@ -3184,6 +3184,10 @@ body.mo .gd-words{grid-template-columns:1fr}
 .gd-end{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;padding:18px 22px;border-radius:18px;background:#fff;border:1px dashed var(--n300)}
 .gd-end b{font-size:15px} .gd-end p{margin:3px 0 0;font-size:13.5px;color:var(--n700)}
 @media (prefers-reduced-motion:reduce){.gd-pin{animation:none}.gd-bar i{transition:none}}
+#encRun{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;background:rgba(20,16,50,.45);backdrop-filter:blur(3px)}
+#encRun .enc-box{display:flex;flex-direction:column;align-items:center;gap:12px;max-width:360px;margin:16px;padding:28px 26px;border-radius:20px;background:#fff;text-align:center;box-shadow:0 20px 50px rgba(20,16,50,.3)}
+#encRun b{font-size:17px;color:var(--n900)} #encRun p{margin:0;font-size:14.5px;color:var(--n700)} #encRun small{font-size:12.5px;line-height:1.6;color:var(--n500)}
+.dz-wait{display:grid;place-items:center;min-height:calc(100vh - 140px)}
 .jr-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px}
 .jr-mascot{width:132px;height:132px;object-fit:contain;flex:none;margin:-18px 0 -10px;filter:drop-shadow(0 10px 18px rgba(74,47,180,.18))}
 .jr-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:10px}
@@ -11274,9 +11278,37 @@ const 표이름 = { bk_demand:'손님 조건', bk_agent:'가입 사무소 · 소
 function encLoad(바꾸기){
   if(ENC.busy) return; ENC.busy = true; ENC.err = ''; render();
   apiFetch('/api/demands', { method:'POST', body: JSON.stringify({ pass: OPS.pass, what: 바꾸기 ? 'enc-migrate' : 'enc-status' }) })
-    .then(r => r.json().catch(() => ({})).then(j => { ENC.busy = false; ENC.at = Date.now(); ENC.j = j; if(!r.ok && !j.현황) ENC.err = j.error || '상태를 읽지 못했습니다'; render();
-      if(바꾸기 && j.ok) toast(`${j.바꿈 || 0}줄을 암호화했습니다`); }))
+    .then(r => r.json().catch(() => ({})).then(j => { ENC.busy = false; ENC.at = Date.now(); ENC.j = j; if(!r.ok && !j.현황) ENC.err = j.error || '상태를 읽지 못했습니다'; render(); }))
     .catch(() => { ENC.busy = false; ENC.err = '네트워크 문제로 읽지 못했습니다'; render(); });
+}
+/* 예전 평문 암호화 - 한 번 누르면 끝날 때까지 200줄씩 이어서 돈다 (2026-11-12 대표님 '암호화하는 중이면 로딩 인디케이터 - 나가지 못하게 하거나 나가도 계속 진행').
+   도는 동안 화면 전체를 덮는 진행 표시를 몸통(body)에 따로 붙인다 - 다시 그려도 사라지지 않고, 다른 곳을 누를 수 없다.
+   이 탭 안에서 주소가 바뀌어도 계속 돌고, 창을 닫으려 하면 브라우저가 한 번 묻는다 */
+const ENC_닫기경고 = e => { e.preventDefault(); e.returnValue = ''; return ''; };
+function encOverlay(글){
+  let el = document.getElementById('encRun');
+  if(글 == null){ if(el) el.remove(); window.removeEventListener('beforeunload', ENC_닫기경고); return; }
+  if(!el){ el = document.createElement('div'); el.id = 'encRun'; el.setAttribute('role', 'alertdialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-label', '개인정보 암호화 진행 중'); document.body.appendChild(el);
+    window.addEventListener('beforeunload', ENC_닫기경고); }
+  el.innerHTML = `<div class="enc-box">${bkLoader(44)}<b>개인정보를 암호화하는 중입니다</b><p>${글}</p><small>끝날 때까지 이 창을 닫지 마세요. 다른 탭에서는 계속 일하셔도 됩니다.</small></div>`;
+}
+async function encRunAll(){
+  if(ENC.running) return; ENC.running = true; ENC.err = ''; let 합 = 0, 빈손 = 0;
+  encOverlay('준비하는 중…');
+  try{
+    for(let i = 0; i < 200; i++){
+      const r = await apiFetch('/api/demands', { method:'POST', body: JSON.stringify({ pass: OPS.pass, what:'enc-migrate' }) });
+      const j = await r.json().catch(() => ({}));
+      if(!r.ok || !j.ok){ ENC.err = j.error || '암호화하지 못했습니다 - 잠시 뒤 다시 눌러 주세요'; break; }
+      ENC.j = j; ENC.at = Date.now(); 합 += j.바꿈 || 0;
+      const 남음 = (j.현황 || []).reduce((s, x) => s + (+x.남음 || 0), 0);
+      encOverlay(`지금까지 <b class="num">${합.toLocaleString('ko-KR')}</b>줄 · 남은 줄 <b class="num">${남음.toLocaleString('ko-KR')}</b>`);
+      if(!남음) break;
+      if(!(j.바꿈 > 0) && ++빈손 >= 2){ ENC.err = '더 진행되지 않는 줄이 있습니다 - 운영사에 알려 주세요'; break; }
+    }
+  }catch(e){ ENC.err = '네트워크 문제로 멈췄습니다 - 다시 누르면 이어서 합니다'; }
+  ENC.running = false; encOverlay(null); render();
+  toast(ENC.err || `${합.toLocaleString('ko-KR')}줄을 암호화했습니다 - 모두 끝났습니다`);
 }
 function encCardHTML(){
   if(!ENC.at && !ENC.busy) setTimeout(() => encLoad(false));
@@ -11288,7 +11320,7 @@ function encCardHTML(){
       : !ENC.j ? '<p class="sub" style="margin:0">상태를 읽는 중입니다</p>'
       : !j.켜짐 ? `<p style="margin:0;padding:11px 14px;background:var(--warnbg);border-radius:var(--r-sm);font-size:13.5px;line-height:1.7;color:var(--warn);font-weight:700">아직 꺼져 있습니다 - Vercel 에 BK_DATA_KEY 를 넣고 재배포하면 켜집니다. 넣기 전에 SQL 0041 을 먼저 돌려 주세요.</p>`
       : `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-bottom:10px">${(j.현황 || []).map(x => `<div style="padding:10px 12px;border-radius:12px;background:var(--n50)"><span style="display:block;font-size:12.5px;color:var(--n500)">${esc(표이름[x.표] || x.표)}</span><b style="font-size:15px">${x.error ? '읽지 못함' : x.남음 ? `평문 ${x.남음}줄 남음` : '모두 암호화됨'}</b></div>`).join('')}</div>
-        ${남은합 ? `<button type="button" class="btn pri md" data-act="enc-run" ${ENC.busy ? 'disabled' : ''}>${ENC.busy ? '암호화하는 중…' : '예전 평문 암호화하기 (한 번에 200줄)'}</button>` : '<span class="badge b-ok">예전 데이터까지 모두 암호화됨</span>'}
+        ${남은합 ? `<button type="button" class="btn pri md" data-act="enc-run" ${ENC.busy || ENC.running ? 'disabled' : ''}>${ENC.running ? '암호화하는 중…' : '예전 평문 암호화하기 (끝날 때까지 자동으로)'}</button>` : '<span class="badge b-ok">예전 데이터까지 모두 암호화됨</span>'}
         <p class="sub" style="margin:10px 0 0;font-size:12.5px">작성 중인 계약서는 다음에 저장할 때 암호화됩니다. 날인본 계약서는 위변조 방지를 위해 고칠 수 없어 확정 당시 그대로 둡니다.</p>`}
   </div>`;
 }
@@ -11991,6 +12023,11 @@ function opsGateScreen(){
   /* 운영자는 여기로 곧장 들어온다. 손님 로그인 화면으로 한 번 보냈다가
      돌아오게 하면 회원가입·네이버·아이디 찾기까지 같이 보게 된다 - 운영자에게는
      쓸 데가 없는 것들이다. 이메일과 구글, 둘만 둔다. */
+  /* 세션은 있는데 계정을 아직 읽는 중이거나, 운영 자료를 여는 중이면 로딩 표시만 (2026-11-12 대표님 '왜 텍스트로 운영자 화면이 나오는지 모르겠다').
+     전에는 그 짧은 사이에 운영자 로그인 카드 · '운영 화면' 제목이 잠깐 보였다 사라졌다 */
+  const 로딩만 = `<div class="scr" style="background:var(--n50);min-height:100vh;display:grid;place-items:center" aria-busy="true">${bkLoader(40)}</div>`;
+  if(!S.user && 세션있음()) return 로딩만;
+  if(S.user && (OPS.loading || !OPS.tried)) return 로딩만;
   if(!S.user){
     const google = SNS.find(x => x.k === 'google');
     /* 운영자 로그인 (2026-11-07 대표님 '비버노크 캐릭터 넣어. 운영자처럼') - 진한 머리띠에 문을 두드리는 비버리,
@@ -13217,6 +13254,10 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
+  { v:'26.11.12.25', 날:'2026-11-12', 줄:[
+    '대시보드 깜빡임 고침 - 수요 · 제안 · 매물 · 계약서 · 일정 · 메모가 다 모일 때까지 로딩 표시만 보여 주고 한 번에 그립니다(최대 6초)',
+    '운영자 화면으로 들어갈 때 글자 대신 로딩 표시만 나옵니다',
+    '개인정보 암호화 전환 - 한 번 누르면 끝날 때까지 자동으로 이어 하고, 도는 동안 화면 전체에 진행 표시(처리한 줄 수) · 창을 닫으려 하면 한 번 묻습니다' ] },
   { v:'26.11.12.24', 날:'2026-11-12', 줄:[
     '암호화 코드리뷰 반영 - 열쇠가 맞지 않아도 저장된 값을 지웁니다/덮지 않습니다(데이터 보존) · 열쇠를 바꿀 때를 위한 옛 열쇠 · 색인 열쇠 · 본문 없는 응답 처리',
     '암호화 칸 추가 - 매물 호수 · 특징 글, 제안 문구, 운영 기록 내용 · 사무소 의뢰인 메모까지 예전 값 전환 대상에 · 전환이 사무소 설정을 덮지 않게' ] },
@@ -14026,7 +14067,26 @@ const dz잔금물음 = rows => !rows.length ? '' : `<section class="dz-card dz-s
     ${rows.map(r => `<div class="dz-settle-r"><button type="button" class="dz-settle-t" data-act="ct-open" data-v="${esc(r.id)}">${esc(r.title || '소재지 미입력')}</button>
       <span class="dz-settle-b"><button type="button" class="btn pri sm" data-act="settle-done" data-v="${esc(r.id)}">완료</button><button type="button" class="btn sec sm" data-act="settle-later" data-v="${esc(r.id)}">아직 (1시간 뒤)</button></span></div>`).join('')}
   </section>`;
+/* 대시보드는 자료가 다 모인 뒤 한 번에 그린다 (2026-11-12 대표님 '충분히 로딩하고 보여 줘도 된다 - 자꾸 깜빡거린다').
+   수요 · 보낸 제안 · 매물 · 계약서 · 일정 알림 · 사무소 메모 · 계약체결 문자가 하나씩 도착할 때마다 숫자 · 브리핑 · 카드가 바뀌며 들썩였다.
+   다 모이거나 6초가 지나면 그린다(느린 통신에서 영영 기다리지 않게). 한 번 열린 뒤 다시 그릴 때는 기다리지 않는다 */
+function 대시보드준비(){
+  const 계 = !계약막힘();
+  if(계){ if(!CT.alert && !CT.alertLoading) setTimeout(ctAlertLoad); if(!CS.loaded && !CS.loading) setTimeout(csLoad); }
+  if(!MEMO.loaded && !MEMO.busy) setTimeout(memoLoad);
+  const 다 = (S.feedAt || S.feedErr) && S.mpReady && S.lsReady && MEMO.loaded
+    && (!계 || ((CT.list || CT.failAt) && (CT.alert || !CT.alertLoading) && (CS.loaded || !CS.loading)));
+  return !!다;
+}
 V['#/partner/home'] = () => {
+  if(!S.dzOpen && !대시보드준비()){
+    const 남음 = 6000 - (Date.now() - (S.dzWait0 || Date.now()));
+    if(남음 > 0){
+      clearTimeout(S.dzWaitT); S.dzWaitT = setTimeout(() => { if(S.route === '#/partner/home') render(); }, Math.min(남음, 600));
+      return `<div class="scr dz-scr">${navPartner('h')}<div class="pad dz-main dz-wait" aria-busy="true">${bkLoader(40)}</div>${tabbar('h','p')}</div>`;
+    }
+  }
+  S.dzOpen = true;
   const { 수요, 물건, 진짜, 열람, 열람분모, 연결, 안읽힘, 계약, 작성중, 날인, days, 보냄, 열림, 앞7, 뒤7, 할일, 잔금물음 } = 파트너현황();
   const 승인 = S.agent && S.agent.status === 'approved';
 
@@ -18699,6 +18759,7 @@ function 새상태비우기(){
   Object.assign(FQ, { loaded:false, loading:false, list:[], busy:false, add:null });
   Object.assign(FP, { id:'', list:[], loading:false, busy:0, err:'', del:'' });
   try{ localStorage.removeItem('bk.mt'); }catch(e){}
+  S.dzOpen = false; MEMO.loaded = false; MEMO.t = ''; CS.loaded = false; CT.alert = null;
 }
 function fpLoad(id){ if(FP.loading) return; FP.id = id; FP.loading = true; FP.err = '';
   ctPost({ what:'contract-fpics', id }).then(({ ok, j }) => { FP.loading = false; if(FP.id !== id) return; if(ok) FP.list = j.list || []; else FP.err = j.error || '사진을 불러오지 못했습니다'; render(); })
@@ -19313,7 +19374,7 @@ function render(){
   else if(S.user && !consentNeeded() && BADGE_ROUTES.includes(h)) loadMine(false);
   if(h==='#/partner/demands' || h.startsWith('#/partner/demand/')) loadFeed(false);
   /* 중개사 대시보드는 한 화면에서 다 보여준다 - 수요·내 제안·내 물건·계약서를 함께 받는다 */
-  if(h==='#/partner/home'){ loadFeed(false); loadMyProps(false); loadListings(false); ctLoadList(); }
+  if(h==='#/partner/home'){ if(S.lastRoute !== '#/partner/home'){ S.dzWait0 = Date.now(); S.dzOpen = false; } loadFeed(false); loadMyProps(false); loadListings(false); ctLoadList(); }
   /* '#/partner' 는 누구나 여는 안내 화면이고 내 제안·내 물건을 쓰지 않는다 (2026-10-09).
      거기서 부르면 로그인한 손님 계정도 방문마다 /api/feed 를 두 번 부르고 403 을 받았다. */
   if(h==='#/partner/proposals' || h==='#/partner/stats') loadMyProps(false);
@@ -20447,7 +20508,7 @@ function handle(a,v,el){
     case 'ops-invite-copy': opsCopy(opsInviteText(), '안내문을 복사했습니다'); return true;
     case 'ops-url-copy':    opsCopy(opsUrl(), '주소를 복사했습니다'); return true;
     case 'ops-id-copy':     if(S.user && S.user.id) opsCopy(S.user.id, '계정 id 를 복사했습니다'); return true;
-    case 'enc-run': encLoad(true); return true;
+    case 'enc-run': encRunAll(); return true;
     case 'ops-link-days': OPS.linkDays = +v || 7; OPS.link = null; render(); return true;
     case 'ops-link-make':
       if(!OPS.pass) return toast('먼저 접근 암호로 여신 뒤에 만들 수 있습니다'), true;

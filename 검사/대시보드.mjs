@@ -121,8 +121,9 @@ const M = new Function('esc', `${js.slice(시작, 끝)}\nreturn { dzLine, dzPill
 
 /* ── ③ 들어오면 함께 받는다 ── */
 {
-  ok(/if\(h==='#\/partner\/home'\)\{ loadFeed\(false\); loadMyProps\(false\); loadListings\(false\); ctLoadList\(\); \}/.test(js),
-     '중개사 대시보드는 수요·내 제안·내 물건·계약서를 함께 받는다');
+  ok(/if\(h==='#\/partner\/home'\)\{ [^\n]*loadFeed\(false\); loadMyProps\(false\); loadListings\(false\); ctLoadList\(\); \}/.test(js)
+     && js.includes('function 대시보드준비()') && /if\(!S\.dzOpen && !대시보드준비\(\)\)/.test(js),
+     '중개사 대시보드는 수요·내 제안·내 물건·계약서를 함께 받고, 다 모일 때까지(최대 6초) 로딩만 보여 준 뒤 한 번에 그린다');
   ok(/S\.route === '#\/partner\/home'/.test(js), '계약서 목록이 오면 대시보드도 다시 그린다');
   ok(/createdAt: x\.created_at \|\| null,/.test(js), '보낸 시각을 실어 흐름 그래프가 날마다 센다');
 }

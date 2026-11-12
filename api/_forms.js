@@ -73,8 +73,8 @@ export async function 서식지우기(agentId, f, fetchFn = fetch) {
    대화방 파일은 room/계약서/번호.확장자, 다른 사무소 계약서는 ext/사무소/번호.확장자 */
 export const 파일버킷 = 'bk-files';
 export const 바로보기 = ext => ['jpg', 'jpeg', 'png', 'pdf'].includes(ext);
-export async function 버킷올리기(bucket, path, ext, buf, fetchFn = fetch) {
-  const r = await fetchFn(저장소(`object/${bucket}/${path}`), { method: 'POST', headers: { ...열쇠(), 'Content-Type': 종류[ext], 'x-upsert': 'false' }, body: buf });
+export async function 버킷올리기(bucket, path, ext, buf, fetchFn = fetch, 덮기 = false) {
+  const r = await fetchFn(저장소(`object/${bucket}/${path}`), { method: 'POST', headers: { ...열쇠(), 'Content-Type': 종류[ext], 'x-upsert': 덮기 ? 'true' : 'false' }, body: buf });
   if (r.ok) return { ok: true };
   const t = await r.text().catch(() => '');
   return 버킷없음(t) ? { need: 'files' } : { error: '파일을 올리지 못했습니다' };

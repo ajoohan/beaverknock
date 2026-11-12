@@ -859,12 +859,14 @@ export async function reportDueCron(req, res) {
   if (트랙) {
     /* 지우기 전에 그 계약서들의 현장 사진 파일부터 지운다(2026-11-12) */
     try {
+      /* 하루 500건씩 - 읽어서 사진을 지운 계약서만 지운다(나머지는 다음 날) */
       const 갈 = await db('bk_contract', `select=id,agent_id,track&status=eq.draft&track->>trash=lt.${날더하기(오늘, -30)}&limit=500`);
       const { 파일버킷, 버킷지우기 } = await import('./_forms.js');
       const 경로 = (갈.rows || []).flatMap(c => 현장사진값((c.track || {}).fpics).map(v => 현장경로(c.agent_id, c.id, v.i)));
       if (경로.length) await 버킷지우기(파일버킷, 경로);
-    } catch { /* 사진을 못 지워도 계약서 정리는 이어 간다 */ }
-    await db('bk_contract', `status=eq.draft&track->>trash=lt.${날더하기(오늘, -30)}`, { method: 'DELETE' }).catch(() => {});
+      const ids = (갈.rows || []).map(c => c.id).filter(x => UUID.test(String(x)));
+      if (ids.length) await db('bk_contract', `status=eq.draft&track->>trash=lt.${날더하기(오늘, -30)}&id=in.(${ids.join(',')})`, { method: 'DELETE' });
+    } catch { /* 넘어간다 - 다음 날 다시 */ }
   }
   /* 휴지통 30일이 지난 매물의 사진 파일을 지운다(물건 줄은 제안 기록 때문에 남긴다) - 0039 · 0040 전이면 넘어간다 */
   try {
@@ -873,7 +875,7 @@ export async function reportDueCron(req, res) {
       const { 파일버킷, 버킷지우기 } = await import('./_forms.js');
       const 경로 = 갈.rows.flatMap(x => (Array.isArray(x.pics) ? x.pics : []).filter(p => typeof p === 'string' && /^listing\//.test(p)));
       if (경로.length) await 버킷지우기(파일버킷, 경로);
-      await db('bk_listing', `id=in.(${갈.rows.map(x => x.id).join(',')})`, { method: 'PATCH', body: JSON.stringify({ pics: [] }) });
+      await db('bk_listing', `id=in.(${갈.rows.map(x => x.id).join(',')})`, { method: 'PATCH', body: JSON.stringify({ pics: [], photos: 0 }) });
     }
   } catch { /* 넘어간다 */ }
   /* 대화방 사진 · 파일 - 잔금 뒤 1년이 지난 것을 지운다(2026-11-10 파트너 기획 '잔금 후 1년 보관') */

@@ -215,7 +215,7 @@ async function contractMail(req, res, agent, user, b) {
 export const 권한키 = w => { w = String(w || '');
   if (w === 'contract-seal') return 'ct_seal';
   if (w === 'contract-mail') return 'ct_mail';
-  if (['contracts', 'contract', 'forms', 'form-url', 'form-fq', 'phrases', 'sms', 'complex', 'alert-settings', 'ics-link', 'contract-ext', 'contract-ext-url'].includes(w)) return 'ct_view';
+  if (['contracts', 'contract', 'contract-fpics', 'forms', 'form-url', 'form-fq', 'phrases', 'sms', 'complex', 'alert-settings', 'ics-link', 'contract-ext', 'contract-ext-url'].includes(w)) return 'ct_view';
   if (/^(contract|form-)/.test(w) || ['phrases-save', 'sms-save', 'complex-save', 'alert-settings-save', 'end-style-save'].includes(w)) return 'ct_edit';
   if (w === 'listing-memo' || w === 'listing-memo-save') return 'listing_memo';
   if (/^listing-/.test(w)) return 'listing';
@@ -388,9 +388,7 @@ async function certUp(res, agent, b) {
   const ext = 자격증형식(buf);
   if (!ext) return res.status(400).json({ error: 'JPG · PNG · PDF 파일만 올릴 수 있습니다' });
   if (buf.length > 자격증크기) return res.status(413).json({ error: '파일이 2MB 를 넘습니다 - 사진으로 다시 찍어 올려 주세요' });
-  const 옛 = ['jpg', 'png', 'pdf'].map(e => 자격증경로(agent.id, agent.staff.i, e));
-  await 버킷지우기(파일버킷, 옛).catch(() => 0);
-  const u = await 버킷올리기(파일버킷, 자격증경로(agent.id, agent.staff.i, ext), ext, buf);
+  const u = await 버킷올리기(파일버킷, 자격증경로(agent.id, agent.staff.i, ext), ext, buf, fetch, true);
   if (!u.ok) return res.status(u.need ? 503 : 502).json({ error: u.need ? '파일 저장소를 준비 중입니다' : u.error, need: u.need });
   const at = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 19);
   const z = await 설정고침(agent, s => { const L = 직원들(s.staff);
@@ -400,6 +398,8 @@ async function certUp(res, agent, b) {
     return { list: 뒤, patch: { staff: 뒤, staff_log: 이력.slice(-50) } }; });
   if (!z.y) return 설정실패(res, z, '자격증');
   if (z.y.error) return res.status(z.y.code || 400).json({ error: z.y.error });
+  /* 저장이 끝난 뒤에만 다른 확장자의 옛 파일을 지운다 - 중간에 실패해도 기록과 파일이 어긋나지 않게 */
+  await 버킷지우기(파일버킷, ['jpg', 'png', 'pdf'].filter(e => e !== ext).map(e => 자격증경로(agent.id, agent.staff.i, e))).catch(() => 0);
   return res.status(200).json({ ok: true, cert: { ext, at }, certOk: '' });
 }
 async function certUrl(res, agent, b) {

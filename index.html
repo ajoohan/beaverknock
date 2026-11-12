@@ -2258,7 +2258,7 @@ body.mo .lp-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
 .lg-bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap} .lg-bar .inp{flex:1;min-width:200px}
 .lg-bar .chip .num{margin-left:6px;opacity:.7}
 .lg-table{padding:0;overflow:hidden}
-.lg-row{display:grid;grid-template-columns:96px minmax(0,1.5fr) minmax(0,1.1fr) minmax(0,.9fr) minmax(0,1.3fr) 104px 76px 236px;gap:12px;align-items:center;padding:12px 16px;border-top:1px solid var(--n100);font-size:14px}
+.lg-row{display:grid;grid-template-columns:96px minmax(0,1.5fr) minmax(0,1.1fr) minmax(0,.9fr) minmax(0,1.3fr) 104px 76px 252px;gap:12px;align-items:center;padding:12px 16px;border-top:1px solid var(--n100);font-size:14px}
 .lg-row:first-child{border-top:0} .lg-row.done{opacity:.75}
 .lg-th{font-size:12.5px;font-weight:700;color:var(--n500);background:var(--n50)}
 .lg-row > div,.lg-row > a{display:flex;flex-direction:column;gap:3px;min-width:0}
@@ -2267,7 +2267,7 @@ body.mo .lp-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
 .lg-priv{align-self:stretch;justify-content:center;margin:-12px 0;padding:12px 10px;background:#FFFAEB}
 .lg-th .lg-priv{margin:-12px 0;background:#FFF4D1}
 .lg-none{color:var(--n300)} .lg-chg{color:var(--warn)!important} .lg-m{color:var(--ok)!important;font-weight:700}
-.lg-c8{flex-direction:row!important;gap:6px!important;justify-content:flex-end;flex-wrap:wrap}
+.lg-c8{display:grid!important;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:6px!important;align-items:stretch}
 .lg-c1,.lg-c6{align-items:flex-start}
 .lg-th > div:last-child{align-items:flex-end}
 .btn.tool.dng{color:var(--danger)} .btn.tool.on{border-color:var(--ind);color:var(--ind700)} .btn.tool.off{color:var(--n500)}
@@ -2275,7 +2275,8 @@ body.mo .lp-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
 .lg-std{display:flex;flex-direction:column;gap:8px} .lg-stds{display:flex;flex-wrap:wrap;gap:6px}
 .lg-ck{display:flex;gap:10px;align-items:flex-start;cursor:pointer} .lg-ck input{margin-top:3px;width:18px;height:18px;flex:none}
 .lg-ck span{display:flex;flex-direction:column;gap:2px} .lg-ck b{font-size:14.5px;color:var(--n900)} .lg-ck small{font-size:13px;color:var(--n500)}
-.lg-acts{display:flex;flex-wrap:wrap;gap:8px}
+.lg-stds .badge::before, .mt-tags .badge::before{display:none}   /* ✓ · 표시가 있어 점은 겹친다 */
+.lg-acts{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:8px}   /* 나란한 단추는 같은 폭(리뷰 11-12) */
 body.mo .lg-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}
 body.mo .lg-th{display:none}
 body.mo .lg-row{grid-template-columns:minmax(0,1fr) auto;gap:8px 10px;padding:14px}
@@ -2284,7 +2285,7 @@ body.mo .lg-c3,body.mo .lg-c4,body.mo .lg-c5,body.mo .lg-c6,body.mo .lg-c7,body.
 body.mo .lg-priv{margin:0;padding:8px 10px;border-radius:8px}
 body.mo .lg-row [data-l]{flex-direction:row;flex-wrap:wrap;align-items:baseline;gap:6px}
 body.mo .lg-row [data-l]::before{content:attr(data-l);flex:none;min-width:64px;font-size:12.5px;color:var(--n500)}
-body.mo .lg-c8{justify-content:flex-start}
+body.mo .lg-c8{grid-auto-flow:row;grid-template-columns:repeat(auto-fit,minmax(96px,1fr))}
 /* 시작 방법 (2026-11-12) */
 .ctw-start{display:flex;flex-direction:column;gap:10px;margin-bottom:16px}
 .ctw-start .lab{margin:0;font-size:14px;font-weight:700;color:var(--n700)}
@@ -7978,7 +7979,7 @@ V['#/matched'] = () => {
   const 막대 = (이름, 점, 만) => `<div class="mt-bar"><span>${이름}</span><i><b style="width:${Math.round(점 / 만 * 100)}%"></b></i><em class="num">${점} / ${만}</em></div>`;
   const 카드 = L => { const s = L.score || {}, 열림 = !!MT.open[L.id];
     const 값 = `${L.deal === '매매' ? '매매 ' : '보증금 '}${won(L.dep)}${+L.rent ? ` / 월 ${won(L.rent)}` : ''}${+L.fee ? ` · 관리비 ${won(L.fee)}` : ''}`;
-    const 줄 = [L.dong, L.bdong ? `${L.bdong}동` : '', +L.area ? `전용 ${(+L.area).toFixed(1).replace(/\.0$/, '')}㎡(${pyOf(L.area)}평)` : '', +L.rooms ? `방 ${L.rooms}` : '', +L.baths ? `욕실 ${L.baths}` : '', L.band || (L.floor_no ? `${L.floor_no}층` : ''), L.dir ? `${L.dir}향` : '', L.move_in ? `입주 ${L.move_in}` : ''].filter(Boolean).join(' · ');
+    const 줄 = [L.dong, L.bdong ? `${L.bdong}동` : '', +L.area ? `전용 ${(+L.area).toFixed(1).replace(/\.0$/, '')}㎡(${pyOf(L.area)}평)` : '', +L.rooms ? `방 ${L.rooms}` : '', +L.baths ? `욕실 ${L.baths}` : '', L.band || (L.floor_no ? `${L.floor_no}층` : ''), L.dir ? (/향$/.test(L.dir) ? L.dir : `${L.dir}향`) : '', L.move_in ? `입주 ${L.move_in}` : ''].filter(Boolean).join(' · ');
     const 더 = MT.pics[L.id];
     return `<article class="card pad mt-card fade">
       ${L.pic ? `<div class="mt-pics">${(더 && 더.length ? 더 : [L.pic]).map((u, i) => `<img src="${esc(u)}" alt="매물 사진 ${i + 1}" loading="lazy">`).join('')}${!더 && L.photos > 1 ? `<button type="button" class="mt-pn" data-act="mt-pics" data-v="${L.id}">사진 ${L.photos}장 모두 보기</button>` : ''}</div>` : ''}
@@ -7993,8 +7994,8 @@ V['#/matched'] = () => {
       ${열림 ? `<div class="mt-bars">${막대('지역', s.지역 || 0, 30)}${막대('예산', s.예산 || 0, 30)}${막대('면적 · 방', s.면적방 || 0, 20)}${막대('입주일', s.입주 || 0, 20)}</div>` : ''}
       <p class="sub" style="margin:0;font-size:13px">담당 ${esc(L.office)} · 연락처는 ‘연락하기’를 누른 뒤에 서로 전달됩니다</p>
       <div class="mt-acts">${MT.tab === 'hide' ? `<button type="button" class="btn tool" data-act="mt-hide" data-v="${L.id}">다시 받기</button>`
-        : `<button type="button" class="btn pri md" data-act="mt-want" data-v="${고른.id}|${L.id}" ${MT.busy ? 'disabled' : ''}>${MT.busy === L.id ? '알리는 중…' : '이 집 보고 싶어요'}</button>
-        <button type="button" class="btn tool${담.fav.includes(L.id) ? ' on' : ''}" data-act="mt-fav" data-v="${L.id}" aria-pressed="${담.fav.includes(L.id)}">${담.fav.includes(L.id) ? '관심 저장됨' : '관심 저장'}</button>
+        : `<span class="eqb"><button type="button" class="btn pri md" data-act="mt-want" data-v="${고른.id}|${L.id}" ${MT.busy ? 'disabled' : ''}>${MT.busy === L.id ? '알리는 중…' : '이 집 보고 싶어요'}</button>
+        <button type="button" class="btn tool md${담.fav.includes(L.id) ? ' on' : ''}" data-act="mt-fav" data-v="${L.id}" aria-pressed="${담.fav.includes(L.id)}">${담.fav.includes(L.id) ? '관심 저장됨' : '관심 저장'}</button></span>
         <button type="button" class="tapx mt-no" data-act="mt-hide" data-v="${L.id}">이 매물 그만 받기</button>`}</div>
     </article>`; };
   return `
@@ -9714,8 +9715,7 @@ function lsApply(f, s, kinds){
   const 채움 = [], 빔 = k => f[k] == null || String(f[k]).trim() === '';
   const 넣기 = (k, v, 이름) => { v = v == null ? '' : String(v).trim(); if(!v || !빔(k)) return; f[k] = v; 채움.push(이름); };
   넣기('lname', s.bdNm, '건물명');
-  const 주소 = s.road || s.jibun;
-  if(주소 && 빔('laddr')){ f.laddr = 주소; 채움.push('주소'); }
+  /* 주소는 바로 넣지 않는다 - 도로명 찾기로 골라야 법정동코드까지 함께 들어온다(lsGo 가 찾기 칸에 넣어 찾아 준다) */
   const 동이름 = (String(s.jibun || '').match(/([가-힣0-9]+[동리가])(?=\s|\d|$)/) || [])[1];
   넣기('ldong', 동이름, '법정동');
   const u = String(s.unit || '');
@@ -9740,7 +9740,10 @@ async function lsGo(){
   if(!ok || !j.scan){ LS.err = j.error || '건축물대장을 읽지 못했습니다'; render(); return; }
   const 채움 = lsApply(S.form, j.scan, kinds);
   LS.done = { 채움, 위반: !!j.scan.violation, 경고: (j.scan.warnings || []).slice(0, 3) };
-  LS.files = {}; render();
+  LS.files = {};
+  const 찾을주소 = String(j.scan.road || j.scan.jibun || '').replace(/\s*\(.*$/, '').trim();
+  if(찾을주소 && !String(S.form.laddr || '').trim()){ ADDR.q = 찾을주소; addrFind('laddr'); LS.done.주소 = true; }
+  render();
   toast(채움.length ? `건축물대장에서 ${채움.length}칸을 채웠습니다 - 값을 한 번 확인해 주세요` : '채울 빈칸이 없거나 서류에서 값을 찾지 못했습니다');
 }
 const LS_부터 = Date.parse('2026-11-18T15:00:00Z');   /* 처리방침 개정 안내 7일 뒤 - 서버(api/_contract.js listingScan)와 같은 날 */
@@ -9756,7 +9759,7 @@ function lsCardHTML(){
             : `<label class="btn sec sm${LS.busy ? ' off' : ''}">올리기<input type="file" class="sr" accept="application/pdf,image/jpeg,image/png,image/webp" data-lsfile="${k}" ${LS.busy ? 'disabled' : ''} aria-label="${이름} 올리기"></label>`}</div>`; }).join('')}</div>
     ${Object.keys(LS.files).length ? `<button type="button" class="btn pri md" data-act="ls-go" ${LS.busy ? 'disabled' : ''}>${LS.busy ? '읽는 중… (약 20초)' : '읽어서 채우기'}</button>` : ''}
     ${LS.err ? `<p class="ls-msg err" role="alert">${esc(LS.err)}</p>` : ''}
-    ${d ? `<p class="ls-msg" role="status">${d.채움.length ? `채운 칸: ${esc(d.채움.join(' · '))}` : '채운 칸이 없습니다'}${d.위반 ? ' · <b style="color:var(--danger)">위반건축물 표시가 있습니다</b>' : ''}${d.경고.length ? `<br>${d.경고.map(esc).join(' · ')}` : ''}</p>` : ''}
+    ${d ? `<p class="ls-msg" role="status">${d.채움.length ? `채운 칸: ${esc(d.채움.join(' · '))}` : '채운 칸이 없습니다'}${d.위반 ? ' · <b style="color:var(--danger)">위반건축물 표시가 있습니다</b>' : ''}${d.주소 ? '<br>서류의 주소로 도로명을 찾았습니다 - 아래 주소 칸에서 맞는 것을 골라 주세요.' : ''}${d.경고.length ? `<br>${d.경고.map(esc).join(' · ')}` : ''}</p>` : ''}
     <p class="ls-foot">발급은 <a class="lnk" href="https://www.eais.go.kr/moct/bci/aaa02/BCIAAA02L01" target="_blank" rel="noopener">세움터 건축물대장 발급</a>에서 무료로 할 수 있습니다.</p></div>`;
 }
 V["#/partner/listing/new"] = () => {
@@ -12883,6 +12886,11 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
+  { v:'26.11.12.18', 날:'2026-11-12', 줄:[
+    '코드리뷰 · 전수점검 반영 - 로그아웃하면 맞춤매물 · 직원 명단 · 사진 주소 · 자격증 상태도 함께 비웁니다(같은 PC 다음 사람에게 남지 않게)',
+    '맞춤매물 - 상가 · 사무실 · 창고 조건(임대)에 매매 물건이 섞이지 않게, ‘보고 싶어요’도 목록과 같은 기준(80점 · 승인된 사무소)으로, 노출 매물이 많아도 내 동네 매물이 빠지지 않게',
+    '직원 자격증을 다시 올리다 실패해도 이전 파일이 지워지지 않게 · 계약서 보기 권한만 있는 직원도 현장 사진을 봅니다',
+    '건축물대장으로 채운 주소는 도로명 찾기로 고르게(법정동코드까지 함께) · 매물장부 · 맞춤매물 단추 같은 폭 · 방향 ‘남향향’ 겹침 고침' ] },
   { v:'26.11.12.17', 날:'2026-11-12', 줄:[
     '매물 올리기의 건축물대장 사진 읽기는 개인정보 처리방침 개정 안내 기간이 끝나는 11월 19일부터 씁니다 - 읽은 값 가운데 소유자 · 권리관계는 매물에 쓰지 않아 아예 돌려주지 않습니다',
     '정리 - 명단에서 뺀 직원의 자격증 파일, 휴지통 30일이 지난 계약서의 현장 사진과 매물 사진 파일을 지웁니다' ] },
@@ -18302,8 +18310,8 @@ function exField(doc){
   const E = EX_FORMS[doc.form] || EX_FORMS['explain-home'], 절 = E.spec.filter(s => !s.g && EX_현장절.test(s.h));
   const 칸 = 절.flatMap(s => s.rows.flatMap(r => r.p.filter(p => p.k && ['one', 'many', 'area', 'text'].includes(p.t))));
   const 찬 = 칸.filter(p => { const v = ctGet(doc, p.k); return Array.isArray(v) ? v.length : v != null && String(v).trim() !== ''; }).length;
-  const 답 = doc.fq || {}, 추가 = FQ.list.filter(q => q.i in 답 || true);
-  return { 절, 다: 칸.length + 추가.length, 찬: 찬 + 추가.filter(q => 답[q.i]).length };
+  const 답 = doc.fq || {};
+  return { 절, 다: 칸.length + FQ.list.length, 찬: 찬 + FQ.list.filter(q => 답[q.i]).length };
 }
 function exFieldHTML(doc){
   const f = exField(doc), 잠김 = !!(CT.row && CT.row.status === 'sealed');
@@ -18331,6 +18339,18 @@ function exFieldHTML(doc){
 /* 현장 사진 (2026-11-12 파트너 기획 '현장 체크리스트 사진 · 사무소 보관') - 계약서마다 20장, 비공개 저장소.
    손님 · 초안 링크 · 인쇄물에는 나가지 않는다. 날인본이어도 붙인다 */
 const FP = { id:'', list:[], loading:false, busy:0, err:'' };
+/* 로그아웃 때 오늘(11-12) 새로 만든 화면 상태를 처음으로 - 같은 브라우저의 다음 사람이 앞사람의 매물 · 직원 명단 · 사진 주소를 보면 안 된다 */
+function 새상태비우기(){
+  Object.assign(MT, { loaded:false, loading:false, at:0, groups:[], need:'', cond:'', open:{}, busy:'', tab:'', pics:{} });
+  Object.assign(SF, { loaded:false, loading:false, list:[], err:'', busy:false, del:null, sel:null, log:[], logOpen:false, open:null });
+  Object.assign(CF, { loaded:false, loading:false, cert:null, certOk:'', busy:false });
+  Object.assign(MG, { tab:'list', f:'', q:'', e:{}, busy:'' });
+  LP.by = {}; LP.busy = '';
+  Object.assign(LS, { files:{}, busy:false, err:'', done:null });
+  Object.assign(FQ, { loaded:false, loading:false, list:[], busy:false, add:null });
+  Object.assign(FP, { id:'', list:[], loading:false, busy:0, err:'', del:'' });
+  try{ localStorage.removeItem('bk.mt'); }catch(e){}
+}
 function fpLoad(id){ if(FP.loading) return; FP.id = id; FP.loading = true; FP.err = '';
   ctPost({ what:'contract-fpics', id }).then(({ ok, j }) => { FP.loading = false; if(FP.id !== id) return; if(ok) FP.list = j.list || []; else FP.err = j.error || '사진을 불러오지 못했습니다'; render(); })
     .catch(() => { FP.loading = false; FP.err = '네트워크 문제로 사진을 불러오지 못했습니다'; render(); }); }
@@ -20361,6 +20381,7 @@ function handle(a,v,el){
       try{ sessionStorage.removeItem('bk.ag'); }catch(e){}
       /* 맡아 둔 '전달되지 않은 조건' 에도 이름·연락처가 들어 있다 - 다음 사람이 보면 안 된다 */
       S.보류목록 = []; try{ sessionStorage.removeItem(HELD_KEY); }catch(e){}
+      새상태비우기();
       /* 이름과 연락처는 접수 초안에도 남는다. 서버에서 받아온 조건·제안·물건은
          그 사람의 것이다. 로그아웃한 화면은 처음 온 사람이 보는 화면과 같아야 한다 -
          예시로 되돌린다. 같은 브라우저를 다음 사람이 쓸 수 있다. */

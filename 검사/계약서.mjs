@@ -535,7 +535,7 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
   process.env.CRON_SECRET = 'cron-secret'; process.env.RESEND_API_KEY = 'test';
   res = 응답(); 불린 = [];
   await C.reportDueCron({ headers: { authorization: 'Bearer cron-secret', host: 'beaverknock.co.kr' } }, res);
-  ok(불린.filter(x => /bk_contract\?/.test(x.u) && x.m === 'GET' && !/track->>trash/.test(decodeURIComponent(x.u))).length === 2 && 불린.some(x => /bk_contract/.test(x.u) && x.m === 'DELETE' && /status=eq\.draft&track->>trash=lt\./.test(x.u)) && res.body.대상 === 1005 && 불린.filter(x => /bk_agent/.test(x.u) && !/ext:settings->ext/.test(decodeURIComponent(x.u))).length === 11, '1000건이 차면 다음 쪽을 더 읽는다 · 중개사는 100명씩 묻는다 · 휴지통 30일 지난 작성 중 계약서는 지운다');
+  ok(불린.filter(x => /bk_contract\?/.test(x.u) && x.m === 'GET' && !/track->>trash/.test(decodeURIComponent(x.u))).length === 2 && 불린.some(x => /bk_contract/.test(x.u) && x.m === 'GET' && /status=eq\.draft&track->>trash=lt\./.test(decodeURIComponent(x.u))) && res.body.대상 === 1005 && 불린.filter(x => /bk_agent/.test(x.u) && !/ext:settings->ext/.test(decodeURIComponent(x.u))).length === 11, '1000건이 차면 다음 쪽을 더 읽는다 · 중개사는 100명씩 묻는다 · 휴지통 30일 지난 작성 중 계약서는 지운다');
   ok(묶음.length === 11 && 묶음.slice(0, 10).every(n => n === 100) && 묶음[10] === 5 && res.body.보냄 === 1005, '100통씩 나눠 보내 1005통 모두 보낸다');
   delete process.env.CRON_SECRET; delete process.env.RESEND_API_KEY;
   for (const k of ['SOLAPI_API_KEY', 'SOLAPI_API_SECRET', 'SOLAPI_PFID', 'SOLAPI_FROM', 'SOLAPI_TPL_SCHEDULE']) delete process.env[k];

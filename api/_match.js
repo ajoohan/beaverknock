@@ -16,7 +16,9 @@ const 구간 = (값, 한도) => !(+한도 > 0) ? 1 : +값 <= +한도 ? 1 : +값 
 
 export function 일치율(d, L) {
   if (!d || !L || d.kind !== L.kind) return null;
-  if (!집아님(d.kind) && d.deal && L.deal && d.deal !== L.deal) return null;
+  if (!집아님(d.kind) && d.deal && L.deal && d.deal !== L.deal) return null;
+  /* 상가 · 사무실 · 창고 조건은 보증금 · 월세(임대)로만 받는다 - 매매 물건은 견주지 않는다 */
+  if (집아님(d.kind) && L.deal === '매매') return null;
   /* 지역 30 - 동이 같으면 만점. 조건에 동이 없으면(서울·경기 어디든) 만점 */
   const 동들 = (d.dongs || []).map(동이름).filter(Boolean);
   const 지역 = !동들.length || 동들.includes(동이름(L.dong)) ? 30 : 0;
@@ -57,8 +59,11 @@ const 내조건 = async user => {
   if (!r.ok) return null;
   return (await r.json()).filter(d => (!d.status || d.status === 'active') && !(d.expires_at && Date.parse(d.expires_at) < Date.now()));
 };
-const 노출물건 = async kinds => {
-  const q = new URLSearchParams({ select: '*', vis: 'eq.open', status: 'eq.active', kind: `in.(${kinds.join(',')})`, order: 'opened_at.desc', limit: '500' });
+const 노출물건 = async (kinds, ds = []) => {
+  /* 모든 조건에 동이 있으면 그 동의 물건만 읽는다(동이 없는 조건이 하나라도 있으면 종류로만) */
+  const 동들 = ds.every(d => (d.dongs || []).map(동이름).filter(Boolean).length) ? [...new Set(ds.flatMap(d => (d.dongs || []).map(동이름).filter(Boolean)))] : [];
+  const q = new URLSearchParams({ select: '*', vis: 'eq.open', status: 'eq.active', kind: `in.(${kinds.join(',')})`, order: 'opened_at.desc', limit: '1000',
+    ...(동들.length ? { dong: `in.(${동들.map(v => '"' + v.replace(/["\\]/g, '') + '"').join(',')})` } : {}) });
   const r = await fetch(sbUrl('bk_listing', q.toString()), { headers: sbHeaders() });
   if (!r.ok) { const t = await r.text(); return /does not exist|PGRST204|42703|vis/i.test(t) ? { need: '0039' } : null; }
   return { rows: await r.json() };
@@ -70,7 +75,7 @@ export async function matched(res, user) {
     const ds = await 내조건(user);
     if (!ds) return res.status(502).json({ error: '조건을 불러오지 못했습니다' });
     if (!ds.length) return res.status(200).json({ ok: true, groups: [] });
-    const x = await 노출물건([...new Set(ds.map(d => d.kind))]);
+    const x = await 노출물건([...new Set(ds.map(d => d.kind))], ds);
     if (!x) return res.status(502).json({ error: '매물을 불러오지 못했습니다' });
     if (x.need) return res.status(200).json({ ok: true, groups: ds.map(d => ({ demand_id: d.id, rows: [] })), need: x.need });
     const 사무소 = {};
@@ -114,7 +119,10 @@ export async function matchWant(req, res, user, b) {
     const L = lr.ok ? (await lr.json())[0] : null;
     if (!L) return res.status(404).json({ error: '지금은 볼 수 없는 매물입니다 - 노출이 끝났을 수 있습니다' });
     const s = 일치율(d, L);
-    if (!s) return res.status(400).json({ error: '조건과 맞지 않는 매물입니다' });
+    if (!s || s.점 < 일치기준) return res.status(400).json({ error: '조건과 맞지 않는 매물입니다' });
+    const ar = await fetch(sbUrl('bk_agent', `select=status&id=eq.${L.agent_id}&limit=1`), { headers: sbHeaders() });
+    const 사 = ar.ok ? (await ar.json())[0] : null;
+    if (!사 || 사.status !== 'approved') return res.status(404).json({ error: '지금은 볼 수 없는 매물입니다' });
     const addr = String(L.road || [L.dong, L.name].filter(Boolean).join(' ')).replace(/[<>"'`]/g, '').slice(0, 200);
     const 있던 = await fetch(sbUrl('bk_proposal', `select=id,status&demand_id=eq.${did}&agent_id=eq.${L.agent_id}&addr=eq.${encodeURIComponent(addr)}&limit=1`), { headers: sbHeaders() });
     const 전 = 있던.ok ? (await 있던.json())[0] : null;

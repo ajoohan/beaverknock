@@ -2202,6 +2202,12 @@ body.mo .sf-log li{grid-template-columns:minmax(0,1fr)}
 .exf-go > div{display:flex;flex-direction:column;gap:2px} .exf-go b{font-size:15px;color:var(--n900)} .exf-go .sub{font-size:13px}
 .exf-bar{height:6px;border-radius:999px;background:var(--n100);overflow:hidden} .exf-bar i{display:block;height:100%;border-radius:999px;background:var(--ind);transition:width .2s}
 .exf-acts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.sf-cert{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:12px 14px;border:1px solid var(--hair);border-radius:12px}
+.sf-cert>span:first-child{flex:1;min-width:200px;font-size:13.5px;line-height:1.6;color:var(--n500)} .sf-cert b{display:block;font-size:14px;color:var(--n900)}
+.cf-card{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap} .cf-acts{display:flex;gap:8px}
+.cf-st{margin:8px 0 0;font-size:13.5px;font-weight:600;color:var(--n700)} .cf-st.ok{color:var(--ok, #0a7a43)}
+.sf-smsrow{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:12px 14px;border-radius:12px;background:var(--n50)}
+.sf-smsrow span{flex:1;min-width:200px;font-size:13.5px;line-height:1.6;color:var(--n700)}
 .exf-own{border-color:#F2B98A!important} .exf-del{margin-left:8px;font-size:12.5px;font-weight:600;color:var(--danger)}
 .exf-add{display:flex;flex-direction:column;gap:10px;padding:12px;border-radius:12px;background:var(--n50)}
 body.mo .exf-top{position:sticky;top:0;z-index:5}
@@ -9174,6 +9180,40 @@ function 직원권한판(s){
    왼쪽은 명단과 초대, 오른쪽은 고른 직원의 기능을 묶음별로 켜고 끈다. 바꾸면 바로 저장되고 이력이 남는다 */
 const SF_묶음 = [['계약', ['ct_view', 'ct_edit', 'ct_seal', 'ct_mail']], ['매물', ['listing', 'listing_open', 'listing_memo', 'listing_price']], ['손님 · 제안', ['propose', 'room']], ['성과', ['stats']]];
 const SF_대표만 = [['영구 삭제', '휴지통 비우기 · 계약서 영구 삭제'], ['직원 초대 · 권한 설정', ''], ['사무소 주소 · 활동 설정', '취급 유형 · 활동 지역 · 알림']];
+/* 직원 자격증 (2026-11-12 파트너 기획 '직원 가입 승인 - 자격증 첨부') - 직원이 사진 · PDF 로 올리고, 대표가 직원 · 권한 화면에서 보고 '확인함'을 누른다.
+   파일은 비공개 저장소(bk-files)에 두고 5분짜리 주소로만 연다 */
+const CF = { loaded:false, loading:false, cert:null, certOk:'', busy:false };
+function cfLoad(){ if(CF.loading || CF.loaded || !직원()) return; CF.loading = true;
+  ctPost({ what:'cert-me' }).then(({ ok, j }) => { CF.loading = false; CF.loaded = true; if(ok){ CF.cert = j.cert; CF.certOk = j.certOk || ''; } render(); }).catch(() => { CF.loading = false; CF.loaded = true; }); }
+async function cfUp(file){
+  if(!file) return;
+  const 사진 = /^image\/(jpeg|png|webp)$/.test(file.type), pdf = file.type === 'application/pdf';
+  if(!사진 && !pdf) return toast('사진(JPG · PNG) 또는 PDF 만 올릴 수 있습니다');
+  if(pdf && file.size > 2 * 1024 * 1024) return toast('PDF 가 2MB 를 넘습니다 - 사진으로 찍어 올려 주세요');
+  CF.busy = true; render();
+  try{
+    const data = 사진 ? await 줄이기(file) : await 읽기(file);
+    const { ok, j } = await ctPost({ what:'cert-up', data }).catch(() => ({ ok:false, j:{ error:'네트워크 문제로 올리지 못했습니다' } }));
+    if(ok){ CF.cert = j.cert; CF.certOk = ''; }
+    toast(ok ? '자격증을 올렸습니다 - 대표님이 확인하면 표시됩니다' : (j.error || '올리지 못했습니다'));
+  }catch(e){ toast('파일을 열지 못했습니다'); }
+  CF.busy = false; render();
+}
+async function cfOpen(i){
+  const 창 = window.open('', '_blank');
+  const { ok, j } = await ctPost({ what:'cert-url', ...(i ? { i } : {}) }).catch(() => ({ ok:false, j:{} }));
+  if(ok && j.url){ if(창) 창.location.href = j.url; else location.href = j.url; } else { if(창) 창.close(); toast(j.error || '열지 못했습니다'); }
+}
+function cfCardHTML(){
+  if(!CF.loaded) setTimeout(cfLoad);
+  const 보조 = 직원() && 직원().role === 'assistant', 이름 = 보조 ? '중개보조원 직무교육 수료증' : '공인중개사 자격증';
+  const 상태 = !CF.loaded ? '불러오는 중입니다' : !CF.cert ? '아직 올리지 않았습니다' : CF.certOk ? `대표님이 확인했습니다 (${esc(CF.certOk.slice(0, 10))})` : `올렸습니다 (${esc(String(CF.cert.at).slice(0, 10))}) · 대표님 확인을 기다리는 중`;
+  return `<div class="card pad cf-card"><div><h2 class="adm-sh" style="margin:0">내 ${이름}</h2>
+      <p class="sub" style="margin:4px 0 0">사진이나 PDF 로 올리면 대표님이 보고 확인합니다. 파일은 대표님과 본인만 볼 수 있습니다.</p>
+      <p class="cf-st${CF.certOk ? ' ok' : ''}" role="status">${상태}</p></div>
+    <div class="eqb cf-acts">${CF.cert ? `<button type="button" class="btn tool sm" data-act="cf-open">올린 파일 보기</button>` : ''}
+      <label class="btn sec sm${CF.busy ? ' off' : ''}">${CF.busy ? '올리는 중…' : CF.cert ? '다시 올리기' : '올리기'}<input type="file" class="sr" accept="image/jpeg,image/png,image/webp,application/pdf" data-cffile ${CF.busy ? 'disabled' : ''} aria-label="${이름} 올리기"></label></div></div>`;
+}
 V['#/partner/staff'] = () => {
   if(!SF.loaded) sfLoad();
   const 이름 = s => s.name || s.email.split('@')[0];
@@ -9191,11 +9231,14 @@ V['#/partner/staff'] = () => {
           <span><button type="button" class="btn tool sm" data-act="sf-grp" data-v="${esc(s.i)}|${t}|1" ${SF.busy ? 'disabled' : ''}>모두 켜기</button><button type="button" class="btn tool sm" data-act="sf-grp" data-v="${esc(s.i)}|${t}|0" ${SF.busy ? 'disabled' : ''}>모두 끄기</button></span></div>
           ${ks.map(k => 칸(s, k)).join('')}</section>`; }).join('')}
       <section class="sf-grp"><div class="sf-gh"><b>대표만</b></div>${SF_대표만.map(([t, d]) => `<label class="sf-sw lock"><span><b>${t}</b><small>${d ? d + ' · ' : ''}직원에게는 열지 않습니다</small></span><input type="checkbox" role="switch" disabled aria-label="${t} - 대표만"></label>`).join('')}</section>
+      <div class="sf-cert"><span><b>${s.role === 'assistant' ? '직무교육 수료증' : '자격증'}</b>${!s.cert ? '직원이 아직 올리지 않았습니다 - 직원이 로그인하면 첫 화면에서 올립니다' : s.certOk ? `확인함 · ${esc(s.certOk.slice(0, 10))}` : `올림 · ${esc(String(s.cert.at).slice(0, 10))} · 확인 전`}</span>
+        ${s.cert ? `<span class="eqb" style="display:flex;gap:8px"><button type="button" class="btn tool sm" data-act="cf-open" data-v="${esc(s.i)}">보기</button><button type="button" class="btn ${s.certOk ? 'tool' : 'pri'} sm" data-act="sf-cert-ok" data-v="${esc(s.i)}|${s.certOk ? 0 : 1}" ${SF.busy ? 'disabled' : ''}>${s.certOk ? '확인 취소' : '확인함'}</button></span>` : ''}</div>
+      ${s.uid ? '' : `<div class="sf-smsrow"><span>아직 들어오지 않았습니다. 메일을 못 봤을 수 있으니 휴대폰 문자로도 알려 주세요.</span><button type="button" class="btn sec sm" data-act="sf-sms" data-v="${esc(s.i)}">문자로 초대 알리기</button></div>`}
       <div class="sf-foot"><select class="inp" data-sf-role="${esc(s.i)}" aria-label="${esc(s.email)} 역할" style="width:auto;min-width:160px" ${SF.busy ? 'disabled' : ''}>${Object.entries(직원역할KO).map(([k, t]) => `<option value="${k}" ${s.role === k ? 'selected' : ''}>${t}</option>`).join('')}</select>
         <button type="button" class="btn tool sm dng" data-act="sf-del" data-v="${esc(s.i)}" ${SF.busy ? 'disabled' : ''}>${SF.del === s.i ? '한 번 더 누르면 명단에서 뺍니다' : '명단에서 빼기'}</button></div>
       <p class="sub" style="margin:0;font-size:12.5px">바꾼 권한은 직원이 다시 들어오거나 새로고침하면 적용됩니다.</p></div>`;
   const 줄 = s => `<button type="button" class="sf-it${고른 && 고른.i === s.i ? ' on' : ''}" data-act="sf-sel" data-v="${esc(s.i)}" aria-pressed="${!!(고른 && 고른.i === s.i)}">
-      <span><b>${esc(이름(s))}</b><small>켜진 기능 ${켠수(s)} / ${CT_권한목록.length}${s.uid ? '' : ' · 아직 안 들어옴'}</small></span><span class="badge ${s.role === 'assistant' ? 'b-warn' : 'b-ind'}">${esc(직원역할KO[s.role] || '')}</span></button>`;
+      <span><b>${esc(이름(s))}</b><small>켜진 기능 ${켠수(s)} / ${CT_권한목록.length}${s.uid ? '' : ' · 아직 안 들어옴'}${s.cert && !s.certOk ? ' · 자격증 확인 전' : ''}</small></span><span class="badge ${s.role === 'assistant' ? 'b-warn' : 'b-ind'}">${esc(직원역할KO[s.role] || '')}</span></button>`;
   return `
 <div class="scr fade" style="background:var(--n50)">
   ${navPartner('sf')}
@@ -10199,6 +10242,19 @@ function modalHTML(){
         <ul>${x.줄.map(t => `<li>${esc(t)}</li>`).join('')}</ul></li>`).join('')}</ul>
       <button class="btn sec" data-act="modal-close" style="margin-top:16px;width:100%">닫기</button>
     </div></div>`;
+  if(S.modal.type==='sf-sms'){
+    /* 직원 초대를 문자로 (2026-11-12 파트너 기획) - 대표 휴대폰의 문자 앱으로 보낸다(발송 비용 없음 · 번호는 저장하지 않음) */
+    const m = S.modal, 번호 = String(m.phone || '').replace(/[^\d]/g, ''), 문자 = `sms:${번호}${/iPhone|iPad/.test(navigator.userAgent) ? '&' : '?'}body=${encodeURIComponent(m.text)}`;
+    return `<div class="modal" data-act="modal-bg"><div class="box" data-stop role="dialog" aria-modal="true" aria-labelledby="mdT" tabindex="-1">
+      <h2 id="mdT" style="margin:0 0 6px;font-size:16px;font-weight:700;letter-spacing:-.03em">${esc(m.name)}님께 문자로 초대 알리기</h2>
+      <p style="margin:0 0 12px;font-size:14px;line-height:1.7;color:var(--n500)">휴대폰의 문자 앱이 열립니다. PC 에서는 글을 복사해 카톡 · 문자에 붙여 넣으세요. 번호는 저장하지 않습니다.</p>
+      <label><span class="lab">직원 휴대폰 <span class="opt">비워 두면 문자 앱에서 고릅니다</span></span><input class="inp" data-in="sf-sms-phone" inputmode="tel" value="${esc(m.phone || '')}" placeholder="010-0000-0000" maxlength="13" autocomplete="off"></label>
+      <textarea class="inp" rows="5" readonly style="width:100%;font-size:13px;margin-top:10px">${esc(m.text)}</textarea>
+      <div class="eqb" style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+        <button class="btn sec" data-act="rm-copy">글 복사</button>
+        <a class="btn sec" href="${esc(문자)}" data-sfsms>문자로 보내기</a></div>
+      <button class="btn pri" data-act="modal-close" style="width:100%;margin-top:10px">닫기</button></div></div>`;
+  }
   if(S.modal.type==='rm-invite'){
     const m = S.modal, 문자 = `sms:${m.phone || ''}${/iPhone|iPad/.test(navigator.userAgent) ? '&' : '?'}body=${encodeURIComponent(m.text)}`;
     return `<div class="modal" data-act="modal-bg"><div class="box" data-stop role="dialog" aria-modal="true" aria-labelledby="mdT" tabindex="-1">
@@ -12818,6 +12874,10 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
+  { v:'26.11.12.15', 날:'2026-11-12', 줄:[
+    '직원 · 권한 - 아직 들어오지 않은 직원에게 ‘문자로 초대 알리기’(휴대폰 문자 앱으로 · 번호는 저장 안 함)',
+    '직원 자격증 - 직원이 첫 화면에서 자격증(보조원은 직무교육 수료증)을 사진 · PDF 로 올리면 대표가 직원 · 권한 화면에서 보고 ‘확인함’을 누릅니다. 이력에도 남습니다',
+    'Google 드라이브 · Dropbox 로 계약서 저장 켜짐' ] },
   { v:'26.11.12.14', 날:'2026-11-12', 줄:[
     '매물 올리기에 ‘건축물대장으로 채우기’ - 표제부 · 전유부 사진이나 스캔본(PDF)을 올리면 건물명 · 동 · 호 · 전용면적 · 층 · 사용승인일 · 주택 유형을 채웁니다(이미 적은 칸은 그대로 · 서류는 저장 안 함)' ] },
   { v:'26.11.12.13', 날:'2026-11-12', 줄:[
@@ -13607,6 +13667,7 @@ V['#/partner/home'] = () => {
     ${isMo() ? `<div class="dz-head">${dzNowHTML()}${찾기단추()}</div>` : ''}
     ${dz브리핑(할일)}
     ${dz잔금물음(잔금물음 || [])}
+    ${직원() && !(CF.loaded && CF.certOk) ? cfCardHTML() : ''}
     <div class="dz-grid">
       <div class="dz-col">
         <div class="dz-k4">
@@ -19711,6 +19772,8 @@ document.addEventListener('input', e=>{
   /* 초안 의견 칸 - 적는 대로 담기만(다시 그리지 않는다) */
   if(k === 'rm-text'){ RM.text = el.value; return; }
   if(k === 'ph-q'){ PH.q = el.value; redrawKeepingCaret('ph-q'); return; }
+  if(k === 'sf-sms-phone'){ if(S.modal && S.modal.type === 'sf-sms'){ S.modal.phone = el.value; const a = document.querySelector('[data-sfsms]'), n = el.value.replace(/[^\d]/g, '');
+      if(a) a.href = `sms:${n}${/iPhone|iPad/.test(navigator.userAgent) ? '&' : '?'}body=${encodeURIComponent(S.modal.text)}`; } return; }
   if(k === 'fq-q' || k === 'fq-o'){ if(FQ.add) FQ.add[k === 'fq-q' ? 'q' : 'o'] = el.value; return; }
   if(k === 'lgq'){ MG.q = el.value; redrawKeepingCaret('lgq'); return; }
   if(k.startsWith('lgp:')){ const [, id, key] = k.split(':'); (MG.e[id] = MG.e[id] || {})[key] = key === 'one' ? el.value : el.value.replace(/[^0-9]/g, ''); if(key !== 'one') el.value = comma(MG.e[id][key]); return; }
@@ -20631,6 +20694,12 @@ function handle(a,v,el){
       if(!SF_메일.test(email)){ toast('직원의 메일 주소를 적어 주세요'); if(칸('sfMail').focus) 칸('sfMail').focus(); return true; }
       sfSave({ op:'add', email, name, role }, j => j.mailed ? `${email} 로 초대 메일을 보냈습니다` : '명단에 넣었습니다 - 초대 메일은 보내지 못했으니 직원에게 이 메일로 로그인하라고 알려 주세요');
       return true; }
+    case 'cf-open': cfOpen(v || ''); return true;
+    case 'sf-cert-ok': { const [i, ok] = String(v).split('|'); sfSave({ op:'cert-ok', i, ok: ok === '1' }, ok === '1' ? '자격증을 확인했습니다' : '확인을 취소했습니다'); return true; }
+    case 'sf-sms': { const s = SF.list.find(x => x.i === v); if(!s) return true;
+      const 이름 = s.name || s.email.split('@')[0], 곳 = (S.agent && S.agent.office) || '중개사무소';
+      S.modal = { type:'sf-sms', name: 이름, phone:'', text: `[비버노크] ${곳}에서 ${이름}님을 직원(${직원역할KO[s.role] || '직원'})으로 초대했습니다.\n아래 주소에서 ${s.email} 메일 계정(구글 · 카카오 · 메일)으로 로그인하시면 사무소 화면이 열립니다.\nhttps://beaverknock.co.kr/#/partner/home` };
+      render(); return true; }
     case 'sf-del':
       if(SF.del !== v){ SF.del = v; render(); return true; }
       sfSave({ op:'del', i: v }, '명단에서 뺐습니다 - 그 계정은 이제 사무소 화면을 열지 못합니다'); return true;
@@ -21633,6 +21702,7 @@ document.addEventListener('keydown', e=>{
 document.addEventListener('change', e=>{
   const s=e.target.closest('[data-act="pick-cond-sel"]'); if(s){ S.inboxCond=s.value; render(); }
   const sf=e.target.closest('[data-scanfile]'); if(sf){ const fl = sf.files && sf.files[0]; sf.value = ''; ctScanPick(sf.dataset.scanfile, fl); }
+  const cf=e.target.closest('[data-cffile]'); if(cf){ const fl = cf.files && cf.files[0]; cf.value = ''; cfUp(fl); }
   const lf=e.target.closest('[data-lsfile]'); if(lf){ const fl = lf.files && lf.files[0]; lf.value = ''; lsPick(lf.dataset.lsfile, fl); }
 });
 

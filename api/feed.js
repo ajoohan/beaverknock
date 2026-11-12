@@ -15,7 +15,7 @@ import { 날씨 } from './_weather.js';
 import { 서식들, 서식확인, 서식올리기, 서식주소, 서식지우기, 서식최대, 파일버킷, 버킷올리기, 버킷주소, 버킷지우기 } from './_forms.js';
 import { 외부들, 외부하나, 외부최대, 외부경로 } from './_ext.js';
 import { listingPics, listingPicAdd, listingPicSet } from './_pics.js';
-import { 직원이력, 이력한줄, 보조원잠금 } from './_staff.js';
+import { 직원이력, 이력한줄, 보조원잠금, 자격증크기, 자격증경로, 자격증형식 } from './_staff.js';
 import { 직원들, 직원고침, 직원사무소, 직원들어옴, 직원역할, 다른사무소직원 } from './_staff.js';
 import { notify, mailWithFile } from './_notify.js';
 import { roomAgent, invitePeek } from './_room.js';
@@ -374,6 +374,44 @@ async function readStaff(res, agent) {
   if (x.error) return res.status(502).json({ error: '직원 명단을 불러오지 못했습니다' });
   return res.status(200).json({ ok: true, list: 직원들(x.settings.staff), log: 직원이력(x.settings.staff_log).reverse(), ...(x.need ? { need: x.need } : {}) });
 }
+/* 직원 자격증 (2026-11-12) - 직원은 자기 것만 올리고 보며, 대표는 명단의 누구 것이든 본다. 확인 표시는 staff-save op:'cert-ok'(대표만) */
+async function certMe(res, agent) {
+  if (!agent.staff) return res.status(400).json({ error: '직원 계정에서만 씁니다' });
+  const x = await 설정읽기(agent); if (x.error) return res.status(502).json({ error: '불러오지 못했습니다' });
+  const s = 직원들(x.settings.staff).find(v => v.i === agent.staff.i) || {};
+  return res.status(200).json({ ok: true, cert: s.cert || null, certOk: s.certOk || '' });
+}
+async function certUp(res, agent, b) {
+  if (!agent.staff) return res.status(400).json({ error: '직원 계정에서만 씁니다' });
+  if (overLimit('cert:' + agent.id + ':' + agent.staff.i, 10, 36e5)) return res.status(429).json({ error: '잠시 뒤 다시 올려 주세요' });
+  let buf; try { buf = Buffer.from(String(b.data || '').replace(/^data:[^,]*,/, ''), 'base64'); } catch { buf = null; }
+  const ext = 자격증형식(buf);
+  if (!ext) return res.status(400).json({ error: 'JPG · PNG · PDF 파일만 올릴 수 있습니다' });
+  if (buf.length > 자격증크기) return res.status(413).json({ error: '파일이 2MB 를 넘습니다 - 사진으로 다시 찍어 올려 주세요' });
+  const 옛 = ['jpg', 'png', 'pdf'].map(e => 자격증경로(agent.id, agent.staff.i, e));
+  await 버킷지우기(파일버킷, 옛).catch(() => 0);
+  const u = await 버킷올리기(파일버킷, 자격증경로(agent.id, agent.staff.i, ext), ext, buf);
+  if (!u.ok) return res.status(u.need ? 503 : 502).json({ error: u.need ? '파일 저장소를 준비 중입니다' : u.error, need: u.need });
+  const at = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 19);
+  const z = await 설정고침(agent, s => { const L = 직원들(s.staff);
+    if (!L.some(v => v.i === agent.staff.i)) return { error: '명단에서 빠진 계정입니다', code: 403 };
+    const 뒤 = L.map(v => v.i === agent.staff.i ? (({ certOk, ...y }) => ({ ...y, cert: { ext, at } }))(v) : v);
+    const 이력 = 직원이력(s.staff_log); 이력.push({ at, who: agent.staff.name || agent.staff.email, what: '자격증 올림' });
+    return { list: 뒤, patch: { staff: 뒤, staff_log: 이력.slice(-50) } }; });
+  if (!z.y) return 설정실패(res, z, '자격증');
+  if (z.y.error) return res.status(z.y.code || 400).json({ error: z.y.error });
+  return res.status(200).json({ ok: true, cert: { ext, at }, certOk: '' });
+}
+async function certUrl(res, agent, b) {
+  const i = agent.staff ? agent.staff.i : String(b.i || '');
+  if (!agent.staff && agent.role !== 'agent') return res.status(403).json({ error: '볼 수 없습니다' });
+  const x = await 설정읽기(agent); if (x.error) return res.status(502).json({ error: '불러오지 못했습니다' });
+  const s = 직원들(x.settings.staff).find(v => v.i === i);
+  if (!s || !s.cert) return res.status(404).json({ error: '올린 자격증이 없습니다' });
+  const u = await 버킷주소(파일버킷, 자격증경로(agent.id, i, s.cert.ext), `자격증.${s.cert.ext}`, s.cert.ext);
+  if (!u.url) return res.status(u.need ? 503 : 502).json({ error: u.error || '파일 저장소를 준비 중입니다' });
+  return res.status(200).json({ ok: true, url: u.url });
+}
 async function saveStaff(req, res, agent, user, b) {
   if (agent.role !== 'agent') return res.status(403).json({ error: '공인중개사 사무소만 직원을 둘 수 있습니다' });
   if (b.op === 'add') {
@@ -554,6 +592,9 @@ export default async function handler(req, res) {
     mail: !!process.env.RESEND_API_KEY });
   /* 계약서 메일로 보내기 - 이름이 contract 로 시작해 중개보조원은 위에서 막힌다 */
   if (b.what === 'contract-mail') return contractMail(req, res, chk.agent, user, b);
+  if (b.what === 'cert-me')    return certMe(res, chk.agent);
+  if (b.what === 'cert-up')    return certUp(res, chk.agent, b);
+  if (b.what === 'cert-url')   return certUrl(res, chk.agent, b);
   if (b.what === 'staff')      return readStaff(res, chk.agent);
   if (b.what === 'staff-save') return saveStaff(req, res, chk.agent, user, b);
 

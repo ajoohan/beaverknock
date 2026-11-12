@@ -17,7 +17,17 @@ export const 권한목록 = [['ct_view', '계약서 보기'], ['ct_edit', '계�
 export const 보조원잠금 = k => /^ct_/.test(k) || k === 'listing_open';
 const 권한키들 = new Set(권한목록.map(([k]) => k));
 const 권한값 = p => { const o = {}; if (p && typeof p === 'object') for (const k of Object.keys(p)) if (권한키들.has(k) && p[k] === false) o[k] = false; return o; };
-export const 직원최대 = 20;
+export const 직원최대 = 20;
+/* 직원 자격증 파일 - bk-files 버킷 staffcert/사무소/직원번호.확장자. 2MB · JPG · PNG · PDF */
+export const 자격증크기 = 2 * 1024 * 1024;
+export const 자격증경로 = (사무소, i, ext) => `staffcert/${사무소}/${i}.${ext}`;
+export function 자격증형식(buf) {
+  if (!buf || buf.length < 100) return '';
+  if (buf[0] === 0xFF && buf[1] === 0xD8 && buf[2] === 0xFF) return 'jpg';
+  if (buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4E && buf[3] === 0x47) return 'png';
+  if (buf.subarray(0, 5).toString('latin1') === '%PDF-') return 'pdf';
+  return '';
+}
 const 메일꼴 = /^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,}$/;
 const 메일 = v => String(v || '').trim().toLowerCase();
 const 지금 = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 19);
@@ -34,6 +44,8 @@ export function 직원들(x) {
       ...(/^[0-9a-f-]{36}$/.test(String(s.uid || '')) ? { uid: s.uid } : {}),
       ...(s.joined ? { joined: String(s.joined).slice(0, 19) } : {}),
       ...(Object.keys(권한값(s.perm)).length ? { perm: 권한값(s.perm) } : {}),
+      ...(s.cert && ['jpg', 'png', 'pdf'].includes(s.cert.ext) ? { cert: { ext: s.cert.ext, at: String(s.cert.at || '').slice(0, 19) } } : {}),
+      ...(s.cert && s.certOk ? { certOk: String(s.certOk).slice(0, 19) } : {}),
     });
     if (out.length >= 직원최대) break;
   }
@@ -51,6 +63,7 @@ export function 이력한줄(앞, 뒤, b) {
   const 전 = 앞.find(s => s.i === String(b.i || '')); if (!전) return null;
   if (b.op === 'del') return { who: 사람(전), what: '명단에서 뺌' };
   if (b.op === 'role') return { who: 사람(전), what: `역할 ${직원역할[전.role]} → ${직원역할[b.role] || b.role}` };
+  if (b.op === 'cert-ok') return { who: 사람(전), what: b.ok ? '자격증 확인함' : '자격증 확인 취소' };
   if (b.op === 'perm') {
     const 후 = (뒤.list || []).find(s => s.i === 전.i) || {}, a = 전.perm || {}, c = 후.perm || {};
     const 끔 = 권한목록.filter(([k]) => a[k] !== false && c[k] === false).map(([k]) => 권한이름[k]);
@@ -80,6 +93,12 @@ export function 직원고침(list, b, 대표메일 = '') {
     const p = 권한값(b.perm);
     return { list: L.map(s => s.i === i ? (({ perm, ...x }) => Object.keys(p).length ? { ...x, perm: p } : x)(s) : s) };
   }
+  /* 자격증 확인 (2026-11-12 파트너 기획 '직원 가입 승인 - 자격증 첨부') - 직원이 올린 자격증을 대표가 보고 확인 표시 */
+  if (b.op === 'cert-ok') {
+    const s = L.find(x => x.i === i);
+    if (!s.cert) return { error: '아직 올린 자격증이 없습니다', code: 400 };
+    return { list: L.map(x => x.i === i ? (({ certOk, ...y }) => b.ok ? { ...y, certOk: 지금() } : y)(x) : x) };
+  }
   if (b.op === 'role') {
     if (!Object.hasOwn(직원역할, b.role)) return { error: '역할을 골라 주세요', code: 400 };
     return { list: L.map(s => s.i === i ? { ...s, role: b.role } : s) };

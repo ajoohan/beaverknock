@@ -979,7 +979,7 @@ async function setListing(res, agent, b) {
     if (b.vis === 'open' || b.vis === 'private') p.vis = b.vis;
     const 뒤 = { ...cur, ...p };
     if (뒤.vis === 'open') {
-      if (cur.status !== 'active') return res.status(400).json({ error: '목록에 있는 물건만 노출할 수 있습니다' });
+      if ((cur.status || 'active') !== 'active') return res.status(400).json({ error: '목록에 있는 물건만 노출할 수 있습니다' });
       const 기준 = 노출기준(뒤);
       if (기준.빠짐.length) return res.status(400).json({ error: `노출하려면 ${기준.빠짐.join(' · ')} 항목을 채워 주세요`, miss: 기준.빠짐 });
       if (cur.vis !== 'open') p.opened_at = new Date().toISOString();

@@ -10,6 +10,7 @@ import { userFrom, sbHeaders, sbUrl } from './_auth.js';
 import { approvedAgent, meAgent } from './feed.js';
 import { roomGuest } from './_room.js';
 import { logOps } from './_opslog.js';
+import { matched, matchWant } from './_match.js';
 
 const KIND_KO = { home: '주거', shop: '상가', office: '오피스', storage: '창고' };
 
@@ -77,6 +78,9 @@ export default async function handler(req, res) {
      전에는 화면의 '저장했습니다' 가 메모리만 바꾸고 서버에는 아무것도 보내지 않았다 -
      덧붙인 상세는 중개사에게 한 번도 가지 않았다. 함수 상한(12개)이 꽉 차 여기에 붙인다. */
   if (body.what === 'demand-edit') return demandEdit(req, res, user, body);
+  /* 맞춤매물 (2026-11-12) - 노출된 물건 가운데 내 조건과 80점 이상 */
+  if (body.what === 'matched') return matched(res, user);
+  if (body.what === 'match-want') return matchWant(req, res, user, body);
   /* 일시중지 · 재개 · 종료 · 연장 (2026-11-03) - 전에는 화면에서만 바뀌어, 종료한 조건이 중개사 목록에 계속 떠 있었다 */
   if (body.what === 'demand-status') return demandStatus(req, res, user, body);
 

@@ -171,7 +171,7 @@ ok(js.includes('function 적합도(st)') && js.includes('내 물건과 맞는 �
   const 줄들 = js.slice(처음, 끝).split('\n').slice(1).filter(Boolean);
   ok(처음 > 0 && 끝 > 처음 && 줄들.every(l => /^  else if\(/.test(l)), '화면 고르는 if … else if 사이에 다른 문장이 끼어 있지 않다'); }
 { const 도 = js.slice(js.indexOf('const PHELP = ['), js.indexOf('const PHELP보임'));
-  ok((도.match(/ id:'/g) || []).length === 14 && !/매물장부|매칭 관리|보고 싶어요/.test(도) && js.includes("!(a.ct && 계약막힘())") && js.includes('function 도움말단추()') && js.includes("localStorage.setItem('bk.tour', '1')"),
-     '중개사 도움말 - 14개 · 우리에게 없는 화면은 안 씀 · 계약서 안내는 권한 있을 때만 · ? 단추 · 처음 쓸 때 말풍선은 한 번'); }
+  ok((도.match(/ id:'/g) || []).length === 17 && !/매칭 관리/.test(도) && js.includes("!(a.ct && 계약막힘())") && js.includes('function 도움말단추()') && js.includes("localStorage.setItem('bk.tour', '1')"),
+     '중개사 도움말 - 17개(11-12 매물장부 노출 · 계약현황 · 현장 체크리스트) · 우리에게 없는 화면은 안 씀 · 계약서 안내는 권한 있을 때만 · ? 단추 · 처음 쓸 때 말풍선은 한 번'); }
 console.log(`${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

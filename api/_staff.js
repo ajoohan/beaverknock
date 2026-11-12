@@ -10,7 +10,11 @@ export const 직원역할 = { staff: '소속공인중개사', assistant: '중개
 /* 기능별 권한 (2026-11-10 파트너 기획 ①-9 '기능마다 켜고 끄기') - 지금 있는 기능만. 기본은 모두 켬, 끈 것만 perm[k] = false 로 둔다.
    중개보조원은 계약서 넷(ct_*)이 늘 꺼져 있다(공인중개사법 - 대표가 켤 수 없다). 영구 삭제 · 직원 관리 · 사무소 주소 · 활동 지역은 대표만(권한 밖) */
 export const 권한목록 = [['ct_view', '계약서 보기'], ['ct_edit', '계약서 작성 · 수정'], ['ct_seal', '날인본 확정'], ['ct_mail', '계약서 메일 보내기'],
-  ['propose', '제안 보내기'], ['listing', '내 물건 등록 · 삭제'], ['room', '손님 대화'], ['stats', '성과 보기']];
+  ['propose', '제안 보내기'], ['listing', '매물장부 작성 · 수정'], ['room', '손님 대화'], ['stats', '성과 보기'],
+  /* 2026-11-12 파트너 기획 A3 - 매물 노출(보조원은 늘 꺼짐: 공인중개사법 제18조의2 표시 · 광고) · 의뢰인 비공개 정보 · 노출 중 금액 */
+  ['listing_open', '매물 노출 · 노출 종료'], ['listing_memo', '의뢰인 비공개 정보 보기'], ['listing_price', '노출 중 매물 금액 수정']];
+/* 보조원에게 늘 꺼진 권한 - 대표가 켤 수 없다 */
+export const 보조원잠금 = k => /^ct_/.test(k) || k === 'listing_open';
 const 권한키들 = new Set(권한목록.map(([k]) => k));
 const 권한값 = p => { const o = {}; if (p && typeof p === 'object') for (const k of Object.keys(p)) if (권한키들.has(k) && p[k] === false) o[k] = false; return o; };
 export const 직원최대 = 20;
@@ -37,6 +41,25 @@ export function 직원들(x) {
 }
 
 /* 명단 고치기 - add(메일 · 역할 · 이름) · del(i) · role(i, 역할). 대표 자신의 메일은 넣지 않는다 */
+/* 변경 이력 (2026-11-12 파트너 기획 A3 '바꾼 내용은 이력이 남는다') - settings.staff_log 에 최근 50건 */
+export const 이력최대 = 50;
+export function 직원이력(x) { return (Array.isArray(x) ? x : []).filter(v => v && typeof v === 'object').slice(-이력최대).map(v => ({ at: String(v.at || '').slice(0, 19), who: String(v.who || '').slice(0, 40), what: String(v.what || '').slice(0, 300) })); }
+const 권한이름 = Object.fromEntries(권한목록);
+export function 이력한줄(앞, 뒤, b) {
+  const 사람 = s => (s && (s.name || s.email)) || '';
+  if (b.op === 'add' && 뒤.added) return { who: 사람(뒤.added), what: `초대 (${직원역할[뒤.added.role]})` };
+  const 전 = 앞.find(s => s.i === String(b.i || '')); if (!전) return null;
+  if (b.op === 'del') return { who: 사람(전), what: '명단에서 뺌' };
+  if (b.op === 'role') return { who: 사람(전), what: `역할 ${직원역할[전.role]} → ${직원역할[b.role] || b.role}` };
+  if (b.op === 'perm') {
+    const 후 = (뒤.list || []).find(s => s.i === 전.i) || {}, a = 전.perm || {}, c = 후.perm || {};
+    const 끔 = 권한목록.filter(([k]) => a[k] !== false && c[k] === false).map(([k]) => 권한이름[k]);
+    const 켬 = 권한목록.filter(([k]) => a[k] === false && c[k] !== false).map(([k]) => 권한이름[k]);
+    if (!끔.length && !켬.length) return null;
+    return { who: 사람(전), what: [켬.length ? `켬: ${켬.join(' · ')}` : '', 끔.length ? `끔: ${끔.join(' · ')}` : ''].filter(Boolean).join(' / ') };
+  }
+  return null;
+}
 export function 직원고침(list, b, 대표메일 = '') {
   const L = 직원들(list);
   if (b.op === 'add') {
@@ -46,7 +69,8 @@ export function 직원고침(list, b, 대표메일 = '') {
     if (!Object.hasOwn(직원역할, b.role)) return { error: '역할을 골라 주세요', code: 400 };
     if (L.some(s => s.email === email)) return { error: '이미 명단에 있는 메일입니다', code: 409 };
     if (L.length >= 직원최대) return { error: `직원은 ${직원최대}명까지 둡니다`, code: 400 };
-    const 새 = { i: crypto.randomBytes(5).toString('hex'), email, role: b.role, name: String(b.name || '').trim().slice(0, 20), at: 지금() };
+    const 새 = { i: crypto.randomBytes(5).toString('hex'), email, role: b.role, name: String(b.name || '').trim().slice(0, 20), at: 지금() };
+    /* 새로 생긴 권한(노출 · 의뢰인 정보 · 금액)도 기본은 켬 - 보조원은 노출이 늘 꺼진다 */
     return { list: [...L, 새], added: 새 };
   }
   const i = String(b.i || '');

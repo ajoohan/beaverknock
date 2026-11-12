@@ -15,6 +15,7 @@ import { 날씨 } from './_weather.js';
 import { 서식들, 서식확인, 서식올리기, 서식주소, 서식지우기, 서식최대, 파일버킷, 버킷올리기, 버킷주소, 버킷지우기 } from './_forms.js';
 import { 외부들, 외부하나, 외부최대, 외부경로 } from './_ext.js';
 import { listingPics, listingPicAdd, listingPicSet } from './_pics.js';
+import { 직원이력, 이력한줄, 보조원잠금 } from './_staff.js';
 import { 직원들, 직원고침, 직원사무소, 직원들어옴, 직원역할, 다른사무소직원 } from './_staff.js';
 import { notify, mailWithFile } from './_notify.js';
 import { roomAgent, invitePeek } from './_room.js';
@@ -216,6 +217,7 @@ export const 권한키 = w => { w = String(w || '');
   if (w === 'contract-mail') return 'ct_mail';
   if (['contracts', 'contract', 'forms', 'form-url', 'phrases', 'sms', 'complex', 'alert-settings', 'ics-link', 'contract-ext', 'contract-ext-url'].includes(w)) return 'ct_view';
   if (/^(contract|form-)/.test(w) || ['phrases-save', 'sms-save', 'complex-save', 'alert-settings-save', 'end-style-save'].includes(w)) return 'ct_edit';
+  if (w === 'listing-memo' || w === 'listing-memo-save') return 'listing_memo';
   if (/^listing-/.test(w)) return 'listing';
   if (/^room/.test(w)) return 'room';
   return ''; };
@@ -337,7 +339,7 @@ async function delForm(res, agent, b) {
 async function readStaff(res, agent) {
   const x = await 설정읽기(agent);
   if (x.error) return res.status(502).json({ error: '직원 명단을 불러오지 못했습니다' });
-  return res.status(200).json({ ok: true, list: 직원들(x.settings.staff), ...(x.need ? { need: x.need } : {}) });
+  return res.status(200).json({ ok: true, list: 직원들(x.settings.staff), log: 직원이력(x.settings.staff_log).reverse(), ...(x.need ? { need: x.need } : {}) });
 }
 async function saveStaff(req, res, agent, user, b) {
   if (agent.role !== 'agent') return res.status(403).json({ error: '공인중개사 사무소만 직원을 둘 수 있습니다' });
@@ -346,8 +348,11 @@ async function saveStaff(req, res, agent, user, b) {
     if (overLimit('staff:' + agent.id, 30, 864e5)) return res.status(429).json({ error: '오늘은 더 초대할 수 없습니다 - 내일 다시 해 주세요' });
     if (await 다른사무소직원(b.email, agent.id).catch(() => false)) return res.status(409).json({ error: '다른 사무소 직원으로 이미 초대된 메일입니다 - 그 사무소에서 먼저 빼야 합니다' });
   }
-  const z = await 설정고침(agent, s => { const y = 직원고침(s.staff, b, user && user.email);
-    return y.error ? { ...y, now: 직원들(s.staff) } : { ...y, patch: { staff: y.list } }; });
+  const z = await 설정고침(agent, s => { const 앞 = 직원들(s.staff), y = 직원고침(s.staff, b, user && user.email);
+    if (y.error) return { ...y, now: 앞 };
+    const 줄 = 이력한줄(앞, y, b), 이력 = 직원이력(s.staff_log);
+    if (줄) 이력.push({ at: new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 19), ...줄 });
+    return { ...y, log: 이력, patch: { staff: y.list, ...(줄 ? { staff_log: 이력.slice(-50) } : {}) } }; });
   if (!z.y) return 설정실패(res, z, '직원 명단');
   if (z.y.error) return res.status(z.y.code || 400).json({ error: z.y.error, list: z.y.now });
   let mailed = false;
@@ -359,7 +364,7 @@ async function saveStaff(req, res, agent, user, b) {
       note: '이 메일 주소로 로그인(구글 · 카카오 · 메일)하면 사무소 화면이 열립니다. 모르는 사무소라면 이 메일은 지우셔도 됩니다.' });
     mailed = !!(m && m.ok);
   }
-  return res.status(200).json({ ok: true, list: z.y.list, mailed });
+  return res.status(200).json({ ok: true, list: z.y.list, mailed, log: 직원이력(z.y.log).reverse() });
 }
 
 async function saveOfficeAddr(res, agent, b) {
@@ -981,6 +986,12 @@ async function setListing(res, agent, b) {
     if ('name' in p && !p.name) return res.status(400).json({ error: '물건 이름을 적어주세요' });
     if (cur.kind !== 'home' && 'baths' in p) p.baths = 0;
     if (b.vis === 'open' || b.vis === 'private') p.vis = b.vis;
+    /* 직원 권한 (2026-11-12 A3) - 노출 켜고 끄기 · 노출 중 금액 */
+    const 직 = agent.staff, 끈 = (직 && 직.perm) || {};
+    if (직 && 'vis' in p && p.vis !== cur.vis && (보조원잠금('listing_open') && 직.role === 'assistant' || 끈.listing_open === false))
+      return res.status(403).json({ error: 직.role === 'assistant' ? '중개보조원은 매물을 노출할 수 없습니다(공인중개사법 제18조의2)' : '대표님이 매물 노출을 꺼 두셨습니다', need: 'perm' });
+    if (직 && cur.vis === 'open' && 끈.listing_price === false && (('dep' in p && +p.dep !== +cur.dep) || ('rent' in p && +p.rent !== +cur.rent)))
+      return res.status(403).json({ error: '대표님이 노출 중 매물의 금액 수정을 꺼 두셨습니다', need: 'perm' });
     const 뒤 = { ...cur, ...p };
     if (뒤.vis === 'open') {
       if ((cur.status || 'active') !== 'active') return res.status(400).json({ error: '목록에 있는 물건만 노출할 수 있습니다' });

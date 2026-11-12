@@ -57,8 +57,8 @@ ok(계약기능('contract-save') && 계약기능('form-up') && !계약기능('li
 const js = 길.js();
 ok(js.includes("const 계약막힘 = () => ownerSide() || 보조원() || !권한('ct_view');") && js.includes("...(계약막힘() ? [] : ['계약', ...CT_하위메뉴])")
   && js.includes("...(계약막힘()?[]:[['#/partner/contracts','계약서','ct']])"), '화면 - 보조원에게는 계약 메뉴를 감춘다(PC · 휴대폰)');
-ok(js.includes("if(직원() && (h === '#/partner/settings' || (보조원() && h.startsWith('#/partner/contract')))){"), '화면 - 직원이 주소로 들어와도 대시보드로 돌린다');
-ok(js.includes("${own || 직원() ? '' : 직원카드HTML()}") && js.includes("ctPost({ what:'staff' })") && js.includes("what:'staff-save'"), '화면 - 대표의 활동 설정에 직원 카드');
+ok(js.includes("if(직원() && (h === '#/partner/settings' || h === '#/partner/staff' || (보조원() && h.startsWith('#/partner/contract')))){"), '화면 - 직원이 주소로 들어와도 대시보드로 돌린다(활동 설정 · 직원 · 권한)');
+ok(js.includes("V['#/partner/staff'] = () => {") && js.includes("['#/partner/staff', '직원 · 권한', 'users', 'sf']") && js.includes("ctPost({ what:'staff' })") && js.includes("what:'staff-save'"), '화면 - 대표만 보는 내 사무소 › 직원 · 권한 화면(2026-11-12 파트너 기획 A3)');
 ok(js.includes("staff: ct직원이름(), hand: true }"), '화면 - 소속공인중개사 직원이 쓰면 계약서 소속공인중개사 칸에 이름');
 ok(js.includes("if(!세션있음() || (S.agent && S.agent.staff && S.agent.staff.role === 'assistant')) return Promise.resolve();") && js.includes("계약없는연결 && !계약막힘() ?") && js.includes("${계약막힘() ? '' : (() => { if(!CS.loaded"), '화면 - 보조원 대시보드는 계약 목록 · 계약 할 일 · 계약체결 문자를 부르지 않는다');
 ok(js.includes("if((NEEDS_OK || h === '#/partner/verify') && 직원() && S.agent.status !== 'approved'){"), '화면 - 직원은 자격 확인 화면 대신 대표 사무소 확인 안내');

@@ -6,6 +6,7 @@
    함수 상한(12개) 때문에 api/my.js 가 이 파일을 불러 쓴다(밑줄 = 주소 없음). */
 import { sbHeaders, sbUrl, emailOf } from './_auth.js';
 import { notify, won } from './_notify.js';
+import { 사진들, 사진주소 } from './_pics.js';
 
 export const 일치기준 = 80;
 const HAREA = [['~33㎡', 0, 33], ['33~66㎡', 33, 66], ['66~99㎡', 66, 99], ['99~132㎡', 99, 132], ['132㎡~', 132, 1e9]];
@@ -46,7 +47,7 @@ function 공개(L, 사무소) {
     fee_basis: L.fee_basis, fee_type: L.fee_type, fee_items: L.fee_items, area: L.area, area_sup: L.area_sup, rooms: L.rooms, baths: L.baths,
     band: L.band, floor_no: L.kind === 'home' ? null : L.floor_no, bdong: L.hide_unit === false ? L.bdong : null, htype: L.htype,
     dir: L.dir, dir_base: L.dir_base, move_in: L.move_in, musts: L.musts || [], one_line: L.one_line, note: L.note, approved: L.approved,
-    photos: L.photos || 0, opened_at: L.opened_at, changed: Array.isArray(L.price_log) && L.price_log.length ? L.price_log[L.price_log.length - 1] : null,
+    photos: 사진들(L.pics).length, pic0: 사진들(L.pics)[0] || '', opened_at: L.opened_at, changed: Array.isArray(L.price_log) && L.price_log.length ? L.price_log[L.price_log.length - 1] : null,
     office: (사무소 && 사무소.office) || '공인중개사사무소',
   };
 }
@@ -81,8 +82,22 @@ export async function matched(res, user) {
     const groups = ds.map(d => ({ demand_id: d.id,
       rows: x.rows.filter(L => 사무소[L.agent_id]).map(L => ({ L, s: 일치율(d, L) })).filter(v => v.s && v.s.점 >= 일치기준)
         .sort((a, b) => b.s.점 - a.s.점).slice(0, 40).map(v => ({ ...공개(v.L, 사무소[v.L.agent_id]), score: v.s })) }));
+    /* 대표 사진 한 장씩만 서명 주소로 바꾼다. 경로(pic0)는 내보내지 않는다 */
+    const 길 = [...new Set(groups.flatMap(g => g.rows.map(r => r.pic0)).filter(Boolean))], 주소 = await 사진주소(길).catch(() => []);
+    for (const g of groups) for (const r of g.rows) { r.pic = r.pic0 ? 주소[길.indexOf(r.pic0)] || '' : ''; delete r.pic0; }
     return res.status(200).json({ ok: true, groups, at: new Date().toISOString() });
   } catch (e) { return res.status(502).json({ error: 'DB에 닿지 못했습니다' }); }
+}
+/* 노출 중인 물건 하나의 사진 모두 (로그인한 손님) */
+export async function matchPics(res, b) {
+  const id = String(b.listing_id || '');
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) return res.status(400).json({ error: '어느 매물인지 알 수 없습니다' });
+  try {
+    const r = await fetch(sbUrl('bk_listing', `select=pics&id=eq.${id}&vis=eq.open&status=eq.active&limit=1`), { headers: sbHeaders() });
+    const L = r.ok ? (await r.json())[0] : null;
+    if (!L) return res.status(404).json({ error: '지금은 볼 수 없는 매물입니다' });
+    return res.status(200).json({ ok: true, urls: (await 사진주소(사진들(L.pics))).filter(Boolean) });
+  } catch (e) { return res.status(502).json({ error: '사진을 불러오지 못했습니다' }); }
 }
 
 /* '이 집 보고 싶어요' - 그 물건으로 제안 한 건을 만들어 손님을 지금의 연결 화면(연락처 제공 동의)으로 잇는다.

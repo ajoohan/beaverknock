@@ -68,5 +68,15 @@ globalThis.fetch = async (url, opt = {}) => {
 { 있던 = [{ id: 'old-1', status: 'sent' }]; 넣은 = null; const { o, res } = 답(); await matchWant({ headers: {} }, res, { id: 'u-1' }, { demand_id: 조건.id, listing_id: 물건.id });
   ok(o.code === 200 && o.body.again && o.body.id === 'old-1' && !넣은, '두 번 누르면 새로 만들지 않고 있던 것으로 잇는다'); }
 
+/* ── 사진 (0040) ── */
+{ const { 사진들, listingPicAdd } = await import('../api/_pics.js');
+  const 길 = 'listing/11111111-2222-4333-8444-555555555555/aaaaaaaa-0000-4000-8000-000000000001/abc123def456.jpg';
+  ok(사진들([길, { p: 길 }, '../etc/passwd', 'listing/x/y/z.jpg', 'http://evil/a.jpg']).length === 2, '사진 경로는 우리 저장소 모양만 받는다');
+  ok(사진들(Array(30).fill(길)).length === 20, '사진은 20장까지');
+  { const { o, res } = 답(); await listingPicAdd(res, { id: 'ag1' }, { id: 물건.id, data: Buffer.from('GIF89a' + 'x'.repeat(400)).toString('base64') });
+    ok(o.code === 400 && /JPEG/.test(o.body.error), 'JPEG 이 아닌 파일은 받지 않는다'); }
+  { const { o, res } = 답(); await listingPicAdd(res, { id: 'ag1' }, { id: 물건.id, data: Buffer.concat([Buffer.from([0xFF, 0xD8, 0xFF]), Buffer.alloc(1300 * 1024)]).toString('base64') });
+    ok(o.code === 413, '너무 큰 사진은 받지 않는다'); } }
+
 console.log(`\n${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

@@ -14,6 +14,7 @@ import { contractRoute, reportDueCron, draftRead, draftNote, icsFeed, 달력표,
 import { 날씨 } from './_weather.js';
 import { 서식들, 서식확인, 서식올리기, 서식주소, 서식지우기, 서식최대, 파일버킷, 버킷올리기, 버킷주소, 버킷지우기 } from './_forms.js';
 import { 외부들, 외부하나, 외부최대, 외부경로 } from './_ext.js';
+import { listingPics, listingPicAdd, listingPicSet } from './_pics.js';
 import { 직원들, 직원고침, 직원사무소, 직원들어옴, 직원역할, 다른사무소직원 } from './_staff.js';
 import { notify, mailWithFile } from './_notify.js';
 import { roomAgent, invitePeek } from './_room.js';
@@ -572,6 +573,9 @@ export default async function handler(req, res) {
   if (b.what === 'listing-del') return delListing(req, res, chk.agent, b);
   if (b.what === 'listing-set')   return setListing(res, chk.agent, b);
   if (b.what === 'listing-state') return setListingState(res, chk.agent, b);
+  if (b.what === 'listing-pics')    return listingPics(res, chk.agent, b);
+  if (b.what === 'listing-pic-add') return listingPicAdd(res, chk.agent, b);
+  if (b.what === 'listing-pic-set') return listingPicSet(res, chk.agent, b);
   if (b.what === 'listing-memo')      return readListingMemos(res, chk.agent);
   if (b.what === 'listing-memo-save') return saveListingMemo(res, chk.agent, b);
 

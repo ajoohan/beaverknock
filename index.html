@@ -2191,6 +2191,17 @@ body.mo .mt-grid{grid-template-columns:minmax(0,1fr)}
 .mt-bar i{height:6px;border-radius:999px;background:var(--white);overflow:hidden} .mt-bar i b{display:block;height:100%;border-radius:999px;background:var(--ind)}
 .mt-bar em{font-style:normal;font-weight:700;text-align:right;color:var(--n900)}
 .mt-cond{margin:0;padding:10px 14px;border-radius:12px;background:var(--white);border:1px solid var(--n200);font-size:14px;color:var(--n700)} .mt-cond b{margin-right:6px;color:var(--n900)}
+.mt-pics{position:relative;display:flex;gap:6px;margin:-4px -4px 4px;overflow-x:auto;border-radius:14px;scroll-snap-type:x mandatory}
+.mt-pics img{flex:none;width:100%;aspect-ratio:16/10;object-fit:cover;border-radius:14px;background:var(--n100);scroll-snap-align:start}
+.mt-pn{position:absolute;right:10px;bottom:10px;padding:6px 12px;border:0;border-radius:999px;background:rgba(17,19,32,.72);color:#fff;font-size:12.5px;font-weight:700;cursor:pointer}
+.lp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:10px}
+.lp-it{position:relative;margin:0;display:flex;flex-direction:column;gap:4px}
+.lp-it img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:10px;background:var(--n100)}
+.lp-first{position:absolute;left:6px;top:6px}
+.lp-it figcaption{display:flex;justify-content:space-between;font-size:13px} .lp-it .tapx{color:var(--ind);font-weight:700} .lp-it .tapx.dng{color:var(--danger)}
+.lp-add{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;aspect-ratio:4/3;border:1.5px dashed var(--ind200);border-radius:10px;background:var(--ind50);cursor:pointer;text-align:center}
+.lp-add b{font-size:14px;color:var(--ind700)} .lp-add span{font-size:12.5px;color:var(--n500)} .lp-add.off{opacity:.6;cursor:default}
+body.mo .lp-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
 .mt-acts{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .mt-no{font-size:13.5px;color:var(--n500);text-decoration:underline;text-underline-offset:3px}
 /* 매물장부 (2026-11-12) */
@@ -7874,7 +7885,7 @@ V['#/inbox'] = () => {
 /* ---------- D-09 제안 상세 ---------- */
 /* ── 맞춤매물 (2026-11-12 파트너 기획 C1-2) ── 중개사가 노출한 물건 가운데 내 조건과 80점 이상인 것. 서버 api/_match.js
    지역 30 · 예산 30 · 면적·방 20 · 입주 20. '보고 싶어요'를 누르면 그 물건으로 제안 한 건이 생기고, 지금의 연결 화면으로 이어진다 */
-const MT = { loaded:false, loading:false, at:0, groups:[], need:'', cond:'', open:{}, busy:'', tab:'' };
+const MT = { loaded:false, loading:false, at:0, groups:[], need:'', cond:'', open:{}, busy:'', tab:'', pics:{} };
 /* 관심 · 그만 받기 (2026-11-12) - 이 기기에만 둔다(서버에 손님별 표를 새로 파지 않았다). 그만 받은 것은 목록에서 빠지고 '그만 받은 매물'에서 되돌린다 */
 const mt담 = () => { try{ const x = JSON.parse(localStorage.getItem('bk.mt') || '{}'); return { fav: Array.isArray(x.fav) ? x.fav : [], hide: Array.isArray(x.hide) ? x.hide : [] }; }catch(_){ return { fav: [], hide: [] }; } };
 const mt둠 = x => { try{ localStorage.setItem('bk.mt', JSON.stringify({ fav: x.fav.slice(-200), hide: x.hide.slice(-200) })); }catch(_){} };
@@ -7906,7 +7917,9 @@ V['#/matched'] = () => {
   const 카드 = L => { const s = L.score || {}, 열림 = !!MT.open[L.id];
     const 값 = `${L.deal === '매매' ? '매매 ' : '보증금 '}${won(L.dep)}${+L.rent ? ` / 월 ${won(L.rent)}` : ''}${+L.fee ? ` · 관리비 ${won(L.fee)}` : ''}`;
     const 줄 = [L.dong, L.bdong ? `${L.bdong}동` : '', +L.area ? `전용 ${(+L.area).toFixed(1).replace(/\.0$/, '')}㎡(${pyOf(L.area)}평)` : '', +L.rooms ? `방 ${L.rooms}` : '', +L.baths ? `욕실 ${L.baths}` : '', L.band || (L.floor_no ? `${L.floor_no}층` : ''), L.dir ? `${L.dir}향` : '', L.move_in ? `입주 ${L.move_in}` : ''].filter(Boolean).join(' · ');
+    const 더 = MT.pics[L.id];
     return `<article class="card pad mt-card fade">
+      ${L.pic ? `<div class="mt-pics">${(더 && 더.length ? 더 : [L.pic]).map((u, i) => `<img src="${esc(u)}" alt="매물 사진 ${i + 1}" loading="lazy">`).join('')}${!더 && L.photos > 1 ? `<button type="button" class="mt-pn" data-act="mt-pics" data-v="${L.id}">사진 ${L.photos}장 모두 보기</button>` : ''}</div>` : ''}
       <div class="mt-top"><span class="mt-score${s.점 >= 90 ? ' hi' : ''}">일치율 <b class="num">${s.점 || 0}</b>점</span>
         <span class="sub" style="font-size:13px">${esc(L.kind === 'home' ? (L.htype || '주거') : KIND_KO2[L.kind] || '')} · ${esc(L.deal || '')}${L.changed ? ' · <b style="color:var(--warn)">가격 변동</b>' : ''}</span></div>
       <h2 class="mt-name">${esc(L.name || '')}</h2>
@@ -9364,6 +9377,55 @@ V["#/partner/listings"] = () => {
   </div>
   ${tabbar('l','p')}
 </div>`;};
+/* ── 매물 사진 (2026-11-12 파트너 기획 C1 '사진 20장') ── 서버 api/_pics.js. 긴 변 1600px JPEG 로 줄여 한 장씩 올린다. 맨 앞이 대표 사진 */
+const LP = { by:{}, busy:'' };
+function lpLoad(id){
+  const x = LP.by[id] || (LP.by[id] = { loaded:false, loading:false, pics:[], need:'' });
+  if(x.loading || (x.loaded && Date.now() - x.at < 40 * 60e3)) return;      /* 서명 주소는 한 시간짜리 - 40분 지나면 다시 받는다 */
+  x.loading = true;
+  ctPost({ what:'listing-pics', id }).then(({ ok, j }) => { x.loading = false; x.loaded = true; x.at = Date.now(); if(ok){ x.pics = j.pics || []; x.need = j.need || ''; } render(); })
+    .catch(() => { x.loading = false; x.loaded = true; x.at = Date.now(); });
+}
+function lp줄이기(file){
+  return new Promise((ok, no) => { const img = new Image(), u = URL.createObjectURL(file);
+    img.onload = () => { try{ const 배 = Math.min(1, 1600 / Math.max(img.naturalWidth, img.naturalHeight)), c = document.createElement('canvas');
+        c.width = Math.round(img.naturalWidth * 배); c.height = Math.round(img.naturalHeight * 배); c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        let q = .84, d = c.toDataURL('image/jpeg', q); while(d.length > 1500000 && q > .5){ q -= .1; d = c.toDataURL('image/jpeg', q); }
+        URL.revokeObjectURL(u); ok(d.split(',')[1] || ''); }catch(e){ URL.revokeObjectURL(u); no(e); } };
+    img.onerror = () => { URL.revokeObjectURL(u); no(new Error('읽지 못함')); }; img.src = u; });
+}
+async function lpAdd(id, files){
+  if(LP.busy) return; const x = LP.by[id] || (LP.by[id] = { loaded:true, pics:[], at: Date.now() });
+  const 남음 = 20 - x.pics.length, 고른 = [...files].filter(f => /^image\//.test(f.type)).slice(0, Math.max(0, 남음));
+  if(!고른.length) return toast(남음 <= 0 ? '사진은 20장까지 올릴 수 있습니다' : '사진 파일을 골라 주세요');
+  LP.busy = id; let 올림 = 0, 말 = '';
+  for(const f of 고른){ LP.n = `${올림 + 1} / ${고른.length}`; render();
+    try{ const data = await lp줄이기(f); const { ok, j } = await ctPost({ what:'listing-pic-add', id, data });
+      if(!ok){ 말 = j.need ? '아직 준비 중입니다 - 운영자가 설정을 마치면 올릴 수 있습니다' : (j.error || '사진을 올리지 못했습니다'); break; }
+      x.pics = j.pics || x.pics; x.at = Date.now(); 올림++; }catch(_){ 말 = '읽지 못한 사진이 있습니다 - JPG · PNG 사진으로 다시 골라 주세요'; break; } }
+  LP.busy = ''; LP.n = ''; const L = S.listings.find(v => v.id === id); if(L) L.photos = x.pics.length;
+  render(); toast(말 || `사진 ${올림}장을 올렸습니다`);
+}
+async function lpSet(id, pth, op){
+  if(LP.busy) return; LP.busy = id; render();
+  const { ok, j } = await ctPost({ what:'listing-pic-set', id, p: pth, op }).catch(() => ({ ok:false, j:{} }));
+  LP.busy = ''; const x = LP.by[id];
+  if(ok && x){ x.pics = j.pics || []; x.at = Date.now(); const L = S.listings.find(v => v.id === id); if(L) L.photos = x.pics.length; }
+  render(); toast(ok ? (op === 'first' ? '대표 사진으로 바꿨습니다' : '사진을 지웠습니다') : (j.error || '바꾸지 못했습니다'));
+}
+if(typeof document !== 'undefined') document.addEventListener('change', e => { const el = e.target.closest && e.target.closest('[data-lp-file]'); if(el && el.files && el.files.length){ lpAdd(el.dataset.lpFile, el.files); el.value = ''; } });
+function 물건사진HTML(L){
+  if(L.seed || !/^[0-9a-f-]{36}$/i.test(String(L.id || '')) || !권한('listing')) return '';
+  const x = LP.by[L.id]; if(!x || !x.loaded) setTimeout(() => lpLoad(L.id));
+  const pics = (x && x.pics) || [], 살아 = L.status === 'active', 바쁨 = LP.busy === L.id;
+  return `<div class="card pad lg-card"><h2 class="lm-h">사진 <span class="badge ${pics.length >= 3 ? 'b-ok' : 'b-mute'}">${pics.length} / 20</span> <span class="sub">맨 앞이 대표 사진 · 3장 이상이면 손님이 더 열어 봅니다</span></h2>
+    ${x && x.need ? `<p class="sub" style="margin:0">사진 올리기는 준비 중입니다 - 운영자가 설정을 마치면 쓸 수 있습니다.</p>` : `
+    <div class="lp-grid">${pics.map((v, i) => `<figure class="lp-it"><img src="${esc(v.url)}" alt="매물 사진 ${i + 1}" loading="lazy">${i === 0 ? '<span class="badge b-ind lp-first">대표</span>' : ''}
+        ${살아 ? `<figcaption>${i ? `<button type="button" class="tapx" data-act="lp-first" data-v="${L.id}|${esc(v.p)}" ${바쁨 ? 'disabled' : ''}>대표로</button>` : '<span></span>'}<button type="button" class="tapx dng" data-act="lp-del" data-v="${L.id}|${esc(v.p)}" ${바쁨 ? 'disabled' : ''}>지우기</button></figcaption>` : ''}</figure>`).join('')}
+      ${살아 && pics.length < 20 ? `<label class="lp-add${바쁨 ? ' off' : ''}"><b>${바쁨 ? '올리는 중…' : '+ 사진 추가'}</b><span>${바쁨 ? esc(LP.n || '') : (isMo() ? '찍거나 고르기' : '여러 장 고르기')}</span><input type="file" class="sr" accept="image/*" multiple data-lp-file="${L.id}" ${바쁨 ? 'disabled' : ''} aria-label="매물 사진 추가"></label>` : ''}</div>
+    <p class="sub" style="margin:0;font-size:13px;line-height:1.6">사람 얼굴 · 차량 번호 · 주소가 보이는 우편물은 찍히지 않게 해 주세요. 사진은 노출한 물건에서만 손님에게 보입니다.</p>`}
+  </div>`;
+}
 /* 물건 상세의 관리 칸 - 노출 기준 · 소유자 확인 · 동·호 숨기기 · 한줄 특징 · 금액 수정 · 상태 */
 function 물건관리HTML(L){
   if(L.seed || !/^[0-9a-f-]{36}$/i.test(String(L.id || '')) || !권한('listing')) return '';
@@ -9702,6 +9764,7 @@ V["#/partner/listing"] = (id) => {
       ${L.seed ? `<button class="btn sec sm" data-act="del-listing" data-v="${L.id}" style="color:var(--danger)">내리기</button>` : ''}
     </div>
     ${물건관리HTML(L)}
+    ${물건사진HTML(L)}
     ${물건메모HTML(L)}
 
     <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;margin-top:4px">
@@ -12585,6 +12648,9 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
+  { v:'26.11.12.8', 날:'2026-11-12', 줄:[
+    '매물장부에 사진 20장까지 - 실제 사진 파일을 올리고 대표 사진을 고릅니다(전에는 장수만 적었습니다)',
+    '노출한 물건의 사진이 손님 맞춤매물 카드에 보입니다' ] },
   { v:'26.11.12.7', 날:'2026-11-12', 줄:[
     '맞춤매물에 ‘관심 저장’ · ‘이 매물 그만 받기’ - 관심 · 그만 받은 매물을 따로 모아 봅니다(이 기기에 저장)' ] },
   { v:'26.11.12.6', 날:'2026-11-12', 줄:[
@@ -21015,12 +21081,14 @@ function handle(a,v,el){
     case 'exf-on': CT.field = true; render(); try{ window.scrollTo(0, 0); }catch(_){} return true;
     case 'exf-off': CT.field = false; render(); return true;
     case 'exf-print': return CT.doc ? ctPrint(exFieldDocHTML(CT.doc)) : true;
+    case 'mt-pics': apiFetch('/api/my', { method:'POST', body: JSON.stringify({ what:'match-pics', listing_id: v }) }).then(r => r.json().catch(() => ({}))).then(j => { if(j.ok && (j.urls || []).length){ MT.pics[v] = j.urls; render(); } else toast(j.error || '사진을 불러오지 못했습니다'); }).catch(() => toast('사진을 불러오지 못했습니다')); return true;
     case 'mt-tab': MT.tab = ['fav', 'hide'].includes(v) ? v : ''; render(); return true;
     case 'mt-fav': mt바꿈('fav', v); render(); return true;
     case 'mt-hide': { const 숨김 = !mt담().hide.includes(v); mt바꿈('hide', v); render(); toast(숨김 ? '이 매물은 더 보이지 않습니다 - ‘그만 받은 매물’에서 되돌릴 수 있습니다' : '다시 받습니다'); return true; }
     case 'mt-cond': MT.cond = v; render(); return true;
     case 'mt-open': MT.open[v] = !MT.open[v]; render(); return true;
     case 'mt-want': { const [did, lid] = String(v).split('|'); mtWant(did, lid); return true; }
+    case 'lp-first': case 'lp-del': { const [id, pth] = String(v).split('|'); lpSet(id, pth, a === 'lp-first' ? 'first' : 'del'); return true; }
     case 'lg-tab': MG.tab = ['list', 'arch', 'trash'].includes(v) ? v : 'list'; render(); return true;
     case 'lg-f': MG.tab = 'list'; MG.f = MG.f === v ? '' : (v || ''); render(); return true;
     case 'lg-new': S.editL = null; S.form = {}; go('#/partner/listing/new'); return true;

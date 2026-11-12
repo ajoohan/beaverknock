@@ -65,13 +65,18 @@ try{
 }
 /* ── 배포될 파일이 검사한 파일과 같은가 (2026-10-13) ──
    검사는 저장소 밖의 원본을 본다. 배포되는 것은 저장소의 index.html 이다.
-   복사를 빠뜨리면 검사는 '실패 없음' 인데 낡거나 깨진 화면이 나간다. */
+   복사를 빠뜨리면 검사는 '실패 없음' 인데 낡거나 깨진 화면이 나간다.
+   2026-11-12 속도: index.html 은 원본을 빌드(tools/빌드.mjs - 주석 · 공백 제거, 스크립트를 app/ 로 떼기)한 것이다 -
+   원본을 지금 빌드한 결과와 index.html · app 파일이 같은지 본다. */
 {
   const 배포본 = path.resolve(여기, '..', 'index.html');
   if(길.보는곳 === '원본' && fs.existsSync(배포본)){
-    const 같다 = fs.readFileSync(배포본).equals(fs.readFileSync(길.HTML경로));
-    if(같다) console.log(`  OK    ${'배포본'.padEnd(14)}  통과  index.html 이 검사한 원본과 같다`);
-    else { 실패++; console.log(`  실패  ${'배포본'.padEnd(14)} index.html 이 원본과 다르다 - 복사를 빠뜨렸다(cp 원본 → index.html)`); }
+    const { 빌드 } = await import('../tools/빌드.mjs');
+    const b = await 빌드(fs.readFileSync(길.HTML경로, 'utf8'));
+    const 앱 = path.resolve(여기, '..', b.이름);
+    const 같다 = fs.readFileSync(배포본, 'utf8') === b.html && fs.existsSync(앱) && fs.readFileSync(앱, 'utf8') === b.파일[b.이름];
+    if(같다) console.log(`  OK    ${'배포본'.padEnd(14)}  통과  index.html · ${b.이름} 이 검사한 원본을 빌드한 것과 같다`);
+    else { 실패++; console.log(`  실패  ${'배포본'.padEnd(14)} index.html 이 원본 빌드와 다르다 - node tools/빌드.mjs 를 빠뜨렸다`); }
   }
 }
 for(const [이름, 기대, 설명] of 목록){

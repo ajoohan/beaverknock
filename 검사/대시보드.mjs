@@ -190,7 +190,7 @@ const M = new Function('esc', `${js.slice(시작, 끝)}\nreturn { dzLine, dzPill
      '계약서 목록 - 불러오는 동안 표 모양 그대로 회색 줄 · 비어 있으면 계약서 작성 단추');
 
   /* 글꼴 (2026-10-30 대표님 '폰트 가독성 - 프리텐다드나 본고딕으로') - 예전 한 파일은 634자 축소판이라 나머지 글자가 맑은 고딕으로 섞였다 */
-  const 머리글꼴 = (fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8').match(/@font-face\{font-family:"Pretendard Variable";[^}]*unicode-range:[^}]*\}/g) || []);
+  const 머리글꼴 = (fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8').match(/@font-face\{font-family:"?Pretendard Variable"?;[^}]*unicode-range:[^}]*\}/g) || []);
   const 조각들 = fs.readdirSync(new URL('../fonts/pretendard/', import.meta.url)).filter(f => /^PretendardVariable\.subset\.\d+\.woff2$/.test(f));
   ok(머리글꼴.length === 92 && 머리글꼴.every(r => /src:url\(fonts\/pretendard\/PretendardVariable\.subset\.\d+\.woff2\)/.test(r)) && 조각들.length === 92
      && !fs.existsSync(new URL('../fonts/pretendard-variable.woff2', import.meta.url)) && !/pretendard-variable\.woff2/.test(js + css),

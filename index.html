@@ -11270,7 +11270,7 @@ function opsSettingPanel(){
 
 /* 개인정보 암호화 상태 · 전환 (2026-11-12) - api/demands.js enc-status · enc-migrate. 운영자만(부운영자는 서버가 막는다) */
 const ENC = { at:0, busy:false, j:null, err:'' };
-const 표이름 = { bk_demand:'손님 조건', bk_agent:'가입 사무소 · 소유자', bk_contract_msg:'계약 대화방 말', bk_proposal:'제안의 연락 방법 · 신고' };
+const 표이름 = { bk_demand:'손님 조건', bk_agent:'가입 사무소 · 소유자', 'bk_agent.settings':'사무소 의뢰인 메모 · 문자 기록', bk_contract_msg:'계약 대화방 말', bk_proposal:'제안 문구 · 연락 방법 · 신고', bk_listing:'매물 호수 · 특징 글', bk_ops_log:'운영 기록 내용' };
 function encLoad(바꾸기){
   if(ENC.busy) return; ENC.busy = true; ENC.err = ''; render();
   apiFetch('/api/demands', { method:'POST', body: JSON.stringify({ pass: OPS.pass, what: 바꾸기 ? 'enc-migrate' : 'enc-status' }) })
@@ -13217,6 +13217,9 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
+  { v:'26.11.12.24', 날:'2026-11-12', 줄:[
+    '암호화 코드리뷰 반영 - 열쇠가 맞지 않아도 저장된 값을 지웁니다/덮지 않습니다(데이터 보존) · 열쇠를 바꿀 때를 위한 옛 열쇠 · 색인 열쇠 · 본문 없는 응답 처리',
+    '암호화 칸 추가 - 매물 호수 · 특징 글, 제안 문구, 운영 기록 내용 · 사무소 의뢰인 메모까지 예전 값 전환 대상에 · 전환이 사무소 설정을 덮지 않게' ] },
   { v:'26.11.12.23', 날:'2026-11-12', 줄:[
     '개인정보 암호화 저장 준비 - 손님 이름 · 전화번호 · 생년월일 · 주소 · 메모, 사무소 연락처 · 의뢰인 메모, 계약서 당사자, 계약 대화방 말을 서버가 AES-256 으로 암호화해 저장합니다(열쇠를 넣으면 켜짐)',
     '보안점검 - 운영 화면에 사무소의 비공개 의뢰인 메모 · 문자 기록이 넘어가던 것을 막았습니다 · 운영 설정에 ‘개인정보 암호화’ 상태와 예전 데이터 전환 단추' ] },

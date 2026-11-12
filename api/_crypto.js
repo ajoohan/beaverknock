@@ -27,11 +27,14 @@ export function 잠그기(v) {
   const 몸 = Buffer.concat([c.update(s, 'utf8'), c.final()]);
   return 머리 + Buffer.concat([iv, c.getAuthTag(), 몸]).toString('base64url');
 }
-/** 푼다. 평문(예전 값)은 그대로. 풀지 못하면 '' (가짜 값을 보여 주지 않는다) */
+/** 푼다. 평문(예전 값)은 그대로.
+    풀지 못하면(열쇠가 틀림 · 바뀜) 암호문을 그대로 돌려준다 - 빈 글을 주면 읽어서 고쳐 다시 쓰는 곳(settings 통째 저장 등)이
+    그 빈 글로 원래 값을 덮어 영영 잃는다(리뷰 11-12). 잠그기()는 이미 잠긴 값을 건너뛰므로 다시 저장해도 원래 암호문이 지켜진다 */
+let 실패알림 = 0;
 export function 풀기(v) {
   if (v == null || typeof v !== 'string' || !v.startsWith(머리)) return v;
   const b = Buffer.from(v.slice(머리.length), 'base64url');
-  if (b.length < 29) return '';
+  if (b.length < 29) return v;
   for (const 이름 of ['BK_DATA_KEY', 'BK_DATA_KEY_OLD']) {
     const k = 열쇠(이름); if (!k) continue;
     try {
@@ -40,18 +43,25 @@ export function 풀기(v) {
       return Buffer.concat([d.update(b.subarray(28)), d.final()]).toString('utf8');
     } catch { /* 다음 열쇠 */ }
   }
-  return '';
+  if (Date.now() - 실패알림 > 60e3) { 실패알림 = Date.now(); console.error('[crypto] 풀지 못한 값이 있습니다 - BK_DATA_KEY · BK_DATA_KEY_OLD 를 확인하세요'); }
+  return v;
 }
 export const 잠긴값인가 = v => typeof v === 'string' && v.startsWith(머리);
 
-/** 같은 값 찾기용 색인 - 전화번호는 숫자만, 메일은 소문자로 맞춘 뒤. 열쇠가 없으면 null */
-export function 색인(v, 종류 = 'text') {
-  const k = 열쇠(); if (!k || v == null || v === '') return null;
+/** 같은 값 찾기용 색인 - 전화번호는 숫자만, 메일은 소문자로 맞춘 뒤. 열쇠가 없으면 null.
+    색인 열쇠는 BK_INDEX_KEY(없으면 BK_DATA_KEY). 암호화 열쇠를 바꿀 때는 BK_INDEX_KEY 에 지금 값을 남겨 두면 색인이 그대로 맞는다(리뷰 11-12) */
+const 색인열쇠 = () => 열쇠('BK_INDEX_KEY') || 열쇠();
+export function 색인(v, 종류 = 'text', k = 색인열쇠()) {
+  if (!k || v == null || v === '') return null;
   let s = String(v).trim();
   if (종류 === 'phone') s = s.replace(/\D/g, '');
   if (종류 === 'email') s = s.toLowerCase();
   if (!s) return null;
   return 'h1:' + crypto.createHmac('sha256', k).update('idx:' + 종류 + ':' + s).digest('base64url').slice(0, 32);
+}
+/** 찾을 때 쓸 색인들 - 지금 열쇠 + 옛 열쇠(BK_DATA_KEY_OLD) */
+export function 색인들(v, 종류 = 'text') {
+  return [...new Set([색인(v, 종류), 색인(v, 종류, 열쇠('BK_DATA_KEY_OLD'))].filter(Boolean))];
 }
 
 /** 객체에서 정한 칸들만 잠근다/푼다 - 얕은 칸 이름 목록 또는 'a.b.c' 경로 */
@@ -111,7 +121,10 @@ export const 표칸 = {
       o.track = { ...o.track, notes: o.track.notes.map(n => n && typeof n === 'object' ? { ...n, name: 잠그기(n.name), text: 잠그기(n.text) } : n) };
   },
   bk_contract_msg: o => { 칸만(o, ['name', 'body']); if (o.file && typeof o.file === 'object' && typeof o.file.name === 'string') o.file = { ...o.file, name: 잠그기(o.file.name) }; },
-  bk_proposal: o => 칸만(o, ['contact_pref', 'report_detail', 'report_note']),
+  bk_proposal: o => 칸만(o, ['contact_pref', 'report_detail', 'report_note', 'msg', 'note']),
+  /* 호수는 손님에게도 안 보이는 값 · 특징 글에는 연락처가 섞일 수 있다(리뷰 11-12) */
+  bk_listing: o => 칸만(o, ['ho', 'note']),
+  bk_ops_log: o => 칸만(o, ['detail']),
 };
 /** 요청 본문 하나(객체 또는 배열)를 표에 맞게 잠근다 - 시험에서도 쓴다 */
 export function 본문잠그기(표, body) {
@@ -131,6 +144,9 @@ export function 길목깔기() {
     if (!base || !url.startsWith(base + '/rest/v1/')) return 원래(input, init);
     const 표 = decodeURIComponent(url.slice(base.length + 9).split(/[?/]/)[0] || '');
     const m = String((init && init.method) || 'GET').toUpperCase();
+    /* 'x-bk-raw' 를 단 요청은 풀지 않고 저장된 그대로 돌려준다(암호화 전환이 평문 · 암호문을 가를 때) */
+    const 원문 = !!(init && init.headers && (init.headers['x-bk-raw'] || init.headers['X-Bk-Raw']));
+    if (원문) { const h = { ...init.headers }; delete h['x-bk-raw']; delete h['X-Bk-Raw']; init = { ...init, headers: h }; }
     let 보낼 = init;
     if (암호켜짐() && (m === 'POST' || m === 'PATCH') && 표칸[표] && init && typeof init.body === 'string') {
       try { 보낼 = { ...init, body: JSON.stringify(본문잠그기(표, JSON.parse(init.body))) }; } catch { /* JSON 이 아니면 그대로 */ }
@@ -141,7 +157,7 @@ export function 길목깔기() {
       try { const b = JSON.parse(보낼.body); const 빼기 = x => { if (x && typeof x === 'object') delete x.phone_idx; return x; };
         r = await 원래(input, { ...보낼, body: JSON.stringify(Array.isArray(b) ? b.map(빼기) : 빼기(b)) }); } catch { /* 그대로 */ }
     }
-    if (!/json/i.test(r.headers.get('content-type') || '')) return r;
+    if (원문 || [101, 204, 205, 304].includes(r.status) || !/json/i.test(r.headers.get('content-type') || '')) return r;
     const 글 = await r.text();
     if (!글.includes(머리)) return new Response(글, { status: r.status, statusText: r.statusText, headers: r.headers });
     let 풀림 = 글; try { 풀림 = JSON.stringify(깊이풀기(JSON.parse(글))); } catch { /* 그대로 */ }

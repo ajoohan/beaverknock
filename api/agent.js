@@ -14,7 +14,7 @@ import { notify, mask } from './_notify.js';
 import { checkShape, lookupReg, regOpens } from './agent-verify.js';
 import { userFrom } from './_auth.js';
 import { readIdv } from './_idv.js';
-import { 색인 } from './_crypto.js';
+import { 색인들 } from './_crypto.js';
 
 const TABLE = 'bk_agent';
 
@@ -297,9 +297,9 @@ async function 겹친신청(BK_URL, KEY, { t, owner, idv, name, phone, role }) {
   const 내것 = await 한줄(new URLSearchParams({ select: 'id', user_id: 'eq.' + owner.id, limit: '1' }));
   if (내것 || /bk_agent_user_idx/.test(t)) return { ok: true, already: true, why: 'account' };
   /* 번호가 암호화돼 있으면 색인(phone_idx)으로, 예전 평문 줄은 번호로 찾는다 (2026-11-12) */
-  const 번호색인 = 색인(phone, 'phone');
+  const 번호색인 = /^01\d{8,9}$/.test(String(phone)) ? 색인들(phone, 'phone') : [];
   const 그것 = await 한줄(new URLSearchParams({ select: 'id,name,user_id', role: 'eq.' + role, limit: '1',
-    ...(번호색인 ? { or: `(phone.eq.${phone},phone_idx.eq.${번호색인})` } : { phone: 'eq.' + phone }) }));
+    ...(번호색인.length ? { or: `(phone.eq.${phone},${번호색인.map(h => `phone_idx.eq.${h}`).join(',')})` } : { phone: 'eq.' + phone }) }));
   const 같은이름 = 그것 && String(그것.name || '').replace(/\s+/g, '') === String(name || '').replace(/\s+/g, '');
   if (그것 && idv && 같은이름) {
     try {

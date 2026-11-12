@@ -9,6 +9,7 @@
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=3">
 <link rel="icon" type="image/x-icon" href="favicon.ico?v=3" sizes="any">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=3">
+<link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#6A46E0">
 <!-- 비버리 그림 미리 받기는 뺐다 (2026-11-08 리뷰) - 운영 · 대시보드 · 계약서 링크로 들어와도 안 쓰는 그림을 먼저 받았다. 그림은 화면을 그릴 때 받는다 -->
 <meta name="description" content="찾아다니지 마세요. 조건을 걸어두면 문을 두드립니다. 서울·경기 조건매칭 부동산 - 전 과정 무료.">
@@ -7610,6 +7611,7 @@ V['#/account'] = () => {
         <input type="checkbox" role="switch" data-act="acc-mkt" ${광고?'checked':''} ${S.accBusy?'disabled':''} aria-label="광고성 정보 수신">
       </label>`
       : `<p class="acc-note">동의 내역을 불러오지 못했습니다. 잠시 뒤 다시 열어 주세요.</p>`)}
+    ${홈화면추가가능() ? 줄('홈 화면에 추가', '앱처럼 바로 열립니다', BK_설치 ? `<button type="button" class="btn tool" data-act="pwa-add">홈 화면에 추가</button>` : `<p class="acc-note" style="margin:0">${/iPhone|iPad|iPod/.test(navigator.userAgent) ? '사파리 아래쪽 <b>공유</b> 단추를 누른 뒤 <b>홈 화면에 추가</b>를 고르세요.' : '브라우저 메뉴(⋮)에서 <b>홈 화면에 추가</b> 또는 <b>앱 설치</b>를 고르세요.'}</p>`) : ''}
     ${줄('계정 탈퇴', '', `<p class="acc-note" style="margin:0">탈퇴를 원하시면 가입하신 이메일과 함께 <a href="mailto:support@plustonic.com?subject=%EB%B9%84%EB%B2%84%EB%85%B8%ED%81%AC%20%ED%9A%8C%EC%9B%90%20%ED%83%88%ED%87%B4">support@plustonic.com</a> 으로 알려 주세요.
       확인 뒤 계정과 걸어두신 조건을 지우고 결과를 메일로 알려 드립니다.</p>`)}`;
   if(관리) return `
@@ -12330,7 +12332,20 @@ const CT_하위메뉴 = [['#/partner/contracts/new', '계약서 작성', 'pen', 
    배포할 때 BK_변경 맨 앞에 한 묶음을 더하고 version.json 의 v 를 같이 바꾼다(검사가 맞춰 본다).
    번호는 배포한 날(연.월.일 - 같은 날 또 올리면 뒤에 .2). 화면이 version.json 을 가끔 읽어,
    더 새 버전이 올라와 있으면 메뉴 아래에서 새로고침을 권한다(버전확인) - 계약서를 띄워 둔 채 오래 일하면 고친 화면을 못 받는다 */
+/* 홈 화면에 추가 (2026-11-12 파트너 기획 E4) - 설치할 수 있다고 브라우저가 알려 주면 단추로, 아니면 방법을 글로. 이미 앱으로 열었으면 숨긴다 */
+let BK_설치 = null;
+if(typeof window !== 'undefined'){
+  window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); BK_설치 = e; if(typeof S !== 'undefined' && S.route === '#/account') render(); });
+  window.addEventListener('appinstalled', () => { BK_설치 = null; });
+}
+function 홈화면추가가능(){
+  if(typeof window === 'undefined' || !isMo()) return !!BK_설치;
+  const 앱 = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+  return !앱;
+}
 const BK_변경 = [
+  { v:'26.11.12.1', 날:'2026-11-12', 줄:[
+    '휴대폰 홈 화면에 비버노크를 추가할 수 있습니다 - 마이페이지 ‘홈 화면에 추가’' ] },
   { v:'26.11.11.10', 날:'2026-11-11', 줄:[
     '휴대폰 화면 모양을 다듬었습니다 - 서식 자료실 단추 · 계약서 목록 글 정렬 · 마이페이지 ‘운영사에 문의’ · 성과 화면 글머리 · 대화방 단추와 보낼 말 칸',
     '파트너 안내 화면의 카드에 생기던 빈 공간을 없앴습니다(휴대폰)',
@@ -19238,6 +19253,7 @@ function handle(a,v,el){
       else { S.afterLogin = S.손님갈곳 && !String(S.손님갈곳).startsWith('#/partner') ? S.손님갈곳 : '#/'; S.손님갈곳 = null; }
       render(); return true; }
     /* 마이페이지 - 광고성 정보 수신 켜고 끄기. 필수 둘은 이미 동의한 것이라 그대로 보낸다(서버가 처음 시각을 지킨다) */
+    case 'pwa-add': { const e = BK_설치; if(!e) return true; BK_설치 = null; try{ e.prompt(); e.userChoice.then(() => render()).catch(() => render()); }catch(_){ render(); } return true; }
     case 'acc-mkt': {
       if(S.accBusy) return true;
       const 켬 = !!(el && el.checked);

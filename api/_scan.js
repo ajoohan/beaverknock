@@ -61,7 +61,7 @@ export const SCAN_SCHEMA = obj({
   address_road: S, address_jibun: S, building_name: S, unit: S,
   land_category: S, land_area_m2: S, land_right: S, land_share_m2: S,
   /* 건물(건축물대장 우선, 없으면 등기부 표제부) */
-  building_structure: S, building_use: S, building_area_m2: S, total_floor_area_m2: S, floors: S,
+  building_structure: S, building_use: S, building_area_m2: S, total_floor_area_m2: S, floors: S, unit_floor: S,
   approval_date: S, violation: B, seismic: S, seismic_level: S, parking: S, elevators: S,
   /* 토지이용계획확인서 */
   land_price_per_m2: S, land_price_year: S, zone: S, district: S, zone_area: S,
@@ -93,7 +93,7 @@ export const SCAN_SYSTEM = `당신은 한국 부동산 공적 서류를 읽어 �
 칸 - 건물:
 - building_structure: 구조(예: 철근콘크리트구조). building_use: 주용도(집합건물은 전유부분 용도, 예: 아파트·제1종근린생활시설).
 - building_area_m2: 전유부분 면적(집합건물) 또는 연면적(일반 건물) 숫자만. total_floor_area_m2: 건물 전체 연면적 숫자(건축물대장 표제부).
-- floors: 층수(예: "지하 2층 / 지상 25층"). approval_date: 사용승인일(예: "2015-06-30"). violation: 건축물대장에 '위반건축물' 표시가 있으면 true.
+- floors: 층수(예: "지하 2층 / 지상 25층"). unit_floor: 전유부에 적힌 그 호실의 층(예: "12", 지하는 "B1"). 전유부가 없거나 집합건물이 아니면 "". approval_date: 사용승인일(예: "2015-06-30"). violation: 건축물대장에 '위반건축물' 표시가 있으면 true.
 - seismic: 내진설계 적용 여부(예: "적용", "미적용"). seismic_level: 내진능력(예: "VII-0.204g"). parking: 주차 대수·방식(예: "자주식 옥내 120대"). elevators: 승강기 대수(예: "승용 2대").
 칸 - 토지이용계획확인서:
 - land_price_per_m2: 개별공시지가 원/㎡ 숫자만(가장 최근 연도). land_price_year: 그 기준 연도(예: "2026년 1월 1일").
@@ -178,7 +178,7 @@ export function scanClean(out) {
     road: 한줄(o.address_road), jibun: 한줄(o.address_jibun), bdNm: 한줄(o.building_name, 80), unit: 한줄(o.unit, 60),
     landCat: 한줄(o.land_category, 20), landArea: 숫자(o.land_area_m2), landRight: 한줄(o.land_right, 120), landShare: 숫자(o.land_share_m2),
     bldStruct: 한줄(o.building_structure, 60), bldUse: 한줄(o.building_use, 60), bldArea: 숫자(o.building_area_m2),
-    totalArea: 숫자(o.total_floor_area_m2), floors: 한줄(o.floors, 40), approval: 한줄(o.approval_date, 30), violation: o.violation === true,
+    totalArea: 숫자(o.total_floor_area_m2), floors: 한줄(o.floors, 40), unitFloor: 한줄(o.unit_floor, 10).replace(/층$/, '').replace(/^지하\s*/, 'B'), approval: 한줄(o.approval_date, 30), violation: o.violation === true,
     seismic: 한줄(o.seismic, 30), seismicLevel: 한줄(o.seismic_level, 40), parking: 한줄(o.parking, 60), elevators: 한줄(o.elevators, 40),
     landPrice: 숫자(o.land_price_per_m2), landPriceYear: 한줄(o.land_price_year, 30),
     zone: 한줄(o.zone, 60), district: 한줄(o.district, 80), zoneArea: 한줄(o.zone_area, 80), facilities: 한줄(o.facilities, 200),

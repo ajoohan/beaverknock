@@ -10,7 +10,7 @@
 import crypto from 'node:crypto';
 import { userFrom, sbHeaders, sbUrl, overLimit } from './_auth.js';
 import { dbWhy } from './_dberr.js';
-import { contractRoute, reportDueCron, draftRead, draftNote, icsFeed, 달력표, 알림설정, 특약문구들, 특약문구고침, 문자틀들, 문자기록들, 문자고침, 단지들, 단지고침 } from './_contract.js';
+import { contractRoute, listingScan, reportDueCron, draftRead, draftNote, icsFeed, 달력표, 알림설정, 특약문구들, 특약문구고침, 문자틀들, 문자기록들, 문자고침, 단지들, 단지고침 } from './_contract.js';
 import { 날씨 } from './_weather.js';
 import { 서식들, 서식확인, 서식올리기, 서식주소, 서식지우기, 서식최대, 파일버킷, 버킷올리기, 버킷주소, 버킷지우기 } from './_forms.js';
 import { 외부들, 외부하나, 외부최대, 외부경로 } from './_ext.js';
@@ -604,7 +604,9 @@ export default async function handler(req, res) {
     if (b.what === 'ics-reset')         return icsLink(req, res, chk.agent, true);
     return res.status(400).json({ error: '알 수 없는 요청입니다' });
   }
-  if (await contractRoute(req, res, chk.agent, user, b)) return;
+  if (await contractRoute(req, res, chk.agent, user, b)) return;
+  /* 매물 등록 - 건축물대장 사진 · 스캔본 판독(_contract.js listingScan). 직원은 위에서 'listing' 권한으로 걸렀다 */
+  if (b.what === 'listing-scan') return listingScan(req, res, user, b);
 
   /* 올려둔 물건. 지금까지 이 목록도 그 브라우저에만 있어서 창을 닫으면
      사라졌다. 함수 상한(12개) 때문에 여기 함께 둔다. */

@@ -956,6 +956,14 @@ async function scan(req, res, b, user) {
   }
 }
 
+/* 매물 등록의 건축물대장 판독 (2026-11-12 대표님 '건축물대장도 사진이나 스캔본 인식해서 자동으로 채워').
+   계약서 판독과 같은 하루 상한 · 같은 모델을 쓰고, 서류는 건축물대장(표제부 · 전유부)만 받는다. 직원 권한은 'listing'(feed.js 권한키) */
+export async function listingScan(req, res, user, b) {
+  const files = Array.isArray(b && b.files) ? b.files : [];
+  if (!files.length || files.length > 2 || !files.every(f => f && ['bld', 'bldx'].includes(f.kind))) return res.status(400).json({ error: '건축물대장(표제부 · 전유부)만 올려 주세요' });
+  return scan(req, res, { files }, user);
+}
+
 /* 작성 중인 것만 지운다(영구 삭제). 날인본은 지우지 않는다(트리거도 막는다).
    2026-11-10 - 휴지통에 들어간 것만, 대표만 지운다(직원은 feed.js 대표만에서 막힌다) */
 async function del(res, agent, b) {

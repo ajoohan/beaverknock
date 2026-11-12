@@ -3093,6 +3093,13 @@ body.mo .scan-flow small{display:none}
 .scan-done span{display:block;font-size:13px;line-height:1.5;color:var(--n700)}
 .scan-done ul{margin:6px 0 0;padding-left:16px;font-size:13.5px;line-height:1.55;color:var(--warn)}
 .scan-mini{align-items:center;background:var(--n50);border:1px dashed var(--n300)}
+.ls-card{display:flex;flex-direction:column;gap:12px}
+.ls-slots{display:grid;grid-template-columns:1fr 1fr;gap:10px} @media (max-width:640px){.ls-slots{grid-template-columns:1fr}}
+.ls-slot{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border:1px dashed var(--n300);border-radius:12px;background:var(--n50)}
+.ls-slot.on{border-style:solid;border-color:var(--ind);background:#fff}
+.ls-slot b{display:block;font-size:14px;color:var(--n900)} .ls-slot span{display:block;font-size:12.5px;color:var(--n500);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ls-msg{margin:0;font-size:13.5px;line-height:1.6;color:var(--n700)} .ls-msg.err{color:var(--danger)}
+.ls-foot{margin:0;font-size:12.5px;color:var(--n500)}
 .scan-mini span{font-size:13px;line-height:1.5;color:var(--n500)}
 .scan-done .btn,.scan-mini .btn{flex:none}
 .ctx-side .scan.ct-sec{padding-top:14px}
@@ -9636,6 +9643,70 @@ function addrBox(target, ph){
 }
 
 /* 매물 등록 */
+/* ── 매물 등록: 건축물대장 사진 · 스캔본으로 채우기 (2026-11-12 대표님) ──
+   표제부 · 전유부를 올리면(사진 · PDF) 서버가 읽어(feed listing-scan → _scan.js) 건물명 · 동 · 호 · 전용면적 · 층 · 사용승인일 · 주택 유형을 채운다.
+   전용면적은 전유부가 있을 때만 넣는다 - 표제부의 연면적은 건물 전체 면적이라 호실 면적 칸에 넣으면 틀린 값이 된다(2026-09-14 걷어낸 까닭).
+   이미 적힌 칸은 덮지 않는다. 서류는 저장하지 않는다 */
+const LS = { files:{}, busy:false, err:'', done:null };
+const LS_칸 = [['bld', '건축물대장 표제부', '사용승인일 · 용도'], ['bldx', '건축물대장 전유부', '동 · 호 · 전용면적 · 층']];
+async function lsPick(kind, file){
+  if(!file || !LS_칸.some(([k]) => k === kind)) return;
+  const 사진 = /^image\/(jpeg|png|webp)$/.test(file.type), pdf = file.type === 'application/pdf';
+  if(!사진 && !pdf) return toast('PDF · JPG · PNG · WEBP 파일만 올릴 수 있습니다');
+  try{
+    const data = 사진 ? await 줄이기(file) : await 읽기(file), bytes = Math.floor(data.length * 3 / 4);
+    const 다른것 = Object.entries(LS.files).filter(([k]) => k !== kind).reduce((s, [, f]) => s + f.bytes, 0);
+    if(다른것 + bytes > SCAN_MAX) return toast('두 서류 합계가 3MB 를 넘습니다 - 필요한 쪽만 PDF 로 올려 주세요');
+    LS.files[kind] = { name: file.name, bytes, data }; LS.err = ''; LS.done = null; render();
+  }catch(e){ toast('파일을 열지 못했습니다 - 다른 파일로 올려 주세요'); }
+}
+/* 읽은 값 → 매물 폼. 채운 칸 이름들을 돌려준다 */
+function lsApply(f, s, kinds){
+  const 채움 = [], 빔 = k => f[k] == null || String(f[k]).trim() === '';
+  const 넣기 = (k, v, 이름) => { v = v == null ? '' : String(v).trim(); if(!v || !빔(k)) return; f[k] = v; 채움.push(이름); };
+  넣기('lname', s.bdNm, '건물명');
+  const 주소 = s.road || s.jibun;
+  if(주소 && 빔('laddr')){ f.laddr = 주소; 채움.push('주소'); }
+  const 동이름 = (String(s.jibun || '').match(/([가-힣0-9]+[동리가])(?=\s|\d|$)/) || [])[1];
+  넣기('ldong', 동이름, '법정동');
+  const u = String(s.unit || '');
+  넣기('lbdong', (u.match(/([0-9A-Za-z가-힣]+)\s*동/) || [])[1], '동');
+  넣기('lho', (u.match(/([0-9A-Za-z-]+)\s*호/) || [])[1], '호');
+  if(kinds.includes('bldx')){ 넣기('larea', s.bldArea, '전용면적'); 넣기('lfloorNo', s.unitFloor, '층'); }
+  넣기('lapproved', String(s.approval || '').replace(/[-/]/g, '.'), '사용승인일');
+  if(!NONHOME(f.lkind) && 빔('lhtype')){
+    const 용 = String(s.bldUse || ''), t = /오피스텔/.test(용) ? '오피스텔' : /아파트/.test(용) ? '아파트' : /다세대|연립/.test(용) ? '빌라·연립' : /다가구|단독/.test(용) ? '단독·다가구' : '';
+    if(t){ f.lhtype = t; 채움.push('주택 유형'); }
+  }
+  return 채움;
+}
+async function lsGo(){
+  if(LS.busy) return;
+  const kinds = LS_칸.map(([k]) => k).filter(k => LS.files[k]);
+  if(!kinds.length) return toast('건축물대장을 하나 이상 올려 주세요');
+  LS.busy = true; LS.err = ''; render();
+  const { ok, j } = await ctPost({ what:'listing-scan', files: kinds.map(k => ({ kind: k, data: LS.files[k].data })) })
+    .catch(() => ({ ok:false, j:{ error:'네트워크 문제로 읽지 못했습니다' } }));
+  LS.busy = false;
+  if(!ok || !j.scan){ LS.err = j.error || '건축물대장을 읽지 못했습니다'; render(); return; }
+  const 채움 = lsApply(S.form, j.scan, kinds);
+  LS.done = { 채움, 위반: !!j.scan.violation, 경고: (j.scan.warnings || []).slice(0, 3) };
+  LS.files = {}; render();
+  toast(채움.length ? `건축물대장에서 ${채움.length}칸을 채웠습니다 - 값을 한 번 확인해 주세요` : '채울 빈칸이 없거나 서류에서 값을 찾지 못했습니다');
+}
+function lsCardHTML(){
+  const d = LS.done;
+  return `<div class="card pad ls-card"><div class="ls-top"><div><h2 style="font-size:16px;margin:0">건축물대장으로 채우기</h2>
+      <p class="sub" style="margin:4px 0 0;font-size:13.5px;line-height:1.6">사진 · 스캔본(PDF)을 올리면 건물명 · 동 · 호 · 전용면적 · 층 · 사용승인일을 채웁니다. 이미 적은 칸은 그대로 둡니다. 서류는 저장하지 않습니다.</p></div></div>
+    <div class="ls-slots">${LS_칸.map(([k, 이름, 쓰임]) => { const x = LS.files[k];
+      return `<div class="ls-slot${x ? ' on' : ''}"><div style="min-width:0"><b>${이름}</b><span>${x ? esc(x.name) : 쓰임}</span></div>
+        ${x ? `<button type="button" class="tapx" data-act="ls-del" data-v="${k}" ${LS.busy ? 'disabled' : ''} style="font-size:13px;color:var(--n500)">빼기</button>`
+            : `<label class="btn sec sm${LS.busy ? ' off' : ''}">올리기<input type="file" class="sr" accept="application/pdf,image/jpeg,image/png,image/webp" data-lsfile="${k}" ${LS.busy ? 'disabled' : ''} aria-label="${이름} 올리기"></label>`}</div>`; }).join('')}</div>
+    ${Object.keys(LS.files).length ? `<button type="button" class="btn pri md" data-act="ls-go" ${LS.busy ? 'disabled' : ''}>${LS.busy ? '읽는 중… (약 20초)' : '읽어서 채우기'}</button>` : ''}
+    ${LS.err ? `<p class="ls-msg err" role="alert">${esc(LS.err)}</p>` : ''}
+    ${d ? `<p class="ls-msg" role="status">${d.채움.length ? `채운 칸: ${esc(d.채움.join(' · '))}` : '채운 칸이 없습니다'}${d.위반 ? ' · <b style="color:var(--danger)">위반건축물 표시가 있습니다</b>' : ''}${d.경고.length ? `<br>${d.경고.map(esc).join(' · ')}` : ''}</p>` : ''}
+    <p class="ls-foot">발급은 <a class="lnk" href="https://www.eais.go.kr/moct/bci/aaa02/BCIAAA02L01" target="_blank" rel="noopener">세움터 건축물대장 발급</a>에서 무료로 할 수 있습니다.</p></div>`;
+}
 V["#/partner/listing/new"] = () => {
   const f = S.form, g = k => f[k]||'';
   const shop = NONHOME(f.lkind);
@@ -9648,6 +9719,7 @@ V["#/partner/listing/new"] = () => {
       <a class="back" data-go="#/partner/listings"><i class="ar-l" aria-hidden="true"></i>${물건이름()}</a>${S.editL ? `<button type="button" class="tapx" data-act="lg-new" style="font-size:13.5px;color:var(--n500)">고치기 그만두고 새로 적기</button>` : ''}</div>
     <div><h1 class="t" style="font-size:${isMo()?21:25}px">${S.editL ? '물건 고치기' : '매물을 올려두세요'}</h1>
       <p class="sub measure">${S.editL ? '고친 값은 저장하는 즉시 장부와 대조에 반영됩니다. 유형(주거 · 상가 등)은 바꿀 수 없습니다.' : '적어 두면 <b style="color:var(--n900)">지금 대기 중인 손님과 즉시 대조</b>합니다. 처음에는 장부에만 남고, 손님에게 노출하는 것은 장부에서 따로 켭니다.'}</p></div>
+    ${lsCardHTML()}
 
     <div class="card pad" style="display:flex;flex-direction:column;gap:16px">
       <!-- 손님은 넷 중에서 고른다(주거·상가·사무실·창고). 여기를 둘로 묶어 두면
@@ -12746,6 +12818,8 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
+  { v:'26.11.12.14', 날:'2026-11-12', 줄:[
+    '매물 올리기에 ‘건축물대장으로 채우기’ - 표제부 · 전유부 사진이나 스캔본(PDF)을 올리면 건물명 · 동 · 호 · 전용면적 · 층 · 사용승인일 · 주택 유형을 채웁니다(이미 적은 칸은 그대로 · 서류는 저장 안 함)' ] },
   { v:'26.11.12.13', 날:'2026-11-12', 줄:[
     '계약현황 위에 ‘계약체결 문자에서 가져오기’ - 보낸 문자 기록에서 바로 계약서를 엽니다' ] },
   { v:'26.11.12.12', 날:'2026-11-12', 줄:[
@@ -21239,7 +21313,9 @@ function handle(a,v,el){
     case 'lp-first': case 'lp-del': { const [id, pth] = String(v).split('|'); lpSet(id, pth, a === 'lp-first' ? 'first' : 'del'); return true; }
     case 'lg-tab': MG.tab = ['list', 'arch', 'trash'].includes(v) ? v : 'list'; render(); return true;
     case 'lg-f': MG.tab = 'list'; MG.f = MG.f === v ? '' : (v || ''); render(); return true;
-    case 'lg-new': S.editL = null; S.form = {}; go('#/partner/listing/new'); return true;
+    case 'lg-new': S.editL = null; S.form = {}; LS.files = {}; LS.done = null; LS.err = ''; go('#/partner/listing/new'); return true;
+    case 'ls-go': lsGo(); return true;
+    case 'ls-del': delete LS.files[v]; render(); return true;
     case 'lg-edit': { const L = S.listings.find(x => x.id === v); if(!L) return true; S.form = 물건폼(L); S.editL = L.id; go('#/partner/listing/new'); return true; }
     case 'lg-owner': { const L = S.listings.find(x => x.id === v); if(L) lgSet(v, { listing: { ownerOk: !L.ownerOk } }, !L.ownerOk ? '소유자 확인을 표시했습니다' : '소유자 확인을 껐습니다'); return true; }
     case 'lg-hide': { const L = S.listings.find(x => x.id === v); if(L) lgSet(v, { listing: { hideUnit: !L.hideUnit } }, !L.hideUnit ? '손님 화면에서 동 · 호를 숨깁니다' : '노출할 때 동까지 보입니다'); return true; }
@@ -21557,6 +21633,7 @@ document.addEventListener('keydown', e=>{
 document.addEventListener('change', e=>{
   const s=e.target.closest('[data-act="pick-cond-sel"]'); if(s){ S.inboxCond=s.value; render(); }
   const sf=e.target.closest('[data-scanfile]'); if(sf){ const fl = sf.files && sf.files[0]; sf.value = ''; ctScanPick(sf.dataset.scanfile, fl); }
+  const lf=e.target.closest('[data-lsfile]'); if(lf){ const fl = lf.files && lf.files[0]; lf.value = ''; lsPick(lf.dataset.lsfile, fl); }
 });
 
 /* 서류 카드에 파일 끌어다 놓기 (2026-10-30) - 서류 단계가 열려 있을 때만.

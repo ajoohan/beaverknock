@@ -12746,6 +12746,8 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
+  { v:'26.11.12.13', 날:'2026-11-12', 줄:[
+    '계약현황 위에 ‘계약체결 문자에서 가져오기’ - 보낸 문자 기록에서 바로 계약서를 엽니다' ] },
   { v:'26.11.12.12', 날:'2026-11-12', 줄:[
     '현장 체크리스트에 ‘우리 사무소 추가 항목’ - 현관 도어락 · 베란다 확장처럼 매번 보는 것을 질문 · 선택지로 만들어 두면 다음 체크리스트부터 계속 나옵니다(확인·설명서에는 안 들어가고 체크리스트 출력물에만)' ] },
   { v:'26.11.12.11', 날:'2026-11-12', 줄:[
@@ -15663,7 +15665,7 @@ V['#/partner/contracts'] = sub => {
   const 전체 = CT.list || [], 살아 = 전체.filter(ct살아있음);
   /* 알림 설정은 다가오는 일정(법무사 예약 시점·끈 항목)에도 쓴다 - 처음 들어올 때 한 번 받아 둔다 */
   if(!CT.alert && 세션있음()) setTimeout(ctAlertLoad);
-  const 몸 = sub === 'forms' ? ctFormsPageHTML() : sub === 'new' ? ctNewPageHTML(전체) : sub === 'schedule' ? ctSchedulePageHTML(살아) : sub === 'phrases' ? ctPhrPageHTML() : sub === 'sms' ? csPageHTML() : (() => { if(!현황) return ctListPageHTML(전체); const 원 = CT.view; CT.view = 'table'; CT.현황 = true; try{ return ctListPageHTML(전체).replace('>계약서 목록</h1>', '>계약현황</h1>'); } finally { CT.view = 원 == null ? 보던 : 원; CT.현황 = false; } })();
+  const 몸 = sub === 'forms' ? ctFormsPageHTML() : sub === 'new' ? ctNewPageHTML(전체) : sub === 'schedule' ? ctSchedulePageHTML(살아) : sub === 'phrases' ? ctPhrPageHTML() : sub === 'sms' ? csPageHTML() : (() => { if(!현황) return ctListPageHTML(전체); const 원 = CT.view; CT.view = 'table'; CT.현황 = true; try{ return ctListPageHTML(전체).replace('>계약서 목록</h1>', '>계약현황</h1>').replace('<button class="btn pri sm" data-go="#/partner/contracts/new">계약서 작성</button>', '<span class="eqb"><button class="btn tool sm" data-go="#/partner/contracts/sms" title="보낸 문자 기록에서 ‘이 내용으로 계약서’를 누르면 목적물 · 대금 · 날짜가 채워진 계약서가 열립니다">계약체결 문자에서 가져오기</button><button class="btn pri sm" data-go="#/partner/contracts/new">계약서 작성</button></span>'); } finally { CT.view = 원 == null ? 보던 : 원; CT.현황 = false; } })();
   return `
 <div class="scr fade" style="background:var(--n50)">
   ${navPartner('ct')}

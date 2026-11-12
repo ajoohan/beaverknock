@@ -7686,6 +7686,7 @@ V['#/account'] = () => {
     ${줄('내 활동', '걸어 둔 조건과 받은 제안', `<div class="acc-tiles">
       ${마이줄('#/my', '내 조건', 조건수 ? `${조건수}건` : '', 'M5 6 h14 M5 12 h14 M5 18 h9')}
       ${마이줄('#/inbox', '받은 제안', 새 ? `새 제안 ${새}건` : '', 'M3 12 h5 l2 3 h4 l2 -3 h5 M3 12 V7 a2 2 0 0 1 2 -2 h14 a2 2 0 0 1 2 2 v5 M3 12 v5 a2 2 0 0 0 2 2 h14 a2 2 0 0 0 2 -2 v-5')}
+      ${마이줄('#/matched', '맞춤매물', '일치율 80점 이상', 'M12 21 a9 9 0 1 0 0 -18 a9 9 0 0 0 0 18 M12 16.5 a4.5 4.5 0 1 0 0 -9 a4.5 4.5 0 0 0 0 9')}
       ${마이줄('#/kind', '새 조건 걸기', '', 'M12 5 v14 M5 12 h14')}</div>`)}
     ${rm내방HTML()}
     ${줄('파트너', a ? '자격과 사무소 정보' : '중개사·소유자로 함께하기', 파트너칸)}
@@ -12544,7 +12545,7 @@ function adm위치(h){
 const adm경로 = 경로 => !경로.length ? '<span></span>' : `<nav class="adm-bc" aria-label="현재 위치">${경로.map(([t, h], i) => i === 경로.length - 1
   ? `<b aria-current="page">${esc(t)}</b>` : `${h ? `<a data-go="${h}">${esc(t)}</a>` : `<span>${esc(t)}</span>`}<i class="adm-sep" aria-hidden="true"></i>`).join('')}</nav>`;
 /* 계약 묶음 네 칸 - [주소, 이름, 아이콘, 켜짐 키]. 휴대폰은 계약서 화면 위 칩 줄로 같은 네 칸 */
-const CT_하위메뉴 = [['#/partner/contracts/new', '계약서 작성', 'pen', 'ctn'], ['#/partner/contracts', '계약서 목록', 'doc', 'ct'],
+const CT_하위메뉴 = [['#/partner/contracts/status', '계약현황', 'cal', 'cst'], ['#/partner/contracts/new', '계약서 작성', 'pen', 'ctn'], ['#/partner/contracts', '계약서 목록', 'doc', 'ct'],
   ['#/partner/contracts/sms', '계약체결 문자', 'send', 'cms'],
   ['#/partner/contracts/phrases', '특약 관리', 'list', 'ctp'], ['#/partner/contracts/forms', '서식 자료실', 'doc', 'ctf'], ['#/partner/contracts/schedule', '일정·알림', 'cal', 'cts']];
 
@@ -12564,6 +12565,9 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
+  { v:'26.11.12.5', 날:'2026-11-12', 줄:[
+    '계약 메뉴 맨 위에 ‘계약현황’ - 계약서 목록을 상태 · 당사자 · 날짜 · 금액 표로 바로 엽니다',
+    '대시보드 매물장부 칸에 노출 · 장부만 건수, 손님 마이페이지에 맞춤매물 바로가기' ] },
   { v:'26.11.12.4', 날:'2026-11-12', 줄:[
     '손님 화면에 ‘맞춤매물’ - 중개사무소가 노출한 매물 가운데 내 조건과 일치율 80점 이상인 것을 점수 내역과 함께 보여 드립니다',
     '‘이 집 보고 싶어요’를 누르면 그 매물로 제안이 만들어져 제안함의 연결로 이어집니다 - 연락처는 연결을 누를 때 전달됩니다' ] },
@@ -13341,7 +13345,7 @@ V['#/partner/home'] = () => {
         </div>
         <div class="dz-r2">
           <div class="dz-stack">
-            ${dzKpi({ ico:'building', cap:'올려둔 물건', v: 물건.length, go:'#/partner/listings', sub:'맞는 손님과 늘 대조합니다' })}
+            ${dzKpi({ ico:'building', cap: ownerSide() ? '올려둔 물건' : '매물장부', v: 물건.length, go:'#/partner/listings', sub: 물건.some(l => l.vis === 'open') ? `노출 ${물건.filter(l => l.vis === 'open' && l.status === 'active').length} · 장부만 ${물건.filter(l => !(l.vis === 'open' && l.status === 'active')).length}` : '맞는 손님과 늘 대조합니다' })}
             ${dzKpi({ ico:'eye', cap:'열람률', v: 열람분모 ? `${Math.round(열람 / 열람분모 * 100)}%` : '-', go:'#/partner/stats', sub: 진짜.length ? '보낸 제안 중 손님이 연 비율' : '첫 제안을 보내면 계산됩니다' })}
           </div>
           <div class="dz-card dz-chart">
@@ -15455,11 +15459,14 @@ function ctFilter(rows){
 /* 계약서 하위 메뉴 (2026-10-30 대표님 '계약서 부분은 서브 메뉴까지') - 목록 · 새로 만들기 · 일정·알림 · 내 특약.
    PC 는 왼쪽 메뉴 아래(CT_하위메뉴), 휴대폰은 화면 위 칩 줄. 주소는 #/partner/contracts[/new|/schedule|/phrases] */
 V['#/partner/contracts'] = sub => {
+  /* 계약현황 (2026-11-12 파트너 기획 D14) - 같은 목록을 표로 연다(휴대폰은 목록). 보는 방식 저장값은 건드리지 않는다 */
+  const 현황 = sub === 'status', 보던 = CT.view;
+  if(현황){ if(CT.view == null){ try{ CT.view = localStorage.getItem('bk.ctView') === 'table' ? 'table' : ''; }catch(_){ CT.view = ''; } } }
   sub = ['new', 'schedule', 'phrases', 'sms', 'forms'].includes(sub) ? sub : '';
   const 전체 = CT.list || [], 살아 = 전체.filter(ct살아있음);
   /* 알림 설정은 다가오는 일정(법무사 예약 시점·끈 항목)에도 쓴다 - 처음 들어올 때 한 번 받아 둔다 */
   if(!CT.alert && 세션있음()) setTimeout(ctAlertLoad);
-  const 몸 = sub === 'forms' ? ctFormsPageHTML() : sub === 'new' ? ctNewPageHTML(전체) : sub === 'schedule' ? ctSchedulePageHTML(살아) : sub === 'phrases' ? ctPhrPageHTML() : sub === 'sms' ? csPageHTML() : ctListPageHTML(전체);
+  const 몸 = sub === 'forms' ? ctFormsPageHTML() : sub === 'new' ? ctNewPageHTML(전체) : sub === 'schedule' ? ctSchedulePageHTML(살아) : sub === 'phrases' ? ctPhrPageHTML() : sub === 'sms' ? csPageHTML() : (() => { if(!현황) return ctListPageHTML(전체); const 원 = CT.view; CT.view = 'table'; try{ return ctListPageHTML(전체).replace('>계약서 목록</h1>', '>계약현황</h1>'); } finally { CT.view = 원 == null ? 보던 : 원; } })();
   return `
 <div class="scr fade" style="background:var(--n50)">
   ${navPartner('ct')}

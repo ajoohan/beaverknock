@@ -3107,6 +3107,52 @@ body.mo .scan-flow small{display:none}
 .scan-done ul{margin:6px 0 0;padding-left:16px;font-size:13.5px;line-height:1.55;color:var(--warn)}
 .scan-mini{align-items:center;background:var(--n50);border:1px dashed var(--n300)}
 .ls-card{display:flex;flex-direction:column;gap:12px}
+/* 가입 첫 화면 - 역할 고르기 (2026-11-12) */
+.jr-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px}
+.jr-mascot{width:132px;height:132px;object-fit:contain;flex:none;margin:-18px 0 -10px;filter:drop-shadow(0 10px 18px rgba(74,47,180,.18))}
+.jr-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:10px}
+body.mo .jr-grid{grid-template-columns:1fr;gap:14px}
+.jr-card{all:unset;box-sizing:border-box;cursor:pointer;display:flex;flex-direction:column;background:#fff;border:1px solid var(--hair);border-radius:20px;overflow:hidden;
+  box-shadow:0 1px 2px rgba(20,16,50,.04),0 8px 24px rgba(74,47,180,.06);transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease}
+.jr-card:hover{transform:translateY(-3px);border-color:#CFC3F7;box-shadow:0 2px 4px rgba(20,16,50,.05),0 18px 40px rgba(74,47,180,.14)}
+.jr-card:active{transform:translateY(-1px)}
+.jr-card:focus-visible{outline:3px solid var(--ind);outline-offset:3px}
+.jr-vis{position:relative;display:block;height:168px;overflow:hidden}
+body.mo .jr-vis{height:132px}
+.jr-agent{background:radial-gradient(120% 90% at 0% 0%,#EDE7FF 0%,#F6F3FF 45%,#FFF 100%)}
+.jr-agent::before{content:'';position:absolute;width:220px;height:220px;border-radius:50%;right:-60px;top:-80px;background:rgba(106,70,224,.10)}
+.jr-shot{position:absolute;left:28px;right:-40px;top:26px;bottom:-30px;border-radius:12px;overflow:hidden;border:1px solid rgba(74,47,180,.14);box-shadow:0 12px 28px rgba(40,24,110,.16);transform:rotate(-2.5deg);background:#fff}
+.jr-shot img{display:block;width:100%;height:auto}
+.jr-owner{background:linear-gradient(160deg,#FFF4EA 0%,#FFFAF5 60%,#fff 100%)}
+.jr-owner::before{content:'';position:absolute;width:180px;height:180px;border-radius:44px;left:-50px;bottom:-90px;transform:rotate(18deg);background:rgba(242,140,60,.12)}
+.jr-photo{position:absolute;right:26px;left:56px;top:22px;bottom:-24px;border-radius:14px;overflow:hidden;box-shadow:0 12px 28px rgba(120,60,10,.16);transform:rotate(2deg)}
+.jr-photo img{display:block;width:100%;height:100%;object-fit:cover}
+.jr-pill{position:absolute;display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:999px;background:#fff;font-size:12.5px;font-weight:700;color:var(--n900);
+  box-shadow:0 6px 16px rgba(20,16,50,.12);white-space:nowrap}
+.jr-pill svg{color:var(--ind)}
+.jr-pill.p1{left:16px;top:16px} .jr-pill.p2{right:16px;bottom:16px}
+.jr-owner .jr-pill.p1{left:20px;top:auto;bottom:18px} .jr-owner .jr-pill.p2{right:18px;top:16px;bottom:auto}
+.jr-owner .jr-pill svg{color:#D9701E}
+.jr-body{display:flex;flex-direction:column;gap:10px;padding:20px 22px 22px}
+body.mo .jr-body{padding:18px}
+.jr-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.jr-t{font-size:19px;font-weight:800;letter-spacing:-.035em;color:var(--n900)}
+.jr-time{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:999px;background:var(--ind50);color:var(--ind);font-size:12.5px;font-weight:700;white-space:nowrap}
+.jr-d{font-size:14px;line-height:1.6;color:var(--n500)}
+.jr-list{display:flex;flex-direction:column;gap:7px;padding:12px 0;border-top:1px solid var(--n100);border-bottom:1px solid var(--n100)}
+.jr-li{display:flex;align-items:flex-start;gap:9px;font-size:14px;line-height:1.5;color:var(--n700)}
+.jr-li i{flex:none;display:grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--okbg,#E8F7EE);color:var(--ok,#14834B);margin-top:1px}
+.jr-need{display:grid;grid-template-columns:auto 1fr;column-gap:10px;row-gap:2px;align-items:baseline;font-size:13px}
+.jr-need span{color:var(--n500)} .jr-need b{color:var(--n900);font-weight:700} .jr-need small{grid-column:2;color:var(--n500);font-size:12.5px}
+.jr-go{margin-top:4px;display:flex;align-items:center;justify-content:center;gap:8px;min-height:48px;border-radius:14px;background:var(--ind);color:#fff;font-size:15px;font-weight:700;transition:background .18s}
+.jr-owner + .jr-body .jr-go{background:var(--n900)}
+.jr-card:hover .jr-go{background:#5A37D0} .jr-card:hover .jr-owner + .jr-body .jr-go{background:#000}
+.jr-trust{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:18px}
+body.mo .jr-trust{grid-template-columns:1fr;gap:8px}
+.jr-trust > span{display:grid;grid-template-columns:auto 1fr;column-gap:12px;align-items:center;padding:14px 16px;border-radius:16px;background:rgba(255,255,255,.7);border:1px solid var(--hair)}
+.jr-trust i{grid-row:span 2;display:grid;place-items:center;width:40px;height:40px;border-radius:12px;background:var(--ind50);color:var(--ind)}
+.jr-trust b{font-size:14px;font-weight:700;color:var(--n900)} .jr-trust small{font-size:12.5px;color:var(--n500);line-height:1.5}
+@media (prefers-reduced-motion:reduce){.jr-card,.jr-go{transition:none}.jr-card:hover{transform:none}}
 .ls-slots{display:grid;grid-template-columns:1fr 1fr;gap:10px} @media (max-width:640px){.ls-slots{grid-template-columns:1fr}}
 .ls-slot{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border:1px dashed var(--n300);border-radius:12px;background:var(--n50)}
 .ls-slot.on{border-style:solid;border-color:var(--ind);background:#fff}
@@ -8742,21 +8788,56 @@ const joinEmailField = f => accountEmail() ? '' : `<div><span class="lab">이메
         <input class="inp" data-in="j-email" type="email" value="${esc(f['j-email']||'')}"
           placeholder="office@example.com" autocomplete="email"></div>`;
 
+/* 가입 첫 화면 - 역할 고르기 (2026-11-12 대표님 '너무 비어 보이고 심심하다 - 팩토그램 · 도형 · 예시로 있어 보이게').
+   역할마다 실제 화면(파트너 대시보드 캡처 · 매물 사진)으로 '들어가면 무엇을 하게 되는지'를 보여 주고,
+   걸리는 시간 · 필요한 것 · 받는 것을 한눈에. 아래에는 안심 문구 세 가지를 그림 기호와 함께 */
+const JR_그림 = {
+  lock: '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+  won:  '<path d="M4 7l3 10 3-8 2 0 3 8 3-10"/><path d="M3 11h18M3 14h18"/>',
+  bolt: '<path d="M13 3L5 13h6l-1 8 8-10h-6l1-8z"/>',
+  check:'<path d="M5 12.5l4.2 4.2L19 7"/>',
+  clock:'<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+  doc:  '<path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4M10 12h5M10 16h5"/>',
+};
+const jr그림 = (k, s = 18) => `<svg viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${JR_그림[k] || ''}</svg>`;
+const JR_카드 = {
+  agent: { 시간:'약 1분', 시간말:'등록번호가 명부에 있으면 바로 시작', 필요:'중개사무소 개설등록번호',
+    받는:['우리 동네 손님 조건을 날마다 받기', '매물장부 · 맞춤매물로 손님과 바로 대조', '계약서 · 확인설명서 · 일정 알림까지 한곳에'],
+    그림:`<div class="jr-shot"><img src="img/home/dash.v2.webp" alt="" loading="lazy" decoding="async"></div>
+      <span class="jr-pill p1">${jr그림('bolt', 14)}새 조건 3건</span><span class="jr-pill p2">${jr그림('doc', 14)}계약서 1분 작성</span>` },
+  owner: { 시간:'약 3분', 시간말:'담당자 확인 뒤 1~2영업일', 필요:'물건 주소 · 소유 형태',
+    받는:['조건이 맞는 손님 수를 미리 보기', '여러 중개사의 제안을 한 번에 받기', '연락처는 내가 고른 곳에만 전달'],
+    그림:`<div class="jr-photo"><img src="img/sample/apt-living.s.v1.webp" alt="" loading="lazy" decoding="async"></div>
+      <span class="jr-pill p1">${jr그림('check', 14)}맞는 손님 5명</span><span class="jr-pill p2">${jr그림('doc', 14)}제안 2건 도착</span>` },
+};
+function joinRoleHTML(){
+  const 카드 = r => { const c = JR_카드[r.k];
+    return `<button type="button" class="jr-card" data-act="j-role" data-v="${r.k}" aria-label="${esc(r.t)}로 시작하기">
+      <span class="jr-vis jr-${r.k}" aria-hidden="true">${c.그림}</span>
+      <span class="jr-body">
+        <span class="jr-top"><b class="jr-t">${r.t}</b><span class="jr-time">${jr그림('clock', 14)}${c.시간}</span></span>
+        <span class="jr-d">${r.d}</span>
+        <span class="jr-list">${c.받는.map(t => `<span class="jr-li"><i>${jr그림('check', 13)}</i>${t}</span>`).join('')}</span>
+        <span class="jr-need"><span>준비할 것</span><b>${c.필요}</b><small>${c.시간말}</small></span>
+        <span class="jr-go">${r.k === 'agent' ? '공인중개사로 시작' : '소유자로 시작'}<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg></span>
+      </span></button>`; };
+  return `
+    <div class="jr-head"><div><h1 class="t" style="font-size:${isMo()?22:28}px">어떤 자격으로 시작하세요?</h1>
+      <p class="sub measure">역할에 따라 필요한 확인이 다릅니다. 걸리는 시간과 준비할 것을 먼저 알려 드립니다.</p></div>
+      ${isMo() ? '' : `<img class="jr-mascot" src="${BEAVERLY_KNOCK}" alt="" width="132" height="132" loading="lazy" decoding="async">`}</div>
+    <div class="jr-grid">${JOIN_ROLES.map(카드).join('')}</div>
+    <div class="jr-trust">
+      <span><i>${jr그림('won', 20)}</i><b>가입비 · 수수료 0원</b><small>거래가 성사돼도 받지 않습니다</small></span>
+      <span><i>${jr그림('lock', 20)}</i><b>주민등록번호 저장 안 함</b><small>확인된 이름 · 연락처만 씁니다</small></span>
+      <span><i>${jr그림('bolt', 20)}</i><b>공공데이터로 바로 확인</b><small>중개사무소 명부와 대조합니다</small></span>
+    </div>`;
+}
 V["#/partner/join"] = () => {
   const f = S.form, step = f.jStep || 1, role = f.jRole;
   const roleName = (JOIN_ROLES.find(r=>r.k===role)||{}).t || '';
   const bar = `<div style="height:3px;background:var(--n100);flex:none"><i style="display:block;height:100%;width:${step/4*100}%;background:var(--ind);transition:width .35s"></i></div>`;
   let body = '';
-  if(step===1) body = `
-    <h1 class="t" style="font-size:${isMo()?21:25}px">어떤 자격으로 시작하세요?</h1>
-    <p class="sub measure">역할에 따라 필요한 확인이 다릅니다. 소요 시간을 먼저 알려드립니다.</p>
-    <div style="display:flex;flex-direction:column;gap:12px;margin-top:6px">
-      ${JOIN_ROLES.map(r=>`<button class="card clickable" data-act="j-role" data-v="${r.k}" style="padding:${isMo()?'20px':'24px 26px'};text-align:left;display:flex;justify-content:space-between;align-items:center;gap:14px">
-        <span><b style="display:block;font-size:16px;font-weight:700;letter-spacing:-.03em;margin-bottom:4px">${r.t}</b>
-        <span style="font-size:14.5px;color:var(--n500)">${r.d}</span></span>
-        <svg viewBox="0 0 24 24" style="width:21px;flex:none" fill="none" stroke="#6A46E0" stroke-width="2.2" stroke-linecap="round"><path d="M9 5 L16 12 L9 19"/></svg>
-      </button>`).join('')}
-    </div>`;
+  if(step===1) body = joinRoleHTML();
   if(step===2){
     const nameOk = (f['j-name']||'').trim().length >= 2;
     const phoneOk = phoneOk2(f['j-phone']||'');
@@ -9039,7 +9120,7 @@ V['#/partner/verify'] = () => `
     <span class="num" style="font-size:13.5px;color:var(--n500)">${step} / ${steps.length}</span>
   </div>
   <div style="flex:1;display:flex;justify-content:center;padding:${isMo()?'20px 24px 30px':'32px 40px 40px'}">
-    <div style="width:100%;max-width:560px;display:flex;flex-direction:column;gap:14px">
+    <div style="width:100%;max-width:${step===1 && !isMo() ? '880px' : '560px'};display:flex;flex-direction:column;gap:14px">
       ${isMo()?'':`<div style="display:flex;gap:8px;margin-bottom:6px">${steps.map((t,i)=>`
         <span style="flex:1;padding:10px 0;text-align:center;font-size:13px;font-weight:${i+1===step?800:600};border-radius:var(--r-full);
           background:${i+1===step?'var(--ind)':i+1<step?'var(--okbg)':'var(--n100)'};color:${i+1===step?'#fff':i+1<step?'var(--ok)':'var(--n500)'}">${t}</span>`).join('')}</div>`}
@@ -12886,6 +12967,8 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
+  { v:'26.11.12.19', 날:'2026-11-12', 줄:[
+    '파트너 가입 첫 화면 새 모양 - 역할마다 실제 화면 · 매물 사진으로 무엇을 하게 되는지 보여 주고, 걸리는 시간 · 준비할 것 · 받는 것을 한눈에. 아래에 안심 문구 세 가지(수수료 0원 · 주민번호 저장 안 함 · 명부로 바로 확인)' ] },
   { v:'26.11.12.18', 날:'2026-11-12', 줄:[
     '코드리뷰 · 전수점검 반영 - 로그아웃하면 맞춤매물 · 직원 명단 · 사진 주소 · 자격증 상태도 함께 비웁니다(같은 PC 다음 사람에게 남지 않게)',
     '맞춤매물 - 상가 · 사무실 · 창고 조건(임대)에 매매 물건이 섞이지 않게, ‘보고 싶어요’도 목록과 같은 기준(80점 · 승인된 사무소)으로, 노출 매물이 많아도 내 동네 매물이 빠지지 않게',

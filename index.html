@@ -2202,6 +2202,8 @@ body.mo .sf-log li{grid-template-columns:minmax(0,1fr)}
 .exf-go > div{display:flex;flex-direction:column;gap:2px} .exf-go b{font-size:15px;color:var(--n900)} .exf-go .sub{font-size:13px}
 .exf-bar{height:6px;border-radius:999px;background:var(--n100);overflow:hidden} .exf-bar i{display:block;height:100%;border-radius:999px;background:var(--ind);transition:width .2s}
 .exf-acts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.exf-own{border-color:#F2B98A!important} .exf-del{margin-left:8px;font-size:12.5px;font-weight:600;color:var(--danger)}
+.exf-add{display:flex;flex-direction:column;gap:10px;padding:12px;border-radius:12px;background:var(--n50)}
 body.mo .exf-top{position:sticky;top:0;z-index:5}
 /* 맞춤매물 (2026-11-12) */
 .mt-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
@@ -12744,6 +12746,8 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
+  { v:'26.11.12.12', 날:'2026-11-12', 줄:[
+    '현장 체크리스트에 ‘우리 사무소 추가 항목’ - 현관 도어락 · 베란다 확장처럼 매번 보는 것을 질문 · 선택지로 만들어 두면 다음 체크리스트부터 계속 나옵니다(확인·설명서에는 안 들어가고 체크리스트 출력물에만)' ] },
   { v:'26.11.12.11', 날:'2026-11-12', 줄:[
     '계약현황에 ‘갱신’ 탭 - 목록에는 신규 계약만, 갱신계약 · 재계약은 갱신 탭에 따로 모입니다(계약서 목록 화면은 그대로)' ] },
   { v:'26.11.12.10', 날:'2026-11-12', 줄:[
@@ -18136,14 +18140,22 @@ function exStateHTML(doc, s){
 /* ── 현장 체크리스트 (2026-11-12 파트너 기획 D5-2) ── 집을 보면서 휴대폰으로 누르는 칸만 모은다.
    확인·설명서의 '실제 권리관계 · 시설물 상태 · 벽면·바닥면·도배 · 환경조건 · 현장안내' 절 그대로라, 누른 값이 곧 확인·설명서 값이다(따로 옮기지 않는다) */
 const EX_현장절 = /실제 권리관계|시설물의 상태|벽면|환경조건|현장안내/;
+/* 우리 사무소 추가 항목 (2026-11-12) - 사무소가 만든 질문 · 선택지. 답은 doc.fq[i] 에 두고 확인·설명서에는 넣지 않는다(체크리스트 출력물에만) */
+const FQ = { loaded:false, loading:false, list:[], busy:false, add:null };
+function fqLoad(){ if(FQ.loading || FQ.loaded || !세션있음()) return; FQ.loading = true;
+  ctPost({ what:'form-fq' }).then(({ ok, j }) => { FQ.loading = false; FQ.loaded = true; if(ok) FQ.list = j.list || []; render(); }).catch(() => { FQ.loading = false; FQ.loaded = true; }); }
+async function fqSave(body, 말){ if(FQ.busy) return; FQ.busy = true; render();
+  const { ok, j } = await ctPost({ what:'form-fq-save', ...body }).catch(() => ({ ok:false, j:{ error:'네트워크 문제로 저장하지 못했습니다' } }));
+  FQ.busy = false; if(Array.isArray(j.list)) FQ.list = j.list; if(ok) FQ.add = null; render(); toast(ok ? 말 : (j.error || '저장하지 못했습니다')); }
 function exField(doc){
   const E = EX_FORMS[doc.form] || EX_FORMS['explain-home'], 절 = E.spec.filter(s => !s.g && EX_현장절.test(s.h));
   const 칸 = 절.flatMap(s => s.rows.flatMap(r => r.p.filter(p => p.k && ['one', 'many', 'area', 'text'].includes(p.t))));
   const 찬 = 칸.filter(p => { const v = ctGet(doc, p.k); return Array.isArray(v) ? v.length : v != null && String(v).trim() !== ''; }).length;
-  return { 절, 다: 칸.length, 찬 };
+  const 답 = doc.fq || {}, 추가 = FQ.list.filter(q => q.i in 답 || true);
+  return { 절, 다: 칸.length + 추가.length, 찬: 찬 + 추가.filter(q => 답[q.i]).length };
 }
 function exFieldHTML(doc){
-  const f = exField(doc), 잠김 = CT.row && CT.row.status === 'sealed';
+  const f = exField(doc), 잠김 = !!(CT.row && CT.row.status === 'sealed');
   let html = `<div class="card pad ct-sec exf-top"><h2>현장 체크리스트 <span class="badge ${f.찬 === f.다 ? 'b-ok' : 'b-ind'}">${f.찬} / ${f.다}</span></h2>
       <div class="exf-bar"><i style="width:${f.다 ? Math.round(f.찬 / f.다 * 100) : 0}%"></i></div>
       <p class="sub" style="margin:0">${esc(doc.property.road || '소재지 미입력')} · 누른 값은 확인·설명서에 그대로 들어갑니다. 다 누른 뒤 ‘임시저장’을 눌러 주세요.</p></div>`;
@@ -18152,12 +18164,23 @@ function exFieldHTML(doc){
       return 칸 ? `<div class="ex-row">${r.l ? `<b class="ex-rl">${esc(r.l)}</b>` : ''}<div class="ct-grid">${칸}</div></div>` : ''; }).join('');
     if(rows) html += `<div class="card pad ct-sec"><h2>${esc(s.h)}</h2>${rows}</div>`;
   }
+  if(!FQ.loaded) setTimeout(fqLoad);
+  const 답 = doc.fq || {}, 새 = FQ.add;
+  html += `<div class="card pad ct-sec exf-own"><h2>우리 사무소 추가 항목 <span class="sub" style="font-weight:500;font-size:13px">확인·설명서에는 안 들어가고 체크리스트 출력물에만</span></h2>
+    ${FQ.list.map(q => `<div class="ex-row"><b class="ex-rl">${esc(q.q)}${잠김 ? '' : ` <button type="button" class="tapx exf-del" data-act="fq-del" data-v="${q.i}" ${FQ.busy ? 'disabled' : ''}>항목 지우기</button>`}</b>
+      <div class="chips one" role="radiogroup">${q.o.map(o => `<button class="chip ${답[q.i] === o ? 'on' : ''}" data-act="fq-pick" data-v="${q.i}|${esc(o)}" role="radio" aria-checked="${답[q.i] === o}" ${잠김 ? 'disabled' : ''}>${esc(o)}</button>`).join('')}</div></div>`).join('')
+      || '<p class="sub" style="margin:0">아직 만든 항목이 없습니다. 현관 도어락 · 베란다 확장처럼 매번 보는 것을 만들어 두면 다음 체크리스트부터 계속 나옵니다.</p>'}
+    ${잠김 ? '' : 새 ? `<div class="exf-add"><label class="ct-f wide"><span class="lab">질문 (40자)</span><input class="inp" data-in="fq-q" value="${esc(새.q || '')}" maxlength="40" placeholder="예: 현관 도어락" autocomplete="off"></label>
+        <label class="ct-f wide"><span class="lab">선택지 (쉼표로 나눠 2~6개)</span><input class="inp" data-in="fq-o" value="${esc(새.o || '')}" maxlength="90" placeholder="예: 정상, 교체 필요" autocomplete="off"></label>
+        <div class="exf-acts"><button type="button" class="btn tool" data-act="fq-cancel">그만두기</button><button type="button" class="btn pri" data-act="fq-add" ${FQ.busy ? 'disabled' : ''}>항목 저장</button></div></div>`
+      : `<button type="button" class="btn sec sm" data-act="fq-new" style="align-self:flex-start">+ 항목 추가</button>`}</div>`;
   return html + `<div class="exf-acts"><button type="button" class="btn tool" data-act="exf-print">체크리스트 인쇄</button><button type="button" class="btn sec" data-act="exf-off">전체 칸 보기</button></div>`;
 }
 /* 현장 확인 체크리스트 A4 - 계약서에 붙이는 종이. 당사자 확인 서명 칸 */
 function exFieldDocHTML(doc){
   const f = exField(doc), 값 = p => { const v = ctGet(doc, p.k); const 덧 = p.x && !Array.isArray(v) && p.x[v] ? ctGet(doc, p.x[v][0]) : ''; return (Array.isArray(v) ? v.join(' · ') : String(v ?? '')) + (덧 ? ` (${덧})` : ''); };
-  const 줄 = f.절.flatMap(s => s.rows.filter(r => r.p.some(p => p.k)).map(r => [`${s.h.split(' ')[0]} ${r.l || s.h.replace(/^\S+\s*/, '')}`, r.p.filter(p => p.k).map(값).filter(Boolean).join(' / ')]));
+  const 줄 = [...f.절.flatMap(s => s.rows.filter(r => r.p.some(p => p.k)).map(r => [`${s.h.split(' ')[0]} ${r.l || s.h.replace(/^\S+\s*/, '')}`, r.p.filter(p => p.k).map(값).filter(Boolean).join(' / ')])),
+    ...FQ.list.map(q => [`추가 · ${q.q}`, (doc.fq || {})[q.i] || ''])];
   const B = doc.broker || {};
   return `<div class="ctdoc exdoc${ct글꼴(doc) === 'sans' ? ' f-sans' : ''}"><h1>현장 확인 체크리스트</h1>
     <p class="ex-kind">계약서 첨부용 · ${ct날짜(doc.date || ct오늘())} 현장 확인</p>
@@ -19612,6 +19635,7 @@ document.addEventListener('input', e=>{
   /* 초안 의견 칸 - 적는 대로 담기만(다시 그리지 않는다) */
   if(k === 'rm-text'){ RM.text = el.value; return; }
   if(k === 'ph-q'){ PH.q = el.value; redrawKeepingCaret('ph-q'); return; }
+  if(k === 'fq-q' || k === 'fq-o'){ if(FQ.add) FQ.add[k === 'fq-q' ? 'q' : 'o'] = el.value; return; }
   if(k === 'lgq'){ MG.q = el.value; redrawKeepingCaret('lgq'); return; }
   if(k.startsWith('lgp:')){ const [, id, key] = k.split(':'); (MG.e[id] = MG.e[id] || {})[key] = key === 'one' ? el.value : el.value.replace(/[^0-9]/g, ''); if(key !== 'one') el.value = comma(MG.e[id][key]); return; }
   if(k.startsWith('lm:')){ const [, id, key] = k.split(':'); const 값 = key === 'nego' ? el.value.replace(/[^0-9]/g, '') : el.value;
@@ -21191,6 +21215,14 @@ function handle(a,v,el){
         }))
         .catch(()=>{ S.lsBusy=false; render(); toast('네트워크 문제로 물건을 저장하지 못했습니다'); });
       return true; }
+    case 'fq-new': FQ.add = { q:'', o:'' }; render(); return true;
+    case 'fq-cancel': FQ.add = null; render(); return true;
+    case 'fq-add': { const a = FQ.add || {}, o = String(a.o || '').split(/[,·]/).map(s => s.trim()).filter(Boolean);
+      if(!String(a.q || '').trim() || o.length < 2) return toast('질문과 선택지 두 개 이상을 적어 주세요'), true;
+      fqSave({ op:'add', q: a.q, o }, '추가 항목을 저장했습니다 - 다음 체크리스트부터 계속 나옵니다'); return true; }
+    case 'fq-del': fqSave({ op:'del', i: v }, '항목을 지웠습니다'); return true;
+    case 'fq-pick': { if(!CT.doc || ctSealed()) return true; const [i, o] = String(v).split('|'), 답 = CT.doc.fq = { ...(CT.doc.fq || {}) };
+      if(답[i] === o) delete 답[i]; else 답[i] = o; CT.dirty = true; render(); return true; }
     case 'exf-on': CT.field = true; render(); try{ window.scrollTo(0, 0); }catch(_){} return true;
     case 'exf-off': CT.field = false; render(); return true;
     case 'exf-print': return CT.doc ? ctPrint(exFieldDocHTML(CT.doc)) : true;

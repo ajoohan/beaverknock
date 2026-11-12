@@ -215,7 +215,7 @@ async function contractMail(req, res, agent, user, b) {
 export const 권한키 = w => { w = String(w || '');
   if (w === 'contract-seal') return 'ct_seal';
   if (w === 'contract-mail') return 'ct_mail';
-  if (['contracts', 'contract', 'forms', 'form-url', 'phrases', 'sms', 'complex', 'alert-settings', 'ics-link', 'contract-ext', 'contract-ext-url'].includes(w)) return 'ct_view';
+  if (['contracts', 'contract', 'forms', 'form-url', 'form-fq', 'phrases', 'sms', 'complex', 'alert-settings', 'ics-link', 'contract-ext', 'contract-ext-url'].includes(w)) return 'ct_view';
   if (/^(contract|form-)/.test(w) || ['phrases-save', 'sms-save', 'complex-save', 'alert-settings-save', 'end-style-save'].includes(w)) return 'ct_edit';
   if (w === 'listing-memo' || w === 'listing-memo-save') return 'listing_memo';
   if (/^listing-/.test(w)) return 'listing';
@@ -291,6 +291,39 @@ async function saveComplex(res, agent, b) {
   return res.status(200).json({ ok: true, list: z.y.list });
 }
 
+/* 현장 체크리스트 - 우리 사무소 추가 항목 (2026-11-12 파트너 기획 D5-2) - settings.fieldq [{ i, q, o:[선택지] }].
+   확인·설명서에는 들어가지 않고 체크리스트 출력물에만. 20개까지, 질문 40자 · 선택지 2~6개 · 12자 */
+export function 현장항목들(x) {
+  const out = [], 본 = new Set();
+  for (const v of Array.isArray(x) ? x : []) {
+    if (!v || !/^[a-z0-9]{6,12}$/.test(String(v.i)) || 본.has(v.i)) continue;
+    const q = String(v.q || '').replace(/[\u0000-\u001f<>]/g, ' ').trim().slice(0, 40);
+    const o = [...new Set((Array.isArray(v.o) ? v.o : []).map(s => String(s || '').replace(/[\u0000-\u001f<>]/g, ' ').trim().slice(0, 12)).filter(Boolean))].slice(0, 6);
+    if (!q || o.length < 2) continue;
+    본.add(v.i); out.push({ i: v.i, q, o });
+    if (out.length >= 20) break;
+  }
+  return out;
+}
+async function readFieldQ(res, agent) {
+  if (agent.role !== 'agent') return res.status(403).json({ error: '공인중개사만 쓸 수 있습니다' });
+  const x = await 설정읽기(agent);
+  if (x.error) return res.status(502).json({ error: '추가 항목을 불러오지 못했습니다' });
+  return res.status(200).json({ ok: true, list: 현장항목들(x.settings.fieldq), need: x.need || '' });
+}
+async function saveFieldQ(res, agent, b) {
+  if (agent.role !== 'agent') return res.status(403).json({ error: '공인중개사만 쓸 수 있습니다' });
+  const z = await 설정고침(agent, s => { const L = 현장항목들(s.fieldq);
+    if (b.op === 'del') { const 뒤 = L.filter(v => v.i !== String(b.i || '')); return { list: 뒤, patch: { fieldq: 뒤 } }; }
+    const 새 = 현장항목들([{ i: crypto.randomBytes(4).toString('hex'), q: b.q, o: b.o }])[0];
+    if (!새) return { error: '질문과 선택지 두 개 이상을 적어 주세요', code: 400, now: L };
+    if (L.length >= 20) return { error: '추가 항목은 20개까지 둡니다', code: 400, now: L };
+    return { list: [...L, 새], patch: { fieldq: [...L, 새] } }; });
+  if (!z.y) return 설정실패(res, z, '추가 항목');
+  if (z.y.error) return res.status(z.y.code || 400).json({ error: z.y.error, list: z.y.now });
+  return res.status(200).json({ ok: true, list: z.y.list });
+}
+
 /* 우리 사무소 서식 (2026-11-06) - 파일은 저장소 bk-forms, 목록은 settings.forms. 공인중개사만 */
 async function readForms(res, agent) {
   if (agent.role !== 'agent') return res.status(403).json({ error: '공인중개사만 쓸 수 있습니다' });
@@ -550,7 +583,9 @@ export default async function handler(req, res) {
   if (b.what === 'sms')          return readSms(res, chk.agent);
   if (b.what === 'sms-save')     return saveSms(res, chk.agent, b);
   if (b.what === 'complex')      return readComplex(res, chk.agent);
-  if (b.what === 'complex-save') return saveComplex(res, chk.agent, b);
+  if (b.what === 'complex-save') return saveComplex(res, chk.agent, b);
+  if (b.what === 'form-fq')      return readFieldQ(res, chk.agent);
+  if (b.what === 'form-fq-save') return saveFieldQ(res, chk.agent, b);
   if (b.what === 'forms')        return readForms(res, chk.agent);
   if (b.what === 'form-up')      return upForm(res, chk.agent, b);
   if (b.what === 'form-url')     return formUrl(res, chk.agent, b);

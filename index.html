@@ -2202,6 +2202,9 @@ body.mo .mt-grid{grid-template-columns:minmax(0,1fr)}
 .lp-add{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;aspect-ratio:4/3;border:1.5px dashed var(--ind200);border-radius:10px;background:var(--ind50);cursor:pointer;text-align:center}
 .lp-add b{font-size:14px;color:var(--ind700)} .lp-add span{font-size:12.5px;color:var(--n500)} .lp-add.off{opacity:.6;cursor:default}
 body.mo .lp-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+.acc-find{display:flex;flex-direction:column;gap:10px}
+.acc-fd{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 14px;border:1px solid var(--n200);border-radius:var(--r-sm);background:var(--white)}
+.acc-fd b{font-size:14.5px;color:var(--n900)} .acc-fn{display:flex;gap:14px;font-size:13.5px} .acc-fn a{color:var(--n700);font-weight:600} .acc-fn em{font-style:normal;font-weight:800;color:var(--ind)}
 .mt-acts{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .mt-no{font-size:13.5px;color:var(--n500);text-decoration:underline;text-underline-offset:3px}
 /* 매물장부 (2026-11-12) */
@@ -7707,6 +7710,11 @@ V['#/account'] = () => {
       ${마이줄('#/inbox', '받은 제안', 새 ? `새 제안 ${새}건` : '', 'M3 12 h5 l2 3 h4 l2 -3 h5 M3 12 V7 a2 2 0 0 1 2 -2 h14 a2 2 0 0 1 2 2 v5 M3 12 v5 a2 2 0 0 0 2 2 h14 a2 2 0 0 0 2 -2 v-5')}
       ${마이줄('#/matched', '맞춤매물', '일치율 80점 이상', 'M12 21 a9 9 0 1 0 0 -18 a9 9 0 0 0 0 18 M12 16.5 a4.5 4.5 0 1 0 0 -9 a4.5 4.5 0 0 0 0 9')}
       ${마이줄('#/kind', '새 조건 걸기', '', 'M12 5 v14 M5 12 h14')}</div>`)}
+    ${(() => { /* 내가 찾는 매물 (2026-11-12 파트너 기획 E4 '손님 대시보드') - 조건마다 맞춤매물 · 받은 제안 건수 */
+      const cs = (S.conds || []).filter(c => !c.seed); if(!cs.length) return '';
+      return 줄('내가 찾는 매물', '조건마다 맞는 매물과 받은 제안', `<div class="acc-find">${cs.slice(0, 5).map(c => { const g = MT.groups.find(x => x.demand_id === c.id), n = g ? g.rows.length : 0, 제 = (S.props || []).filter(q => !q.seed && q.cond === c.id && q.status !== 'hidden').length;
+        return `<div class="acc-fd"><b>${esc(c.title)}</b><span class="acc-fn"><a class="tapx" data-act="mt-go" data-v="${c.id}">맞춤매물 <em class="num">${MT.loaded ? n : '…'}</em></a><a class="tapx" data-go="#/inbox" data-cond="${c.id}">1:1 제안 <em class="num">${제}</em></a></span></div>`; }).join('')}
+        <a class="lnk" data-go="#/my" style="font-size:13.5px">조건 고치기 · 그만 받기</a></div>`); })()}
     ${rm내방HTML()}
     ${줄('파트너', a ? '자격과 사무소 정보' : '중개사·소유자로 함께하기', 파트너칸)}
     ${줄('동의 내역', '언제 무엇에 동의했는지 · 광고 수신은 여기서 바로 끕니다', c ? `<dl class="acc-dl">
@@ -12648,6 +12656,8 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
+  { v:'26.11.12.9', 날:'2026-11-12', 줄:[
+    '손님 마이페이지에 ‘내가 찾는 매물’ - 조건마다 맞춤매물 · 1:1 제안 건수를 한눈에 봅니다' ] },
   { v:'26.11.12.8', 날:'2026-11-12', 줄:[
     '매물장부에 사진 20장까지 - 실제 사진 파일을 올리고 대표 사진을 고릅니다(전에는 장수만 적었습니다)',
     '노출한 물건의 사진이 손님 맞춤매물 카드에 보입니다' ] },
@@ -18621,7 +18631,7 @@ function render(){
   /* 대시보드는 한 화면에서 전부 보여준다 - 탭을 하나씩 열게 하지 않는다 */
   if(h===OPS_HOME && OPS.rows && (OPS.tab||'home')==='home') dashDoLoad();
   if(h==='#/my' || h==='#/inbox' || h==='#/matched' || h.startsWith('#/proposal/')) loadMine(false);
-  if(h==='#/matched') mtLoad(false);
+  if(h==='#/matched' || h==='#/account') mtLoad(false);
   /* 글을 적지 않는 손님 화면(첫 화면·안내)에서도 한 번 받아 둔다 - 오른쪽 위 '새 제안' 뱃지가 들어와 보지
      않아도 보이게(2026-10-17). 20초 안에는 다시 묻지 않는다.
      **조건 걸기처럼 적는 화면에서는 부르지 않는다** - 답이 오면 화면을 다시 그려 적던 칸의 커서와
@@ -21082,6 +21092,7 @@ function handle(a,v,el){
     case 'exf-off': CT.field = false; render(); return true;
     case 'exf-print': return CT.doc ? ctPrint(exFieldDocHTML(CT.doc)) : true;
     case 'mt-pics': apiFetch('/api/my', { method:'POST', body: JSON.stringify({ what:'match-pics', listing_id: v }) }).then(r => r.json().catch(() => ({}))).then(j => { if(j.ok && (j.urls || []).length){ MT.pics[v] = j.urls; render(); } else toast(j.error || '사진을 불러오지 못했습니다'); }).catch(() => toast('사진을 불러오지 못했습니다')); return true;
+    case 'mt-go': MT.cond = v; MT.tab = ''; go('#/matched'); return true;
     case 'mt-tab': MT.tab = ['fav', 'hide'].includes(v) ? v : ''; render(); return true;
     case 'mt-fav': mt바꿈('fav', v); render(); return true;
     case 'mt-hide': { const 숨김 = !mt담().hide.includes(v); mt바꿈('hide', v); render(); toast(숨김 ? '이 매물은 더 보이지 않습니다 - ‘그만 받은 매물’에서 되돌릴 수 있습니다' : '다시 받습니다'); return true; }

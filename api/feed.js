@@ -426,6 +426,8 @@ async function saveStaff(req, res, agent, user, b) {
     return { ...y, log: 이력, patch: { staff: y.list, ...(줄 ? { staff_log: 이력.slice(-50) } : {}) } }; });
   if (!z.y) return 설정실패(res, z, '직원 명단');
   if (z.y.error) return res.status(z.y.code || 400).json({ error: z.y.error, list: z.y.now });
+  /* 명단에서 뺀 직원의 자격증 파일은 바로 지운다(처리방침 - 명단에서 빠지면 파기) */
+  if (b.op === 'del' && /^[0-9a-f]{10}$/.test(String(b.i || ''))) await 버킷지우기(파일버킷, ['jpg', 'png', 'pdf'].map(e => 자격증경로(agent.id, String(b.i), e))).catch(() => 0);
   let mailed = false;
   if (b.op === 'add' && z.y.added) {
     const 새 = z.y.added;

@@ -856,7 +856,26 @@ export async function reportDueCron(req, res) {
   /* 보관함 · 휴지통에 넣은 계약서는 알리지 않는다(2026-11-10) */
   const 살아있음 = rows.filter(c => c.agent_id && !앞판.has(c.id) && !(c.track && (c.track.arch || c.track.trash)));
   /* 휴지통 30일이 지난 작성 중 계약서는 지운다 - 날인본은 휴지통에 남는다(지우지 않음) */
-  if (트랙) await db('bk_contract', `status=eq.draft&track->>trash=lt.${날더하기(오늘, -30)}`, { method: 'DELETE' }).catch(() => {});
+  if (트랙) {
+    /* 지우기 전에 그 계약서들의 현장 사진 파일부터 지운다(2026-11-12) */
+    try {
+      const 갈 = await db('bk_contract', `select=id,agent_id,track&status=eq.draft&track->>trash=lt.${날더하기(오늘, -30)}&limit=500`);
+      const { 파일버킷, 버킷지우기 } = await import('./_forms.js');
+      const 경로 = (갈.rows || []).flatMap(c => 현장사진값((c.track || {}).fpics).map(v => 현장경로(c.agent_id, c.id, v.i)));
+      if (경로.length) await 버킷지우기(파일버킷, 경로);
+    } catch { /* 사진을 못 지워도 계약서 정리는 이어 간다 */ }
+    await db('bk_contract', `status=eq.draft&track->>trash=lt.${날더하기(오늘, -30)}`, { method: 'DELETE' }).catch(() => {});
+  }
+  /* 휴지통 30일이 지난 매물의 사진 파일을 지운다(물건 줄은 제안 기록 때문에 남긴다) - 0039 · 0040 전이면 넘어간다 */
+  try {
+    const 갈 = await db('bk_listing', `select=id,pics&status=eq.trash&closed_at=lt.${new Date(Date.now() - 30 * 864e5).toISOString()}&pics=neq.[]&limit=200`);
+    if (갈.r.ok && 갈.rows.length) {
+      const { 파일버킷, 버킷지우기 } = await import('./_forms.js');
+      const 경로 = 갈.rows.flatMap(x => (Array.isArray(x.pics) ? x.pics : []).filter(p => typeof p === 'string' && /^listing\//.test(p)));
+      if (경로.length) await 버킷지우기(파일버킷, 경로);
+      await db('bk_listing', `id=in.(${갈.rows.map(x => x.id).join(',')})`, { method: 'PATCH', body: JSON.stringify({ pics: [] }) });
+    }
+  } catch { /* 넘어간다 */ }
   /* 대화방 사진 · 파일 - 잔금 뒤 1년이 지난 것을 지운다(2026-11-10 파트너 기획 '잔금 후 1년 보관') */
   let 파일지움 = 0;
   try { 파일지움 = await (await import('./_room.js')).방파일정리(오늘); } catch { /* 0036 전이면 넘어간다 */ }
@@ -1014,9 +1033,16 @@ async function fieldPicDel(res, agent, b) {
 
 /* 매물 등록의 건축물대장 판독 (2026-11-12 대표님 '건축물대장도 사진이나 스캔본 인식해서 자동으로 채워').
    계약서 판독과 같은 하루 상한 · 같은 모델을 쓰고, 서류는 건축물대장(표제부 · 전유부)만 받는다. 직원 권한은 'listing'(feed.js 권한키) */
+/* 처리방침에 '매물 등록' 목적을 더해 알린 뒤 7일이 지나야 켠다(문자 캡처와 같은 방식). 개정 게시일이 정해지면 이 날짜를 고친다 */
+let 매물대장부터 = Date.parse('2026-11-18T15:00:00Z');
+export const __setListingScanFrom = ms => { 매물대장부터 = ms; };
 export async function listingScan(req, res, user, b) {
+  if (Date.now() < 매물대장부터) return res.status(403).json({ error: '건축물대장 사진 읽기는 11월 19일부터 씁니다(개인정보 처리방침 개정 안내 기간) - 지금은 칸을 직접 적어 주세요', code: 'not_yet' });
   const files = Array.isArray(b && b.files) ? b.files : [];
   if (!files.length || files.length > 2 || !files.every(f => f && ['bld', 'bldx'].includes(f.kind))) return res.status(400).json({ error: '건축물대장(표제부 · 전유부)만 올려 주세요' });
+  /* 매물에는 소유자 · 권리관계가 필요 없다 - 읽은 값에서 빼고 돌려준다 */
+  const 원래 = res.json.bind(res);
+  res.json = j => 원래(j && j.scan ? { ...j, scan: { ...j.scan, owners: [], rights: [], trust: false, jointCollateral: false } } : j);
   return scan(req, res, { files }, user);
 }
 

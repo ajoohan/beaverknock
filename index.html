@@ -2202,6 +2202,12 @@ body.mo .sf-log li{grid-template-columns:minmax(0,1fr)}
 .exf-go > div{display:flex;flex-direction:column;gap:2px} .exf-go b{font-size:15px;color:var(--n900)} .exf-go .sub{font-size:13px}
 .exf-bar{height:6px;border-radius:999px;background:var(--n100);overflow:hidden} .exf-bar i{display:block;height:100%;border-radius:999px;background:var(--ind);transition:width .2s}
 .exf-acts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fp-sec{display:flex;flex-direction:column;gap:12px}
+.fp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px}
+.fp-it{margin:0;border:1px solid var(--hair);border-radius:12px;overflow:hidden;background:var(--n50)}
+.fp-it img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover} .fp-no{display:grid;place-items:center;aspect-ratio:4/3;font-size:12px;color:var(--n500)}
+.fp-it figcaption{display:flex;justify-content:space-between;align-items:center;gap:6px;padding:6px 8px;font-size:12px;color:var(--n500)}
+.fp-it figcaption button{font-size:12px;color:var(--danger)}
 .sf-cert{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:12px 14px;border:1px solid var(--hair);border-radius:12px}
 .sf-cert>span:first-child{flex:1;min-width:200px;font-size:13.5px;line-height:1.6;color:var(--n500)} .sf-cert b{display:block;font-size:14px;color:var(--n900)}
 .cf-card{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap} .cf-acts{display:flex;gap:8px}
@@ -12874,6 +12880,8 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
+  { v:'26.11.12.16', 날:'2026-11-12', 줄:[
+    '현장 체크리스트에 ‘현장 사진’ - 누수 · 벽지 · 계량기처럼 나중에 다툼이 될 만한 곳을 계약서마다 20장까지 붙여 사무소에 보관합니다(손님 · 초안 링크 · 인쇄물에는 나가지 않음 · 날인본에도 붙임)' ] },
   { v:'26.11.12.15', 날:'2026-11-12', 줄:[
     '직원 · 권한 - 아직 들어오지 않은 직원에게 ‘문자로 초대 알리기’(휴대폰 문자 앱으로 · 번호는 저장 안 함)',
     '직원 자격증 - 직원이 첫 화면에서 자격증(보조원은 직무교육 수료증)을 사진 · PDF 로 올리면 대표가 직원 · 권한 화면에서 보고 ‘확인함’을 누릅니다. 이력에도 남습니다',
@@ -18311,7 +18319,38 @@ function exFieldHTML(doc){
         <label class="ct-f wide"><span class="lab">선택지 (쉼표로 나눠 2~6개)</span><input class="inp" data-in="fq-o" value="${esc(새.o || '')}" maxlength="90" placeholder="예: 정상, 교체 필요" autocomplete="off"></label>
         <div class="exf-acts"><button type="button" class="btn tool" data-act="fq-cancel">그만두기</button><button type="button" class="btn pri" data-act="fq-add" ${FQ.busy ? 'disabled' : ''}>항목 저장</button></div></div>`
       : `<button type="button" class="btn sec sm" data-act="fq-new" style="align-self:flex-start">+ 항목 추가</button>`}</div>`;
+  html += fpHTML();
   return html + `<div class="exf-acts"><button type="button" class="btn tool" data-act="exf-print">체크리스트 인쇄</button><button type="button" class="btn sec" data-act="exf-off">전체 칸 보기</button></div>`;
+}
+/* 현장 사진 (2026-11-12 파트너 기획 '현장 체크리스트 사진 · 사무소 보관') - 계약서마다 20장, 비공개 저장소.
+   손님 · 초안 링크 · 인쇄물에는 나가지 않는다. 날인본이어도 붙인다 */
+const FP = { id:'', list:[], loading:false, busy:0, err:'' };
+function fpLoad(id){ if(FP.loading) return; FP.id = id; FP.loading = true; FP.err = '';
+  ctPost({ what:'contract-fpics', id }).then(({ ok, j }) => { FP.loading = false; if(FP.id !== id) return; if(ok) FP.list = j.list || []; else FP.err = j.error || '사진을 불러오지 못했습니다'; render(); })
+    .catch(() => { FP.loading = false; FP.err = '네트워크 문제로 사진을 불러오지 못했습니다'; render(); }); }
+async function fpAdd(files){
+  const id = CT.row && CT.row.id; if(!id) return toast('계약서를 먼저 저장해 주세요');
+  const 고른 = [...(files || [])].filter(f => /^image\//.test(f.type)).slice(0, Math.max(0, 20 - FP.list.length));
+  if(!고른.length) return toast(FP.list.length >= 20 ? '현장 사진은 20장까지 붙입니다' : '사진 파일을 골라 주세요');
+  FP.busy = 고른.length; render(); let 실패 = '';
+  for(const f of 고른){
+    try{ const data = await lp줄이기(f); const { ok, j } = await ctPost({ what:'contract-fpic-add', id, data }); if(!ok){ 실패 = j.error || '올리지 못했습니다'; break; } }
+    catch(e){ 실패 = '사진을 열지 못했습니다'; break; }
+    FP.busy--; render();
+  }
+  FP.busy = 0; FP.loading = false; fpLoad(id); toast(실패 || '현장 사진을 붙였습니다');
+}
+function fpHTML(){
+  const id = CT.row && CT.row.id;
+  if(!id) return `<div class="card pad ct-sec fp-sec"><h2>현장 사진 <span class="sub" style="font-weight:500;font-size:13px">사무소 보관</span></h2><p class="sub" style="margin:0">계약서를 한 번 저장하면 현장 사진을 붙일 수 있습니다.</p></div>`;
+  if(FP.id !== id && !FP.loading) setTimeout(() => fpLoad(id));
+  const 다 = FP.list.length >= 20;
+  return `<div class="card pad ct-sec fp-sec"><h2>현장 사진 <span class="sub" style="font-weight:500;font-size:13px">사무소 보관 · ${FP.list.length} / 20장 · 손님에게는 보이지 않습니다</span></h2>
+    ${FP.err ? `<p style="margin:0;color:var(--danger)">${esc(FP.err)}</p>` : FP.loading && FP.id === id && !FP.list.length ? '<p class="sub" style="margin:0">불러오는 중입니다</p>' : ''}
+    ${FP.list.length ? `<div class="fp-grid">${FP.list.map(v => `<figure class="fp-it">${v.url ? `<a href="${esc(v.url)}" target="_blank" rel="noopener"><img src="${esc(v.url)}" alt="현장 사진 ${esc(String(v.at).slice(0, 10))}" loading="lazy"></a>` : '<span class="fp-no">열 수 없음</span>'}
+        <figcaption><span>${esc(String(v.at).replace('T', ' ').slice(5, 16))}</span><button type="button" class="tapx" data-act="fp-del" data-v="${esc(v.i)}" aria-label="이 사진 지우기">지우기</button></figcaption></figure>`).join('')}</div>`
+      : !FP.loading ? '<p class="sub" style="margin:0">누수 자국 · 벽지 상태 · 계량기처럼 나중에 다툼이 될 만한 곳을 찍어 두세요. 입주 · 퇴거 때 비교할 수 있습니다.</p>' : ''}
+    <label class="btn sec sm${FP.busy || 다 ? ' off' : ''}" style="align-self:flex-start">${FP.busy ? `올리는 중… (${FP.busy}장 남음)` : 다 ? '20장을 모두 붙였습니다' : '+ 사진 붙이기'}<input type="file" class="sr" accept="image/*" multiple data-fpfile ${FP.busy || 다 ? 'disabled' : ''} aria-label="현장 사진 붙이기"></label></div>`;
 }
 /* 현장 확인 체크리스트 A4 - 계약서에 붙이는 종이. 당사자 확인 서명 칸 */
 function exFieldDocHTML(doc){
@@ -20695,6 +20734,9 @@ function handle(a,v,el){
       sfSave({ op:'add', email, name, role }, j => j.mailed ? `${email} 로 초대 메일을 보냈습니다` : '명단에 넣었습니다 - 초대 메일은 보내지 못했으니 직원에게 이 메일로 로그인하라고 알려 주세요');
       return true; }
     case 'cf-open': cfOpen(v || ''); return true;
+    case 'fp-del': { const id = CT.row && CT.row.id; if(!id) return true;
+      if(FP.del !== v){ FP.del = v; toast('한 번 더 누르면 이 사진을 지웁니다'); return true; } FP.del = '';
+      ctPost({ what:'contract-fpic-del', id, i: v }).then(({ ok, j }) => { if(ok){ FP.list = FP.list.filter(x => x.i !== v); render(); toast('사진을 지웠습니다'); } else toast(j.error || '지우지 못했습니다'); }); return true; }
     case 'sf-cert-ok': { const [i, ok] = String(v).split('|'); sfSave({ op:'cert-ok', i, ok: ok === '1' }, ok === '1' ? '자격증을 확인했습니다' : '확인을 취소했습니다'); return true; }
     case 'sf-sms': { const s = SF.list.find(x => x.i === v); if(!s) return true;
       const 이름 = s.name || s.email.split('@')[0], 곳 = (S.agent && S.agent.office) || '중개사무소';
@@ -21702,6 +21744,7 @@ document.addEventListener('keydown', e=>{
 document.addEventListener('change', e=>{
   const s=e.target.closest('[data-act="pick-cond-sel"]'); if(s){ S.inboxCond=s.value; render(); }
   const sf=e.target.closest('[data-scanfile]'); if(sf){ const fl = sf.files && sf.files[0]; sf.value = ''; ctScanPick(sf.dataset.scanfile, fl); }
+  const fpf=e.target.closest('[data-fpfile]'); if(fpf){ const fl = [...(fpf.files || [])]; fpf.value = ''; fpAdd(fl); }
   const cf=e.target.closest('[data-cffile]'); if(cf){ const fl = cf.files && cf.files[0]; cf.value = ''; cfUp(fl); }
   const lf=e.target.closest('[data-lsfile]'); if(lf){ const fl = lf.files && lf.files[0]; lf.value = ''; lsPick(lf.dataset.lsfile, fl); }
 });

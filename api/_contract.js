@@ -152,6 +152,9 @@ export async function contractRoute(req, res, agent, user, b) {
       case 'contract-track':   await track(res, agent, b); break;
       case 'contract-note':    await note(res, agent, b); break;
       case 'contract-scan':    await scan(req, res, b, user); break;
+      case 'contract-fpics':   await fieldPics(res, agent, b); break;
+      case 'contract-fpic-add': await fieldPicAdd(res, agent, b); break;
+      case 'contract-fpic-del': await fieldPicDel(res, agent, b); break;
       case 'contract-share':   await share(res, agent, b); break;
       case 'contract-share-cut': await shareCut(res, agent, b); break;
       default: res.status(400).json({ error: '알 수 없는 요청입니다' });
@@ -449,6 +452,16 @@ export function 알림설정(x) {
 /* arch · trash (2026-11-10 대표님 결정 1번) - 보관함으로 내린 날 · 휴지통에 넣은 날. 날인본은 휴지통까지만, 작성 중은 휴지통 30일 뒤 지운다 */
 const TRACK_DATES = ['permitDue', 'permitApplied', 'midDate', 'balanceDate', 'guideAt', 'permitPaid', 'permitAgreed', 'permitOk', 'piAt', 'arch', 'trash'];
 export const 진행상태 = { ready: '준비', doing: '진행중', done: '완료', hold: '보류', cancel: '취소' };
+export const 현장사진최대 = 20;
+export function 현장사진값(x) {
+  const out = [], 본 = new Set();
+  for (const v of Array.isArray(x) ? x : []) {
+    if (!v || !/^[a-z0-9]{8,20}$/.test(String(v.i)) || 본.has(v.i)) continue;
+    본.add(v.i); out.push({ i: v.i, at: String(v.at || '').slice(0, 19), ...(v.k ? { k: String(v.k).replace(/[\u0000-\u001f<>]/g, ' ').slice(0, 30) } : {}) });
+    if (out.length >= 현장사진최대) break;
+  }
+  return out;
+}
 export function trackCheck(t) {
   if (!t || typeof t !== 'object' || Array.isArray(t)) return null;
   const out = {};
@@ -470,6 +483,9 @@ export function trackCheck(t) {
   if (x) out.extra = x;
   /* 판 번호 - track 을 쓸 때마다 하나 올린다. 읽은 판 그대로일 때만 쓴다(중개사 저장 · 초안 의견이 서로 지우지 않게) */
   if (Number.isInteger(t.tv) && t.tv > 0 && t.tv < 1e9) out.tv = t.tv;
+  /* 현장 체크리스트 사진 (2026-11-12 파트너 기획 '사무소 보관') - [{ i, at, k? }] 20장. 파일은 bk-files field/사무소/계약서/번호.jpg */
+  const 사진 = 현장사진값(t.fpics);
+  if (사진.length) out.fpics = 사진;
   /* 초안 의견 (2026-11-06 · 파트너 기획 [111] '의견 남기기') - 초안 링크로 연 손님 · 공동중개 사무소가 남긴다 */
   const 의견 = 의견들(t.notes);
   if (의견.length) out.notes = 의견;
@@ -778,9 +794,9 @@ async function track(res, agent, b) {
      끊은 링크가 다시 열리면 안 된다(2026-11-05 리뷰). 받은 값은 버리고 지금 값을 지킨다 */
   delete t.shareN;
   /* 초안 의견은 화면이 보낸 것으로 덮지 않는다 - 서버에 지금 있는 것을 그대로 둔다(읽음 · 지우기는 contract-note) */
-  delete t.notes; delete t.tv; delete t.room;
+  delete t.notes; delete t.tv; delete t.room; delete t.fpics;
   /* 읽은 링크 번호가 그대로일 때만 쓴다 - 그 사이 끊기가 번호를 올렸으면 다시 읽는다(2026-11-05 재검토) */
-  const z = await 링크번호지켜쓰기(id, agent, (n, 지금) => ({ ...t, ...(지금.notes ? { notes: 지금.notes } : {}), ...(지금.room ? { room: 지금.room } : {}),
+  const z = await 링크번호지켜쓰기(id, agent, (n, 지금) => ({ ...t, ...(지금.notes ? { notes: 지금.notes } : {}), ...(지금.room ? { room: 지금.room } : {}), ...(지금.fpics ? { fpics: 지금.fpics } : {}),
     ...(b.guideOff !== true && 지금.guideAt && !t.guideAt ? { guideAt: 지금.guideAt } : {}) }));   /* 잔금안내 체크를 끈 것은 guideOff 로 온다 */
   if (z.res) return z.res(res, '일정을 저장하지 못했습니다');
   return res.status(200).json({ ok: true, track: z.track });
@@ -954,6 +970,46 @@ async function scan(req, res, b, user) {
     if (e instanceof ScanError) return res.status(e.status).json({ error: e.message, code: e.code, ...(e.code === 'no_key' ? { need: 'key' } : {}) });
     throw e;
   }
+}
+
+/* 현장 체크리스트 사진 (2026-11-12) - 사무소 보관용. 날인본이어도 붙인다(track 안). 손님 · 초안 링크에는 나가지 않는다 */
+const 현장경로 = (사무소, 계약, i) => `field/${사무소}/${계약}/${i}.jpg`;
+async function fieldPics(res, agent, b) {
+  const id = String(b.id || ''); if (!UUID.test(id)) return res.status(400).json({ error: '어느 계약서인지 알 수 없습니다' });
+  const got = await db('bk_contract', `select=track&id=eq.${id}&agent_id=eq.${agent.id}&limit=1`);
+  if (!got.r.ok || !got.rows.length) return res.status(got.r.ok ? 404 : 502).json({ error: '계약서를 불러오지 못했습니다' });
+  const L = 현장사진값(((got.rows[0].track) || {}).fpics);
+  const { 사진주소 } = await import('./_pics.js');
+  const 주소 = await 사진주소(L.map(v => 현장경로(agent.id, id, v.i)));
+  return res.status(200).json({ ok: true, list: L.map((v, n) => ({ ...v, url: 주소[n] || '' })) });
+}
+async function fieldPicAdd(res, agent, b) {
+  const id = String(b.id || ''); if (!UUID.test(id)) return res.status(400).json({ error: '어느 계약서인지 알 수 없습니다' });
+  let buf; try { buf = Buffer.from(String(b.data || '').replace(/^data:[^,]*,/, ''), 'base64'); } catch { buf = null; }
+  if (!buf || buf.length < 200) return res.status(400).json({ error: '사진이 비어 있습니다' });
+  if (buf.length > 1200 * 1024) return res.status(413).json({ error: '사진이 너무 큽니다 - 다시 골라 주세요' });
+  if (!(buf[0] === 0xFF && buf[1] === 0xD8 && buf[2] === 0xFF)) return res.status(400).json({ error: '사진 파일(JPEG)만 올릴 수 있습니다' });
+  const { 파일버킷, 버킷올리기, 버킷지우기 } = await import('./_forms.js');
+  const i = Date.now().toString(36) + crypto.randomBytes(3).toString('hex'), 경로 = 현장경로(agent.id, id, i);
+  const u = await 버킷올리기(파일버킷, 경로, 'jpg', buf);
+  if (!u.ok) return res.status(u.need ? 503 : 502).json({ error: u.need ? '파일 저장소를 준비 중입니다' : u.error, need: u.need });
+  const k = String(b.k || '').replace(/[\u0000-\u001f<>]/g, ' ').slice(0, 30);
+  const z = await 링크번호지켜쓰기(id, agent, (n, 지금) => {
+    const L = 현장사진값(지금.fpics);
+    if (L.length >= 현장사진최대) return { 거절: `현장 사진은 ${현장사진최대}장까지 붙입니다`, code: 400 };
+    return { ...지금, fpics: [...L, { i, at: new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 19), ...(k ? { k } : {}) }] };
+  });
+  if (z.res) { await 버킷지우기(파일버킷, [경로]).catch(() => 0); return z.res(res, '사진을 저장하지 못했습니다'); }
+  return res.status(200).json({ ok: true, n: (z.track.fpics || []).length });
+}
+async function fieldPicDel(res, agent, b) {
+  const id = String(b.id || ''), i = String(b.i || '');
+  if (!UUID.test(id) || !/^[a-z0-9]{8,20}$/.test(i)) return res.status(400).json({ error: '어느 사진인지 알 수 없습니다' });
+  const z = await 링크번호지켜쓰기(id, agent, (n, 지금) => ({ ...지금, fpics: 현장사진값(지금.fpics).filter(v => v.i !== i) }));
+  if (z.res) return z.res(res, '사진을 지우지 못했습니다');
+  const { 파일버킷, 버킷지우기 } = await import('./_forms.js');
+  await 버킷지우기(파일버킷, [현장경로(agent.id, id, i)]).catch(() => 0);
+  return res.status(200).json({ ok: true });
 }
 
 /* 매물 등록의 건축물대장 판독 (2026-11-12 대표님 '건축물대장도 사진이나 스캔본 인식해서 자동으로 채워').

@@ -1,0 +1,4 @@
+* text=auto
+index.html text eol=lf
+app/*.js text eol=lf
+원본/* text eol=lf

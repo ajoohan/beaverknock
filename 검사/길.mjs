@@ -10,13 +10,14 @@ import fs from 'node:fs';
 const 여기 = path.dirname(fileURLToPath(import.meta.url));
 export const 저장소 = path.resolve(여기, '..');                 /* beaverknock-prototype */
 
-/* 화면의 원본은 저장소 **바깥**에 있다(D:/BeaverKnock/비버노크_프로토타입.html).
-   그것을 고치고 배포할 때 index.html 로 복사한다 - 그래서 원본이 있으면 원본을 본다.
-   없으면(다른 자리에 내려받았다면) 저장소의 index.html 을 본다.
+/* 화면의 원본은 저장소 **바깥**에 있다(D:/BeaverKnock/비버노크_프로토타입.html) - 그래서 원본이 있으면 원본을 본다.
+   2026-11-12 속도: 배포본 index.html 은 이제 빌드(주석 · 공백 제거, 스크립트는 app/)라 검사가 읽을 수 없다.
+   빌드가 원본 사본을 저장소 안 원본/ 에 같이 남긴다(웹에는 안 올라감 - .vercelignore) - 다른 자리에 내려받았으면 그것을 본다.
    둘 중 무엇을 보고 있는지는 검사가 말해 준다 - 말없이 옛것을 재면 안 된다. */
 const 원본 = path.resolve(저장소, '..', '비버노크_프로토타입.html');
-export const HTML경로 = fs.existsSync(원본) ? 원본 : path.resolve(저장소, 'index.html');
-export const 보는곳 = fs.existsSync(원본) ? '원본' : 'index.html';
+const 사본 = path.resolve(저장소, '원본', '비버노크_프로토타입.html');
+export const HTML경로 = fs.existsSync(원본) ? 원본 : 사본;
+export const 보는곳 = fs.existsSync(원본) ? '원본' : '저장소 원본/ 사본';
 
 export const html = () => fs.readFileSync(HTML경로, 'utf8');
 export const js = () => html().match(/<script>([\s\S]*)<\/script>/)[1];

@@ -72,11 +72,18 @@ try{
   const 배포본 = path.resolve(여기, '..', 'index.html');
   if(길.보는곳 === '원본' && fs.existsSync(배포본)){
     const { 빌드 } = await import('../tools/빌드.mjs');
-    const b = await 빌드(fs.readFileSync(길.HTML경로, 'utf8'));
-    const 앱 = path.resolve(여기, '..', b.이름);
-    const 같다 = fs.readFileSync(배포본, 'utf8') === b.html && fs.existsSync(앱) && fs.readFileSync(앱, 'utf8') === b.파일[b.이름];
-    if(같다) console.log(`  OK    ${'배포본'.padEnd(14)}  통과  index.html · ${b.이름} 이 검사한 원본을 빌드한 것과 같다`);
-    else { 실패++; console.log(`  실패  ${'배포본'.padEnd(14)} index.html 이 원본 빌드와 다르다 - node tools/빌드.mjs 를 빠뜨렸다`); }
+    const 원 = fs.readFileSync(길.HTML경로, 'utf8');
+    const b = await 빌드(원);
+    const 앱 = path.resolve(여기, '..', b.이름), 사본 = path.resolve(여기, '..', '원본', '비버노크_프로토타입.html');
+    /* 줄바꿈은 맞춰 비교한다 - Windows 에서 새로 받으면 CRLF 로 풀릴 수 있다(.gitattributes 가 LF 로 묶지만 옛 작업본 대비) */
+    const 읽기 = p => fs.existsSync(p) ? fs.readFileSync(p, 'utf8').replace(/\r\n/g, '\n') : null;
+    const lf = t => t.replace(/\r\n/g, '\n');
+    const 같다 = 읽기(배포본) === lf(b.html) && 읽기(앱) === lf(b.파일[b.이름]) && 읽기(사본) === lf(원);
+    if(같다) console.log(`  OK    ${'배포본'.padEnd(14)}  통과  index.html · ${b.이름} · 원본/ 사본이 검사한 원본을 빌드한 것과 같다`);
+    else { 실패++; console.log(`  실패  ${'배포본'.padEnd(14)} index.html · app · 원본/ 사본이 원본 빌드와 다르다 - node tools/빌드.mjs 를 빠뜨렸다`); }
+    /* 리뷰 11-12: 실제로 나가는 것은 줄인 스크립트다 - 그것도 문법이 살아 있는지 본다(원본 검사가 통과해도 줄이기에서 깨질 수 있다) */
+    try { new Function(b.파일[b.이름]); console.log(`  OK    ${'빌드 문법'.padEnd(14)}  통과  배포되는 줄인 스크립트도 문법 오류 없이 읽힌다`); }
+    catch(e){ 실패++; console.log(`  실패  ${'빌드 문법'.padEnd(14)} 줄인 스크립트가 깨졌다 - ${e.message}`); }
   }
 }
 for(const [이름, 기대, 설명] of 목록){

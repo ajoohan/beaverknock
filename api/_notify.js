@@ -75,7 +75,7 @@ export async function notify(req, opts) {
 /* 한 통의 모양을 만든다. 한 통을 보낼 때도, 여러 통을 묶어 보낼 때도 이걸 쓴다. */
 function build(req, { subject, rows, link, to: toArg, cta, note }) {
   const to   = toArg || process.env.ALERT_TO || 'beaverknock@gmail.com';
-  const from = process.env.ALERT_FROM || '비버노크 <noreply@rawpick.co.kr>';
+  const from = process.env.ALERT_FROM || '비버노크 <noreply@beaverknock.co.kr>';
   const host = siteOf(req);
 
   const body = rows.map(([k, v]) =>

@@ -2168,6 +2168,41 @@ body.mo .ct-long{display:none}
    - 움직임은 세 곳만(150~300ms): 종류를 바꾸면 오른쪽 걸음이 아래에서 45ms 간격으로 올라오고, 고른 단추가 톡 튀고, 다 고르면 만들기 줄이 켜진다.
      누르면 .97 로 살짝 줄어든다. 움직임 줄이기 설정이면 모두 끈다 */
 .ctw-quick{display:flex;align-items:center;gap:10px 16px;flex-wrap:wrap}
+/* 매물장부 (2026-11-12) */
+.lg-tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.lg-tile{display:flex;flex-direction:column;gap:2px;padding:14px 16px;border:1px solid var(--n200);border-radius:14px;background:var(--white);text-align:left;cursor:pointer;font:inherit}
+.lg-tile small{font-size:13px;color:var(--n500)} .lg-tile b{font-size:22px;font-weight:800;color:var(--n900)} .lg-tile span{font-size:12.5px;color:var(--n500)}
+.lg-tile.on{border-color:var(--ind);box-shadow:0 0 0 3px var(--ind50)} .lg-tile.on b{color:var(--ind)}
+.lg-bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap} .lg-bar .inp{flex:1;min-width:200px}
+.lg-bar .chip .num{margin-left:6px;opacity:.7}
+.lg-table{padding:0;overflow:hidden}
+.lg-row{display:grid;grid-template-columns:96px minmax(0,1.5fr) minmax(0,1.1fr) minmax(0,.9fr) minmax(0,1.3fr) 104px 76px 236px;gap:12px;align-items:center;padding:12px 16px;border-top:1px solid var(--n100);font-size:14px}
+.lg-row:first-child{border-top:0} .lg-row.done{opacity:.75}
+.lg-th{font-size:12.5px;font-weight:700;color:var(--n500);background:var(--n50)}
+.lg-row > div,.lg-row > a{display:flex;flex-direction:column;gap:3px;min-width:0}
+.lg-c2{color:inherit;text-decoration:none;cursor:pointer} .lg-c2 b{font-size:15px;color:var(--n900)} .lg-c2 span,.lg-row small{font-size:12.5px;color:var(--n500)}
+.lg-c2:hover b{color:var(--ind)}
+.lg-priv{align-self:stretch;justify-content:center;margin:-12px 0;padding:12px 10px;background:#FFFAEB}
+.lg-th .lg-priv{margin:-12px 0;background:#FFF4D1}
+.lg-none{color:var(--n300)} .lg-chg{color:var(--warn)!important} .lg-m{color:var(--ok)!important;font-weight:700}
+.lg-c8{flex-direction:row!important;gap:6px!important;justify-content:flex-end;flex-wrap:wrap}
+.lg-c1,.lg-c6{align-items:flex-start}
+.lg-th > div:last-child{align-items:flex-end}
+.btn.tool.dng{color:var(--danger)} .btn.tool.on{border-color:var(--ind);color:var(--ind700)} .btn.tool.off{color:var(--n500)}
+.lg-card{display:flex;flex-direction:column;gap:14px}
+.lg-std{display:flex;flex-direction:column;gap:8px} .lg-stds{display:flex;flex-wrap:wrap;gap:6px}
+.lg-ck{display:flex;gap:10px;align-items:flex-start;cursor:pointer} .lg-ck input{margin-top:3px;width:18px;height:18px;flex:none}
+.lg-ck span{display:flex;flex-direction:column;gap:2px} .lg-ck b{font-size:14.5px;color:var(--n900)} .lg-ck small{font-size:13px;color:var(--n500)}
+.lg-acts{display:flex;flex-wrap:wrap;gap:8px}
+body.mo .lg-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}
+body.mo .lg-th{display:none}
+body.mo .lg-row{grid-template-columns:minmax(0,1fr) auto;gap:8px 10px;padding:14px}
+body.mo .lg-c1{grid-column:2;grid-row:1;align-items:flex-end} body.mo .lg-c2{grid-column:1;grid-row:1}
+body.mo .lg-c3,body.mo .lg-c4,body.mo .lg-c5,body.mo .lg-c6,body.mo .lg-c7,body.mo .lg-c8{grid-column:1 / -1}
+body.mo .lg-priv{margin:0;padding:8px 10px;border-radius:8px}
+body.mo .lg-row [data-l]{flex-direction:row;flex-wrap:wrap;align-items:baseline;gap:6px}
+body.mo .lg-row [data-l]::before{content:attr(data-l);flex:none;min-width:64px;font-size:12.5px;color:var(--n500)}
+body.mo .lg-c8{justify-content:flex-start}
 /* 시작 방법 (2026-11-12) */
 .ctw-start{display:flex;flex-direction:column;gap:10px;margin-bottom:16px}
 .ctw-start .lab{margin:0;font-size:14px;font-weight:700;color:var(--n700)}
@@ -4583,6 +4618,7 @@ const ownerSide = () => !!(S.agent && S.agent.role && S.agent.role !== 'agent');
 /* 직원 계정 (2026-11-06) - 대표가 초대한 소속공인중개사 · 중개보조원. 서버(api/_staff.js)가 알려준 역할만 믿는다.
    직원은 대표 사무소로 일한다. 직원 관리 · 활동 설정은 대표만, 중개보조원은 계약서 기능을 쓰지 않는다(서버도 막는다) */
 const 직원 = () => (S.agent && S.agent.staff) || null;
+const 물건이름 = () => typeof ownerSide === 'function' && ownerSide() ? '내 물건' : '매물장부';   /* 소유자 파트너에게는 예전 이름 */
 const 보조원 = () => !!(직원() && 직원().role === 'assistant');
 /* 직원 기능별 권한 (2026-11-10) - 서버(api/_staff.js 권한목록)와 같은 키. 대표 · 직원 아님은 늘 됨. 보조원은 계약서 넷이 늘 꺼짐 */
 const CT_권한목록 = [['ct_view', '계약서 보기', '목록 · 열기 · 일정'], ['ct_edit', '계약서 작성 · 수정', '저장 · 서류로 채우기 · 일정·체크 · 보관함 · 특약 · 문자 틀'], ['ct_seal', '날인본 확정', ''], ['ct_mail', '계약서 메일 보내기', 'PDF 를 메일로'],
@@ -4641,7 +4677,7 @@ function navPartner(active, 탭있음 = true){
   <a data-go="${S.agent ? '#/partner/home' : '#/partner'}" style="flex:none">${logoLockup({h:22,partner:true})}</a>
   <div class="items mid">
     <a data-go="#/partner/demands" class="${active==='d'?'on':''}">${own?'맞는 손님':'수요 목록'}</a>
-    <a data-go="#/partner/listings" class="${active==='l'?'on':''}">내 물건</a>
+    <a data-go="#/partner/listings" class="${active==='l'?'on':''}">${ownerSide() ? '내 물건' : '매물장부'}</a>
     ${own||직원()?'':`<a data-go="#/partner/settings" class="${active==='s'?'on':''}">활동 설정</a>`}
     ${권한('stats') ? `<a data-go="#/partner/stats" class="${active==='st'?'on':''}">성과</a>` : ''}
     <a data-go="#/partner/proposals" class="${active==='p'?'on':''}">내 제안</a>
@@ -4931,6 +4967,9 @@ function listingFromRow(x){
     mustsFree:x.musts_free||'',
     moveIn:x.move_in||'협의',
     photos:x.photos||0, at:agoText(x.created_at), status:x.status||'active',
+    /* 매물장부 (0039) */
+    vis:x.vis === 'open' ? 'open' : 'private', road:x.road||'', hideUnit:x.hide_unit !== false, oneLine:x.one_line||'', ownerOk:x.owner_ok === true,
+    priceLog:Array.isArray(x.price_log) ? x.price_log : [], closedAt:x.closed_at||'', closedWhy:x.closed_why||'', editedAt:x.updated_at ? agoText(x.updated_at) : agoText(x.created_at),
   };
 }
 
@@ -9135,48 +9174,124 @@ const specOf = L => (L.kind==='home'
      L.dir && `${L.dir}${L.dirBase?`(${L.dirBase})`:''}`]
   ).filter(Boolean).join(' · ');
 
+/* ── 매물장부 (2026-11-12 파트너 기획 C1) ── 우리 사무소 안에서만 보는 장부. 노출은 기준 열 가지를 다 채운 물건만 직접 켠다.
+   서버 api/feed.js 노출기준 과 같은 목록. 소유자(집주인) 파트너에게는 예전 이름 '내 물건'으로 보인다 */
+const MG = { tab:'list', f:'', q:'', e:{}, busy:'' };
+function 물건기준(L){
+  const 주거 = L.kind === 'home', 글 = v => !!String(v ?? '').trim();
+  const 목록 = [['종류', 글(L.kind)], ['거래유형', 글(L.deal)], ['소재지', 글(L.dong)], ['금액', +L.dep > 0], ['면적', +L.area > 0],
+    ['층', 주거 ? 글(L.band) || 글(L.floorNo) : 글(L.floorNo)], ['방향', !주거 || (글(L.dir) && 글(L.dirBase))],
+    ['입주 가능일', 글(L.moveIn)], ['관리비 기준', 글(L.feeBasis)], ['소유자 확인', L.ownerOk === true]];
+  return { 목록, 다: 목록.length, 찬: 목록.filter(x => x[1]).length, 빠짐: 목록.filter(x => !x[1]).map(x => x[0]) };
+}
+const 물건상태 = L => L.status === 'done' ? ['거래완료', 'b-ok'] : L.vis === 'open' && L.status === 'active' ? ['노출 중', 'b-ind'] : ['장부만', 'b-mute'];
+const 노출권한 = () => 권한('listing') && !(직원() && 직원().role === 'assistant');   /* 중개보조원은 표시 · 광고를 할 수 없다(공인중개사법 제18조의2) */
+function 물건바꿈(row){ const L = listingFromRow(row), i = S.listings.findIndex(x => x.id === L.id); if(i >= 0) S.listings[i] = L; else S.listings.unshift(L); return L; }
+async function lgSet(id, body, 말){
+  if(MG.busy) return false; MG.busy = id; render();
+  const { ok, j } = await ctPost({ what:'listing-set', id, ...body }).catch(() => ({ ok:false, j:{ error:'네트워크 문제로 저장하지 못했습니다' } }));
+  MG.busy = '';
+  if(!ok || !j.row){ render(); toast(j.need ? '아직 준비 중입니다 - 운영자가 설정을 마치면 쓸 수 있습니다' : (j.error || '저장하지 못했습니다')); return false; }
+  물건바꿈(j.row); render(); if(말) toast(말); return true;
+}
+async function lgState(id, to, 말){
+  if(MG.busy) return false; MG.busy = id; render();
+  const { ok, j } = await ctPost({ what:'listing-state', id, to }).catch(() => ({ ok:false, j:{ error:'네트워크 문제로 바꾸지 못했습니다' } }));
+  MG.busy = '';
+  if(!ok || !j.row){ render(); toast(j.need ? '아직 준비 중입니다 - 운영자가 설정을 마치면 쓸 수 있습니다' : (j.error || '바꾸지 못했습니다')); return false; }
+  물건바꿈(j.row); render(); if(말) toast(말); return true;
+}
+/* 올려 둔 물건 → 등록 화면 칸 (고치기) */
+function 물건폼(L){
+  const 입주 = String(L.moveIn || '').split(' · ').map(s => s.trim()).filter(Boolean), 고름 = ['즉시', '협의'];
+  const 날 = 입주.find(x => !고름.includes(x));
+  return { lkind: L.kind, lname: L.name, ldong: L.dong, ldeal: L.deal || '월세', ldep: L.dep ? String(L.dep) : '', lrent: L.rent ? String(L.rent) : '', lfee: L.fee ? String(L.fee) : '',
+    lfeeBasis: L.feeBasis, lfeeType: L.feeType, lfeeItems: L.feeItems, larea: L.area ? String(L.area) : '', lareaSup: L.areaSup ? String(L.areaSup) : '',
+    lrooms: L.rooms ? String(L.rooms) : '', lbaths: L.baths ? String(L.baths) : '', lband: L.band || '', lfloorNo: L.floorNo, lduplex: L.duplex ? '복층' : '단층',
+    ldir: L.dir, ldirBase: L.dirBase, lmoveIn: [...입주.filter(x => 고름.includes(x)), ...(날 ? ['날짜 지정'] : [])], lmoveWhen: 날 || '',
+    lhtype: L.htype, lbdong: L.bdong, lho: L.ho, lnote: L.note, lapproved: L.approved || '', lmusts: [...(L.musts || [])], lmustsFree: L.mustsFree,
+    lpark: (L.musts || []).includes('주차 가능') ? '가능' : '' };
+}
 V["#/partner/listings"] = () => {
   if(!LM.loaded && !LM.loading && 세션있음()) setTimeout(lmLoad);
-  const rows = S.listings.map(L=>{
-    const ms = matchesFor(L);
-    return `<div class="card pad clickable fade" data-go="#/partner/listing/${L.id}" style="display:flex;flex-direction:column;gap:10px">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
-        <span style="font-size:14.5px;font-weight:700;color:var(--ind)">${L.kind==='home'?'주거':'상가'} · ${esc(L.deal||'')}</span>
-        <span style="display:flex;gap:6px;align-items:center">${LM.memos[L.id] ? '<span class="badge b-mute">메모</span>' : ''}${ms.length? `<span class="badge b-ok">맞는 손님 ${ms.length}명 · 최고 ${적합도(ms[0].st)}점</span>` : `<span class="badge b-mute">대기 중</span>`}</span>
-      </div>
-      <b style="font-size:${isMo()?15:16}px;font-weight:700;letter-spacing:-.02em">${esc(L.name)} ${demoTag(L,'vertical-align:middle')}</b>
-      <div class="lines"><span class="num">${priceOf(L)}</span><br>${esc(specOf(L))}</div>
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:auto;padding-top:2px">
-        <span style="font-size:13.5px;color:var(--n500)">등록 ${esc(L.at)} · 사진 ${L.photos}장</span>
-        <span style="font-size:14.5px;font-weight:700;color:${ms.length?'var(--ind)':'var(--n500)'}">${ms.length?'제안 보내기 →':'자세히 →'}</span>
-      </div></div>`;}).join('');
-  const total = S.listings.reduce((n,L)=>n+matchesFor(L).length,0);
+  const 전체 = S.listings, 목록 = 전체.filter(L => L.status === 'active' || L.status === 'done' || L.seed || !L.status), 보관 = 전체.filter(L => L.status === 'arch'), 휴지 = 전체.filter(L => L.status === 'trash');
+  const 탭줄 = MG.tab === 'arch' ? 보관 : MG.tab === 'trash' ? 휴지 : 목록;
+  const 말 = String(MG.q || '').trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const 거름 = 탭줄.filter(L => (MG.tab !== 'list' || !MG.f || (MG.f === 'open' ? L.vis === 'open' && L.status === 'active' : MG.f === 'done' ? L.status === 'done' : L.vis !== 'open' && L.status !== 'done'))
+    && 말.every(w => { const m = LM.memos[L.id] || {}; return [L.name, L.dong, L.deal, L.bdong, L.ho, m.who, m.note].join(' ').toLowerCase().includes(w); }));
+  const 쓸수 = 권한('listing'), 노출 = 노출권한();
+  const 단 = (act, v, t, cls = '') => `<button type="button" class="btn tool sm${cls}" data-act="${act}" data-v="${esc(v)}" ${MG.busy ? 'disabled' : ''}>${t}</button>`;
+  const 줄 = L => { const [상, 색] = 물건상태(L), g = 물건기준(L), m = LM.memos[L.id] || {}, ms = L.status === 'active' ? matchesFor(L) : [];
+    const 관리 = L.seed || !쓸수 ? '' : MG.tab === 'trash' ? 단('lg-state', L.id + '|active', '되돌리기')
+      : MG.tab === 'arch' ? 단('lg-state', L.id + '|active', '되돌리기') + 단('lg-state', L.id + '|trash', '삭제', ' dng')
+      : L.status === 'done' ? 단('lg-state', L.id + '|active', '되돌리기') + 단('lg-state', L.id + '|arch', '내리기')
+      : (노출 ? (L.vis === 'open' ? 단('lg-vis', L.id + '|private', '노출 종료') : 단('lg-vis', L.id + '|open', '노출하기', g.빠짐.length ? ' off' : ' on')) : '') + 단('lg-state', L.id + '|arch', '내리기') + 단('lg-state', L.id + '|trash', '삭제', ' dng');
+    return `<div class="lg-row${L.status === 'done' ? ' done' : ''}">
+      <div class="lg-c1"><span class="badge ${색}">${상}</span>${ms.length ? `<small class="lg-m">맞는 손님 ${ms.length}명</small>` : ''}</div>
+      <a class="lg-c2" data-go="#/partner/listing/${L.id}"><b>${esc(L.name)} ${demoTag(L, 'vertical-align:middle')}</b><span>${esc(specOf(L))}</span></a>
+      <div class="lg-c3"><b class="num">${priceOf(L)}</b>${L.priceLog.length ? `<small class="lg-chg">금액 변경 ${L.priceLog.length}회</small>` : ''}</div>
+      <div class="lg-c4 lg-priv" data-l="의뢰인">${m.who || m.phone ? `<b>${esc(m.who || '')}</b><span class="num">${esc(m.phone || '')}</span>` : '<span class="lg-none">-</span>'}</div>
+      <div class="lg-c5 lg-priv" data-l="특이사항">${m.note ? esc(m.note.length > 60 ? m.note.slice(0, 60) + '…' : m.note) : '<span class="lg-none">-</span>'}</div>
+      <div class="lg-c6" data-l="노출 기준"><span class="badge ${g.빠짐.length ? 'b-warn' : 'b-ok'}">${g.찬}/${g.다}</span>${g.빠짐.length ? `<small>${esc(g.빠짐.slice(0, 2).join(' · '))}${g.빠짐.length > 2 ? ` 외 ${g.빠짐.length - 2}` : ''}</small>` : ''}</div>
+      <div class="lg-c7" data-l="고친 날">${esc(L.editedAt || L.at)}${L.status === 'trash' ? '<small>30일 뒤 지워짐</small>' : ''}</div>
+      <div class="lg-c8">${관리}</div></div>`; };
+  const 세 = { open: 목록.filter(L => L.vis === 'open' && L.status === 'active').length, done: 목록.filter(L => L.status === 'done').length };
+  const 타일 = (k, 이름, n, 덧) => `<button type="button" class="lg-tile${MG.tab === 'list' && MG.f === k ? ' on' : ''}" data-act="lg-f" data-v="${k}" aria-pressed="${MG.tab === 'list' && MG.f === k}"><small>${이름}</small><b class="num">${n}</b><span>${덧}</span></button>`;
+  const total = 목록.filter(L => L.status === 'active').reduce((n, L) => n + matchesFor(L).length, 0);
   return `
 <div class="scr fade" style="background:var(--n50)">
   ${navPartner('l')}
-  <div class="pad adm-page" style="flex:1;padding-top:${isMo()?18:30}px;padding-bottom:24px;max-width:${isMo()?'none':'1000px'};margin:0 auto;width:100%;display:flex;flex-direction:column;gap:14px">
+  <div class="pad adm-page" style="flex:1;padding-top:${isMo()?18:30}px;padding-bottom:24px;max-width:${isMo()?'none':'1240px'};margin:0 auto;width:100%;display:flex;flex-direction:column;gap:14px">
     <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap">
-      <div><h1 class="t" style="font-size:${isMo()?21:25}px;margin-top:8px">내 물건 <span style="color:var(--ind)">${S.listings.length}건</span></h1>
-        <p class="sub" style="font-size:14.5px">올려두시면 지금 들어와 있는 조건과 <b style="color:var(--n900)">바로 대조</b>해 맞는 손님을 찾아드립니다.</p></div>
-      <button class="btn pri sm" data-go="#/partner/listing/new">+ 매물 등록</button>
+      <div><h1 class="t" style="font-size:${isMo()?21:25}px;margin-top:8px">${물건이름()} <span style="color:var(--ind)">${목록.length}건</span></h1>
+        <p class="sub" style="font-size:14.5px">우리 사무소 안에서만 보는 장부입니다. 올려두면 들어와 있는 조건과 <b style="color:var(--n900)">바로 대조</b>하고, 기준을 다 채운 물건은 손님에게 <b style="color:var(--n900)">노출</b>할 수 있습니다.</p></div>
+      ${쓸수 ? `<button class="btn pri sm" data-act="lg-new">+ 장부에 새로 적기</button>` : ''}
     </div>
-    ${total? `<div class="card pad" style="border-color:rgba(27,122,70,.35);background:var(--okbg);box-shadow:none;display:flex;align-items:center;gap:12px">
+    <div class="lg-tiles">${타일('', '전체', 목록.length, '목록에 있는 물건')}${타일('open', '노출 중', 세.open, '손님 · 다른 중개사에게 보임')}${타일('private', '장부만', 목록.length - 세.open - 세.done, '우리 사무소만 봄')}${타일('done', '거래완료', 세.done, '계약으로 끝난 물건')}</div>
+    ${total ? `<div class="card pad" style="border-color:rgba(27,122,70,.35);background:var(--okbg);box-shadow:none;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
       <b style="font-size:14.5px;line-height:1.5;color:var(--ok)">지금 바로 제안할 수 있는 손님이 ${total}명 있습니다</b>
-      <span style="font-size:13.5px;line-height:1.5;color:var(--n700)">물건을 눌러 확인하세요</span></div>`:''}
-    ${seedGate(S.lsReady, () => S.listings.length? `<div class="adm-grid">${rows}</div>`
-      : `<div class="empty">${beaverlyMini(110)}<p style="margin:8px 0 6px;font-size:15px;font-weight:700">아직 올려둔 물건이 없습니다</p>
-         <p style="margin:0 auto 18px;max-width:400px;font-size:14.5px;line-height:1.6;color:var(--n500)">보유하신 물건을 올려두시면, 조건이 맞는 손님을 이 화면에서 바로 찾아드립니다.</p>
-         <button class="btn pri md" data-go="#/partner/listing/new">첫 매물 등록하기</button></div>`)}
+      <span style="font-size:13.5px;line-height:1.5;color:var(--n700)">물건을 눌러 확인하세요</span></div>` : ''}
+    <div class="lg-bar"><div class="ct-chips" role="tablist" aria-label="장부 나누기">${[['list', '목록', 목록.length], ['arch', '보관함', 보관.length], ['trash', '휴지통', 휴지.length]].map(([k, t, n]) =>
+        `<button type="button" class="chip${MG.tab === k ? ' on' : ''}" data-act="lg-tab" data-v="${k}" role="tab" aria-selected="${MG.tab === k}">${t}<span class="num">${n}</span></button>`).join('')}</div>
+      <input class="inp" type="search" data-in="lgq" value="${esc(MG.q || '')}" placeholder="단지 · 동네 · 의뢰인 · 메모로 찾기" aria-label="장부에서 찾기" autocomplete="off"></div>
+    ${seedGate(S.lsReady, () => 거름.length ? `<div class="card lg-table"><div class="lg-row lg-th" aria-hidden="true"><div>상태</div><div>물건</div><div>금액</div><div class="lg-priv">의뢰인 (비공개)</div><div class="lg-priv">특이사항 (비공개)</div><div>노출 기준</div><div>고친 날</div><div>관리</div></div>${거름.map(줄).join('')}</div>`
+      : 탭줄.length ? 빈자리('찾는 물건이 없습니다', '다른 말로 찾아 보세요.', '', 80)
+      : MG.tab === 'arch' ? 빈자리('보관함이 비어 있습니다', '목록에서 ‘내리기’를 누른 물건이 여기에 모입니다.', '', 80)
+      : MG.tab === 'trash' ? 빈자리('휴지통이 비어 있습니다', '삭제한 물건은 30일 동안 여기에 있다가 지워집니다.', '', 80)
+      : `<div class="empty">${beaverlyMini(110)}<p style="margin:8px 0 6px;font-size:15px;font-weight:700">아직 적어 둔 물건이 없습니다</p>
+         <p style="margin:0 auto 18px;max-width:400px;font-size:14.5px;line-height:1.6;color:var(--n500)">보유하신 물건을 적어 두시면, 조건이 맞는 손님을 이 화면에서 바로 찾아드립니다.</p>
+         ${쓸수 ? `<button class="btn pri md" data-act="lg-new">첫 물건 적기</button>` : ''}</div>`)}
     <p style="margin:2px 0 ${isMo()?'12px':'0'};font-size:13.5px;line-height:1.75;color:var(--n500)">
-      올리신 물건은 <b style="color:var(--n900)">손님에게 목록으로 공개되지 않습니다.</b> 조건이 맞을 때 보내시는 제안 안에서만 보입니다.</p>
-    <!-- 예시가 실제로 보일 때만 예시라고 말한다. 전에는 '이번에 저장한 적이 있는가'
-         만 보고 있어서, 올려둔 물건이 하나도 없는 파트너에게도 아무것도 안 보이는
-         화면에 '지금 보이는 것은 예시입니다' 라고 적혀 있었다. -->
+      노란 칸(의뢰인 · 특이사항)은 <b style="color:var(--n900)">우리 사무소 직원만</b> 봅니다. ‘장부만’인 물건은 손님에게 목록으로 보이지 않고, 조건이 맞을 때 보내시는 제안 안에서만 보입니다.</p>
     ${S.listings.some(x=>x.seed)?`<p style="margin:0;background:var(--warnbg);padding:12px 16px;font-size:13.5px;line-height:1.7;color:var(--n700)">
       지금 보이는 것은 <b style="color:var(--n900)">예시</b>입니다. 가입 확인이 끝나면 올려두신 물건이 저장됩니다.</p>`:''}
   </div>
   ${tabbar('l','p')}
 </div>`;};
+/* 물건 상세의 관리 칸 - 노출 기준 · 소유자 확인 · 동·호 숨기기 · 한줄 특징 · 금액 수정 · 상태 */
+function 물건관리HTML(L){
+  if(L.seed || !/^[0-9a-f-]{36}$/i.test(String(L.id || '')) || !권한('listing')) return '';
+  const g = 물건기준(L), [상, 색] = 물건상태(L), e = MG.e[L.id] || {}, 살아 = L.status === 'active', 노출 = 노출권한(), 바쁨 = MG.busy ? 'disabled' : '';
+  const 돈칸 = (k, 이름, v) => `<label class="ct-f"><span class="lab">${이름} (원)</span><input class="inp num" data-in="lgp:${L.id}:${k}" inputmode="numeric" value="${esc(comma(String(e[k] != null ? e[k] : (v || ''))))}" autocomplete="off"></label>`;
+  const 날 = s => String(s || '').slice(0, 10).replace(/-/g, '.');
+  return `<div class="card pad lg-card"><h2 class="lm-h">장부 관리 <span class="badge ${색}">${상}</span></h2>
+    <div class="lg-std"><b>노출 기준 ${g.찬}/${g.다}</b><div class="lg-stds">${g.목록.map(([t, ok]) => `<span class="badge ${ok ? 'b-ok' : 'b-warn'}">${ok ? '✓' : '·'} ${t}</span>`).join('')}</div>
+      ${g.빠짐.length ? `<p class="sub" style="margin:0;font-size:13.5px">아직 빠진 항목 - ${esc(g.빠짐.join(' · '))}. 모두 채우면 노출할 수 있습니다.</p>` : ''}</div>
+    ${살아 ? `<label class="lg-ck"><input type="checkbox" data-act="lg-owner" data-v="${L.id}" ${L.ownerOk ? 'checked' : ''} ${바쁨}><span><b>등기부상 소유자와 일치함을 확인했습니다</b><small>중개사가 등기부와 대조하고 직접 체크합니다 · 공동명의는 모두 일치해야 합니다</small></span></label>
+    <label class="lg-ck"><input type="checkbox" data-act="lg-hide" data-v="${L.id}" ${L.hideUnit ? 'checked' : ''} ${바쁨}><span><b>손님 화면에서 동 · 호 숨기기</b><small>끄면 노출할 때 동까지 보입니다 · 호는 연결 전에는 보이지 않습니다</small></span></label>
+    <div class="lm-grid"><label class="ct-f wide"><span class="lab">한줄 특징 (40자)</span><input class="inp" data-in="lgp:${L.id}:one" maxlength="40" value="${esc(e.one != null ? e.one : L.oneLine)}" placeholder="예: 올수리 · 남향 로열층 · 역 도보 5분" autocomplete="off"></label>
+      ${돈칸('dep', L.deal === '매매' ? '매매가' : '보증금', L.dep)}${L.deal === '매매' || L.deal === '전세' ? '' : 돈칸('rent', '월세', L.rent)}</div>
+    ${L.priceLog.length ? `<p class="sub" style="margin:0;font-size:13px;line-height:1.7">금액 변경 이력 · ${L.priceLog.slice(-3).map(x => `${날(x.at)} ${comma(String((x.dep || [])[0] || 0))}원 → ${comma(String((x.dep || [])[1] || 0))}원${(x.rent || [])[0] !== (x.rent || [])[1] ? ` / 월 ${comma(String((x.rent || [])[0] || 0))}원 → ${comma(String((x.rent || [])[1] || 0))}원` : ''}`).join(' · ')}</p>` : ''}` : `<p class="sub" style="margin:0">${L.status === 'done' ? '거래가 끝난 물건입니다.' : L.status === 'arch' ? '보관함에 있는 물건입니다.' : '휴지통에 있는 물건입니다 - 30일 뒤 지워집니다.'}${L.closedAt ? ` (${날(L.closedAt)})` : ''}</p>`}
+    <div class="lg-acts">${살아 ? `<button type="button" class="btn sec sm" data-act="lg-save" data-v="${L.id}" ${바쁨}>${MG.busy === L.id ? '저장하는 중…' : '저장'}</button>
+      ${노출 ? (L.vis === 'open' ? `<button type="button" class="btn tool sm" data-act="lg-vis" data-v="${L.id}|private" ${바쁨}>노출 종료</button>` : `<button type="button" class="btn pri sm" data-act="lg-vis" data-v="${L.id}|open" ${바쁨}>노출하기</button>`) : ''}
+      <button type="button" class="btn tool sm" data-act="lg-edit" data-v="${L.id}" ${바쁨}>고치기</button>
+      <button type="button" class="btn tool sm" data-act="lg-state" data-v="${L.id}|done" ${바쁨}>거래완료</button>
+      <button type="button" class="btn tool sm" data-act="lg-state" data-v="${L.id}|arch" ${바쁨}>내리기</button>
+      <button type="button" class="btn tool sm dng" data-act="lg-state" data-v="${L.id}|trash" ${바쁨}>삭제</button>`
+      : `<button type="button" class="btn sec sm" data-act="lg-state" data-v="${L.id}|active" ${바쁨}>목록으로 되돌리기</button>`}</div>
+    ${L.vis === 'open' && 살아 ? `<p class="sub" style="margin:0;font-size:13px;line-height:1.6">노출 종료는 자동이 아닙니다 - 계약금 일부가 들어오면 직접 눌러 주세요.</p>` : ''}
+  </div>`;
+}
 
 /* ══════════ 도로명주소 찾기 ══════════
    여기저기서 쓰이므로 한 벌만 둔다 - 매물 등록에도, 소유자 가입에도.
@@ -9275,9 +9390,9 @@ V["#/partner/listing/new"] = () => {
   ${navPartner('l', false)}
   <div class="pad" style="flex:1;padding-top:${isMo()?18:28}px;padding-bottom:24px;max-width:${isMo()?'none':'780px'};margin:0 auto;width:100%;display:flex;flex-direction:column;gap:16px">
     <div style="display:flex;justify-content:space-between;align-items:center">
-      <a class="back" data-go="#/partner/listings"><i class="ar-l" aria-hidden="true"></i>내 물건</a></div>
-    <div><h1 class="t" style="font-size:${isMo()?21:25}px">매물을 올려두세요</h1>
-      <p class="sub measure">등록하면 <b style="color:var(--n900)">지금 대기 중인 손님과 즉시 대조</b>합니다. 맞는 손님이 있으면 바로 제안할 수 있습니다.</p></div>
+      <a class="back" data-go="#/partner/listings"><i class="ar-l" aria-hidden="true"></i>${물건이름()}</a>${S.editL ? `<button type="button" class="tapx" data-act="lg-new" style="font-size:13.5px;color:var(--n500)">고치기 그만두고 새로 적기</button>` : ''}</div>
+    <div><h1 class="t" style="font-size:${isMo()?21:25}px">${S.editL ? '물건 고치기' : '매물을 올려두세요'}</h1>
+      <p class="sub measure">${S.editL ? '고친 값은 저장하는 즉시 장부와 대조에 반영됩니다. 유형(주거 · 상가 등)은 바꿀 수 없습니다.' : '적어 두면 <b style="color:var(--n900)">지금 대기 중인 손님과 즉시 대조</b>합니다. 처음에는 장부에만 남고, 손님에게 노출하는 것은 장부에서 따로 켭니다.'}</p></div>
 
     <div class="card pad" style="display:flex;flex-direction:column;gap:16px">
       <!-- 손님은 넷 중에서 고른다(주거·상가·사무실·창고). 여기를 둘로 묶어 두면
@@ -9408,7 +9523,7 @@ V["#/partner/listing/new"] = () => {
 
     <div style="display:flex;justify-content:space-between;align-items:center;gap:12px">
       <span data-lhint style="font-size:13.5px;color:var(--n500)">${req?'등록 즉시 대기 손님과 대조합니다':'* 표시 항목을 채워주세요'}</span>
-      <button class="btn pri" data-act="save-listing" ${req&&!S.lsBusy?'':'disabled'}>${S.lsBusy?'등록하는 중…':'등록하고 매칭 보기'}</button>
+      <button class="btn pri" data-act="save-listing" ${req&&!S.lsBusy?'':'disabled'}>${S.lsBusy?'저장하는 중…':S.editL?'고친 내용 저장':'등록하고 매칭 보기'}</button>
     </div>
   </div>
 </div>`;};
@@ -9477,7 +9592,7 @@ V["#/partner/listing"] = (id) => {
 <div class="scr fade" style="background:var(--n50)">
   ${navPartner('l')}
   <div class="pad" style="flex:1;padding-top:${isMo()?18:28}px;padding-bottom:24px;max-width:${isMo()?'none':'1000px'};margin:0 auto;width:100%;display:flex;flex-direction:column;gap:14px">
-    <a class="back" data-go="#/partner/listings"><i class="ar-l" aria-hidden="true"></i>내 물건</a>
+    <a class="back" data-go="#/partner/listings"><i class="ar-l" aria-hidden="true"></i>${물건이름()}</a>
     <div class="card pad" style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap">
       <div>
         <span style="font-size:14.5px;font-weight:700;color:var(--ind)">${L.kind==='home'?'주거':'상가'} · ${esc(L.deal||'')}</span>
@@ -9488,8 +9603,9 @@ V["#/partner/listing"] = (id) => {
           <b style="color:var(--ind)">강점</b> ${esc(appealOf(L))}</p>` : ''}
         ${L.note ? `<p style="margin:6px 0 0;font-size:14.5px;line-height:1.7;color:var(--n700);white-space:pre-line">${esc(L.note)}</p>` : ''}
       </div>
-      <button class="btn sec sm" data-act="del-listing" data-v="${L.id}" style="color:var(--danger)">내리기</button>
+      ${L.seed ? `<button class="btn sec sm" data-act="del-listing" data-v="${L.id}" style="color:var(--danger)">내리기</button>` : ''}
     </div>
+    ${물건관리HTML(L)}
     ${물건메모HTML(L)}
 
     <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;margin-top:4px">
@@ -12298,7 +12414,7 @@ function 파트너옆(active){
     ['#/partner/home', '대시보드', 'home', 'h'],
     '영업',
     ['#/partner/demands', own ? '맞는 손님' : '수요 목록', 'users', 'd'],
-    ['#/partner/listings', '내 물건', 'building', 'l'],
+    ['#/partner/listings', (ownerSide() ? '내 물건' : '매물장부'), 'building', 'l'],
     ['#/partner/proposals', '내 제안', 'send', 'p'],
     ...(own || !권한('room') ? [] : [['#/partner/rooms', '손님 대화', 'chat', 'rm']]),
     ...(계약막힘() ? [] : ['계약', ...CT_하위메뉴]),
@@ -12332,14 +12448,14 @@ function adm위치(h){
   if(계약[h]) return [['계약'], [계약[h]]];
   if(h === '#/partner/contract/new') return [['계약'], ['계약서 작성', '#/partner/contracts/new'], [CT.doc ? ctTitle(CT.doc) : '새 계약서']];
   if(h.startsWith('#/partner/contract/')) return [['계약'], ['계약서 목록', '#/partner/contracts'], [CT.doc ? ctTitle(CT.doc) : '계약서']];
-  const 수요 = [ownerSide() ? '맞는 손님' : '수요 목록', '#/partner/demands'], 물건 = ['내 물건', '#/partner/listings'];
+  const 수요 = [ownerSide() ? '맞는 손님' : '수요 목록', '#/partner/demands'], 물건 = [(ownerSide() ? '내 물건' : '매물장부'), '#/partner/listings'];
   if(h === '#/partner/home') return [['대시보드']];
   if(h === '#/account') return [['마이페이지']];
   if(h === '#/partner/demands') return [['영업'], [수요[0]]];
   if(h.startsWith('#/partner/demand/')) return [['영업'], 수요, ['손님 조건']];
   if(h.startsWith('#/partner/propose/')) return [['영업'], 수요, ['제안 보내기']];
-  if(h === '#/partner/listings') return [['영업'], ['내 물건']];
-  if(h === '#/partner/listing/new') return [['영업'], 물건, ['매물 등록']];
+  if(h === '#/partner/listings') return [['영업'], [(ownerSide() ? '내 물건' : '매물장부')]];
+  if(h === '#/partner/listing/new') return [['영업'], 물건, [S.editL ? '물건 고치기' : '새로 적기']];
   if(h.startsWith('#/partner/listing/')) return [['영업'], 물건, ['물건 보기']];
   if(h === '#/partner/proposals') return [['영업'], ['내 제안']];
   if(h === '#/partner/rooms') return [['영업'], ['손님 대화']];
@@ -12373,6 +12489,10 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
+  { v:'26.11.12.3', 날:'2026-11-12', 줄:[
+    '‘내 물건’이 ‘매물장부’가 됐습니다 - 목록 · 보관함 · 휴지통(30일), 의뢰인 · 특이사항 비공개 칸, 노출 기준 10가지',
+    '올려 둔 물건을 고칠 수 있습니다 - 한줄 특징 · 금액 수정(변경 이력이 남습니다) · 거래완료 표시',
+    '기준을 다 채운 물건은 ‘노출하기’로 손님 공개를 준비합니다 - 소유자 확인은 중개사가 직접 체크하고, 중개보조원은 노출을 켤 수 없습니다' ] },
   { v:'26.11.12.2', 날:'2026-11-12', 줄:[
     '새 계약서 시작 방법 네 가지 - 등록 물건에서 · 서류로 채우기 · 기존 계약서 복사 · 빈 양식에 직접',
     '계약서 인쇄 - 서명란이 두 쪽으로 갈라지지 않습니다. 한 쪽에 모아 맨 아래에 찍고, 넘친 특약만 다음 쪽으로 넘깁니다',
@@ -19169,6 +19289,8 @@ document.addEventListener('input', e=>{
   /* 초안 의견 칸 - 적는 대로 담기만(다시 그리지 않는다) */
   if(k === 'rm-text'){ RM.text = el.value; return; }
   if(k === 'ph-q'){ PH.q = el.value; redrawKeepingCaret('ph-q'); return; }
+  if(k === 'lgq'){ MG.q = el.value; redrawKeepingCaret('lgq'); return; }
+  if(k.startsWith('lgp:')){ const [, id, key] = k.split(':'); (MG.e[id] = MG.e[id] || {})[key] = key === 'one' ? el.value : el.value.replace(/[^0-9]/g, ''); if(key !== 'one') el.value = comma(MG.e[id][key]); return; }
   if(k.startsWith('lm:')){ const [, id, key] = k.split(':'); const 값 = key === 'nego' ? el.value.replace(/[^0-9]/g, '') : el.value;
     LM.edit[id] = { ...(LM.memos[id] || {}), ...(LM.edit[id] || {}), [key]: 값 };
     if(key === 'nego'){ const w = document.querySelector(`[data-lmwon="${id}"]`); if(w) w.textContent = +값 ? `금 ${한글금액(+값)}원` : ''; } return; }
@@ -20718,10 +20840,12 @@ function handle(a,v,el){
         photos:0, at:'방금', status:'active' };
       if(S.lsBusy) return true;
       S.lsBusy = true; render();
-      apiFetch('/api/feed', {method:'POST', body: JSON.stringify({what:'listing-add', listing:L})})
+      apiFetch('/api/feed', {method:'POST', body: JSON.stringify(S.editL ? {what:'listing-set', id:S.editL, listing:L} : {what:'listing-add', listing:L})})
         .then(r => r.json().catch(()=>({})).then(j => {
           S.lsBusy = false;
-          if(!(r.ok && j.ok)){ render(); return toast(j.error || '물건을 저장하지 못했습니다'); }
+          if(!(r.ok && j.ok)){ render(); return toast(j.need ? '아직 준비 중입니다 - 운영자가 설정을 마치면 고칠 수 있습니다' : (j.error || '물건을 저장하지 못했습니다')); }
+          if(S.editL){ const 고친 = j.row ? 물건바꿈(j.row) : null; S.editL = null; S.form = {}; S.lsAt = Date.now();
+            go('#/partner/listing/' + (고친 ? 고친.id : '')); toast('고친 내용을 저장했습니다'); return; }
           const saved = j.row ? listingFromRow(j.row) : L;
           S.listings.unshift(saved); S.lsSaved = true; S.lsAt = Date.now();
           const n = matchesFor(saved).length;
@@ -20738,6 +20862,22 @@ function handle(a,v,el){
           }
         }))
         .catch(()=>{ S.lsBusy=false; render(); toast('네트워크 문제로 물건을 저장하지 못했습니다'); });
+      return true; }
+    case 'lg-tab': MG.tab = ['list', 'arch', 'trash'].includes(v) ? v : 'list'; render(); return true;
+    case 'lg-f': MG.tab = 'list'; MG.f = MG.f === v ? '' : (v || ''); render(); return true;
+    case 'lg-new': S.editL = null; S.form = {}; go('#/partner/listing/new'); return true;
+    case 'lg-edit': { const L = S.listings.find(x => x.id === v); if(!L) return true; S.form = 물건폼(L); S.editL = L.id; go('#/partner/listing/new'); return true; }
+    case 'lg-owner': { const L = S.listings.find(x => x.id === v); if(L) lgSet(v, { listing: { ownerOk: !L.ownerOk } }, !L.ownerOk ? '소유자 확인을 표시했습니다' : '소유자 확인을 껐습니다'); return true; }
+    case 'lg-hide': { const L = S.listings.find(x => x.id === v); if(L) lgSet(v, { listing: { hideUnit: !L.hideUnit } }, !L.hideUnit ? '손님 화면에서 동 · 호를 숨깁니다' : '노출할 때 동까지 보입니다'); return true; }
+    case 'lg-save': { const L = S.listings.find(x => x.id === v), e = MG.e[v] || {}; if(!L) return true;
+      const 값 = {}; if(e.one != null) 값.oneLine = String(e.one).trim(); if(e.dep != null && +e.dep > 0) 값.dep = +e.dep; if(e.rent != null) 값.rent = +e.rent || 0;
+      if(!Object.keys(값).length) return toast('바뀐 것이 없습니다'), true;
+      lgSet(v, { listing: 값 }, '저장했습니다').then(ok => { if(ok){ delete MG.e[v]; render(); } }); return true; }
+    case 'lg-vis': { const [id, to] = String(v).split('|'), L = S.listings.find(x => x.id === id); if(!L) return true;
+      if(to === 'open'){ const g = 물건기준(L); if(g.빠짐.length){ toast(`노출하려면 ${g.빠짐.join(' · ')} 항목을 채워 주세요`); if(S.route !== '#/partner/listing/' + id) go('#/partner/listing/' + id); return true; } }
+      lgSet(id, { vis: to === 'open' ? 'open' : 'private' }, to === 'open' ? '노출을 켰습니다 - 손님과 다른 중개사에게 보입니다' : '노출을 끝냈습니다 - 장부에만 남습니다'); return true; }
+    case 'lg-state': { const [id, to] = String(v).split('|');
+      lgState(id, to, { active: '목록으로 되돌렸습니다', done: '거래완료로 표시했습니다', arch: '보관함으로 내렸습니다', trash: '휴지통으로 옮겼습니다 - 30일 뒤 지워집니다' }[to]).then(ok => { if(ok && S.route.startsWith('#/partner/listing/') && to !== 'active' && to !== 'done') go('#/partner/listings'); });
       return true; }
     case 'del-listing': {
       const L=S.listings.find(x=>x.id===v);

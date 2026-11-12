@@ -570,6 +570,8 @@ export default async function handler(req, res) {
   if (b.what === 'listings')    return readListings(req, res, chk.agent);
   if (b.what === 'listing-add') return addListing(req, res, chk.agent, user, b);
   if (b.what === 'listing-del') return delListing(req, res, chk.agent, b);
+  if (b.what === 'listing-set')   return setListing(res, chk.agent, b);
+  if (b.what === 'listing-state') return setListingState(res, chk.agent, b);
   if (b.what === 'listing-memo')      return readListingMemos(res, chk.agent);
   if (b.what === 'listing-memo-save') return saveListingMemo(res, chk.agent, b);
 
@@ -925,10 +927,98 @@ async function readListings(req, res, agent) {
       if (noTable(t)) return res.status(200).json({ ok: true, rows: [], note: '0015 마이그레이션 필요' });
       return res.status(502).json({ error: '물건을 불러오지 못했습니다' });
     }
-    return res.status(200).json({ ok: true, rows: await r.json(), at: new Date().toISOString() });
+    /* 휴지통은 30일 (0039) - 지난 것은 목록에서 빼기만 한다(행은 남는다: 보낸 제안이 참조한다) */
+    const 한달전 = Date.now() - 30 * 864e5;
+    const rows = (await r.json()).filter(x => x.status !== 'trash' || !x.closed_at || Date.parse(x.closed_at) > 한달전);
+    return res.status(200).json({ ok: true, rows, at: new Date().toISOString() });
   } catch (e) {
     return res.status(502).json({ error: 'DB에 닿지 못했습니다' });
   }
+}
+
+/* ── 매물장부 · 매물등록 (2026-11-12 파트너 기획 C1, 0039) ──
+   노출 기준 열 가지 - 다 채워야 손님과 다른 중개사에게 노출(vis=open)할 수 있다. 화면(물건기준)과 같은 목록이다.
+   소유자 확인은 중개사가 등기부와 대조하고 직접 체크한다(시스템이 검증하지 않는다) */
+export function 노출기준(m) {
+  const 주거 = m.kind === 'home', 글 = v => !!String(v ?? '').trim();
+  const 목록 = [
+    ['종류', KINDS.includes(m.kind)], ['거래유형', 글(m.deal)], ['소재지', 글(m.dong)], ['금액', +m.dep > 0], ['면적', +m.area > 0],
+    ['층', 주거 ? 글(m.band) || 글(m.floor_no) : 글(m.floor_no)], ['방향', !주거 || (글(m.dir) && 글(m.dir_base))],
+    ['입주 가능일', 글(m.move_in)], ['관리비 기준', 글(m.fee_basis)], ['소유자 확인', m.owner_ok === true],
+  ];
+  return { 다: 목록.length, 찬: 목록.filter(x => x[1]).length, 빠짐: 목록.filter(x => !x[1]).map(x => x[0]) };
+}
+const 칸없음 = t => /does not exist|PGRST204|Could not find the '[a-z_]+' column|23514|violates check constraint/i.test(t);
+const 물건고침칸 = {
+  name: v => txt(v, 80), dong: v => txt(v, 60), deal: v => txt(v, 20), dep: int0, rent: int0, fee: int0,
+  area: num0, areaSup: ['area_sup', num0], py: num0, rooms: int0, baths: int0, band: v => txt(v, 20), floors: int0,
+  bdong: v => txt(v, 20), ho: v => txt(v, 20), htype: v => txt(v, 30), floorNo: ['floor_no', v => txt(v, 10)], duplex: v => v === true,
+  musts: arr, mustsFree: ['musts_free', v => txt(v, 120)], dir: v => txt(v, 10), dirBase: ['dir_base', v => txt(v, 20)],
+  feeBasis: ['fee_basis', v => txt(v, 20)], feeType: ['fee_type', v => txt(v, 40)], feeItems: ['fee_items', v => txt(v, 200)],
+  note: v => txt(v, 1000), approved: v => txt(v, 40), moveIn: ['move_in', v => txt(v, 40)],
+  road: v => txt(v, 160), admCd: ['adm_cd', v => { const x = String(v ?? '').replace(/\D/g, ''); return x.length === 10 ? x : null; }],
+  hideUnit: ['hide_unit', v => v !== false], oneLine: ['one_line', v => txt(v, 40)], ownerOk: ['owner_ok', v => v === true],
+};
+async function 내물건(agent, id) {
+  const r = await fetch(sbUrl('bk_listing', `select=*&id=eq.${id}&agent_id=eq.${agent.id}&limit=1`), { headers: sbHeaders() });
+  if (!r.ok) return { error: true };
+  return { row: (await r.json())[0] || null };
+}
+async function setListing(res, agent, b) {
+  const id = String(b.id || ''), L = b.listing && typeof b.listing === 'object' ? b.listing : {};
+  if (!LUUID.test(id)) return res.status(400).json({ error: '어느 물건인지 알 수 없습니다' });
+  try {
+    const 지금 = await 내물건(agent, id);
+    if (지금.error) return res.status(502).json({ error: '물건을 불러오지 못했습니다' });
+    const cur = 지금.row;
+    if (!cur || cur.status === 'closed') return res.status(404).json({ error: '내 물건이 아니거나 이미 지운 물건입니다' });
+    const p = {};
+    for (const [k, f] of Object.entries(물건고침칸)) { if (!(k in L)) continue; const [col, fn] = Array.isArray(f) ? f : [k, f]; p[col] = fn(L[k]); }
+    if ('name' in p && !p.name) return res.status(400).json({ error: '물건 이름을 적어주세요' });
+    if (cur.kind !== 'home' && 'baths' in p) p.baths = 0;
+    if (b.vis === 'open' || b.vis === 'private') p.vis = b.vis;
+    const 뒤 = { ...cur, ...p };
+    if (뒤.vis === 'open') {
+      if (cur.status !== 'active') return res.status(400).json({ error: '목록에 있는 물건만 노출할 수 있습니다' });
+      const 기준 = 노출기준(뒤);
+      if (기준.빠짐.length) return res.status(400).json({ error: `노출하려면 ${기준.빠짐.join(' · ')} 항목을 채워 주세요`, miss: 기준.빠짐 });
+      if (cur.vis !== 'open') p.opened_at = new Date().toISOString();
+    }
+    /* 금액 변경 이력 - 노출 중인 물건의 보증금(매매가) · 월세가 바뀌면 남긴다 */
+    if (cur.vis === 'open' && (('dep' in p && +p.dep !== +cur.dep) || ('rent' in p && +p.rent !== +cur.rent))) {
+      const 이력 = Array.isArray(cur.price_log) ? cur.price_log.slice(-19) : [];
+      이력.push({ at: new Date().toISOString(), dep: [+cur.dep || 0, +뒤.dep || 0], rent: [+cur.rent || 0, +뒤.rent || 0] });
+      p.price_log = 이력;
+    }
+    if (!Object.keys(p).length) return res.status(200).json({ ok: true, row: cur });
+    p.updated_at = new Date().toISOString();
+    const r = await fetch(sbUrl('bk_listing', `id=eq.${id}&agent_id=eq.${agent.id}`), {
+      method: 'PATCH', headers: { ...sbHeaders(), Prefer: 'return=representation' }, body: JSON.stringify(p) });
+    if (!r.ok) { const t = await r.text();
+      if (칸없음(t)) return res.status(503).json({ error: '아직 준비 중입니다 (0039 마이그레이션 필요)', need: '0039' });
+      const w = dbWhy(t); console.error('[feed:listing-set]', r.status, w.code || '-', t.slice(0, 200));
+      return res.status(502).json({ error: w.msg || '물건을 저장하지 못했습니다' }); }
+    return res.status(200).json({ ok: true, row: (await r.json())[0] || null });
+  } catch (e) { return res.status(502).json({ error: 'DB에 닿지 못했습니다' }); }
+}
+/* 목록(active) · 거래완료(done) · 보관함(arch) · 휴지통(trash, 30일). 목록 밖으로 나가면 노출도 함께 끝난다 */
+async function setListingState(res, agent, b) {
+  const id = String(b.id || ''), to = String(b.to || '');
+  if (!LUUID.test(id)) return res.status(400).json({ error: '어느 물건인지 알 수 없습니다' });
+  if (!['active', 'done', 'arch', 'trash'].includes(to)) return res.status(400).json({ error: '알 수 없는 상태입니다' });
+  try {
+    const now = new Date().toISOString();
+    const p = to === 'active' ? { status: to, closed_at: null, closed_why: null, updated_at: now }
+      : { status: to, vis: 'private', closed_at: now, closed_why: txt(b.why, 60), updated_at: now };
+    const r = await fetch(sbUrl('bk_listing', `id=eq.${id}&agent_id=eq.${agent.id}&status=neq.closed`), {
+      method: 'PATCH', headers: { ...sbHeaders(), Prefer: 'return=representation' }, body: JSON.stringify(p) });
+    if (!r.ok) { const t = await r.text();
+      if (칸없음(t)) return res.status(503).json({ error: '아직 준비 중입니다 (0039 마이그레이션 필요)', need: '0039' });
+      return res.status(502).json({ error: '상태를 바꾸지 못했습니다' }); }
+    const row = (await r.json().catch(() => []))[0];
+    if (!row) return res.status(404).json({ error: '내 물건이 아니거나 이미 지운 물건입니다' });
+    return res.status(200).json({ ok: true, row });
+  } catch (e) { return res.status(502).json({ error: 'DB에 닿지 못했습니다' }); }
 }
 
 async function addListing(req, res, agent, user, b) {

@@ -12744,6 +12744,8 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
+  { v:'26.11.12.11', 날:'2026-11-12', 줄:[
+    '계약현황에 ‘갱신’ 탭 - 목록에는 신규 계약만, 갱신계약 · 재계약은 갱신 탭에 따로 모입니다(계약서 목록 화면은 그대로)' ] },
   { v:'26.11.12.10', 날:'2026-11-12', 줄:[
     '‘내 사무소 › 직원 · 권한’ 화면을 따로 만들었습니다 - 직원을 고르고 기능을 묶음(계약 · 매물 · 손님·제안 · 성과)별로 켜고 끕니다. 바꾼 내용은 변경 이력에 남습니다',
     '새 권한 - 매물 노출 · 노출 종료(중개보조원은 늘 꺼짐), 의뢰인 비공개 정보 보기, 노출 중 매물 금액 수정' ] },
@@ -15657,7 +15659,7 @@ V['#/partner/contracts'] = sub => {
   const 전체 = CT.list || [], 살아 = 전체.filter(ct살아있음);
   /* 알림 설정은 다가오는 일정(법무사 예약 시점·끈 항목)에도 쓴다 - 처음 들어올 때 한 번 받아 둔다 */
   if(!CT.alert && 세션있음()) setTimeout(ctAlertLoad);
-  const 몸 = sub === 'forms' ? ctFormsPageHTML() : sub === 'new' ? ctNewPageHTML(전체) : sub === 'schedule' ? ctSchedulePageHTML(살아) : sub === 'phrases' ? ctPhrPageHTML() : sub === 'sms' ? csPageHTML() : (() => { if(!현황) return ctListPageHTML(전체); const 원 = CT.view; CT.view = 'table'; try{ return ctListPageHTML(전체).replace('>계약서 목록</h1>', '>계약현황</h1>'); } finally { CT.view = 원 == null ? 보던 : 원; } })();
+  const 몸 = sub === 'forms' ? ctFormsPageHTML() : sub === 'new' ? ctNewPageHTML(전체) : sub === 'schedule' ? ctSchedulePageHTML(살아) : sub === 'phrases' ? ctPhrPageHTML() : sub === 'sms' ? csPageHTML() : (() => { if(!현황) return ctListPageHTML(전체); const 원 = CT.view; CT.view = 'table'; CT.현황 = true; try{ return ctListPageHTML(전체).replace('>계약서 목록</h1>', '>계약현황</h1>'); } finally { CT.view = 원 == null ? 보던 : 원; CT.현황 = false; } })();
   return `
 <div class="scr fade" style="background:var(--n50)">
   ${navPartner('ct')}
@@ -16180,14 +16182,18 @@ function ctRowsHTML(전체, rows, 갱신고르기){
 /* 계약서 목록 - 표 | 옆에 2주 안 일정 */
 function ctListPageHTML(모두){
   if(CT.view == null){ try{ CT.view = localStorage.getItem('bk.ctView') === 'table' ? 'table' : ''; }catch(_){ CT.view = ''; } }
-  const 칸 = ['arch', 'trash'].includes(CT.bin) ? CT.bin : '', 전체 = 모두.filter(r => ct보관칸(r) === 칸);
-  const 수 = k => 모두.filter(r => ct보관칸(r) === k).length;
-  const 칸줄 = 모두.length ? `<div class="ct-chips ct-bins" role="tablist" aria-label="계약서 보관 위치">${[['', '목록'], ['arch', '보관함'], ['trash', '휴지통']].map(([k, t]) =>
-    `<button type="button" role="tab" class="chip${칸 === k ? ' on' : ''}" aria-selected="${칸 === k}" data-act="ct-bin-tab" data-v="${k}">${t} <span class="num">${수(k)}</span></button>`).join('')}</div>` : '';
+  /* 계약현황의 '갱신' 탭 (2026-11-12 파트너 기획 D14) - 계약현황에서는 목록에 신규 계약만, 갱신 계약은 갱신 탭에 따로. 계약서 목록 화면은 그대로 */
+  if(!CT.현황 && CT.bin === 'renew') CT.bin = '';
+  const 현황 = !!CT.현황, 갱신탭 = 현황 && CT.bin === 'renew';
+  const 칸 = ['arch', 'trash'].includes(CT.bin) ? CT.bin : '';
+  const 전체 = 모두.filter(r => ct보관칸(r) === 칸 && (!현황 || 칸 || (갱신탭 ? ct형태(r) === 'renew' : ct형태(r) === 'new')));
+  const 수 = k => k === 'renew' ? 모두.filter(r => !ct보관칸(r) && ct형태(r) === 'renew').length : 모두.filter(r => ct보관칸(r) === k && (!현황 || k || ct형태(r) === 'new')).length;
+  const 칸줄 = 모두.length ? `<div class="ct-chips ct-bins" role="tablist" aria-label="계약서 보관 위치">${[['', '목록'], ...(현황 ? [['renew', '갱신']] : []), ['arch', '보관함'], ['trash', '휴지통']].map(([k, t]) =>
+    `<button type="button" role="tab" class="chip${(갱신탭 ? 'renew' : 칸) === k ? ' on' : ''}" aria-selected="${(갱신탭 ? 'renew' : 칸) === k}" data-act="ct-bin-tab" data-v="${k}">${t} <span class="num">${수(k)}</span></button>`).join('')}</div>` : '';
   if(!CT.alert && 세션있음()) setTimeout(ctAlertLoad);
   const 자동 = ct알림설정(CT.alert && CT.alert.cfg).autoArch, 자동막힘 = !(CT.alert && CT.alert.loaded) || CT.alert.need || CT.alert.err;
   const 자동칸 = 모두.length && !칸 ? `<label class="ct-chk ct-autoarch"><input type="checkbox" data-act="ct-autoarch" ${자동 ? 'checked' : ''} ${자동막힘 ? 'disabled' : ''}> 완료 · 취소 건은 3개월 뒤 자동으로 보관함으로 <span class="sub">(완료는 잔금일, 취소는 계약일부터)</span></label>` : '';
-  const 칸말 = 칸 === 'trash' ? '<p class="sub ct-binnote">작성 중 계약서는 휴지통에 넣은 지 30일이 지나면 지워집니다(대표는 바로 영구 삭제할 수 있습니다). 날인본은 휴지통에 남고 지워지지 않습니다.</p>'
+  const 칸말 = 갱신탭 ? '<p class="sub ct-binnote">기존 계약서로 만든 갱신계약 · 재계약입니다. 만기가 가까운 임대차는 계약서의 ‘갱신 의사 확인’ 문자로 먼저 물어보세요.</p>' : 칸 === 'trash' ? '<p class="sub ct-binnote">작성 중 계약서는 휴지통에 넣은 지 30일이 지나면 지워집니다(대표는 바로 영구 삭제할 수 있습니다). 날인본은 휴지통에 남고 지워지지 않습니다.</p>'
     : 칸 === 'arch' ? '<p class="sub ct-binnote">끝난 계약을 목록에서 내려 둔 곳입니다. 찾기로 찾을 수 있고 언제든 목록으로 되돌릴 수 있습니다. 일정 알림은 가지 않습니다.</p>' : '';
   const 일정 = 칸 ? '' : ctUpcomingHTML(전체);
   if(칸 && !전체.length) return `
@@ -21107,7 +21113,7 @@ function handle(a,v,el){
       else if(직원권한켬(s, k)) p[k] = false; else delete p[k];
       sfSave({ op:'perm', i, perm: p }, '권한을 바꿨습니다'); return true; }
     case 'ct-view': CT.view = v === 'table' ? 'table' : ''; try{ localStorage.setItem('bk.ctView', CT.view); }catch(_){} render(); return true;
-    case 'ct-bin-tab': CT.bin = ['arch', 'trash'].includes(v) ? v : ''; render(); return true;
+    case 'ct-bin-tab': CT.bin = ['arch', 'trash', 'renew'].includes(v) ? v : ''; render(); return true;
     case 'ct-bin': { const [id, 어디] = String(v).split('|'); ctBin(id, 어디 || ''); return true; }
     case 'ct-purge': S.modal = { type:'ct-del', id: v }; render(); return true;
     /* 작성 화면의 '이 계약서 지우기' - 바로 지우지 않고 휴지통으로(30일 안에 되돌릴 수 있게) */

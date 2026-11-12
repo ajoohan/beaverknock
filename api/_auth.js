@@ -10,7 +10,8 @@
  *   BK_SECRET_KEY   없으면 이것으로 대신한다
  */
 
-import crypto from 'node:crypto';
+import crypto from 'node:crypto';
+import './_crypto.js';   /* 개인정보 칸 암호화 - DB 길목(fetch)에 깔린다 (2026-11-12) */
 
 /** 비밀값 비교 - 길이도 흘리지 않는다(양쪽을 같은 길이의 해시로 바꿔 비교) (2026-11-03 보안점검) */
 export function sameSecret(a, b) {

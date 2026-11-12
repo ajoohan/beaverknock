@@ -78,6 +78,14 @@ export default async function handler(req, res) {
   if (payload.what === 'users')       return readUsers(req, res, { ...payload, __sub: 부 }, opsUser);
   if (payload.what === 'stats')       return readStats(req, res, payload, opsUser);
   if (payload.what === 'mark-sent')   return markSent(req, res, payload, opsUser);
+  /* 개인정보 암호화 전환 (2026-11-12) - 예전에 평문으로 저장된 줄을 한 번에 최대 200줄씩 암호화해 다시 쓴다. 운영자만 */
+  if (payload.what === 'enc-status' || payload.what === 'enc-migrate') {
+    if (부) return res.status(403).json({ error: '운영자만 할 수 있습니다' });
+    const { 암호전환 } = await import('./_encmig.js');
+    const out = await 암호전환(payload.what === 'enc-migrate');
+    if (payload.what === 'enc-migrate') await logOps(req, opsUser, { action: 'enc-migrate', count: out.바꿈 || 0 });
+    return res.status(out.error ? 503 : 200).json(out);
+  }
   if (payload.what === 'agents')      return readAgents(req, res, { ...payload, reveal: payload.reveal === true && !부 }, opsUser);
 
   const limit  = Math.min(parseInt(payload.limit, 10) || 200, 1000);
@@ -468,7 +476,10 @@ async function readAgents(req, res, p, opsUser) {
     }
     const rows = await r.json();
     /* 화면에서는 연락처를 기본으로 가린다 - 원문은 따로 요청해야 나온다 */
-    const out = p.reveal ? rows : rows.map(x => ({ ...x, phone: maskPhone(x.phone) }));
+    /* 사무소 안에서만 보는 것은 운영자에게도 내보내지 않는다 - 의뢰인 메모(lmemo) · 문자 기록 · 사무소 메모 · 다른 사무소 계약서 · 색인값 (2026-11-12 보안점검) */
+    const 사무소만 = s => { if (!s || typeof s !== 'object') return s; const { lmemo, smsLog, memo, memoAt, ext, fieldq, ...남김 } = s; return 남김; };
+    const 다듬 = x => { const { phone_idx, ...y } = x; return { ...y, settings: 사무소만(x.settings) }; };
+    const out = p.reveal ? rows.map(다듬) : rows.map(x => ({ ...다듬(x), phone: maskPhone(x.phone) }));
     await logOps(req, opsUser, { action: 'agents', reveal: !!p.reveal, count: out.length });
     return res.status(200).json({ rows: out, at: new Date().toISOString() });
   } catch (e) {

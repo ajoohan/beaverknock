@@ -11258,6 +11258,7 @@ function opsSettingPanel(){
         시험이 끝나면 Vercel 에서 <b>BK_OPS_OPEN_UNTIL</b> 을 지워주세요.<br>
         <span style="font-weight:600">안 지우셔도 ${esc(opsLinkWhen(OPS.openUntil))} 에 서버가 스스로 닫습니다.</span></p>` : ''}
     </div>
+    ${encCardHTML()}
     <div class="card pad" style="margin-top:14px">
       <b style="display:block;font-size:15px;font-weight:700;margin-bottom:8px">여기서 바꾸지 않는 것</b>
       <p style="margin:0;font-size:14.5px;line-height:1.8;color:var(--n700)">
@@ -11267,6 +11268,30 @@ function opsSettingPanel(){
     </div>`;
 }
 
+/* 개인정보 암호화 상태 · 전환 (2026-11-12) - api/demands.js enc-status · enc-migrate. 운영자만(부운영자는 서버가 막는다) */
+const ENC = { at:0, busy:false, j:null, err:'' };
+const 표이름 = { bk_demand:'손님 조건', bk_agent:'가입 사무소 · 소유자', bk_contract_msg:'계약 대화방 말', bk_proposal:'제안의 연락 방법 · 신고' };
+function encLoad(바꾸기){
+  if(ENC.busy) return; ENC.busy = true; ENC.err = ''; render();
+  apiFetch('/api/demands', { method:'POST', body: JSON.stringify({ pass: OPS.pass, what: 바꾸기 ? 'enc-migrate' : 'enc-status' }) })
+    .then(r => r.json().catch(() => ({})).then(j => { ENC.busy = false; ENC.at = Date.now(); ENC.j = j; if(!r.ok && !j.현황) ENC.err = j.error || '상태를 읽지 못했습니다'; render();
+      if(바꾸기 && j.ok) toast(`${j.바꿈 || 0}줄을 암호화했습니다`); }))
+    .catch(() => { ENC.busy = false; ENC.err = '네트워크 문제로 읽지 못했습니다'; render(); });
+}
+function encCardHTML(){
+  if(!ENC.at && !ENC.busy) setTimeout(() => encLoad(false));
+  const j = ENC.j || {}, 남은합 = (j.현황 || []).reduce((s, x) => s + (+x.남음 || 0), 0);
+  return `<div class="card pad" style="margin-top:14px">
+    <b style="display:block;font-size:15px;font-weight:700;margin-bottom:6px">개인정보 암호화</b>
+    <p style="margin:0 0 10px;font-size:13.5px;line-height:1.75;color:var(--n700)">이름 · 전화번호 · 주소 · 메모 · 계약 당사자 · 대화방 말은 서버가 암호화(AES-256)해 저장합니다. 열쇠는 DB 밖(Vercel BK_DATA_KEY)에 있습니다.</p>
+    ${ENC.err ? `<p style="margin:0;color:var(--danger);font-size:13.5px">${esc(ENC.err)}</p>`
+      : !ENC.j ? '<p class="sub" style="margin:0">상태를 읽는 중입니다</p>'
+      : !j.켜짐 ? `<p style="margin:0;padding:11px 14px;background:var(--warnbg);border-radius:var(--r-sm);font-size:13.5px;line-height:1.7;color:var(--warn);font-weight:700">아직 꺼져 있습니다 - Vercel 에 BK_DATA_KEY 를 넣고 재배포하면 켜집니다. 넣기 전에 SQL 0041 을 먼저 돌려 주세요.</p>`
+      : `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-bottom:10px">${(j.현황 || []).map(x => `<div style="padding:10px 12px;border-radius:12px;background:var(--n50)"><span style="display:block;font-size:12.5px;color:var(--n500)">${esc(표이름[x.표] || x.표)}</span><b style="font-size:15px">${x.error ? '읽지 못함' : x.남음 ? `평문 ${x.남음}줄 남음` : '모두 암호화됨'}</b></div>`).join('')}</div>
+        ${남은합 ? `<button type="button" class="btn pri md" data-act="enc-run" ${ENC.busy ? 'disabled' : ''}>${ENC.busy ? '암호화하는 중…' : '예전 평문 암호화하기 (한 번에 200줄)'}</button>` : '<span class="badge b-ok">예전 데이터까지 모두 암호화됨</span>'}
+        <p class="sub" style="margin:10px 0 0;font-size:12.5px">작성 중인 계약서는 다음에 저장할 때 암호화됩니다. 날인본 계약서는 위변조 방지를 위해 고칠 수 없어 확정 당시 그대로 둡니다.</p>`}
+  </div>`;
+}
 function reportPanel(){
   const rows = RP.rows;
   if(RP.loading && !rows) return `<div class="card pad" style="display:flex;justify-content:center;padding:30px 0">${bkLoader(28)}</div>`;
@@ -13192,6 +13217,9 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
+  { v:'26.11.12.23', 날:'2026-11-12', 줄:[
+    '개인정보 암호화 저장 준비 - 손님 이름 · 전화번호 · 생년월일 · 주소 · 메모, 사무소 연락처 · 의뢰인 메모, 계약서 당사자, 계약 대화방 말을 서버가 AES-256 으로 암호화해 저장합니다(열쇠를 넣으면 켜짐)',
+    '보안점검 - 운영 화면에 사무소의 비공개 의뢰인 메모 · 문자 기록이 넘어가던 것을 막았습니다 · 운영 설정에 ‘개인정보 암호화’ 상태와 예전 데이터 전환 단추' ] },
   { v:'26.11.12.22', 날:'2026-11-12', 줄:[
     '코드리뷰 · 전수점검 반영 - 가입 첫 화면 소유자 카드 문구를 실제 기능대로(맞는 손님 보기 · 직접 제안 · 연결 뒤에만 연락처)',
     '시작 가이드 - 계정마다 따로 기억(같은 PC 다른 사람과 섞이지 않게), 불러오기 전에는 ‘확인하는 중’, 대시보드 그림을 지금 화면으로 · 휴대폰 번호 단추 누르기 쉽게',
@@ -20416,6 +20444,7 @@ function handle(a,v,el){
     case 'ops-invite-copy': opsCopy(opsInviteText(), '안내문을 복사했습니다'); return true;
     case 'ops-url-copy':    opsCopy(opsUrl(), '주소를 복사했습니다'); return true;
     case 'ops-id-copy':     if(S.user && S.user.id) opsCopy(S.user.id, '계정 id 를 복사했습니다'); return true;
+    case 'enc-run': encLoad(true); return true;
     case 'ops-link-days': OPS.linkDays = +v || 7; OPS.link = null; render(); return true;
     case 'ops-link-make':
       if(!OPS.pass) return toast('먼저 접근 암호로 여신 뒤에 만들 수 있습니다'), true;

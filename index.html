@@ -3151,7 +3151,8 @@ body.mo .gd-it{grid-template-columns:auto 1fr} body.mo .gd-it > .btn{grid-column
 .gd-map img{display:block;width:100%;height:auto}
 .gd-pin{position:absolute;transform:translate(-50%,-50%);width:34px;height:34px;border-radius:50%;border:3px solid #fff;background:#F2603C;color:#fff;font-weight:800;font-size:15px;cursor:pointer;
   box-shadow:0 4px 14px rgba(242,96,60,.45);animation:gdPulse 2.4s ease-in-out infinite}
-body.mo .gd-pin{width:26px;height:26px;font-size:12.5px;border-width:2px}
+body.mo .gd-pin{width:28px;height:28px;font-size:12.5px;border-width:2px}
+.gd-pin::before{content:'';position:absolute;inset:-9px;border-radius:50%}   /* 누르는 자리는 44px 이상 */
 .gd-pin.on{background:var(--ind);box-shadow:0 0 0 6px rgba(106,70,224,.25);animation:none}
 @keyframes gdPulse{0%,100%{box-shadow:0 4px 14px rgba(242,96,60,.45)}50%{box-shadow:0 0 0 8px rgba(242,96,60,.12)}}
 .gd-legend{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
@@ -8882,13 +8883,13 @@ const JR_카드 = {
     그림:`<div class="jr-shot"><img src="img/home/dash.v2.webp" alt="" loading="lazy" decoding="async"></div>
       <span class="jr-pill p1">${jr그림('bolt', 14)}새 조건 3건</span><span class="jr-pill p2">${jr그림('doc', 14)}계약서 1분 작성</span>` },
   owner: { 시간:'약 3분', 시간말:'담당자 확인 뒤 1~2영업일', 필요:'물건 주소 · 소유 형태',
-    받는:['조건이 맞는 손님 수를 미리 보기', '여러 중개사의 제안을 한 번에 받기', '연락처는 내가 고른 곳에만 전달'],
+    받는:['내 물건에 맞는 손님 조건을 바로 보기', '맞는 손님에게 직접 제안 보내기', '연락처는 손님이 연결을 누른 뒤에만 전달'],
     그림:`<div class="jr-photo"><img src="img/sample/apt-living.s.v1.webp" alt="" loading="lazy" decoding="async"></div>
-      <span class="jr-pill p1">${jr그림('check', 14)}맞는 손님 5명</span><span class="jr-pill p2">${jr그림('doc', 14)}제안 2건 도착</span>` },
+      <span class="jr-pill p1">${jr그림('check', 14)}맞는 손님 5명</span><span class="jr-pill p2">${jr그림('doc', 14)}제안 보내기</span>` },
 };
 function joinRoleHTML(){
   const 카드 = r => { const c = JR_카드[r.k];
-    return `<button type="button" class="jr-card" data-act="j-role" data-v="${r.k}" aria-label="${esc(r.t)}로 시작하기">
+    return `<button type="button" class="jr-card" data-act="j-role" data-v="${r.k}">
       <span class="jr-vis jr-${r.k}" aria-hidden="true">${c.그림}</span>
       <span class="jr-body">
         <span class="jr-top"><b class="jr-t">${r.t}</b><span class="jr-time">${jr그림('clock', 14)}${c.시간}</span></span>
@@ -12535,9 +12536,9 @@ const PHELP보임 = () => PHELP.filter(a => !(a.ct && 계약막힘()) && !(a.bos
 /* 화면 → 그 화면 안내 (? 단추) */
 function 화면도움말(h = S.route || ''){
   const 맵 = [['#/partner/home', 'start'], ['#/partner/demand', 'propose'], ['#/partner/listing', 'listing'], ['#/partner/proposals', 'connect'],
-    ['#/partner/rooms', 'room'], ['#/partner/staff', 'staff'], ['#/partner/contracts/status', 'ct-status'], ['#/partner/contracts/new', 'ct-new'], ['#/partner/contracts/phrases', 'ct-special'],
+    ['#/partner/rooms', 'room'], ['#/partner/staff', 'staff'], ['#/partner/settings', 'start'], ['#/partner/contracts/status', 'ct-status'], ['#/partner/contracts/new', 'ct-new'], ['#/partner/contracts/phrases', 'ct-special'],
     ['#/partner/contracts/schedule', 'ct-plan'], ['#/partner/contracts', 'bin'],
-    ['#/partner/contract/', CT.mode === 'plan' ? 'room' : CT.mode === 'extra' ? 'extra' : CT.mode === 'scan' || CT.mode === 'edit' ? 'ct-new' : 'ct-seal']];
+    ['#/partner/contract/', CT.field ? 'ct-field' : CT.mode === 'plan' ? 'room' : CT.mode === 'extra' ? 'extra' : CT.mode === 'scan' || CT.mode === 'edit' ? 'ct-new' : 'ct-seal']];
   const id = (맵.find(([p]) => h.startsWith(p)) || [])[1];
   return PHELP보임().find(a => a.id === id) || null;
 }
@@ -12573,9 +12574,12 @@ V['#/partner/help'] = id => {
 /* ══════════ 시작 가이드 (2026-11-12 대표님 '처음 대시보드가 나왔을 때 기능이 뭔지 어떻게 쓰는지 어려워할 수 있다 - 친절하고 꼼꼼하고 쉬운 가이드') ══════════
    #/partner/guide - 첫날 할 일(진행률이 저절로 찬다) · 대시보드 한눈에(그림에 번호) · 메뉴 지도 · 하루 흐름 · 낯선 말 풀이.
    대시보드에는 다 끝내거나 닫을 때까지 '처음 오셨나요' 카드가 뜬다. 본 화면은 이 기기에 기억한다(bk.guide) */
-const GD_키 = 'bk.guide';
-const gd읽기 = () => { try{ return JSON.parse(localStorage.getItem(GD_키) || '{}') || {}; }catch(_){ return {}; } };
-const gd쓰기 = o => { try{ localStorage.setItem(GD_키, JSON.stringify(o)); }catch(_){} };
+/* 계정마다 따로 - 같은 PC 를 여러 사람이 써도 서로의 진행이 섞이지 않게(리뷰 11-12). 한 번 읽은 것은 기억해 그릴 때마다 다시 읽지 않는다 */
+const GD_키 = () => 'bk.guide.' + ((S.user && S.user.id) || '-');
+const GD_캐시 = { k:'', v:null }, GD_불렀음 = new Set();
+const gd읽기 = () => { const k = GD_키(); if(GD_캐시.k === k && GD_캐시.v) return GD_캐시.v;
+  let v = {}; try{ v = JSON.parse(localStorage.getItem(k) || '{}') || {}; }catch(_){} GD_캐시.k = k; GD_캐시.v = v; return v; };
+const gd쓰기 = o => { GD_캐시.k = GD_키(); GD_캐시.v = o; try{ localStorage.setItem(GD_캐시.k, JSON.stringify(o)); }catch(_){} };
 function 가이드기록(h){
   if(!S.agent || !h || !h.startsWith('#/partner/')) return;
   const 길 = h.startsWith('#/partner/demand') ? 'demands' : h.startsWith('#/partner/contract/') && !h.endsWith('/new') ? 'contract'
@@ -12584,12 +12588,18 @@ function 가이드기록(h){
   g.seen = { ...(g.seen || {}), [길]: Date.now() }; gd쓰기(g);
 }
 function 가이드할일(){
+  /* 서버에서 아직 안 읽은 값으로 '안 함'을 띄우지 않게 먼저 불러 둔다(그동안은 확인 중) */
+  /* 한 사람당 한 번씩만 부른다 - 실패해도 그릴 때마다 다시 부르며 돌지 않게 */
+  const 한번 = (k, 필요, fn) => { const id = k + ':' + ((S.user && S.user.id) || ''); if(필요 && !GD_불렀음.has(id) && typeof fn === 'function'){ GD_불렀음.add(id); setTimeout(() => fn()); } };
+  한번('feed', !S.feedAt, typeof loadFeed === 'function' ? loadFeed : null);
+  한번('ls', !S.lsReady, typeof loadListings === 'function' ? loadListings : null);
+  한번('mp', !S.mpReady, typeof loadMyProps === 'function' ? loadMyProps : null);
   const g = gd읽기(), 본 = k => !!(g.seen && g.seen[k]), 대표 = !직원() && !ownerSide(), 계약 = !계약막힘();
   return [
-    대표 && { k:'scope', t:'활동 지역 정하기', why:'고른 지역에 걸린 손님 조건만 수요 목록에 모입니다. 가장 먼저 해 주세요.', 분:'1분', go:'#/partner/settings', 끝: !!S.scopeStored },
+    대표 && { k:'scope', t:'활동 지역 정하기', why:'고른 지역에 걸린 손님 조건만 수요 목록에 모입니다. 가장 먼저 해 주세요.', 분:'1분', go:'#/partner/settings', 끝: !!S.scopeStored, 모름: !S.feedAt },
     { k:'demands', t:'수요 목록 둘러보기', why:'우리 동네 손님이 무엇을 찾는지 봅니다. 이름 · 연락처는 연결 전까지 가려져 있습니다.', 분:'2분', go:'#/partner/demands', 끝: 본('demands') },
-    { k:'listing', t:'매물장부에 물건 하나 적기', why:'적어 두면 걸려 있는 손님 조건과 바로 견줘 맞는 손님 수를 알려 줍니다.', 분:'3분', go:'#/partner/listing/new', 끝: (S.listings || []).some(L => !L.seed) },
-    { k:'propose', t:'손님에게 첫 제안 보내기', why:'조건 하나에 5곳까지만 제안할 수 있어 빨리 보낼수록 유리합니다.', 분:'2분', go:'#/partner/demands', 끝: (S.myprops || []).some(x => !x.seed) },
+    { k:'listing', t:'매물장부에 물건 하나 적기', why:'적어 두면 걸려 있는 손님 조건과 바로 견줘 맞는 손님 수를 알려 줍니다.', 분:'3분', go:'#/partner/listing/new', 끝: (S.listings || []).some(L => !L.seed), 모름: !S.lsReady },
+    { k:'propose', t:'손님에게 첫 제안 보내기', why:'조건 하나에 5곳까지만 제안할 수 있어 빨리 보낼수록 유리합니다.', 분:'2분', go:'#/partner/demands', 끝: (S.myprops || []).some(x => !x.seed), 모름: !S.mpReady },
     계약 && { k:'contract', t:'계약서 하나 만들어 보기', why:'등기부 · 건축물대장을 올리면 칸이 채워집니다. 연습으로 만들고 휴지통에 넣어도 됩니다.', 분:'5분', go:'#/partner/contracts/new', 끝: 본('contract') },
     계약 && { k:'schedule', t:'알림 받을 곳 확인하기', why:'계약일 · 잔금일을 넣으면 매일 아침 9시에 카카오톡 · 메일로 챙겨 드립니다.', 분:'1분', go:'#/partner/contracts/schedule', 끝: 본('schedule') },
     대표 && { k:'staff', t:'(직원이 있다면) 직원 초대하기', why:'메일로 초대하고 기능마다 켜고 끕니다. 혼자 하시면 건너뛰어도 됩니다.', 분:'2분', go:'#/partner/staff', 끝: (SF.list || []).length > 0 || 본('staff'), 선택:true },
@@ -12600,7 +12610,7 @@ function 가이드진행(){ const L = 가이드할일(), 필수 = L.filter(x => 
 function 가이드카드HTML(){
   if(!S.agent || ownerSide()) return '';
   const g = gd읽기(); if(g.off) return '';
-  const { L, 끝, 다 } = 가이드진행(); if(끝 >= 다) return '';
+  const { L, 끝, 다 } = 가이드진행(); if(끝 >= 다 || L.some(x => x.모름)) return '';
   const 다음 = L.find(x => !x.끝 && !x.선택) || L[0];
   return `<section class="gd-card" aria-label="시작 가이드">
     <img class="gd-cm" src="${BEAVERLY_KNOCK}" alt="" width="84" height="84" loading="lazy" decoding="async">
@@ -12611,12 +12621,12 @@ function 가이드카드HTML(){
     <button type="button" class="tapx gd-x" data-act="gd-off" aria-label="시작 가이드 카드 닫기">닫기</button></section>`;
 }
 const GD_핀 = [
-  [7, 30, '왼쪽 메뉴', '영업 · 계약 · 내 사무소 세 묶음입니다. 휴대폰에서는 아래 탭과 오른쪽 위 내 계정 메뉴에 같은 것이 있습니다.'],
-  [69, 4, '찾기 · 알림 · ?', '손님 · 주소 · 계약서를 찾고(Ctrl K), 종에 새 소식이 모입니다. ? 를 누르면 지금 화면 설명이 열립니다.'],
-  [52, 18, '오늘의 브리핑', '지금 직접 보셔야 할 일을 한 줄로 알려 줍니다. 누르면 그 화면으로 갑니다.'],
-  [28.5, 36, '숫자 카드', '내 지역 조건 · 보낸 제안 · 연결된 손님 · 계약서 수입니다. 누르면 목록이 열립니다.'],
-  [56, 72, '제안 흐름', '최근 14일 동안 보낸 제안과 그중 손님이 열어 본 수입니다. 열람이 낮으면 조건을 다시 보세요.'],
-  [95, 59.5, '할 일 · 바로 가기', '미뤄 둔 일과 자주 쓰는 화면으로 바로 가는 단추가 모입니다.'],
+  [12.4, 34, '왼쪽 메뉴', '영업 · 계약 · 내 사무소 세 묶음입니다. 휴대폰에서는 아래 탭과 오른쪽 위 내 계정 메뉴에 같은 것이 있습니다.'],
+  [76, 3.6, '찾기 · 알림 · ?', '손님 · 주소 · 계약서를 찾고(Ctrl K), 종에 새 소식이 모입니다. ? 를 누르면 지금 화면 설명이 열립니다.'],
+  [46, 14.5, '오늘의 브리핑', '지금 직접 보셔야 할 일을 한 줄로 알려 줍니다. 누르면 그 화면으로 갑니다.'],
+  [29.5, 33, '숫자 카드', '내 지역 조건 · 보낸 제안 · 연결된 손님 · 계약서 수입니다. 누르면 목록이 열립니다.'],
+  [55, 64, '제안 흐름', '최근 14일 동안 보낸 제안과 그중 손님이 열어 본 수입니다. 열람이 낮으면 조건을 다시 보세요.'],
+  [88.5, 63, '달력 · 일정', '계약일 · 중도금 · 잔금 · 신고 기한이 달력에 표시됩니다. 날짜를 누르면 그날 일정이 보입니다.'],
 ];
 const GD_메뉴 = () => [
   ['영업', 'users', '손님을 찾고 제안하는 곳', [
@@ -12651,7 +12661,7 @@ const GD_말 = [
 ];
 V['#/partner/guide'] = () => {
   const { L, 끝, 다 } = 가이드진행(), 율 = 다 ? Math.round(끝 / 다 * 100) : 0;
-  const 할일 = L.map((x, i) => `<li class="gd-it${x.끝 ? ' done' : ''}"><span class="gd-n num" aria-hidden="true">${x.끝 ? jr그림('check', 16) : i + 1}</span>
+  const 할일 = L.map((x, i) => x.모름 && !x.끝 ? `<li class="gd-it"><span class="gd-n num" aria-hidden="true">${i + 1}</span><div class="gd-itb"><b>${esc(x.t)}</b><p>${esc(x.why)}</p><small>확인하는 중…</small></div><span></span></li>` : `<li class="gd-it${x.끝 ? ' done' : ''}"><span class="gd-n num" aria-hidden="true">${x.끝 ? jr그림('check', 16) : i + 1}</span>
       <div class="gd-itb"><b>${esc(x.t)}${x.끝 ? ' <span class="badge b-ok">마침</span>' : ''}</b><p>${esc(x.why)}</p><small>${jr그림('clock', 12)} 약 ${x.분}</small></div>
       <button type="button" class="btn ${x.끝 ? 'tool' : 'pri'} sm" data-go="${x.go}">${x.끝 ? '다시 보기' : '하러 가기'}</button></li>`).join('');
   return `
@@ -12670,10 +12680,10 @@ V['#/partner/guide'] = () => {
 
     <section class="card pad gd-sec"><h2><span class="gd-sn">2</span>대시보드 한눈에 보기</h2>
       <p class="sub">로그인하면 처음 보이는 화면입니다. 번호를 눌러 보세요.</p>
-      <div class="gd-map"><img src="img/home/dash.v2.webp" alt="파트너 대시보드 예시 화면" width="1600" height="956" loading="lazy" decoding="async">
+      <div class="gd-map"><img src="img/home/dash.v3.webp" alt="파트너 대시보드 예시 화면" width="1600" height="956" loading="lazy" decoding="async">
         ${GD_핀.map(([x, y, t], i) => `<button type="button" class="gd-pin${GD.pin === i ? ' on' : ''}" style="left:${x}%;top:${y}%" data-act="gd-pin" data-v="${i}" aria-label="${i + 1}. ${t}">${i + 1}</button>`).join('')}</div>
       <ol class="gd-legend">${GD_핀.map(([, , t, s], i) => `<li class="${GD.pin === i ? 'on' : ''}"><span class="gd-ln num">${i + 1}</span><div><b>${t}</b><p>${s}</p></div></li>`).join('')}</ol>
-      <p class="sub" style="margin:0;font-size:12.5px">그림은 예시 화면입니다. 메뉴 이름은 지금 화면과 조금 다를 수 있습니다.</p></section>
+      <p class="sub" style="margin:0;font-size:12.5px">그림은 시험 계정의 예시 화면입니다. 숫자는 사무소마다 다릅니다.</p></section>
 
     <section class="card pad gd-sec"><h2><span class="gd-sn">3</span>메뉴는 이렇게 나뉘어요</h2>
       <div class="gd-menus">${GD_메뉴().filter(([, , , M]) => M.length).map(([g, ico, s, M]) => `<div class="gd-mg"><div class="gd-mh"><span class="gd-mi">${dzIco(ico, 20)}</span><span><b>${g}</b><small>${s}</small></span></div>
@@ -13182,6 +13192,10 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
+  { v:'26.11.12.22', 날:'2026-11-12', 줄:[
+    '코드리뷰 · 전수점검 반영 - 가입 첫 화면 소유자 카드 문구를 실제 기능대로(맞는 손님 보기 · 직접 제안 · 연결 뒤에만 연락처)',
+    '시작 가이드 - 계정마다 따로 기억(같은 PC 다른 사람과 섞이지 않게), 불러오기 전에는 ‘확인하는 중’, 대시보드 그림을 지금 화면으로 · 휴대폰 번호 단추 누르기 쉽게',
+    '활동 설정 · 현장 체크리스트에서도 ? 단추가 그 화면 안내를 엽니다' ] },
   { v:'26.11.12.21', 날:'2026-11-12', 줄:[
     '시작 가이드 - 처음 오신 중개사님을 위한 화면. 첫날 할 일(하면 저절로 체크) · 대시보드 그림에 번호를 붙인 설명 · 메뉴 지도 · 하루 흐름 · 낯선 말 풀이',
     '대시보드에 ‘처음 오셨나요?’ 카드 - 첫날 할 일 진행률과 다음 할 일을 보여 주고, 다 하거나 닫으면 사라집니다(왼쪽 아래 ‘시작 가이드’에서 다시 열기)',

@@ -2191,6 +2191,8 @@ body.mo .mt-grid{grid-template-columns:minmax(0,1fr)}
 .mt-bar i{height:6px;border-radius:999px;background:var(--white);overflow:hidden} .mt-bar i b{display:block;height:100%;border-radius:999px;background:var(--ind)}
 .mt-bar em{font-style:normal;font-weight:700;text-align:right;color:var(--n900)}
 .mt-cond{margin:0;padding:10px 14px;border-radius:12px;background:var(--white);border:1px solid var(--n200);font-size:14px;color:var(--n700)} .mt-cond b{margin-right:6px;color:var(--n900)}
+.mt-acts{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.mt-no{font-size:13.5px;color:var(--n500);text-decoration:underline;text-underline-offset:3px}
 /* 매물장부 (2026-11-12) */
 .lg-tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
 .lg-tile{display:flex;flex-direction:column;gap:2px;padding:14px 16px;border:1px solid var(--n200);border-radius:14px;background:var(--white);text-align:left;cursor:pointer;font:inherit}
@@ -7872,7 +7874,11 @@ V['#/inbox'] = () => {
 /* ---------- D-09 제안 상세 ---------- */
 /* ── 맞춤매물 (2026-11-12 파트너 기획 C1-2) ── 중개사가 노출한 물건 가운데 내 조건과 80점 이상인 것. 서버 api/_match.js
    지역 30 · 예산 30 · 면적·방 20 · 입주 20. '보고 싶어요'를 누르면 그 물건으로 제안 한 건이 생기고, 지금의 연결 화면으로 이어진다 */
-const MT = { loaded:false, loading:false, at:0, groups:[], need:'', cond:'', open:{}, busy:'' };
+const MT = { loaded:false, loading:false, at:0, groups:[], need:'', cond:'', open:{}, busy:'', tab:'' };
+/* 관심 · 그만 받기 (2026-11-12) - 이 기기에만 둔다(서버에 손님별 표를 새로 파지 않았다). 그만 받은 것은 목록에서 빠지고 '그만 받은 매물'에서 되돌린다 */
+const mt담 = () => { try{ const x = JSON.parse(localStorage.getItem('bk.mt') || '{}'); return { fav: Array.isArray(x.fav) ? x.fav : [], hide: Array.isArray(x.hide) ? x.hide : [] }; }catch(_){ return { fav: [], hide: [] }; } };
+const mt둠 = x => { try{ localStorage.setItem('bk.mt', JSON.stringify({ fav: x.fav.slice(-200), hide: x.hide.slice(-200) })); }catch(_){} };
+const mt바꿈 = (k, id) => { const x = mt담(); x[k] = x[k].includes(id) ? x[k].filter(v => v !== id) : [...x[k], id]; mt둠(x); };
 function mtLoad(force){
   if(!세션있음() || MT.loading || (!force && MT.at && Date.now() - MT.at < 20000)) return;
   MT.loading = true;
@@ -7893,7 +7899,9 @@ async function mtWant(did, lid){
 V['#/matched'] = () => {
   const conds = (S.conds || []).filter(c => !c.seed);
   const 고른 = conds.find(c => c.id === MT.cond) || conds[0];
-  const g = 고른 ? (MT.groups.find(x => x.demand_id === 고른.id) || { rows: [] }) : { rows: [] };
+  const g0 = 고른 ? (MT.groups.find(x => x.demand_id === 고른.id) || { rows: [] }) : { rows: [] };
+  const 담 = mt담(), 세 = { all: g0.rows.filter(L => !담.hide.includes(L.id)).length, fav: g0.rows.filter(L => 담.fav.includes(L.id) && !담.hide.includes(L.id)).length, hide: g0.rows.filter(L => 담.hide.includes(L.id)).length };
+  const g = { rows: g0.rows.filter(L => MT.tab === 'hide' ? 담.hide.includes(L.id) : !담.hide.includes(L.id) && (MT.tab !== 'fav' || 담.fav.includes(L.id))) };
   const 막대 = (이름, 점, 만) => `<div class="mt-bar"><span>${이름}</span><i><b style="width:${Math.round(점 / 만 * 100)}%"></b></i><em class="num">${점} / ${만}</em></div>`;
   const 카드 = L => { const s = L.score || {}, 열림 = !!MT.open[L.id];
     const 값 = `${L.deal === '매매' ? '매매 ' : '보증금 '}${won(L.dep)}${+L.rent ? ` / 월 ${won(L.rent)}` : ''}${+L.fee ? ` · 관리비 ${won(L.fee)}` : ''}`;
@@ -7909,19 +7917,25 @@ V['#/matched'] = () => {
       <button type="button" class="tapx mt-more" data-act="mt-open" data-v="${L.id}" aria-expanded="${열림}">${열림 ? '점수 접기' : '점수 자세히 보기'}</button>
       ${열림 ? `<div class="mt-bars">${막대('지역', s.지역 || 0, 30)}${막대('예산', s.예산 || 0, 30)}${막대('면적 · 방', s.면적방 || 0, 20)}${막대('입주일', s.입주 || 0, 20)}</div>` : ''}
       <p class="sub" style="margin:0;font-size:13px">담당 ${esc(L.office)} · 연락처는 ‘연락하기’를 누른 뒤에 서로 전달됩니다</p>
-      <button type="button" class="btn pri md ${isMo() ? 'blk' : ''}" data-act="mt-want" data-v="${고른.id}|${L.id}" ${MT.busy ? 'disabled' : ''} style="align-self:flex-start">${MT.busy === L.id ? '알리는 중…' : '이 집 보고 싶어요'}</button>
+      <div class="mt-acts">${MT.tab === 'hide' ? `<button type="button" class="btn tool" data-act="mt-hide" data-v="${L.id}">다시 받기</button>`
+        : `<button type="button" class="btn pri md" data-act="mt-want" data-v="${고른.id}|${L.id}" ${MT.busy ? 'disabled' : ''}>${MT.busy === L.id ? '알리는 중…' : '이 집 보고 싶어요'}</button>
+        <button type="button" class="btn tool${담.fav.includes(L.id) ? ' on' : ''}" data-act="mt-fav" data-v="${L.id}" aria-pressed="${담.fav.includes(L.id)}">${담.fav.includes(L.id) ? '관심 저장됨' : '관심 저장'}</button>
+        <button type="button" class="tapx mt-no" data-act="mt-hide" data-v="${L.id}">이 매물 그만 받기</button>`}</div>
     </article>`; };
   return `
 <div class="scr fade" style="background:var(--n50)">
   ${navUser('match')}
   <div class="pad" style="flex:1;padding-top:${isMo()?18:28}px;padding-bottom:24px;max-width:${isMo()?'none':'1000px'};margin:0 auto;width:100%;display:flex;flex-direction:column;gap:14px">
-    <div><h1 class="t" style="font-size:${isMo()?21:25}px">맞춤매물 <span style="color:var(--ind)">${g.rows.length}건</span></h1>
+    <div><h1 class="t" style="font-size:${isMo()?21:25}px">맞춤매물 <span style="color:var(--ind)">${세.all}건</span></h1>
       <p class="sub measure">중개사무소가 올린 매물 가운데 걸어 두신 조건과 <b style="color:var(--n900)">일치율 80점 이상</b>인 것만 보여 드립니다. 중개사가 직접 골라 보내는 1:1 제안은 제안함에 따로 옵니다.</p></div>
     ${conds.length > 1 ? `<div class="chips one" role="radiogroup" aria-label="조건 고르기">${conds.map(c => `<button class="chip ${고른 && 고른.id === c.id ? 'on' : ''}" data-act="mt-cond" data-v="${c.id}" role="radio" aria-checked="${!!(고른 && 고른.id === c.id)}">${esc(c.title)}</button>`).join('')}</div>` : 고른 ? `<p class="mt-cond"><b>내 조건</b> ${esc(고른.title)} <a class="lnk" data-go="#/my">조건 보기</a></p>` : ''}
     ${!conds.length ? 빈자리('걸어 둔 조건이 없습니다', '조건을 걸어 두시면 맞는 매물이 올라올 때 여기에 모입니다.', `<button class="btn pri md" data-go="#/kind">내 조건 걸어두기</button>`, 104)
       : !MT.loaded ? `<div class="card pad"><span class="sk" style="height:18px;width:40%"></span><span class="sk" style="height:14px;width:70%;margin-top:10px"></span></div>`
-      : g.rows.length ? `<div class="mt-grid">${g.rows.map(카드).join('')}</div>`
-      : 빈자리('아직 80점 이상인 매물이 없습니다', '맞는 매물이 올라오면 여기에 모입니다. 중개사가 보내는 1:1 제안은 지금도 그대로 받습니다.', `<button class="btn tool" data-go="#/inbox">제안함 보기</button>`, 104)}
+      : `${세.all + 세.hide ? `<div class="ct-chips" role="tablist" aria-label="보는 매물">${[['', '매칭된 매물', 세.all], ['fav', '관심', 세.fav], ['hide', '그만 받은 매물', 세.hide]].map(([k, t, n]) => `<button type="button" class="chip${MT.tab === k ? ' on' : ''}" data-act="mt-tab" data-v="${k}" role="tab" aria-selected="${MT.tab === k}">${t} ${n}</button>`).join('')}</div>` : ''}`
+        + (g.rows.length ? `<div class="mt-grid">${g.rows.map(카드).join('')}</div>`
+      : MT.tab === 'fav' ? 빈자리('관심 저장한 매물이 없습니다', '마음에 드는 매물의 ‘관심 저장’을 누르면 여기에 모입니다.', '', 88)
+      : MT.tab === 'hide' ? 빈자리('그만 받은 매물이 없습니다', '', '', 88)
+      : 빈자리('아직 80점 이상인 매물이 없습니다', '맞는 매물이 올라오면 여기에 모입니다. 중개사가 보내는 1:1 제안은 지금도 그대로 받습니다.', `<button class="btn tool" data-go="#/inbox">제안함 보기</button>`, 104))}
     <p class="sub" style="margin:0;font-size:13px;line-height:1.7">일치율은 지역 30 · 예산 30 · 면적·방 20 · 입주일 20점으로 셉니다. 거래 방식이 다른 매물은 보이지 않습니다. 매물 정보는 올린 중개사무소가 적은 그대로입니다.</p>
   </div>
   ${tabbar('match','u')}
@@ -12571,6 +12585,8 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
+  { v:'26.11.12.7', 날:'2026-11-12', 줄:[
+    '맞춤매물에 ‘관심 저장’ · ‘이 매물 그만 받기’ - 관심 · 그만 받은 매물을 따로 모아 봅니다(이 기기에 저장)' ] },
   { v:'26.11.12.6', 날:'2026-11-12', 줄:[
     '확인·설명서에 ‘현장 체크리스트’ - 집을 보면서 휴대폰으로 ⑩~⑭(실제 권리관계 · 시설물 · 벽면·도배 · 환경 · 현장안내)만 모아 누릅니다. 누른 값이 그대로 확인·설명서에 들어가고, A4 한 장으로 인쇄해 서명받을 수 있습니다' ] },
   { v:'26.11.12.5', 날:'2026-11-12', 줄:[
@@ -20999,6 +21015,9 @@ function handle(a,v,el){
     case 'exf-on': CT.field = true; render(); try{ window.scrollTo(0, 0); }catch(_){} return true;
     case 'exf-off': CT.field = false; render(); return true;
     case 'exf-print': return CT.doc ? ctPrint(exFieldDocHTML(CT.doc)) : true;
+    case 'mt-tab': MT.tab = ['fav', 'hide'].includes(v) ? v : ''; render(); return true;
+    case 'mt-fav': mt바꿈('fav', v); render(); return true;
+    case 'mt-hide': { const 숨김 = !mt담().hide.includes(v); mt바꿈('hide', v); render(); toast(숨김 ? '이 매물은 더 보이지 않습니다 - ‘그만 받은 매물’에서 되돌릴 수 있습니다' : '다시 받습니다'); return true; }
     case 'mt-cond': MT.cond = v; render(); return true;
     case 'mt-open': MT.open[v] = !MT.open[v]; render(); return true;
     case 'mt-want': { const [did, lid] = String(v).split('|'); mtWant(did, lid); return true; }

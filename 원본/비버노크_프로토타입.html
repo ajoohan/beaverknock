@@ -3530,6 +3530,11 @@ body.mo .dz-more::after{content:"";position:absolute;left:-6px;right:-6px;top:-5
 .dz-rt b{font-size:15px;font-weight:700;color:var(--n900);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .dz-rt span{font-size:13.5px;color:var(--n500);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .dz-rw{font-size:13.5px;color:var(--n500);white-space:nowrap}
+/* 계약현황 · 매칭된 물건 카드 (2026-11-13) */
+.dz-cst-n{display:flex;gap:6px;flex-wrap:wrap}
+.dz-mtc .dz-cs{margin-left:0}
+.dz-rw b{font-weight:700;color:var(--n900)}
+.dz-rw b.soon{color:var(--ind)}
 .dz-status .dz-st{display:block;margin-top:4px;font-size:14.5px;color:var(--n700)}
 .dz-trk{height:10px;margin:14px 0 12px;border-radius:999px;background:var(--n100);overflow:hidden}
 .dz-trk i{display:block;height:100%;border-radius:999px;background:var(--ind)}
@@ -5227,6 +5232,7 @@ function myPropFromRow(x){
     at: agoText(x.created_at),
     cust: x.cust || undefined, cphone: x.cphone || undefined, cpref: x.cpref || undefined,
     createdAt: x.created_at || null,
+    via: x.via || '', score: +x.score || 0,
     raw: { addr: x.addr || '', bname: x.bname || '', dep: +x.dep || 0, rent: +x.rent || 0, fee: +x.fee || 0,
            kind: x.kind || '', deal: x.deal || '' },
     reason: x.status==='reported' ? `손님이 신고했습니다${x.report_type?` · ${x.report_type}`:''}`
@@ -9210,6 +9216,36 @@ V['#/partner/verify'] = () => `
   </div>
 </div>`;};
 
+/* 성과 - 계약 · 매물 · 매칭 (2026-11-13 파트너 기획 B4 '성과 지표(계약 · 매물 · 매칭)').
+   계약은 날인본 확정 기준(확인·설명서와 고치기 전 판 제외) · 매물은 매물장부 · 매칭은 맞춤매물 '보고 싶어요' 로 생긴 제안 */
+function 성과더HTML(P, tile){
+  const 이달 = ct오늘().slice(0, 7), 올해 = 이달.slice(0, 4);
+  const 계 = (CT.list || []).filter(ct살아있음), 앞판 = new Set(계.map(r => r.prev_id).filter(Boolean));
+  const 본계 = 계.filter(r => !앞판.has(r.id) && !(CT_FORMS[r.form] || {}).explain);
+  const 확정 = 본계.filter(r => r.status === 'sealed'), 날 = r => ct한국날(r.sealed_at);
+  const 물 = S.listings || [], 노출 = 물.filter(l => l.vis === 'open' && l.status === 'active').length;
+  const 원함 = P.filter(p => p.via === 'want'), 원함연결 = 원함.filter(p => p.status === 'selected').length;
+  const 줄 = (제목, 칸들) => `<div><span class="sect" style="display:block;margin:4px 0 8px">${제목}</span>
+    <div style="display:grid;grid-template-columns:repeat(${isMo() ? 2 : 4},minmax(0,1fr));gap:12px">${칸들.join('')}</div></div>`;
+  return [
+    계약막힘() ? '' : 줄('계약', CT.list ? [
+      tile('이번 달 날인', 확정.filter(r => 날(r).slice(0, 7) === 이달).length + '건', `${+이달.slice(5)}월 확정`, null),
+      tile('올해 날인', 확정.filter(r => 날(r).slice(0, 4) === 올해).length + '건', `${올해}년`, null),
+      tile('작성 중', 본계.filter(r => r.status !== 'sealed').length + '건', '날인 전 계약서', null),
+      tile('잔금 완료', 확정.filter(r => (r.track || {}).state === 'done').length + '건', '진행 상태 완료', null)]
+      : [tile('계약', '…', '불러오는 중입니다', null)]),
+    줄('매물', [
+      tile('매물장부', 물.length + '건', '사무소 전체', null),
+      tile('노출 중', 노출 + '건', '맞춤매물에 뜨는 매물', null),
+      tile('장부만', (물.length - 노출) + '건', '손님에게 안 보임', null),
+      tile('사진 있음', 물.filter(l => l.photos > 0).length + '건', '사진이 있으면 더 열어 봅니다', null)]),
+    줄('매칭', [
+      tile('보고 싶어요', 원함.length + '건', '손님이 먼저 고른 내 매물', null),
+      tile('그중 연결', 원함연결 + '건', 원함.length ? `${Math.round(원함연결 / 원함.length * 100)}%` : '보고 싶어요가 오면 계산됩니다', null),
+      tile('평균 일치율', 원함.length ? Math.round(원함.reduce((s, p) => s + (p.score || 0), 0) / 원함.length) + '점' : '-', '보고 싶어요 당시', null),
+      tile('내 지역 조건', (S.demands || []).length + '건', '지금 걸린 손님 조건', null)]),
+  ].join('');
+}
 /* ---------- S-09 성과 대시보드 ---------- */
 V["#/partner/stats"] = () => {
   const P = S.myprops;
@@ -9228,7 +9264,7 @@ V["#/partner/stats"] = () => {
   ${navPartner('st')}
   <div class="pad adm-page" style="flex:1;padding-top:${isMo()?18:30}px;padding-bottom:24px;max-width:${isMo()?'none':'1000px'};margin:0 auto;width:100%;display:flex;flex-direction:column;gap:14px">
     <div><h1 class="t" style="font-size:${isMo()?21:25}px;margin-top:8px">성과</h1>
-      <p class="sub" style="font-size:14.5px">보내신 제안 전체 기준입니다. 좋은 제안을 쓰는 것이 이기는 길입니다.</p></div>
+      <p class="sub" style="font-size:14.5px">제안 · 계약 · 매물 · 매칭 숫자를 한곳에 모았습니다. 좋은 제안을 쓰는 것이 이기는 길입니다.</p></div>
 
     ${sent ? '' : `<div class="card pad" style="background:var(--ind50);border-color:var(--ind200)">
       <b style="display:block;font-size:15px;font-weight:700;color:var(--n900);margin-bottom:4px">아직 보내신 제안이 없습니다</b>
@@ -9242,6 +9278,7 @@ V["#/partner/stats"] = () => {
       ${tile('선택률', viewed?sr+'%':'-', viewed?`${selected}건 연결`:'열람이 있어야 계산됩니다', null)}
       ${tile('품질 점수', sent?qualityScore()+'점':'-', '아래 산식대로', null, true)}
     </div>
+    ${성과더HTML(P, tile)}
 
     <div style="display:grid;grid-template-columns:repeat(${isMo()?1:2},minmax(0,1fr));gap:14px">
       <div class="card pad">
@@ -12577,7 +12614,7 @@ const PHELP = [
     ['휴대폰 달력에', '일정·알림의 ‘휴대폰 · 구글 달력에서 보기’에서 구독 주소를 받으면 쓰시는 달력에 일정이 들어갑니다.'],
     ['잔금 완료 확인', '잔금일 오후 3시부터 대시보드가 ‘잔금 완료하셨나요?’를 묻습니다. 완료로 바꾸면 알림이 멈춥니다.'] ] },
   { g:'계약 진행', id:'room', ct:true, room:true, t:'손님을 대화방에 초대하기', steps:[
-    ['초대 링크 보내기', '날인본 계약서의 ‘일정·체크’ 탭 › 손님 대화방에서 당사자마다 ‘초대 링크’를 눌러 문자 · 카톡으로 보냅니다.'],
+    ['초대 링크 보내기', '계약서(체결문자 뒤 작성 중이거나 날인본)의 ‘일정·체크’ 탭 › 손님 대화방에서 당사자마다 ‘초대 링크’를 눌러 문자 · 카톡으로 보냅니다.'],
     ['대리인 초대', '본인 대신 챙기는 분이 있으면 ‘대리인 초대’로 한 분을 더 부릅니다. 같은 방에서 대화합니다.'],
     ['대화 · 사진 · 파일', '영업 › 손님 대화에서 당사자마다 따로 대화합니다. ‘사진 · 파일’로 서류를 보냅니다(잔금 뒤 1년 보관).'],
     ['잔금 준비물 안내', '매매 방에서는 ‘잔금 준비물 안내’ 단추가 매도인 · 매수인 몫의 글을 채웁니다. 보내면 잔금안내 체크도 됩니다.'] ] },
@@ -13256,6 +13293,12 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
+  { v:'26.11.13.1', 날:'2026-11-13', 줄:[ '대시보드 - 계약현황(진행중 · 준비 · 보류와 다음 일정) · 매칭된 물건(손님이 ‘보고 싶어요’를 누른 내 매물) 카드',
+    '성과 - 계약 · 매물 · 매칭 숫자를 함께 봅니다',
+    '알림 - 읽은 알림을 서버에 기억해, PC 에서 읽은 것이 휴대폰에서 다시 새것으로 뜨지 않습니다',
+    '바로 찾기 - 손님 이름 · 전화번호 뒷자리 · 계약 당사자로도 찾고, 오래된 계약서 · 물건도 서버에서 찾아 줍니다',
+    '손님 대화방 - 계약체결 문자를 보낸 뒤라면 날인 전(작성 중 계약서)에도 손님을 초대할 수 있습니다',
+    '계약서 - 관리비 칸은 주택 · 상가 임대차 계약서에만 나옵니다' ] },
   { v:'26.11.12.29', 날:'2026-11-12', 줄:[ '배포 점검 보강 - 줄인 화면 파일도 검사하고, 배포 직전에 열려 있던 화면이 끊기지 않게 했습니다' ] },
   { v:'26.11.12.28', 날:'2026-11-12', 줄:[ '속도 - 화면 파일을 30% 줄이고(설명 글 · 빈칸 정리), 두 번째 방문부터는 휴대폰이 저장해 둔 것을 바로 씁니다' ] },
   { v:'26.11.12.27', 날:'2026-11-12', 줄:[ '속도 - 서버를 서울로 옮겼습니다(전에는 미국 동부). 데이터가 서울에 있어 요청마다 태평양을 오가던 시간이 줄어듭니다' ] },
@@ -13769,8 +13812,18 @@ const 알림읽음 = (() => { let 봄, 최대; const 쪼개 = id => /^(todo:.*):
   const 셈 = id => { const m = 쪼개(id); if(m && +m[2] > (최대.get(m[1]) || 0)) 최대.set(m[1], +m[2]); };
   const 읽기 = () => { if(봄) return 봄; try{ 봄 = new Set(JSON.parse(localStorage.getItem('bk_noti_seen') || '[]')); }catch{ 봄 = new Set(); }
     최대 = new Map(); 봄.forEach(셈); return 봄; };
-  return { 있나: id => { const s = 읽기(); if(s.has(id)) return true; const m = 쪼개(id); return !!m && (최대.get(m[1]) || 0) >= +m[2]; },
-    넣기: ids => { const s = 읽기(); ids.forEach(i => { s.add(i); 셈(i); }); try{ localStorage.setItem('bk_noti_seen', JSON.stringify([...s].slice(-400))); }catch{} } }; })();
+  /* 서버에도 둔다 (2026-11-13 파트너 기획 B2 '알림창 서버 저장') - PC 에서 읽은 알림이 휴대폰에서 다시 새것으로 뜨지 않게.
+     로그인한 사람(대표 · 직원)마다 따로. 처음 그릴 때 한 번 받아 합치고, 읽으면 1.5초 모아 보낸다. 실패해도 이 기기 기억은 그대로 */
+  let 받은사람 = '', 보낼 = [], 보냄T = 0, 실패때 = 0;
+  const 저장 = s => { try{ localStorage.setItem('bk_noti_seen', JSON.stringify([...s].slice(-400))); }catch{} };
+  const 서버받기 = () => { const uid = S.user && S.user.id; if(!uid || !S.agent || 받은사람 === uid || !세션있음() || Date.now() - 실패때 < 60e3) return; 받은사람 = uid;
+    ctPost({ what:'noti-seen' }).then(({ ok, j }) => { if(!ok || !Array.isArray(j.ids) || !j.ids.length) return;
+      const s = 읽기(), 전 = s.size; j.ids.forEach(i => { s.add(String(i)); 셈(String(i)); }); if(s.size !== 전){ 저장(s); 알림종새로(); } }).catch(() => { 받은사람 = ''; 실패때 = Date.now(); }); };   /* 통신이 끊기면 1분 뒤에 다시 */
+  return { 있나: id => { 서버받기(); const s = 읽기(); if(s.has(id)) return true; const m = 쪼개(id); return !!m && (최대.get(m[1]) || 0) >= +m[2]; },
+    넣기: ids => { const s = 읽기(); ids.forEach(i => { s.add(i); 셈(i); }); 저장(s);
+      if(!S.agent || !세션있음()) return; 보낼.push(...ids); clearTimeout(보냄T);
+      보냄T = setTimeout(() => { const 묶음 = [...new Set(보낼)]; 보낼 = []; ctPost({ what:'noti-seen-save', ids: 묶음 }).catch(() => {}); }, 1500); },
+    비우기: () => { 받은사람 = ''; 보낼 = []; clearTimeout(보냄T); } }; })();
 function 알림들(){
   if(!S.user || !S.agent) return [];
   if(RM.list == null && !RM.listLoading && !ownerSide() && !계약막힘() && Date.now() - (알림들._물음 || 0) > 60e3){ 알림들._물음 = Date.now(); setTimeout(rmListLoad); }
@@ -13858,12 +13911,26 @@ function 바로찾기목록(q){
   if(낮){
     묶음.push(['손님 조건', (S.demands || []).filter(d => 맞나([d.region, d.deal, ...(d.lines || [])].join(' '))).slice(0, 5)
       .map(d => ({ t: d.region, s: [d.deal, (d.lines || [])[0]].filter(Boolean).join(' · '), ico: NONHOME(d.kind) ? 'building' : 'home', go: `#/partner/demand/${d.id}` }))]);
-    묶음.push(['계약서', (CT.list || []).filter(r => 맞나([r.title, r.road, r.form].join(' '))).slice(0, 5)
+    /* 손님 이름 · 연락처 (2026-11-13 B3) - 연결된 손님(보낸 제안) · 계약 당사자. 서버에서는 암호화돼 찾을 수 없어 불러온 것 안에서 */
+    const 당사자 = r => Object.values(r.parties || {}).flatMap(x => x && typeof x === 'object' ? [x.name, x.phone, ...(Array.isArray(x.co) ? x.co.map(c => c && c.name) : [])] : []);
+    const 숫자만 = t => String(t || '').replace(/\D/g, ''), 낮숫 = 숫자만(낮), 번호맞나 = t => 낮숫.length >= 4 && 숫자만(t).includes(낮숫);
+    묶음.push(['손님', (S.myprops || []).filter(p => p.cust && (맞나(p.cust) || 번호맞나(p.cphone))).slice(0, 5)
+      .map(p => ({ t: p.cust, s: [p.title, '연결된 손님'].filter(Boolean).join(' · '), ico: 'user', go: '#/partner/proposals' }))]);
+    묶음.push(['계약서', (CT.list || []).filter(r => 맞나([r.title, r.road, r.form, ...당사자(r)].join(' ')) || 당사자(r).some(번호맞나)).slice(0, 5)
       .map(r => ({ t: r.title || r.road || '소재지 미입력', s: r.status === 'sealed' ? '날인본' : '작성 중', ico: 'doc', go: `#/partner/contract/${r.id}` }))]);
     묶음.push(['대화방', (RM.list || []).filter(r => 맞나([r.title, r.name, RM_자리[r.side]].join(' '))).slice(0, 5)
       .map(r => ({ t: r.title || '계약', s: `${RM_자리[r.side] || ''}${r.name ? ' ' + r.name : ''}`, ico: 'chat', go: `#/partner/rooms/${r.id}/${r.side}` }))]);
     묶음.push(['내 물건', (S.listings || []).filter(l => !l.seed && 맞나([l.name, l.dong, l.deal, l.biz].join(' '))).slice(0, 5)
       .map(l => ({ t: l.name || l.dong || '물건', s: [l.dong, l.deal || l.biz].filter(Boolean).join(' · '), ico: 'building', go: `#/partner/listing/${l.id}` }))]);
+    /* 서버에서 더 찾은 것 - 불러온 목록 밖(오래된 계약서 · 물건 · 보낸 제안). 이미 위에 있는 것은 뺀다 */
+    if(CK.srv && CK.srv.q === 낮){
+      const 이미 = new Set(묶음.flatMap(([, rows]) => rows.map(x => x.go)));
+      const 더 = [...(CK.srv.contracts || []).map(r => ({ t: r.title || '소재지 미입력', s: `계약서 · ${r.status === 'sealed' ? '날인본' : '작성 중'}`, ico: 'doc', go: `#/partner/contract/${r.id}` })),
+        ...(CK.srv.listings || []).map(l => ({ t: l.name || l.dong || '물건', s: ['물건', l.dong, l.deal].filter(Boolean).join(' · '), ico: 'building', go: `#/partner/listing/${l.id}` })),
+        ...(CK.srv.proposals || []).filter(x => !(S.myprops || []).some(p => p.id === x.id)).map(x => ({ t: x.bname || x.addr || '제안', s: '보낸 제안', ico: 'send', go: '#/partner/proposals', k: x.id }))]
+        .filter(x => x.k || !이미.has(x.go)).slice(0, 6);
+      묶음.push(['더 찾은 것', 더]);
+    }
   }
   return 묶음.filter(([, rows]) => rows.length);
 }
@@ -13880,12 +13947,12 @@ function 바로찾기(열기){
     바로찾기._앞 = document.activeElement;
     box = document.createElement('div'); box.id = 'ck'; box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-label', '바로 찾기');
     box.innerHTML = `<div class="ck-veil" data-ck-close></div><div class="ck-box">
-      <label class="ck-in">${dzIco('search', 19)}<input type="text" autocomplete="off" spellcheck="false" placeholder="손님 지역 · 주소 · 계약서 · 메뉴 이름" aria-label="찾을 말" aria-controls="ckRes"><kbd data-ck-close>Esc</kbd></label>
+      <label class="ck-in">${dzIco('search', 19)}<input type="text" autocomplete="off" spellcheck="false" placeholder="손님 이름 · 지역 · 주소 · 계약서 · 메뉴 이름" aria-label="찾을 말" aria-controls="ckRes"><kbd data-ck-close>Esc</kbd></label>
       <div class="ck-res" id="ckRes" role="listbox"></div>
       <div class="ck-foot"><span><kbd>↑</kbd><kbd>↓</kbd> 이동</span><span><kbd>Enter</kbd> 열기</span><span><kbd>Esc</kbd> 닫기</span></div></div>`;
     document.body.appendChild(box);
     const inp = box.querySelector('input');
-    inp.addEventListener('input', () => { CK.q = inp.value; CK.i = 0; 바로찾기그리기(); });
+    inp.addEventListener('input', () => { CK.q = inp.value; CK.i = 0; 바로찾기그리기(); 바로찾기서버(); });
     inp.addEventListener('keydown', e => {
       if(e.key === 'ArrowDown' || e.key === 'ArrowUp'){ e.preventDefault(); const n = CK.rows.length; if(!n) return;
         CK.i = (CK.i + (e.key === 'ArrowDown' ? 1 : -1) + n) % n; 바로찾기그리기(true); }
@@ -13895,11 +13962,20 @@ function 바로찾기(열기){
     box.addEventListener('click', e => { if(e.target.closest('[data-ck-close]')) return 바로찾기(false);
       const it = e.target.closest('[data-ck-i]'); if(it){ const x = CK.rows[+it.dataset.ckI]; if(x){ 바로찾기(false); go(x.go); } } });
     box.addEventListener('mousemove', e => { const it = e.target.closest('[data-ck-i]'); if(it && +it.dataset.ckI !== CK.i){ CK.i = +it.dataset.ckI; 바로찾기그리기(true); } });
-    CK.q = ''; CK.i = 0;
+    CK.q = ''; CK.i = 0; CK.srv = null;
     requestAnimationFrame(() => box.classList.add('in')); setTimeout(() => box.classList.add('in'), 30);
     setTimeout(() => inp.focus(), 0);
   }
   바로찾기그리기();
+}
+/* 서버 검색 - 두 글자부터, 치다 멈추면(0.35초) 한 번. 답이 늦게 와도 그사이 바뀐 말이면 버린다 */
+let 바로찾기T = 0;
+function 바로찾기서버(){
+  clearTimeout(바로찾기T); const q = String(CK.q || '').trim().toLowerCase();
+  if(q.length < 2 || (CK.srv && CK.srv.q === q)) return;
+  바로찾기T = setTimeout(() => ctPost({ what:'search', q }).then(({ ok, j }) => {
+    if(!ok || String(CK.q || '').trim().toLowerCase() !== q) return;
+    CK.srv = { q, contracts: j.contracts || [], listings: j.listings || [], proposals: j.proposals || [] }; 바로찾기그리기(); }).catch(() => {}), 350);
 }
 function 바로찾기그리기(자리만){
   const box = document.getElementById('ck'); if(!box) return;
@@ -13912,7 +13988,7 @@ function 바로찾기그리기(자리만){
   res.innerHTML = 묶음.length ? 묶음.map(([이름, rows]) => `<div class="ck-g"><span class="ck-gt">${esc(이름)}</span>${rows.map(x => { const i = k++;
       return `<button type="button" role="option" class="ck-it${i === CK.i ? ' on' : ''}" aria-selected="${i === CK.i}" data-ck-i="${i}" style="--i:${Math.min(i, 12)}">
         <span class="ck-ic">${dzIco(x.ico || 'list', 16)}</span><span class="ck-tx"><b>${표(x.t)}</b>${x.s ? `<span>${표(x.s)}</span>` : ''}</span><span class="ck-go">열기</span></button>`; }).join('')}</div>`).join('')
-    : `<p class="ck-none">‘${esc(CK.q)}’ 와 맞는 것이 없습니다.<br>손님 지역(예: 미사동) · 계약서 주소 · 메뉴 이름으로 찾아 보세요.</p>`;
+    : `<p class="ck-none">‘${esc(CK.q)}’ 와 맞는 것이 없습니다.<br>손님 이름 · 전화번호 뒷자리 · 지역(예: 미사동) · 계약서 주소 · 메뉴 이름으로 찾아 보세요.</p>`;
 }
 /* Ctrl+K · ⌘K - 파트너로 들어와 있으면 어느 화면에서든 */
 document.addEventListener('keydown', e => {
@@ -14074,6 +14150,40 @@ const dz잔금물음 = rows => !rows.length ? '' : `<section class="dz-card dz-s
     ${rows.map(r => `<div class="dz-settle-r"><button type="button" class="dz-settle-t" data-act="ct-open" data-v="${esc(r.id)}">${esc(r.title || '소재지 미입력')}</button>
       <span class="dz-settle-b"><button type="button" class="btn pri sm" data-act="settle-done" data-v="${esc(r.id)}">완료</button><button type="button" class="btn sec sm" data-act="settle-later" data-v="${esc(r.id)}">아직 (1시간 뒤)</button></span></div>`).join('')}
   </section>`;
+/* 계약현황 (2026-11-13 파트너 기획 ① 대시보드 '계약현황 - 진행중 · 준비 · 보류, 상태 · 목적물 · 종류 · 다음 일정') -
+   끝나지 않은 계약서를 다음 일정이 가까운 차례로 넷. 확인·설명서와 고치기 전 판은 뺀다. 줄을 누르면 그 계약서, 전체 보기는 계약현황 */
+function dz계약현황(계약){
+  const 오늘 = ct오늘(), 설정 = ct알림설정(CT.alert && CT.alert.cfg), 앞판 = new Set(계약.map(r => r.prev_id).filter(Boolean));
+  const 대상 = 계약.filter(r => !앞판.has(r.id) && !(CT_FORMS[r.form] || {}).explain && !['done', 'cancel'].includes((r.track || {}).state));
+  const 상태 = r => (r.track || {}).state || (r.status === 'sealed' ? 'doing' : 'ready');
+  const 수 = k => 대상.filter(r => 상태(r) === k).length;
+  const 다음 = r => ct일정목록(r, 설정).find(e => e.날 >= 오늘 && !e.마침) || null;
+  const 줄들 = 대상.map(r => ({ r, e: 다음(r) })).sort((a, b) => (a.e ? a.e.날 : '9999') < (b.e ? b.e.날 : '9999') ? -1 : 1).slice(0, 4);
+  const 날 = d => `${+d.slice(5, 7)}.${+d.slice(8)}`;
+  return `<section class="dz-card dz-cst" aria-label="계약현황">
+    <div class="dz-chh"><b class="dz-ct">계약현황</b><span class="dz-cst-n">${[['doing', '진행중'], ['ready', '준비'], ['hold', '보류']].map(([k, t]) => `<span class="badge ${k === 'hold' ? 'b-warn' : k === 'doing' ? 'b-ind' : 'b-mute'}">${t} <b class="num">${수(k)}</b></span>`).join('')}</span>
+      <a class="dz-more" data-go="#/partner/contracts">전체 보기<i class="ar-r" aria-hidden="true"></i></a></div>
+    ${줄들.length ? 줄들.map(({ r, e }) => `<a class="dz-row" data-act="ct-open" data-v="${esc(r.id)}">
+      <span class="dz-av">${dzIco('doc', 18)}</span>
+      <span class="dz-rt"><b>${esc(r.title || '소재지 미입력')}</b><span>${esc(CT_진행[상태(r)] || '')} · ${esc(ctTitle(r).replace(/계약서$/, ''))} · ${esc(CT_거래유형[ct거래(r)] || '')}</span></span>
+      <span class="dz-rw">${e ? `<b class="num${ct날차(오늘, e.날) <= 7 ? ' soon' : ''}">${날(e.날)}</b> ${esc(e.이름 || '')}` : '<span class="mute">다음 일정 없음</span>'}</span></a>`).join('')
+      : `<p class="dz-calm">진행 중인 계약이 없습니다. 계약서를 만들면 다음 일정과 함께 여기에 모입니다.</p>`}
+  </section>`;
+}
+/* 매칭된 물건 (2026-11-13 파트너 기획 ① '손님 조건과 80% 이상 일치하는 내 매물') - 맞춤매물에서 손님이 '보고 싶어요' 를 누른 내 매물.
+   이름 · 연락처는 손님이 연결을 누른 뒤에만 보인다(지금 제안함과 같은 약속). 비어 있으면 노출하는 길을 알려 준다 */
+function dz매칭(진짜){
+  const 줄 = 진짜.filter(p => p.via === 'want').slice(0, 4);
+  return `<section class="dz-card dz-mtc" aria-label="매칭된 물건">
+    <div class="dz-chh"><b class="dz-ct">매칭된 물건</b><span class="dz-cs">손님 조건과 80점 이상 맞는 내 매물에 ‘보고 싶어요’</span>
+      <a class="dz-more" data-go="#/partner/proposals">전체 보기<i class="ar-r" aria-hidden="true"></i></a></div>
+    ${줄.length ? 줄.map(p => `<a class="dz-row" data-go="#/partner/proposals">
+      <span class="dz-av">${dzIco('home', 18)}</span>
+      <span class="dz-rt"><b>${esc(p.title)}</b><span>${p.cust ? `${esc(p.cust)} · 연결됨` : esc(p.status || '')}${p.line ? ` · ${esc(p.line)}` : ''}</span></span>
+      <span class="dz-rw">${p.score ? `<b class="num">${p.score}%</b> 일치` : ''}</span></a>`).join('')
+      : `<p class="dz-calm">아직 없습니다. 매물장부에서 ‘노출하기’를 켜 두면, 조건이 맞는 손님이 ‘보고 싶어요’를 누를 때 여기에 모입니다.</p>`}
+  </section>`;
+}
 /* 대시보드는 자료가 다 모인 뒤 한 번에 그린다 (2026-11-12 대표님 '충분히 로딩하고 보여 줘도 된다 - 자꾸 깜빡거린다').
    수요 · 보낸 제안 · 매물 · 계약서 · 일정 알림 · 사무소 메모 · 계약체결 문자가 하나씩 도착할 때마다 숫자 · 브리핑 · 카드가 바뀌며 들썩였다.
    다 모이거나 6초가 지나면 그린다(느린 통신에서 영영 기다리지 않게). 한 번 열린 뒤 다시 그릴 때는 기다리지 않는다 */
@@ -14131,6 +14241,8 @@ V['#/partner/home'] = () => {
                 '<button type="button" class="btn sec sm" data-go="#/partner/demands">맞는 손님 보기</button>')}
           </div>
         </div>
+        ${계약막힘() ? '' : dz계약현황(계약)}
+        ${dz매칭(진짜)}
         ${계약막힘() ? '' : dz실적(계약)}
         <div class="dz-card dz-recent">
           <div class="dz-chh"><b class="dz-ct">새로 걸린 조건</b><a class="dz-more" data-go="#/partner/demands">전체 보기<i class="ar-r" aria-hidden="true"></i></a></div>
@@ -14610,10 +14722,10 @@ function ctTitle(doc){
 
 /* 양식 표. 당사자 키(a/b)를 양식마다 두는 것은 저장된 doc 이 '누가 누구' 인지를 이름으로 말하게 하려는 것이다 */
 const CT_FORMS = {
-  'home-lease': { ko:'주택임대차계약서', h1:'주 택 임 대 차 계 약 서', obj:'주택', lease:true, a:['lessor','임대인'], b:['lessee','임차인'],
+  'home-lease': { ko:'주택임대차계약서', h1:'주 택 임 대 차 계 약 서', obj:'주택', lease:true, fee:true, a:['lessor','임대인'], b:['lessee','임차인'],
     clauses: CT_HOME_CLAUSES, specials: CT_HOME_SPECIALS, monthly:'choose',
     foot:'법무부 주택임대차표준계약서의 항목을 참고' },
-  'shop-lease': { ko:'상가건물 임대차계약서', h1:'상 가 건 물 임 대 차 계 약 서', obj:'상가건물', lease:true, a:['lessor','임대인'], b:['lessee','임차인'],
+  'shop-lease': { ko:'상가건물 임대차계약서', h1:'상 가 건 물 임 대 차 계 약 서', obj:'상가건물', lease:true, fee:true, a:['lessor','임대인'], b:['lessee','임차인'],
     clauses: CT_SHOP_CLAUSES, specials: CT_SHOP_SPECIALS, monthly:'always',
     foot:'법무부 상가건물 임대차표준계약서의 항목을 참고' },
   'sale': { ko:'부동산 매매계약서', h1:'부 동 산 매 매 계 약 서', obj:'부동산', lease:false, a:['seller','매도인'], b:['buyer','매수인'],
@@ -15918,23 +16030,25 @@ V['#/partner/rooms'] = (id, side) => {
   ${navPartner('rm')}
   <div class="pad adm-page" style="flex:1;padding-top:${isMo()?18:28}px;padding-bottom:24px;width:100%;display:flex;flex-direction:column;gap:14px">
     ${isMo() && 키 ? '' : `<div><h1 class="t" style="font-size:${isMo()?21:25}px;margin-top:8px">손님 대화</h1>
-      <p class="sub" style="font-size:14.5px">계약을 마친 손님과 잔금까지 이어지는 대화를 모읍니다. 당사자마다 방이 따로라 매도인과 매수인은 서로의 대화를 보지 못합니다.</p></div>`}
+      <p class="sub" style="font-size:14.5px">계약하는 손님과 체결문자 뒤부터 잔금까지 이어지는 대화를 모읍니다. 당사자마다 방이 따로라 매도인과 매수인은 서로의 대화를 보지 못합니다.</p></div>`}
     <div class="rm-lay${키 ? ' has' : ''}">${isMo() && 키 ? '' : 왼쪽}${오른쪽}</div>
   </div>
   ${tabbar('rm','p')}
 </div>`;
 };
 
-/* 일정·체크 탭 - 손님 초대 (날인본만). 당사자마다 방이 따로다 */
+/* 일정·체크 탭 - 손님 초대. 당사자마다 방이 따로다.
+   2026-11-13 파트너 기획 E4 '체결문자 단계부터 초대' - 날인 전(작성 중)에도 초대한다. 휴지통에 넣은 계약서만 막는다 */
 function ct방HTML(doc){
   if(!CT.id || (CT_FORMS[doc.form] || {}).explain) return '';
-  const 확정 = (CT.row || {}).status === 'sealed';
+  const 확정 = (CT.row || {}).status === 'sealed', 휴지통 = ct보관칸(CT.row || {}) === 'trash';
   const 방 = ct트랙().room || {};
   const 자리 = Object.keys(RM_자리).filter(k => (doc.parties || {})[k]);
   const 보조 = 보조원();
   return `<div class="card pad ct-sec" id="ctRoom"><h2>손님 대화방 <span class="sub" style="font-weight:500;font-size:13.5px">당사자마다 방이 따로입니다 - 초대 링크로 로그인하면 사무소와 그분만의 방이 열립니다</span></h2>
-    ${!확정 ? `<p class="sub" style="margin:0">날인본으로 확정한 뒤에 손님을 초대할 수 있습니다.</p>`
-      : `<ul class="rm-inv">${자리.map(k => { const 사람 = doc.parties[k] || {}, 들 = !!방[k], 대 = (방.p || {})[k], 날 = x => esc(String(x.at || '').slice(0, 10).replace(/-/g, '.'));
+    ${휴지통 ? `<p class="sub" style="margin:0">휴지통에 있는 계약서입니다 - 목록으로 되돌리면 손님을 초대할 수 있습니다.</p>`
+      : `${확정 ? '' : `<p class="sub" style="margin:0;font-size:13.5px">계약체결 문자를 보낸 뒤라면 날인 전에도 초대할 수 있습니다. 계약서에 당사자 이름을 넣으면 그 자리가 생깁니다.</p>`}
+      ${자리.length ? '' : `<p class="sub" style="margin:0">계약서 당사자 칸을 먼저 채워 주세요.</p>`}<ul class="rm-inv">${자리.map(k => { const 사람 = doc.parties[k] || {}, 들 = !!방[k], 대 = (방.p || {})[k], 날 = x => esc(String(x.at || '').slice(0, 10).replace(/-/g, '.'));
         return `<li><span><b>${RM_자리[k]}${사람.name ? ` · ${esc(사람.name)}` : ''}</b><small>${들 ? `들어옴 ${날(방[k])}` : '아직 안 들어옴'}${대 ? ` · 대리인 들어옴 ${날(대)}` : ''}</small></span>
           <span class="eqb rm-invb">${들 || 대 ? `<button type="button" class="btn sec sm" data-go="#/partner/rooms/${esc(CT.id)}/${k}">대화</button>` : ''}
           ${보조 ? '' : 들 ? `<button type="button" class="btn tool sm" data-act="rm-kick" data-v="${k}">${CT.rmKick === CT.id + '|' + k ? '한 번 더 누르면 내보냅니다' : '내보내기'}</button>`
@@ -16725,7 +16839,9 @@ function ct행단추(r){
   const k = ct보관칸(r), 이름 = esc(r.title || '이 계약서'), id = esc(r.id), 단 = (act, v, t, 말, 위험) =>
     `<button type="button" class="ct-rcopy${위험 ? ' dng' : ''}" data-act="${act}" data-v="${v}" aria-label="${이름} ${말}">${t}</button>`;
   const 칸들 = k === 'trash'
-    ? [단('ct-bin', `${id}|`, '되돌리기', '목록으로 되돌리기'), r.status === 'sealed' ? '' : 직원() ? `<span class="ct-rnote">${ct휴지남은날(r)}일 뒤 지워짐</span>` : 단('ct-purge', id, '영구 삭제', '영구 삭제', true)]
+    ? [단('ct-bin', `${id}|`, '되돌리기', '목록으로 되돌리기'), r.status === 'sealed' ? ''
+        : r.track && r.track.room ? `<span class="ct-rnote">손님 대화방이 있어 지우지 않습니다</span>`   /* 2026-11-13 - 대화 · 파일이 주인 없이 남지 않게(서버도 막는다) */
+        : 직원() ? `<span class="ct-rnote">${ct휴지남은날(r)}일 뒤 지워짐</span>` : 단('ct-purge', id, '영구 삭제', '영구 삭제', true)]
     : k === 'arch' ? [단('ct-bin', `${id}|`, '되돌리기', '목록으로 되돌리기'), 단('ct-bin', `${id}|trash`, '휴지통', '휴지통으로')]
     : [!isMo() && !(CT_FORMS[r.form] || {}).explain ? 단('ct-copy', id, '복사', '복사해서 새로') : '', 단('ct-bin', `${id}|arch`, '내리기', '보관함으로 내리기'), 단('ct-bin', `${id}|trash`, '휴지통', '휴지통으로')];
   return `<span class="ct-racts${isMo() ? ' mo' : ''}">${칸들.join('')}</span>`;
@@ -17186,11 +17302,11 @@ function ctFormHTML(doc){
         ${ctIn('deal.balanceDate','잔금 지급일',{type:'date'})}
         ${F.lease && D.type==='monthly' ? ctIn('deal.rent','월 차임(원)',{money:true}) + ctIn('deal.rentDay','지급일',{w:2, ph:'매월 25'}) : ''}
         ${F.lease && D.type==='yearly' ? ctIn('deal.rent','연 차임(원)',{money:true}) + ctIn('deal.rentDay','지급 시기',{w:4, ph:'예: 매년 3월 1일'}) : ''}
-        ${F.lease ? ctIn('deal.fee','관리비 정액(원)',{money:true, ph:'없으면 비움'}) : ''}
+        ${/* 관리비 칸은 주택 · 상가 임대차 표준계약서에만 (2026-11-13 파트너 기획 D2-10). 예전에 적어 둔 값은 계속 보인다 */ F.fee || (F.lease && +D.fee) ? ctIn('deal.fee','관리비 정액(원)',{money:true, ph:'없으면 비움'}) : ''}
       </div>
       ${F.lease && (D.type==='monthly' || D.type==='yearly') ? `<div><span class="lab">차임 지급</span>${chipsHTML(['선불','후불'], D.rentWhen || '선불', 'ct-rentwhen', false, 잠김)}</div>` : ''}
       ${F.lease && (상가 || D.type==='monthly' || D.type==='yearly') ? `<div><span class="lab">차임의 부가가치세</span>${chipsHTML(['해당 없음','별도','포함'], ct부가(doc), 'ct-vat', false, 잠김)}</div>` : ''}
-      ${F.lease && +D.fee ? `<div><span class="lab">관리비의 부가가치세</span>${chipsHTML(['해당 없음','별도','포함'], D.feeVat || '해당 없음', 'ct-feevat', false, 잠김)}</div>` : ''}</div>
+      ${(F.fee || F.lease) && +D.fee ? `<div><span class="lab">관리비의 부가가치세</span>${chipsHTML(['해당 없음','별도','포함'], D.feeVat || '해당 없음', 'ct-feevat', false, 잠김)}</div>` : ''}</div>
 
     <div class="card pad ct-sec"><h2>${doc.form === 'premium' ? '임대차계약일과 계약일' : 매매?'인도와 계약일':doc.form === 'sublease' ? '전대차기간' : '임대차기간'}${매매 && doc.form !== 'premium'?' <span class="sub" style="font-weight:500;font-size:13.5px">인도일을 비우면 잔금일에 인도합니다</span>':''}${ct구획(doc, ['period', 'contractDate'])}</h2>
       <div class="ct-grid">
@@ -18759,6 +18875,7 @@ function exFieldHTML(doc){
 const FP = { id:'', list:[], loading:false, busy:0, err:'' };
 /* 로그아웃 때 오늘(11-12) 새로 만든 화면 상태를 처음으로 - 같은 브라우저의 다음 사람이 앞사람의 매물 · 직원 명단 · 사진 주소를 보면 안 된다 */
 function 새상태비우기(){
+  알림읽음.비우기();   /* 알림 읽음 - 다음 사람은 자기 기록을 서버에서 다시 받는다 */
   Object.assign(MT, { loaded:false, loading:false, at:0, groups:[], need:'', cond:'', open:{}, busy:'', tab:'', pics:{} });
   Object.assign(SF, { loaded:false, loading:false, list:[], err:'', busy:false, del:null, sel:null, log:[], logOpen:false, open:null });
   Object.assign(CF, { loaded:false, loading:false, cert:null, certOk:'', busy:false });
@@ -19388,6 +19505,8 @@ function render(){
   /* '#/partner' 는 누구나 여는 안내 화면이고 내 제안·내 물건을 쓰지 않는다 (2026-10-09).
      거기서 부르면 로그인한 손님 계정도 방문마다 /api/feed 를 두 번 부르고 403 을 받았다. */
   if(h==='#/partner/proposals' || h==='#/partner/stats') loadMyProps(false);
+  /* 성과 - 계약 · 매물 · 매칭 지표도 함께 (2026-11-13 파트너 기획 B4) */
+  if(h==='#/partner/stats'){ loadListings(false); if(S.agent && !계약막힘()) ctLoadList(); }
   /* 내 제안의 '계약서 만들기' 가 이미 만든 초안을 찾으려면 계약서 목록이 있어야 한다 */
   if(h==='#/partner/proposals' && S.agent && !계약막힘()) ctLoadList();
   if(h.startsWith('#/partner/listing')) loadListings(false);

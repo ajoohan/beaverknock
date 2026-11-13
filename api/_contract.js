@@ -860,12 +860,13 @@ export async function reportDueCron(req, res) {
     /* 지우기 전에 그 계약서들의 현장 사진 파일부터 지운다(2026-11-12) */
     try {
       /* 하루 500건씩 - 읽어서 사진을 지운 계약서만 지운다(나머지는 다음 날) */
-      const 갈 = await db('bk_contract', `select=id,agent_id,track&status=eq.draft&track->>trash=lt.${날더하기(오늘, -30)}&limit=500`);
+      /* 대화방이 있는 계약서(체결문자 단계부터 초대 - 2026-11-13)는 지우지 않는다 - 손님과 나눈 대화 · 파일이 주인 없이 남지 않게 */
+      const 갈 = await db('bk_contract', `select=id,agent_id,track&status=eq.draft&track->>trash=lt.${날더하기(오늘, -30)}&track->room=is.null&limit=500`);
       const { 파일버킷, 버킷지우기 } = await import('./_forms.js');
       const 경로 = (갈.rows || []).flatMap(c => 현장사진값((c.track || {}).fpics).map(v => 현장경로(c.agent_id, c.id, v.i)));
       if (경로.length) await 버킷지우기(파일버킷, 경로);
       const ids = (갈.rows || []).map(c => c.id).filter(x => UUID.test(String(x)));
-      if (ids.length) await db('bk_contract', `status=eq.draft&track->>trash=lt.${날더하기(오늘, -30)}&id=in.(${ids.join(',')})`, { method: 'DELETE' });
+      if (ids.length) await db('bk_contract', `status=eq.draft&track->>trash=lt.${날더하기(오늘, -30)}&track->room=is.null&id=in.(${ids.join(',')})`, { method: 'DELETE' });
     } catch { /* 넘어간다 - 다음 날 다시 */ }
   }
   /* 휴지통 30일이 지난 매물의 사진 파일을 지운다(물건 줄은 제안 기록 때문에 남긴다) - 0039 · 0040 전이면 넘어간다 */
@@ -1054,11 +1055,16 @@ async function del(res, agent, b) {
   const id = String(b.id || '');
   if (!UUID.test(id)) return res.status(400).json({ error: '어느 계약서인지 알 수 없습니다' });
   if (agent.staff) return res.status(403).json({ error: '영구 삭제는 대표만 할 수 있습니다' });
-  const { r, t, rows } = await db('bk_contract', `id=eq.${id}&agent_id=eq.${agent.id}&status=eq.draft`, {
+  /* 손님 대화방이 열린 계약서는 지우지 않는다(2026-11-13 - 작성 중에도 초대하게 되면서). 대화 · 파일이 주인 없이 남지 않게 */
+  const { r, t, rows } = await db('bk_contract', `id=eq.${id}&agent_id=eq.${agent.id}&status=eq.draft&track->room=is.null`, {
     method: 'DELETE', headers: { Prefer: 'return=representation' },
   });
   if (!r.ok) return noTable(t) ? 준비중(res) : res.status(502).json({ error: '지우지 못했습니다' });
-  if (!rows.length) return res.status(409).json({ error: '날인본은 지울 수 없습니다' });
+  if (!rows.length) {
+    const 있나 = await db('bk_contract', `select=status,track&id=eq.${id}&agent_id=eq.${agent.id}&limit=1`);
+    const 행 = (있나.rows || [])[0];
+    return res.status(409).json({ error: 행 && 행.status === 'draft' && 행.track && 행.track.room ? '손님 대화방이 있는 계약서는 지우지 않습니다 - 휴지통에 그대로 둡니다' : '날인본은 지울 수 없습니다' });
+  }
   return res.status(200).json({ ok: true });
 }
 

@@ -49,9 +49,12 @@ ok(R.말다듬기('900101-1234567 입니다').error && R.말다듬기('  ').erro
 let r = await 중({ what: 'room-invite', id: CID, side: 'buyer' });
 ok(r.code === 200 && R.초대표읽기(r.body.token) && 계약.track && 계약.track.room && r.body.room, '날인본에서 초대 링크를 만들면 방이 생긴다');
 const 표 = r.body.token;
-계약 = { ...계약, status: 'draft' };
-ok((await 중({ what: 'room-invite', id: CID, side: 'buyer' })).code === 409, '작성 중인 계약서에서는 초대하지 않는다');
-계약 = { ...계약, status: 'sealed' };
+/* 2026-11-13 파트너 기획 E4 '체결문자 단계부터 초대' - 작성 중에도 초대한다 · 휴지통의 계약서는 막는다 */
+{ const 원 = 계약; 계약 = { ...원, status: 'draft' };
+  ok((await 중({ what: 'room-invite', id: CID, side: 'buyer' })).code === 200, '작성 중인 계약서에서도 초대 링크를 만든다(체결문자 단계부터)');
+  계약 = { ...원, status: 'draft', track: { ...(원.track || {}), trash: '2026-11-13' } };
+  ok((await 중({ what: 'room-invite', id: CID, side: 'buyer' })).code === 409, '휴지통에 넣은 계약서에서는 초대하지 않는다');
+  계약 = { ...원, status: 'sealed' }; }
 ok((await 중({ what: 'room-invite', id: CID, side: 'lessee' })).code === 400, '계약서에 없는 당사자는 초대하지 않는다');
 r = await 손(손님1, { what: 'invite-join', token: 표 });
 ok(r.code === 200 && r.body.id === CID && 계약.track.room.buyer.uid === 손님1.id, '손님이 링크로 들어오면 그 자리에 계정이 묶인다');

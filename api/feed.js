@@ -7,15 +7,15 @@
  * 중개사는 지역·조건·메모까지만 본다.
  */
 
-import crypto from 'node:crypto';
+import crypto from 'node:crypto';
 import { userFrom, sbHeaders, sbUrl, overLimit } from './_auth.js';
 import { dbWhy } from './_dberr.js';
 import { contractRoute, listingScan, reportDueCron, draftRead, draftNote, icsFeed, 달력표, 알림설정, 특약문구들, 특약문구고침, 문자틀들, 문자기록들, 문자고침, 단지들, 단지고침 } from './_contract.js';
 import { 날씨 } from './_weather.js';
-import { 서식들, 서식확인, 서식올리기, 서식주소, 서식지우기, 서식최대, 파일버킷, 버킷올리기, 버킷주소, 버킷지우기 } from './_forms.js';
+import { 서식들, 서식확인, 서식올리기, 서식주소, 서식지우기, 서식최대, 파일버킷, 버킷올리기, 버킷주소, 버킷지우기 } from './_forms.js';
 import { 외부들, 외부하나, 외부최대, 외부경로 } from './_ext.js';
-import { listingPics, listingPicAdd, listingPicSet } from './_pics.js';
-import { 직원이력, 이력한줄, 보조원잠금, 자격증크기, 자격증경로, 자격증형식 } from './_staff.js';
+import { listingPics, listingPicAdd, listingPicSet } from './_pics.js';
+import { 직원이력, 이력한줄, 보조원잠금, 자격증크기, 자격증경로, 자격증형식 } from './_staff.js';
 import { 직원들, 직원고침, 직원사무소, 직원들어옴, 직원역할, 다른사무소직원 } from './_staff.js';
 import { notify, mailWithFile } from './_notify.js';
 import { roomAgent, invitePeek } from './_room.js';
@@ -211,16 +211,16 @@ async function contractMail(req, res, agent, user, b) {
   if (!r.ok) return res.status(r.unsure ? 504 : 502).json({ error: r.error });
   return res.status(200).json({ ok: true, sent: 받는.length });
 }
-/* 요청 → 권한 (2026-11-10 직원 기능별 권한) */
-export const 권한키 = w => { w = String(w || '');
-  if (w === 'contract-seal') return 'ct_seal';
-  if (w === 'contract-mail') return 'ct_mail';
-  if (['contracts', 'contract', 'contract-fpics', 'forms', 'form-url', 'form-fq', 'phrases', 'sms', 'complex', 'alert-settings', 'ics-link', 'contract-ext', 'contract-ext-url'].includes(w)) return 'ct_view';
-  if (/^(contract|form-)/.test(w) || ['phrases-save', 'sms-save', 'complex-save', 'alert-settings-save', 'end-style-save'].includes(w)) return 'ct_edit';
-  if (w === 'listing-memo' || w === 'listing-memo-save') return 'listing_memo';
-  if (/^listing-/.test(w)) return 'listing';
-  if (/^room/.test(w)) return 'room';
-  return ''; };
+/* 요청 → 권한 (2026-11-10 직원 기능별 권한) */
+export const 권한키 = w => { w = String(w || '');
+  if (w === 'contract-seal') return 'ct_seal';
+  if (w === 'contract-mail') return 'ct_mail';
+  if (['contracts', 'contract', 'contract-fpics', 'forms', 'form-url', 'form-fq', 'phrases', 'sms', 'complex', 'alert-settings', 'ics-link', 'contract-ext', 'contract-ext-url'].includes(w)) return 'ct_view';
+  if (/^(contract|form-)/.test(w) || ['phrases-save', 'sms-save', 'complex-save', 'alert-settings-save', 'end-style-save'].includes(w)) return 'ct_edit';
+  if (w === 'listing-memo' || w === 'listing-memo-save') return 'listing_memo';
+  if (/^listing-/.test(w)) return 'listing';
+  if (/^room/.test(w)) return 'room';
+  return ''; };
 export const 계약기능 = w => /^(contract|form)/.test(String(w || '')) || ['forms', 'phrases', 'phrases-save', 'sms', 'sms-save',
   'complex', 'complex-save', 'alert-settings', 'alert-settings-save', 'end-style-save', 'ics-link', 'ics-reset'].includes(w);
 const 가린번호 = p => { const n = String(p || '').replace(/\D/g, ''); return n.length >= 10 ? `${n.slice(0, 3)}-****-${n.slice(-4)}` : ''; };
@@ -291,39 +291,39 @@ async function saveComplex(res, agent, b) {
   return res.status(200).json({ ok: true, list: z.y.list });
 }
 
-/* 현장 체크리스트 - 우리 사무소 추가 항목 (2026-11-12 파트너 기획 D5-2) - settings.fieldq [{ i, q, o:[선택지] }].
-   확인·설명서에는 들어가지 않고 체크리스트 출력물에만. 20개까지, 질문 40자 · 선택지 2~6개 · 12자 */
-export function 현장항목들(x) {
-  const out = [], 본 = new Set();
-  for (const v of Array.isArray(x) ? x : []) {
-    if (!v || !/^[a-z0-9]{6,12}$/.test(String(v.i)) || 본.has(v.i)) continue;
-    const q = String(v.q || '').replace(/[\u0000-\u001f<>]/g, ' ').trim().slice(0, 40);
-    const o = [...new Set((Array.isArray(v.o) ? v.o : []).map(s => String(s || '').replace(/[\u0000-\u001f<>]/g, ' ').trim().slice(0, 12)).filter(Boolean))].slice(0, 6);
-    if (!q || o.length < 2) continue;
-    본.add(v.i); out.push({ i: v.i, q, o });
-    if (out.length >= 20) break;
-  }
-  return out;
-}
-async function readFieldQ(res, agent) {
-  if (agent.role !== 'agent') return res.status(403).json({ error: '공인중개사만 쓸 수 있습니다' });
-  const x = await 설정읽기(agent);
-  if (x.error) return res.status(502).json({ error: '추가 항목을 불러오지 못했습니다' });
-  return res.status(200).json({ ok: true, list: 현장항목들(x.settings.fieldq), need: x.need || '' });
-}
-async function saveFieldQ(res, agent, b) {
-  if (agent.role !== 'agent') return res.status(403).json({ error: '공인중개사만 쓸 수 있습니다' });
-  const z = await 설정고침(agent, s => { const L = 현장항목들(s.fieldq);
-    if (b.op === 'del') { const 뒤 = L.filter(v => v.i !== String(b.i || '')); return { list: 뒤, patch: { fieldq: 뒤 } }; }
-    const 새 = 현장항목들([{ i: crypto.randomBytes(4).toString('hex'), q: b.q, o: b.o }])[0];
-    if (!새) return { error: '질문과 선택지 두 개 이상을 적어 주세요', code: 400, now: L };
-    if (L.length >= 20) return { error: '추가 항목은 20개까지 둡니다', code: 400, now: L };
-    return { list: [...L, 새], patch: { fieldq: [...L, 새] } }; });
-  if (!z.y) return 설정실패(res, z, '추가 항목');
-  if (z.y.error) return res.status(z.y.code || 400).json({ error: z.y.error, list: z.y.now });
-  return res.status(200).json({ ok: true, list: z.y.list });
-}
-
+/* 현장 체크리스트 - 우리 사무소 추가 항목 (2026-11-12 파트너 기획 D5-2) - settings.fieldq [{ i, q, o:[선택지] }].
+   확인·설명서에는 들어가지 않고 체크리스트 출력물에만. 20개까지, 질문 40자 · 선택지 2~6개 · 12자 */
+export function 현장항목들(x) {
+  const out = [], 본 = new Set();
+  for (const v of Array.isArray(x) ? x : []) {
+    if (!v || !/^[a-z0-9]{6,12}$/.test(String(v.i)) || 본.has(v.i)) continue;
+    const q = String(v.q || '').replace(/[\u0000-\u001f<>]/g, ' ').trim().slice(0, 40);
+    const o = [...new Set((Array.isArray(v.o) ? v.o : []).map(s => String(s || '').replace(/[\u0000-\u001f<>]/g, ' ').trim().slice(0, 12)).filter(Boolean))].slice(0, 6);
+    if (!q || o.length < 2) continue;
+    본.add(v.i); out.push({ i: v.i, q, o });
+    if (out.length >= 20) break;
+  }
+  return out;
+}
+async function readFieldQ(res, agent) {
+  if (agent.role !== 'agent') return res.status(403).json({ error: '공인중개사만 쓸 수 있습니다' });
+  const x = await 설정읽기(agent);
+  if (x.error) return res.status(502).json({ error: '추가 항목을 불러오지 못했습니다' });
+  return res.status(200).json({ ok: true, list: 현장항목들(x.settings.fieldq), need: x.need || '' });
+}
+async function saveFieldQ(res, agent, b) {
+  if (agent.role !== 'agent') return res.status(403).json({ error: '공인중개사만 쓸 수 있습니다' });
+  const z = await 설정고침(agent, s => { const L = 현장항목들(s.fieldq);
+    if (b.op === 'del') { const 뒤 = L.filter(v => v.i !== String(b.i || '')); return { list: 뒤, patch: { fieldq: 뒤 } }; }
+    const 새 = 현장항목들([{ i: crypto.randomBytes(4).toString('hex'), q: b.q, o: b.o }])[0];
+    if (!새) return { error: '질문과 선택지 두 개 이상을 적어 주세요', code: 400, now: L };
+    if (L.length >= 20) return { error: '추가 항목은 20개까지 둡니다', code: 400, now: L };
+    return { list: [...L, 새], patch: { fieldq: [...L, 새] } }; });
+  if (!z.y) return 설정실패(res, z, '추가 항목');
+  if (z.y.error) return res.status(z.y.code || 400).json({ error: z.y.error, list: z.y.now });
+  return res.status(200).json({ ok: true, list: z.y.list });
+}
+
 /* 우리 사무소 서식 (2026-11-06) - 파일은 저장소 bk-forms, 목록은 settings.forms. 공인중개사만 */
 async function readForms(res, agent) {
   if (agent.role !== 'agent') return res.status(403).json({ error: '공인중개사만 쓸 수 있습니다' });
@@ -374,44 +374,44 @@ async function readStaff(res, agent) {
   if (x.error) return res.status(502).json({ error: '직원 명단을 불러오지 못했습니다' });
   return res.status(200).json({ ok: true, list: 직원들(x.settings.staff), log: 직원이력(x.settings.staff_log).reverse(), ...(x.need ? { need: x.need } : {}) });
 }
-/* 직원 자격증 (2026-11-12) - 직원은 자기 것만 올리고 보며, 대표는 명단의 누구 것이든 본다. 확인 표시는 staff-save op:'cert-ok'(대표만) */
-async function certMe(res, agent) {
-  if (!agent.staff) return res.status(400).json({ error: '직원 계정에서만 씁니다' });
-  const x = await 설정읽기(agent); if (x.error) return res.status(502).json({ error: '불러오지 못했습니다' });
-  const s = 직원들(x.settings.staff).find(v => v.i === agent.staff.i) || {};
-  return res.status(200).json({ ok: true, cert: s.cert || null, certOk: s.certOk || '' });
-}
-async function certUp(res, agent, b) {
-  if (!agent.staff) return res.status(400).json({ error: '직원 계정에서만 씁니다' });
-  if (overLimit('cert:' + agent.id + ':' + agent.staff.i, 10, 36e5)) return res.status(429).json({ error: '잠시 뒤 다시 올려 주세요' });
-  let buf; try { buf = Buffer.from(String(b.data || '').replace(/^data:[^,]*,/, ''), 'base64'); } catch { buf = null; }
-  const ext = 자격증형식(buf);
-  if (!ext) return res.status(400).json({ error: 'JPG · PNG · PDF 파일만 올릴 수 있습니다' });
-  if (buf.length > 자격증크기) return res.status(413).json({ error: '파일이 2MB 를 넘습니다 - 사진으로 다시 찍어 올려 주세요' });
-  const u = await 버킷올리기(파일버킷, 자격증경로(agent.id, agent.staff.i, ext), ext, buf, fetch, true);
-  if (!u.ok) return res.status(u.need ? 503 : 502).json({ error: u.need ? '파일 저장소를 준비 중입니다' : u.error, need: u.need });
-  const at = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 19);
-  const z = await 설정고침(agent, s => { const L = 직원들(s.staff);
-    if (!L.some(v => v.i === agent.staff.i)) return { error: '명단에서 빠진 계정입니다', code: 403 };
-    const 뒤 = L.map(v => v.i === agent.staff.i ? (({ certOk, ...y }) => ({ ...y, cert: { ext, at } }))(v) : v);
-    const 이력 = 직원이력(s.staff_log); 이력.push({ at, who: agent.staff.name || agent.staff.email, what: '자격증 올림' });
-    return { list: 뒤, patch: { staff: 뒤, staff_log: 이력.slice(-50) } }; });
-  if (!z.y) return 설정실패(res, z, '자격증');
-  if (z.y.error) return res.status(z.y.code || 400).json({ error: z.y.error });
-  /* 저장이 끝난 뒤에만 다른 확장자의 옛 파일을 지운다 - 중간에 실패해도 기록과 파일이 어긋나지 않게 */
-  await 버킷지우기(파일버킷, ['jpg', 'png', 'pdf'].filter(e => e !== ext).map(e => 자격증경로(agent.id, agent.staff.i, e))).catch(() => 0);
-  return res.status(200).json({ ok: true, cert: { ext, at }, certOk: '' });
-}
-async function certUrl(res, agent, b) {
-  const i = agent.staff ? agent.staff.i : String(b.i || '');
-  if (!agent.staff && agent.role !== 'agent') return res.status(403).json({ error: '볼 수 없습니다' });
-  const x = await 설정읽기(agent); if (x.error) return res.status(502).json({ error: '불러오지 못했습니다' });
-  const s = 직원들(x.settings.staff).find(v => v.i === i);
-  if (!s || !s.cert) return res.status(404).json({ error: '올린 자격증이 없습니다' });
-  const u = await 버킷주소(파일버킷, 자격증경로(agent.id, i, s.cert.ext), `자격증.${s.cert.ext}`, s.cert.ext);
-  if (!u.url) return res.status(u.need ? 503 : 502).json({ error: u.error || '파일 저장소를 준비 중입니다' });
-  return res.status(200).json({ ok: true, url: u.url });
-}
+/* 직원 자격증 (2026-11-12) - 직원은 자기 것만 올리고 보며, 대표는 명단의 누구 것이든 본다. 확인 표시는 staff-save op:'cert-ok'(대표만) */
+async function certMe(res, agent) {
+  if (!agent.staff) return res.status(400).json({ error: '직원 계정에서만 씁니다' });
+  const x = await 설정읽기(agent); if (x.error) return res.status(502).json({ error: '불러오지 못했습니다' });
+  const s = 직원들(x.settings.staff).find(v => v.i === agent.staff.i) || {};
+  return res.status(200).json({ ok: true, cert: s.cert || null, certOk: s.certOk || '' });
+}
+async function certUp(res, agent, b) {
+  if (!agent.staff) return res.status(400).json({ error: '직원 계정에서만 씁니다' });
+  if (overLimit('cert:' + agent.id + ':' + agent.staff.i, 10, 36e5)) return res.status(429).json({ error: '잠시 뒤 다시 올려 주세요' });
+  let buf; try { buf = Buffer.from(String(b.data || '').replace(/^data:[^,]*,/, ''), 'base64'); } catch { buf = null; }
+  const ext = 자격증형식(buf);
+  if (!ext) return res.status(400).json({ error: 'JPG · PNG · PDF 파일만 올릴 수 있습니다' });
+  if (buf.length > 자격증크기) return res.status(413).json({ error: '파일이 2MB 를 넘습니다 - 사진으로 다시 찍어 올려 주세요' });
+  const u = await 버킷올리기(파일버킷, 자격증경로(agent.id, agent.staff.i, ext), ext, buf, fetch, true);
+  if (!u.ok) return res.status(u.need ? 503 : 502).json({ error: u.need ? '파일 저장소를 준비 중입니다' : u.error, need: u.need });
+  const at = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 19);
+  const z = await 설정고침(agent, s => { const L = 직원들(s.staff);
+    if (!L.some(v => v.i === agent.staff.i)) return { error: '명단에서 빠진 계정입니다', code: 403 };
+    const 뒤 = L.map(v => v.i === agent.staff.i ? (({ certOk, ...y }) => ({ ...y, cert: { ext, at } }))(v) : v);
+    const 이력 = 직원이력(s.staff_log); 이력.push({ at, who: agent.staff.name || agent.staff.email, what: '자격증 올림' });
+    return { list: 뒤, patch: { staff: 뒤, staff_log: 이력.slice(-50) } }; });
+  if (!z.y) return 설정실패(res, z, '자격증');
+  if (z.y.error) return res.status(z.y.code || 400).json({ error: z.y.error });
+  /* 저장이 끝난 뒤에만 다른 확장자의 옛 파일을 지운다 - 중간에 실패해도 기록과 파일이 어긋나지 않게 */
+  await 버킷지우기(파일버킷, ['jpg', 'png', 'pdf'].filter(e => e !== ext).map(e => 자격증경로(agent.id, agent.staff.i, e))).catch(() => 0);
+  return res.status(200).json({ ok: true, cert: { ext, at }, certOk: '' });
+}
+async function certUrl(res, agent, b) {
+  const i = agent.staff ? agent.staff.i : String(b.i || '');
+  if (!agent.staff && agent.role !== 'agent') return res.status(403).json({ error: '볼 수 없습니다' });
+  const x = await 설정읽기(agent); if (x.error) return res.status(502).json({ error: '불러오지 못했습니다' });
+  const s = 직원들(x.settings.staff).find(v => v.i === i);
+  if (!s || !s.cert) return res.status(404).json({ error: '올린 자격증이 없습니다' });
+  const u = await 버킷주소(파일버킷, 자격증경로(agent.id, i, s.cert.ext), `자격증.${s.cert.ext}`, s.cert.ext);
+  if (!u.url) return res.status(u.need ? 503 : 502).json({ error: u.error || '파일 저장소를 준비 중입니다' });
+  return res.status(200).json({ ok: true, url: u.url });
+}
 async function saveStaff(req, res, agent, user, b) {
   if (agent.role !== 'agent') return res.status(403).json({ error: '공인중개사 사무소만 직원을 둘 수 있습니다' });
   if (b.op === 'add') {
@@ -450,76 +450,76 @@ async function saveOfficeAddr(res, agent, b) {
   return res.status(200).json({ ok: true, addr });
 }
 
-/* ── 다른 사무소가 쓴 계약서 (2026-11-10 파트너 기획 · api/_ext.js) - settings.ext, 파일은 bk-files 버킷 ── */
-const 외부준비중 = res => res.status(503).json({ error: '다른 사무소 계약서 올리기를 준비 중입니다 - 곧 열립니다', need: 'files' });
-async function readExt(res, agent) {
-  const x = await 설정읽기(agent);
-  if (x.error) return res.status(502).json({ error: '목록을 불러오지 못했습니다' });
-  return res.status(200).json({ ok: true, list: 외부들(x.settings.ext), need: x.need || '' });
-}
-async function saveExt(res, agent, b) {
-  const 입력 = b.item && typeof b.item === 'object' ? b.item : {};
-  const id = /^[0-9a-f]{12}$/.test(String(입력.id || '')) ? String(입력.id) : crypto.randomBytes(6).toString('hex');
-  let 새파일 = null;
-  if (b.data) {
-    if (overLimit('extup:' + agent.id, 30, 600e3)) return res.status(429).json({ error: '잠시 뒤 다시 올려 주세요' });
-    const c = 서식확인(b);
-    if (c.error) return res.status(400).json({ error: c.error });
-    const f = { id: crypto.randomBytes(6).toString('hex'), ext: c.ext, size: c.buf.length, name: c.name };
-    const u = await 버킷올리기(파일버킷, 외부경로(agent.id, f), c.ext, c.buf);
-    if (u.need) return 외부준비중(res);
-    if (!u.ok) return res.status(502).json({ error: u.error || '파일을 올리지 못했습니다' });
-    새파일 = f;
-  }
-  const at = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 19);
-  let 옛파일 = null;
-  const z = await 설정고침(agent, s => {
-    const L = 외부들(s.ext), 옛 = L.find(e => e.id === id);
-    if (!옛 && L.length >= 외부최대) return { error: `다른 사무소 계약서는 ${외부최대}건까지 둡니다 - 끝난 건을 지운 뒤 올려 주세요`, code: 400 };
-    const v = 외부하나({ ...입력, id, file: 새파일 || (옛 && 옛.file) || null, at: (옛 && 옛.at) || at });
-    if (!v) return { error: '소재지(이름)를 적어 주세요', code: 400 };
-    옛파일 = 새파일 && 옛 && 옛.file ? 옛.file : null;
-    const 목록 = 옛 ? L.map(e => e.id === id ? v : e) : [v, ...L];
-    return { list: 목록, item: v, patch: { ext: 목록 } };
-  });
-  if (!z.y || z.y.error) {
-    if (새파일) await 버킷지우기(파일버킷, [외부경로(agent.id, 새파일)]).catch(() => {});
-    return z.y && z.y.error ? res.status(z.y.code || 400).json({ error: z.y.error }) : 설정실패(res, z, '계약서');
-  }
-  if (옛파일) await 버킷지우기(파일버킷, [외부경로(agent.id, 옛파일)]).catch(() => {});
-  return res.status(200).json({ ok: true, list: z.y.list, item: z.y.item });
-}
-async function delExt(res, agent, b) {
-  let 지운 = null;
-  const z = await 설정고침(agent, s => { const L = 외부들(s.ext); 지운 = L.find(e => e.id === String(b.id || '')) || null;
-    return { list: L.filter(e => e !== 지운), patch: { ext: L.filter(e => e !== 지운) } }; });
-  if (!z.y) return 설정실패(res, z, '계약서');
-  if (지운 && 지운.file) await 버킷지우기(파일버킷, [외부경로(agent.id, 지운.file)]).catch(() => {});
-  return res.status(200).json({ ok: true, list: z.y.list });
-}
-async function extUrl(res, agent, b) {
-  const x = await 설정읽기(agent);
-  if (x.error) return res.status(502).json({ error: '목록을 불러오지 못했습니다 - 잠시 뒤 다시 눌러 주세요' });
-  const e = 외부들(x.settings.ext).find(v => v.id === String(b.id || ''));
-  if (!e || !e.file) return res.status(404).json({ error: '지워졌거나 파일이 없는 계약서입니다' });
-  const u = await 버킷주소(파일버킷, 외부경로(agent.id, e.file), `${e.file.name}.${e.file.ext}`, e.file.ext);
-  if (!u.url) return u.need ? 외부준비중(res) : res.status(502).json({ error: u.error });
-  return res.status(200).json({ ok: true, url: u.url, ext: e.file.ext });
-}
-/* ── 일정 달력 구독 주소 (2026-11-10 · api/_contract.js icsFeed) - 사무소 하나에 주소 하나. 바꾸기는 대표만 ── */
-const 달력주소 = (req, agentId, n) => `${String((req.headers && req.headers['x-forwarded-proto']) || 'https').split(',')[0]}://${(req.headers && (req.headers['x-forwarded-host'] || req.headers.host)) || 'beaverknock.co.kr'}/api/feed?ics=${달력표(agentId, n)}`;
-async function icsLink(req, res, agent, 바꾸기) {
-  if (!바꾸기) {
-    const x = await 설정읽기(agent);
-    if (x.error) return res.status(502).json({ error: '구독 주소를 만들지 못했습니다' });
-    const n = Number.isInteger(x.settings.icsN) ? x.settings.icsN : 0;
-    return res.status(200).json({ ok: true, url: 달력주소(req, agent.id, n) });
-  }
-  const z = await 설정고침(agent, s => { const n = (Number.isInteger(s.icsN) ? s.icsN : 0) + 1; return { n, patch: { icsN: n } }; });
-  if (!z.y) return 설정실패(res, z, '구독 주소');
-  return res.status(200).json({ ok: true, url: 달력주소(req, agent.id, z.y.n) });
-}
-
+/* ── 다른 사무소가 쓴 계약서 (2026-11-10 파트너 기획 · api/_ext.js) - settings.ext, 파일은 bk-files 버킷 ── */
+const 외부준비중 = res => res.status(503).json({ error: '다른 사무소 계약서 올리기를 준비 중입니다 - 곧 열립니다', need: 'files' });
+async function readExt(res, agent) {
+  const x = await 설정읽기(agent);
+  if (x.error) return res.status(502).json({ error: '목록을 불러오지 못했습니다' });
+  return res.status(200).json({ ok: true, list: 외부들(x.settings.ext), need: x.need || '' });
+}
+async function saveExt(res, agent, b) {
+  const 입력 = b.item && typeof b.item === 'object' ? b.item : {};
+  const id = /^[0-9a-f]{12}$/.test(String(입력.id || '')) ? String(입력.id) : crypto.randomBytes(6).toString('hex');
+  let 새파일 = null;
+  if (b.data) {
+    if (overLimit('extup:' + agent.id, 30, 600e3)) return res.status(429).json({ error: '잠시 뒤 다시 올려 주세요' });
+    const c = 서식확인(b);
+    if (c.error) return res.status(400).json({ error: c.error });
+    const f = { id: crypto.randomBytes(6).toString('hex'), ext: c.ext, size: c.buf.length, name: c.name };
+    const u = await 버킷올리기(파일버킷, 외부경로(agent.id, f), c.ext, c.buf);
+    if (u.need) return 외부준비중(res);
+    if (!u.ok) return res.status(502).json({ error: u.error || '파일을 올리지 못했습니다' });
+    새파일 = f;
+  }
+  const at = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 19);
+  let 옛파일 = null;
+  const z = await 설정고침(agent, s => {
+    const L = 외부들(s.ext), 옛 = L.find(e => e.id === id);
+    if (!옛 && L.length >= 외부최대) return { error: `다른 사무소 계약서는 ${외부최대}건까지 둡니다 - 끝난 건을 지운 뒤 올려 주세요`, code: 400 };
+    const v = 외부하나({ ...입력, id, file: 새파일 || (옛 && 옛.file) || null, at: (옛 && 옛.at) || at });
+    if (!v) return { error: '소재지(이름)를 적어 주세요', code: 400 };
+    옛파일 = 새파일 && 옛 && 옛.file ? 옛.file : null;
+    const 목록 = 옛 ? L.map(e => e.id === id ? v : e) : [v, ...L];
+    return { list: 목록, item: v, patch: { ext: 목록 } };
+  });
+  if (!z.y || z.y.error) {
+    if (새파일) await 버킷지우기(파일버킷, [외부경로(agent.id, 새파일)]).catch(() => {});
+    return z.y && z.y.error ? res.status(z.y.code || 400).json({ error: z.y.error }) : 설정실패(res, z, '계약서');
+  }
+  if (옛파일) await 버킷지우기(파일버킷, [외부경로(agent.id, 옛파일)]).catch(() => {});
+  return res.status(200).json({ ok: true, list: z.y.list, item: z.y.item });
+}
+async function delExt(res, agent, b) {
+  let 지운 = null;
+  const z = await 설정고침(agent, s => { const L = 외부들(s.ext); 지운 = L.find(e => e.id === String(b.id || '')) || null;
+    return { list: L.filter(e => e !== 지운), patch: { ext: L.filter(e => e !== 지운) } }; });
+  if (!z.y) return 설정실패(res, z, '계약서');
+  if (지운 && 지운.file) await 버킷지우기(파일버킷, [외부경로(agent.id, 지운.file)]).catch(() => {});
+  return res.status(200).json({ ok: true, list: z.y.list });
+}
+async function extUrl(res, agent, b) {
+  const x = await 설정읽기(agent);
+  if (x.error) return res.status(502).json({ error: '목록을 불러오지 못했습니다 - 잠시 뒤 다시 눌러 주세요' });
+  const e = 외부들(x.settings.ext).find(v => v.id === String(b.id || ''));
+  if (!e || !e.file) return res.status(404).json({ error: '지워졌거나 파일이 없는 계약서입니다' });
+  const u = await 버킷주소(파일버킷, 외부경로(agent.id, e.file), `${e.file.name}.${e.file.ext}`, e.file.ext);
+  if (!u.url) return u.need ? 외부준비중(res) : res.status(502).json({ error: u.error });
+  return res.status(200).json({ ok: true, url: u.url, ext: e.file.ext });
+}
+/* ── 일정 달력 구독 주소 (2026-11-10 · api/_contract.js icsFeed) - 사무소 하나에 주소 하나. 바꾸기는 대표만 ── */
+const 달력주소 = (req, agentId, n) => `${String((req.headers && req.headers['x-forwarded-proto']) || 'https').split(',')[0]}://${(req.headers && (req.headers['x-forwarded-host'] || req.headers.host)) || 'beaverknock.co.kr'}/api/feed?ics=${달력표(agentId, n)}`;
+async function icsLink(req, res, agent, 바꾸기) {
+  if (!바꾸기) {
+    const x = await 설정읽기(agent);
+    if (x.error) return res.status(502).json({ error: '구독 주소를 만들지 못했습니다' });
+    const n = Number.isInteger(x.settings.icsN) ? x.settings.icsN : 0;
+    return res.status(200).json({ ok: true, url: 달력주소(req, agent.id, n) });
+  }
+  const z = await 설정고침(agent, s => { const n = (Number.isInteger(s.icsN) ? s.icsN : 0) + 1; return { n, patch: { icsN: n } }; });
+  if (!z.y) return 설정실패(res, z, '구독 주소');
+  return res.status(200).json({ ok: true, url: 달력주소(req, agent.id, z.y.n) });
+}
+
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
   /* 매일 아침 신고 기한 알림(Vercel 예약 실행). CRON_SECRET 으로만 열린다 - api/_contract.js */
@@ -578,10 +578,10 @@ export default async function handler(req, res) {
   /* 직원 권한 (2026-11-06) - 직원 관리 · 사무소 주소 · 활동 지역은 대표만. 중개보조원은 계약서 기능을 쓰지 않는다 */
   const 직원 = chk.agent && chk.agent.staff;
   if (직원 && 대표만(b.what)) return res.status(403).json({ error: '대표만 할 수 있습니다' });
-  if (직원 && 직원.role === 'assistant' && 계약기능(b.what)) return res.status(403).json({ error: '중개보조원은 계약서 기능을 쓸 수 없습니다' });
-  /* 기능별 권한 (2026-11-10) - 대표가 끈 기능. 계약서 보기를 끄면 계약서 일은 모두 막힌다 */
-  const 권 = 직원 && 권한키(b.what), 끔 = (직원 && 직원.perm) || {};
-  if (권 && (끔[권] === false || (권.startsWith('ct_') && 끔.ct_view === false))) return res.status(403).json({ error: '대표님이 이 기능을 꺼 두셨습니다', need: 'perm' });
+  if (직원 && 직원.role === 'assistant' && 계약기능(b.what)) return res.status(403).json({ error: '중개보조원은 계약서 기능을 쓸 수 없습니다' });
+  /* 기능별 권한 (2026-11-10) - 대표가 끈 기능. 계약서 보기를 끄면 계약서 일은 모두 막힌다 */
+  const 권 = 직원 && 권한키(b.what), 끔 = (직원 && 직원.perm) || {};
+  if (권 && (끔[권] === false || (권.startsWith('ct_') && 끔.ct_view === false))) return res.status(403).json({ error: '대표님이 이 기능을 꺼 두셨습니다', need: 'perm' });
   /* 계약진행 대화방 (2026-11-06 · api/_room.js) - 보조원도 대화는 한다(초대 · 내보내기는 _room.js 가 막는다) */
   if (['rooms', 'room', 'room-send', 'room-file', 'room-file-url', 'room-invite', 'room-cut'].includes(b.what)) {
     if (chk.agent.role !== 'agent') return res.status(403).json({ error: '공인중개사 사무소만 쓸 수 있습니다' });
@@ -594,9 +594,9 @@ export default async function handler(req, res) {
     mail: !!process.env.RESEND_API_KEY });
   /* 계약서 메일로 보내기 - 이름이 contract 로 시작해 중개보조원은 위에서 막힌다 */
   if (b.what === 'contract-mail') return contractMail(req, res, chk.agent, user, b);
-  if (b.what === 'cert-me')    return certMe(res, chk.agent);
-  if (b.what === 'cert-up')    return certUp(res, chk.agent, b);
-  if (b.what === 'cert-url')   return certUrl(res, chk.agent, b);
+  if (b.what === 'cert-me')    return certMe(res, chk.agent);
+  if (b.what === 'cert-up')    return certUp(res, chk.agent, b);
+  if (b.what === 'cert-url')   return certUrl(res, chk.agent, b);
   if (b.what === 'staff')      return readStaff(res, chk.agent);
   if (b.what === 'staff-save') return saveStaff(req, res, chk.agent, user, b);
 
@@ -604,6 +604,13 @@ export default async function handler(req, res) {
      새로고침하면 자기가 보낸 것이 사라졌다.
      함수 상한(12개) 때문에 수요 목록과 한 지붕 아래 둔다. */
   if (b.what === 'mine') return readMine(req, res, chk.agent);
+  /* 바로 찾기 서버 검색 (2026-11-13 파트너 기획 B3) - 화면이 불러온 목록(최근 200건) 밖의 계약서 · 물건 · 보낸 제안도 찾는다.
+     주소 · 이름(건물명) 칸만 - 사람 이름 · 연락처는 암호화돼 서버에서 찾을 수 없다(화면이 불러온 것 안에서 찾는다).
+     중개보조원 · 계약서 보기가 꺼진 직원에게는 계약서를 주지 않는다 */
+  if (b.what === 'search') {
+    const 직 = chk.agent.staff, 계약됨 = chk.agent.role === 'agent' && !(직 && (직.role === 'assistant' || (직.perm || {}).ct_view === false));
+    return 바로찾기서버(res, chk.agent, b, 계약됨);
+  }
 
   /* 사무소 주소 (2026-10-30 대표님 - 계약서의 사무소 소재지로 자동으로). 마이페이지에서 도로명 찾기로 고른다.
      가입 때 명부에서 온 값은 동 이름 하나라 계약서에 쓸 수 없다 */
@@ -611,13 +618,27 @@ export default async function handler(req, res) {
 
   /* 계약 일정 알림 설정 - 받는 곳 · 항목 · 법무사 예약 시점 */
   if (b.what === 'alert-settings')      return readAlert(res, chk.agent);
-  if (b.what === 'alert-settings-save') return saveAlert(res, chk.agent, b);
-  /* 사무소 메모 (2026-11-10 파트너 기획 대시보드 'memo') - settings.memo, 2000자. 대표 · 직원 모두 보고 고친다(같은 사무소) */
-  if (b.what === 'memo') { const x = await 설정읽기(chk.agent); if (x.error) return res.status(502).json({ error: '메모를 불러오지 못했습니다' });
-    return res.status(200).json({ ok: true, memo: String(x.settings.memo || ''), at: String(x.settings.memoAt || ''), need: x.need || '' }); }
-  if (b.what === 'memo-save') { const memo = String(b.memo || '').slice(0, 2000), at = new Date().toISOString();
-    const z = await 설정고침(chk.agent, () => ({ patch: { memo, memoAt: at } })); if (!z.y) return 설정실패(res, z, '메모');
+  if (b.what === 'alert-settings-save') return saveAlert(res, chk.agent, b);
+  /* 사무소 메모 (2026-11-10 파트너 기획 대시보드 'memo') - settings.memo, 2000자. 대표 · 직원 모두 보고 고친다(같은 사무소) */
+  if (b.what === 'memo') { const x = await 설정읽기(chk.agent); if (x.error) return res.status(502).json({ error: '메모를 불러오지 못했습니다' });
+    return res.status(200).json({ ok: true, memo: String(x.settings.memo || ''), at: String(x.settings.memoAt || ''), need: x.need || '' }); }
+  if (b.what === 'memo-save') { const memo = String(b.memo || '').slice(0, 2000), at = new Date().toISOString();
+    const z = await 설정고침(chk.agent, () => ({ patch: { memo, memoAt: at } })); if (!z.y) return 설정실패(res, z, '메모');
     return res.status(200).json({ ok: true, at }); }
+  /* 알림창 읽음 (2026-11-13 파트너 기획 B2 '알림창 서버 저장') - 전에는 그 기기에만 기억해 PC 에서 읽은 알림이 휴대폰에서 다시 새것으로 떴다.
+     사람마다(대표 · 직원) settings.nseen[로그인 id] 에 알림 id 를 300개까지. 보낸 것과 합친다(다른 기기에서 읽은 것을 지우지 않게) */
+  if (b.what === 'noti-seen') { const x = await 설정읽기(chk.agent); if (x.error) return res.status(502).json({ error: '알림 기록을 불러오지 못했습니다' });
+    const m = x.settings.nseen && typeof x.settings.nseen === 'object' ? x.settings.nseen : {};
+    return res.status(200).json({ ok: true, ids: Array.isArray(m[user.id]) ? m[user.id] : [], need: x.need || '' }); }
+  if (b.what === 'noti-seen-save') {
+    if (overLimit('nseen:' + user.id, 30, 60e3)) return res.status(429).json({ error: '잠시 뒤 다시 시도해 주세요' });
+    const 새 = (Array.isArray(b.ids) ? b.ids : []).map(v => String(v).slice(0, 160)).filter(Boolean).slice(-300);
+    if (!새.length) return res.status(200).json({ ok: true });
+    const z = await 설정고침(chk.agent, s => { const m = s.nseen && typeof s.nseen === 'object' && !Array.isArray(s.nseen) ? s.nseen : {};
+      const 합 = [...new Set([...(Array.isArray(m[user.id]) ? m[user.id] : []), ...새])].slice(-300);
+      return { patch: { nseen: { ...m, [user.id]: 합 } } }; });
+    if (!z.y) return 설정실패(res, z, '알림 기록');
+    return res.status(200).json({ ok: true }); }
   if (b.what === 'end-style-save')      return saveEndStyle(res, chk.agent, b);
 
   /* 내 특약 문구함 - 자주 쓰는 특약을 매매·임대차·갱신계약·기타로 */
@@ -626,8 +647,8 @@ export default async function handler(req, res) {
   if (b.what === 'sms')          return readSms(res, chk.agent);
   if (b.what === 'sms-save')     return saveSms(res, chk.agent, b);
   if (b.what === 'complex')      return readComplex(res, chk.agent);
-  if (b.what === 'complex-save') return saveComplex(res, chk.agent, b);
-  if (b.what === 'form-fq')      return readFieldQ(res, chk.agent);
+  if (b.what === 'complex-save') return saveComplex(res, chk.agent, b);
+  if (b.what === 'form-fq')      return readFieldQ(res, chk.agent);
   if (b.what === 'form-fq-save') return saveFieldQ(res, chk.agent, b);
   if (b.what === 'forms')        return readForms(res, chk.agent);
   if (b.what === 'form-up')      return upForm(res, chk.agent, b);
@@ -636,32 +657,32 @@ export default async function handler(req, res) {
 
   /* 계약서 (2026-10-29). 승인 전 중개사도 쓴다 - 자격 확인은 수요 전문을 여는 문이지
      양식·인쇄 도구의 문이 아니다. 갈래는 api/_contract.js 가 맡는다. */
-  /* 다른 사무소 계약서 · 달력 구독 (2026-11-10) - 공인중개사 사무소만. 직원 권한은 위에서 걸렀다 */
-  if (/^contract-ext/.test(b.what || '') || b.what === 'ics-link' || b.what === 'ics-reset') {
-    if (chk.agent.role !== 'agent') return res.status(403).json({ error: '공인중개사만 쓸 수 있습니다' });
-    if (b.what === 'contract-ext')      return readExt(res, chk.agent);
-    if (b.what === 'contract-ext-save') return saveExt(res, chk.agent, b);
-    if (b.what === 'contract-ext-del')  return delExt(res, chk.agent, b);
-    if (b.what === 'contract-ext-url')  return extUrl(res, chk.agent, b);
-    if (b.what === 'ics-link')          return icsLink(req, res, chk.agent, false);
-    if (b.what === 'ics-reset')         return icsLink(req, res, chk.agent, true);
-    return res.status(400).json({ error: '알 수 없는 요청입니다' });
-  }
-  if (await contractRoute(req, res, chk.agent, user, b)) return;
-  /* 매물 등록 - 건축물대장 사진 · 스캔본 판독(_contract.js listingScan). 직원은 위에서 'listing' 권한으로 걸렀다 */
+  /* 다른 사무소 계약서 · 달력 구독 (2026-11-10) - 공인중개사 사무소만. 직원 권한은 위에서 걸렀다 */
+  if (/^contract-ext/.test(b.what || '') || b.what === 'ics-link' || b.what === 'ics-reset') {
+    if (chk.agent.role !== 'agent') return res.status(403).json({ error: '공인중개사만 쓸 수 있습니다' });
+    if (b.what === 'contract-ext')      return readExt(res, chk.agent);
+    if (b.what === 'contract-ext-save') return saveExt(res, chk.agent, b);
+    if (b.what === 'contract-ext-del')  return delExt(res, chk.agent, b);
+    if (b.what === 'contract-ext-url')  return extUrl(res, chk.agent, b);
+    if (b.what === 'ics-link')          return icsLink(req, res, chk.agent, false);
+    if (b.what === 'ics-reset')         return icsLink(req, res, chk.agent, true);
+    return res.status(400).json({ error: '알 수 없는 요청입니다' });
+  }
+  if (await contractRoute(req, res, chk.agent, user, b)) return;
+  /* 매물 등록 - 건축물대장 사진 · 스캔본 판독(_contract.js listingScan). 직원은 위에서 'listing' 권한으로 걸렀다 */
   if (b.what === 'listing-scan') return listingScan(req, res, user, b);
 
   /* 올려둔 물건. 지금까지 이 목록도 그 브라우저에만 있어서 창을 닫으면
      사라졌다. 함수 상한(12개) 때문에 여기 함께 둔다. */
   if (b.what === 'listings')    return readListings(req, res, chk.agent);
   if (b.what === 'listing-add') return addListing(req, res, chk.agent, user, b);
-  if (b.what === 'listing-del') return delListing(req, res, chk.agent, b);
-  if (b.what === 'listing-set')   return setListing(res, chk.agent, b);
-  if (b.what === 'listing-state') return setListingState(res, chk.agent, b);
-  if (b.what === 'listing-pics')    return listingPics(res, chk.agent, b);
-  if (b.what === 'listing-pic-add') return listingPicAdd(res, chk.agent, b);
-  if (b.what === 'listing-pic-set') return listingPicSet(res, chk.agent, b);
-  if (b.what === 'listing-memo')      return readListingMemos(res, chk.agent);
+  if (b.what === 'listing-del') return delListing(req, res, chk.agent, b);
+  if (b.what === 'listing-set')   return setListing(res, chk.agent, b);
+  if (b.what === 'listing-state') return setListingState(res, chk.agent, b);
+  if (b.what === 'listing-pics')    return listingPics(res, chk.agent, b);
+  if (b.what === 'listing-pic-add') return listingPicAdd(res, chk.agent, b);
+  if (b.what === 'listing-pic-set') return listingPicSet(res, chk.agent, b);
+  if (b.what === 'listing-memo')      return readListingMemos(res, chk.agent);
   if (b.what === 'listing-memo-save') return saveListingMemo(res, chk.agent, b);
 
   /* 활동 조건을 저장한다.
@@ -939,9 +960,22 @@ const P_STATUS_KO = {
   reported: '신고', withdrawn: '회수', expired: '미열람 만료',
 };
 
+async function 바로찾기서버(res, agent, b, 계약됨) {
+  const q = String(b.q || '').replace(/[,()*%\\:"'.[\]{}]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 40);
+  if (q.length < 2) return res.status(200).json({ ok: true, contracts: [], listings: [], proposals: [] });
+  const 걸 = encodeURIComponent(`*${q}*`);
+  const 묻기 = (표, 열, 거름) => fetch(sbUrl(표, `select=${열}&agent_id=eq.${agent.id}&${거름}&order=created_at.desc&limit=8`), { headers: sbHeaders() })
+    .then(r => (r.ok ? r.json() : [])).catch(() => []);
+  const [contracts, listings, proposals] = await Promise.all([
+    계약됨 ? 묻기('bk_contract', 'id,title,status,form,updated_at', `title=ilike.${걸}`) : [],
+    묻기('bk_listing', 'id,name,dong,road,deal,status', `or=(name.ilike.${걸},dong.ilike.${걸},road.ilike.${걸})&status=neq.closed`),
+    묻기('bk_proposal', 'id,bname,addr,status,created_at', `or=(bname.ilike.${걸},addr.ilike.${걸})`),
+  ]);
+  return res.status(200).json({ ok: true, contracts, listings, proposals });
+}
 async function readMine(req, res, agent) {
   try {
-    const 열 = 'id,created_at,status,addr,bname,dep,rent,fee,demand_id,connected_at,report_type,read_at';
+    const 열 = 'id,created_at,status,addr,bname,dep,rent,fee,demand_id,connected_at,report_type,read_at,msg';
     const 묻기 = s => fetch(sbUrl('bk_proposal', new URLSearchParams({ select: s, agent_id: 'eq.' + agent.id, order: 'created_at.desc', limit: '200' }).toString()), { headers: sbHeaders() });
     let r = await 묻기(열 + ',contact_pref');
     if (!r.ok) { const t = await r.clone().text().catch(() => ''); if (/contact_pref|42703/.test(t)) r = await 묻기(열); }
@@ -975,6 +1009,8 @@ async function readMine(req, res, agent) {
           id: x.id, status: x.status, status_ko: P_STATUS_KO[x.status] || x.status,
           created_at: x.created_at, connected_at: x.connected_at || null,
           bname: x.bname, addr: x.addr, dep: x.dep, rent: x.rent, fee: x.fee,
+          /* 맞춤매물 '보고 싶어요' 로 생긴 제안인가 · 그때 일치율 (2026-11-13 대시보드 '매칭된 물건') - 글 전체는 보내지 않는다 */
+          ...(m => m ? { via: 'want', score: +m[1] } : {})(/^맞춤매물에서 손님이 ‘보고 싶어요’를 눌렀습니다 \(일치율 (\d+)점\)/.exec(String(x.msg || ''))),
           dongs: (d.dongs || []).join(' · '),
           kind: d.kind || null, deal: d.deal || null,
           want: d.dep != null ? { dep: d.dep, rent: d.rent } : null,
@@ -1218,38 +1254,38 @@ async function addListing(req, res, agent, user, b) {
   }
 }
 
-/* 내 물건 비공개 메모 (2026-11-11 파트너 기획 '매물장부 - 의뢰인 비공개 칸') - 사무소 설정 settings.lmemo { 물건id: {...} }.
-   물건 표(bk_listing)에 두지 않는다 - 물건 값은 제안 · 수요 대조로 손님 쪽에 흘러가는 길이 여럿이라, 메모는 아예 다른 곳에 둔다.
-   현관 비밀번호 같은 것은 받지 않는다(화면이 그렇게 안내한다). 사무소 직원 중 '내 물건' 권한이 있는 사람만 본다 */
-const 메모최대 = 300;
-const 메모글 = (v, n) => String(v ?? '').replace(/[\u0000-\u0008\u000b-\u001f\u007f]/g, ' ').trim().slice(0, n);
-export function 물건메모(m) {
-  if (!m || typeof m !== 'object' || Array.isArray(m)) return null;
-  const 값 = { who: 메모글(m.who, 30), phone: 메모글(m.phone, 20).replace(/[^0-9-]/g, ''), nego: Math.max(0, Math.min(1e13, Math.round(+String(m.nego ?? '').replace(/[^0-9]/g, '')) || 0)), note: 메모글(m.note, 500) };
-  if (!값.who && !값.phone && !값.nego && !값.note) return null;
-  return { ...값, at: String(m.at || '').slice(0, 19) };
-}
-export function 물건메모들(x) {
-  const out = {};
-  if (!x || typeof x !== 'object' || Array.isArray(x)) return out;
-  for (const [k, v] of Object.entries(x).slice(0, 메모최대)) { const m = LUUID.test(k) && 물건메모(v); if (m) out[k] = m; }
-  return out;
-}
-async function readListingMemos(res, agent) {
-  const x = await 설정읽기(agent);
-  if (x.error) return res.status(502).json({ error: '메모를 불러오지 못했습니다' });
-  return res.status(200).json({ ok: true, memos: 물건메모들(x.settings.lmemo), need: x.need || '' });
-}
-async function saveListingMemo(res, agent, b) {
-  const id = String(b.id || '');
-  if (!LUUID.test(id)) return res.status(400).json({ error: '어느 물건인지 알 수 없습니다' });
-  const 새 = 물건메모({ ...(b.memo || {}), at: new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 19) });
-  const z = await 설정고침(agent, s => { const L = 물건메모들(s.lmemo);
-    if (새) { if (!L[id] && Object.keys(L).length >= 메모최대) return { error: `메모는 물건 ${메모최대}개까지 둡니다`, code: 400 }; L[id] = 새; } else delete L[id];
-    return { memos: L, patch: { lmemo: L } }; });
-  if (!z.y || z.y.error) return z.y && z.y.error ? res.status(400).json({ error: z.y.error }) : 설정실패(res, z, '메모');
-  return res.status(200).json({ ok: true, memo: 새 });
-}
+/* 내 물건 비공개 메모 (2026-11-11 파트너 기획 '매물장부 - 의뢰인 비공개 칸') - 사무소 설정 settings.lmemo { 물건id: {...} }.
+   물건 표(bk_listing)에 두지 않는다 - 물건 값은 제안 · 수요 대조로 손님 쪽에 흘러가는 길이 여럿이라, 메모는 아예 다른 곳에 둔다.
+   현관 비밀번호 같은 것은 받지 않는다(화면이 그렇게 안내한다). 사무소 직원 중 '내 물건' 권한이 있는 사람만 본다 */
+const 메모최대 = 300;
+const 메모글 = (v, n) => String(v ?? '').replace(/[\u0000-\u0008\u000b-\u001f\u007f]/g, ' ').trim().slice(0, n);
+export function 물건메모(m) {
+  if (!m || typeof m !== 'object' || Array.isArray(m)) return null;
+  const 값 = { who: 메모글(m.who, 30), phone: 메모글(m.phone, 20).replace(/[^0-9-]/g, ''), nego: Math.max(0, Math.min(1e13, Math.round(+String(m.nego ?? '').replace(/[^0-9]/g, '')) || 0)), note: 메모글(m.note, 500) };
+  if (!값.who && !값.phone && !값.nego && !값.note) return null;
+  return { ...값, at: String(m.at || '').slice(0, 19) };
+}
+export function 물건메모들(x) {
+  const out = {};
+  if (!x || typeof x !== 'object' || Array.isArray(x)) return out;
+  for (const [k, v] of Object.entries(x).slice(0, 메모최대)) { const m = LUUID.test(k) && 물건메모(v); if (m) out[k] = m; }
+  return out;
+}
+async function readListingMemos(res, agent) {
+  const x = await 설정읽기(agent);
+  if (x.error) return res.status(502).json({ error: '메모를 불러오지 못했습니다' });
+  return res.status(200).json({ ok: true, memos: 물건메모들(x.settings.lmemo), need: x.need || '' });
+}
+async function saveListingMemo(res, agent, b) {
+  const id = String(b.id || '');
+  if (!LUUID.test(id)) return res.status(400).json({ error: '어느 물건인지 알 수 없습니다' });
+  const 새 = 물건메모({ ...(b.memo || {}), at: new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 19) });
+  const z = await 설정고침(agent, s => { const L = 물건메모들(s.lmemo);
+    if (새) { if (!L[id] && Object.keys(L).length >= 메모최대) return { error: `메모는 물건 ${메모최대}개까지 둡니다`, code: 400 }; L[id] = 새; } else delete L[id];
+    return { memos: L, patch: { lmemo: L } }; });
+  if (!z.y || z.y.error) return z.y && z.y.error ? res.status(400).json({ error: z.y.error }) : 설정실패(res, z, '메모');
+  return res.status(200).json({ ok: true, memo: 새 });
+}
 async function delListing(req, res, agent, b) {
   const id = String(b.id || '');
   if (!LUUID.test(id)) return res.status(400).json({ error: '어느 물건인지 알 수 없습니다' });

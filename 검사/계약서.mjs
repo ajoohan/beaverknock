@@ -1327,8 +1327,11 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
   ok(t && t.arch === '2026-11-10' && t.trash === '2026-11-10' && C.trackCheck({ trash: '어제' }) === null, 'track 에 보관함 · 휴지통 날짜(arch · trash)가 들어가고, 날짜 모양이 아니면 거절');
   ok(/case 'contract-bin':\s+await bin\(res, agent, b\)/.test(길.read ? '' : fs.readFileSync(new URL('../api/_contract.js', import.meta.url), 'utf8')), '서버 contract-bin - 보관함 · 휴지통으로 옮기고 되돌린다');
   ok(/'contract-del'[^\]]*\]\.includes\(w\)/.test(feed), '영구 삭제(contract-del)는 대표만 - 직원은 막는다');
-  ok(js.includes("const ct보관칸 = r =>") && js.includes("data-act=\"ct-bin-tab\"") && js.includes("'ct-purge', id, '영구 삭제'") && js.includes("r.status === 'sealed' ? '' : 직원()"),
-     '목록 · 보관함 · 휴지통 칸 - 휴지통의 날인본은 영구 삭제 단추가 없고, 직원에게는 남은 날만 보인다');
+  ok(js.includes("const ct보관칸 = r =>") && js.includes("data-act=\"ct-bin-tab\"") && js.includes("'ct-purge', id, '영구 삭제'") && js.includes("r.status === 'sealed' ? ''") && /r\.track && r\.track\.room \? `<span class="ct-rnote">손님 대화방이 있어 지우지 않습니다/.test(js) && js.includes(": 직원() ? `<span class=\"ct-rnote\">${ct휴지남은날(r)}일 뒤 지워짐"),
+     '목록 · 보관함 · 휴지통 칸 - 휴지통의 날인본 · 대화방이 있는 계약서는 영구 삭제 단추가 없고, 직원에게는 남은 날만 보인다');
+  { const 서 = fs.readFileSync(new URL('../api/_contract.js', import.meta.url), 'utf8');
+    ok(/status=eq\.draft&track->room=is\.null`, \{\s*method: 'DELETE'/.test(서) && (서.match(/track->>trash=lt\.\$\{날더하기\(오늘, -30\)\}&track->room=is\.null/g) || []).length === 2,
+       '손님 대화방이 열린 작성 중 계약서는 영구 삭제 · 휴지통 30일 자동 삭제에서 빠진다(대화 · 파일이 주인 없이 남지 않게)'); }
   ok(js.includes("const 계약 = (CT.list || []).filter(ct살아있음);") && js.includes("sub === 'schedule' ? ctSchedulePageHTML(살아)"), '보관함 · 휴지통 계약서는 대시보드 · 일정에서 빠진다');
   ok(js.includes('data-act="ct-trash-cur"') && !js.includes('>이 계약서 지우기<'), '작성 화면의 지우기는 휴지통으로(바로 지우지 않는다)');
 }

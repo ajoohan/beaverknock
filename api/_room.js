@@ -179,7 +179,7 @@ export async function roomAgent(req, res, agent, user, b) {
   const 보조원 = !!(agent.staff && agent.staff.role === 'assistant');
   if (b.what === 'rooms') {
     /* 방이 있는 계약서 - 초대했거나 누가 들어온 날인본. 계약서 한 장에 당사자 수만큼 방이 있다 */
-    const x = await db('bk_contract', `select=id,title,form,status,track,doc_parties:doc->parties,road:doc->property->>road&agent_id=eq.${agent.id}&status=eq.sealed&track->room=not.is.null&order=updated_at.desc&limit=100`);
+    const x = await db('bk_contract', `select=id,title,form,status,track,doc_parties:doc->parties,road:doc->property->>road&agent_id=eq.${agent.id}&track->room=not.is.null&order=updated_at.desc&limit=100`);
     if (!x.r.ok) return res.status(502).json({ error: '대화방 목록을 불러오지 못했습니다' });
     const 계약들 = x.rows.slice();
     const 마지막 = {};
@@ -191,7 +191,7 @@ export async function roomAgent(req, res, agent, user, b) {
       const 있음 = new Set(계약들.map(r => r.id));
       const 밖 = [...new Set(m.rows.map(v => String(v.contract_id || '')))].filter(c => UUID.test(c) && !있음.has(c)).slice(0, 50);
       if (밖.length) {
-        const y = await db('bk_contract', `select=id,title,form,status,track,doc_parties:doc->parties,road:doc->property->>road&agent_id=eq.${agent.id}&status=eq.sealed&id=in.(${밖.join(',')})&limit=50`);
+        const y = await db('bk_contract', `select=id,title,form,status,track,doc_parties:doc->parties,road:doc->property->>road&agent_id=eq.${agent.id}&id=in.(${밖.join(',')})&limit=50`);
         for (const r of y.rows || []) if (!있음.has(r.id)) { 있음.add(r.id); 계약들.push(r); }
       }
       담기(m.rows);
@@ -265,7 +265,8 @@ export async function roomAgent(req, res, agent, user, b) {
   /* 아래는 공인중개사만 - 보조원은 대화만 */
   if (보조원) return res.status(403).json({ error: '초대 · 내보내기는 공인중개사가 합니다' });
   if (b.what === 'room-invite') {
-    if (row.status !== 'sealed') return res.status(409).json({ error: '날인본으로 확정한 뒤에 손님을 초대합니다' });
+    /* 2026-11-13 파트너 기획 E4 '체결문자 단계부터 초대' - 날인 전(작성 중)에도 초대한다. 휴지통에 넣은 계약서만 막는다 */
+    if ((trackCheck(row.track || {}) || {}).trash) return res.status(409).json({ error: '휴지통에 있는 계약서입니다 - 목록으로 되돌린 뒤 초대해 주세요' });
     if (!당사자있음(row, side)) return res.status(400).json({ error: '이 계약서에 없는 당사자입니다' });
     const 대리초대 = b.proxy === true;
     if (대리초대 && 대리인(방, side)) return res.status(409).json({ error: `${자리이름[side]}의 대리인이 이미 들어와 있습니다 - 바꾸려면 먼저 내보내 주세요` });

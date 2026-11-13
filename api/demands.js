@@ -477,7 +477,7 @@ async function readAgents(req, res, p, opsUser) {
     const rows = await r.json();
     /* 화면에서는 연락처를 기본으로 가린다 - 원문은 따로 요청해야 나온다 */
     /* 사무소 안에서만 보는 것은 운영자에게도 내보내지 않는다 - 의뢰인 메모(lmemo) · 문자 기록 · 사무소 메모 · 다른 사무소 계약서 · 색인값 (2026-11-12 보안점검) */
-    const 사무소만 = s => { if (!s || typeof s !== 'object') return s; const { lmemo, smsLog, memo, memoAt, ext, fieldq, ...남김 } = s; return 남김; };
+    const 사무소만 = s => { if (!s || typeof s !== 'object') return s; const { lmemo, smsLog, memo, memoAt, ext, fieldq, nseen, ...남김 } = s; return 남김; };
     const 다듬 = x => { const { phone_idx, ...y } = x; return { ...y, settings: 사무소만(x.settings) }; };
     const out = p.reveal ? rows.map(다듬) : rows.map(x => ({ ...다듬(x), phone: maskPhone(x.phone) }));
     await logOps(req, opsUser, { action: 'agents', reveal: !!p.reveal, count: out.length });

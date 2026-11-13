@@ -44,7 +44,7 @@ export default async function handler(req, res) {
   const body = req.method === 'POST' ? (req.body || {}) : {};
   if (body.what === 'consent') return consent(req, res, user, body);
   /* 계약진행 대화방 - 손님 쪽 (2026-11-06 · api/_room.js) */
-  if (['invite-join', 'my-rooms', 'my-room', 'my-room-send', 'my-room-file', 'my-room-file-url'].includes(body.what)) return roomGuest(req, res, user, body);
+  if (['invite-join', 'my-rooms', 'my-room', 'my-room-send', 'my-room-file', 'my-room-file-url', 'my-room-doc'].includes(body.what)) return roomGuest(req, res, user, body);
 
   /* 내가 파트너인가.
      ── 왜 여기에 있나 ──

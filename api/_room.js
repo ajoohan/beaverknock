@@ -16,7 +16,7 @@
  * 중개보조원도 대화는 한다(기획 '보조원은 매칭 관리 · 채팅 가능'). 초대 링크 만들기 · 내보내기는 공인중개사만. */
 import crypto from 'node:crypto';
 import { sbHeaders, sbUrl, emailOf, sameSecret, overLimit } from './_auth.js';
-import { trackCheck, track고치기 } from './_contract.js';
+import { trackCheck, track고치기, 초안가림 } from './_contract.js';
 import { notify } from './_notify.js';
 import { alimtalk } from './_kakao.js';
 import { 서식확인, 파일버킷, 버킷올리기, 버킷주소, 버킷지우기 } from './_forms.js';
@@ -382,6 +382,22 @@ export async function roomGuest(req, res, user, b) {
       officePhone: 사.phone || '', steps: 일정(row), rows: m.rows.map(v => ({ ...내보낼말(v, user.id), name: v.side === 'agent' ? v.name : (v.name || 자리이름[v.side]) })) });
   }
   if (b.what === 'my-room-file-url') return 파일주소(res, id, side, b.msg);
+  /* 지난 계약 서류 다시 보기 (2026-11-13 파트너 기획 E4) - 이 계약의 당사자(초대로 들어온 분)에게 날인본을 보기 전용으로.
+     고쳐 쓴 판(prev_id)이 날인됐으면 가장 나중 날인본. 전화번호 · 생년월일은 초안 링크처럼 가린다. 작성 중이면 내용은 주지 않는다 */
+  if (b.what === 'my-room-doc') {
+    if (overLimit('roomdoc:' + user.id, 30, 600e3)) return res.status(429).json({ error: '잠시 뒤 다시 열어 주세요' });
+    let 지금 = row, 몇 = 0;
+    while (몇++ < 6) {
+      const 다음 = await db('bk_contract', `select=id,status&prev_id=eq.${지금.id}&agent_id=eq.${row.agent_id}&status=eq.sealed&order=sealed_at.desc&limit=1`);
+      if (!다음.r.ok || !다음.rows.length) break;
+      지금 = 다음.rows[0];
+    }
+    if (지금.status !== 'sealed') return res.status(200).json({ ok: true, sealed: false });
+    const d = await db('bk_contract', `select=form,title,sealed_at,doc&id=eq.${지금.id}&limit=1`);
+    const r0 = d.rows[0];
+    if (!d.r.ok || !r0) return res.status(502).json({ error: '계약서를 불러오지 못했습니다' });
+    return res.status(200).json({ ok: true, sealed: true, form: r0.form, title: r0.title || '', sealed_at: r0.sealed_at, doc: 초안가림(r0.doc) });
+  }
   if (b.what === 'my-room-send' || b.what === 'my-room-file') {
     if (overLimit('room:g:' + user.id, 30, 600e3)) return res.status(429).json({ error: '잠시 뒤 다시 보내 주세요' });
     const 파일 = b.what === 'my-room-file';

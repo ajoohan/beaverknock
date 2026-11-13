@@ -4797,7 +4797,7 @@ function tabbar(active, role){
   const items = role==='p'
     /* 맨 앞은 대시보드(홈). 다섯 칸을 넘지 않게 중개사는 '내 물건' 을 홈 카드로 보내고, 소유자는 계약서가 없다 */
     ? [['#/partner/home','홈','h'],['#/partner/demands',ownerSide()?'맞는 손님':'수요','d'],...(ownerSide()?[['#/partner/listings','내 물건','l']]:[]),['#/partner/proposals','내 제안','p'],...(계약막힘()?[]:[['#/partner/contracts','계약서','ct']]),...(직원()?[]:[['#/partner/settings','설정','s']])]
-    : [['#/','홈','home'],['#/my','내 조건','my'],['#/matched','맞춤매물','match'],['#/inbox','제안함','inbox']];
+    : [['#/','홈','home'],['#/my','대시보드','my'],['#/matched','맞춤매물','match'],['#/inbox','1:1 제안','inbox']];
   const ico = {
     home:'M4 11 L12 4 L20 11 M6.5 9.5 V19 h11 V9.5',
     my:'M5 5 h14 M5 12 h14 M5 19 h9',
@@ -4820,9 +4820,11 @@ function navUser(active){ return `
 <div class="nav solid pad">
   <a data-go="#/" style="flex:none">${logoLockup({h:25,tag:!isMo()})}</a>
   <div class="items mid">
-    <a data-go="#/my" class="${active==='my'?'on':''}">내 조건</a>
+    ${/* 손님 메뉴 (2026-11-13 파트너 기획 E4 '대시보드 · 매물지도 · 맞춤매물 · 1:1 제안 · 고객센터 · 도움말') - 매물지도는 지도 키를 받으면 더한다 */''}
+    <a data-go="#/my" class="${active==='my'?'on':''}">대시보드</a>
     <a data-go="#/matched" class="${active==='match'?'on':''}">맞춤매물</a>
-    <a data-go="#/inbox" class="${active==='inbox'?'on':''}">제안함${새제안표(새제안수())}</a>
+    <a data-go="#/inbox" class="${active==='inbox'?'on':''}">1:1 제안${새제안표(새제안수())}</a>
+    ${isMo()?'':`<a data-go="#/faq" class="${active==='faq'?'on':''}">고객센터</a><a data-go="#/help" class="${active==='help'?'on':''}">도움말</a>`}
     ${isMo()?'':partnerDoor('link')}
   </div>
   <div class="right" style="gap:14px">
@@ -4904,7 +4906,7 @@ function navPartner(active, 탭있음 = true){
   <div class="items mid">
     <a data-go="#/partner/demands" class="${active==='d'?'on':''}">${own?'맞는 손님':'수요 목록'}</a>
     <a data-go="#/partner/listings" class="${active==='l'?'on':''}">${ownerSide() ? '내 물건' : '매물장부'}</a>
-    ${own||직원()?'':`<a data-go="#/partner/settings" class="${active==='s'?'on':''}">활동 설정</a>`}
+    ${own||직원()?'':`<a data-go="#/partner/settings" class="${active==='s'?'on':''}">사무소 설정</a>`}
     ${권한('stats') ? `<a data-go="#/partner/stats" class="${active==='st'?'on':''}">성과</a>` : ''}
     <a data-go="#/partner/proposals" class="${active==='p'?'on':''}">내 제안</a>
     ${own || !권한('room') ?'':`<a data-go="#/partner/rooms" class="${active==='rm'?'on':''}">손님 대화</a>`}
@@ -6146,12 +6148,18 @@ V['#/register'] = () => {
         ${regionPicker(d, true)}
       </div>
       <div class="grid2 mo1">
-        <div><span class="lab">희망 면적 <span class="req">*</span> <span class="opt">전용면적 기준 · 평</span></span>
-          <div class="grid2" style="gap:10px">
+        <div><span class="lab">희망 면적 <span class="req">*</span> <span class="opt">전용면적 기준</span>
+            <span class="chips" role="group" aria-label="면적 단위" style="display:inline-flex;gap:4px;margin-left:6px">${['평','㎡'].map(u => `<button type="button" class="chip sm${(d.areaUnit || '평') === u ? ' on' : ''}" data-act="area-unit" data-v="${u}" aria-pressed="${(d.areaUnit || '평') === u}" style="padding:4px 10px;font-size:13px">${u}</button>`).join('')}</span></span>
+          ${/* ㎡ 로도 적는다 (2026-11-13 파트너 기획 C1-2 '㎡(평)') - 저장은 평(정수, 최소는 내림 · 최대는 올림) */ (d.areaUnit || '평') === '㎡' ? `<div class="grid2" style="gap:10px">
+            <div class="unit"><input class="inp" data-in="areaMinM2" inputmode="decimal" value="${esc(d.areaMinM2 != null ? d.areaMinM2 : (+d.areaMin ? (d.areaMin * 3.305785).toFixed(0) : ''))}" placeholder="최소"><span>㎡(전용)</span></div>
+            <div class="unit"><input class="inp" data-in="areaMaxM2" inputmode="decimal" value="${esc(d.areaMaxM2 != null ? d.areaMaxM2 : (+d.areaMax ? (d.areaMax * 3.305785).toFixed(0) : ''))}" placeholder="최대"><span>㎡(전용)</span></div>
+          </div>
+          <span data-areahint style="display:block;margin-top:6px;font-size:13px;font-weight:700;color:var(--ind)">${d.areaMin ? `약 ${d.areaMin}${d.areaMax ? `~${d.areaMax}` : ''}평으로 전달합니다` : ''}</span>`
+          : `<div class="grid2" style="gap:10px">
             <div class="unit"><input class="inp" data-in="areaMin" inputmode="numeric" value="${esc(d.areaMin)}" placeholder="최소"><span>평(전용)</span></div>
             <div class="unit"><input class="inp" data-in="areaMax" inputmode="numeric" value="${esc(d.areaMax)}" placeholder="최대"><span>평(전용)</span></div>
           </div>
-          ${d.areaMin?`<span style="display:block;margin-top:6px;font-size:13px;font-weight:700;color:var(--ind)">전용 약 ${(d.areaMin*3.305785).toFixed(1)}${d.areaMax?`~${(d.areaMax*3.305785).toFixed(1)}`:''} ㎡</span>`:''}
+          ${d.areaMin?`<span style="display:block;margin-top:6px;font-size:13px;font-weight:700;color:var(--ind)">전용 약 ${(d.areaMin*3.305785).toFixed(1)}${d.areaMax?`~${(d.areaMax*3.305785).toFixed(1)}`:''} ㎡</span>`:''}`}
         </div>
         ${K==='shop' ? `
         <div><span class="lab">권리금 <span class="opt">감당 가능한 상한</span></span>
@@ -7086,7 +7094,7 @@ function mapScene(level, sel, shop){
 function regMiss(d){
   const shop = NONHOME(d.kind), w = words(d.kind);
   if(shop && !String(d.biz||'').trim()) return {k:'biz',     m:`${w.what}${josa(w.what,'을','를')} 적어주세요`};
-  if(shop && !+d.areaMin)               return {k:'areaMin', m:'희망 면적(전용)을 적어주세요'};
+  if(shop && !+d.areaMin)               return {k: d.areaUnit === '㎡' ? 'areaMinM2' : 'areaMin', m:'희망 면적(전용)을 적어주세요'};
   if(!shop && !d.deal)                  return {k:'deal',    m:'거래 방식을 선택해 주세요'};
   if((d.dongs||[]).length > 5)          return {k:'dongs',   m:'지역은 5곳까지 고를 수 있습니다 - 하나를 빼 주세요'};   /* 2026-11-11 - 서버가 말없이 자르지 않게 */
   if(!(d.dongs||[]).length)             return {k:'dongs',   m: shop?`${w.area}${josa(w.area,'을','를')} 하나 이상 선택해 주세요`:'동네를 하나 이상 선택해 주세요'};
@@ -7877,7 +7885,7 @@ V['#/account'] = () => {
           + (ownerSide() ? '' : 마이줄('#/partner/guide', '시작 가이드', '첫날 할 일 · 메뉴 지도', 'M5 21V4 M5 4h11l-2 4 2 4H5'))
           + 마이줄('#/partner/help', '도움말', '화면마다 ? 단추', 'M12 21 a9 9 0 1 0 0 -18 a9 9 0 0 0 0 18 Z M9.4 9.2 a2.7 2.7 0 1 1 3.8 2.5 c-.8 .4 -1.2 1 -1.2 1.8 v.5 M12 16.7 v.3')
           + (직원() || ownerSide() ? '' : 마이줄('#/partner/staff', '직원 · 권한', '', 'M16 19 v-1.5 a3.5 3.5 0 0 0 -3.5 -3.5 h-5 A3.5 3.5 0 0 0 4 17.5 V19 M10 10.5 a3 3 0 1 0 0 -6 a3 3 0 0 0 0 6 M20 19 v-1.5 a3.5 3.5 0 0 0 -2.6 -3.4 M15.5 4.6 a3 3 0 0 1 0 5.8'))
-          + (직원() ? '' : 마이줄('#/partner/settings', '활동 설정', '', 'M12 21 s-7 -6.2 -7 -11.5 a7 7 0 0 1 14 0 C19 14.8 12 21 12 21 Z M12 12.5 a2.5 2.5 0 1 0 0 -5 a2.5 2.5 0 0 0 0 5'))
+          + (직원() ? '' : 마이줄('#/partner/settings', '사무소 설정', '', 'M12 21 s-7 -6.2 -7 -11.5 a7 7 0 0 1 14 0 C19 14.8 12 21 12 21 Z M12 12.5 a2.5 2.5 0 1 0 0 -5 a2.5 2.5 0 0 0 0 5'))
           /* 운영사에 문의 (2026-11-10 파트너 기획 '운영사 상담') - 휴대폰은 왼쪽 메뉴가 없어 여기에도 둔다 */
           + `<a class="acc-go" href="mailto:support@plustonic.com?subject=${encodeURIComponent('[비버노크 파트너 문의] ')}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6 h16 v12 H4 Z M4 7 l8 6 8-6"/></svg><span class="acc-gn">운영사에 문의</span>${isMo() ? '' : '<span class="acc-gv">support@plustonic.com</span>'}<i class="ar-r" aria-hidden="true"></i></a>`
         : 마이줄('#/partner/verify', '자격 확인하기', '등록번호 대조', 판)}</div>`
@@ -7929,6 +7937,24 @@ V['#/account'] = () => {
   ${tabbar('acc')}
 </div>`;};
 
+/* 손님 대시보드 요약 (2026-11-13 파트너 기획 E4 '손님 대시보드') - 걸어 둔 조건 · 맞춤매물 · 받은 제안 · 내 계약(다음 일정).
+   로그인한 손님만. 숫자를 누르면 그 화면으로 */
+function 손님요약HTML(){
+  if(!S.user || !세션있음()) return '';
+  if(!MT.loaded && !MT.loading) setTimeout(() => mtLoad(false));
+  if(RM.mine == null && !RM.mineLoading) setTimeout(rmMineLoad);
+  const 조건 = (S.conds || []).filter(c => !c.seed), 활성 = 조건.filter(c => c.status === 'active' || c.status === 'expiring').length;
+  const 매물 = (MT.groups || []).reduce((s, g) => s + ((g.rows || []).length), 0);
+  const 제안 = (S.props || []).filter(q => !q.seed && q.status !== 'hidden'), 새 = 새제안수();
+  const 계약 = RM.mine || [], 진행 = 계약.filter(r => !gm끝남(r)), 오늘 = gm오늘();
+  const 다음 = 진행.flatMap(r => (r.steps || []).filter(s => !s.됨 && s.날 >= 오늘).map(s => ({ ...s, r }))).sort((a, b) => (a.날 > b.날) - (a.날 < b.날))[0];
+  return `<div class="dz-k4 gm-k4">
+    ${dzKpi({ ico:'list', cap:'걸어 둔 조건', v: 조건.length, go:'#/my', sub: 조건.length ? `진행 중 ${활성}건` : '조건을 걸면 맞는 매물이 모입니다' })}
+    ${dzKpi({ ico:'home', cap:'맞춤매물', v: MT.loaded ? 매물 : null, go:'#/matched', sub:'일치율 80점 이상' })}
+    ${dzKpi({ ico:'send', cap:'받은 1:1 제안', v: 제안.length, go:'#/inbox', sub: 새 ? `새 제안 ${새}건` : '중개사가 보낸 제안' })}
+    ${dzKpi({ ico:'doc', cap:'내 계약', v: RM.mine == null ? null : 진행.length, go: 다음 ? `#/room/${다음.r.id}` : '#/account', sub: 다음 ? `${esc(다음.이름)} ${esc(gm날(다음.날))}` : 계약.length ? `지난 계약 ${계약.length - 진행.length}건` : '계약하면 일정이 여기에' })}
+  </div>`;
+}
 V['#/my'] = () => {
   const rows = S.conds.map(c=>{
     const cnt = S.props.filter(p=>p.cond===c.id && p.status!=='hidden').length;
@@ -7969,9 +7995,11 @@ V['#/my'] = () => {
   ${navUser('my')}
   <div class="pad" style="flex:1;padding-top:${isMo()?20:32}px;display:flex;flex-direction:column;gap:14px;max-width:${isMo()?'none':'1000px'};margin:0 auto;width:100%">
     <div style="display:flex;justify-content:space-between;align-items:center">
-      <div><h1 class="t" style="font-size:${isMo()?21:25}px;margin-top:8px">내 조건 <span style="color:var(--ind)">${S.conds.length}건</span></h1></div>
+      <div><h1 class="t" style="font-size:${isMo()?21:25}px;margin-top:8px">대시보드</h1></div>
       <button class="btn sec sm" data-act="restart">+ 조건 등록</button>
     </div>
+    ${손님요약HTML()}
+    <h2 style="margin:6px 0 0;font-size:${isMo()?17:19}px;font-weight:800;letter-spacing:-.02em">내 조건 <span style="color:var(--ind)">${S.conds.length}건</span></h2>
     ${보류띠()}
     ${S.mineErr ? `<div class="card pad" style="border-color:var(--warnline);background:var(--warnbg);box-shadow:none;
       display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
@@ -9506,6 +9534,36 @@ function 직원카드HTML(){
 if(typeof document !== 'undefined') document.addEventListener('change', e => { const el = e.target.closest && e.target.closest('[data-sf-role]'); if(!el) return;
   sfSave({ op:'role', i: el.dataset.sfRole, role: el.value }, '역할을 바꿨습니다'); });
 
+/* 사무소 설정 › 알림 - 새 손님 메일(활동 조건과 같은 저장) · 계약 일정 알림 (2026-11-13 A4) */
+function 설정알림HTML(own, sect, sc){
+  if(!계약막힘() && !CT.alert && !CT.alertLoading) setTimeout(ctAlertLoad);
+  return `${own ? '' : `<div style="display:flex;justify-content:flex-end"><button class="btn pri sm" data-act="scope-save">새 손님 알림 저장</button></div>
+    ${sect('1','새 손님 알림','',
+          `<p style="margin:0 0 12px;font-size:14.5px;line-height:1.8;color:var(--n700)">
+            활동 조건에 맞는 새 손님이 오면 <b style="color:var(--n900)">메일</b>로 알려드립니다.
+            받는 곳은 가입하실 때 적어주신 주소입니다.<br>
+            메일에는 <b style="color:var(--n900)">유형 · 지역 · 예산 · 남은 자리</b>까지만 담습니다 -
+            손님 성함과 연락처는 손님이 연결을 누르신 뒤에 오갑니다.</p>
+          <div class="chk ${sc.paused?'on':''}" data-act="sc-pause">
+            <span class="box">${ICON_CHECK}</span><span class="txt">당분간 알림 중단
+            <small>휴가·물량 소진 시. 목록은 그대로 보이고 메일만 멈춥니다.</small></span></div>
+          <p style="margin:12px 0 0;padding:12px 15px;background:var(--n50);border-radius:var(--r-sm);
+            font-size:13.5px;line-height:1.75;color:var(--n500)">
+            받는 시간대와 1일 상한은 아직 없습니다. 카톡 알림(알림톡)은 템플릿 심사가 있어 준비 중이고,
+            그때 함께 붙일 예정입니다. <b style="color:var(--n700)">없는 것을 있다고 적어두지 않으려고 지웠습니다.</b></p>`)}`}
+    ${계약막힘() ? '' : ctAlertHTML(true)}`;
+}
+/* 사무소 설정 › 기능 - 대시보드 카드 보이기 (2026-11-13 A4 · 시안 '기능 끄면 이 카드는 대시보드에서 숨김'). 이 기기에 기억 */
+const DZ_카드 = [['cst', '계약현황'], ['mtc', '매칭된 물건'], ['perf', '이번 달 실적'], ['recent', '새로 걸린 조건'], ['cal', '계약 일정 달력'], ['memo', '사무소 메모'], ['sms', '계약체결 문자']];
+function dz숨김(){ try{ const v = JSON.parse(localStorage.getItem('bk.dzHide') || '[]'); return new Set(Array.isArray(v) ? v : []); }catch(_){ return new Set(); } }
+function 설정기능HTML(){
+  const 숨 = dz숨김(); let 매출숨김 = false; try{ 매출숨김 = localStorage.getItem('bk.hideSales') === '1'; }catch(_){}
+  const 줄 = (act, v, on, 글, 설명) => `<label class="acc-sw ct-sw"><span><b>${글}</b>${설명 ? `<small>${설명}</small>` : ''}</span><input type="checkbox" role="switch" data-act="${act}" data-v="${v}" ${on ? 'checked' : ''} aria-label="${글}"></label>`;
+  return `<div class="card pad"><h2 class="adm-sh" style="margin-bottom:6px">대시보드 카드</h2>
+    <p style="margin:0 0 12px;font-size:13.5px;line-height:1.6;color:var(--n500)">끈 카드는 대시보드에서 숨깁니다. 이 기기에만 적용됩니다 - 직원마다 따로 고를 수 있습니다.</p>
+    <div class="ct-sws st-sws">${DZ_카드.filter(([k]) => !계약막힘() || !['cst', 'perf', 'cal', 'sms'].includes(k)).map(([k, t]) => 줄('dz-card', k, !숨.has(k), t, '')).join('')}
+      ${계약막힘() ? '' : 줄('dz-sales', '', !매출숨김, '실적(매출) 보이기', '중개보수 합계 - 대표만 보입니다')}</div></div>`;
+}
 V["#/partner/settings"] = () => {
   const own = ownerSide();
   const sc = S.scope;
@@ -9513,6 +9571,10 @@ V["#/partner/settings"] = () => {
   const now  = reachCount(sc);
   const week = Math.max(0, Math.round(now * 0.6));
   const drop = base > 0 && now <= base/2;
+  /* 탭 (2026-11-13 파트너 기획 A4 '사무소 설정(정보 · 알림 · 기능)') - 한 화면에 섞여 있던 것을 넷으로. 고른 탭은 이 기기에 기억 */
+  const 탭들 = own ? [['info','사무소 정보'],['noti','알림'],['func','기능']] : [['info','사무소 정보'],['scope','활동 조건'],['noti','알림'],['func','기능']];
+  if(S.lastRoute !== '#/partner/settings') S.setTab = '';   /* 다른 화면에서 들어오면 기본 탭(활동 조건) - '활동 지역 정하기' 같은 단추가 이 화면으로 온다 */
+  const 탭 = 탭들.some(([k]) => k === S.setTab) ? S.setTab : (own ? 'info' : 'scope');
   const sect = (no,title,hint,body) => `<div class="card pad">
     <h2 class="adm-sh" style="margin-bottom:${hint?6:14}px"><span class="ctw-n">${no}</span>${title}</h2>
     ${hint?`<p style="margin:0 0 12px;font-size:13.5px;line-height:1.6;color:var(--n500)">${hint}</p>`:''}
@@ -9522,13 +9584,16 @@ V["#/partner/settings"] = () => {
   ${navPartner('s')}
   <div class="pad adm-page" style="flex:1;padding-top:${isMo()?18:28}px;padding-bottom:24px;max-width:${isMo()?'none':'1100px'};margin:0 auto;width:100%;display:flex;flex-direction:column;gap:14px">
     <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap">
-      <div><h1 class="t" style="font-size:${isMo()?21:25}px;margin-top:8px">활동 조건 설정</h1>
-        <p class="sub" style="font-size:14.5px">저장 즉시 새 조건부터 적용됩니다 · 이미 발송된 알림에는 소급되지 않습니다.</p></div>
-      ${own?'':`<button class="btn pri sm" data-act="scope-save">저장</button>`}
+      <div><h1 class="t" style="font-size:${isMo()?21:25}px;margin-top:8px">사무소 설정</h1>
+        <p class="sub" style="font-size:14.5px">${탭 === 'scope' ? '저장 즉시 새 조건부터 적용됩니다 · 이미 발송된 알림에는 소급되지 않습니다.' : 탭 === 'info' ? '사무소와 내 계정 정보입니다.' : 탭 === 'noti' ? '새 손님 알림과 계약 일정 알림을 정합니다.' : '대시보드에 보일 카드를 고릅니다.'}</p></div>
+      ${own || 탭 !== 'scope' ? '' : `<button class="btn pri sm" data-act="scope-save">저장</button>`}
     </div>
+    <div class="ct-chips st-tabs" role="tablist" aria-label="사무소 설정">${탭들.map(([k, t]) => `<button type="button" class="chip${k === 탭 ? ' on' : ''}" role="tab" aria-selected="${k === 탭}" data-act="set-tab" data-v="${k}">${t}</button>`).join('')}</div>
 
-    ${meCard()}
-    ${own ? `<p style="margin:0;font-size:13.5px;line-height:1.7;color:var(--n500)">
+    ${탭 === 'info' ? meCard() : ''}
+    ${탭 === 'noti' ? 설정알림HTML(own, sect, sc) : ''}
+    ${탭 === 'func' ? 설정기능HTML() : ''}
+    ${탭 !== 'scope' ? '' : own ? `<p style="margin:0;font-size:13.5px;line-height:1.7;color:var(--n500)">
       소유자·시행사께는 활동 지역과 유형을 묻지 않습니다 - 올려두신 물건이 곧 조건입니다.</p>`
     : `<div style="display:grid;grid-template-columns:${isMo()?'1fr':'1fr 300px'};gap:${isMo()?14:18}px;align-items:start">
       <div style="display:flex;flex-direction:column;gap:14px">
@@ -9567,19 +9632,6 @@ V["#/partner/settings"] = () => {
           }).join('')}</div>`
           + (sc.excluded.length ? `<p style="margin:10px 0 0;padding:12px 16px;font-size:14.5px;font-weight:700;background:${drop?'var(--dangerbg)':'var(--warnbg)'};color:${drop?'var(--danger)':'var(--warn)'}">
               이 설정이면 대기 손님 ${base}건 → ${now}건이 됩니다${drop?' - 알림이 크게 줄어듭니다':''}</p>` : ''))}
-        ${sect('4','알림','',
-          `<p style="margin:0 0 12px;font-size:14.5px;line-height:1.8;color:var(--n700)">
-            위 조건에 맞는 새 손님이 오면 <b style="color:var(--n900)">메일</b>로 알려드립니다.
-            받는 곳은 가입하실 때 적어주신 주소입니다.<br>
-            메일에는 <b style="color:var(--n900)">유형 · 지역 · 예산 · 남은 자리</b>까지만 담습니다 -
-            손님 성함과 연락처는 손님이 연결을 누르신 뒤에 오갑니다.</p>
-          <div class="chk ${sc.paused?'on':''}" data-act="sc-pause">
-            <span class="box">${ICON_CHECK}</span><span class="txt">당분간 알림 중단
-            <small>휴가·물량 소진 시. 목록은 그대로 보이고 메일만 멈춥니다.</small></span></div>
-          <p style="margin:12px 0 0;padding:12px 15px;background:var(--n50);border-radius:var(--r-sm);
-            font-size:13.5px;line-height:1.75;color:var(--n500)">
-            받는 시간대와 1일 상한은 아직 없습니다. 카톡 알림(알림톡)은 템플릿 심사가 있어 준비 중이고,
-            그때 함께 붙일 예정입니다. <b style="color:var(--n700)">없는 것을 있다고 적어두지 않으려고 지웠습니다.</b></p>`)}
       </div>
 
       <!-- 실시간 도달 패널 -->
@@ -9601,7 +9653,7 @@ V["#/partner/settings"] = () => {
           <span style="display:block;font-size:13.5px;color:var(--n700);margin-top:4px">수요는 계속 쌓이며, 재개하면 그동안의 조건을 한 번에 보여드립니다.</span></div>` : ''}
       </div>
     </div>`}
-    ${own || 직원() ? '' : `<div class="card pad sf-go"><div><h2 class="adm-sh" style="margin:0">직원 · 권한</h2><p class="sub" style="margin:4px 0 0">직원 초대와 기능별 권한은 ‘내 사무소 › 직원 · 권한’에서 합니다.${SF.loaded ? ` 지금 ${SF.list.length}명` : ''}</p></div><button type="button" class="btn sec sm" data-go="#/partner/staff">열기</button></div>`}
+    ${탭 !== 'info' || own || 직원() ? '' : `<div class="card pad sf-go"><div><h2 class="adm-sh" style="margin:0">직원 · 권한</h2><p class="sub" style="margin:4px 0 0">직원 초대와 기능별 권한은 ‘내 사무소 › 직원 · 권한’에서 합니다.${SF.loaded ? ` 지금 ${SF.list.length}명` : ''}</p></div><button type="button" class="btn sec sm" data-go="#/partner/staff">열기</button></div>`}
   </div>
   ${tabbar('s','p')}
 </div>`;};
@@ -12742,7 +12794,7 @@ const GD_메뉴 = () => [
     ['일정 · 알림', '#/partner/contracts/schedule', '신고 기한 · 잔금 준비를 아침 9시에 알려 줍니다']]]]),
   ['내 사무소', 'gear', '사무소 설정', [
     ...(권한('stats') ? [['성과', '#/partner/stats', '제안 · 열람 · 연결 숫자를 기간별로']] : []),
-    ...(직원() ? [] : [['활동 설정', '#/partner/settings', '활동 지역 · 알림 · 사무소 주소'], ['직원 · 권한', '#/partner/staff', '직원 초대 · 기능마다 켜고 끄기']])]],
+    ...(직원() ? [] : [['사무소 설정', '#/partner/settings', '사무소 정보 · 활동 조건 · 알림 · 대시보드 카드'], ['직원 · 권한', '#/partner/staff', '직원 초대 · 기능마다 켜고 끄기']])]],
 ];
 const GD_흐름 = [
   ['clock', '아침 9시', '카카오톡 · 메일로 오늘 챙길 일정이 옵니다'],
@@ -13221,7 +13273,7 @@ function 파트너옆(active){
     ...(계약막힘() ? [] : ['계약', ...CT_하위메뉴]),
     '내 사무소',
     ...(권한('stats') ? [['#/partner/stats', '성과', 'chart', 'st']] : []),
-    ...(own || 직원() ? [] : [['#/partner/settings', '활동 설정', 'map', 's'], ['#/partner/staff', '직원 · 권한', 'users', 'sf']]),
+    ...(own || 직원() ? [] : [['#/partner/settings', '사무소 설정', 'map', 's'], ['#/partner/staff', '직원 · 권한', 'users', 'sf']]),
   ];
   /* 계약 묶음은 네 칸이 한 줄씩 (2026-10-30 대표님 '계약 - 계약서 작성 · 계약서 목록 · 특약 관리 · 일정·알림').
      계약서 화면들은 navPartner('ct') 로 부른다 - 어느 칸인지는 주소로 가린다. 작성 중인 새 계약서는 '계약서 작성', 연 계약서는 '계약서 목록' */
@@ -13264,7 +13316,7 @@ function adm위치(h){
   if(h.startsWith('#/partner/rooms/')){ const [, , , 번호, 자리] = h.split('/'); const 줄 = (RM.list || []).find(r => r.id === 번호 && (!자리 || r.side === 자리)) || {};
     return [['영업'], ['손님 대화', '#/partner/rooms'], [`${줄.title || '대화방'}${자리 && RM_자리[자리] ? ' · ' + RM_자리[자리] : ''}`]]; }
   if(h === '#/partner/stats') return [['내 사무소'], ['성과']];
-  if(h === '#/partner/settings') return [['내 사무소'], ['활동 설정']];
+  if(h === '#/partner/settings') return [['내 사무소'], ['사무소 설정']];
   if(h === '#/partner/staff') return [['내 사무소'], ['직원 · 권한']];
   if(h === '#/partner/guide') return [['도움'], ['시작 가이드']];
   return [];
@@ -13293,6 +13345,10 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
+  { v:'26.11.13.2', 날:'2026-11-13', 줄:[ '사무소 설정 - 사무소 정보 · 활동 조건 · 알림 · 기능 탭으로 나눴습니다. 기능 탭에서 대시보드 카드를 켜고 끕니다',
+    '손님 - 대시보드(걸어 둔 조건 · 맞춤매물 · 받은 1:1 제안 · 내 계약과 다음 일정)와 메뉴(대시보드 · 맞춤매물 · 1:1 제안 · 고객센터 · 도움말)',
+    '손님 - 계약 대화방의 ‘계약서 보기’에서 날인본을 다시 봅니다(전화번호는 가려서)',
+    '손님 - 상가 · 사무실 희망 면적을 ㎡ 로도 적습니다' ] },
   { v:'26.11.13.1', 날:'2026-11-13', 줄:[ '대시보드 - 계약현황(진행중 · 준비 · 보류와 다음 일정) · 매칭된 물건(손님이 ‘보고 싶어요’를 누른 내 매물) 카드',
     '성과 - 계약 · 매물 · 매칭 숫자를 함께 봅니다',
     '알림 - 읽은 알림을 서버에 기억해, PC 에서 읽은 것이 휴대폰에서 다시 새것으로 뜨지 않습니다',
@@ -13906,7 +13962,7 @@ function 바로찾기목록(q){
   const 메뉴 = [['#/partner/home', '대시보드', 'home'], ['#/partner/demands', own ? '맞는 손님' : '수요 목록', 'users'], ['#/partner/listings', '내 물건', 'building'],
     ...(권한('listing') ? [['#/partner/listing/new', '물건 올리기', 'building']] : []), ['#/partner/proposals', '내 제안', 'send'], ...(own || !권한('room') ? [] : [['#/partner/rooms', '손님 대화', 'chat']]),
     ...(계약막힘() ? [] : CT_하위메뉴.map(([h, t, i]) => [h, t, i || 'doc'])), ...(권한('stats') ? [['#/partner/stats', '성과', 'chart']] : []),
-    ...(own || 직원() ? [] : [['#/partner/settings', '활동 설정', 'map']]), ['#/account', '마이페이지', 'user']];
+    ...(own || 직원() ? [] : [['#/partner/settings', '사무소 설정', 'map']]), ['#/account', '마이페이지', 'user']];
   묶음.push(['바로 가기', 메뉴.filter(([, t]) => 맞나(t)).slice(0, 낮 ? 6 : 8).map(([h, t, i]) => ({ t, s: '', ico: i, go: h }))]);
   if(낮){
     묶음.push(['손님 조건', (S.demands || []).filter(d => 맞나([d.region, d.deal, ...(d.lines || [])].join(' '))).slice(0, 5)
@@ -14208,6 +14264,7 @@ V['#/partner/home'] = () => {
   S.dzOpen = true; S.dzWait0 = 0;
   const { 수요, 물건, 진짜, 열람, 열람분모, 연결, 안읽힘, 계약, 작성중, 날인, days, 보냄, 열림, 앞7, 뒤7, 할일, 잔금물음 } = 파트너현황();
   const 승인 = S.agent && S.agent.status === 'approved';
+  const 숨 = dz숨김();   /* 사무소 설정 › 기능에서 끈 카드 (2026-11-13 A4) */
 
   return `
 <div class="scr fade dz-scr">
@@ -14241,27 +14298,27 @@ V['#/partner/home'] = () => {
                 '<button type="button" class="btn sec sm" data-go="#/partner/demands">맞는 손님 보기</button>')}
           </div>
         </div>
-        ${계약막힘() ? '' : dz계약현황(계약)}
-        ${dz매칭(진짜)}
-        ${계약막힘() ? '' : dz실적(계약)}
-        <div class="dz-card dz-recent">
+        ${계약막힘() || 숨.has('cst') ? '' : dz계약현황(계약)}
+        ${숨.has('mtc') ? '' : dz매칭(진짜)}
+        ${계약막힘() || 숨.has('perf') ? '' : dz실적(계약)}
+        ${숨.has('recent') ? '' : `<div class="dz-card dz-recent">
           <div class="dz-chh"><b class="dz-ct">새로 걸린 조건</b><a class="dz-more" data-go="#/partner/demands">전체 보기<i class="ar-r" aria-hidden="true"></i></a></div>
           ${수요.length ? 수요.slice(0, 6).map(d => `<a class="dz-row" data-go="#/partner/demand/${esc(d.id)}">
             <span class="dz-av">${dzIco(NONHOME(d.kind) ? 'building' : 'home', 18)}</span>
             <span class="dz-rt"><b>${esc(d.region)}</b><span>${esc(d.deal || '')} · ${esc((d.lines || [])[0] || '')}</span></span>
             <span class="dz-rw">${esc(d.at || '')}</span></a>`).join('')
           : `<p class="dz-calm">${!S.feedAt ? '불러오는 중입니다…' : '아직 내 지역에 걸린 조건이 없습니다. 활동 지역을 넓히면 더 보입니다.'}</p>`}
-        </div>
+        </div>`}
       </div>
       <aside class="dz-aside">
         ${dzStatus(승인
           ? { t:'자격 확인', state:'확인 완료', pct:100, note:'손님 조건 전문과 연락 연결을 모두 쓸 수 있습니다.' }
           : { t:'자격 확인', state: S.agent ? '확인 중' : '가입 전', pct: S.agent ? 55 : 10,
               note:'등록번호를 공공데이터로 확인하면 손님 조건 전문이 열립니다.', btn:'자격 확인하기', go:'#/partner/verify' })}
-        ${계약막힘() ? '' : dz달력(계약)}
-        ${dz메모()}
+        ${계약막힘() || 숨.has('cal') ? '' : dz달력(계약)}
+        ${숨.has('memo') ? '' : dz메모()}
         ${dzTodo(할일, '지금 손댈 일은 없습니다. 새 조건이 오면 알려 드립니다.', dz바로가기())}
-        ${계약막힘() ? '' : (() => { if(!CS.loaded && 세션있음()) setTimeout(csLoad);
+        ${계약막힘() || 숨.has('sms') ? '' : (() => { if(!CS.loaded && 세션있음()) setTimeout(csLoad);
           return `<div class="dz-card cs-dz"><div class="dz-chh"><b class="dz-ct">계약체결 문자</b><a class="dz-more" data-go="#/partner/contracts/sms">틀 고치기<i class="ar-r" aria-hidden="true"></i></a></div>
           <div class="cs-dz-b">${cs틀들().filter(t => !t.hidden).map(t => `<button type="button" class="btn tool sm" data-act="cs-go" data-v="${esc(t.id)}">${esc(t.name)}</button>`).join('')}</div></div>`; })()}
       </aside>
@@ -15829,7 +15886,7 @@ V['#/draft'] = tok => {
 /* ══════════ 계약진행 대화방 (2026-11-06 · 파트너 기획 '확정하면 당사자 초대 → 가입하면 계약진행 채팅방') ══════════
    서버 api/_room.js. 중개사는 날인본 계약서의 일정·체크 탭에서 당사자마다 초대 링크를 만들어 문자 · 카톡으로 보낸다.
    손님은 링크(#/invite/표)를 열고 로그인하면 그 계약의 방(#/room/번호)에 들어온다. 중개사는 '손님 대화'(#/partner/rooms)에서 본다.
-   방에는 계약 요약 · 다가오는 일정 · 대화만 - 계약서 원문 · 다른 당사자 연락처는 보이지 않는다. 8초마다 새 말을 받아 온다 */
+   방에는 계약 요약 · 다가오는 일정 · 대화. 날인본은 ‘계약서 보기’(#/room/번호/doc)에서 보기 전용 - 전화번호는 가려서(2026-11-13 E4). 8초마다 새 말을 받아 온다 */
 const RM_자리 = { seller:'매도인', buyer:'매수인', lessor:'임대인', lessee:'임차인', sublessor:'전대인', subtenant:'전차인', assignor:'양도인', assignee:'양수인' };
 const RM = { list:null, listAt:0, listLoading:false, listErr:'', need:'', cur:null, text:'', busy:false, inv:null, mine:null, mineLoading:false };
 const rm손님 = () => (S.route || '').startsWith('#/room/');
@@ -16115,7 +16172,31 @@ async function rmJoin(){
 }
 
 /* ── 손님 - 대화방 ── */
-V['#/room'] = id => {
+/* 지난 계약 서류 다시 보기 (2026-11-13 파트너 기획 E4) - #/room/번호/doc. 날인본을 보기 전용으로(전화번호는 가려서). 작성 중이면 아직 없다고 */
+const RMD = {};
+function rm서류HTML(id){
+  /* 날인 전이었으면 30초 뒤 다시 들어올 때 새로 묻는다(그사이 날인됐을 수 있다) */
+  if(RMD[id] && !RMD[id].loading && !(RMD[id].ok && RMD[id].j && RMD[id].j.sealed) && Date.now() - (RMD[id].at || 0) > 30e3) delete RMD[id];
+  const D = RMD[id] || (RMD[id] = { loading: true, at: Date.now() });
+  if(D.loading && !D.asked){ D.asked = true; rmPost({ what:'my-room-doc', id }).then(({ ok, j }) => { Object.assign(D, { loading: false, ok, j }); if(S.route === `#/room/${id}/doc`) render(); })
+    .catch(() => { Object.assign(D, { loading: false, ok: false, j: { error: '네트워크 문제로 계약서를 열지 못했습니다' } }); render(); }); }
+  const j = D.j || {};
+  return `
+<div class="scr fade" style="background:var(--n100)">
+  ${navUser ? navUser() : ''}
+  <div class="pad" style="flex:1;padding-top:20px;padding-bottom:32px;width:100%;max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:12px">
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><a class="back" data-go="#/room/${esc(id)}"><i class="ar-l" aria-hidden="true"></i>대화방으로</a>
+      <span class="sub" style="font-size:13.5px">날인본 · 보기 전용 · 전화번호는 가려서 보입니다</span></div>
+    ${D.loading ? `<div class="card pad">${bkLoader(28)}</div>`
+      : !D.ok ? `<div class="card pad"><p class="sub" style="margin:0">${esc(j.error || '계약서를 열지 못했습니다')}</p></div>`
+      : !j.sealed ? `<div class="card pad"><p class="sub" style="margin:0">아직 날인 전입니다. 계약서를 날인본으로 확정하면 여기에서 다시 볼 수 있습니다.</p></div>`
+      : `<p class="sub" style="margin:0;font-size:13.5px">${esc(j.title || '')} · 날인본 확정 ${esc(ct한국날(j.sealed_at))} · 원본은 중개사무소에서 받으신 종이 계약서입니다.</p>
+        <div class="ct-sheet-wrap"><div class="ct-sheet">${ctDocHTML(j.doc)}</div></div>`}
+  </div>
+</div>`;
+}
+V['#/room'] = (id, sub) => {
+  if(sub === 'doc') return rm서류HTML(id);
   if(!RM.cur || RM.cur.id !== id) setTimeout(() => rmLoad(id, true));
   const C = RM.cur && RM.cur.id === id ? RM.cur : null, M = C && C.meta;
   return `
@@ -16125,7 +16206,7 @@ V['#/room'] = id => {
     <div class="card rm-pane rm-guest">
       <div class="rm-h"><div><b>${esc(M ? M.title : '계약 대화방')}</b>
         <span class="sub">${M ? `${esc(M.office)} · 나는 ${esc(M.role)}` : ''}</span></div>
-        ${M && M.officePhone ? `<a class="btn tool sm" style="flex:none" href="tel:${esc(String(M.officePhone).replace(/[^0-9]/g, ''))}">전화</a>` : ''}</div>
+        <span class="eqb" style="flex:none;gap:6px">${M ? `<button type="button" class="btn tool sm" data-go="#/room/${esc(id)}/doc">계약서 보기</button>` : ''}${M && M.officePhone ? `<a class="btn tool sm" href="tel:${esc(String(M.officePhone).replace(/[^0-9]/g, ''))}">전화</a>` : ''}</span></div>
       ${C && C.err ? `<div class="rm-gone" role="alert"><p>${esc(C.err)}</p>
           ${C.gone ? `<p class="sub">중개사무소에서 새 초대 링크를 받으셨다면 그 링크를 다시 눌러 주세요.</p>
             <button type="button" class="btn sec" data-go="#/account">마이페이지로</button>` : `<p class="sub">잠시 뒤 저절로 다시 불러옵니다.</p>`}</div>`
@@ -16173,7 +16254,7 @@ function rm내방HTML(){
   return `<section class="card acc-row"><div class="acc-l"><h2>내 계약</h2><p>진행 단계와 일정 · 중개사무소와 잔금까지</p></div><div class="acc-r gm-wrap">
     ${진행.length ? `<div class="gm-list">${진행.map(카드).join('')}</div>${gm달력(진행)}` : ''}
     ${지난.length ? `<div class="gm-past"><b>지난 계약</b>${지난.map(r => `<a class="gm-pr" data-go="#/room/${esc(r.id)}"><span><b>${esc(r.title)}</b><small>${esc(r.office)} · 잔금 ${esc(String(((r.steps || []).find(s => s.이름 === '잔금') || {}).날 || '').replace(/-/g, '.'))}</small></span><i class="ar-r" aria-hidden="true"></i></a>`).join('')}
-      <small class="sub">대화와 받은 파일은 대화방에 남아 있습니다. 파일은 잔금 뒤 1년까지 보관됩니다.</small></div>` : ''}
+      <small class="sub">대화와 받은 파일은 대화방에 남아 있습니다. 파일은 잔금 뒤 1년까지 보관됩니다. 계약서는 대화방의 ‘계약서 보기’에서 다시 봅니다.</small></div>` : ''}
   </div></section>`;
 }
 
@@ -19367,7 +19448,7 @@ function render(){
   else if(h.startsWith('#/partner/contract/')) html = V['#/partner/contract'](parts[3]);
   else if(h.startsWith('#/draft/')) html = V['#/draft'](parts[2]);
   else if(h.startsWith('#/invite/')) html = V['#/invite'](parts[2]);
-  else if(h.startsWith('#/room/')) html = V['#/room'](parts[2]);
+  else if(h.startsWith('#/room/')) html = V['#/room'](parts[2], parts[3]);
   else if(h === '#/help' || h.startsWith('#/help/')) html = V['#/help'](parts[2]);
   else if(h === '#/partner/help' || h.startsWith('#/partner/help/')) html = V['#/partner/help'](parts[3]);
   else if(h === '#/partner/rooms' || h.startsWith('#/partner/rooms/')) html = V['#/partner/rooms'](parts[3], parts[4]);
@@ -19493,7 +19574,7 @@ function render(){
   /* 대시보드는 한 화면에서 전부 보여준다 - 탭을 하나씩 열게 하지 않는다 */
   if(h===OPS_HOME && OPS.rows && (OPS.tab||'home')==='home') dashDoLoad();
   if(h==='#/my' || h==='#/inbox' || h==='#/matched' || h.startsWith('#/proposal/')) loadMine(false);
-  if(h==='#/matched' || h==='#/account') mtLoad(false);
+  if(h==='#/matched' || h==='#/account' || h==='#/my') mtLoad(false);
   /* 글을 적지 않는 손님 화면(첫 화면·안내)에서도 한 번 받아 둔다 - 오른쪽 위 '새 제안' 뱃지가 들어와 보지
      않아도 보이게(2026-10-17). 20초 안에는 다시 묻지 않는다.
      **조건 걸기처럼 적는 화면에서는 부르지 않는다** - 답이 오면 화면을 다시 그려 적던 칸의 커서와
@@ -20389,6 +20470,12 @@ document.addEventListener('input', e=>{
   if(k.startsWith('ext:')){ if(CT.extEdit){ const key = k.slice(4); CT.extEdit[key] = key === 'price' ? el.value.replace(/[^0-9]/g, '') : el.value;
     if(key === 'price'){ const w = document.querySelector('[data-extwon]'); if(w) w.textContent = +CT.extEdit.price ? `금 ${한글금액(+CT.extEdit.price)}원` : ''; } } return; }
   if(k === 'dr-name' || k === 'dr-text'){ if(DR.note) DR.note[k === 'dr-name' ? 'name' : 'text'] = el.value; return; }
+  /* 상가 희망 면적을 ㎡ 로 적으면 평으로 바꿔 담는다 - 최소는 내림 · 최대는 올림(조건이 좁아지지 않게) */
+  if(k === 'areaMinM2' || k === 'areaMaxM2'){
+    const n = parseFloat(String(el.value).replace(/[^0-9.]/g, '')), 평 = n > 0 ? n / 3.305785 : 0, 최소 = k === 'areaMinM2';
+    S.form[k] = el.value; S.form[최소 ? 'areaMin' : 'areaMax'] = 평 ? String(최소 ? Math.max(1, Math.floor(평)) : Math.ceil(평)) : '';
+    const h = document.querySelector('#app [data-areahint]'); if(h) h.textContent = S.form.areaMin ? `약 ${S.form.areaMin}${S.form.areaMax ? `~${S.form.areaMax}` : ''}평으로 전달합니다` : '';
+    return; }
   const v = MONEY_IN.includes(k) ? money(el) : el.value;
   if(k==='j-phone'){ S.form[k] = autoHyphen(el); refreshJoin(); return; }
   if(k==='j-reg'){ S.form[k]=v;
@@ -20834,6 +20921,7 @@ function handle(a,v,el){
     case 'musts': toggleIn(d.musts,v); render(); return true;
     /* 손님이 고르는 밴드 - 면적·층·방향은 여러 개, 화장실·연식은 하나 */
     case 'harea': toggleIn(d.hArea,v); render(); return true;
+    case 'area-unit': d.areaUnit = v === '㎡' ? '㎡' : '평'; d.areaMinM2 = null; d.areaMaxM2 = null; render(); return true;
     case 'hfloor': toggleIn(d.hFloor,v); render(); return true;
     case 'hdir':  toggleIn(d.hDir,v);  render(); return true;
     case 'hbath': d.hBath = v; render(); return true;
@@ -21882,6 +21970,9 @@ function handle(a,v,el){
     })(); return true;
     case 'ct-autoarch': { const A = CT.alert; if(!A || !A.loaded || A.need || A.err) return true; A.cfg = ct알림설정({ ...ct알림설정(A.cfg), autoArch: !ct알림설정(A.cfg).autoArch });
       ctAlertSave(); render(); toast(A.cfg.autoArch ? '완료 · 취소 건을 3개월 뒤 보관함으로 옮깁니다(매일 아침)' : '자동 보관을 껐습니다'); return true; }
+    case 'set-tab': S.setTab = v; render(); return true;
+    case 'dz-card': { const 숨 = dz숨김(); 숨.has(v) ? 숨.delete(v) : 숨.add(v); try{ localStorage.setItem('bk.dzHide', JSON.stringify([...숨])); }catch(_){} render(); return true; }
+    case 'dz-sales': { let 지금 = false; try{ 지금 = localStorage.getItem('bk.hideSales') === '1'; localStorage.setItem('bk.hideSales', 지금 ? '0' : '1'); }catch(_){} render(); return true; }
     case 'perf-hide': { let 지금 = false; try{ 지금 = localStorage.getItem('bk.hideSales') === '1'; localStorage.setItem('bk.hideSales', 지금 ? '0' : '1'); }catch(_){} render(); return true; }
     case 'sf-perm-open': SF.open = SF.open === v ? null : v; render(); return true;
     case 'sf-sel': SF.sel = v; SF.del = null; render(); return true;

@@ -130,8 +130,8 @@ const 놓기 = o => { for (const k of Object.keys(키들)) delete process.env[k]
   const { 새제안표 } = 만들기({});
   ok(새제안표(0) === '' && /nbadge/.test(새제안표(3)) && />3</.test(새제안표(3)) && />99\+</.test(새제안표(120)), '0이면 아무것도, 많으면 99+');
   ok(/aria-label="\$\{esc\(who\)\} 님 메뉴\$\{새 \? ` · 새 제안 \$\{새\}건` : ''\}"/.test(js), '낭독기에도 새 제안 수를 읽어 준다');
-  ok(/\$\{관리 \? '' : 새제안표\(새\)\}/.test(js) && /제안함\$\{새제안표\(새제안수\(\)\)\}/.test(js) && /k==='inbox' \? 새제안표\(새제안수\(\)\)/.test(js),
-     '내 이름 단추 · 제안함 탭 · 휴대폰 탭바 세 곳에 뜬다');
+  ok(/\$\{관리 \? '' : 새제안표\(새\)\}/.test(js) && /1:1 제안\$\{새제안표\(새제안수\(\)\)\}/.test(js) && /k==='inbox' \? 새제안표\(새제안수\(\)\)/.test(js),
+     '내 이름 단추 · 1:1 제안 탭 · 휴대폰 탭바 세 곳에 뜬다');
   ok(/else if\(S\.user && !consentNeeded\(\) && BADGE_ROUTES\.includes\(h\)\) loadMine\(false\);/.test(js),
      '첫 화면·안내에서도 받아 둔다 - 들어와 보지 않아도 뱃지가 보인다(동의 전 계정은 빼고)');
   const 화면들 = new Function(`${js.match(/const BADGE_ROUTES = \[[^\]]*\];/)[0]}; return BADGE_ROUTES;`)();

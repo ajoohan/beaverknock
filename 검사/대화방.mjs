@@ -60,6 +60,15 @@ r = await 손(손님1, { what: 'invite-join', token: 표 });
 ok(r.code === 200 && r.body.id === CID && 계약.track.room.buyer.uid === 손님1.id, '손님이 링크로 들어오면 그 자리에 계정이 묶인다');
 ok((await 손(손님2, { what: 'invite-join', token: 표 })).code === 409, '다른 계정은 같은 자리에 들어오지 못한다');
 ok((await 손(손님1, { what: 'invite-join', token: 표 })).body.already === true, '같은 분이 다시 누르면 그냥 들어간다');
+/* 지난 계약 서류 다시 보기 (2026-11-13 E4) - 들어온 당사자만, 날인본만, 전화번호 · 생년월일은 가림 */
+{ const 원 = 계약; 계약 = { ...원, doc: { form: 'sale', parties: { seller: { name: '김매도', phone: '010-1111-2222', birth: '1970-01-01' }, buyer: { name: '이매수', phone: '010-3333-4444' } } } };
+  const r1 = await 손(손님1, { what: 'my-room-doc', id: CID }), 문 = JSON.stringify(r1.body.doc || {});
+  ok(r1.code === 200 && r1.body.sealed === true && /김매도/.test(문) && !/1111-2222|3333-4444|1970/.test(문) && /010-\*{4}-2222/.test(문), '손님 - 날인본 계약서를 보기 전용으로(전화번호 · 생년월일은 가림)');
+  ok((await 손(손님2, { what: 'my-room-doc', id: CID })).code === 403, '손님 - 이 계약에 들어오지 않은 계정은 계약서를 못 본다');
+  계약 = { ...계약, status: 'draft' };
+  const r2 = await 손(손님1, { what: 'my-room-doc', id: CID });
+  ok(r2.code === 200 && r2.body.sealed === false && !r2.body.doc, '손님 - 날인 전(작성 중)이면 내용을 주지 않는다');
+  계약 = { ...원, track: 계약.track }; }
 { const 앞 = 불린.filter(x => x.m === 'PATCH').length; await 손(손님1, { what: 'invite-join', token: 표 });
   ok(불린.filter(x => x.m === 'PATCH').length === 앞, '이미 든 분이 다시 누르면 track 을 새로 쓰지 않는다(일정 저장과 부딪히지 않게)'); }
 ok((await 중({ what: 'room-invite', id: CID, side: 'buyer' })).code === 409, '들어온 자리는 다시 초대하지 않는다');
@@ -140,7 +149,7 @@ ok(r.code === 503 && r.body.need === '0035', 'thread 칸이 없으면 0035 마�
 
 /* 7. 화면 */
 const js = 길.js();
-ok(js.includes("else if(h.startsWith('#/invite/')) html = V['#/invite'](parts[2]);") && js.includes("else if(h.startsWith('#/room/')) html = V['#/room'](parts[2]);")
+ok(js.includes("else if(h.startsWith('#/invite/')) html = V['#/invite'](parts[2]);") && js.includes("else if(h.startsWith('#/room/')) html = V['#/room'](parts[2], parts[3]);")
   && js.includes("if(h.startsWith('#/room/') && 로그인전()){"), '화면 - 초대 · 손님 방 주소, 방은 로그인 뒤');
 ok(js.includes("['#/partner/rooms', '손님 대화', 'chat', 'rm']") && js.includes('${ct방HTML(doc)}') && js.includes("S.modal.type==='rm-invite'"), '화면 - 손님 대화 메뉴 · 일정·체크 탭의 초대 · 초대 링크 창');
 ok(js.includes("const 곳 = /^(invite-join|my-)/.test(body.what) ? '/api/my' : '/api/feed';"), '화면 - 손님 요청은 /api/my, 사무소 요청은 /api/feed');

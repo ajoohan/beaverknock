@@ -166,7 +166,7 @@ const M = new Function('esc', `${js.slice(시작, 끝)}\nreturn { dzLine, dzPill
      && JSON.stringify(위치.adm위치('#/partner/contract/abc')) === '[["계약"],["계약서 목록","#/partner/contracts"],["부동산 매매계약서"]]'
      && JSON.stringify(위치.adm위치('#/partner/contract/new')) === '[["계약"],["계약서 작성","#/partner/contracts/new"],["부동산 매매계약서"]]'
      && JSON.stringify(위치.adm위치('#/partner/demand/x')) === '[["영업"],["수요 목록","#/partner/demands"],["손님 조건"]]'
-     && JSON.stringify(위치.adm위치('#/partner/settings')) === '[["내 사무소"],["활동 설정"]]' && 위치.adm위치('#/x').length === 0,
+     && JSON.stringify(위치.adm위치('#/partner/settings')) === '[["내 사무소"],["사무소 설정"]]' && 위치.adm위치('#/x').length === 0,
      '지금 위치 - 묶음 › 화면(› 그 안의 화면), 계약서 작성 중이면 그 계약서 이름');
   const 경로 = 위치.adm경로([['계약서', '#/partner/contracts'], ['일정·알림']]);
   ok(/aria-label="현재 위치"/.test(경로) && /<a data-go="#\/partner\/contracts">계약서<\/a><i class="adm-sep" aria-hidden="true"><\/i><b aria-current="page">일정·알림<\/b>/.test(경로) && !/›|>/.test(경로.replace(/<[^>]*>/g, '')),

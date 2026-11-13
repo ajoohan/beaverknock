@@ -7,6 +7,18 @@
 import { sbHeaders, sbUrl, emailOf } from './_auth.js';
 import { notify, won } from './_notify.js';
 import { 사진들, 사진주소 } from './_pics.js';
+import { 거리 } from './_geo.js';
+
+/* 손님이 고른 곳(2026-11-14 구글 지도 · 파트너 기획 C1-2 '동 · 반경 · 역 · 단지') - 반경은 고른 거리, 역 1km, 단지 300m */
+const 곳반경 = { radius: [300, 3000, 1000], station: [300, 2000, 1000], complex: [100, 1000, 300] };
+export function 고른곳들(v) {
+  return (Array.isArray(v) ? v : []).map(p => { if (!p || !곳반경[p.t]) return null; const lat = +p.lat, lng = +p.lng;
+    if (!(lat > 33 && lat < 39 && lng > 124 && lng < 132)) return null; const [lo, hi, 기본] = 곳반경[p.t];
+    return { t: p.t, name: String(p.name || '').replace(/[<>"'`]/g, '').trim().slice(0, 40), lat: +lat.toFixed(6), lng: +lng.toFixed(6), r: Math.max(lo, Math.min(hi, Math.round(+p.r) || 기본)),
+      area: String(p.area || '').replace(/[^가-힣0-9 ]/g, '').trim().slice(0, 20) }; })
+    .filter(Boolean).slice(0, 5);
+}
+export const 곳안 = (곳, L) => +L.lat && +L.lng && 곳.some(p => 거리(p, { lat: +L.lat, lng: +L.lng }) <= p.r);
 
 export const 일치기준 = 80;
 const HAREA = [['~33㎡', 0, 33], ['33~66㎡', 33, 66], ['66~99㎡', 66, 99], ['99~132㎡', 99, 132], ['132㎡~', 132, 1e9]];
@@ -20,8 +32,8 @@ export function 일치율(d, L) {
   /* 상가 · 사무실 · 창고 조건은 보증금 · 월세(임대)로만 받는다 - 매매 물건은 견주지 않는다 */
   if (집아님(d.kind) && L.deal === '매매') return null;
   /* 지역 30 - 동이 같으면 만점. 조건에 동이 없으면(서울·경기 어디든) 만점 */
-  const 동들 = (d.dongs || []).map(동이름).filter(Boolean);
-  const 지역 = !동들.length || 동들.includes(동이름(L.dong)) ? 30 : 0;
+  const 동들 = (d.dongs || []).map(동이름).filter(Boolean), 곳 = 고른곳들(d.places);
+  const 지역 = (!동들.length && !곳.length) || 동들.includes(동이름(L.dong)) || 곳안(곳, L) ? 30 : 0;
   /* 예산 30 - 보증금(매매가)과 월세(관리비 포함)를 각각 보고 낮은 쪽. 10% 넘으면 20점, 20% 넘으면 10점 */
   const 월 = (+L.rent || 0) + (d.fee_included !== false ? (+L.fee || 0) : 0);
   const 예산 = Math.round(30 * Math.min(구간(L.dep, d.dep), +d.rent > 0 ? 구간(월, d.rent) : (+L.rent > 0 && !집아님(d.kind) && d.deal === '전세' ? 0 : 1)));
@@ -51,6 +63,8 @@ function 공개(L, 사무소) {
     dir: L.dir, dir_base: L.dir_base, move_in: L.move_in, musts: L.musts || [], one_line: L.one_line, note: L.note, approved: L.approved,
     photos: 사진들(L.pics).length, pic0: 사진들(L.pics)[0] || '', opened_at: L.opened_at, changed: Array.isArray(L.price_log) && L.price_log.length ? L.price_log[L.price_log.length - 1] : null,
     office: (사무소 && 사무소.office) || '공인중개사사무소',
+    /* 지도용 대략 위치(소수 셋째 자리 - 100m 안팎). 정확한 동 · 호는 연결 뒤에 */
+    ...(+L.lat && +L.lng ? { lat: +(+L.lat).toFixed(3), lng: +(+L.lng).toFixed(3) } : {}),
   };
 }
 const 내조건 = async user => {
@@ -61,7 +75,7 @@ const 내조건 = async user => {
 };
 const 노출물건 = async (kinds, ds = []) => {
   /* 모든 조건에 동이 있으면 그 동의 물건만 읽는다(동이 없는 조건이 하나라도 있으면 종류로만) */
-  const 동들 = ds.every(d => (d.dongs || []).map(동이름).filter(Boolean).length) ? [...new Set(ds.flatMap(d => (d.dongs || []).map(동이름).filter(Boolean)))] : [];
+  const 동들 = ds.every(d => (d.dongs || []).map(동이름).filter(Boolean).length && !고른곳들(d.places).length) ? [...new Set(ds.flatMap(d => (d.dongs || []).map(동이름).filter(Boolean)))] : [];
   const q = new URLSearchParams({ select: '*', vis: 'eq.open', status: 'eq.active', kind: `in.(${kinds.join(',')})`, order: 'opened_at.desc', limit: '1000',
     ...(동들.length ? { dong: `in.(${동들.map(v => '"' + v.replace(/["\\]/g, '') + '"').join(',')})` } : {}) });
   const r = await fetch(sbUrl('bk_listing', q.toString()), { headers: sbHeaders() });

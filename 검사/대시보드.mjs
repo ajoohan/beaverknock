@@ -365,7 +365,7 @@ const M = new Function('esc', `${js.slice(시작, 끝)}\nreturn { dzLine, dzPill
 {
   const api = f => fs.readFileSync(new URL('../api/' + f, import.meta.url), 'utf8');
   const vj = fs.readFileSync(new URL('../vercel.json', import.meta.url), 'utf8');
-  ok(/connect-src 'self' https:\/\/gmbtsucasfwqskfvugzo\.supabase\.co https:\/\/cdn\.portone\.io/.test(vj) && /\*\.iamport\.co/.test(vj) && !/Report-Only/.test(vj),
+  ok(/connect-src 'self'( https:\/\/maps\.googleapis\.com https:\/\/places\.googleapis\.com)? https:\/\/gmbtsucasfwqskfvugzo\.supabase\.co https:\/\/cdn\.portone\.io/.test(vj) && /\*\.iamport\.co/.test(vj) && !/Report-Only/.test(vj),
      '통신 출처 제한은 강제 - 포트원 SDK 가 쓰는 주소(iamport·cdn)는 열어 둔다');
   ok(/rt: 'c'/.test(js) && /what:'rt-set'/.test(js) && /what:'rt-refresh'/.test(js) && /what:'rt-clear'/.test(js),
      '오래 가는 열쇠는 저장소에 두지 않고 서버 쿠키로 - 갱신·로그아웃도 쿠키로');

@@ -71,6 +71,18 @@ globalThis.fetch = async (url, opt = {}) => {
   ok(o.code === 200 && o.body.again && o.body.id === 'old-1' && !넣은, '두 번 누르면 새로 만들지 않고 있던 것으로 잇는다'); }
 
 /* ── 사진 (0040) ── */
+/* 구글 지도 (2026-11-14) - 역 · 단지 · 반경으로 고른 곳 · 손님에게는 대략 위치 */
+{ const { 고른곳들, 곳안 } = await import('../api/_match.js'); const G = await import('../api/_geo.js');
+  const 곳 = 고른곳들([{ t: 'station', name: '미사역<b>', lat: 37.5605, lng: 127.1932, area: '하남시' }, { t: 'radius', lat: 37.5, lng: 127.0, r: 99999 }, { t: 'x', lat: 37, lng: 127 }, { t: 'complex', lat: 10, lng: 10 }]);
+  ok(곳.length === 2 && 곳[0].r === 1000 && 곳[0].name === '미사역b' && 곳[1].r === 3000, '고른 곳 - 역은 1km 기본 · 반경은 3km 까지 · 모르는 종류 · 한국 밖 좌표는 버린다 · 이름의 꺾쇠는 지운다');
+  ok(Math.abs(G.거리({ lat: 37.5605, lng: 127.1932 }, { lat: 37.5605, lng: 127.2045 }) - 1000) < 30, '거리 - 경도 0.0113도 ≈ 1km(서울 위도)');
+  const L = { kind: 'home', deal: '전세', dong: '풍산동', dep: 1, area: 50, move_in: '즉시', lat: 37.5640, lng: 127.1990 };
+  const d = { kind: 'home', deal: '전세', dongs: ['하남시'], dep: 2, places: [{ t: 'station', name: '미사역', lat: 37.5605, lng: 127.1932, area: '하남시' }] };
+  ok(곳안(고른곳들(d.places), L) && 일치율(d, L).지역 === 30, '역 1km 안의 매물은 동이 달라도 지역 만점');
+  ok(일치율({ ...d, places: [{ ...d.places[0], t: 'complex' }] }, L).지역 === 0, '단지(300m) 밖이면 지역 0점 - 시 이름(하남시)만으로 만점을 주지 않는다');
+  ok(일치율({ ...d, places: [] , dongs: [] }, L).지역 === 30 && 일치율({ ...d, dongs: [] }, { ...L, lat: 0, lng: 0 }).지역 === 0, '고른 곳이 없으면 어디든 만점 · 좌표 없는 매물은 고른 곳으로는 못 맞춘다');
+  const 막 = await G.좌표('경기도 하남시 미사강변대로 1');
+  ok(막 === null && !G.지도켜짐(), '서버 열쇠(GOOGLE_MAPS_SERVER_KEY)가 없으면 좌표를 찾지 않는다'); }
 { const { 사진들, listingPicAdd } = await import('../api/_pics.js');
   const 길 = 'listing/11111111-2222-4333-8444-555555555555/aaaaaaaa-0000-4000-8000-000000000001/abc123def456.jpg';
   ok(사진들([길, { p: 길 }, '../etc/passwd', 'listing/x/y/z.jpg', 'http://evil/a.jpg']).length === 2, '사진 경로는 우리 저장소 모양만 받는다');

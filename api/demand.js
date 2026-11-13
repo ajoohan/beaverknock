@@ -16,6 +16,7 @@ import { readIdv } from './_idv.js';
 import { userFrom, sbHeaders, sbUrl } from './_auth.js';
 import { scopeHits, scopeOf, anyFits } from './feed.js';
 import { dbWhy } from './_dberr.js';
+import { 고른곳들 } from './_match.js';
 
 const TABLE = 'bk_demand';
 
@@ -192,7 +193,11 @@ export default async function handler(req, res) {
   /* ── 값 검사 — 화면을 우회해 들어오는 요청도 여기서 걸린다 ── */
   const kind = KINDS.includes(b.kind) ? b.kind : null;
   /* 희망 지역은 5곳까지 (2026-11-11 파트너 기획) - 넓게 걸수록 맞지 않는 중개사에게까지 간다 */
-  const dongs = arr(b.dongs, 5);
+  const 고른동 = arr(b.dongs, 5);
+  /* 동 말고 고른 곳(역 · 단지 · 반경 - 2026-11-14 구글 지도). 동과 합쳐 5곳까지.
+     중개사에게 가는 길(활동 지역 대조)은 지금처럼 dongs 로 - 고른 곳이 든 시 · 구를 dongs 에 함께 적는다 */
+  const places = 고른곳들(b.places).slice(0, Math.max(0, 5 - 고른동.length));
+  const dongs = [...고른동, ...[...new Set(places.map(p => p.area).filter(Boolean))].filter(a => !고른동.includes(a))].slice(0, 10);
 
   /* 본인확인이 붙어 있으면 화면에서 적은 이름을 쓰지 않는다.
      처리방침에 '본인확인된 이름을 전달한다' 고 적어둔 이상, 손으로 고친 이름이
@@ -208,6 +213,7 @@ export default async function handler(req, res) {
   const bad =
     !kind ? '유형이 없습니다' :
     !dongs.length ? '지역을 하나 이상 골라주세요' :
+    places.some(p => !p.area) ? '고른 곳의 지역(시 · 구)을 알 수 없습니다 - 다시 골라 주세요' :
     !name ? '이름이 없습니다' :
     !/^01[016789][0-9]{7,8}$/.test(phone) ? '연락처 형식이 맞지 않습니다' :
     (b.agree_third_party !== true || b.agree_multi_alert !== true) ? '필수 동의가 없습니다' :
@@ -274,6 +280,7 @@ export default async function handler(req, res) {
 
   const row = {
     kind, who: kind, dongs,
+    ...(places.length ? { places } : {}),
     user_id: owner ? owner.id : null,
     deal: NONHOME(kind) ? null : str(b.deal, 20),
     dep: int(b.dep), rent: int(b.rent), fee_included: true,

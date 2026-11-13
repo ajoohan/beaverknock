@@ -231,12 +231,12 @@ const 조건번호 = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
 {
   const fs = await import('node:fs');
   const 목록서버 = fs.readFileSync(new URL(길.api('feed.js')), 'utf8');
-  ok((목록서버.match(/slots,slots_left,edited_at'/g) || []).length === 2, '중개사 목록 두 곳이 고친 시각(edited_at)을 함께 읽는다');
+  ok((목록서버.match(/slots,slots_left,edited_at,places'/g) || []).length === 2, '중개사 목록 두 곳이 고친 시각(edited_at)을 함께 읽는다');
 
   /* 물러서기를 실제로 돌린다 (2026-10-15 리뷰 - 전에는 코드 글자만 봤다).
      목록이 쓰는 select 를 소스에서 그대로 떼어 와서, 없는 칸을 DB 가 거절하는 흉내를 낸다. */
   const { getDemands } = await import(길.api('feed.js'));
-  const 원select = eval(목록서버.match(/select: ('id,created_at,kind[\s\S]*?edited_at'),/)[1]);
+  const 원select = eval(목록서버.match(/select: ('id,created_at,kind[\s\S]*?edited_at,places'),/)[1]);
   const 돌려 = async 없는칸 => {
     const 물음 = [];
     globalThis.fetch = async url => {

@@ -19,6 +19,7 @@ import { 직원이력, 이력한줄, 보조원잠금, 자격증크기, 자격증
 import { 직원들, 직원고침, 직원사무소, 직원들어옴, 직원역할, 다른사무소직원 } from './_staff.js';
 import { notify, mailWithFile } from './_notify.js';
 import { roomAgent, invitePeek } from './_room.js';
+import { 지도켜짐, 물건좌표채우기, 내물건좌표 } from './_geo.js';
 
 const KIND_KO = { home: '주거', shop: '상가', office: '오피스', storage: '창고' };
 
@@ -538,6 +539,11 @@ export default async function handler(req, res) {
     if (overLimit('invite:' + String((req.headers && (req.headers['x-forwarded-for'] || '')) || '').split(',')[0].trim(), 60, 600e3)) return res.status(429).json({ error: '잠시 뒤 다시 열어 주세요' });
     return invitePeek(res, req.query.invite);
   }
+  /* 구글 지도 화면 열쇠 (2026-11-14) - 사이트 주소로 묶인 공개 열쇠라 로그인 없이 준다. 없으면 빈 값(화면이 '준비 중') */
+  if (req.method === 'GET' && req.query && req.query.maps) {
+    res.setHeader('Cache-Control', 'public, max-age=300');
+    return res.status(200).json({ ok: true, key: String(process.env.GOOGLE_MAPS_KEY || '').trim(), geo: 지도켜짐() });
+  }
   /* 일정 달력 구독(휴대폰 · 구글 달력이 몇 시간마다 읽는다) - 사무소마다 서명한 주소로만. api/_contract.js icsFeed */
   if (req.method === 'GET' && req.query && req.query.ics) {
     if (!process.env.BK_URL || !process.env.BK_SECRET_KEY) return res.status(503).json({ error: '서버에 환경변수가 설정되지 않았습니다' });
@@ -677,6 +683,8 @@ export default async function handler(req, res) {
   if (b.what === 'listings')    return readListings(req, res, chk.agent);
   if (b.what === 'listing-add') return addListing(req, res, chk.agent, user, b);
   if (b.what === 'listing-del') return delListing(req, res, chk.agent, b);
+  /* 매물지도 - 좌표 없는 내 물건을 15개씩 채운다(지도를 열 때) */
+  if (b.what === 'listing-geo') { const z = await 내물건좌표(chk.agent.id); return res.status(z.ok ? 200 : z.need ? 503 : 502).json(z.ok ? z : { error: z.need ? '아직 준비 중입니다 (0042 마이그레이션 필요)' : '좌표를 찾지 못했습니다', need: z.need }); }
   if (b.what === 'listing-set')   return setListing(res, chk.agent, b);
   if (b.what === 'listing-state') return setListingState(res, chk.agent, b);
   if (b.what === 'listing-pics')    return listingPics(res, chk.agent, b);
@@ -713,7 +721,7 @@ export default async function handler(req, res) {
       select: 'id,created_at,kind,dongs,deal,dep,rent,biz,area_min,area_max,htype,rooms,musts,must_free,'
             + 'floor_avoid,household,elevator,loan_plan,open_when,shop_floor_free,facilities_free,'
             + 'area_bands,bath_want,floor_bands,dir_want,age_band,'
-            + 'key_ok,sign_need,park_need,shop_note,spec,memo,slots,slots_left,edited_at',
+            + 'key_ok,sign_need,park_need,shop_note,spec,memo,slots,slots_left,edited_at,places',
       order: 'created_at.desc', limit: '200',
     });
     q.set('kind', `in.(${kinds.join(',')})`);
@@ -772,7 +780,8 @@ export async function getDemands(q) {
   /* 고친 시각(0030)이 아직 없으면 그 칸만 빼고 다시 묻는다 - '조건 고침' 표시만 안 뜬다 */
   const sel = String(q.get('select') || '');
   let 새sel = sel;
-  if (/edited_at/.test(t)) 새sel = sel.replace(',edited_at', '');
+  if (/places/.test(t)) 새sel = sel.replace(',places', '');   /* 0042 전 - 고른 곳(역 · 단지 · 반경)만 안 실린다 */
+  else if (/edited_at/.test(t)) 새sel = sel.replace(',edited_at', '');
   else if (/area_bands|bath_want|floor_bands|dir_want|age_band/.test(t)) 새sel = sel.replace(BAND_COLS, '');
   if (새sel === sel) return r;
   const q2 = new URLSearchParams(q);
@@ -814,7 +823,7 @@ const 가장오래된 = rows => rows.reduce((m, d) => (d.created_at && (!m || d.
    이유가 안 생긴다 - 있다는 것까지만 보여준다.
    ※ 가리는 일은 반드시 서버가 한다. 화면에서 감추면 감춘 것이 아니다. */
 const SUMMARY_COLS = ['id','created_at','kind','dongs','deal','dep','rent',
-                      'htype','rooms','slots_left','open_when','area_bands','edited_at'];
+                      'htype','rooms','slots_left','open_when','area_bands','edited_at','places'];
 function maskDemand(d) {
   const o = { locked: true };
   for (const k of SUMMARY_COLS) if (d[k] !== undefined) o[k] = d[k];
@@ -915,7 +924,7 @@ async function readFitting(res, agent, pending) {
       select: 'id,created_at,kind,dongs,deal,dep,rent,biz,area_min,area_max,htype,rooms,musts,must_free,'
             + 'floor_avoid,household,elevator,loan_plan,open_when,shop_floor_free,facilities_free,'
             + 'area_bands,bath_want,floor_bands,dir_want,age_band,'
-            + 'key_ok,sign_need,park_need,shop_note,spec,memo,slots,slots_left,edited_at',
+            + 'key_ok,sign_need,park_need,shop_note,spec,memo,slots,slots_left,edited_at,places',
       order: 'created_at.desc', limit: '200',
     });
     q.set('kind', `in.(${kinds.join(',')})`);
@@ -1129,7 +1138,10 @@ async function setListing(res, agent, b) {
       if (칸없음(t)) return res.status(503).json({ error: '아직 준비 중입니다 (0039 마이그레이션 필요)', need: '0039' });
       const w = dbWhy(t); console.error('[feed:listing-set]', r.status, w.code || '-', t.slice(0, 200));
       return res.status(502).json({ error: w.msg || '물건을 저장하지 못했습니다' }); }
-    return res.status(200).json({ ok: true, row: (await r.json())[0] || null });
+    const 뒤행 = (await r.json())[0] || null;
+    /* 주소를 바꿨으면 좌표도 다시(2026-11-14 매물지도) */
+    if (뒤행 && ('road' in p || 'dong' in p) && 지도켜짐()) { const v = await 물건좌표채우기(뒤행).catch(() => null); if (v) Object.assign(뒤행, v); }
+    return res.status(200).json({ ok: true, row: 뒤행 });
   } catch (e) { return res.status(502).json({ error: 'DB에 닿지 못했습니다' }); }
 }
 /* 목록(active) · 거래완료(done) · 보관함(arch) · 휴지통(trash, 30일). 목록 밖으로 나가면 노출도 함께 끝난다 */
@@ -1191,6 +1203,9 @@ async function addListing(req, res, agent, user, b) {
        여태 칸도 없고 묻지도 않아서 그 조건은 한 번도 판단된 적이 없다(0026). */
     approved: txt(L.approved, 40),
     move_in: txt(L.moveIn, 40), photos: int0(L.photos) || 0,
+    /* 도로명 주소 (2026-11-14) - 화면이 주소 검색으로 고른 값. 전에는 싣지 않아 지도에 놓을 수 없었다 */
+    ...(txt(L.road, 160) ? { road: txt(L.road, 160) } : {}),
+    ...(/^\d{10}$/.test(String(L.admCd || '').replace(/\D/g, '')) ? { adm_cd: String(L.admCd).replace(/\D/g, '') } : {}),
   };
 
   try {
@@ -1244,8 +1259,11 @@ async function addListing(req, res, agent, user, b) {
       console.error('[feed:listing-add]', r.status, w.code || '-', t.slice(0, 200));
       return res.status(502).json({ error: w.msg || '물건을 저장하지 못했습니다', code: w.code });
     }
+    const 새행 = (await r.json())[0] || null;
+    /* 좌표 - 매물지도에 놓는다(열쇠 · 0042 가 없으면 넘어간다). 저장은 이미 끝났으니 실패해도 그대로 */
+    if (새행 && 지도켜짐()) { const v = await 물건좌표채우기(새행).catch(() => null); if (v) Object.assign(새행, v); }
     return res.status(201).json({
-      ok: true, row: (await r.json())[0] || null,
+      ok: true, row: 새행,
       /* 화면이 이것을 보고 '다 저장되지 않았다' 고 말한다 */
       degraded: dropped ? { dropped } : null,
     });

@@ -164,7 +164,7 @@ ok(길.html().includes(".hp-t{margin:0;font-size:26px") && 길.html().includes("
   const feed2 = fs.readFileSync(path.resolve(길.저장소, 'api/feed.js'), 'utf8'), pr2 = fs.readFileSync(path.resolve(길.저장소, 'api/proposal.js'), 'utf8'), dm = fs.readFileSync(path.resolve(길.저장소, 'api/demand.js'), 'utf8');
   ok(/settings\.lmemo/.test(feed2) && !/lmemo/.test(pr2) && /cpref:  connected \? /.test(feed2) && /contact_pref\|42703/.test(pr2) && /arr\(b\.dongs, 5\)/.test(dm),
      '서버 - 메모는 사무소 설정에만(제안 쪽 코드에 없음) · 연락 방법은 연결된 건에만 · 칸이 없어도 연결은 된다 · 새 조건 지역 5곳'); }
-ok(js.includes('function 적합도(st)') && js.includes('내 물건과 맞는 새 손님') && js.includes("d.dongs.length >= 5") && js.includes("MOVE_FLEX = ['딱 그때', '앞뒤 2주', '한두 달 여유']")
+ok(js.includes('function 적합도(st)') && js.includes('내 물건과 맞는 새 손님') && js.includes("d.dongs.length + (d.places || []).length >= 5") && js.includes("MOVE_FLEX = ['딱 그때', '앞뒤 2주', '한두 달 여유']")
    && js.includes("data-act=\"cn-how\"") && js.includes('function gm막대(r)') && js.includes('LM_비번'), '화면 - 적합도 · 새 손님 알림 · 지역 5곳 · 날짜 여유 · 연락 방법 · 내 계약 단계 · 비밀번호 거르기');
 /* 8. 화면 고르는 갈래가 끊기지 않는다 (2026-11-11 - 사이에 끼운 한 줄 때문에 #/help/… 가 첫 화면으로 덮였다) */
 { const 처음 = js.indexOf("  if(h.startsWith('#/proposal/')) html = V['#/proposal'](parts[2]);"), 끝 = js.indexOf("  else html = (V[h] || V['#/'])();");

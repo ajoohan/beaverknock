@@ -3532,6 +3532,39 @@ body.mo .dz-more::after{content:"";position:absolute;left:-6px;right:-6px;top:-5
 .dz-rw{font-size:13.5px;color:var(--n500);white-space:nowrap}
 /* 계약현황 · 매칭된 물건 카드 (2026-11-13) */
 .dz-cst-n{display:flex;gap:6px;flex-wrap:wrap}
+/* 구글 지도 (2026-11-14) */
+.gm-lay{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:14px;align-items:start}
+.gm-box{position:relative;height:min(72vh,680px);min-height:420px;padding:0;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.gm-map{position:absolute;inset:0}
+.gm-msg{margin:0;padding:24px;font-size:14.5px;color:var(--n500);text-align:center}
+.gm-side{padding:14px;display:flex;flex-direction:column;gap:10px;max-height:min(72vh,680px);overflow:auto}
+.gm-sh{font-size:14.5px;font-weight:800}
+.gm-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+.gm-it{display:flex;gap:10px;align-items:flex-start;width:100%;text-align:left;background:none;border:0;padding:10px 8px;border-radius:8px;cursor:pointer;font:inherit;color:inherit}
+.gm-it:hover{background:var(--n50)}
+.gm-it span{display:flex;flex-direction:column;gap:2px;min-width:0}
+.gm-it b{font-size:14.5px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gm-it small{font-size:13px;color:var(--n500);line-height:1.45}
+.gm-dot{flex:none;width:11px;height:11px;margin-top:5px;border-radius:50%;background:#8A8FA0;box-shadow:0 0 0 2px #fff,0 0 0 3px var(--hair)}
+.gm-dot.on{background:var(--ind)}
+.gm-dot.off{background:transparent;box-shadow:0 0 0 1.5px var(--n300) inset}
+.gm-iw{display:flex;flex-direction:column;gap:3px;font-family:inherit;font-size:13.5px;color:var(--n700);min-width:180px}
+.gm-iw b{font-size:14.5px;color:var(--n900)}
+.gm-iw .gm-iwn{font-size:12.5px;color:var(--n500)}
+.gm-iw .btn{margin-top:6px;align-self:flex-start}
+body.mo .gm-lay{grid-template-columns:minmax(0,1fr)}
+body.mo .gm-box{height:56vh;min-height:320px}
+body.mo .gm-side{max-height:none}
+.gp-box{display:flex;flex-direction:column;gap:8px;margin-top:14px;padding:14px 16px;background:var(--n50);border-radius:var(--r-md)}
+.gp-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.gp-list li{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#fff;border:1px solid var(--hair);border-radius:10px;padding:8px 12px}
+.gp-t{display:flex;flex-direction:column;min-width:0;flex:1 1 160px}
+.gp-t b{font-size:14.5px}
+.gp-t small{font-size:13px;color:var(--n500)}
+.gp-r{gap:4px}
+.gp-r .chip{padding:5px 10px;font-size:13px}
+.gp-x{font-size:13.5px;color:var(--n500)}
+.gp-ac gmp-place-autocomplete{width:100%}
 .dz-mtc .dz-cs{margin-left:0}
 .dz-rw b{font-weight:700;color:var(--n900)}
 .dz-rw b.soon{color:var(--ind)}
@@ -4376,7 +4409,7 @@ const words = k => KIND_WORDS[k] || KIND_WORDS.shop;
 const BLD_TYPES = ['지식산업센터','오피스빌딩','상가 내 사무실','단독/주택 개조','상관없음'];
 const DOCKS     = ['도크 필요','1층 접안','지게차 진입','상관없음'];
 const TEMPS     = ['상온','냉장','냉동','상관없음'];
-const blankDraft = () => ({who:'',kind:'',deal:'',dongs:[],dep:'',rent:'',htype:[],rooms:'',musts:[],
+const blankDraft = () => ({who:'',kind:'',deal:'',dongs:[],places:[],dep:'',rent:'',htype:[],rooms:'',musts:[],
   hArea:[], hBath:'', hFloor:[], hDir:[], hAge:'',
   openWhen:'', moveWhen:'', moveMonth:'', movePart:'',
   dongFree:'',mustFree:'',elev:'',
@@ -4797,11 +4830,12 @@ function tabbar(active, role){
   const items = role==='p'
     /* 맨 앞은 대시보드(홈). 다섯 칸을 넘지 않게 중개사는 '내 물건' 을 홈 카드로 보내고, 소유자는 계약서가 없다 */
     ? [['#/partner/home','홈','h'],['#/partner/demands',ownerSide()?'맞는 손님':'수요','d'],...(ownerSide()?[['#/partner/listings','내 물건','l']]:[]),['#/partner/proposals','내 제안','p'],...(계약막힘()?[]:[['#/partner/contracts','계약서','ct']]),...(직원()?[]:[['#/partner/settings','설정','s']])]
-    : [['#/','홈','home'],['#/my','대시보드','my'],['#/matched','맞춤매물','match'],['#/inbox','1:1 제안','inbox']];
+    : [['#/','홈','home'],['#/my','대시보드','my'],['#/map','매물지도','map'],['#/matched','맞춤매물','match'],['#/inbox','1:1 제안','inbox']];
   const ico = {
     home:'M4 11 L12 4 L20 11 M6.5 9.5 V19 h11 V9.5',
     my:'M5 5 h14 M5 12 h14 M5 19 h9',
     inbox:'M3 12 h5 l2 3 h4 l2 -3 h5 M3 12 V7 a2 2 0 0 1 2 -2 h14 a2 2 0 0 1 2 2 v5 M3 12 v5 a2 2 0 0 0 2 2 h14 a2 2 0 0 0 2 -2 v-5',
+    map:'M12 21 s-7 -6.2 -7 -11.5 a7 7 0 0 1 14 0 C19 14.8 12 21 12 21 Z M12 12.5 a2.5 2.5 0 1 0 0 -5 a2.5 2.5 0 0 0 0 5',
     match:'M12 21 a9 9 0 1 0 0 -18 a9 9 0 0 0 0 18 M12 16.5 a4.5 4.5 0 1 0 0 -9 a4.5 4.5 0 0 0 0 9 M12 12 h.01',
     ct:'M6 3 h9 l4 4 v14 H6 Z M9 11 h7 M9 15 h7 M9 19 h4',
     h:'M4 4 h7 v7 H4 Z M13 4 h7 v7 h-7 Z M4 13 h7 v7 H4 Z M13 13 h7 v7 h-7 Z',
@@ -4822,6 +4856,7 @@ function navUser(active){ return `
   <div class="items mid">
     ${/* 손님 메뉴 (2026-11-13 파트너 기획 E4 '대시보드 · 매물지도 · 맞춤매물 · 1:1 제안 · 고객센터 · 도움말') - 매물지도는 지도 키를 받으면 더한다 */''}
     <a data-go="#/my" class="${active==='my'?'on':''}">대시보드</a>
+    <a data-go="#/map" class="${active==='map'?'on':''}">매물지도</a>
     <a data-go="#/matched" class="${active==='match'?'on':''}">맞춤매물</a>
     <a data-go="#/inbox" class="${active==='inbox'?'on':''}">1:1 제안${새제안표(새제안수())}</a>
     ${isMo()?'':`<a data-go="#/faq" class="${active==='faq'?'on':''}">고객센터</a><a data-go="#/help" class="${active==='help'?'on':''}">도움말</a>`}
@@ -5178,6 +5213,7 @@ const MP_STATUS = { read:'viewed', accepted:'selected', reported:'rejected' };
 function listingFromRow(x){
   return {
     id:x.id, kind:x.kind, name:x.name, dong:x.dong||'',
+    road:x.road||'', lat:+x.lat||0, lng:+x.lng||0, geoAt:x.geo_at||'',   /* 매물지도 (2026-11-14) */
     deal:x.deal||undefined, biz:x.biz||undefined,
     dep:x.dep||0, rent:x.rent||0, fee:x.fee||0,
     feeBasis:x.fee_basis||'', feeType:x.fee_type||'', feeItems:x.fee_items||'',
@@ -5336,7 +5372,7 @@ function demandFromRow(d){
   return {
     id:d.id, kind:d.kind, who:d.kind,
     deal: shop ? (d.biz || d.kind_ko) : (d.deal || '월세'),
-    region:(d.dongs||[]).join(' · ')||'서울·경기',
+    region:[...(d.dongs||[]), ...(Array.isArray(d.places) ? d.places.map(x => `${x.name} ${x.r >= 1000 ? +(x.r / 1000).toFixed(1) + 'km' : x.r + 'm'}`) : [])].join(' · ')||'서울·경기',
     slotsLeft:d.slots_left, at:agoText(d.created_at), createdAt:d.created_at || null, pct:0,
     urgent:(d.slots_left||0)<=1, lines:L.filter(Boolean), memo:d.memo||'',
     mine:!!d.mine, locked:!!d.locked,
@@ -6146,6 +6182,7 @@ V['#/register'] = () => {
             placeholder="예) 미사, 신장, 강남 - 적으면 목록이 뜹니다" aria-label="${w.area} 검색">
           <div class="aclist" data-aclist></div></div>
         ${regionPicker(d, true)}
+        ${고른곳HTML(d)}
       </div>
       <div class="grid2 mo1">
         <div><span class="lab">희망 면적 <span class="req">*</span> <span class="opt">전용면적 기준</span>
@@ -6215,6 +6252,7 @@ ${gDeal ? `<div data-req="dongs"><span class="lab">찾으시는 동네 <span cla
             placeholder="예) 미사, 덕풍, 강남 - 적으면 목록이 뜹니다" aria-label="동네 검색">
           <div class="aclist" data-aclist></div></div>
         ${regionPicker(d, false)}
+        ${고른곳HTML(d)}
       </div>`:''}
 
       <!-- 예산: 동네를 고른 뒤에 연다 -->
@@ -7096,8 +7134,8 @@ function regMiss(d){
   if(shop && !String(d.biz||'').trim()) return {k:'biz',     m:`${w.what}${josa(w.what,'을','를')} 적어주세요`};
   if(shop && !+d.areaMin)               return {k: d.areaUnit === '㎡' ? 'areaMinM2' : 'areaMin', m:'희망 면적(전용)을 적어주세요'};
   if(!shop && !d.deal)                  return {k:'deal',    m:'거래 방식을 선택해 주세요'};
-  if((d.dongs||[]).length > 5)          return {k:'dongs',   m:'지역은 5곳까지 고를 수 있습니다 - 하나를 빼 주세요'};   /* 2026-11-11 - 서버가 말없이 자르지 않게 */
-  if(!(d.dongs||[]).length)             return {k:'dongs',   m: shop?`${w.area}${josa(w.area,'을','를')} 하나 이상 선택해 주세요`:'동네를 하나 이상 선택해 주세요'};
+  if((d.dongs||[]).length + (d.places||[]).length > 5) return {k:'dongs',   m:'지역은 5곳까지 고를 수 있습니다 - 하나를 빼 주세요'};   /* 2026-11-11 - 서버가 말없이 자르지 않게 */
+  if(!(d.dongs||[]).length && !(d.places||[]).length) return {k:'dongs',   m: shop?`${w.area}${josa(w.area,'을','를')} 하나 이상 선택해 주세요`:'동네를 하나 이상 선택해 주세요'};
   if(!+d.dep)                           return {k:'dep',     m:'보증금을 입력해 주세요'};
   if(shop && !+d.rent)                  return {k:'rent',    m:'월세를 입력해 주세요'};
   if(!shop && !(d.htype||[]).length)    return {k:'htype',   m:'주택 유형을 선택해 주세요'};
@@ -9687,6 +9725,176 @@ const specOf = L => (L.kind==='home'
      L.dir && `${L.dir}${L.dirBase?`(${L.dirBase})`:''}`]
   ).filter(Boolean).join(' · ');
 
+/* ══════════ 구글 지도 (2026-11-14 대표님 '구글지도로 할께') ══════════
+   매물지도(#/partner/map · #/map) · 손님 조건의 '역 · 단지 · 장소로 고르기'.
+   화면 열쇠는 서버가 준다(/api/feed?maps=1 - GOOGLE_MAPS_KEY, 사이트 주소로 묶인 공개 열쇠). 없으면 '준비 중' 으로 남는다.
+   지도는 한 번 만든 것을 계속 쓴다 - render() 가 #app 을 통째로 다시 그려도, 그린 뒤 [data-gmap] 자리로 옮겨 붙인다(지도붙이기).
+   좌표는 서버가 도로명 주소로 찾아 둔다(api/_geo.js). 손님에게는 대략 위치(약 100m)만 간다 */
+const GM = { st:'', el:null, map:null, marks:[], circles:[], info:null, last:'', ac:null, acBusy:false };
+function 구글지도(){
+  if(GM.st) return;
+  GM.st = 'loading';
+  fetch('/api/feed?maps=1').then(r => r.json()).then(j => {
+    if(!j.key) throw new Error('nokey');
+    return new Promise((ok, no) => {
+      window.gm_authFailure = () => { GM.st = 'bad'; render(); };   /* 열쇠가 막혔거나 이 주소에서 못 쓰는 열쇠 */
+      window.__bkGm = () => ok();
+      const s = document.createElement('script');
+      s.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(j.key)}&v=weekly&language=ko&region=KR&loading=async&callback=__bkGm`;
+      s.async = true; s.onerror = () => no(new Error('load')); document.head.appendChild(s);
+    });
+  }).then(() => { if(GM.st !== 'bad') GM.st = 'ok'; render(); })
+    .catch(e => { GM.st = e && e.message === 'nokey' ? 'nokey' : 'err'; render(); });
+}
+const 지도글 = () => GM.st === 'nokey' ? '지도를 준비 중입니다 - 곧 열립니다.' : GM.st === 'bad' ? '지도를 열지 못했습니다 - 운영사에 알려 주세요(열쇠 설정).'
+  : GM.st === 'err' ? '네트워크 문제로 지도를 불러오지 못했습니다. 새로 고침해 주세요.' : '지도를 불러오는 중입니다…';
+const 지도표시 = {};   /* [data-gmap] 이름 → () => { points:[{id,lat,lng,t,html,on}], circles:[{lat,lng,r}] } */
+function 지도붙이기(){
+  if(GM.st !== 'ok' || typeof google === 'undefined' || !google.maps) return;
+  const 자리 = document.querySelector('#app [data-gmap]');
+  if(자리){
+    if(!GM.el){
+      GM.el = document.createElement('div'); GM.el.className = 'gm-map';
+      GM.map = new google.maps.Map(GM.el, { center: { lat: 37.545, lng: 127.2 }, zoom: 13, mapTypeControl: false, streetViewControl: false, fullscreenControl: false, clickableIcons: false });
+      GM.info = new google.maps.InfoWindow();
+    }
+    if(GM.el.parentNode !== 자리){ 자리.textContent = ''; 자리.appendChild(GM.el); }
+    const 표 = (지도표시[자리.dataset.gmap] || (() => ({ points: [], circles: [] })))();
+    const 열쇠 = 자리.dataset.gmap + JSON.stringify([표.points.map(x => [x.id, x.lat, x.lng, x.on]), 표.circles]);
+    if(GM.last !== 열쇠){ GM.last = 열쇠; 지도그리기(표); }
+  }
+  const 칸 = document.querySelector('#app [data-gplace]');
+  if(칸) 자동완성붙이기(칸);
+}
+function 지도그리기(표){
+  GM.marks.forEach(m => m.setMap(null)); GM.circles.forEach(c => c.setMap(null)); GM.marks = []; GM.circles = []; GM.byId = {};
+  const 틀 = new google.maps.LatLngBounds();
+  for(const x of 표.points){
+    const m = new google.maps.Marker({ position: { lat: x.lat, lng: x.lng }, map: GM.map, title: x.t,
+      icon: { path: google.maps.SymbolPath.CIRCLE, scale: 9, fillColor: x.on ? '#5B3FD6' : '#8A8FA0', fillOpacity: 1, strokeColor: '#ffffff', strokeWeight: 2 } });
+    m.addListener('click', () => { GM.info.setContent(x.html); GM.info.open({ map: GM.map, anchor: m }); });
+    GM.marks.push(m); GM.byId[x.id] = m; 틀.extend(m.getPosition());
+  }
+  for(const c of 표.circles){
+    GM.circles.push(new google.maps.Circle({ map: GM.map, center: { lat: c.lat, lng: c.lng }, radius: c.r, strokeColor: '#5B3FD6', strokeOpacity: .6, strokeWeight: 1.5, fillColor: '#5B3FD6', fillOpacity: .06 }));
+    틀.extend({ lat: c.lat + c.r / 111000, lng: c.lng }); 틀.extend({ lat: c.lat - c.r / 111000, lng: c.lng });
+  }
+  if(표.points.length + 표.circles.length > 1) GM.map.fitBounds(틀, 48);
+  else if(표.points.length + 표.circles.length === 1){ GM.map.setCenter(틀.getCenter()); GM.map.setZoom(15); }
+}
+function 지도가기(id){ const m = GM.byId && GM.byId[id]; if(!m) return; GM.map.panTo(m.getPosition()); if(GM.map.getZoom() < 15) GM.map.setZoom(15); google.maps.event.trigger(m, 'click'); }
+const 지도값 = x => `${x.deal === '매매' ? '매매 ' : '보증금 '}${won(x.dep)}${+x.rent ? ` / 월 ${won(x.rent)}` : ''}`;
+
+/* 파트너 매물지도 - 우리 사무소 매물장부. 노출 중은 보라, 장부만은 회색 */
+function 매물좌표채우기(){
+  const 없음 = (S.listings || []).filter(l => !l.seed && !l.lat && !l.geoAt && l.status !== 'trash');
+  if(!없음.length || S.geoAsk || !세션있음()) return;
+  S.geoAsk = true;
+  ctPost({ what:'listing-geo' }).then(({ ok, j }) => { if(ok && j.done) loadListings(true); if(ok && j.left) setTimeout(() => { S.geoAsk = false; }, 3000); }).catch(() => {});
+}
+지도표시.partner = () => ({ circles: [], points: (S.listings || []).filter(l => !l.seed && l.lat && l.lng && l.status !== 'trash').map(l => ({ id: l.id, lat: l.lat, lng: l.lng, t: l.name, on: l.vis === 'open' && l.status === 'active',
+  html: `<div class="gm-iw"><b>${esc(l.name || '물건')}</b><span>${esc([l.dong, l.deal].filter(Boolean).join(' · '))}</span><span>${esc(지도값(l))}</span><span>${esc(물건상태(l)[0])}</span><button type="button" class="btn sec sm" data-go="#/partner/listing/${esc(l.id)}">물건 보기</button></div>` })) });
+V['#/partner/map'] = () => {
+  if(!GM.st) setTimeout(구글지도);
+  if(S.lsReady) setTimeout(매물좌표채우기);
+  const 목록 = (S.listings || []).filter(l => !l.seed && l.status !== 'trash'), 있음 = 목록.filter(l => l.lat && l.lng), 없음 = 목록.filter(l => !(l.lat && l.lng));
+  return `
+<div class="scr fade" style="background:var(--n50)">
+  ${navPartner('lm')}
+  <div class="pad adm-page" style="flex:1;padding-top:${isMo()?18:28}px;padding-bottom:24px;width:100%;display:flex;flex-direction:column;gap:14px">
+    <div><h1 class="t" style="font-size:${isMo()?21:25}px;margin-top:8px">매물지도</h1>
+      <p class="sub" style="font-size:14.5px">매물장부의 물건을 지도에서 봅니다 · <b style="color:var(--ind)">보라</b>는 손님에게 노출 중, 회색은 장부만입니다.</p></div>
+    <div class="gm-lay">
+      <div class="gm-box card" data-gmap="partner">${GM.st === 'ok' ? '' : `<p class="gm-msg">${지도글()}</p>`}</div>
+      <aside class="card gm-side"><b class="gm-sh">물건 ${목록.length}건${없음.length ? ` · 위치 없음 ${없음.length}` : ''}</b>
+        ${목록.length ? `<ul class="gm-list">${있음.concat(없음).map(l => `<li><button type="button" class="gm-it" ${l.lat ? `data-act="gm-go" data-v="${esc(l.id)}"` : `data-go="#/partner/listing/${esc(l.id)}"`}>
+          <i class="gm-dot${l.vis === 'open' && l.status === 'active' ? ' on' : ''}${l.lat ? '' : ' off'}" aria-hidden="true"></i>
+          <span><b>${esc(l.name || '물건')}</b><small>${esc(l.lat ? [l.dong, 지도값(l)].filter(Boolean).join(' · ') : !l.road ? '도로명 주소가 없습니다 - 물건 고치기에서 주소를 찾아 넣어 주세요' : l.geoAt ? '주소로 위치를 찾지 못했습니다' : '위치를 찾는 중입니다')}</small></span></button></li>`).join('')}</ul>`
+          : `<p class="sub" style="margin:0">아직 매물장부에 물건이 없습니다.</p><button type="button" class="btn pri sm" data-go="#/partner/listing/new" style="align-self:flex-start">물건 올리기</button>`}</aside>
+    </div>
+  </div>
+  ${tabbar('lm','p')}
+</div>`;
+};
+/* 손님 매물지도 - 맞춤매물(80점 이상)의 대략 위치. 같은 물건이 여러 조건에 걸리면 한 번만 */
+지도표시.cust = () => { const 본 = new Set(), points = [];
+  for(const g of MT.groups || []) for(const r of g.rows || []) if(r.lat && r.lng && !본.has(r.id)){ 본.add(r.id);
+    points.push({ id: r.id, lat: r.lat, lng: r.lng, t: r.name, on: true, html: `<div class="gm-iw"><b>${esc(r.name || '매물')}</b><span>${esc([r.dong, r.deal].filter(Boolean).join(' · '))}</span><span>${esc(지도값(r))}</span><span>일치율 ${esc(String((r.score || {}).점 || ''))}점 · ${esc(r.office || '')}</span><span class="gm-iwn">대략적인 위치입니다</span><button type="button" class="btn sec sm" data-go="#/matched">맞춤매물에서 보기</button></div>` }); }
+  return { points, circles: [] }; };
+V['#/map'] = () => {
+  if(!GM.st) setTimeout(구글지도);
+  const 줄 = []; const 본 = new Set();
+  for(const g of MT.groups || []) for(const r of g.rows || []) if(!본.has(r.id)){ 본.add(r.id); 줄.push(r); }
+  return `
+<div class="scr fade" style="background:var(--n50)">
+  ${navUser('map')}
+  <div class="pad" style="flex:1;padding-top:${isMo()?16:28}px;padding-bottom:24px;width:100%;max-width:1200px;margin:0 auto;display:flex;flex-direction:column;gap:12px">
+    <div><h1 class="t" style="font-size:${isMo()?21:25}px;margin-top:8px">매물지도</h1>
+      <p class="sub" style="font-size:14.5px">걸어 두신 조건에 80점 이상 맞는 매물입니다 · 위치는 대략(100m 안팎)으로 보입니다.</p></div>
+    ${!S.user ? `<div class="card pad"><p class="sub" style="margin:0 0 10px">조건을 걸어 두면 맞는 매물이 지도에 모입니다.</p><button type="button" class="btn pri sm" data-go="#/login">로그인</button></div>` : `
+    <div class="gm-lay">
+      <div class="gm-box card" data-gmap="cust">${GM.st === 'ok' ? '' : `<p class="gm-msg">${지도글()}</p>`}</div>
+      <aside class="card gm-side"><b class="gm-sh">맞춤매물 ${MT.loaded ? 줄.length + '건' : '…'}</b>
+        ${줄.length ? `<ul class="gm-list">${줄.map(r => `<li><button type="button" class="gm-it" ${r.lat ? `data-act="gm-go" data-v="${esc(r.id)}"` : 'data-go="#/matched"'}><i class="gm-dot on${r.lat ? '' : ' off'}" aria-hidden="true"></i>
+          <span><b>${esc(r.name || '매물')}</b><small>${esc([r.dong, 지도값(r), r.lat ? '' : '위치 준비 중'].filter(Boolean).join(' · '))}</small></span></button></li>`).join('')}</ul>`
+          : `<p class="sub" style="margin:0">${MT.loaded ? '아직 맞는 매물이 없습니다. 조건에 맞는 매물이 노출되면 여기에 모입니다.' : '불러오는 중입니다…'}</p>`}</aside>
+    </div>`}
+  </div>
+  ${tabbar('map','u')}
+</div>`;
+};
+
+/* 손님 조건 - 역 · 단지 · 장소로 고르기 (2026-11-14 · 파트너 기획 C1-2 '동 · 반경 · 역 · 단지'). 구글 장소 검색으로 고르고, 거리를 정한다.
+   동과 합쳐 5곳까지. 고른 곳이 든 시 · 구는 서버가 지역에 함께 적어 그 지역 중개사에게 간다(api/demand.js) */
+const GP_종류 = { station: '역 주변', complex: '단지', radius: '반경' }, GP_거리 = { station: [500, 1000, 2000], complex: [100, 300, 500], radius: [500, 1000, 2000, 3000] };
+const 거리글 = r => r >= 1000 ? `${+(r / 1000).toFixed(1)}km` : `${r}m`;
+function 고른곳HTML(d){
+  const 곳 = d.places || [];
+  if(!GM.st) setTimeout(구글지도);
+  if(['nokey', 'err', 'bad'].includes(GM.st) && !곳.length) return '';
+  return `<div class="gp-box"><span class="lab">역 · 단지 · 장소로 고르기 <span class="opt">고른 곳에서 정한 거리 안의 매물 · 동과 합쳐 5곳까지</span></span>
+    ${곳.length ? `<ul class="gp-list">${곳.map((p, i) => `<li><span class="gp-t"><b>${esc(p.name)}</b><small>${GP_종류[p.t] || ''} · ${esc(p.area || '')}</small></span>
+      <span class="chips gp-r">${(GP_거리[p.t] || GP_거리.radius).map(r => `<button type="button" class="chip${p.r === r ? ' on' : ''}" data-act="gp-r" data-v="${i}|${r}" aria-pressed="${p.r === r}">${거리글(r)}</button>`).join('')}</span>
+      <button type="button" class="tapx gp-x" data-act="gp-del" data-v="${i}" aria-label="${esc(p.name)} 빼기">빼기</button></li>`).join('')}</ul>` : ''}
+    ${GM.st === 'ok' ? `<div class="gp-ac" data-gplace></div><small class="sub">예) 미사역 · 미사강변 푸르지오 · 스타필드 하남</small>` : ['nokey', 'err', 'bad'].includes(GM.st) ? '' : `<p class="sub" style="margin:0">장소 검색을 불러오는 중입니다…</p>`}
+  </div>`;
+}
+async function 자동완성붙이기(칸){
+  if(!GM.ac){
+    if(GM.acBusy) return; GM.acBusy = true;
+    try{
+      const { PlaceAutocompleteElement } = await google.maps.importLibrary('places');
+      GM.ac = new PlaceAutocompleteElement({ includedRegionCodes: ['kr'], locationBias: { lat: 37.55, lng: 127.05 } });
+      GM.ac.setAttribute('placeholder', '역 · 아파트 단지 · 장소 이름');
+      let 앞 = '';
+      const 고름 = async pl => { if(!pl) return; try{ await pl.fetchFields({ fields: ['displayName', 'location', 'addressComponents', 'types'] }); }catch(_){ return toast('이 곳의 정보를 불러오지 못했습니다'); }
+        const 키 = String(pl.id || pl.displayName); if(키 === 앞) return; 앞 = 키; setTimeout(() => { 앞 = ''; }, 1500); 곳더하기(pl); };
+      GM.ac.addEventListener('gmp-select', e => 고름(e.placePrediction && e.placePrediction.toPlace()));
+      GM.ac.addEventListener('gmp-placeselect', e => 고름(e.place));
+    }catch(_){ GM.acBusy = false; return; }
+    GM.acBusy = false;
+  }
+  if(GM.ac.parentNode !== 칸) 칸.appendChild(GM.ac);
+}
+function 곳더하기(pl){
+  const d = S.draft; d.places = d.places || []; d.dongs = d.dongs || [];
+  const loc = pl.location; if(!loc) return toast('위치를 알 수 없는 곳입니다');
+  const lat = typeof loc.lat === 'function' ? loc.lat() : +loc.lat, lng = typeof loc.lng === 'function' ? loc.lng() : +loc.lng;
+  const 성분 = pl.addressComponents || [], 찾기 = t => ((성분.find(c => (c.types || []).includes(t)) || {}).longText || '');
+  const 시도 = 찾기('administrative_area_level_1');
+  if(!/서울|경기/.test(시도)) return toast('서울 · 경기 안의 곳만 고를 수 있습니다');
+  const area = /서울/.test(시도) ? 찾기('sublocality_level_1') : (찾기('locality') || 찾기('administrative_area_level_2'));
+  if(!area) return toast('이 곳의 시 · 구를 알 수 없습니다 - 다른 이름으로 찾아 주세요');
+  const 이름 = String(pl.displayName || '').trim().slice(0, 40);
+  if(d.places.some(x => x.name === 이름)) return toast('이미 고른 곳입니다');
+  if(d.dongs.length + d.places.length >= 5) return toast('지역은 5곳까지 고를 수 있습니다 - 하나를 빼고 골라 주세요');
+  const 종류 = pl.types || [];
+  const t = 종류.some(x => /subway_station|train_station|transit_station|light_rail_station/.test(x)) ? 'station'
+    : /아파트|단지|빌라|타운|마을|힐스|자이|래미안|푸르지오|편한세상|더샵|아이파크|캐슬|센트럴|파크|하이츠|맨션/.test(이름) ? 'complex' : 'radius';
+  d.places.push({ t, name: 이름, lat: +lat.toFixed(6), lng: +lng.toFixed(6), r: { station: 1000, complex: 300, radius: 1000 }[t], area });
+  render();
+}
+
 /* ── 매물장부 (2026-11-12 파트너 기획 C1) ── 우리 사무소 안에서만 보는 장부. 노출은 기준 열 가지를 다 채운 물건만 직접 켠다.
    서버 api/feed.js 노출기준 과 같은 목록. 소유자(집주인) 파트너에게는 예전 이름 '내 물건'으로 보인다 */
 const MG = { tab:'list', f:'', q:'', e:{}, busy:'' };
@@ -9718,7 +9926,7 @@ async function lgState(id, to, 말){
 function 물건폼(L){
   const 입주 = String(L.moveIn || '').split(' · ').map(s => s.trim()).filter(Boolean), 고름 = ['즉시', '협의'];
   const 날 = 입주.find(x => !고름.includes(x));
-  return { lkind: L.kind, lname: L.name, ldong: L.dong, ldeal: L.deal || '월세', ldep: L.dep ? String(L.dep) : '', lrent: L.rent ? String(L.rent) : '', lfee: L.fee ? String(L.fee) : '',
+  return { laddr: L.road || '', lkind: L.kind, lname: L.name, ldong: L.dong, ldeal: L.deal || '월세', ldep: L.dep ? String(L.dep) : '', lrent: L.rent ? String(L.rent) : '', lfee: L.fee ? String(L.fee) : '',
     lfeeBasis: L.feeBasis, lfeeType: L.feeType, lfeeItems: L.feeItems, larea: L.area ? String(L.area) : '', lareaSup: L.areaSup ? String(L.areaSup) : '',
     lrooms: L.rooms ? String(L.rooms) : '', lbaths: L.baths ? String(L.baths) : '', lband: L.band || '', lfloorNo: L.floorNo, lduplex: L.duplex ? '복층' : '단층',
     ldir: L.dir, ldirBase: L.dirBase, lmoveIn: [...입주.filter(x => 고름.includes(x)), ...(날 ? ['날짜 지정'] : [])], lmoveWhen: 날 || '',
@@ -9909,7 +10117,7 @@ function addrPick(i){
   }
   else if(ADDR.for === 'acc-addr'){ accAddrSave(full); }
   else if(ADDR.for === 'laddr'){
-    S.form.laddr = full;
+    S.form.laddr = full; S.form.ladmCd = a.admCd || '';
     S.form.lname = S.form.lname || a.bdNm || '';
     /* 손님이 고른 동과 맞춰야 해서, 알아낸 법정동이 목록에 있을 때만 넣는다 */
     if(!S.form.ldong && a.emd) S.form.ldong = a.emd;
@@ -10653,6 +10861,7 @@ function demandPayload(d, slotN){
   return {
     kind: d.kind, who: d.kind,
     dongs: d.dongs,
+    ...((d.places || []).length ? { places: d.places } : {}),   /* 역 · 단지 · 장소 (2026-11-14) */
     deal: shop ? null : t(d.deal),
     dep: i(d.dep), rent: i(d.rent), fee_included: true,
     key_money: d.kind === 'shop' ? i(d.key) : null,
@@ -13268,6 +13477,7 @@ function 파트너옆(active){
     '영업',
     ['#/partner/demands', own ? '맞는 손님' : '수요 목록', 'users', 'd'],
     ['#/partner/listings', (ownerSide() ? '내 물건' : '매물장부'), 'building', 'l'],
+    ['#/partner/map', '매물지도', 'map', 'lm'],
     ['#/partner/proposals', '내 제안', 'send', 'p'],
     ...(own || !권한('room') ? [] : [['#/partner/rooms', '손님 대화', 'chat', 'rm']]),
     ...(계약막힘() ? [] : ['계약', ...CT_하위메뉴]),
@@ -13312,6 +13522,7 @@ function adm위치(h){
   if(h === '#/partner/listing/new') return [['영업'], 물건, [S.editL ? '물건 고치기' : '새로 적기']];
   if(h.startsWith('#/partner/listing/')) return [['영업'], 물건, ['물건 보기']];
   if(h === '#/partner/proposals') return [['영업'], ['내 제안']];
+  if(h === '#/partner/map') return [['영업'], ['매물지도']];
   if(h === '#/partner/rooms') return [['영업'], ['손님 대화']];
   if(h.startsWith('#/partner/rooms/')){ const [, , , 번호, 자리] = h.split('/'); const 줄 = (RM.list || []).find(r => r.id === 번호 && (!자리 || r.side === 자리)) || {};
     return [['영업'], ['손님 대화', '#/partner/rooms'], [`${줄.title || '대화방'}${자리 && RM_자리[자리] ? ' · ' + RM_자리[자리] : ''}`]]; }
@@ -13345,6 +13556,9 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
+  { v:'26.11.14.1', 날:'2026-11-14', 줄:[ '매물지도 - 파트너는 매물장부를, 손님은 맞춤매물을 구글 지도에서 봅니다(손님에게는 대략 위치)',
+    '손님 조건 - 역 · 아파트 단지 · 장소를 고르고 거리(반경)를 정합니다. 동과 합쳐 5곳까지',
+    '매물 등록 - 주소 검색으로 고른 도로명 주소를 저장해 지도에 놓습니다' ] },
   { v:'26.11.13.2', 날:'2026-11-13', 줄:[ '사무소 설정 - 사무소 정보 · 활동 조건 · 알림 · 기능 탭으로 나눴습니다. 기능 탭에서 대시보드 카드를 켜고 끕니다',
     '손님 - 대시보드(걸어 둔 조건 · 맞춤매물 · 받은 1:1 제안 · 내 계약과 다음 일정)와 메뉴(대시보드 · 맞춤매물 · 1:1 제안 · 고객센터 · 도움말)',
     '손님 - 계약 대화방의 ‘계약서 보기’에서 날인본을 다시 봅니다(전화번호는 가려서)',
@@ -19493,6 +19707,7 @@ function render(){
   document.body.classList.toggle('ptn', isMo() && !!app.querySelector('.ptn-nav, .tabbar.pt, .opsPad'));
   가운뎃점붙이기(app);
   키보드로도닿게(app);
+  지도붙이기();   /* 구글 지도 - 한 번 만든 지도를 새 [data-gmap] 자리로 (2026-11-14) */
   /* 좁은 데스크톱에서 메뉴 줄이 옆으로 밀릴 때 켜진 탭이 가려지지 않게 그 자리로 맞춘다 */
   { const 줄 = app.querySelector('.nav .items'), 켜짐 = 줄 && 줄.querySelector('a.on');
     if(줄 && 켜짐 && 줄.scrollWidth > 줄.clientWidth){
@@ -19574,7 +19789,8 @@ function render(){
   /* 대시보드는 한 화면에서 전부 보여준다 - 탭을 하나씩 열게 하지 않는다 */
   if(h===OPS_HOME && OPS.rows && (OPS.tab||'home')==='home') dashDoLoad();
   if(h==='#/my' || h==='#/inbox' || h==='#/matched' || h.startsWith('#/proposal/')) loadMine(false);
-  if(h==='#/matched' || h==='#/account' || h==='#/my') mtLoad(false);
+  if(h==='#/matched' || h==='#/account' || h==='#/my' || h==='#/map') mtLoad(false);
+  if(h==='#/partner/map') loadListings(false);
   /* 글을 적지 않는 손님 화면(첫 화면·안내)에서도 한 번 받아 둔다 - 오른쪽 위 '새 제안' 뱃지가 들어와 보지
      않아도 보이게(2026-10-17). 20초 안에는 다시 묻지 않는다.
      **조건 걸기처럼 적는 화면에서는 부르지 않는다** - 답이 오면 화면을 다시 그려 적던 칸의 커서와
@@ -20473,8 +20689,8 @@ document.addEventListener('input', e=>{
   /* 상가 희망 면적을 ㎡ 로 적으면 평으로 바꿔 담는다 - 최소는 내림 · 최대는 올림(조건이 좁아지지 않게) */
   if(k === 'areaMinM2' || k === 'areaMaxM2'){
     const n = parseFloat(String(el.value).replace(/[^0-9.]/g, '')), 평 = n > 0 ? n / 3.305785 : 0, 최소 = k === 'areaMinM2';
-    S.form[k] = el.value; S.form[최소 ? 'areaMin' : 'areaMax'] = 평 ? String(최소 ? Math.max(1, Math.floor(평)) : Math.ceil(평)) : '';
-    const h = document.querySelector('#app [data-areahint]'); if(h) h.textContent = S.form.areaMin ? `약 ${S.form.areaMin}${S.form.areaMax ? `~${S.form.areaMax}` : ''}평으로 전달합니다` : '';
+    const D = S.draft; D[k] = el.value; D[최소 ? 'areaMin' : 'areaMax'] = 평 ? String(최소 ? Math.max(1, Math.floor(평)) : Math.ceil(평)) : '';
+    const h = document.querySelector('#app [data-areahint]'); if(h) h.textContent = D.areaMin ? `약 ${D.areaMin}${D.areaMax ? `~${D.areaMax}` : ''}평으로 전달합니다` : '';
     return; }
   const v = MONEY_IN.includes(k) ? money(el) : el.value;
   if(k==='j-phone'){ S.form[k] = autoHyphen(el); refreshJoin(); return; }
@@ -20665,7 +20881,7 @@ function handle(a,v,el){
 
     case 'dong': {
       const had = d.dongs.includes(v);
-      if(!had && d.dongs.length >= 5) return toast('지역은 5곳까지 고를 수 있습니다 - 하나를 빼고 골라 주세요'), true;   /* 2026-11-11 파트너 기획 */
+      if(!had && d.dongs.length + (d.places || []).length >= 5) return toast('지역은 5곳까지 고를 수 있습니다 - 하나를 빼고 골라 주세요'), true;   /* 2026-11-11 파트너 기획 */
       toggleIn(d.dongs, v);
       if(!had) followMap(d, v);          /* 새로 고른 곳으로 지도를 옮긴다 */
       render(); return true; }
@@ -20900,7 +21116,7 @@ function handle(a,v,el){
     case 'ops-reveal': if(OPS.role === 'sub') return true; OPS.reveal = !OPS.reveal; opsFetch(); return true;
     case 'ops-csv':    return opsCsv();
     case 'pick-addr': { const t=String(v||'').trim(); if(!t) return true;
-      if(!d.dongs.includes(t) && d.dongs.length >= 5) return toast('지역은 5곳까지 고를 수 있습니다 - 하나를 빼고 골라 주세요'), true;
+      if(!d.dongs.includes(t) && d.dongs.length + (d.places || []).length >= 5) return toast('지역은 5곳까지 고를 수 있습니다 - 하나를 빼고 골라 주세요'), true;
       if(!d.dongs.includes(t)){ d.dongs.push(t); followMap(d, t); }
       d.dongFree=''; render(); return true; }
     case 'elev': d.elev = v; render(); return true;
@@ -20921,6 +21137,9 @@ function handle(a,v,el){
     case 'musts': toggleIn(d.musts,v); render(); return true;
     /* 손님이 고르는 밴드 - 면적·층·방향은 여러 개, 화장실·연식은 하나 */
     case 'harea': toggleIn(d.hArea,v); render(); return true;
+    case 'gm-go': 지도가기(v); return true;
+    case 'gp-r': { const [i, r] = v.split('|').map(Number); const x = (d.places || [])[i]; if(x) x.r = r; render(); return true; }
+    case 'gp-del': { d.places = (d.places || []).filter((_, i) => i !== +v); render(); return true; }
     case 'area-unit': d.areaUnit = v === '㎡' ? '㎡' : '평'; d.areaMinM2 = null; d.areaMaxM2 = null; render(); return true;
     case 'hfloor': toggleIn(d.hFloor,v); render(); return true;
     case 'hdir':  toggleIn(d.hDir,v);  render(); return true;
@@ -22038,6 +22257,8 @@ function handle(a,v,el){
            없다는 것을 굳이 적어 보내면 매물이 깎여 보일 뿐이다. */
         musts: shop ? (f.lpark === '가능' ? ['주차 가능'] : []) : (f.lmusts||[]),
         mustsFree:shop?'':(f.lmustsFree||'').trim(),
+        /* 도로명 주소 (2026-11-14 매물지도) - 서버가 이것으로 좌표를 찾는다 */
+        ...(String(f.laddr||'').trim() ? { road: String(f.laddr).trim(), admCd: f.ladmCd || '' } : {}),
         photos:0, at:'방금', status:'active' };
       if(S.lsBusy) return true;
       S.lsBusy = true; render();

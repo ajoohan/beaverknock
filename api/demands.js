@@ -74,6 +74,8 @@ export default async function handler(req, res) {
   if (payload.what === 'log')         return readLog(req, res, payload, opsUser);
   if (payload.what === 'reports')     return readReports(req, res, payload, opsUser);
   if (payload.what === 'report-mark') return markReport(req, res, payload, opsUser);
+  if (payload.what === 'lreports')    return readListingReports(req, res, opsUser);
+  if (payload.what === 'lreport-mark') return markListingReport(req, res, payload, opsUser);
   if (payload.what === 'listings')    return readListings(req, res, { ...payload, __sub: 부 }, opsUser);
   if (payload.what === 'users')       return readUsers(req, res, { ...payload, __sub: 부 }, opsUser);
   if (payload.what === 'stats')       return readStats(req, res, payload, opsUser);
@@ -248,6 +250,33 @@ async function readReports(req, res, p, opsUser) {
 const REPORT_MARK = ['checking', 'done', 'dismissed'];
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+/* 매물 신고 (2026-11-14) - 신고가 있는 매물 · 처리: 'ok'(확인함 - 신고만 닫음) · 'stop'(공개 멈춤 - vis private · 신고 닫음) */
+async function readListingReports(req, res, opsUser) {
+  try {
+    const r = await fetch(sbUrl('bk_listing', 'select=id,name,dong,road,deal,dep,rent,vis,status,agent_id,reports,report_at&report_at=not.is.null&order=report_at.desc&limit=100'), { headers: sbHeaders() });
+    if (!r.ok) { const t = await r.text(); return /report|42703|PGRST204/.test(t) ? res.status(200).json({ rows: [], note: '매물 신고 칸이 아직 없습니다 (0042 마이그레이션 필요)' }) : res.status(500).json({ error: '매물 신고를 불러오지 못했습니다' }); }
+    const rows = await r.json();
+    const aIds = [...new Set(rows.map(x => x.agent_id).filter(Boolean))], who = {};
+    if (aIds.length) { const ar = await fetch(sbUrl('bk_agent', `select=id,office,name&id=in.(${aIds.join(',')})`), { headers: sbHeaders() }); if (ar.ok) for (const a of await ar.json()) who[a.id] = a.office || a.name || '-'; }
+    await logOps(req, opsUser, { action: 'lreports', count: rows.length });
+    return res.status(200).json({ rows: rows.map(x => ({ ...x, office: who[x.agent_id] || '-', reports: (Array.isArray(x.reports) ? x.reports : []).map(({ uid, ...y }) => y) })) });
+  } catch (e) { return res.status(500).json({ error: '매물 신고를 불러오지 못했습니다' }); }
+}
+async function markListingReport(req, res, p, opsUser) {
+  const id = String(p.id || ''), op = String(p.op || '');
+  if (!UUID.test(id) || !['ok', 'stop'].includes(op)) return res.status(400).json({ error: '알 수 없는 요청입니다' });
+  try {
+    const g = await fetch(sbUrl('bk_listing', `select=id,reports&id=eq.${id}&limit=1`), { headers: sbHeaders() });
+    const L = g.ok ? (await g.json())[0] : null;
+    if (!L) return res.status(404).json({ error: '매물을 찾지 못했습니다' });
+    const reports = (Array.isArray(L.reports) ? L.reports : []).map(x => ({ ...x, done: true }));
+    const body = op === 'stop' ? { reports, vis: 'private', updated_at: new Date().toISOString() } : { reports };
+    const w = await fetch(sbUrl('bk_listing', `id=eq.${id}`), { method: 'PATCH', headers: { ...sbHeaders(), Prefer: 'return=minimal' }, body: JSON.stringify(body) });
+    if (!w.ok) return res.status(500).json({ error: '처리하지 못했습니다' });
+    await logOps(req, opsUser, { action: 'lreport-mark', count: 1, detail: op === 'stop' ? '공개 멈춤' : '확인함' });
+    return res.status(200).json({ ok: true });
+  } catch (e) { return res.status(500).json({ error: '처리하지 못했습니다' }); }
+}
 async function markReport(req, res, p, opsUser) {
   const id = String(p.id || '');
   if (!UUID.test(id)) return res.status(400).json({ error: '어느 신고인지 알 수 없습니다' });

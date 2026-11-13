@@ -1037,10 +1037,10 @@ async function fieldPicDel(res, agent, b) {
 /* 매물 등록의 건축물대장 판독 (2026-11-12 대표님 '건축물대장도 사진이나 스캔본 인식해서 자동으로 채워').
    계약서 판독과 같은 하루 상한 · 같은 모델을 쓰고, 서류는 건축물대장(표제부 · 전유부)만 받는다. 직원 권한은 'listing'(feed.js 권한키) */
 /* 처리방침에 '매물 등록' 목적을 더해 알린 뒤 7일이 지나야 켠다(문자 캡처와 같은 방식). 개정 게시일이 정해지면 이 날짜를 고친다 */
-let 매물대장부터 = Date.parse('2026-11-18T15:00:00Z');
+let 매물대장부터 = Date.parse('2026-11-20T15:00:00Z');   /* 처리방침 11/14 게시 + 7일 */
 export const __setListingScanFrom = ms => { 매물대장부터 = ms; };
 export async function listingScan(req, res, user, b) {
-  if (Date.now() < 매물대장부터) return res.status(403).json({ error: '건축물대장 사진 읽기는 11월 19일부터 씁니다(개인정보 처리방침 개정 안내 기간) - 지금은 칸을 직접 적어 주세요', code: 'not_yet' });
+  if (Date.now() < 매물대장부터) return res.status(403).json({ error: '건축물대장 사진 읽기는 11월 21일부터 씁니다(개인정보 처리방침 개정 안내 기간) - 지금은 칸을 직접 적어 주세요', code: 'not_yet' });
   const files = Array.isArray(b && b.files) ? b.files : [];
   if (!files.length || files.length > 2 || !files.every(f => f && ['bld', 'bldx'].includes(f.kind))) return res.status(400).json({ error: '건축물대장(표제부 · 전유부)만 올려 주세요' });
   /* 매물에는 소유자 · 권리관계가 필요 없다 - 읽은 값에서 빼고 돌려준다 */

@@ -71,6 +71,25 @@ globalThis.fetch = async (url, opt = {}) => {
   ok(o.code === 200 && o.body.again && o.body.id === 'old-1' && !넣은, '두 번 누르면 새로 만들지 않고 있던 것으로 잇는다'); }
 
 /* ── 사진 (0040) ── */
+/* 매물 신고 (2026-11-14 약관 제11조) - 공개 중인 매물만 · 까닭은 정한 것 중에서 · 같은 분은 한 번만 · 사무소에는 누가 했는지 안 간다 */
+{ const { matchReport } = await import('../api/_match.js');
+  let 줄 = { id: 물건.id, reports: [{ at: 'x', type: '기타', uid: 'u-9', done: false }] }, 쓴 = null;
+  const 원 = globalThis.fetch;
+  globalThis.fetch = async (u, o = {}) => { const d = decodeURIComponent(String(u));
+    if ((o.method || 'GET') === 'PATCH') { 쓴 = JSON.parse(o.body); return new Response(null, { status: 204 }); }
+    return new Response(JSON.stringify(/vis=eq\.open/.test(d) && 줄 ? [줄] : []), { status: 200 }); };
+  const 답 = () => { const r = { code: 0, body: null }; r.status = c => (r.code = c, r); r.json = b => (r.body = b, r); return r; };
+  let r = 답(); await matchReport(r, { id: 'u-1' }, { listing_id: 물건.id, type: '사실과 다른 정보', detail: '<b>관리비가 다름</b>' });
+  ok(r.code === 200 && 쓴.reports.length === 2 && 쓴.reports[1].uid === 'u-1' && !/[<>]/.test(쓴.reports[1].detail) && 쓴.report_at, '신고는 물건 줄에 쌓인다(꺾쇠는 지움) · 마지막 신고 시각');
+  줄 = { ...줄, reports: 쓴.reports }; r = 답(); await matchReport(r, { id: 'u-1' }, { listing_id: 물건.id, type: '기타' });
+  ok(쓴.reports.filter(x => x.uid === 'u-1').length === 1 && 쓴.reports.at(-1).type === '기타', '같은 분이 다시 신고하면 앞 것을 바꾼다(쌓이지 않음)');
+  r = 답(); await matchReport(r, { id: 'u-2' }, { listing_id: 물건.id, type: '아무거나' });
+  ok(r.code === 400, '정해진 까닭이 아니면 받지 않는다');
+  줄 = null; r = 답(); await matchReport(r, { id: 'u-3' }, { listing_id: 물건.id, type: '기타' });
+  ok(r.code === 404, '공개가 끝난 매물은 신고를 받지 않는다');
+  globalThis.fetch = 원;
+  const fs = await import('node:fs'); const feed = fs.readFileSync(new URL('../api/feed.js', import.meta.url), 'utf8');
+  ok(/\.map\(\(\{ reports, \.\.\.x \}\) => \(\{ \.\.\.x, report_open:/.test(feed), '매물장부(사무소)에는 신고 내용 대신 미확인 신고 수만 - 신고한 손님 계정이 가지 않는다'); }
 /* 구글 지도 (2026-11-14) - 역 · 단지 · 반경으로 고른 곳 · 손님에게는 대략 위치 */
 { const { 고른곳들, 곳안 } = await import('../api/_match.js'); const G = await import('../api/_geo.js');
   const 곳 = 고른곳들([{ t: 'station', name: '미사역<b>', lat: 37.5605, lng: 127.1932, area: '하남시' }, { t: 'radius', lat: 37.5, lng: 127.0, r: 99999 }, { t: 'x', lat: 37, lng: 127 }, { t: 'complex', lat: 10, lng: 10 }]);

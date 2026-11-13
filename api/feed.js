@@ -1063,7 +1063,9 @@ async function readListings(req, res, agent) {
     }
     /* 휴지통은 30일 (0039) - 지난 것은 목록에서 빼기만 한다(행은 남는다: 보낸 제안이 참조한다) */
     const 한달전 = Date.now() - 30 * 864e5;
-    const rows = (await r.json()).filter(x => x.status !== 'trash' || !x.closed_at || Date.parse(x.closed_at) > 한달전);
+    /* 매물 신고(2026-11-14)는 누가 했는지 빼고 '처리 안 된 신고 수'만 - 사무소에 손님 계정이 가지 않게 */
+    const rows = (await r.json()).filter(x => x.status !== 'trash' || !x.closed_at || Date.parse(x.closed_at) > 한달전)
+      .map(({ reports, ...x }) => ({ ...x, report_open: (Array.isArray(reports) ? reports : []).filter(v => v && !v.done).length }));
     return res.status(200).json({ ok: true, rows, at: new Date().toISOString() });
   } catch (e) {
     return res.status(502).json({ error: 'DB에 닿지 못했습니다' });

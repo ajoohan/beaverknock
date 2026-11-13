@@ -8,6 +8,7 @@ import { sbHeaders, sbUrl, emailOf } from './_auth.js';
 import { notify, won } from './_notify.js';
 import { 사진들, 사진주소 } from './_pics.js';
 import { 거리 } from './_geo.js';
+import { overLimit } from './_auth.js';
 
 /* 손님이 고른 곳(2026-11-14 구글 지도 · 파트너 기획 C1-2 '동 · 반경 · 역 · 단지') - 반경은 고른 거리, 역 1km, 단지 300m */
 const 곳반경 = { radius: [300, 3000, 1000], station: [300, 2000, 1000], complex: [100, 1000, 300] };
@@ -117,6 +118,30 @@ export async function matchPics(res, b) {
     if (!L) return res.status(404).json({ error: '지금은 볼 수 없는 매물입니다' });
     return res.status(200).json({ ok: true, urls: (await 사진주소(사진들(L.pics))).filter(Boolean) });
   } catch (e) { return res.status(502).json({ error: '사진을 불러오지 못했습니다' }); }
+}
+
+/* 이 매물 신고 (2026-11-14 약관 제10조의2 · 제11조) - 거래 완료 · 사실과 다름 · 기타. 로그인한 손님만, 한 시간에 10번.
+   신고는 물건 줄(reports)에 쌓고 운영 신고함이 읽는다. 같은 분이 같은 매물을 다시 신고하면 앞 것을 바꾼다 */
+export const 매물신고종류 = ['거래 완료된 매물', '사실과 다른 정보', '연락이 안 됨', '기타'];
+export async function matchReport(res, user, b) {
+  const id = String(b.listing_id || '');
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) return res.status(400).json({ error: '어느 매물인지 알 수 없습니다' });
+  const type = 매물신고종류.includes(b.type) ? b.type : null;
+  if (!type) return res.status(400).json({ error: '신고 까닭을 골라 주세요' });
+  if (overLimit('lreport:' + user.id, 10, 3600e3)) return res.status(429).json({ error: '신고가 많습니다 - 잠시 뒤 다시 해 주세요' });
+  const detail = String(b.detail || '').replace(/[\u0000-\u001f<>]/g, ' ').trim().slice(0, 300);
+  try {
+    const r = await fetch(sbUrl('bk_listing', `select=id,reports&id=eq.${id}&vis=eq.open&status=eq.active&limit=1`), { headers: sbHeaders() });
+    if (!r.ok) { const t = await r.text(); return /reports|42703|PGRST204/.test(t) ? res.status(503).json({ error: '신고 기능을 준비 중입니다', need: '0042' }) : res.status(502).json({ error: '매물을 불러오지 못했습니다' }); }
+    const L = (await r.json())[0];
+    if (!L) return res.status(404).json({ error: '지금은 볼 수 없는 매물입니다 - 이미 공개가 끝났을 수 있습니다' });
+    const at = new Date().toISOString();
+    const 앞 = (Array.isArray(L.reports) ? L.reports : []).filter(x => x && x.uid !== user.id);
+    const reports = [...앞, { at, type, detail, uid: user.id, done: false }].slice(-30);
+    const w = await fetch(sbUrl('bk_listing', `id=eq.${id}`), { method: 'PATCH', headers: { ...sbHeaders(), Prefer: 'return=minimal' }, body: JSON.stringify({ reports, report_at: at }) });
+    if (!w.ok) return res.status(502).json({ error: '신고를 남기지 못했습니다' });
+    return res.status(200).json({ ok: true });
+  } catch (e) { return res.status(502).json({ error: 'DB에 닿지 못했습니다' }); }
 }
 
 /* '이 집 보고 싶어요' - 그 물건으로 제안 한 건을 만들어 손님을 지금의 연결 화면(연락처 제공 동의)으로 잇는다.

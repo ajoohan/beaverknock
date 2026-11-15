@@ -38,7 +38,7 @@ const M = new Function('esc', `${js.slice(시작, 끝)}\nreturn { dzLine, dzPill
   const 카드 = M.dzKpi({ ico:'users', cap:'걸린 조건', v:1234, act:'ops-tab', v2:'demand' });
   ok(/^<button type="button" class="dz-card dz-kpi" data-act="ops-tab" data-v="demand" aria-label="걸린 조건 1234">/.test(카드) && /1,234/.test(카드), '누를 수 있는 카드는 단추 · 이름과 숫자를 말한다 · 천 단위 쉼표');
   ok(/class="sk"/.test(M.dzKpi({ ico:'users', cap:'x', v:null })) && /불러오는 중/.test(M.dzKpi({ ico:'users', cap:'x', v:null, go:'#/a' })), '아직 못 받은 값은 0 이 아니라 회색 띠');
-  ok(/<p class="dz-calm">손댈 일 없음<\/p>/.test(M.dzTodo([], '손댈 일 없음')) && /<span class="dz-tn num">3<\/span>/.test(M.dzTodo([{ t:'신고', n:3, go:'#/x' }])), '할 일 - 없으면 없다고, 있으면 개수');
+  ok(/<p class="dz-calm"><svg class="dz-ck"[^]*?<\/svg><span>손댈 일 없음<\/span><\/p>/.test(M.dzTodo([], '손댈 일 없음')) && /<span class="dz-tn num">3<\/span>/.test(M.dzTodo([{ t:'신고', n:3, go:'#/x' }])), '할 일 - 없으면 없다고, 있으면 개수');
   ok(/width:100%/.test(M.dzStatus({ t:'a', state:'b', pct:140 })) && /width:0%/.test(M.dzStatus({ t:'a', state:'b', pct:-5 })), '상태 막대는 0~100% 안에서만');
   /* 머리 (2026-10-30 대표님 '인사는 필요없고, 접속한 날짜 요일 시간 날씨가 나오게') */
   const 지금 = M.dzNow(new Date(2026, 9, 30, 19, 5));

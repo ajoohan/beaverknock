@@ -3707,7 +3707,16 @@ body.mo .ptn-nav .nt-bell{width:38px;height:38px;border:none;background:none}
 /* ── 운영자 로그인 (2026-11-07) ── */
 .ol-card{padding:0;overflow:hidden}
 .ol-top{display:flex;align-items:flex-end;gap:14px;padding:22px 22px 0;background:linear-gradient(160deg,var(--ind900),#2A1E7A);color:#fff}
-.ol-bv{width:108px;height:auto;flex:none;display:block;margin-bottom:-2px;user-select:none;-webkit-user-drag:none}
+.ol-bv{width:108px;height:auto;flex:none;display:block;margin-bottom:-2px;user-select:none;-webkit-user-drag:none;
+  transform-origin:46% 96%;animation:olKnock 1.15s ease-in-out .45s both}
+/* 운영자 로그인 비버 - 한 번 두 번 두드리고 멈춘다, 물결은 주먹(그림 오른쪽 위 93% · 43%) 자리에서 (2026-11-15) */
+.ol-bvw{position:relative;flex:none;display:block}
+.ol-rp{position:absolute;left:93%;top:43%;width:20px;height:20px;margin:-10px 0 0 -10px;border-radius:50%;
+  border:2px solid rgba(255,255,255,.7);opacity:0;pointer-events:none;animation:olRing .9s cubic-bezier(.16,.84,.44,1) .62s both}
+.ol-rp + .ol-rp{animation-delay:1.02s}
+@keyframes olKnock{0%,100%{transform:none}16%{transform:rotate(-2.6deg)}28%{transform:rotate(.8deg)}50%{transform:rotate(-2.6deg)}62%{transform:rotate(.8deg)}80%{transform:none}}
+@keyframes olRing{0%{opacity:0;transform:scale(.4)}18%{opacity:.85}100%{opacity:0;transform:scale(2.6)}}
+@media (prefers-reduced-motion: reduce){.ol-bv,.ol-rp{animation:none !important}}
 .ol-tt{display:flex;flex-direction:column;gap:6px;padding-bottom:20px;min-width:0}
 .ol-badge{align-self:flex-start;display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;background:rgba(255,255,255,.14);color:#fff;font-size:12.5px;font-weight:700}
 .ol-tt h1{margin:0;font-size:21px;font-weight:800;letter-spacing:-.03em;color:#fff}
@@ -3811,7 +3820,17 @@ body.mo .rm-h{padding:12px 14px}
 .dz-tt b{font-size:14.5px;font-weight:700;color:var(--n900)}
 .dz-tt span{font-size:13px;line-height:1.45;color:var(--n500)}
 .dz-tn{min-width:28px;padding:2px 9px;border-radius:999px;background:var(--dangerbg);color:var(--danger);font-size:13.5px;font-weight:800;text-align:center}
-.dz-calm{margin:4px 0 0;font-size:14px;line-height:1.6;color:var(--n500)}
+.dz-calm{margin:4px 0 0;font-size:14px;line-height:1.6;color:var(--n500);display:flex;align-items:flex-start;gap:9px}
+.dz-ck{flex:none;margin-top:0}
+.dz-ck circle,.dz-ck path{fill:none;stroke:var(--ok);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1}
+.dz-ck circle{stroke:#BFE3CD}
+.dz-calm.draw .dz-ck circle{animation:ckDraw .6s var(--e-out) .2s both}
+.dz-calm.draw .dz-ck path{animation:ckDraw .38s var(--e-out) .62s both}
+@keyframes ckDraw{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+/* 운영 탭 옮김 - 본문이 살짝 올라오고 줄은 차례로 (opsRows · 2026-11-15) */
+.opsPane.op-in{animation:dzRise .34s var(--e-out) both}
+.op-row{animation:dzRise .36s var(--e-out) both;animation-delay:calc(var(--i,0) * 28ms)}
+@media (prefers-reduced-motion: reduce){.opsPane.op-in,.op-row,.dz-calm.draw .dz-ck *{animation:none !important}}
 .dz-fine{margin:0;max-width:46em;font-size:13.5px;line-height:1.7;color:var(--n500)}
 .dz-prog .prog{display:flex;flex-direction:column;gap:14px}
 @media (max-width:1320px){ .dz-grid{grid-template-columns:minmax(0,1fr)} .dz-aside{position:static;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))} }
@@ -12367,7 +12386,7 @@ function opsGateScreen(){
     return wrap(`
     <div class="card ol-card" style="width:100%">
       <div class="ol-top">
-        <img src="${BEAVERLY_KNOCK}" alt="문을 두드리는 비버리" class="ol-bv">
+        <span class="ol-bvw"><img src="${BEAVERLY_KNOCK}" alt="문을 두드리는 비버리" class="ol-bv"><i class="ol-rp" aria-hidden="true"></i><i class="ol-rp" aria-hidden="true"></i></span>
         <div class="ol-tt">
           <span class="ol-badge"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11 V8 a4 4 0 0 1 8 0 v3"/></svg>운영자 전용</span>
           <h1>비버노크 운영 화면</h1>
@@ -12465,7 +12484,7 @@ V[OPS_HOME] = () => {
   <div class="pad opsPad" style="flex:1;padding-top:16px;padding-bottom:28px;width:100%">
     <div class="opsWrap">
       <aside class="opsNav">${메뉴}</aside>
-      <main style="min-width:0">${시험}${머리}${opsPanel()}</main>
+      <main style="min-width:0">${시험}${머리}<div class="opsPane" id="opsPane" data-tab="${tab}">${opsPanel()}</div></main>
     </div>
   </div>
 </div>`;
@@ -12481,7 +12500,7 @@ V[OPS_HOME] = () => {
     </div>
   </aside>
   <div class="ptop">${tab === 'home' ? dzNowHTML() : adm경로([['운영'], [OPS_TITLE[tab] || '운영 화면']])}<span class="ptop-r">${tab === 'home' ? 새로고침 : ''}${S.user ? userMenu({ admin: true, sub: OPS.role === 'sub' ? '부운영자' : '운영자' }) : ''}</span></div>
-  <main class="pad dz-main">${시험}${머리}${opsPanel()}</main>
+  <main class="pad dz-main">${시험}${머리}<div class="opsPane" id="opsPane" data-tab="${tab}">${opsPanel()}</div></main>
 </div>`;
 };
 
@@ -12629,6 +12648,12 @@ function growBars(root){
   });
 }
 
+/* 운영 목록 줄 - 위에서부터 28ms 간격으로 (12줄까지만 늦추고 나머지는 같이) */
+function opsRows(root){
+  [...root.querySelectorAll('.agt tbody tr, .dz-row, .rm-li, .tl .it')].forEach((el, i) => {
+    el.style.setProperty('--i', Math.min(i, 12)); el.classList.add('op-row'); });
+}
+
 /* 화면이 바뀐 직후 한 번 */
 function animateData(root){
   /* 움직임을 줄이도록 설정했거나, 화면이 보이지 않는 상태면 그냥 제값을 둔다 */
@@ -12636,7 +12661,7 @@ function animateData(root){
   growBars(root);
   /* 카드는 50ms 간격으로 차례로 올라온다(레퍼런스의 첫 화면). 다시 그릴 때는 새 노드라 클래스가 없어 다시 움직이지 않는다 */
   [...root.querySelectorAll('.brief, .dz-card')].forEach((el, i) => { el.style.setProperty('--di', Math.min(i, 10)); el.classList.add('dz-in'); });
-  root.querySelectorAll('.dz-line').forEach(el => el.classList.add('draw'));
+  root.querySelectorAll('.dz-line, .dz-calm').forEach(el => el.classList.add('draw'));
   const nums = [...root.querySelectorAll('.num')];
   let i = 0;
   nums.forEach(el => {
@@ -13481,7 +13506,7 @@ function dzTodo(items, 빈말, 아래 = ''){
       <span class="dz-tic">${dzIco(t.ico || 'check', 18)}</span>
       <span class="dz-tt"><b>${esc(t.t)}</b><span>${esc(t.s || '')}</span></span>
       ${t.n != null ? `<span class="dz-tn num">${t.n}</span>` : ''}</button>`).join('')
-    : `<p class="dz-calm">${esc(빈말 || '지금 손댈 일은 없습니다.')}</p>`}
+    : `<p class="dz-calm"><svg class="dz-ck" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="12" cy="12" r="9.5" pathLength="1"/><path d="M7.6 12.4l3 3 5.8-6.4" pathLength="1"/></svg><span>${esc(빈말 || '지금 손댈 일은 없습니다.')}</span></p>`}
     ${아래}</div>`;
 }
 /* 할 일 카드 아래 바로 가기 (2026-11-06 대표님 '중간중간 여백이 없게') - 오른쪽 칸이 왼쪽 높이까지 늘어날 때 빈 곳을 자주 가는 곳으로 채운다 */
@@ -13590,6 +13615,8 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
+  { v:'26.11.15', 날:'2026-11-15', 줄:[ '운영 화면 움직임 - 탭을 옮기면 본문이 살짝 올라오고 목록 줄이 차례로 나타납니다. 지표 탭은 막대가 자라고 숫자가 세어 올라갑니다',
+    '운영 대시보드 - 할 일이 모두 끝나면 체크 표시가 그려집니다 · 운영자 로그인의 비버가 문을 두 번 두드립니다(움직임 줄이기 설정이면 멈춤)' ] },
   { v:'26.11.14.2', 날:'2026-11-14', 줄:[ '약관 · 개인정보 처리방침 개정 게시(11월 21일 적용) - 매물 공개 · 맞춤매물 · 매물지도(Google 지도) · 매물 표시 · 광고의 책임 · 암호화 저장',
     '맞춤매물 - ‘이 매물 신고’(거래 완료 · 사실과 다름 · 연락 안 됨). 운영 신고함에서 확인하고 공개를 멈출 수 있습니다',
     '안내 문구 - 메인 · 이용 안내 · 자주 묻는 질문을 매물 공개에 맞게 고쳤습니다',
@@ -19812,9 +19839,23 @@ function render(){
   /* 운영 화면에 들어왔으면 묻지 않고 한 번 열어본다 */
   if(h === OPS_HOME && !OPS.rows && !OPS.loading && !OPS.tried && S.user) opsFetch();
 
+  /* 운영 탭 - 탭을 옮기면 본문이 살짝 올라오고 줄은 차례로, 자료가 늦게 오면 그때 한 번 세어 올라간다 (2026-11-15 대표님 '어드민에 애니메이션').
+     20초 새로고침은 같은 서명이라 다시 움직이지 않는다 */
+  const pane = $('#opsPane');
+  let paneRan = false;
+  if(pane){
+    const ptab = pane.dataset.tab, ready = !pane.querySelector('.sk, .bkld');
+    const psig = ptab + '|' + (ready ? 'ok' : 'wait') + '|' + (ptab === 'stats' ? ST.days : '');
+    if(!entered && psig !== S.opsPaneSig && !REDUCED() && document.visibilityState === 'visible'){
+      const 탭바뀜 = (S.opsPaneSig || '').split('|')[0] !== ptab;
+      if(탭바뀜) pane.classList.add('op-in');
+      if(ready && (ptab !== 'home' || 탭바뀜)){ opsRows(pane); animateData(pane); paneRan = true; }
+    }
+    S.opsPaneSig = psig;
+  }
   const dash = $('#opsDash');
   const dsig = dash ? (dash.dataset.sig || '') : '';
-  if(dash && !entered && dsig !== S.dashSig) animateData(dash);
+  if(dash && !entered && !paneRan && dsig !== S.dashSig) animateData(dash);
   S.dashSig = dsig;
   refreshAddr();   /* 목록은 DOM 에만 있다 - 재렌더마다 다시 채워준다 */
   a11y(app);       /* 이름표·키보드 자리를 붙인다 - 화면마다 손으로 달면 빠뜨린다 */

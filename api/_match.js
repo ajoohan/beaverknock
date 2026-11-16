@@ -131,16 +131,21 @@ export async function matchReport(res, user, b) {
   if (overLimit('lreport:' + user.id, 10, 3600e3)) return res.status(429).json({ error: '신고가 많습니다 - 잠시 뒤 다시 해 주세요' });
   const detail = String(b.detail || '').replace(/[\u0000-\u001f<>]/g, ' ').trim().slice(0, 300);
   try {
-    const r = await fetch(sbUrl('bk_listing', `select=id,reports&id=eq.${id}&vis=eq.open&status=eq.active&limit=1`), { headers: sbHeaders() });
-    if (!r.ok) { const t = await r.text(); return /reports|42703|PGRST204/.test(t) ? res.status(503).json({ error: '신고 기능을 준비 중입니다', need: '0042' }) : res.status(502).json({ error: '매물을 불러오지 못했습니다' }); }
-    const L = (await r.json())[0];
-    if (!L) return res.status(404).json({ error: '지금은 볼 수 없는 매물입니다 - 이미 공개가 끝났을 수 있습니다' });
-    const at = new Date().toISOString();
-    const 앞 = (Array.isArray(L.reports) ? L.reports : []).filter(x => x && x.uid !== user.id);
-    const reports = [...앞, { at, type, detail, uid: user.id, done: false }].slice(-30);
-    const w = await fetch(sbUrl('bk_listing', `id=eq.${id}`), { method: 'PATCH', headers: { ...sbHeaders(), Prefer: 'return=minimal' }, body: JSON.stringify({ reports, report_at: at }) });
-    if (!w.ok) return res.status(502).json({ error: '신고를 남기지 못했습니다' });
-    return res.status(200).json({ ok: true });
+    /* 두 분이 거의 같이 신고해도 한 건이 지워지지 않게 - 읽은 때의 report_at 이 그대로일 때만 쓰고, 아니면 다시 읽어 쓴다(2026-11-16 코드리뷰) */
+    for (let 번 = 0; 번 < 4; 번++) {
+      const r = await fetch(sbUrl('bk_listing', `select=id,reports,report_at&id=eq.${id}&vis=eq.open&status=eq.active&limit=1`), { headers: sbHeaders() });
+      if (!r.ok) { const t = await r.text(); return /report|42703|PGRST204/.test(t) ? res.status(503).json({ error: '신고 기능을 준비 중입니다', need: '0042' }) : res.status(502).json({ error: '매물을 불러오지 못했습니다' }); }
+      const L = (await r.json())[0];
+      if (!L) return res.status(404).json({ error: '지금은 볼 수 없는 매물입니다 - 이미 공개가 끝났을 수 있습니다' });
+      const at = new Date().toISOString();
+      const 앞 = (Array.isArray(L.reports) ? L.reports : []).filter(x => x && x.uid !== user.id);
+      const reports = [...앞, { at, type, detail, uid: user.id, done: false }].slice(-30);   /* 멈춤 표시가 있는 매물은 비공개라 여기 오지 않는다 */
+      const 그대로 = L.report_at ? `report_at=eq.${encodeURIComponent(L.report_at)}` : 'report_at=is.null';
+      const w = await fetch(sbUrl('bk_listing', `id=eq.${id}&${그대로}`), { method: 'PATCH', headers: { ...sbHeaders(), Prefer: 'return=representation' }, body: JSON.stringify({ reports, report_at: at }) });
+      if (!w.ok) return res.status(502).json({ error: '신고를 남기지 못했습니다' });
+      if (((await w.json().catch(() => [])) || []).length) return res.status(200).json({ ok: true });
+    }
+    return res.status(409).json({ error: '신고가 몰렸습니다 - 잠시 뒤 다시 해 주세요' });
   } catch (e) { return res.status(502).json({ error: 'DB에 닿지 못했습니다' }); }
 }
 

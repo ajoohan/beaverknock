@@ -19,7 +19,7 @@ import { 직원이력, 이력한줄, 보조원잠금, 자격증크기, 자격증
 import { 직원들, 직원고침, 직원사무소, 직원들어옴, 직원역할, 다른사무소직원 } from './_staff.js';
 import { notify, mailWithFile } from './_notify.js';
 import { roomAgent, invitePeek } from './_room.js';
-import { 지도켜짐, 물건좌표채우기, 내물건좌표 } from './_geo.js';
+import { 지도켜짐, 물건좌표잠깐, 내물건좌표 } from './_geo.js';
 
 const KIND_KO = { home: '주거', shop: '상가', office: '오피스', storage: '창고' };
 
@@ -683,8 +683,8 @@ export default async function handler(req, res) {
   if (b.what === 'listings')    return readListings(req, res, chk.agent);
   if (b.what === 'listing-add') return addListing(req, res, chk.agent, user, b);
   if (b.what === 'listing-del') return delListing(req, res, chk.agent, b);
-  /* 매물지도 - 좌표 없는 내 물건을 15개씩 채운다(지도를 열 때) */
-  if (b.what === 'listing-geo') { const z = await 내물건좌표(chk.agent.id); return res.status(z.ok ? 200 : z.need ? 503 : 502).json(z.ok ? z : { error: z.need ? '아직 준비 중입니다 (0042 마이그레이션 필요)' : '좌표를 찾지 못했습니다', need: z.need }); }
+  /* 매물지도 - 좌표 없는 내 물건을 10개씩 채운다(지도를 열 때). 구글 사용량이 겹치지 않게 시간당 30번까지 */
+  if (b.what === 'listing-geo') { if (overLimit('lgeo:' + chk.agent.id, 30, 36e5)) return res.status(429).json({ error: '잠시 뒤 다시 열어 주세요' }); const z = await 내물건좌표(chk.agent.id); return res.status(z.ok ? 200 : z.need ? 503 : 502).json(z.ok ? z : { error: z.need ? '아직 준비 중입니다 (0042 마이그레이션 필요)' : '좌표를 찾지 못했습니다', need: z.need }); }
   if (b.what === 'listing-set')   return setListing(res, chk.agent, b);
   if (b.what === 'listing-state') return setListingState(res, chk.agent, b);
   if (b.what === 'listing-pics')    return listingPics(res, chk.agent, b);
@@ -827,6 +827,10 @@ const SUMMARY_COLS = ['id','created_at','kind','dongs','deal','dep','rent',
 function maskDemand(d) {
   const o = { locked: true };
   for (const k of SUMMARY_COLS) if (d[k] !== undefined) o[k] = d[k];
+  /* 고른 곳(2026-11-16 코드리뷰) - 좌표는 빼고, 반경 중심의 이름은 시 · 구로 바꾼다.
+     반경 중심이 손님 집일 수 있어서, 열람 전에는 정확한 자리가 나가면 안 된다. 역 · 단지는 공개된 장소라 이름을 둔다 */
+  if (Array.isArray(d.places)) o.places = d.places.map(p => p && ({ t: p.t, r: p.r, area: p.area || '',
+    name: p.t === 'radius' ? `${p.area || '고른 곳'} 부근` : p.name })).filter(Boolean);
   return o;
 }
 
@@ -1065,7 +1069,7 @@ async function readListings(req, res, agent) {
     const 한달전 = Date.now() - 30 * 864e5;
     /* 매물 신고(2026-11-14)는 누가 했는지 빼고 '처리 안 된 신고 수'만 - 사무소에 손님 계정이 가지 않게 */
     const rows = (await r.json()).filter(x => x.status !== 'trash' || !x.closed_at || Date.parse(x.closed_at) > 한달전)
-      .map(({ reports, ...x }) => ({ ...x, report_open: (Array.isArray(reports) ? reports : []).filter(v => v && !v.done).length }));
+      .map(({ reports, ...x }) => ({ ...x, report_open: (Array.isArray(reports) ? reports : []).filter(v => v && !v.done && !v.stop).length, ops_stop: 운영멈춤(reports) }));
     return res.status(200).json({ ok: true, rows, at: new Date().toISOString() });
   } catch (e) {
     return res.status(502).json({ error: 'DB에 닿지 못했습니다' });
@@ -1095,6 +1099,9 @@ const 물건고침칸 = {
   road: v => txt(v, 160), admCd: ['adm_cd', v => { const x = String(v ?? '').replace(/\D/g, ''); return x.length === 10 ? x : null; }],
   hideUnit: ['hide_unit', v => v !== false], oneLine: ['one_line', v => txt(v, 40)], ownerOk: ['owner_ok', v => v === true],
 };
+/* 운영자가 신고를 보고 공개를 멈춘 물건(2026-11-16 코드리뷰 - 약관 '확인 뒤 공개 중단').
+   reports 안의 { stop: true } 표시가 남아 있으면 중개사가 다시 노출할 수 없다. 운영 신고함에서 '멈춤 풀기' 로만 푼다 */
+const 운영멈춤 = reports => (Array.isArray(reports) ? reports : []).some(v => v && v.stop && !v.lifted);
 async function 내물건(agent, id) {
   const r = await fetch(sbUrl('bk_listing', `select=*&id=eq.${id}&agent_id=eq.${agent.id}&limit=1`), { headers: sbHeaders() });
   if (!r.ok) return { error: true };
@@ -1122,6 +1129,7 @@ async function setListing(res, agent, b) {
     const 뒤 = { ...cur, ...p };
     if (뒤.vis === 'open') {
       if ((cur.status || 'active') !== 'active') return res.status(400).json({ error: '목록에 있는 물건만 노출할 수 있습니다' });
+      if (cur.vis !== 'open' && 운영멈춤(cur.reports)) return res.status(403).json({ error: '신고 확인으로 공개가 멈춘 매물입니다 - 다시 노출하려면 고객센터로 문의해 주세요', need: 'ops_stop' });
       const 기준 = 노출기준(뒤);
       if (기준.빠짐.length) return res.status(400).json({ error: `노출하려면 ${기준.빠짐.join(' · ')} 항목을 채워 주세요`, miss: 기준.빠짐 });
       if (cur.vis !== 'open') p.opened_at = new Date().toISOString();
@@ -1132,7 +1140,8 @@ async function setListing(res, agent, b) {
       이력.push({ at: new Date().toISOString(), dep: [+cur.dep || 0, +뒤.dep || 0], rent: [+cur.rent || 0, +뒤.rent || 0] });
       p.price_log = 이력;
     }
-    if (!Object.keys(p).length) return res.status(200).json({ ok: true, row: cur });
+    const 내보낼행 = ({ reports, ...x }) => ({ ...x, report_open: (Array.isArray(reports) ? reports : []).filter(v => v && !v.done && !v.stop).length, ops_stop: 운영멈춤(reports) });
+    if (!Object.keys(p).length) return res.status(200).json({ ok: true, row: 내보낼행(cur) });
     p.updated_at = new Date().toISOString();
     const r = await fetch(sbUrl('bk_listing', `id=eq.${id}&agent_id=eq.${agent.id}`), {
       method: 'PATCH', headers: { ...sbHeaders(), Prefer: 'return=representation' }, body: JSON.stringify(p) });
@@ -1142,8 +1151,8 @@ async function setListing(res, agent, b) {
       return res.status(502).json({ error: w.msg || '물건을 저장하지 못했습니다' }); }
     const 뒤행 = (await r.json())[0] || null;
     /* 주소를 바꿨으면 좌표도 다시(2026-11-14 매물지도) */
-    if (뒤행 && ('road' in p || 'dong' in p) && 지도켜짐()) { const v = await 물건좌표채우기(뒤행).catch(() => null); if (v) Object.assign(뒤행, v); }
-    return res.status(200).json({ ok: true, row: 뒤행 });
+    if (뒤행 && ('road' in p || 'dong' in p) && 지도켜짐()) { const v = await 물건좌표잠깐(뒤행); Object.assign(뒤행, v || { lat: null, lng: null }); }
+    return res.status(200).json({ ok: true, row: 뒤행 && 내보낼행(뒤행) });
   } catch (e) { return res.status(502).json({ error: 'DB에 닿지 못했습니다' }); }
 }
 /* 목록(active) · 거래완료(done) · 보관함(arch) · 휴지통(trash, 30일). 목록 밖으로 나가면 노출도 함께 끝난다 */
@@ -1263,7 +1272,7 @@ async function addListing(req, res, agent, user, b) {
     }
     const 새행 = (await r.json())[0] || null;
     /* 좌표 - 매물지도에 놓는다(열쇠 · 0042 가 없으면 넘어간다). 저장은 이미 끝났으니 실패해도 그대로 */
-    if (새행 && 지도켜짐()) { const v = await 물건좌표채우기(새행).catch(() => null); if (v) Object.assign(새행, v); }
+    if (새행 && 지도켜짐()) { const v = await 물건좌표잠깐(새행); if (v) Object.assign(새행, v); }
     return res.status(201).json({
       ok: true, row: 새행,
       /* 화면이 이것을 보고 '다 저장되지 않았다' 고 말한다 */

@@ -250,31 +250,51 @@ async function readReports(req, res, p, opsUser) {
 const REPORT_MARK = ['checking', 'done', 'dismissed'];
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-/* 매물 신고 (2026-11-14) - 신고가 있는 매물 · 처리: 'ok'(확인함 - 신고만 닫음) · 'stop'(공개 멈춤 - vis private · 신고 닫음) */
+/* 매물 신고 (2026-11-14) - 신고가 있는 매물 · 처리: 'ok'(확인함 - 신고만 닫음) · 'stop'(공개 멈춤 - vis private · 신고 닫음 · 중개사가 다시 못 켬)
+   · 'lift'(멈춤 풀기 - 중개사가 다시 노출할 수 있게. 공개는 중개사가 직접 켠다).
+   멈춤 표시는 reports 안의 { stop: true, at } 한 줄 - 0042 칸만으로 되고, 중개사 쪽(api/feed.js 운영멈춤)이 이것을 본다 */
+const LR_COLS = 'select=id,name,dong,road,deal,dep,rent,vis,status,agent_id,reports,report_at';
+const 멈춤중 = reports => (Array.isArray(reports) ? reports : []).some(v => v && v.stop && !v.lifted);
 async function readListingReports(req, res, opsUser) {
   try {
-    const r = await fetch(sbUrl('bk_listing', 'select=id,name,dong,road,deal,dep,rent,vis,status,agent_id,reports,report_at&report_at=not.is.null&order=report_at.desc&limit=100'), { headers: sbHeaders() });
-    if (!r.ok) { const t = await r.text(); return /report|42703|PGRST204/.test(t) ? res.status(200).json({ rows: [], note: '매물 신고 칸이 아직 없습니다 (0042 마이그레이션 필요)' }) : res.status(500).json({ error: '매물 신고를 불러오지 못했습니다' }); }
-    const rows = await r.json();
+    /* 처리 안 된 신고가 있는 매물은 모두(오래된 것도 빠지지 않게) + 최근 신고 매물 50개 (2026-11-16 코드리뷰) */
+    const 열린 = encodeURIComponent('[{"done":false}]');
+    const [r, r2] = await Promise.all([
+      fetch(sbUrl('bk_listing', `${LR_COLS}&reports=cs.${열린}&order=report_at.desc&limit=300`), { headers: sbHeaders() }),
+      fetch(sbUrl('bk_listing', `${LR_COLS}&report_at=not.is.null&order=report_at.desc&limit=50`), { headers: sbHeaders() }),
+    ]);
+    if (!r.ok || !r2.ok) { const t = await (r.ok ? r2 : r).text(); return /report|42703|PGRST204/.test(t) ? res.status(200).json({ rows: [], note: '매물 신고 칸이 아직 없습니다 (0042 마이그레이션 필요)' }) : res.status(500).json({ error: '매물 신고를 불러오지 못했습니다' }); }
+    const 모음 = new Map();
+    for (const x of [...await r.json(), ...await r2.json()]) 모음.set(x.id, x);
+    const rows = [...모음.values()].sort((a, b) => String(b.report_at || '').localeCompare(String(a.report_at || '')));
     const aIds = [...new Set(rows.map(x => x.agent_id).filter(Boolean))], who = {};
     if (aIds.length) { const ar = await fetch(sbUrl('bk_agent', `select=id,office,name&id=in.(${aIds.join(',')})`), { headers: sbHeaders() }); if (ar.ok) for (const a of await ar.json()) who[a.id] = a.office || a.name || '-'; }
     await logOps(req, opsUser, { action: 'lreports', count: rows.length });
-    return res.status(200).json({ rows: rows.map(x => ({ ...x, office: who[x.agent_id] || '-', reports: (Array.isArray(x.reports) ? x.reports : []).map(({ uid, ...y }) => y) })) });
+    return res.status(200).json({ rows: rows.map(x => ({ ...x, office: who[x.agent_id] || '-', stopped: 멈춤중(x.reports),
+      reports: (Array.isArray(x.reports) ? x.reports : []).filter(v => v && !v.stop).map(({ uid, ...y }) => y) })) });
   } catch (e) { return res.status(500).json({ error: '매물 신고를 불러오지 못했습니다' }); }
 }
 async function markListingReport(req, res, p, opsUser) {
   const id = String(p.id || ''), op = String(p.op || '');
-  if (!UUID.test(id) || !['ok', 'stop'].includes(op)) return res.status(400).json({ error: '알 수 없는 요청입니다' });
+  if (!UUID.test(id) || !['ok', 'stop', 'lift'].includes(op)) return res.status(400).json({ error: '알 수 없는 요청입니다' });
   try {
-    const g = await fetch(sbUrl('bk_listing', `select=id,reports&id=eq.${id}&limit=1`), { headers: sbHeaders() });
-    const L = g.ok ? (await g.json())[0] : null;
-    if (!L) return res.status(404).json({ error: '매물을 찾지 못했습니다' });
-    const reports = (Array.isArray(L.reports) ? L.reports : []).map(x => ({ ...x, done: true }));
-    const body = op === 'stop' ? { reports, vis: 'private', updated_at: new Date().toISOString() } : { reports };
-    const w = await fetch(sbUrl('bk_listing', `id=eq.${id}`), { method: 'PATCH', headers: { ...sbHeaders(), Prefer: 'return=minimal' }, body: JSON.stringify(body) });
-    if (!w.ok) return res.status(500).json({ error: '처리하지 못했습니다' });
-    await logOps(req, opsUser, { action: 'lreport-mark', count: 1, detail: op === 'stop' ? '공개 멈춤' : '확인함' });
-    return res.status(200).json({ ok: true });
+    /* 처리하는 사이 새 신고가 들어오면 그 신고가 '처리함' 으로 덮이지 않게 - report_at 이 읽은 때와 같을 때만 쓴다 */
+    for (let 번 = 0; 번 < 4; 번++) {
+      const g = await fetch(sbUrl('bk_listing', `select=id,reports,report_at&id=eq.${id}&limit=1`), { headers: sbHeaders() });
+      const L = g.ok ? (await g.json())[0] : null;
+      if (!L) return res.status(404).json({ error: '매물을 찾지 못했습니다' });
+      const at = new Date().toISOString(), 앞 = Array.isArray(L.reports) ? L.reports.filter(Boolean) : [];
+      const reports = op === 'lift' ? 앞.map(x => x.stop && !x.lifted ? { ...x, lifted: at } : x)
+        : [...(op === 'stop' && !멈춤중(앞) ? [{ stop: true, at, done: true }] : []), ...앞.map(x => ({ ...x, done: true }))];
+      const body = op === 'stop' ? { reports, vis: 'private', updated_at: at } : { reports };
+      const 그대로 = L.report_at ? `report_at=eq.${encodeURIComponent(L.report_at)}` : 'report_at=is.null';
+      const w = await fetch(sbUrl('bk_listing', `id=eq.${id}&${그대로}`), { method: 'PATCH', headers: { ...sbHeaders(), Prefer: 'return=representation' }, body: JSON.stringify(body) });
+      if (!w.ok) return res.status(500).json({ error: '처리하지 못했습니다' });
+      if (!((await w.json().catch(() => [])) || []).length) continue;
+      await logOps(req, opsUser, { action: 'lreport-mark', count: 1, detail: { ok: '확인함', stop: '공개 멈춤', lift: '멈춤 풀기' }[op] });
+      return res.status(200).json({ ok: true });
+    }
+    return res.status(409).json({ error: '그사이 새 신고가 들어왔습니다 - 다시 불러와 확인해 주세요' });
   } catch (e) { return res.status(500).json({ error: '처리하지 못했습니다' }); }
 }
 async function markReport(req, res, p, opsUser) {

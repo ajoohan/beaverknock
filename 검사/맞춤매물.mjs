@@ -26,8 +26,8 @@ const 조건 = { id: 'dddddddd-0000-4000-8000-000000000001', user_id: 'u-1', kin
 ok(일치기준 === 80, '80점 이상만 보인다');
 ok(일치율(조건, 물건).점 === 100, '다 맞으면 100점');
 ok(일치율(조건, { ...물건, deal: '전세' }) === null, '거래 방식이 다르면 견주지 않는다');
-ok(일치율(조건, { ...물건, kind: 'shop' }) === null, '유형이 다르면 견주지 않는다');
-{ const 상가조건 = { kind: 'shop', dongs: [], dep: 30000000, rent: 2000000 }, 상가 = { kind: 'shop', dong: '망월동', dep: 20000000, rent: 1500000, area: 60 };
+ok(일치율(조건, { ...물건, kind: 'shop' }) === null, '유형이 다르면 견주지 않는다');
+{ const 상가조건 = { kind: 'shop', dongs: [], dep: 30000000, rent: 2000000 }, 상가 = { kind: 'shop', dong: '망월동', dep: 20000000, rent: 1500000, area: 60 };
   ok(일치율(상가조건, 상가) && 일치율(상가조건, { ...상가, deal: '매매' }) === null, '상가 · 사무실 조건(임대)은 매매 물건과 견주지 않는다 (리뷰 11-12)'); }
 ok(일치율(조건, { ...물건, dong: '덕풍동' }).지역 === 0 && 일치율(조건, { ...물건, dong: '덕풍동' }).점 === 70, '동이 다르면 지역 0점 - 70점이라 안 보인다');
 ok(일치율(조건, { ...물건, dep: 54000000 }).예산 === 20, '보증금이 10% 안에서 넘으면 예산 20점');
@@ -73,10 +73,12 @@ globalThis.fetch = async (url, opt = {}) => {
 /* ── 사진 (0040) ── */
 /* 매물 신고 (2026-11-14 약관 제11조) - 공개 중인 매물만 · 까닭은 정한 것 중에서 · 같은 분은 한 번만 · 사무소에는 누가 했는지 안 간다 */
 { const { matchReport } = await import('../api/_match.js');
-  let 줄 = { id: 물건.id, reports: [{ at: 'x', type: '기타', uid: 'u-9', done: false }] }, 쓴 = null;
+  let 줄 = { id: 물건.id, reports: [{ at: 'x', type: '기타', uid: 'u-9', done: false }] }, 쓴 = null, 엇갈림 = 0, 쓴주소 = [];
   const 원 = globalThis.fetch;
   globalThis.fetch = async (u, o = {}) => { const d = decodeURIComponent(String(u));
-    if ((o.method || 'GET') === 'PATCH') { 쓴 = JSON.parse(o.body); return new Response(null, { status: 204 }); }
+    if ((o.method || 'GET') === 'PATCH') { 쓴주소.push(d);
+      if (엇갈림 > 0) { 엇갈림--; 줄 = { ...줄, reports: [...줄.reports, { at: 'y', type: '기타', uid: 'u-8', done: false }], report_at: 'y' }; return new Response('[]', { status: 200 }); }
+      쓴 = JSON.parse(o.body); return new Response(JSON.stringify([{ id: 물건.id }]), { status: 200 }); }
     return new Response(JSON.stringify(/vis=eq\.open/.test(d) && 줄 ? [줄] : []), { status: 200 }); };
   const 답 = () => { const r = { code: 0, body: null }; r.status = c => (r.code = c, r); r.json = b => (r.body = b, r); return r; };
   let r = 답(); await matchReport(r, { id: 'u-1' }, { listing_id: 물건.id, type: '사실과 다른 정보', detail: '<b>관리비가 다름</b>' });
@@ -87,9 +89,19 @@ globalThis.fetch = async (url, opt = {}) => {
   ok(r.code === 400, '정해진 까닭이 아니면 받지 않는다');
   줄 = null; r = 답(); await matchReport(r, { id: 'u-3' }, { listing_id: 물건.id, type: '기타' });
   ok(r.code === 404, '공개가 끝난 매물은 신고를 받지 않는다');
+  /* 2026-11-16 코드리뷰 - 거의 같이 들어온 두 신고가 서로를 지우지 않는다 */
+  줄 = { id: 물건.id, reports: [], report_at: null }; 엇갈림 = 1; 쓴주소 = []; r = 답(); await matchReport(r, { id: 'u-5' }, { listing_id: 물건.id, type: '기타' });
+  ok(r.code === 200 && 쓴주소[0].includes('report_at=is.null') && 쓴주소[1].includes('report_at=eq.y') && 쓴.reports.some(x => x.uid === 'u-8') && 쓴.reports.some(x => x.uid === 'u-5'),
+    '읽은 뒤 다른 신고가 끼면 다시 읽어 둘 다 남긴다(report_at 이 그대로일 때만 쓴다)');
   globalThis.fetch = 원;
   const fs = await import('node:fs'); const feed = fs.readFileSync(new URL('../api/feed.js', import.meta.url), 'utf8');
-  ok(/\.map\(\(\{ reports, \.\.\.x \}\) => \(\{ \.\.\.x, report_open:/.test(feed), '매물장부(사무소)에는 신고 내용 대신 미확인 신고 수만 - 신고한 손님 계정이 가지 않는다'); }
+  ok(/\.map\(\(\{ reports, \.\.\.x \}\) => \(\{ \.\.\.x, report_open:/.test(feed), '매물장부(사무소)에는 신고 내용 대신 미확인 신고 수만 - 신고한 손님 계정이 가지 않는다');
+  ok(feed.includes('row: 뒤행 && 내보낼행(뒤행)') && feed.includes('row: 내보낼행(cur)'), '물건 고침 응답에도 신고한 손님 계정이 실리지 않는다');
+  ok(feed.includes("cur.vis !== 'open' && 운영멈춤(cur.reports)) return res.status(403)"), '운영자가 공개를 멈춘 매물은 중개사가 다시 노출할 수 없다');
+  const dm = fs.readFileSync(new URL('../api/demands.js', import.meta.url), 'utf8');
+  ok(dm.includes('reports=cs.${열린}') && dm.includes("['ok', 'stop', 'lift']") && dm.includes('{ stop: true, at, done: true }'), '운영 신고함 - 처리 안 된 신고는 오래돼도 모두 · 공개 멈춤 표시 · 멈춤 풀기');
+  ok(feed.includes("name: p.t === 'radius' ? `${p.area || '고른 곳'} 부근` : p.name") && !/o\.places = d\.places\.map\([^\n]*lat/.test(feed), '열람 전 요약 - 고른 곳의 좌표는 빼고 반경 중심 이름은 시 · 구로');
+  ok(fs.readFileSync(new URL('../api/demand.js', import.meta.url), 'utf8').includes("if (miss === 'places') return res.status(503)"), '0042 전 - 고른 곳을 말없이 빼지 않고 동으로 다시 골라 달라고 한다'); }
 /* 구글 지도 (2026-11-14) - 역 · 단지 · 반경으로 고른 곳 · 손님에게는 대략 위치 */
 { const { 고른곳들, 곳안 } = await import('../api/_match.js'); const G = await import('../api/_geo.js');
   const 곳 = 고른곳들([{ t: 'station', name: '미사역<b>', lat: 37.5605, lng: 127.1932, area: '하남시' }, { t: 'radius', lat: 37.5, lng: 127.0, r: 99999 }, { t: 'x', lat: 37, lng: 127 }, { t: 'complex', lat: 10, lng: 10 }]);
@@ -101,7 +113,22 @@ globalThis.fetch = async (url, opt = {}) => {
   ok(일치율({ ...d, places: [{ ...d.places[0], t: 'complex' }] }, L).지역 === 0, '단지(300m) 밖이면 지역 0점 - 시 이름(하남시)만으로 만점을 주지 않는다');
   ok(일치율({ ...d, places: [] , dongs: [] }, L).지역 === 30 && 일치율({ ...d, dongs: [] }, { ...L, lat: 0, lng: 0 }).지역 === 0, '고른 곳이 없으면 어디든 만점 · 좌표 없는 매물은 고른 곳으로는 못 맞춘다');
   const 막 = await G.좌표('경기도 하남시 미사강변대로 1');
-  ok(막 === null && !G.지도켜짐(), '서버 열쇠(GOOGLE_MAPS_SERVER_KEY)가 없으면 좌표를 찾지 않는다'); }
+  ok(막 === null && !G.지도켜짐(), '서버 열쇠(GOOGLE_MAPS_SERVER_KEY)가 없으면 좌표를 찾지 않는다');
+  /* 2026-11-16 코드리뷰 - 잠깐 실패(사용량 · 열쇠 거절 · 시간 초과)는 '찾아 봤음' 으로 남기지 않는다 */
+  const 원 = globalThis.fetch, 쓴 = [], 원열쇠 = process.env.GOOGLE_MAPS_SERVER_KEY; let 구글답 = 'OVER_QUERY_LIMIT', 구글횟수 = 0;
+  process.env.GOOGLE_MAPS_SERVER_KEY = 'test-key';
+  globalThis.fetch = async (u, o = {}) => { const d = String(u);
+    if (d.includes('maps.googleapis.com')) { 구글횟수++; return new Response(JSON.stringify(구글답 === 'OK' ? { status: 'OK', results: [{ geometry: { location: { lat: 37.56, lng: 127.19 } } }] } : { status: 구글답 }), { status: 200 }); }
+    if ((o.method || 'GET') === 'PATCH') { 쓴.push(JSON.parse(o.body)); return new Response(null, { status: 204 }); }
+    return new Response(JSON.stringify(Array.from({ length: 10 }, (_, i) => ({ id: 'L' + i, road: `잠깐 실패 시험로 ${i}` }))), { status: 200 }); };
+  const z1 = await G.물건좌표채우기({ id: 'a1', road: '잠깐 실패 시험로 1' });
+  ok(!z1.v && !z1.sure && 쓴.at(-1).geo_at === null && 쓴.at(-1).lat === null, '잠깐 실패면 geo_at 을 비워 둔다 - 지도를 열 때 다시 찾는다');
+  구글답 = 'ZERO_RESULTS'; const z2 = await G.물건좌표채우기({ id: 'a2', road: '없는 주소로 2' });
+  ok(!z2.v && z2.sure && 쓴.at(-1).geo_at && 쓴.at(-1).lat === null, '주소가 정말 없으면 geo_at 을 찍어 다시 묻지 않는다');
+  구글답 = 'OVER_QUERY_LIMIT'; 구글횟수 = 0; const 묶음 = await G.내물건좌표('ag1');
+  ok(묶음.ok && 묶음.done === 0 && 구글횟수 === 5 && !묶음.left, '지도 열 때 - 다섯 개씩 함께 찾고, 사용량 초과가 나오면 거기서 멈춘다');
+  구글답 = 'OK'; ok((await G.물건좌표잠깐({ id: 'a3', road: '찾는 주소로 3' }))?.lat === 37.56, '물건 저장 - 좌표가 빨리 오면 응답에 싣는다');
+  globalThis.fetch = 원; if (원열쇠 === undefined) delete process.env.GOOGLE_MAPS_SERVER_KEY; else process.env.GOOGLE_MAPS_SERVER_KEY = 원열쇠; }
 { const { 사진들, listingPicAdd } = await import('../api/_pics.js');
   const 길 = 'listing/11111111-2222-4333-8444-555555555555/aaaaaaaa-0000-4000-8000-000000000001/abc123def456.jpg';
   ok(사진들([길, { p: 길 }, '../etc/passwd', 'listing/x/y/z.jpg', 'http://evil/a.jpg']).length === 2, '사진 경로는 우리 저장소 모양만 받는다');

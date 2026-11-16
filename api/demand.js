@@ -369,6 +369,9 @@ export default async function handler(req, res) {
       for (let i = 0; i < 4 && !r.ok; i++) {
         const miss = missingColumn(row, t);
         if (!miss) break;
+        /* 고른 곳(역 · 단지 · 반경)은 빼고 넣으면 지역에 시 · 구 이름만 남아 맞춤매물이 하나도 안 뜬다 -
+           말없이 빼지 않고 손님께 동으로 다시 골라 달라고 한다 (2026-11-16 코드리뷰 · 0042 전) */
+        if (miss === 'places') return res.status(503).json({ error: '역 · 단지 · 장소로 고르기는 아직 준비 중입니다 - 동으로 골라 주세요', need: '0042' });
         console.warn(`${miss} 칸 없음 — 그 칸 없이 저장한다 (마이그레이션 필요)`);
         delete row[miss];
         r = await insert(row);

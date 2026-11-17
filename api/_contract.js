@@ -1000,12 +1000,16 @@ export async function reportDueCron(req, res) {
 /* 문자 캡처 읽기는 처리방침 개정(2026-11-05) 뒤 7일이 지나야 켠다 - 2026-11-12 0시(한국) */
 let 문자사진부터 = Date.parse('2026-11-11T15:00:00Z');
 export const __setSmsFrom = ms => { 문자사진부터 = ms; };
+/* 다른 사무소 계약서 판독 - 처리방침 개정(2026-11-17 게시) 안내 7일 뒤, 11월 24일 0시(한국)부터 */
+let 계약서판독부터 = Date.parse('2026-11-23T15:00:00Z');
+export const __setExtFrom = ms => { 계약서판독부터 = ms; };
 async function scan(req, res, b, user) {
   /* 판독 한 번이 Anthropic 요금이다 - 계정마다 하루 30번, 한 곳(IP)에서 하루 60번까지 (2026-11-03 보안점검).
      서버리스라 인스턴스마다 따로 세는 느슨한 상한이지만, 한 계정이 끝없이 돌리는 것은 막는다 */
   const 많음 = () => res.status(429).json({ error: '오늘 서류 판독을 많이 쓰셨습니다 - 내일 다시 해 주세요', code: 'too_many_scans' });
   /* 문자 캡처는 켜기 전이면 횟수를 세기 전에 막는다(막힌 시도가 하루 상한을 깎지 않게) */
   if (b && b.mode === 'sms' && Date.now() < 문자사진부터) return res.status(403).json({ error: '캡처 사진 읽기는 11월 12일부터 씁니다(개인정보 처리방침 개정 안내 기간) - 지금은 글을 붙여 넣어 주세요', code: 'not_yet' });
+  if (b && b.mode === 'ext' && Date.now() < 계약서판독부터) return res.status(403).json({ error: '계약서에서 읽기는 11월 24일부터 씁니다(개인정보 처리방침 개정 안내 기간) - 지금은 날짜 · 금액을 직접 적어 주세요', code: 'not_yet' });
   if (overLimit('scan:u:' + (user && user.id), 30, 864e5) || overLimit('scan:ip:' + ipOf(req), 60, 864e5)) return 많음();
   /* 인스턴스마다 세는 위 상한은 느슨하다 - 운영 기록 표에 남긴 판독 수를 DB 에서 한 번 더 센다(새 표 없이) */
   if (user && user.id) {
@@ -1016,13 +1020,19 @@ async function scan(req, res, b, user) {
       if (r.ok && (await r.json()).length >= 30) return 많음();
     } catch { /* 기록을 못 읽어도 판독은 막지 않는다 - 위 상한이 남아 있다 */ }
   }
-  const { scanDocs, scanSms, ScanError } = await import('./_scan.js');
+  const { scanDocs, scanSms, scanExt, ScanError } = await import('./_scan.js');
   try {
     /* 계약체결 문자 캡처 한 장 - 본문 글만 돌려준다(같은 하루 상한을 쓴다) */
     if (b.mode === 'sms') {
       const text = await scanSms(b.file);
       await logOps(req || { headers: {} }, user, { action: 'contract-scan', count: 1 });
       return res.status(200).json({ ok: true, text });
+    }
+    /* 다른 사무소 계약서 한 파일 - 소재지 · 거래 · 금액 · 날짜만(같은 하루 상한) */
+    if (b.mode === 'ext') {
+      const ext = await scanExt(b.file);
+      await logOps(req || { headers: {} }, user, { action: 'contract-scan', count: 1 });
+      return res.status(200).json({ ok: true, ext });
     }
     const out = await scanDocs(b.files);
     await logOps(req || { headers: {} }, user, { action: 'contract-scan', count: Array.isArray(b.files) ? b.files.length : null });

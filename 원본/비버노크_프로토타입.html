@@ -3279,6 +3279,7 @@ body.mo .ct-cobrk .btn{width:100%;min-height:44px}
 body.mo .ct-cobrk .tapx{min-height:44px;padding:0 6px}
 .ct-qedit{display:inline-block;margin-top:5px;padding:4px 10px;min-height:28px;border:1px solid var(--n200);border-radius:8px;background:var(--white);font-size:12.5px;font-weight:600;color:var(--ind700,#3B3EA8)}
 .ct-qedit:hover{background:var(--n100)}
+.ct-tbl .chg{color:#B25E00;font-weight:700}
 .modal .box.ct-qbox{max-width:560px}
 .ct-qbox .ct-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 12px}
 .ct-qbox .ct-grid > .w12{grid-column:1/-1}
@@ -10157,7 +10158,7 @@ function 물건관리HTML(L){
   return `<div class="card pad lg-card"><h2 class="lm-h">장부 관리 <span class="badge ${색}">${상}</span></h2>
     <div class="lg-std"><b>노출 기준 ${g.찬}/${g.다}</b><div class="lg-stds">${g.목록.map(([t, ok]) => `<span class="badge ${ok ? 'b-ok' : 'b-warn'}">${ok ? '✓' : '·'} ${t}</span>`).join('')}</div>
       ${g.빠짐.length ? `<p class="sub" style="margin:0;font-size:13.5px">아직 빠진 항목 - ${esc(g.빠짐.join(' · '))}. 모두 채우면 노출할 수 있습니다.</p>` : ''}</div>
-    ${살아 ? `<label class="lg-ck"><input type="checkbox" data-act="lg-owner" data-v="${L.id}" ${L.ownerOk ? 'checked' : ''} ${바쁨}><span><b>등기부상 소유자와 일치함을 확인했습니다</b><small>중개사가 등기부와 대조하고 직접 체크합니다 · 공동명의는 모두 일치해야 합니다</small></span></label>
+    ${살아 ? `<label class="lg-ck"><input type="checkbox" data-act="lg-owner" data-v="${L.id}" ${L.ownerOk ? 'checked' : ''} ${바쁨}><span><b>등기부상 소유자와 일치함을 확인했습니다</b><small>아래 비공개 메모에 등기부상 소유자 이름을 적은 뒤 체크합니다 · 중개사가 등기부와 대조하고 직접 체크 · 공동명의는 모두 일치해야 합니다</small></span></label>
     <label class="lg-ck"><input type="checkbox" data-act="lg-hide" data-v="${L.id}" ${L.hideUnit ? 'checked' : ''} ${바쁨}><span><b>손님 화면에서 동 · 호 숨기기</b><small>끄면 노출할 때 동까지 보입니다 · 호는 연결 전에는 보이지 않습니다</small></span></label>
     <div class="lm-grid"><label class="ct-f wide"><span class="lab">한줄 특징 (40자)</span><input class="inp" data-in="lgp:${L.id}:one" maxlength="40" value="${esc(e.one != null ? e.one : L.oneLine)}" placeholder="예: 올수리 · 남향 로열층 · 역 도보 5분" autocomplete="off"></label>
       ${돈칸('dep', L.deal === '매매' ? '매매가' : '보증금', L.dep)}${L.deal === '매매' || L.deal === '전세' ? '' : 돈칸('rent', '월세', L.rent)}</div>
@@ -10547,7 +10548,7 @@ function 물건메모HTML(L){
       : `<input class="inp" data-in="lm:${L.id}:${k}" value="${esc(o.num && +m[k] ? comma(String(+m[k])) : (m[k] || ''))}" maxlength="${o.max}" ${o.num ? 'inputmode="numeric"' : o.tel ? 'inputmode="tel"' : ''} placeholder="${esc(o.ph || '')}" autocomplete="off">`}
     ${o.num ? `<span class="ct-won" data-lmwon="${L.id}">${+m[k] ? `금 ${esc(한글금액(+m[k]))}원` : ''}</span>` : ''}</label>`;
   return `<div class="card pad lm-card"><h2 class="lm-h">비공개 메모 <span class="sub">우리 사무소만 봅니다 · 손님과 제안에는 나가지 않습니다</span></h2>
-    <div class="lm-grid">${칸('who', '의뢰인', { max: 30, ph: '예: 김○○ (집주인)' })}${칸('phone', '의뢰인 연락처', { max: 20, tel: true, ph: '010-0000-0000' })}
+    <div class="lm-grid">${칸('owner', '등기부상 소유자 이름', { wide: true, max: 40, ph: '등기부에 적힌 그대로 - 공동명의는 모두 (예: 김○○, 이○○)' })}${칸('who', '의뢰인', { max: 30, ph: '예: 김○○ (집주인)' })}${칸('phone', '의뢰인 연락처', { max: 20, tel: true, ph: '010-0000-0000' })}
       ${칸('nego', '조정 가능 금액 (원)', { max: 20, num: true, ph: '예: 5,000,000' })}${칸('note', '특이사항', { wide: true, area: true, max: 500, ph: '예: 오후에만 방문 가능, 반려동물 협의 가능' })}</div>
     <p class="sub" style="margin:0;font-size:13px;line-height:1.6">현관 · 공동현관 비밀번호는 적지 마세요.${저장된 && 저장된.at ? ` · 마지막 저장 ${esc(String(저장된.at).slice(0, 16).replace('T', ' '))}` : ''}</p>
     <button type="button" class="btn sec sm" data-act="lm-save" data-v="${L.id}" style="align-self:flex-start" ${LM.busy === L.id ? 'disabled' : ''}>${LM.busy === L.id ? '저장하는 중…' : '메모 저장'}</button>
@@ -13758,6 +13759,9 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
+  { v:'26.11.17.19', 날:'2026-11-17', 줄:[ '매물 - 비공개 메모에 ‘등기부상 소유자 이름’ 칸. 이름을 적고 저장해야 ‘소유자와 일치함’ 체크를 켤 수 있습니다(손님에게는 나가지 않습니다)',
+    '계약현황 표 - 처음 정한 날짜에서 바뀐 중도금일 · 잔금일은 주황색으로 보입니다(공동중개 계약서는 고친 날짜)',
+    '공동중개 계약서 올리기 - ‘계약서에서 날짜 · 금액 읽기’(11월 24일부터 · 개인정보 처리방침 개정 안내 기간) · 소재지 · 거래 · 금액 · 날짜만 읽습니다' ] },
   { v:'26.11.17.18', 날:'2026-11-17', 줄:[ '3차 · 4차 · 5차 중도금도 다가오는 일정 · 달력 · 아침 알림 · 달력 구독에 들어가고, 영수증도 차수마다 뽑을 수 있습니다' ] },
   { v:'26.11.17.17', 날:'2026-11-17', 줄:[ '서식 입력 · 전체화면에서 계약서 서식을 화면 폭에 맞춰 크게(1.7배까지) 보여 줍니다 · 확인·설명서는 입력 칸에서 적으므로 ‘서식 입력’을 꺼 둡니다',
     '계약체결 문자 ‘계약현황에 추가’ - 같은 문자를 두 번 넣지 않고, 계약금은 추정값(10%)을 넣지 않습니다',
@@ -17521,8 +17525,9 @@ function ct외부줄들(){
 function ct현황표(rows, 외부 = []){
   if(!rows.length && !외부.length) return 빈자리('찾는 계약서가 없습니다', '거르기를 바꿔 보세요.', '', 80);
   const 오늘 = ct오늘(), 원 = n => +n > 0 ? won(+n) : '', 날 = d => d ? d.slice(5).replace('-', '.') : '';
-  const 칸날 = (d, 돈) => { if(!d && !돈) return '<td class="mute">-</td>'; const 곧 = d && d >= 오늘 && ct날차(오늘, d) <= 30;
-    return `<td><span class="${곧 ? 'soon' : ''}">${날(d) || '미정'}</span>${돈 ? `<small>${돈}</small>` : ''}</td>`; };
+  /* 바뀜 - 처음 정한 날짜를 나중에 고친 칸은 주황(2026-11-17 파트너 D14 ③). 우리 계약서는 일정에서 바꾼 중도금일 · 잔금일, 공동중개 계약서는 고친 날짜 */
+  const 칸날 = (d, 돈, 바뀜) => { if(!d && !돈) return '<td class="mute">-</td>'; const 곧 = d && d >= 오늘 && ct날차(오늘, d) <= 30;
+    return `<td><span class="${바뀜 ? 'chg' : 곧 ? 'soon' : ''}"${바뀜 ? ' title="처음 정한 날짜에서 바뀌었습니다"' : ''}>${날(d) || '미정'}</span>${바뀜 ? '<small class="chg">날짜 바뀜</small>' : ''}${돈 ? `<small>${돈}</small>` : ''}</td>`; };
   /* 이름을 누르면 그 손님 대화방(대화방이 있을 때만 - 2026-11-17 파트너 D14 ③) */
   const 사람 = (r, 쪽) => { const F = CT_FORMS[r.form] || {}, [k, ko] = (쪽 === 'a' ? F.a : F.b) || ['', ''], x = (r.parties || {})[k] || {};
     const 방 = r.track && r.track.room && 권한('room') && x.name;
@@ -17543,15 +17548,15 @@ function ct현황표(rows, 외부 = []){
         <td class="obj">${esc(r.title || '소재지 미입력')}${ct빠른쓰기() ? `<button type="button" class="tapx ct-qedit" data-act="ct-qedit" data-v="${esc(r.id)}" aria-label="${esc(r.title || '이 계약')} 고치기">고치기</button>` : ''}</td>${사람(r, 'a')}${사람(r, 'b')}
         ${t.permit ? 칸날(t.permitAgreed || t.permitDue, 원(t.agreedAmt)) + 칸날(t.permitApplied, '') + 칸날(t.permitOk, '') : '<td class="mute">-</td><td class="mute">-</td><td class="mute">-</td>'}
         ${t.permit ? (r.cd ? `<td><span>${날(r.cd)}</span><small>계약일과 같음</small></td>` : '<td class="mute">-</td>') : t.signDate ? `<td><span>${날(t.signDate)}</span><small>계약금 일부</small></td>` : '<td class="mute">미정</td>'}
-        ${칸날(r.cd, 원(r.down))}${+r.mid ? 칸날(t.midDate || r.md, 원(중)) : '<td class="mute">-</td>'}${칸날(t.balanceDate || r.bd, 원(잔))}</tr>`; }).join('')}
+        ${칸날(r.cd, 원(r.down))}${+r.mid ? 칸날(t.midDate || r.md, 원(중), !!(t.midDate && r.md && t.midDate !== r.md)) : '<td class="mute">-</td>'}${칸날(t.balanceDate || r.bd, 원(잔), !!(t.balanceDate && r.bd && t.balanceDate !== r.bd))}</tr>`; }).join('')}
     ${외부.map(e => `<tr data-act="ext-edit" data-v="${esc(e.id)}" tabindex="0">
         <td>${e.state ? `<span class="badge ${e.state === 'done' ? 'b-ok' : 'b-warn'}">${e.state === 'done' ? '완료' : '취소'}</span>` : '<span class="badge b-mute">진행</span>'}<small class="ct-tag">공동중개</small></td>
         <td><b>${esc(e.kind)}</b><small>다른 사무소 작성${e.file ? ' · 파일 있음' : ''}</small></td>
         <td class="obj">${esc(e.title)}</td><td colspan="2"><small>작성 사무소</small><b>${esc(e.office || '-')}</b>${e.memo ? `<small>${esc(e.memo)}</small>` : ''}</td>
         <td class="mute">-</td><td class="mute">-</td><td class="mute">-</td><td class="mute">-</td>
-        ${칸날(e.cd, e.price ? won(e.price) : '')}${칸날(e.md, '')}${칸날(e.bd, '')}</tr>`).join('')}
+        ${칸날(e.cd, e.price ? won(e.price) : '', (e.chg || []).includes('cd'))}${칸날(e.md, '', (e.chg || []).includes('md'))}${칸날(e.bd, '', (e.chg || []).includes('bd'))}</tr>`).join('')}
     </tbody></table></div>
-    <p class="sub ct-tbl-note">상태는 표에서 바로 바꿉니다 · ‘고치기’로 날짜 · 금액 · 당사자를 바로 고칩니다(날인본은 날짜만) · ‘공동중개’ 줄은 다른 사무소가 쓴 계약서로, 누르면 날짜 · 금액을 고칩니다 · 밑줄 이름은 누르면 그 손님 대화방 · 이름 아래는 연락처 · 30일 안에 다가오는 날짜는 보라색 · 계약체결일은 계약서의 ‘일정 · 체크’에서 적습니다.</p>`;
+    <p class="sub ct-tbl-note">상태는 표에서 바로 바꿉니다 · ‘고치기’로 날짜 · 금액 · 당사자를 바로 고칩니다(날인본은 날짜만) · ‘공동중개’ 줄은 다른 사무소가 쓴 계약서로, 누르면 날짜 · 금액을 고칩니다 · 처음 정한 날짜에서 바뀐 칸은 주황색 · 밑줄 이름은 누르면 그 손님 대화방 · 이름 아래는 연락처 · 30일 안에 다가오는 날짜는 보라색 · 계약체결일은 계약서의 ‘일정 · 체크’에서 적습니다.</p>`;
 }
 /* 줄 단추 - 복사 · 내리기 · 휴지통 · 되돌리기 · 영구 삭제(휴지통의 작성 중 계약서, 대표만). PC 는 마우스를 올리면, 휴대폰은 줄 아래에 */
 function ct행단추(r){
@@ -17710,7 +17715,9 @@ function ctExt창HTML(){
       <div class="ct-f wide"><span class="lab">계약서 파일 (선택 · 한 파일 3MB)</span>
         <div class="ext-file">${파일}
           <label class="btn tool sm">${E.newFile || E.file ? '바꾸기' : '파일 고르기'}<input type="file" class="sr" accept="${FU_받음}" data-ext-file aria-label="계약서 파일 고르기"></label>
-          ${isMo() ? `<label class="btn tool sm">사진 찍기<input type="file" class="sr" accept="image/*" capture="environment" data-ext-file aria-label="계약서 사진 찍기"></label>` : ''}</div></div>
+          ${isMo() ? `<label class="btn tool sm">사진 찍기<input type="file" class="sr" accept="image/*" capture="environment" data-ext-file aria-label="계약서 사진 찍기"></label>` : ''}
+          ${ctExt읽을수(E.newFile) ? `<button type="button" class="btn sec sm" data-act="ext-read" ${CT.extRead ? 'disabled' : ''}>${CT.extRead ? '읽는 중…' : '계약서에서 날짜 · 금액 읽기'}</button>` : ''}</div>
+        ${ctExt읽을수(E.newFile) ? '<p class="sub" style="margin:6px 0 0;font-size:12.5px;line-height:1.6">AI(Anthropic)가 소재지 · 거래 · 금액 · 날짜만 읽어 빈칸을 채웁니다. 당사자 이름 · 주민등록번호는 옮기지 않습니다(개인정보 처리방침의 국외 이전 · 11월 24일부터).</p>' : ''}</div>
     </div>
     <p class="sub" style="font-size:12.5px;line-height:1.6;margin:12px 0 0">주민등록번호 · 계좌번호가 보이는 면은 가리고 올려 주세요. 파일은 우리 사무소만 열 수 있습니다.</p>
     <div class="eqb" style="display:flex;gap:8px;margin-top:14px">
@@ -17723,6 +17730,27 @@ if(typeof document !== 'undefined') document.addEventListener('change', e => { c
   if(!/\.(pdf|hwp|hwpx|docx?|xlsx?|jpe?g|png)$/i.test(file.name)) return toast('한글(hwp · hwpx) · 워드 · 엑셀 · PDF · JPG · PNG 파일만 올릴 수 있습니다');
   if(file.size > (/\.(jpe?g|png)$/i.test(file.name) ? 20 : 3) * 1024 * 1024) return toast('파일이 3MB 를 넘습니다 - PDF 로 줄이거나 나눠 올려 주세요');
   CT.extEdit.newFile = file; render(); });
+/* 올린 계약서에서 소재지 · 거래 · 금액 · 날짜 읽기 (2026-11-17 대표님 결정 · 서버 _scan.js scanExt). 비어 있는 칸만 채운다 - 적어 둔 값은 건드리지 않는다.
+   판독에 쓴 파일은 서버가 저장하지 않는다(파일 보관은 '저장'을 눌렀을 때만) */
+const ctExt읽을수 = f => !!f && /\.(pdf|jpe?g|png)$/i.test(f.name || '');
+async function ctExtRead(){
+  const E = CT.extEdit, f = E && E.newFile; if(!f || CT.extRead) return;
+  if(!ctExt읽을수(f)) return toast('PDF · JPG · PNG 파일만 읽을 수 있습니다');
+  if(f.size > 3 * 1024 * 1024) return toast('3MB 를 넘는 파일은 읽을 수 없습니다 - 날짜 · 금액을 직접 적어 주세요');
+  CT.extRead = true; render();
+  try{
+    const data = await 읽기(f);
+    const { ok, j } = await ctPost({ what:'contract-scan', mode:'ext', file:{ data } }).catch(() => ({ ok:false, j:{ error:'네트워크 문제로 읽지 못했습니다' } }));
+    if(CT.extEdit !== E) return;
+    if(!ok || !j.ext) return toast(j.error || '계약서를 읽지 못했습니다 - 직접 적어 주세요');
+    const 채움 = [];
+    for(const [k, 이름] of [['title', '소재지'], ['kind', '거래'], ['price', '금액'], ['cd', '계약일'], ['md', '중도금일'], ['bd', '잔금일']]){
+      const 빈 = k === 'kind' ? !E.kind || E.kind === '기타' : !String(E[k] || '').trim() || (k === 'price' && !+String(E[k]).replace(/[^0-9]/g, ''));
+      if(빈 && j.ext[k]){ E[k] = k === 'price' ? String(j.ext[k]) : j.ext[k]; 채움.push(이름); } }
+    toast(채움.length ? `계약서에서 읽어 채웠습니다 (${채움.join(' · ')}) - 계약서와 맞는지 확인해 주세요` : '채울 빈칸이 없습니다 - 적어 둔 값은 그대로 둡니다');
+  }catch(_){ toast('파일을 읽지 못했습니다 - 직접 적어 주세요'); }
+  finally{ CT.extRead = false; render(); }
+}
 async function ctExtSave(){
   const E = CT.extEdit; if(!E || CT.extBusy) return;
   if(!String(E.title || '').trim()) return toast('소재지(물건 이름)를 적어 주세요');
@@ -22601,6 +22629,7 @@ function handle(a,v,el){
       if(!권한('ct_edit')){ if(e.file) 파일열기(() => ctPost({ what:'contract-ext-url', id: v }), 바로보는파일(e.file.ext)); else toast('계약서 작성 권한이 꺼져 있어 고칠 수 없습니다'); return true; } CT.extEdit = { ...e, price: e.price ? String(e.price) : '' }; S.modal = { type:'ct-ext' }; render(); return true; }
     case 'ext-chip': { const [k, val] = String(v).split('|'); if(CT.extEdit && ['kind', 'state'].includes(k)){ CT.extEdit[k] = val || ''; render(); } return true; }
     case 'ext-save': ctExtSave(); return true;
+    case 'ext-read': ctExtRead(); return true;
     case 'ext-del': if(CT.extDel !== v){ CT.extDel = v; render(); return true; } CT.extDel = null; ctExtDel(v); return true;
     case 'ext-file': { const e = (CT.ext || []).find(x => x.id === v); 파일열기(() => ctPost({ what:'contract-ext-url', id: v }), e && e.file && 바로보는파일(e.file.ext)); return true; }
     case 'rm-kakao': S.modal = null; rmInvite(v, true); render(); return true;
@@ -22873,7 +22902,9 @@ function handle(a,v,el){
     case 'lb-go': lbGo(); return true;
     case 'ls-del': delete LS.files[v]; render(); return true;
     case 'lg-edit': { const L = S.listings.find(x => x.id === v); if(!L) return true; S.form = 물건폼(L); S.editL = L.id; go('#/partner/listing/new'); return true; }
-    case 'lg-owner': { const L = S.listings.find(x => x.id === v); if(L) lgSet(v, { listing: { ownerOk: !L.ownerOk } }, !L.ownerOk ? '소유자 확인을 표시했습니다' : '소유자 확인을 껐습니다'); return true; }
+    case 'lg-owner': { const L = S.listings.find(x => x.id === v);
+      if(L && !L.ownerOk && LM.loaded && !((LM.memos[v] || {}).owner)){ render(); toast(권한('listing_memo') ? '등기부상 소유자 이름을 먼저 적어 주세요 - 아래 ‘비공개 메모’에 적고 ‘메모 저장’을 누른 뒤 체크합니다' : '등기부상 소유자 이름이 아직 없습니다 - 대표님께 비공개 메모에 적어 달라고 요청하세요'); return true; }
+      if(L) lgSet(v, { listing: { ownerOk: !L.ownerOk } }, !L.ownerOk ? '소유자 확인을 표시했습니다' : '소유자 확인을 껐습니다'); return true; }
     case 'lg-hide': { const L = S.listings.find(x => x.id === v); if(L) lgSet(v, { listing: { hideUnit: !L.hideUnit } }, !L.hideUnit ? '손님 화면에서 동 · 호를 숨깁니다' : '노출할 때 동까지 보입니다'); return true; }
     case 'lg-save': { const L = S.listings.find(x => x.id === v), e = MG.e[v] || {}; if(!L) return true;
       const 값 = {}; if(e.one != null) 값.oneLine = String(e.one).trim(); if(e.dep != null && +e.dep > 0) 값.dep = +e.dep; if(e.rent != null) 값.rent = +e.rent || 0;

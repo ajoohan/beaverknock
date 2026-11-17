@@ -480,6 +480,8 @@ async function saveExt(res, agent, b) {
     if (!옛 && L.length >= 외부최대) return { error: `다른 사무소 계약서는 ${외부최대}건까지 둡니다 - 끝난 건을 지운 뒤 올려 주세요`, code: 400 };
     const v = 외부하나({ ...입력, id, file: 새파일 || (옛 && 옛.file) || null, at: (옛 && 옛.at) || at });
     if (!v) return { error: '소재지(이름)를 적어 주세요', code: 400 };
+    if (옛) { const 바뀜 = new Set(옛.chg || []); for (const k of ['cd', 'md', 'bd']) if (옛[k] && v[k] && 옛[k] !== v[k]) 바뀜.add(k); if (바뀜.size) v.chg = [...바뀜]; else delete v.chg; }
+    else delete v.chg;
     옛파일 = 새파일 && 옛 && 옛.file ? 옛.file : null;
     const 목록 = 옛 ? L.map(e => e.id === id ? v : e) : [v, ...L];
     return { list: 목록, item: v, patch: { ext: 목록 } };
@@ -1148,6 +1150,9 @@ async function setListing(res, agent, b) {
     if ('name' in p && !p.name) return res.status(400).json({ error: '물건 이름을 적어주세요' });
     if (cur.kind !== 'home' && 'baths' in p) p.baths = 0;
     if (b.vis === 'open' || b.vis === 'private') p.vis = b.vis;
+    /* 소유자 확인을 켜려면 비공개 메모에 등기부상 소유자 이름이 있어야 한다(2026-11-17 파트너 · 대표님). 설정을 못 읽으면 막지 않는다 */
+    if (p.owner_ok === true) { const x = await 설정읽기(agent); const 메 = x && !x.error && x.settings ? 물건메모들(x.settings.lmemo)[id] : null;
+      if (x && !x.error && x.settings && !(메 && 메.owner)) return res.status(400).json({ error: '등기부상 소유자 이름을 먼저 적어 주세요 - 물건의 비공개 메모에 적고 저장한 뒤 체크합니다', need: 'owner_name' }); }
     /* 직원 권한 (2026-11-12 A3) - 노출 켜고 끄기 · 노출 중 금액 */
     const 직 = agent.staff, 끈 = (직 && 직.perm) || {};
     if (직 && 'vis' in p && p.vis !== cur.vis && (보조원잠금('listing_open') && 직.role === 'assistant' || 끈.listing_open === false))
@@ -1327,8 +1332,8 @@ const 메모최대 = 300;
 const 메모글 = (v, n) => String(v ?? '').replace(/[\u0000-\u0008\u000b-\u001f\u007f]/g, ' ').trim().slice(0, n);
 export function 물건메모(m) {
   if (!m || typeof m !== 'object' || Array.isArray(m)) return null;
-  const 값 = { who: 메모글(m.who, 30), phone: 메모글(m.phone, 20).replace(/[^0-9-]/g, ''), nego: Math.max(0, Math.min(1e13, Math.round(+String(m.nego ?? '').replace(/[^0-9]/g, '')) || 0)), note: 메모글(m.note, 500) };
-  if (!값.who && !값.phone && !값.nego && !값.note) return null;
+  const 값 = { owner: 메모글(m.owner, 40), who: 메모글(m.who, 30), phone: 메모글(m.phone, 20).replace(/[^0-9-]/g, ''), nego: Math.max(0, Math.min(1e13, Math.round(+String(m.nego ?? '').replace(/[^0-9]/g, '')) || 0)), note: 메모글(m.note, 500) };
+  if (!값.owner && !값.who && !값.phone && !값.nego && !값.note) return null;
   return { ...값, at: String(m.at || '').slice(0, 19) };
 }
 export function 물건메모들(x) {

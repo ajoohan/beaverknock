@@ -266,3 +266,46 @@ export async function scanDocs(files) {
   if (!out || typeof out !== 'object' || Array.isArray(out)) throw new ScanError('unreadable', 422);
   return scanClean(out);
 }
+
+/* ── 다른 사무소가 쓴 계약서 판독 (2026-11-17) ── 계약현황에 올리는 공동중개 계약서 한 파일에서
+   소재지 · 거래 종류 · 금액 · 계약일 · 중도금일 · 잔금일만 읽는다. 당사자 이름 · 주민등록번호 · 계좌 · 연락처는 적지 않게 시키고,
+   돌아온 값도 정해진 칸만 받는다(그 밖의 글은 버린다). 판독에 쓴 파일은 저장하지 않는다 */
+export const EXT_KINDS = ['매매', '전세', '월세', '연세', '단기임대', '분양권', '기타'];
+export const EXT_SYSTEM = '당신은 한국 부동산 계약서를 읽어 정해진 칸만 옮겨 적는 도우미다. 당사자의 이름 · 주민등록번호 · 외국인등록번호 · 계좌번호 · 전화번호 · 주소는 어떤 칸에도 적지 않는다. 서류에 없는 값은 지어내지 않고 빈 문자열이나 0 으로 둔다. 답은 JSON 객체 하나만 적는다.';
+export function extRequest(block) {
+  return {
+    model: SCAN_MODEL, max_tokens: 800, output_config: { effort: SCAN_EFFORT },
+    system: EXT_SYSTEM,
+    messages: [{ role: 'user', content: [block, { type: 'text', text: '위 계약서에서 다음 칸만 JSON 으로 적어 주세요: {"title":"부동산 소재지(지번 · 건물명 · 동 · 호까지, 80자 안)","kind":"' + EXT_KINDS.join(' | ') + ' 가운데 하나","price":매매대금 또는 보증금(원, 숫자),"cd":"계약일 YYYY-MM-DD","md":"중도금 지급일 YYYY-MM-DD","bd":"잔금 지급일 YYYY-MM-DD"}' }] }],
+  };
+}
+export function extClean(t) {
+  const s = String(t || ''), a = s.indexOf('{'), b = s.lastIndexOf('}');
+  if (a < 0 || b <= a) return null;
+  let o; try { o = JSON.parse(s.slice(a, b + 1)); } catch { return null; }
+  if (!o || typeof o !== 'object' || Array.isArray(o)) return null;
+  const 날 = v => /^\d{4}-\d{2}-\d{2}$/.test(String(v || '')) ? String(v) : '';
+  const 돈 = Math.round(+String(o.price ?? '').replace(/[^0-9]/g, ''));
+  const out = { title: 한줄(String(o.title || '').replace(RRN_꼴, ''), 80), kind: EXT_KINDS.includes(o.kind) ? o.kind : '',
+    price: 돈 > 0 && 돈 < 1e13 ? 돈 : 0, cd: 날(o.cd), md: 날(o.md), bd: 날(o.bd) };
+  return out.title || out.price || out.cd || out.md || out.bd ? out : null;
+}
+export async function scanExt(file) {
+  const data = String((file && file.data) || '').replace(/^data:[^,]*,/, '').replace(/\s+/g, '');
+  if (!data || !/^[A-Za-z0-9+/]+=*$/.test(data)) throw new ScanError('bad_file', 400);
+  const buf = Buffer.from(data, 'base64');
+  if (buf.length > SCAN_MAX_BYTES) throw new ScanError('too_big', 413);
+  const t = 형식(buf);
+  if (!t || !TYPES.includes(t)) throw new ScanError('bad_file', 400);
+  if (t === 'application/pdf') { const n = 쪽수(buf); if ((n && n > SCAN_MAX_PDF_PAGES) || (!n && buf.length > 1_500_000)) throw new ScanError('too_many_pages', 413); }
+  const { client, A } = await 클라이언트();
+  let res;
+  try {
+    res = await client.messages.create(extRequest(t === 'application/pdf'
+      ? { type: 'document', source: { type: 'base64', media_type: t, data } } : { type: 'image', source: { type: 'base64', media_type: t, data } }), { timeout: 60_000, maxRetries: 1 });
+  } catch (e) { throw 오류(e, A); }
+  if (res && res.stop_reason === 'refusal') throw new ScanError('refused', 422);
+  const out = extClean(((res && res.content) || []).filter(b => b && b.type === 'text').map(b => b.text).join(''));
+  if (!out) throw new ScanError('unreadable', 422);
+  return out;
+}

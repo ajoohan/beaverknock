@@ -1417,5 +1417,18 @@ ok(js.includes('doc.deal.down = 0;') && js.includes("if(같은줄){ CS.rowBusy =
   ok(서버.includes("이름: `${i + 3}차 중도금`, 날: 날만(x.date)") && js.includes("이름: `${i + 3}차 중도금`, 날: ct날만(x.date)"), '3~5차 중도금 일정 - 서버와 화면이 같은 규칙');
   ok(js.includes('const ct영수더 = (D, k) =>') && js.includes("['down','mid','mid2','mx0','mx1','mx2','bal'].includes(v)"), '영수증 - 3~5차 중도금도 고른다'); }
 
+/* ── 대표님 결정 반영 (2026-11-17, 26.11.17.19) - 계약서 판독 · 날짜 바뀜 주황 · 소유자 이름 ── */
+{ const SC2 = await import(길.api('_scan.js')), EX2 = await import(길.api('_ext.js'));
+  const 깨끗 = SC2.extClean('설명 {"title":"망월동 1095 미사 101동 302호 900101-1234567","kind":"매매","price":"500,000,000","cd":"2026-11-20","md":"","bd":"2026-13-40x","name":"홍길동"} 끝');
+  ok(깨끗 && 깨끗.kind === '매매' && 깨끗.price === 500000000 && 깨끗.cd === '2026-11-20' && 깨끗.bd === '' && !/900101/.test(깨끗.title) && !('name' in 깨끗), '계약서 판독 - 정해진 칸만 받고 주민번호 꼴은 지운다');
+  ok(SC2.extClean('읽을 수 없음') === null && /이름[^.]*주민등록번호[^.]*적지 않는다/.test(SC2.EXT_SYSTEM), '계약서 판독 - 못 읽으면 null · 당사자 정보는 적지 않게 시킨다');
+  const 서버 = fs.readFileSync(new URL('../api/_contract.js', import.meta.url), 'utf8'), 방침2 = fs.readFileSync(new URL('../privacy.html', import.meta.url), 'utf8');
+  ok(서버.includes("b.mode === 'ext' && Date.now() < 계약서판독부터") && 서버.includes("Date.parse('2026-11-23T15:00:00Z')") && 방침2.includes('공동중개 계약서 판독') && 방침2.includes('2026년 11월 24일 적용'), '계약서 판독은 처리방침 개정 7일 뒤(11월 24일)부터');
+  const 하나 = EX2.외부하나({ id: 'aaaaaaaaaaaa', title: '가', chg: ['bd', 'x', 'bd'] });
+  ok(하나 && 하나.chg.join() === 'bd' && !('chg' in EX2.외부하나({ id: 'aaaaaaaaaaaa', title: '가' })), '공동중개 계약서 - 고친 날짜 칸 표시(chg)는 cd · md · bd 만');
+  const feed = fs.readFileSync(new URL('../api/feed.js', import.meta.url), 'utf8');
+  ok(feed.includes("if (옛[k] && v[k] && 옛[k] !== v[k]) 바뀜.add(k)") && js.includes("칸날(t.balanceDate || r.bd, 원(잔), !!(t.balanceDate && r.bd && t.balanceDate !== r.bd))") && css.includes('.ct-tbl .chg{color:#B25E00;font-weight:700}'), '계약현황 표 - 바뀐 날짜 주황');
+  ok(feed.includes("owner: 메모글(m.owner, 40)") && feed.includes("need: 'owner_name'") && js.includes("칸('owner', '등기부상 소유자 이름'") && 방침2.includes('등기부상 소유자 성명'), '매물 등기부상 소유자 이름 - 비공개 메모(암호화) · 이름이 있어야 소유자 확인'); }
+
 console.log(`${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

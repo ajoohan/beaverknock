@@ -17,7 +17,9 @@ export function 외부하나(e) {
     ? { id: e.file.id, ext: e.file.ext, size: +e.file.size || 0, name: 글(e.file.name, 60) || '계약서' } : null;
   return { id: e.id, title, kind: 외부거래.includes(e.kind) ? e.kind : '기타', office: 글(e.office, 40), price: 금액(e.price),
     cd: 날('cd'), md: 날('md'), bd: 날('bd'), memo: 글(e.memo, 200), state: ['done', 'cancel'].includes(e.state) ? e.state : '',
-    ...(f ? { file: f } : {}), at: String(e.at || '').slice(0, 19) };
+    ...(f ? { file: f } : {}), at: String(e.at || '').slice(0, 19),
+    /* chg - 처음 적은 뒤 고친 날짜 칸(상대 사무소가 일정을 바꿔 알려온 것). 계약현황 표에 주황으로 */
+    ...(Array.isArray(e.chg) && e.chg.some(k => ['cd', 'md', 'bd'].includes(k)) ? { chg: [...new Set(e.chg.filter(k => ['cd', 'md', 'bd'].includes(k)))] } : {}) };
 }
 export function 외부들(x) {
   const out = [], 본 = new Set();

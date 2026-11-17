@@ -1384,5 +1384,9 @@ ok(js.includes('<button type="button" class="ctx-fullbtn" data-act="ct-full"') &
 ok(js.includes("ct칸('property.show', 글 || P.road, 300)") && js.includes("ctIn('property.show', '계약서에 찍히는 소재지'") && js.includes('const ct소재지다름 = P =>') && js.includes("if(ctGet(doc, 'property.jibun') !== s.jibun){ ctSet(doc, 'property.jibun', s.jibun);"), '소재지 - 찍히는 글자는 따로 고치고 찾은 주소는 그대로 · 공적장부 지번이 먼저');
 ok(js.includes("V['#/partner/listings/open'] = () => V['#/partner/listings']();") && js.includes("['#/partner/listings/open', '매물등록', 'list', 'lr']") && js.includes("(L.vis === 'open' || !물건기준(L).빠짐.length)"), '매물등록 메뉴 - 노출 중 · 노출할 수 있는 매물만(매물장부는 그대로)');
 
+/* ── 화면 검수 (2026-11-17 PC · 휴대폰) ── */
+ok(css.includes('.modal .box.ct-qbox{max-width:560px}') && css.includes('.ct-qbox .ct-grid > .w12{grid-column:1/-1}') && css.includes('body.mo .ct-qbox .inp{min-height:44px;font-size:16px}'), '직접 추가 창 - 폭이 모달 기본(440px)에 지지 않고, 휴대폰 입력 칸은 44px · 16px');
+ok(js.includes('class="lg-sw" role="tablist"') && js.includes("if(MG.f === 'done') MG.f = '';") && css.includes('.lg-tiles.n3{grid-template-columns:repeat(3,minmax(0,1fr))}'), '매물장부 · 매물등록 오가는 단추(휴대폰 길) · 거르기 물려받지 않음 · 요약 3칸');
+
 console.log(`${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

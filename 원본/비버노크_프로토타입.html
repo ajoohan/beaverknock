@@ -3280,6 +3280,8 @@ body.mo .ct-cobrk .tapx{min-height:44px;padding:0 6px}
 .ct-qedit{display:inline-block;margin-top:5px;padding:4px 10px;min-height:28px;border:1px solid var(--n200);border-radius:8px;background:var(--white);font-size:12.5px;font-weight:600;color:var(--ind700,#3B3EA8)}
 .ct-qedit:hover{background:var(--n100)}
 .ct-tbl .chg{color:#B25E00;font-weight:700}
+.ct-xshare{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:10px 14px;border:1px dashed var(--n300);border-radius:10px;background:var(--n50)}
+.ct-xcode{font-size:20px;letter-spacing:.18em;color:var(--ind700,#3B3EA8)}
 .modal .box.ct-qbox{max-width:560px}
 .ct-qbox .ct-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 12px}
 .ct-qbox .ct-grid > .w12{grid-column:1/-1}
@@ -5405,7 +5407,7 @@ function propFromRow(p){
     diff:[], match:[], msg:p.msg||'',
     /* 연결 전에는 누구인지 특정할 수 있는 것을 담지 않는다 - 자격만 담는다.
        연결한 뒤에는 서버가 contact 를 실어 준다. 새로고침해도 번호가 남는다. */
-    by:p.by||'공인중개사', contact:p.contact||null,
+    by:p.by||'공인중개사', contact:p.contact||null, listingId:p.listing_id||'', priceAlert:p.price_alert !== false,
     agency:{name:p.by||'공인중개사', rep:'', reg:'', addr:''},
     at:agoText(p.created_at), approved:p.approved||'', floors:0, violation:false,
     loan:0, lease:false, risk:'', status:P_STATUS[p.status] || p.status,
@@ -8331,6 +8333,7 @@ V['#/proposal'] = (id) => { const p=S.props.find(x=>x.id===id); if(!p) return V[
     kv('주차', p.parking),
     p.dir ? kv('방향', `${p.dir}${p.dirBase?` (${p.dirBase})`:''}`) : '',
     kv('관리비 기준', p.feeBasis), kv('관리비 포함', p.feeItems),
+    p.listingId && !p.seed ? `<div class="kv"><dt>가격 변동 알림</dt><dd><button type="button" class="chip${p.priceAlert ? ' on' : ''}" data-act="pa-toggle" data-v="${esc(p.id)}" aria-pressed="${p.priceAlert}">${p.priceAlert ? '알림톡 켜짐' : '알림톡 꺼짐'}</button> <span class="sub" style="font-size:12.5px">이 매물의 금액이 바뀌면 카카오톡으로 알려 드립니다 · 언제든 끌 수 있습니다</span></dd></div>` : '',
     p.seed ? `<div class="kv"><dt>위반건축물</dt><dd style="color:${p.violation?'var(--danger)':'var(--ok)'};font-weight:700">${p.violation?'있음':'해당 없음'}</dd></div>` : '',
     p.seed ? `<div class="kv"><dt>융자금</dt><dd class="num">${p.loan?won(p.loan):'없음'}</dd></div>` : '',
   ].filter(Boolean).join('');
@@ -13762,6 +13765,8 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
+  { v:'26.11.17.21', 날:'2026-11-17', 줄:[ '손님 - ‘보고 싶어요’를 누른 매물의 금액이 바뀌면 카카오 알림톡으로 알려 드립니다(제안 상세에서 끌 수 있음 · 알림톡 템플릿 심사가 끝나면 켜집니다)',
+    '계약서 일정 · 체크 - 공동중개 상대 사무소와 날짜 · 금액만 나누는 공유 코드(당사자 · 소재지 · 연락처는 보이지 않음). 상대가 코드를 넣으면 계약일 · 중도금일 · 잔금일 · 보증금이 따라가고, 상대가 바꾸면 주황으로 알려 줍니다' ] },
   { v:'26.11.17.20', 날:'2026-11-17', 줄:[ '매물 거래 방식에 연세 · 단기임대 - 장부에 적고 노출할 수 있습니다(손님 조건과 자동 대조는 하지 않습니다 · 금액 표시는 연세면 ‘연’으로)' ] },
   { v:'26.11.17.19', 날:'2026-11-17', 줄:[ '매물 - 비공개 메모에 ‘등기부상 소유자 이름’ 칸. 이름을 적고 저장해야 ‘소유자와 일치함’ 체크를 켤 수 있습니다(손님에게는 나가지 않습니다)',
     '계약현황 표 - 처음 정한 날짜에서 바뀐 중도금일 · 잔금일은 주황색으로 보입니다(공동중개 계약서는 고친 날짜)',
@@ -17558,7 +17563,7 @@ function ct현황표(rows, 외부 = []){
         <td><b>${esc(e.kind)}</b><small>다른 사무소 작성${e.file ? ' · 파일 있음' : ''}</small></td>
         <td class="obj">${esc(e.title)}</td><td colspan="2"><small>작성 사무소</small><b>${esc(e.office || '-')}</b>${e.memo ? `<small>${esc(e.memo)}</small>` : ''}</td>
         <td class="mute">-</td><td class="mute">-</td><td class="mute">-</td><td class="mute">-</td>
-        ${칸날(e.cd, e.price ? won(e.price) : '', (e.chg || []).includes('cd'))}${칸날(e.md, '', (e.chg || []).includes('md'))}${칸날(e.bd, '', (e.chg || []).includes('bd'))}</tr>`).join('')}
+        ${칸날(e.cd, e.price ? won(e.price) + ((e.chg || []).includes('price') ? ' · 금액 바뀜' : '') : '', (e.chg || []).includes('cd'))}${칸날(e.md, '', (e.chg || []).includes('md'))}${칸날(e.bd, '', (e.chg || []).includes('bd'))}</tr>`).join('')}
     </tbody></table></div>
     <p class="sub ct-tbl-note">상태는 표에서 바로 바꿉니다 · ‘고치기’로 날짜 · 금액 · 당사자를 바로 고칩니다(날인본은 날짜만) · ‘공동중개’ 줄은 다른 사무소가 쓴 계약서로, 누르면 날짜 · 금액을 고칩니다 · 처음 정한 날짜에서 바뀐 칸은 주황색 · 밑줄 이름은 누르면 그 손님 대화방 · 이름 아래는 연락처 · 30일 안에 다가오는 날짜는 보라색 · 계약체결일은 계약서의 ‘일정 · 체크’에서 적습니다.</p>`;
 }
@@ -17716,6 +17721,11 @@ function ctExt창HTML(){
       ${칸('cd', '계약일', { type: 'date' })}${칸('md', '중도금일', { type: 'date' })}${칸('bd', '잔금일', { type: 'date' })}
       <div class="ct-f wide"><span class="lab">진행</span><div class="ct-chips">${칩('state', [['', '진행중'], ['done', '완료'], ['cancel', '취소']])}</div></div>
       ${칸('memo', '메모', { wide: true, ph: '200자까지', max: 200 })}
+      <div class="ct-f wide"><span class="lab">상대 사무소 공유 코드 <span class="opt">선택 · 상대가 알려 준 8자리 - 날짜 · 금액이 상대 계약을 따라갑니다</span></span>
+        ${E.link ? `<p class="sub" style="margin:0 0 6px;font-size:13px;line-height:1.6">공유 중입니다 (${esc(E.link)}) · 계약일 · 중도금일 · 잔금일 · 금액은 상대 사무소 계약서를 따라가므로 여기서 고치지 않습니다.${(E.chg || []).length ? ' <b style="color:#B25E00">상대가 바꾼 값이 있습니다 - 확인하면 주황 표시가 꺼집니다.</b>' : ''}${E.lost ? ' <b style="color:var(--danger)">상대가 공유를 끝냈습니다 - 마지막으로 받은 값입니다.</b>' : ''}</p>
+          ${(E.chg || []).length && E.id ? `<button type="button" class="btn sec sm" data-act="ext-ack" data-v="${esc(E.id)}" style="align-self:flex-start">바뀐 값을 확인했습니다</button>` : ''}`
+        : `<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><input class="inp" data-in="ext:linkCode" value="${esc(E.linkCode || '')}" maxlength="9" placeholder="예) K7M2QX9P" autocomplete="off" style="max-width:200px;text-transform:uppercase">
+          <button type="button" class="btn tool sm" data-act="ext-link" ${CT.extLinkBusy ? 'disabled' : ''}>${CT.extLinkBusy ? '받아 오는 중…' : '코드로 불러오기'}</button></div>`}</div>
       <div class="ct-f wide"><span class="lab">계약서 파일 (선택 · 한 파일 3MB)</span>
         <div class="ext-file">${파일}
           <label class="btn tool sm">${E.newFile || E.file ? '바꾸기' : '파일 고르기'}<input type="file" class="sr" accept="${FU_받음}" data-ext-file aria-label="계약서 파일 고르기"></label>
@@ -17755,12 +17765,48 @@ async function ctExtRead(){
   }catch(_){ toast('파일을 읽지 못했습니다 - 직접 적어 주세요'); }
   finally{ CT.extRead = false; render(); }
 }
+/* ── 사무소끼리 날짜 · 금액 공유 (2026-11-17 대표님) - 서버 contract-xshare · contract-xpeek · contract-ext-ack ── */
+function ct공유카드(){
+  const 코드 = ct트랙().xcode || '', 못 = 직원() && !권한('ct_edit');
+  return `<div class="card pad ct-sec"><h2>공동중개 상대 사무소와 날짜 · 금액 공유 <span class="sub" style="font-weight:500;font-size:13.5px">선택</span></h2>
+    <p class="sub" style="margin:0;line-height:1.7">공유 코드를 상대 사무소에 알려 주면, 상대가 자기 ‘다른 사무소 계약서’에 코드를 넣어 이 계약의 <b style="color:var(--n900)">계약일 · 중도금일 · 잔금일 · 보증금(대금)</b>만 함께 봅니다. 당사자 · 소재지 · 연락처 · 특약은 보이지 않고, 여기서 끄면 바로 끊깁니다. 날짜가 바뀌면 상대 화면에 주황으로 표시됩니다.</p>
+    ${코드 ? `<div class="ct-xshare"><b class="num ct-xcode" aria-label="공유 코드">${esc(코드)}</b>
+        <span class="eqb"><button type="button" class="btn sec sm" data-act="ct-xcopy">코드 복사</button><button type="button" class="btn tool sm" data-act="ct-xshare" data-v="off" ${못 ? 'disabled' : ''}>공유 끄기</button></span></div>`
+      : `<button type="button" class="btn sec sm" data-act="ct-xshare" data-v="on" style="align-self:flex-start" ${못 ? 'disabled' : ''}>공유 코드 만들기</button>`}</div>`;
+}
+async function ctXShare(켜기){
+  if(!CT.id) return toast('계약서를 먼저 저장해 주세요');
+  const { ok, j } = await ctPost({ what:'contract-xshare', id: CT.id, on: 켜기 }).catch(() => ({ ok:false, j:{ error:'네트워크 문제로 바꾸지 못했습니다' } }));
+  if(!ok) return toast(j.error || '바꾸지 못했습니다');
+  CT.track = j.track; if(CT.row) CT.row = { ...CT.row, track: j.track };
+  const 행 = (CT.list || []).find(r => r.id === CT.id); if(행) 행.track = j.track;
+  render(); toast(켜기 ? '공유 코드를 만들었습니다 - 상대 사무소에 알려 주세요' : '공유를 껐습니다 - 상대 사무소 연결이 끊깁니다');
+}
+/* 다른 사무소 계약서 창 - 상대가 준 코드로 날짜 · 금액 받아 오기 */
+async function ctExtLink(){
+  const E = CT.extEdit; if(!E || CT.extLinkBusy) return;
+  const code = String(E.linkCode || '').toUpperCase().replace(/[\s-]/g, '');
+  if(!/^[A-HJKMNP-Z2-9]{8}$/.test(code)) return toast('공유 코드는 영문 · 숫자 8자리입니다');
+  CT.extLinkBusy = true; render();
+  const { ok, j } = await ctPost({ what:'contract-xpeek', code }).catch(() => ({ ok:false, j:{ error:'네트워크 문제로 받아 오지 못했습니다' } }));
+  CT.extLinkBusy = false;
+  if(CT.extEdit !== E) return;
+  if(!ok || !j.share){ render(); return toast(j.error || '코드를 확인하지 못했습니다'); }
+  Object.assign(E, { link: code, price: j.share.price ? String(j.share.price) : '', cd: j.share.cd, md: j.share.md, bd: j.share.bd });
+  render(); toast('상대 사무소 계약의 날짜 · 금액을 받아 왔습니다 - 저장하면 이어집니다');
+}
+async function ctExtAck(id){
+  const { ok, j } = await ctPost({ what:'contract-ext-ack', id }).catch(() => ({ ok:false, j:{ error:'네트워크 문제로 확인하지 못했습니다' } }));
+  if(!ok) return toast(j.error || '확인하지 못했습니다');
+  CT.ext = j.list || CT.ext; if(CT.extEdit && CT.extEdit.id === id){ S.modal = null; CT.extEdit = null; }
+  render(); toast('확인했습니다');
+}
 async function ctExtSave(){
   const E = CT.extEdit; if(!E || CT.extBusy) return;
   if(!String(E.title || '').trim()) return toast('소재지(물건 이름)를 적어 주세요');
   CT.extBusy = true; render();
   try{
-    const item = { id: E.id, title: E.title, office: E.office, kind: E.kind, price: E.price, cd: E.cd, md: E.md, bd: E.bd, memo: E.memo, state: E.state || '' };
+    const item = { id: E.id, title: E.title, office: E.office, kind: E.kind, price: E.price, cd: E.cd, md: E.md, bd: E.bd, memo: E.memo, state: E.state || '', ...(E.link ? { link: E.link } : {}) };
     let 파일 = {};
     if(E.newFile){ const fl = await rm사진줄이기(E.newFile);
       if(fl.size > 3 * 1024 * 1024){ CT.extBusy = false; render(); return toast('파일이 3MB 를 넘습니다 - PDF 로 줄이거나 나눠 올려 주세요'); }
@@ -18320,6 +18366,7 @@ function ctPlanHTML(doc){
       <div class="ct-grid">${+(doc.deal && doc.deal.mid) ? ctTrackIn('midDate', '바뀐 중도금일') : ''}${ctTrackIn('balanceDate', '바뀐 잔금일')}</div>
       ${t.permit ? '' : `<div class="ct-grid">${ctTrackIn('signDate', '계약체결일 (계약금 일부가 들어온 날)')}</div>
       <p class="sub" style="margin:0;font-size:13px">계약현황의 ‘계약체결일’ 칸에 나옵니다. 매물 노출 종료도 이날을 기준으로 해 주세요.</p>`}</div>
+    ${CT.id && !CT.need32 && !F.explain ? ct공유카드() : ''}
     <div class="card pad ct-sec"><h2>알림</h2>
       ${체크('ctk-off', !t.off, '이 계약의 일정을 알려 주세요', '끄면 이 계약은 카카오톡·메일 알림을 보내지 않습니다', '')}
       <p class="sub" style="margin:0;font-size:13.5px">받는 곳 ${[설정.kakao && '카카오톡', 설정.mail && '메일'].filter(Boolean).join('·') || '없음'} · 법무사 예약은 잔금 ${설정.lawyer[0]}~${설정.lawyer[1]}영업일 전
@@ -22703,6 +22750,15 @@ function handle(a,v,el){
     case 'ct-edit': CT.mode = 'edit'; render(); return true;
     case 'ct-print': return ctPrint();
     case 'ct-lay': ct배치바꿈(v); return true;
+    case 'pa-toggle': { const p = S.props.find(x => x.id === v); if(!p) return true; const 켜기 = !p.priceAlert;
+      apiFetch('/api/my', { method:'POST', body: JSON.stringify({ what:'match-alert', proposal_id: v, on: 켜기 }) }).then(r => r.json().catch(() => ({})).then(j => {
+        if(r.ok && j.ok){ p.priceAlert = 켜기; render(); toast(켜기 ? '가격이 바뀌면 카카오톡으로 알려 드립니다' : '가격 변동 알림을 껐습니다'); }
+        else toast(j.error || '바꾸지 못했습니다'); })).catch(() => toast('네트워크 문제로 바꾸지 못했습니다'));
+      return true; }
+    case 'ct-xshare': ctXShare(v !== 'off'); return true;
+    case 'ct-xcopy': { const c = ct트랙().xcode || ''; if(c && navigator.clipboard) navigator.clipboard.writeText(c).then(() => toast('공유 코드를 복사했습니다 - 상대 사무소에 알려 주세요'), () => toast('복사하지 못했습니다 - 코드를 직접 알려 주세요')); return true; }
+    case 'ext-link': ctExtLink(); return true;
+    case 'ext-ack': ctExtAck(v); return true;
     case 'ct-full': CT.full = !CT.full; render(); setTimeout(() => { const b = $('#app [data-act="ct-full"]'); if(b) b.focus({ preventScroll: true }); }); return true;
     case 'ct-cloud': 보관창(); return true;
     case 'cl-save': cl저장(v); return true;

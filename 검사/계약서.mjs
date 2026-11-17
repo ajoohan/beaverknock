@@ -1430,5 +1430,17 @@ ok(js.includes('doc.deal.down = 0;') && js.includes("if(같은줄){ CS.rowBusy =
   ok(feed.includes("if (옛[k] && v[k] && 옛[k] !== v[k]) 바뀜.add(k)") && js.includes("칸날(t.balanceDate || r.bd, 원(잔), !!(t.balanceDate && r.bd && t.balanceDate !== r.bd))") && css.includes('.ct-tbl .chg{color:#B25E00;font-weight:700}'), '계약현황 표 - 바뀐 날짜 주황');
   ok(feed.includes("owner: 메모글(m.owner, 40)") && feed.includes("need: 'owner_name'") && js.includes("칸('owner', '등기부상 소유자 이름'") && 방침2.includes('등기부상 소유자 성명'), '매물 등기부상 소유자 이름 - 비공개 메모(암호화) · 이름이 있어야 소유자 확인'); }
 
+/* ── 가격 변동 알림톡 · 사무소끼리 날짜 금액 공유 (2026-11-17 대표님) ── */
+{ const EX3 = await import(길.api('_ext.js'));
+  const 지금 = [{ id: 'aaaaaaaaaaaa', title: '가', link: 'K7M2QX9P', price: 100, cd: '2026-11-20', md: '', bd: '2026-12-20', ack: { price: 100, cd: '2026-11-20', md: '', bd: '2026-12-20' } }, { id: 'bbbbbbbbbbbb', title: '나' }];
+  const 같음 = EX3.공유합치기(지금, { K7M2QX9P: { price: 100, cd: '2026-11-20', md: '', bd: '2026-12-20' } }), 바뀜 = EX3.공유합치기(지금, { K7M2QX9P: { price: 100, cd: '2026-11-20', md: '', bd: '2027-01-10' } }), 끊김 = EX3.공유합치기(지금, {});
+  ok(!같음.changed && !(같음.view[0].chg || []).length && 바뀜.changed && 바뀜.stored[0].bd === '2027-01-10' && 바뀜.view[0].chg.join() === 'bd' && 끊김.view[0].lost === true && !('link' in 바뀜.view[1]), '공유 합치기 - 같으면 그대로, 상대가 바꾸면 값 따라가고 주황(chg), 코드가 끊기면 lost');
+  ok(EX3.외부하나({ id: 'aaaaaaaaaaaa', title: '가', link: 'K7M2QX9P' }).link === 'K7M2QX9P' && !('link' in EX3.외부하나({ id: 'aaaaaaaaaaaa', title: '가', link: '<script>' })), '공유 코드는 영문 · 숫자 8자리만 받는다');
+  const 서버 = fs.readFileSync(new URL('../api/_contract.js', import.meta.url), 'utf8'), feed3 = fs.readFileSync(new URL('../api/feed.js', import.meta.url), 'utf8'), 매치 = fs.readFileSync(new URL('../api/_match.js', import.meta.url), 'utf8'), 내 = fs.readFileSync(new URL('../api/my.js', import.meta.url), 'utf8');
+  ok(C.trackCheck({ xcode: 'K7M2QX9P' }).xcode === 'K7M2QX9P' && !('xcode' in C.trackCheck({ xcode: 'abc' })) && 서버.includes('delete t.xcode;') && 서버.includes('...(지금.xcode ? { xcode: 지금.xcode } : {})'), '공유 코드는 서버만 바꾼다(화면의 일정 저장이 못 바꾸고 지우지도 못한다)');
+  ok(서버.includes("title") === true && 서버.includes('share: { price: s.price, cd: s.cd, md: s.md, bd: s.bd }') && !/share: \{[^}]*(title|parties|road|phone)/.test(서버), '공유로 나가는 것은 금액 · 날짜뿐(당사자 · 소재지 · 연락처 없음)');
+  ok(매치.includes("process.env.SOLAPI_TPL_PRICE") && 매치.includes('price_alert=eq.true') && 매치.includes('6 * 3600e3') && 매치.includes("price_alert: on") && 내.includes("body.what === 'match-alert'") && feed3.includes('await Promise.race([가격바뀜알림(뒤행, cur)'), '가격 변동 알림톡 - 템플릿이 있을 때만 · 끈 손님 제외 · 6시간에 한 번 · 손님이 끌 수 있다');
+  ok(js.includes('data-act="pa-toggle"') && js.includes("what:'match-alert'") && js.includes('data-act="ext-link"') && js.includes('function ct공유카드(){'), '화면 - 손님 가격 알림 끄기 · 공유 코드 만들기 · 코드로 불러오기'); }
+
 console.log(`${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

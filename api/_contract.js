@@ -126,6 +126,47 @@ async function 대장(req, res, agent, b) {
   }
 }
 
+/* ── 사무소끼리 날짜 · 금액 공유 (2026-11-17 대표님 '날짜 금액만 공유') ──
+   계약을 만든 사무소가 공유 코드(8자리)를 만들어 상대 사무소에 알려 주면, 상대는 자기 '다른 사무소 계약서'에 그 코드를 넣어
+   이 계약의 계약일 · 중도금일 · 잔금일 · 보증금(대금)만 따라 본다. 당사자 · 소재지 · 연락처 · 특약은 어디에도 실리지 않는다.
+   코드는 track.xcode 에 두고(서버만 쓴다), 끄면 지워져 상대 연결이 끊긴다 */
+export const XCODE = /^[A-HJKMNP-Z2-9]{8}$/;
+const 코드글자 = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+const 새공유코드 = () => Array.from({ length: 8 }, () => 코드글자[crypto.randomInt(코드글자.length)]).join('');
+/* 코드들 → { 코드: { price, cd, md, bd, agent_id } } . 못 읽으면 null(끊긴 것으로 오해하지 않게) */
+export async function 공유찾기(codes) {
+  const 목록 = [...new Set((codes || []).filter(c => XCODE.test(String(c))))].slice(0, 100);
+  if (!목록.length) return {};
+  const { r, rows } = await 읽기(`select=id,agent_id,xc:track->>xcode,price:doc->deal->>price,deposit:doc->deal->>deposit${일정열}{track}&track->>xcode=in.(${목록.join(',')})&limit=100`);
+  if (!r.ok) return null;
+  const 날 = v => 날꼴.test(String(v || '')) ? String(v) : '', 맵 = {};
+  for (const x of rows) { const t = x.track || {}; if (!XCODE.test(String(x.xc || '')) || t.trash) continue;
+    맵[x.xc] = { price: Math.max(0, Math.round(+x.price || +x.deposit || 0)), cd: 날(x.cd), md: 날(t.midDate || x.md), bd: 날(t.balanceDate || x.bd), agent_id: x.agent_id }; }
+  return 맵;
+}
+async function 공유코드(res, agent, b) {
+  const id = String(b.id || '');
+  if (!UUID.test(id)) return res.status(400).json({ error: '어느 계약서인지 알 수 없습니다' });
+  const 켜기 = b.on !== false;
+  let 코드 = '';
+  const z = await 링크번호지켜쓰기(id, agent, (n, 지금) => { const t = { ...지금 };
+    if (켜기) { 코드 = 지금.xcode || 새공유코드(); t.xcode = 코드; } else { delete t.xcode; 코드 = ''; }
+    return t; });
+  if (z.res) return z.res(res, '공유 코드를 바꾸지 못했습니다');
+  return res.status(200).json({ ok: true, code: 코드, track: z.track });
+}
+async function 공유보기(res, agent, b) {
+  if (overLimit('xpeek:' + agent.id, 30, 3600e3)) return res.status(429).json({ error: '코드를 많이 넣으셨습니다 - 잠시 뒤 다시 해 주세요' });
+  const code = String(b.code || '').toUpperCase().replace(/[\s-]/g, '');
+  if (!XCODE.test(code)) return res.status(400).json({ error: '공유 코드는 영문 · 숫자 8자리입니다' });
+  const 맵 = await 공유찾기([code]);
+  if (!맵) return res.status(502).json({ error: '코드를 확인하지 못했습니다 - 잠시 뒤 다시 해 주세요' });
+  const s = 맵[code];
+  if (!s) return res.status(404).json({ error: '코드를 찾지 못했습니다 - 상대 사무소가 공유를 껐거나 코드가 다릅니다' });
+  if (s.agent_id === agent.id) return res.status(400).json({ error: '우리 사무소 계약서의 코드입니다 - 상대 사무소에서 받은 코드를 넣어 주세요' });
+  return res.status(200).json({ ok: true, code, share: { price: s.price, cd: s.cd, md: s.md, bd: s.bd } });
+}
+
 /* 공동중개 사무소 찾기 (2026-11-17 파트너 '상대 중개사의 대표자명 · 등록번호를 넣으면 정보를 끌어온다') -
    전국 명부(api/_brokers.js · 국토교통부)에서 등록번호로 찾는다. 대표자명을 함께 적었으면 맞을 때만 알려 준다(엉뚱한 사무소를 적지 않게).
    명부에는 전화가 없다 - 전화는 손으로 */
@@ -182,6 +223,8 @@ export async function contractRoute(req, res, agent, user, b) {
       case 'contract-state':   await state(res, agent, b); break;
       case 'contract-bld':     await 대장(req, res, agent, b); break;
       case 'contract-broker':  await 중개사찾기(req, res, agent, b); break;
+      case 'contract-xshare':  await 공유코드(res, agent, b); break;
+      case 'contract-xpeek':   await 공유보기(res, agent, b); break;
       case 'contract-reported': await reported(res, agent, b); break;
       case 'contract-track':   await track(res, agent, b); break;
       case 'contract-note':    await note(res, agent, b); break;
@@ -514,6 +557,8 @@ export function trackCheck(t) {
   /* 초안 링크 번호 - 올리면 그 계약서의 나간 링크가 모두 끊긴다 */
   if (Number.isInteger(t.shareN) && t.shareN > 0 && t.shareN < 1e6) out.shareN = t.shareN;
   if (t.hb === true) out.hb = true;
+  /* 상대 사무소와 날짜 · 금액을 나누는 공유 코드(2026-11-17) - 서버만 만들고 지운다(track 저장은 이 칸을 못 바꾼다) */
+  if (typeof t.xcode === 'string' && XCODE.test(t.xcode)) out.xcode = t.xcode;
   /* 전자계약으로 진행(파트너 기획 [137] - 금리 우대 대상 관리용 표시) */
   if (t.ec === true) out.ec = true;
   const x = 부속값(t.extra);
@@ -833,9 +878,9 @@ async function track(res, agent, b) {
      끊은 링크가 다시 열리면 안 된다(2026-11-05 리뷰). 받은 값은 버리고 지금 값을 지킨다 */
   delete t.shareN;
   /* 초안 의견은 화면이 보낸 것으로 덮지 않는다 - 서버에 지금 있는 것을 그대로 둔다(읽음 · 지우기는 contract-note) */
-  delete t.notes; delete t.tv; delete t.room; delete t.fpics;
+  delete t.notes; delete t.tv; delete t.room; delete t.fpics; delete t.xcode;
   /* 읽은 링크 번호가 그대로일 때만 쓴다 - 그 사이 끊기가 번호를 올렸으면 다시 읽는다(2026-11-05 재검토) */
-  const z = await 링크번호지켜쓰기(id, agent, (n, 지금) => ({ ...t, ...(지금.notes ? { notes: 지금.notes } : {}), ...(지금.room ? { room: 지금.room } : {}), ...(지금.fpics ? { fpics: 지금.fpics } : {}),
+  const z = await 링크번호지켜쓰기(id, agent, (n, 지금) => ({ ...t, ...(지금.notes ? { notes: 지금.notes } : {}), ...(지금.room ? { room: 지금.room } : {}), ...(지금.fpics ? { fpics: 지금.fpics } : {}), ...(지금.xcode ? { xcode: 지금.xcode } : {}),
     ...(b.guideOff !== true && 지금.guideAt && !t.guideAt ? { guideAt: 지금.guideAt } : {}) }));   /* 잔금안내 체크를 끈 것은 guideOff 로 온다 */
   if (z.res) return z.res(res, '일정을 저장하지 못했습니다');
   return res.status(200).json({ ok: true, track: z.track });

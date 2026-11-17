@@ -9,6 +9,7 @@ import { notify, won } from './_notify.js';
 import { 사진들, 사진주소 } from './_pics.js';
 import { 거리 } from './_geo.js';
 import { overLimit } from './_auth.js';
+import { alimtalk } from './_kakao.js';
 
 /* 손님이 고른 곳(2026-11-14 구글 지도 · 파트너 기획 C1-2 '동 · 반경 · 역 · 단지') - 반경은 고른 거리, 역 1km, 단지 300m */
 const 곳반경 = { radius: [300, 3000, 1000], station: [300, 2000, 1000], complex: [100, 1000, 300] };
@@ -152,6 +153,50 @@ export async function matchReport(res, user, b) {
   } catch (e) { return res.status(502).json({ error: 'DB에 닿지 못했습니다' }); }
 }
 
+/* ── 가격 변동 알림톡 (2026-11-17 대표님) ── 맞춤매물에서 '보고 싶어요'를 누른 손님에게 그 매물의 금액이 바뀌면 알림톡 한 통.
+   · 템플릿 SOLAPI_TPL_PRICE 가 있어야 나간다(카카오 심사 · 할일.md '가격 변동 알림톡 템플릿'). 없으면 조용히 건너뛴다
+   · 손님이 제안 상세에서 끌 수 있다(price_alert) · 같은 제안에는 6시간 안에 한 번만(고쳤다 되돌리는 경우에 연달아 가지 않게)
+   · 연락처 · 소재지 · 사무소 이름은 담지 않는다 - 매물 이름(맞춤매물에 이미 보이는 단지 · 건물명)과 금액만
+   · 0044 칸(listing_id · price_alert)이 없으면 건너뛴다 */
+const 알림받는상태 = ['sent', 'read', 'accepted'];
+const 가격글 = (deal, dep, rent) => deal === '매매' ? `매매가 ${won(dep)}` : deal === '전세' ? `전세 ${won(dep)}` : `보증금 ${won(dep)}${+rent ? ` / ${deal === '연세' ? '연' : '월'} ${won(rent)}` : ''}`;
+export async function 가격바뀜알림(L, 전) {
+  const tpl = process.env.SOLAPI_TPL_PRICE;
+  if (!tpl || !L || !L.id) return { skipped: 'no template' };
+  try {
+    const r = await fetch(sbUrl('bk_proposal', `select=id,demand_id,price_alert_at&listing_id=eq.${L.id}&price_alert=eq.true&status=in.(${알림받는상태.join(',')})&limit=50`), { headers: sbHeaders() });
+    if (!r.ok) return { skipped: 'no column' };
+    const 줄 = ((await r.json().catch(() => [])) || []).filter(p => !p.price_alert_at || Date.now() - Date.parse(p.price_alert_at) > 6 * 3600e3);
+    if (!줄.length) return { sent: 0 };
+    const ids = [...new Set(줄.map(p => p.demand_id).filter(Boolean))];
+    const dr = await fetch(sbUrl('bk_demand', `select=id,name,phone&id=in.(${ids.join(',')})`), { headers: sbHeaders() });
+    if (!dr.ok) return { skipped: 'no demand' };
+    const 손님 = Object.fromEntries(((await dr.json().catch(() => [])) || []).map(d => [d.id, d]));
+    const 보냄 = [];
+    await Promise.all(줄.map(async p => { const d = 손님[p.demand_id]; if (!d || !d.phone) return;
+      const x = await alimtalk({ to: d.phone, template: tpl, vars: { 이름: d.name || '고객', 매물: L.name || '관심 매물', 이전: 가격글(L.deal, 전.dep, 전.rent), 변경: 가격글(L.deal, L.dep, L.rent) } });
+      if (x && x.ok) 보냄.push(p.id); }));
+    if (보냄.length) await fetch(sbUrl('bk_proposal', `id=in.(${보냄.join(',')})`), { method: 'PATCH', headers: { ...sbHeaders(), Prefer: 'return=minimal' }, body: JSON.stringify({ price_alert_at: new Date().toISOString() }) }).catch(() => {});
+    return { sent: 보냄.length };
+  } catch (e) { return { skipped: 'error' }; }
+}
+/* 손님이 제안 상세에서 가격 알림을 끄고 켠다 - 내 조건에 온 제안만 */
+export async function matchAlert(res, user, b) {
+  const id = String(b.proposal_id || '');
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) return res.status(400).json({ error: '어느 제안인지 알 수 없습니다' });
+  try {
+    const pr = await fetch(sbUrl('bk_proposal', `select=id,demand_id&id=eq.${id}&limit=1`), { headers: sbHeaders() });
+    const p = pr.ok ? (await pr.json())[0] : null;
+    if (!p) return res.status(404).json({ error: '없는 제안입니다' });
+    const dr = await fetch(sbUrl('bk_demand', `select=id&id=eq.${p.demand_id}&user_id=eq.${user.id}&limit=1`), { headers: sbHeaders() });
+    if (!dr.ok || !(await dr.json())[0]) return res.status(403).json({ error: '내 조건에 온 제안이 아닙니다' });
+    const on = b.on !== false;
+    const w = await fetch(sbUrl('bk_proposal', `id=eq.${id}`), { method: 'PATCH', headers: { ...sbHeaders(), Prefer: 'return=minimal' }, body: JSON.stringify({ price_alert: on }) });
+    if (!w.ok) return res.status(503).json({ error: '가격 알림 설정을 준비 중입니다 - 곧 열립니다', need: '0044' });
+    return res.status(200).json({ ok: true, on });
+  } catch (e) { return res.status(502).json({ error: 'DB에 닿지 못했습니다' }); }
+}
+
 /* '이 집 보고 싶어요' - 그 물건으로 제안 한 건을 만들어 손님을 지금의 연결 화면(연락처 제공 동의)으로 잇는다.
    자리(조건당 5곳)는 쓰지 않는다 - 손님이 먼저 고른 것이다. 중개사에게는 메일로 알린다(손님 이름 · 연락처는 연결 뒤에) */
 export async function matchWant(req, res, user, b) {
@@ -180,7 +225,10 @@ export async function matchWant(req, res, user, b) {
       dir: L.dir, dir_base: L.dir_base, floor_no: L.kind === 'home' ? null : L.floor_no, band: L.band, bdong: L.hide_unit === false ? L.bdong : null, htype: L.htype,
       duplex: L.duplex === true, move_in: L.move_in, approved: L.approved, photos: L.photos || 0,
       status: 'sent', msg: `맞춤매물에서 손님이 ‘보고 싶어요’를 눌렀습니다 (일치율 ${s.점}점)` };
-    const ir = await fetch(sbUrl('bk_proposal'), { method: 'POST', headers: { ...sbHeaders(), Prefer: 'return=representation' }, body: JSON.stringify(row) });
+    const 올리기 = body => fetch(sbUrl('bk_proposal'), { method: 'POST', headers: { ...sbHeaders(), Prefer: 'return=representation' }, body: JSON.stringify(body) });
+    /* 어느 매물인지(listing_id)를 남겨 가격이 바뀌면 알림톡을 보낸다 - 0044 를 넣기 전이면 이 칸만 빼고 다시 올린다 */
+    let ir = await 올리기({ ...row, listing_id: lid });
+    if (!ir.ok) { const t0 = await ir.clone().text().catch(() => ''); if (/listing_id|PGRST204|does not exist/i.test(t0)) ir = await 올리기(row); }
     if (!ir.ok) { console.error('[match-want]', ir.status, (await ir.text()).slice(0, 200)); return res.status(502).json({ error: '요청을 남기지 못했습니다' }); }
     const saved = (await ir.json())[0] || {};
     emailOf(L.agent_user).then(to => to && notify(req, { to, subject: `‘${L.name}’을 보고 싶다는 손님이 있습니다`,

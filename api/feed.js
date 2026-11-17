@@ -10,10 +10,11 @@
 import crypto from 'node:crypto';
 import { userFrom, sbHeaders, sbUrl, overLimit, ipOf } from './_auth.js';
 import { dbWhy } from './_dberr.js';
-import { contractRoute, listingScan, reportDueCron, draftRead, draftNote, icsFeed, 달력표, 알림설정, 특약문구들, 특약문구고침, 문자틀들, 문자기록들, 문자고침, 단지들, 단지고침 } from './_contract.js';
+import { 공유찾기, contractRoute, listingScan, reportDueCron, draftRead, draftNote, icsFeed, 달력표, 알림설정, 특약문구들, 특약문구고침, 문자틀들, 문자기록들, 문자고침, 단지들, 단지고침 } from './_contract.js';
 import { 날씨 } from './_weather.js';
 import { 서식들, 서식확인, 서식올리기, 서식주소, 서식지우기, 서식최대, 파일버킷, 버킷올리기, 버킷주소, 버킷지우기 } from './_forms.js';
-import { 외부들, 외부하나, 외부최대, 외부경로 } from './_ext.js';
+import { 외부들, 외부하나, 외부최대, 외부경로, 공유코드꼴, 공유합치기 } from './_ext.js';
+import { 가격바뀜알림 } from './_match.js';
 import { listingPics, listingPicAdd, listingPicSet } from './_pics.js';
 import { 직원이력, 이력한줄, 보조원잠금, 자격증크기, 자격증경로, 자격증형식 } from './_staff.js';
 import { 직원들, 직원고침, 직원사무소, 직원들어옴, 직원역할, 다른사무소직원 } from './_staff.js';
@@ -457,10 +458,42 @@ const 외부준비중 = res => res.status(503).json({ error: '다른 사무소 �
 async function readExt(res, agent) {
   const x = await 설정읽기(agent);
   if (x.error) return res.status(502).json({ error: '목록을 불러오지 못했습니다' });
-  return res.status(200).json({ ok: true, list: 외부들(x.settings.ext), need: x.need || '' });
+  let list = 외부들(x.settings.ext);
+  /* 공유 코드로 이어진 계약은 상대 계약의 날짜 · 금액을 따라간다 - 바뀌었으면 저장해 일정 · 알림에도 반영하고, 확인하지 않은 변경은 chg 로 */
+  const 코드들 = list.filter(e => e.link).map(e => e.link);
+  if (코드들.length) {
+    const 맵 = await 공유찾기(코드들).catch(() => null);
+    if (맵) { const m = 공유합치기(list, 맵);
+      if (m.changed) await 설정고침(agent, s => { const L = 공유합치기(외부들(s.ext), 맵).stored; return { list: L, patch: { ext: L } }; }).catch(() => {});
+      list = m.view; }
+  }
+  return res.status(200).json({ ok: true, list, need: x.need || '' });
+}
+/* 상대가 바꾼 날짜 · 금액을 확인했다고 표시 - 그때의 값이 내 기준이 된다(주황이 꺼진다) */
+async function ackExt(res, agent, b) {
+  const id = String(b.id || '');
+  const x = await 설정읽기(agent);
+  if (x.error) return res.status(502).json({ error: '목록을 불러오지 못했습니다' });
+  const e = 외부들(x.settings.ext).find(v => v.id === id);
+  if (!e || !e.link) return res.status(404).json({ error: '공유 중인 계약서가 아닙니다' });
+  const 맵 = await 공유찾기([e.link]);
+  const s = 맵 && 맵[e.link];
+  if (!s) return res.status(404).json({ error: '상대 사무소가 공유를 끝냈습니다' });
+  const z = await 설정고침(agent, set => { const L = 외부들(set.ext).map(v => { if (v.id !== id) return v; const { chg, ...남 } = v; void chg;
+    return { ...남, price: s.price, cd: s.cd, md: s.md, bd: s.bd, ack: { price: s.price, cd: s.cd, md: s.md, bd: s.bd } }; });
+    return { list: L, patch: { ext: L } }; });
+  if (!z.y) return 설정실패(res, z, '계약서');
+  return res.status(200).json({ ok: true, list: 공유합치기(z.y.list, 맵).view });
 }
 async function saveExt(res, agent, b) {
   const 입력 = b.item && typeof b.item === 'object' ? b.item : {};
+  /* 상대 사무소 공유 코드를 넣었으면 그 계약의 날짜 · 금액을 받아 온다(2026-11-17) */
+  const 링크 = String(입력.link || '').toUpperCase().replace(/[\s-]/g, '');
+  let 공유값 = null;
+  if (링크) { if (!공유코드꼴.test(링크)) return res.status(400).json({ error: '공유 코드는 영문 · 숫자 8자리입니다' });
+    const 맵 = await 공유찾기([링크]); if (!맵) return res.status(502).json({ error: '코드를 확인하지 못했습니다 - 잠시 뒤 다시 해 주세요' });
+    공유값 = 맵[링크]; if (!공유값) return res.status(404).json({ error: '코드를 찾지 못했습니다 - 상대 사무소가 공유를 껐거나 코드가 다릅니다' });
+    if (공유값.agent_id === agent.id) return res.status(400).json({ error: '우리 사무소 계약서의 코드입니다' }); }
   const id = /^[0-9a-f]{12}$/.test(String(입력.id || '')) ? String(입력.id) : crypto.randomBytes(6).toString('hex');
   let 새파일 = null;
   if (b.data) {
@@ -482,6 +515,8 @@ async function saveExt(res, agent, b) {
     if (!v) return { error: '소재지(이름)를 적어 주세요', code: 400 };
     if (옛) { const 바뀜 = new Set(옛.chg || []); for (const k of ['cd', 'md', 'bd']) if (옛[k] && v[k] && 옛[k] !== v[k]) 바뀜.add(k); if (바뀜.size) v.chg = [...바뀜]; else delete v.chg; }
     else delete v.chg;
+    if (공유값) { Object.assign(v, { link: 링크, price: 공유값.price, cd: 공유값.cd, md: 공유값.md, bd: 공유값.bd, ack: { price: 공유값.price, cd: 공유값.cd, md: 공유값.md, bd: 공유값.bd } }); delete v.chg; }
+    else if (옛 && 옛.link) { v.link = 옛.link; v.ack = 옛.ack || {}; }
     옛파일 = 새파일 && 옛 && 옛.file ? 옛.file : null;
     const 목록 = 옛 ? L.map(e => e.id === id ? v : e) : [v, ...L];
     return { list: 목록, item: v, patch: { ext: 목록 } };
@@ -671,6 +706,7 @@ export default async function handler(req, res) {
     if (chk.agent.role !== 'agent') return res.status(403).json({ error: '공인중개사만 쓸 수 있습니다' });
     if (b.what === 'contract-ext')      return readExt(res, chk.agent);
     if (b.what === 'contract-ext-save') return saveExt(res, chk.agent, b);
+    if (b.what === 'contract-ext-ack')  return ackExt(res, chk.agent, b);
     if (b.what === 'contract-ext-del')  return delExt(res, chk.agent, b);
     if (b.what === 'contract-ext-url')  return extUrl(res, chk.agent, b);
     if (b.what === 'ics-link')          return icsLink(req, res, chk.agent, false);
@@ -1187,6 +1223,9 @@ async function setListing(res, agent, b) {
       const w = dbWhy(t); console.error('[feed:listing-set]', r2.status, w.code || '-', t.slice(0, 200));
       return res.status(502).json({ error: w.msg || '물건을 저장하지 못했습니다' }); }
     const 뒤행 = (await r2.json())[0] || null;
+    /* 노출 중인 매물의 금액이 바뀌면 '보고 싶어요'를 누른 손님에게 알림톡(2026-11-17) - 응답을 늦추지 않게 4초까지만 기다린다 */
+    if (뒤행 && cur.vis === 'open' && 뒤행.vis === 'open' && (+뒤행.dep !== +cur.dep || +뒤행.rent !== +cur.rent))
+      await Promise.race([가격바뀜알림(뒤행, cur).catch(() => {}), new Promise(r => setTimeout(r, 4000))]);
     /* 주소를 바꿨으면 좌표도 다시(2026-11-14 매물지도) */
     if (뒤행 && ('road' in p || 'dong' in p) && 지도켜짐()) { const v = await 물건좌표잠깐(뒤행); Object.assign(뒤행, v || { lat: null, lng: null }); }
     return res.status(200).json({ ok: true, row: 뒤행 && 내보낼행(뒤행) });

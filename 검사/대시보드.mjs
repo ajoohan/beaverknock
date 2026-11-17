@@ -148,7 +148,7 @@ const M = new Function('esc', `${js.slice(시작, 끝)}\nreturn { dzLine, dzPill
      && js.includes("if(h === '#/partner/contracts' || h.startsWith('#/partner/contracts/')){"),
      "계약 묶음 일곱 칸(계약현황(2026-11-12 파트너 기획) · 계약서 작성 · 계약서 목록 · 계약체결 문자 · 특약 관리 · 서식 자료실 · 일정·알림, 2026-10-30 대표님 · 11-05 문자) - 주소마다 화면 · 켜진 칸은 주소로(새 계약서 작성 중이면 '계약서 작성')");
   for (const k of ['d', 'p', 'st', 's', 'l'])
-    ok(js.includes(`\${navPartner('${k}')}\n  <div class="pad adm-page" style=`), `메뉴 화면(${k})은 가운데 폭 제한 없이 본문을 채운다`);
+    ok(js.includes(`\${navPartner(${k === 'l' ? "등록 ? 'lr' : 'l'" : `'${k}'`})}\n  <div class="pad adm-page" style=`), `메뉴 화면(${k})은 가운데 폭 제한 없이 본문을 채운다`);
   ok(/body:not\(\.mo\) \.scr:has\(> \.psb\) > \.adm-page\{max-width:none!important;margin:0!important/.test(css) && /\.adm-grid\{display:grid;grid-template-columns:repeat\(auto-fill,minmax\(440px,1fr\)\)/.test(css)
      && /\.dz-main\{padding-top:14px!important;padding-bottom:40px!important;width:100%\}/.test(css) && /\.ptop\{[^}]*z-index:30\}/.test(css),
      '넓은 화면 - 폭 제한을 풀고 카드는 폭만큼 여러 줄 · 대시보드도 1320px 제한 없음 · 프로필 드롭다운이 카드 위로');

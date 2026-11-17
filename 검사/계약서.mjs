@@ -1361,7 +1361,7 @@ ok(js.includes("what:'listing-bld'") && js.includes('S.form.lbun = a.bun') && js
 ok(js.includes("case 'ct-full': CT.full = !CT.full;") && js.includes("CT.full ? ' ctx-full' : ''") && js.includes("e.key === 'Escape' && CT.full") && js.includes("알림창(false); CT.full = false;") && css.includes('html:has(.ctx-view.ctx-full){overflow:hidden}'), '계약서 서류 전체화면 - 같은 서류로 바로 고치기 · Esc · 화면 옮기면 닫힘');
 
 /* ── 소재지는 지번 (2026-11-17 파트너) ── */
-ok(js.includes('const ct소재지 = P => P && P.jibun ?') && js.split('${ct소재지(P)}').length === 3 && js.includes('(도로명) ${esc(doc.property.road)}') && js.includes('계약서 소재지는 지번으로 적힙니다'), '계약서 · 확인·설명서 소재지는 지번 먼저, 도로명은 괄호');
+ok(js.includes('function ct소재지(P){') && js.split('${ct소재지(P)}').length === 3 && js.includes('(도로명) ${esc(doc.property.road)}') && js.includes('비워 두면 찾은 지번이 찍힙니다'), '계약서 · 확인·설명서 소재지는 지번 먼저, 도로명은 괄호');
 
 /* ── 공동중개 사무소 (2026-11-17 파트너) ── */
 { ok(C.등록키('41450-2019-00217') === C.등록키('41450-2019-217') && C.등록키(' 가3665-4 ') === '가36654', '공동중개 찾기 - 등록번호 정규화(앞 0 · 옛 번호)');
@@ -1379,6 +1379,10 @@ ok(js.includes('const ct소재지 = P => P && P.jibun ?') && js.split('${ct소�
   ok(js.includes("ctIn(`parties.${k}.corpNo`, '법인등록번호'") && js.includes("<th>법인등록번호</th><td>${ct칸(b + '.corpNo'") && js.includes('delete x.bizNo; delete x.corpNo;'), '법인등록번호 칸 - 입력 · 인쇄 · 개인으로 바꾸면 지움'); }
 
 ok(js.includes('<button type="button" class="ctx-fullbtn" data-act="ct-full"') && js.split('data-act="ct-full"').length === 3 && css.includes('.ctx-fullbtn{position:absolute;'), '전체화면 단추는 단추 줄과 따로 서류 위에 떠 있다(단추 줄 구조는 그대로)');
+
+/* ── 소재지 따로 고치기 · 공적장부 우선 · 매물등록 메뉴 (2026-11-17 대표님) ── */
+ok(js.includes("ct칸('property.show', 글 || P.road, 300)") && js.includes("ctIn('property.show', '계약서에 찍히는 소재지'") && js.includes('const ct소재지다름 = P =>') && js.includes("if(ctGet(doc, 'property.jibun') !== s.jibun){ ctSet(doc, 'property.jibun', s.jibun);"), '소재지 - 찍히는 글자는 따로 고치고 찾은 주소는 그대로 · 공적장부 지번이 먼저');
+ok(js.includes("V['#/partner/listings/open'] = () => V['#/partner/listings']();") && js.includes("['#/partner/listings/open', '매물등록', 'list', 'lr']") && js.includes("(L.vis === 'open' || !물건기준(L).빠짐.length)"), '매물등록 메뉴 - 노출 중 · 노출할 수 있는 매물만(매물장부는 그대로)');
 
 console.log(`${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

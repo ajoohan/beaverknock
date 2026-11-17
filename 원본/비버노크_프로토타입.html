@@ -10006,7 +10006,9 @@ function 물건폼(L){
 }
 V["#/partner/listings"] = () => {
   if(!LM.loaded && !LM.loading && 세션있음()) setTimeout(lmLoad);
-  const 전체 = S.listings, 목록 = 전체.filter(L => L.status === 'active' || L.status === 'done' || L.seed || !L.status), 보관 = 전체.filter(L => L.status === 'arch'), 휴지 = 전체.filter(L => L.status === 'trash');
+  const 등록 = S.route === '#/partner/listings/open';   /* 매물등록 현황 - 노출 중이거나 명시사항을 다 채운 물건만 */
+  if(등록) MG.tab = 'list';
+  const 전체 = S.listings, 목록 = 전체.filter(L => 등록 ? (L.status === 'active' || !L.status) && !L.seed && (L.vis === 'open' || !물건기준(L).빠짐.length) : L.status === 'active' || L.status === 'done' || L.seed || !L.status), 보관 = 전체.filter(L => L.status === 'arch'), 휴지 = 전체.filter(L => L.status === 'trash');
   const 탭줄 = MG.tab === 'arch' ? 보관 : MG.tab === 'trash' ? 휴지 : 목록;
   const 말 = String(MG.q || '').trim().toLowerCase().split(/\s+/).filter(Boolean);
   const 거름 = 탭줄.filter(L => (MG.tab !== 'list' || !MG.f || (MG.f === 'open' ? L.vis === 'open' && L.status === 'active' : MG.f === 'done' ? L.status === 'done' : L.vis !== 'open' && L.status !== 'done'))
@@ -10032,27 +10034,30 @@ V["#/partner/listings"] = () => {
   const total = 목록.filter(L => L.status === 'active').reduce((n, L) => n + matchesFor(L).length, 0);
   return `
 <div class="scr fade" style="background:var(--n50)">
-  ${navPartner('l')}
+  ${navPartner(등록 ? 'lr' : 'l')}
   <div class="pad adm-page" style="flex:1;padding-top:${isMo()?18:30}px;padding-bottom:24px;max-width:${isMo()?'none':'1240px'};margin:0 auto;width:100%;display:flex;flex-direction:column;gap:14px">
     <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap">
-      <div><h1 class="t" style="font-size:${isMo()?21:25}px;margin-top:8px">${물건이름()} <span style="color:var(--ind)">${목록.length}건</span></h1>
-        <p class="sub" style="font-size:14.5px">우리 사무소 안에서만 보는 장부입니다. 올려두면 들어와 있는 조건과 <b style="color:var(--n900)">바로 대조</b>하고, 기준을 다 채운 물건은 손님에게 <b style="color:var(--n900)">노출</b>할 수 있습니다.</p></div>
-      ${쓸수 ? `<button class="btn pri sm" data-act="lg-new">+ 장부에 새로 적기</button>` : ''}
+      <div><h1 class="t" style="font-size:${isMo()?21:25}px;margin-top:8px">${등록 ? '매물등록 현황' : 물건이름()} <span style="color:var(--ind)">${목록.length}건</span></h1>
+        ${등록 ? '<p class="sub" style="font-size:14.5px">손님에게 <b style="color:var(--n900)">노출 중</b>이거나, 명시사항을 다 채워 <b style="color:var(--n900)">바로 노출할 수 있는</b> 매물만 모았습니다. 덜 채운 물건은 매물장부에 있습니다.</p>' : ''}
+        <p class="sub" style="font-size:14.5px"${등록 ? ' hidden' : ''}>우리 사무소 안에서만 보는 장부입니다. 올려두면 들어와 있는 조건과 <b style="color:var(--n900)">바로 대조</b>하고, 기준을 다 채운 물건은 손님에게 <b style="color:var(--n900)">노출</b>할 수 있습니다.</p></div>
+      ${쓸수 ? `<button class="btn pri sm" data-act="lg-new">${등록 ? '+ 매물 등록' : '+ 장부에 새로 적기'}</button>` : ''}
     </div>
-    <div class="lg-tiles">${타일('', '전체', 목록.length, '목록에 있는 물건')}${타일('open', '노출 중', 세.open, '손님 · 다른 중개사에게 보임')}${타일('private', '장부만', 목록.length - 세.open - 세.done, '우리 사무소만 봄')}${타일('done', '거래완료', 세.done, '계약으로 끝난 물건')}</div>
+    <div class="lg-tiles">${타일('', '전체', 목록.length, '목록에 있는 물건')}${타일('open', '노출 중', 세.open, '손님 · 다른 중개사에게 보임')}${등록 ? 타일('private', '노출 대기', 목록.length - 세.open, '명시사항을 다 채움 · 노출 전') : 타일('private', '장부만', 목록.length - 세.open - 세.done, '우리 사무소만 봄') + 타일('done', '거래완료', 세.done, '계약으로 끝난 물건')}</div>
     ${total ? `<div class="card pad" style="border-color:rgba(27,122,70,.35);background:var(--okbg);box-shadow:none;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
       <b style="font-size:14.5px;line-height:1.5;color:var(--ok)">지금 바로 제안할 수 있는 손님이 ${total}명 있습니다</b>
       <span style="font-size:13.5px;line-height:1.5;color:var(--n700)">물건을 눌러 확인하세요</span></div>` : ''}
-    <div class="lg-bar"><div class="ct-chips" role="tablist" aria-label="장부 나누기">${[['list', '목록', 목록.length], ['arch', '보관함', 보관.length], ['trash', '휴지통', 휴지.length]].map(([k, t, n]) =>
+    <div class="lg-bar"><div class="ct-chips" role="tablist" aria-label="장부 나누기">${(등록 ? [['list', '등록 매물', 목록.length]] : [['list', '목록', 목록.length], ['arch', '보관함', 보관.length], ['trash', '휴지통', 휴지.length]]).map(([k, t, n]) =>
         `<button type="button" class="chip${MG.tab === k ? ' on' : ''}" data-act="lg-tab" data-v="${k}" role="tab" aria-selected="${MG.tab === k}">${t}<span class="num">${n}</span></button>`).join('')}</div>
       <input class="inp" type="search" data-in="lgq" value="${esc(MG.q || '')}" placeholder="단지 · 동네 · 의뢰인 · 메모로 찾기" aria-label="장부에서 찾기" autocomplete="off"></div>
     ${seedGate(S.lsReady, () => 거름.length ? `<div class="card lg-table"><div class="lg-row lg-th" aria-hidden="true"><div>상태</div><div>물건</div><div>금액</div><div class="lg-priv">의뢰인 (비공개)</div><div class="lg-priv">특이사항 (비공개)</div><div>노출 기준</div><div>고친 날</div><div>관리</div></div>${거름.map(줄).join('')}</div>`
       : 탭줄.length ? 빈자리('찾는 물건이 없습니다', '다른 말로 찾아 보세요.', '', 80)
       : MG.tab === 'arch' ? 빈자리('보관함이 비어 있습니다', '목록에서 ‘내리기’를 누른 물건이 여기에 모입니다.', '', 80)
       : MG.tab === 'trash' ? 빈자리('휴지통이 비어 있습니다', '삭제한 물건은 30일 동안 여기에 있다가 지워집니다.', '', 80)
+      : 등록 ? 빈자리('등록한 매물이 없습니다', '‘+ 매물 등록’으로 명시사항을 모두 적고 소유자 확인을 마치면 노출할 수 있습니다. 매물장부에 적어 둔 물건도 기준을 다 채우면 여기에 나옵니다.', '', 80)
       : `<div class="empty">${beaverlyMini(110)}<p style="margin:8px 0 6px;font-size:15px;font-weight:700">아직 적어 둔 물건이 없습니다</p>
          <p style="margin:0 auto 18px;max-width:400px;font-size:14.5px;line-height:1.6;color:var(--n500)">보유하신 물건을 적어 두시면, 조건이 맞는 손님을 이 화면에서 바로 찾아드립니다.</p>
          ${쓸수 ? `<button class="btn pri md" data-act="lg-new">첫 물건 적기</button>` : ''}</div>`)}
+    ${등록 ? `<p style="margin:2px 0 0;font-size:13.5px;line-height:1.75;color:var(--n500)">거래가 성사된(계약금이 들어온) 매물은 바로 <b style="color:var(--n900)">‘노출 종료’</b>를 눌러 주세요. 끝난 매물이 계속 보이지 않게 관리하는 화면입니다.</p>` : ''}
     <p style="margin:2px 0 ${isMo()?'12px':'0'};font-size:13.5px;line-height:1.75;color:var(--n500)">
       노란 칸(의뢰인 · 특이사항)은 <b style="color:var(--n900)">우리 사무소 직원만</b> 봅니다. ‘장부만’인 물건은 손님에게 목록으로 보이지 않고, 조건이 맞을 때 보내시는 제안 안에서만 보입니다.</p>
     ${S.listings.some(x=>x.seed)?`<p style="margin:0;background:var(--warnbg);padding:12px 16px;font-size:13.5px;line-height:1.7;color:var(--n700)">
@@ -10060,6 +10065,7 @@ V["#/partner/listings"] = () => {
   </div>
   ${tabbar('l','p')}
 </div>`;};
+V['#/partner/listings/open'] = () => V['#/partner/listings']();
 /* ── 매물 사진 (2026-11-12 파트너 기획 C1 '사진 20장') ── 서버 api/_pics.js. 긴 변 1600px JPEG 로 줄여 한 장씩 올린다. 맨 앞이 대표 사진 */
 const LP = { by:{}, busy:'' };
 function lpLoad(id){
@@ -13153,6 +13159,7 @@ const GD_메뉴 = () => [
   ['영업', 'users', '손님을 찾고 제안하는 곳', [
     ['수요 목록', '#/partner/demands', '활동 지역에 걸린 손님 조건. 맞으면 1:1 제안을 보냅니다'],
     ['매물장부', '#/partner/listings', '우리 사무소 물건 장부. 기준을 채우면 손님에게 노출됩니다'],
+    ['매물등록', '#/partner/listings/open', '노출 중이거나 바로 노출할 수 있는 매물만 모아 봅니다'],
     ['내 제안', '#/partner/proposals', '보낸 제안 · 손님이 연결하면 이름과 번호가 열립니다'],
     ...(권한('room') ? [['손님 대화', '#/partner/rooms', '계약한 손님과 일정 · 서류를 주고받는 대화방']] : [])]],
   ...(계약막힘() ? [] : [['계약', 'doc', '계약서부터 잔금까지', [
@@ -13638,6 +13645,7 @@ function 파트너옆(active){
     '영업',
     ['#/partner/demands', own ? '맞는 손님' : '수요 목록', 'users', 'd'],
     ['#/partner/listings', (ownerSide() ? '내 물건' : '매물장부'), 'building', 'l'],
+    ...(own ? [] : [['#/partner/listings/open', '매물등록', 'list', 'lr']]),
     ['#/partner/map', '매물지도', 'map', 'lm'],
     ['#/partner/proposals', '내 제안', 'send', 'p'],
     ...(own || !권한('room') ? [] : [['#/partner/rooms', '손님 대화', 'chat', 'rm']]),
@@ -13680,6 +13688,7 @@ function adm위치(h){
   if(h.startsWith('#/partner/demand/')) return [['영업'], 수요, ['손님 조건']];
   if(h.startsWith('#/partner/propose/')) return [['영업'], 수요, ['제안 보내기']];
   if(h === '#/partner/listings') return [['영업'], [(ownerSide() ? '내 물건' : '매물장부')]];
+  if(h === '#/partner/listings/open') return [['영업'], ['매물등록']];
   if(h === '#/partner/listing/new') return [['영업'], 물건, [S.editL ? '물건 고치기' : '새로 적기']];
   if(h.startsWith('#/partner/listing/')) return [['영업'], 물건, ['물건 보기']];
   if(h === '#/partner/proposals') return [['영업'], ['내 제안']];
@@ -13717,6 +13726,10 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
+  { v:'26.11.17.12', 날:'2026-11-17', 줄:[ '메뉴 ‘매물등록’ - 노출 중이거나 명시사항을 다 채워 바로 노출할 수 있는 매물만 모아 봅니다. 매물장부는 그대로입니다',
+    '계약서 소재지 - 찾은 주소는 그대로 두고 ‘계약서에 찍히는 소재지’를 따로 고칠 수 있습니다(왼쪽 칸 · 오른쪽 서류 · 전체화면). 찾은 주소와 다르면 알려 줍니다',
+    '등기부 · 건축물대장을 올리면 소재지(지번)를 그 값으로 먼저 맞춥니다',
+    '계약서 전체화면 - 서류에서 소재지도 바로 고칩니다. 왼쪽 칸이 필요한 항목을 누르면 전체화면이 닫히고 그 칸으로 갑니다' ] },
   { v:'26.11.17.11', 날:'2026-11-17', 줄:[ '계약서 전체화면 단추 - 미리보기 위 단추 줄은 원래대로 두고, 서류 오른쪽 아래에 따로 떠 있는 ‘전체화면으로 보며 고치기’ 단추로' ] },
   { v:'26.11.17.10', 날:'2026-11-17', 줄:[ '계약서 ‘전체화면’ 단추를 미리보기 제목 바로 옆으로 - 화면이 좁으면 단추 줄 끝에서 잘려 안 보였습니다',
     '계약서 법인 당사자 - 법인등록번호 칸(숫자 13자리). 계약서 서명란에도 찍힙니다' ] },
@@ -15303,7 +15316,16 @@ function ctNewDoc0(form, from, F){
 /* 가입 때 받은 사무소 주소. 명부에서 온 동 이름 하나('경기도 하남시 덕풍동')는 계약서에 쓸 주소가 아니다 - 숫자(도로·번지)가 있어야 쓴다 */
 /* 계약서의 소속공인중개사 칸 - 소속공인중개사 직원(2026-11-06)이 쓰면 그 이름으로 */
 /* 계약서 · 확인·설명서의 소재지 칸 - 지번이 있으면 지번을 쓰고 도로명은 괄호로 (2026-11-17 파트너) */
-const ct소재지 = P => P && P.jibun ? `${esc(P.jibun)}${P.road ? `<br><span class="sm">(도로명) ${esc(P.road)}</span>` : ''}` : ct값(P && P.road, 300);
+const ct소재지있음 = P => !!(P && (P.road || P.jibun || P.show));
+const ct소재지글 = P => String((P && (P.show || P.jibun)) || '').trim();
+/* 찍히는 소재지가 찾은 주소(지번)와 다른가 - 띄어쓰기는 무시 */
+const ct소재지다름 = P => { const 맞 = v => String(v || '').replace(/\s+/g, ''); return !!(P && P.show && P.jibun && !맞(P.show).startsWith(맞(P.jibun)) && 맞(P.show) !== 맞(P.road)); };
+function ct소재지(P){
+  P = P || {};
+  const 글 = ct소재지글(P), 도로 = P.road && 글 && 글 !== P.road ? `<br><span class="sm">(도로명) ${esc(P.road)}</span>` : '';
+  if(CT편집칸 && ct소재지있음(P)) return ct칸('property.show', 글 || P.road, 300) + 도로;
+  return 글 ? esc(글) + 도로 : ct값(P.road, 300);
+}
 const ct직원이름 = () => { const v = S.agent && S.agent.staff; return (v && v.role === 'staff' && v.name) || ''; };
 const ct사무소주소 = () => { const v = String((S.agent && S.agent.addr) || '').trim(); return /\d/.test(v) ? v : ''; };
 
@@ -15776,13 +15798,13 @@ function ctDocHTML(doc){
     ${맞춤 ? `
     <h2>[${esc(F.fields[0].h)}]</h2>
     <table>
-      <tr><th class="w">소재지</th><td colspan="3"${CT편집칸 ? ` class="ct-road${CT.req && !P.road ? ' miss' : ''}" data-act="ct-req-go" data-v="property.road" title="소재지는 왼쪽 ‘주소 찾기’나 공적장부로 넣습니다"` : ''}>${ct소재지(P)}</td></tr>
+      <tr><th class="w">소재지</th><td colspan="3"${CT편집칸 && !ct소재지있음(P) ? ` class="ct-road${CT.req && !P.road ? ' miss' : ''}" data-act="ct-req-go" data-v="property.road" title="소재지는 왼쪽 ‘주소 찾기’나 공적장부로 넣습니다"` : ''}>${ct소재지(P)}</td></tr>
       ${ctFieldRows(doc, F.fields[0].rows)}
     </table>
     ${F.fields.slice(1).map(g => `<h2>[${esc(g.h)}]</h2><table>${ctFieldRows(doc, g.rows)}</table>`).join('')}` : `
     <h2>[${매매?'부동산':doc.form==='sublease'?'전대물':상가?'임차상가건물':군==='home'?'임차주택':'임차물'}의 표시]</h2>
     <table>
-      <tr><th class="w">소재지</th><td colspan="5"${CT편집칸 ? ` class="ct-road${CT.req && !P.road ? ' miss' : ''}" data-act="ct-req-go" data-v="property.road" title="소재지는 왼쪽 ‘주소 찾기’나 공적장부로 넣습니다"` : ''}>${ct소재지(P)}</td></tr>
+      <tr><th class="w">소재지</th><td colspan="5"${CT편집칸 && !ct소재지있음(P) ? ` class="ct-road${CT.req && !P.road ? ' miss' : ''}" data-act="ct-req-go" data-v="property.road" title="소재지는 왼쪽 ‘주소 찾기’나 공적장부로 넣습니다"` : ''}>${ct소재지(P)}</td></tr>
       <tr><th class="w">토지</th><th>지목</th><td>${ct칸('property.landCat', P.landCat, 70)}</td><th>면적</th><td colspan="2">${ct칸('property.landArea', P.landArea, 70, 'area')}</td></tr>
       ${매매 || (F.lease && ct집합(doc.sub)) ? `<tr><th class="w">대지권</th><td colspan="5">${ct칸('property.landRight', P.landRight, 200)}</td></tr>` : ''}
       <tr><th class="w">건물</th><th>구조·용도</th><td>${CT편집칸 ? `${ct칸('property.bldStruct', P.bldStruct, 60, 'text', { ph:'구조' })} · ${ct칸('property.bldUse', P.bldUse, 50, 'text', { ph:'용도' })}` : ct값([P.bldStruct,P.bldUse].filter(Boolean).join(' · '), 90)}</td><th>면적</th><td colspan="2">${ct칸('property.bldArea', P.bldArea, 70, 'area')}</td></tr>
@@ -17894,7 +17916,9 @@ function ctFormHTML(doc){
         ${잠김 ? `<p style="margin:4px 0 0">${esc(P.road||'')}</p>` : P.road ? `
         <div class="ct-addr"><b>${esc(P.jibun || P.road)}</b><span>${P.jibun && P.road ? `도로명 ${esc(P.road)}` : ''}${P.admCd?` · 법정동코드 ${esc(P.admCd)}`:' · <span style="color:var(--danger)">법정동코드 없음 - ‘다시 찾기’로 주소를 골라 주세요</span>'}</span>
           <button class="tapx" data-act="ct-addr-clear" style="font-size:13.5px;color:var(--n500)">다시 찾기</button></div>
-        <p class="sub" style="margin:4px 0 0;font-size:12.5px">계약서 소재지는 지번으로 적힙니다(당사자 주소는 도로명).</p>`
+        <div style="margin-top:8px">${ctIn('property.show', '계약서에 찍히는 소재지', {wide:true, ph: P.jibun || P.road || ''})}</div>
+        ${ct소재지다름(P) ? `<p class="sub" role="status" style="margin:4px 0 0;font-size:12.5px;color:var(--warn,#9A6700)">찾은 주소(${esc(P.jibun)})와 다릅니다 - 맞게 적었는지 한 번 확인해 주세요.</p>` : ''}
+        <p class="sub" style="margin:4px 0 0;font-size:12.5px">비워 두면 찾은 지번이 찍힙니다. 동 · 호수, 필지가 여럿일 때처럼 다르게 적어야 하면 여기(또는 오른쪽 서류)에서 고치세요. 찾은 주소는 계약현황 찾기 · 신고 도우미에 그대로 쓰입니다.</p>`
         : addrBox('ct-addr', '도로명·지번·건물명으로 찾기 (예: 미사강변대로 220)')
           /* 검색이 꺼져 있거나 못 찾았을 때만 직접 적는다 - 그 주소에는 법정동코드가 없다고 표시된다 */
           + (ADDR.for === 'ct-addr' && ((ADDR.rows && !ADDR.rows.length) || ADDR.off)
@@ -18855,7 +18879,9 @@ function ctApplyScan(doc, s, kinds, 빈칸만){
   };
   const 있음 = k => (kinds || []).includes(k) || (k === 'bld' && (kinds || []).includes('bldx'));
   /* 소재지·토지·건물 - 계약서·확인·설명서가 같은 property 칸을 쓴다 */
-  넣기('property.jibun', s.jibun); 넣기('property.bdNm', s.bdNm);
+  /* 소재지는 공적장부가 먼저다 (2026-11-17 파트너 · 대표님) - 이미 적혀 있어도 등기부 · 대장의 지번으로 바꾼다 */
+  if(!비었나(s.jibun)){ if(ctGet(doc, 'property.jibun') !== s.jibun){ ctSet(doc, 'property.jibun', s.jibun); 채움.push('property.jibun'); } }
+  넣기('property.bdNm', s.bdNm);
   넣기('property.landCat', s.landCat); 넣기('property.landArea', s.landArea);
   넣기('property.bldStruct', s.bldStruct); 넣기('property.bldUse', s.bldUse); 넣기('property.bldArea', s.bldArea);
   if(!F.explain && !F.lease) 넣기('property.landRight', s.landRight);
@@ -19277,7 +19303,7 @@ function exPart(doc, p){
   if(p.t === 'area') return v ? esc(String(v)).replace(/\n/g, '<br>') : `<span class="ex-area"></span>`;
   if(p.t === 'note') return `<span class="ex-note">${esc(p.s)}</span>`;
   if(p.t === 'sign') return `<span class="ex-sign">${esc(p.s)} ${빈칸(90)} (서명 또는 날인)</span>`;
-  if(p.t === 'addr') return doc.property.jibun ? `${esc(doc.property.jibun)}${doc.property.road ? ` <span class="sm">(도로명) ${esc(doc.property.road)}</span>` : ''}` : doc.property.road ? esc(doc.property.road) : 빈칸(300);
+  if(p.t === 'addr'){ const 글 = ct소재지글(doc.property); return 글 ? `${esc(글)}${doc.property.road && 글 !== doc.property.road ? ` <span class="sm">(도로명) ${esc(doc.property.road)}</span>` : ''}` : doc.property.road ? esc(doc.property.road) : 빈칸(300); }
   if(p.t === 'sum'){ const n = (+ctGet(doc,'ex.fee')||0) + (+ctGet(doc,'ex.cost')||0); return n ? `${n.toLocaleString()} 원` : `${빈칸(110)} 원`; }
   return '';
 }
@@ -22530,6 +22556,7 @@ function handle(a,v,el){
       if(!CT.list) ctLoadList(true).then(() => { if(S.modal && S.modal.type === 'ct-seal') render(); });
       return true; }
     case 'ct-req-go':
+      if(CT.full){ CT.full = false; render(); }
       if(CT.mode !== 'edit'){ CT.mode = 'edit'; render(); }
       setTimeout(() => ct필수가기(v), 30); return true;
     case 'ct-seal-go': {

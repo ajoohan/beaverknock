@@ -774,38 +774,14 @@ async function bin(res, agent, b) {
   return res.status(200).json({ ok: true, track: z.track });
 }
 
-/* 계약을 마치면 그 계약서를 시작한 등록 물건도 거래완료로 (2026-11-17 파트너 방향 - 등록 매물이 계약현황까지 이어진다).
-   계약서 doc.listingId(등록 물건에서 시작한 계약서만 있다)를 보고, 내 물건일 때만 바꾼다.
-   완료를 되돌리면 계약 때문에 옮긴 물건(closed_why '계약 완료')만 목록으로 돌린다 - 노출은 꺼진 채로 둔다.
-   물건 칸이 없거나 실패해도 계약 진행 상태 저장은 그대로 성공이다. 돌려줌: 'done' | 'active' | null */
-const 계약완료말 = '계약 완료';
-export async function 물건따라가기(id, agent, 전, 새) {
-  const 끝남 = 새 === 'done' && 전 !== 'done', 되돌림 = 전 === 'done' && 새 !== 'done';
-  if (!끝남 && !되돌림) return null;
-  try {
-    const got = await db('bk_contract', `select=lid:doc->>listingId&id=eq.${id}&agent_id=eq.${agent.id}&limit=1`);
-    const lid = got.r.ok && got.rows[0] && String(got.rows[0].lid || '');
-    if (!lid || !UUID.test(lid)) return null;
-    const now = new Date().toISOString();
-    const 조건 = 끝남 ? 'status=in.(active,arch)' : `status=eq.done&closed_why=eq.${encodeURIComponent(계약완료말)}`;
-    const 칸 = 끝남 ? { status: 'done', vis: 'private', closed_at: now, closed_why: 계약완료말, updated_at: now }
-      : { status: 'active', closed_at: null, closed_why: null, updated_at: now };
-    const x = await db('bk_listing', `id=eq.${lid}&agent_id=eq.${agent.id}&${조건}&select=id`, {
-      method: 'PATCH', headers: { Prefer: 'return=representation' }, body: JSON.stringify(칸) });
-    return x.r.ok && x.rows.length ? (끝남 ? 'done' : 'active') : null;
-  } catch { return null; }
-}
-
 /* 진행 상태만 바꾸기 (2026-11-10 대시보드 '잔금 완료하셨나요? → 완료') - track 의 다른 값은 서버에 있는 그대로 둔다 */
 async function state(res, agent, b) {
   const id = String(b.id || ''), s = String(b.state || '');
   if (!UUID.test(id)) return res.status(400).json({ error: '어느 계약서인지 알 수 없습니다' });
   if (s && !Object.hasOwn(진행상태, s)) return res.status(400).json({ error: '알 수 없는 진행 상태입니다' });
-  let 전 = '';
-  const z = await 링크번호지켜쓰기(id, agent, (n, 지금) => { 전 = 지금.state || ''; const t = { ...지금 }; if (s) t.state = s; else delete t.state; return t; });
+  const z = await 링크번호지켜쓰기(id, agent, (n, 지금) => { const t = { ...지금 }; if (s) t.state = s; else delete t.state; return t; });
   if (z.res) return z.res(res, '진행 상태를 바꾸지 못했습니다');
-  const listing = await 물건따라가기(id, agent, 전, s);
-  return res.status(200).json({ ok: true, track: z.track, ...(listing ? { listing } : {}) });
+  return res.status(200).json({ ok: true, track: z.track });
 }
 
 /* 일정·체크 저장 - 날인본도 된다(트리거가 track 만 통과시킨다). 내 계약서만 */
@@ -820,12 +796,10 @@ async function track(res, agent, b) {
   /* 초안 의견은 화면이 보낸 것으로 덮지 않는다 - 서버에 지금 있는 것을 그대로 둔다(읽음 · 지우기는 contract-note) */
   delete t.notes; delete t.tv; delete t.room; delete t.fpics;
   /* 읽은 링크 번호가 그대로일 때만 쓴다 - 그 사이 끊기가 번호를 올렸으면 다시 읽는다(2026-11-05 재검토) */
-  let 전 = '';
-  const z = await 링크번호지켜쓰기(id, agent, (n, 지금) => (전 = 지금.state || '', { ...t, ...(지금.notes ? { notes: 지금.notes } : {}), ...(지금.room ? { room: 지금.room } : {}), ...(지금.fpics ? { fpics: 지금.fpics } : {}),
+  const z = await 링크번호지켜쓰기(id, agent, (n, 지금) => ({ ...t, ...(지금.notes ? { notes: 지금.notes } : {}), ...(지금.room ? { room: 지금.room } : {}), ...(지금.fpics ? { fpics: 지금.fpics } : {}),
     ...(b.guideOff !== true && 지금.guideAt && !t.guideAt ? { guideAt: 지금.guideAt } : {}) }));   /* 잔금안내 체크를 끈 것은 guideOff 로 온다 */
   if (z.res) return z.res(res, '일정을 저장하지 못했습니다');
-  const listing = await 물건따라가기(id, agent, 전, t.state || '');
-  return res.status(200).json({ ok: true, track: z.track, ...(listing ? { listing } : {}) });
+  return res.status(200).json({ ok: true, track: z.track });
 }
 /* track 을 고쳐 쓴다 - 고침(지금 링크 번호 n) 이 새 track 을 돌려준다. 링크 번호가 읽은 뒤 바뀌었으면 다시 읽어 3번까지.
    돌려주는 값: { track } 또는 { res: (res, 실패말) => 답 } */

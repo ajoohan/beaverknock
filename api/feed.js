@@ -20,6 +20,7 @@ import { 직원들, 직원고침, 직원사무소, 직원들어옴, 직원역할
 import { notify, mailWithFile } from './_notify.js';
 import { roomAgent, invitePeek } from './_room.js';
 import { 지도켜짐, 물건좌표잠깐, 내물건좌표 } from './_geo.js';
+import { 건축물대장, 포털오류 } from './_bld.js';
 
 const KIND_KO = { home: '주거', shop: '상가', office: '오피스', storage: '창고' };
 
@@ -677,6 +678,13 @@ export default async function handler(req, res) {
   if (await contractRoute(req, res, chk.agent, user, b)) return;
   /* 매물 등록 - 건축물대장 사진 · 스캔본 판독(_contract.js listingScan). 직원은 위에서 'listing' 권한으로 걸렀다 */
   if (b.what === 'listing-scan') return listingScan(req, res, user, b);
+  /* 매물 등록 - 주소(법정동코드 · 지번)로 건축물대장 불러오기 (2026-11-17 파트너 C1 시안 '건축물대장 자동 입력').
+     계약서의 contract-bld 와 같은 공공 조회(_bld.js) - 소유자 같은 개인정보는 오지 않는다. 키는 사이트 전체가 같이 써서 계약서와 같은 한도 */
+  if (b.what === 'listing-bld') {
+    if (overLimit('bld:a:' + chk.agent.id, 200, 864e5)) return res.status(429).json({ ok: false, error: '오늘 건축물대장 조회를 많이 하셨습니다 - 내일 다시 해 주세요' });
+    try { const o = await 건축물대장(b); return res.status(200).json(o.error ? { ok: false, error: o.error } : { ok: true, scan: o.scan, kinds: o.kinds }); }
+    catch (e) { return res.status(200).json({ ok: false, error: e instanceof 포털오류 ? e.message : '건축물대장을 불러오지 못했습니다' }); }
+  }
 
   /* 올려둔 물건. 지금까지 이 목록도 그 브라우저에만 있어서 창을 닫으면
      사라졌다. 함수 상한(12개) 때문에 여기 함께 둔다. */

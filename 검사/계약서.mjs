@@ -1336,31 +1336,10 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
   ok(js.includes('data-act="ct-trash-cur"') && !js.includes('>이 계약서 지우기<'), '작성 화면의 지우기는 휴지통으로(바로 지우지 않는다)');
 }
 
-/* ── 잔금 완료 → 등록 물건 거래완료 (2026-11-17 파트너 방향) ── */
-{
-  process.env.BK_URL = 'https://x.supabase.co'; process.env.BK_SECRET_KEY = 'k';
-  const agent = { id: '11111111-1111-1111-1111-111111111111', role: 'agent' };
-  const cid = '33333333-3333-3333-3333-333333333333', lid = '44444444-4444-4444-4444-444444444444';
-  let 불린 = [], 계약lid = lid, 물건있음 = true;
-  globalThis.fetch = async (u, o = {}) => { u = String(u); const m = o.method || 'GET'; 불린.push({ u, m, b: o.body });
-    if (u.includes('bk_contract') && u.includes('lid:doc')) return new Response(JSON.stringify([{ lid: 계약lid }]), { status: 200 });
-    if (u.includes('bk_listing') && m === 'PATCH') return new Response(JSON.stringify(물건있음 ? [{ id: lid }] : []), { status: 200 });
-    return new Response('[]', { status: 200 }); };
-  const 물건PATCH = () => 불린.find(x => x.u.includes('bk_listing') && x.m === 'PATCH');
-  불린 = []; ok(await C.물건따라가기(cid, agent, '', 'done') === 'done', '잔금 완료로 바꾸면 계약서를 시작한 물건을 거래완료로 옮긴다');
-  { const p = 물건PATCH(), b = JSON.parse(p.b);
-    ok(p.u.includes(`id=eq.${lid}`) && p.u.includes(`agent_id=eq.${agent.id}`) && p.u.includes('status=in.(active,arch)'), '내 물건이고 목록 · 보관함에 있을 때만 바꾼다');
-    ok(b.status === 'done' && b.vis === 'private' && b.closed_why === '계약 완료', '거래완료로 옮기며 노출도 끈다'); }
-  불린 = []; ok(await C.물건따라가기(cid, agent, 'done', 'done') === null && !물건PATCH(), '이미 완료였으면 다시 건드리지 않는다');
-  불린 = []; ok(await C.물건따라가기(cid, agent, '', 'cancel') === null && !물건PATCH(), '취소 · 진행 중은 물건을 건드리지 않는다');
-  불린 = []; ok(await C.물건따라가기(cid, agent, 'done', '') === 'active', '완료를 되돌리면 물건도 목록으로 돌린다');
-  { const p = 물건PATCH(), b = JSON.parse(p.b);
-    ok(p.u.includes('status=eq.done') && p.u.includes('closed_why=eq.' + encodeURIComponent('계약 완료')) && b.status === 'active' && !('vis' in b), '계약 때문에 옮긴 물건만 되돌리고 노출은 켜지 않는다'); }
-  계약lid = null; 불린 = []; ok(await C.물건따라가기(cid, agent, '', 'done') === null && !물건PATCH(), '물건에서 시작하지 않은 계약서는 물건을 건드리지 않는다');
-  계약lid = 'x;drop'; 불린 = []; ok(await C.물건따라가기(cid, agent, '', 'done') === null && !물건PATCH(), '물건 번호 모양이 아니면 버린다');
-  계약lid = lid; 물건있음 = false; ok(await C.물건따라가기(cid, agent, '', 'done') === null, '이미 거래완료 · 휴지통인 물건이면 아무것도 안 했다고 돌려준다');
-  ok(js.includes('d.listingId = 물.id') && js.includes('ct물건알림(j.listing)'), '화면 - 물건에서 시작하면 번호를 적고, 옮겨졌으면 알린다');
-}
+/* ── 잔금 완료는 등록 물건을 건드리지 않는다 (2026-11-17 파트너 C1 시안 - 노출 종료는 중개사가 직접) ── */
+ok(!('물건따라가기' in C) && js.includes('d.listingId = 물.id') && !js.includes('ct물건알림'), '계약서에 물건 번호만 남기고, 잔금 완료로 물건을 자동으로 옮기지 않는다');
+/* ── 매물 등록 - 주소로 건축물대장 불러오기 (2026-11-17) ── */
+ok(js.includes("what:'listing-bld'") && js.includes('S.form.lbun = a.bun') && js.includes('lbRowHTML()'), '매물 등록 - 고른 주소의 지번으로 건축물대장을 불러온다');
 
 console.log(`${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

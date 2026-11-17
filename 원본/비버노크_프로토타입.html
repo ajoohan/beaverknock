@@ -3239,6 +3239,9 @@ body.mo .jr-trust{grid-template-columns:1fr;gap:8px}
 .ls-slot b{display:block;font-size:14px;color:var(--n900)} .ls-slot span{display:block;font-size:12.5px;color:var(--n500);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ls-msg{margin:0;font-size:13.5px;line-height:1.6;color:var(--n700)} .ls-msg.err{color:var(--danger)}
 .ls-foot{margin:0;font-size:12.5px;color:var(--n500)}
+.ls-bld{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border:1px solid var(--ind100,#e0e3ff);border-radius:12px;background:var(--ind50)}
+.ls-bld b{display:block;font-size:14px;color:var(--n900)} .ls-bld span{display:block;font-size:12.5px;line-height:1.5;color:var(--n500)} .ls-bld .btn{flex:none}
+@media (max-width:640px){.ls-bld{flex-direction:column;align-items:stretch}}
 .scan-mini span{font-size:13px;line-height:1.5;color:var(--n500)}
 .scan-done .btn,.scan-mini .btn{flex:none}
 .ctx-side .scan.ct-sec{padding-top:14px}
@@ -10140,6 +10143,8 @@ function addrPick(i){
   else if(ADDR.for === 'acc-addr'){ accAddrSave(full); }
   else if(ADDR.for === 'laddr'){
     S.form.laddr = full; S.form.ladmCd = a.admCd || '';
+    /* 지번 - 주소로 건축물대장 불러오기에만 쓴다(저장하지 않는다, 2026-11-17) */
+    S.form.lbun = a.bun || ''; S.form.lji = a.ji || ''; S.form.lmount = !!a.mount; LB.done = null; LB.err = '';
     S.form.lname = S.form.lname || a.bdNm || '';
     /* 손님이 고른 동과 맞춰야 해서, 알아낸 법정동이 목록에 있을 때만 넣는다 */
     if(!S.form.ldong && a.emd) S.form.ldong = a.emd;
@@ -10227,8 +10232,38 @@ async function lsGo(){
   render();
   toast(채움.length ? `건축물대장에서 ${채움.length}칸을 채웠습니다 - 값을 한 번 확인해 주세요` : '채울 빈칸이 없거나 서류에서 값을 찾지 못했습니다');
 }
+/* ── 매물 등록: 주소로 건축물대장 불러오기 (2026-11-17 파트너 C1 시안) ──
+   도로명 찾기로 고른 주소(법정동코드 · 지번)와 적어 둔 동 · 호로 공공 건축물대장(표제부 · 전유부)을 불러와 빈칸만 채운다.
+   서류를 받지 않아 개인정보가 오가지 않는다 - 사진 읽기와 달리 바로 쓴다. 서버 feed listing-bld → api/_bld.js.
+   전용면적은 동 · 호로 전유부를 찾았을 때만 넣는다(표제부 연면적은 건물 전체라 넣지 않는다). 총층 · 주차는 칸이 없어 참고로만 보인다 */
+const LB = { busy:false, err:'', done:null };
+const lb가능 = () => !!(S.form && S.form.ladmCd && S.form.lbun);
+async function lbGo(){
+  const f = S.form; if(LB.busy) return;
+  if(!lb가능()) return toast('먼저 주소를 ‘도로명 찾기’로 골라 주세요 - 지번이 있어야 건축물대장을 찾습니다');
+  LB.busy = true; LB.err = ''; LB.done = null; render();
+  const 동호 = [f.lbdong && String(f.lbdong).replace(/동$/, '') + '동', f.lho && String(f.lho).replace(/호$/, '') + '호'].filter(Boolean).join(' ');
+  const { ok, j } = await ctPost({ what:'listing-bld', admCd: f.ladmCd, bun: f.lbun, ji: f.lji || '', mount: !!f.lmount, road: f.laddr || '', unit: 동호 })
+    .catch(() => ({ ok:false, j:{ error:'네트워크 문제로 불러오지 못했습니다 - 다시 해 주세요' } }));
+  LB.busy = false;
+  if(S.form !== f){ render(); return; }
+  if(!ok || !j.ok || !j.scan){ LB.err = j.error || '건축물대장을 불러오지 못했습니다'; render(); return; }
+  const kinds = j.kinds || ['bld'], 채움 = lsApply(f, j.scan, kinds);
+  const 참고 = [j.scan.floors, j.scan.parking && '주차 ' + j.scan.parking, j.scan.bldUse && '용도 ' + j.scan.bldUse].filter(Boolean);
+  LB.done = { 채움, 참고, 전유: kinds.includes('bldx'), 경고: (j.scan.warnings || []).filter(w => !/소유자 · 권리관계/.test(w)).slice(0, 2) };
+  render();
+  toast(채움.length ? `건축물대장에서 ${채움.length}칸을 채웠습니다 - 값을 한 번 확인해 주세요` : '채울 빈칸이 없습니다 - 이미 적은 값은 그대로 둡니다');
+}
+function lbRowHTML(){
+  const d = LB.done;
+  return `<div class="ls-bld"><div style="min-width:0"><b>주소로 불러오기</b><span>${lb가능() ? '고른 주소와 동 · 호로 건물명 · 전용면적 · 사용승인일 · 주택 유형을 채웁니다' : '위에서 주소를 ‘도로명 찾기’로 고르면 서류 없이 바로 불러옵니다'}</span></div>
+    <button type="button" class="btn sec sm" data-act="lb-go" ${LB.busy || !lb가능() ? 'disabled' : ''}>${LB.busy ? '불러오는 중…' : '건축물대장 불러오기'}</button></div>
+    ${LB.err ? `<p class="ls-msg err" role="alert">${esc(LB.err)}</p>` : ''}
+    ${d ? `<p class="ls-msg" role="status">${d.채움.length ? `채운 칸: ${esc(d.채움.join(' · '))}` : '채운 칸이 없습니다'}${d.참고.length ? `<br>참고(칸 없음): ${esc(d.참고.join(' · '))}` : ''}${!d.전유 && String(S.form.lho || '').trim() ? '<br>이 동 · 호의 전유부를 찾지 못해 전용면적은 넣지 않았습니다 - 직접 적어 주세요' : !d.전유 ? '<br>동 · 호를 적고 다시 불러오면 그 호의 전용면적까지 채웁니다' : ''}${d.경고.map(w => `<br>${esc(w)}`).join('')}</p>` : ''}`;
+}
 const LS_부터 = Date.parse('2026-11-20T15:00:00Z');   /* 처리방침 개정 안내 7일 뒤 - 서버(api/_contract.js listingScan)와 같은 날 */
-function lsCardHTML(){
+function lsCardHTML(){ return lsCardHTML0().replace('<div class="card pad ls-card">', '<div class="card pad ls-card">' + lbRowHTML()); }
+function lsCardHTML0(){
   if(Date.now() < LS_부터) return `<div class="card pad ls-card"><h2 style="font-size:16px;margin:0">건축물대장으로 채우기 <span class="badge b-mute" style="vertical-align:middle">11월 21일부터</span></h2>
     <p class="sub" style="margin:0;font-size:13.5px;line-height:1.6">사진 · 스캔본을 올리면 건물명 · 동 · 호 · 전용면적 · 층 · 사용승인일을 채워 드립니다. 개인정보 처리방침 개정 안내 기간이 끝나는 11월 21일부터 쓸 수 있습니다.</p></div>`;
   const d = LS.done;
@@ -13617,7 +13652,8 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
-  { v:'26.11.17', 날:'2026-11-17', 줄:[ '계약서 ↔ 매물장부 - 등록 물건에서 시작한 계약서를 잔금 완료로 바꾸면 그 물건이 매물장부에서 거래완료로 옮겨지고 노출도 꺼집니다 · 완료를 되돌리면 물건도 목록으로 돌아옵니다' ] },
+  { v:'26.11.17.2', 날:'2026-11-17', 줄:[ '매물 올리기 - 도로명 찾기로 주소를 고르면 ‘건축물대장 불러오기’로 건물명 · 전용면적(동 · 호를 적었을 때) · 사용승인일 · 주택 유형을 서류 없이 채웁니다 · 총층 · 주차는 참고로 보입니다',
+    '계약서 - 잔금 완료로 바꿔도 매물장부의 물건은 그대로 둡니다(오전에 넣은 자동 거래완료를 뺐습니다) - 노출 종료는 계약금이 들어오면 매물장부에서 직접 눌러 주세요' ] },
   { v:'26.11.16', 날:'2026-11-16', 줄:[ '매물 신고 - 운영자가 공개를 멈춘 매물은 중개사가 다시 켤 수 없습니다(신고함의 ‘멈춤 풀기’로만 풂) · 거의 같이 들어온 신고도 빠지지 않습니다 · 오래된 미처리 신고도 신고함에 모두 보입니다',
     '매물지도 - 좌표 찾기가 잠깐 실패하면 다음에 다시 찾습니다 · 지도를 열 때 좌표를 여러 개씩 함께 찾고, 물건 저장은 좌표를 오래 기다리지 않습니다',
     '손님 개인정보 - 열람 전 요약에는 손님이 고른 곳의 정확한 위치가 실리지 않습니다(반경 중심은 시 · 구로만)' ] },
@@ -15295,7 +15331,8 @@ function ctMake(catK, sub, deal){
   CT.filled = new Set(); CT.scan = null; CT.scanWarn = [];
   /* 시작 방법 (2026-11-12) - 등록 물건의 건물명 · 금액을 옮긴다. 주소는 물건에 없어 계약서에서 찾는다 */
   const 물 = CT.start === 'listing' && CT.startL ? (S.listings || []).find(x => x.id === CT.startL) : null;
-  /* listingId - 잔금 완료로 바꾸면 이 물건도 거래완료로 옮긴다(2026-11-17 파트너 방향, 서버 물건따라가기) */
+  /* listingId - 어느 등록 물건에서 시작한 계약서인지 남긴다(2026-11-17). 물건을 자동으로 옮기지는 않는다 -
+     노출 종료는 계약금이 들어오면 중개사가 직접(파트너 C1 시안 · 표시 · 광고 법률 검토 전) */
   if(물){ const d = CT.doc; d.property = { ...(d.property || {}), bdNm: 물.name || '' }; if(/^[0-9a-f-]{36}$/i.test(String(물.id || ''))) d.listingId = 물.id;
     if(form === 'sale'){ if(+물.dep) d.deal.price = +물.dep; }
     else { if(+물.dep) d.deal.deposit = +물.dep; if(+물.rent && deal !== '전세') d.deal.rent = +물.rent; if(+물.fee) d.deal.fee = +물.fee; } }
@@ -16666,7 +16703,7 @@ function ctWizHTML(전체){
   const 복사중 = p.cat === 'copy' || p.cat === 'renew', 시작 = 복사중 ? 'copy' : (CT.start || 'docs');
   const 물건 = (S.listings || []).filter(l => !l.seed && l.status !== 'closed');
   const 시작줄 = `<div class="ctw-start"><span class="lab">시작 방법</span><div class="ctw-sts" role="radiogroup" aria-label="시작 방법">${
-    [['listing', '등록 물건에서', '건물명 · 금액이 들어가고, 잔금 완료 때 물건도 거래완료로'], ['docs', '서류로 채우기', '등기부 · 건축물대장 · 토지이용계획 - 사진도 됩니다'], ['copy', '기존 계약서 복사', '지난 계약서의 목적물 · 당사자 · 특약'], ['blank', '빈 양식에 직접', '자동 입력 없이 바로 적기']]
+    [['listing', '등록 물건에서', '내 물건을 고르면 건물명 · 금액이 들어갑니다'], ['docs', '서류로 채우기', '등기부 · 건축물대장 · 토지이용계획 - 사진도 됩니다'], ['copy', '기존 계약서 복사', '지난 계약서의 목적물 · 당사자 · 특약'], ['blank', '빈 양식에 직접', '자동 입력 없이 바로 적기']]
       .map(([k, b, s]) => `<button type="button" class="ctw-st${시작 === k ? ' on' : ''}" data-act="ctp-start" data-v="${k}" role="radio" aria-checked="${시작 === k}"><b>${b}</b><span>${s}</span></button>`).join('')}</div>
     ${시작 === 'listing' ? (물건.length ? `<div class="ctw-ls" role="group" aria-label="내 물건 고르기">${물건.slice(0, 12).map(l => `<button type="button" class="ctw-c${CT.startL === l.id ? ' on' : ''}" data-act="ctp-listing" data-v="${esc(l.id)}" aria-pressed="${CT.startL === l.id}">${esc(l.name || '이름 없는 물건')}${l.deal ? ` · ${esc(l.deal)}` : ''}</button>`).join('')}</div>`
       : `<p class="ctw-note" style="margin:0">올려 둔 물건이 없습니다. <a class="lnk" data-go="#/partner/listing/new">물건 올리기</a> 뒤에 고를 수 있습니다 - 지금은 다른 방법으로 시작하세요.</p>`) : ''}</div>`;
@@ -17899,10 +17936,6 @@ function ctTrackSet(patch){
   CT.track = t; render(); ctTrackSave(true);
 }
 let ctTrackT = 0;
-/* 계약 진행 상태를 완료로(또는 되돌림) 바꾸면 서버가 그 계약서를 시작한 등록 물건도 따라 옮긴다 - 알림 문구 */
-const ct물건알림 = l => { if(l !== 'done' && l !== 'active') return '';
-  if(typeof loadListings === 'function') loadListings(true);
-  return l === 'done' ? '매물장부의 그 물건도 거래완료로 옮겼습니다' : '매물장부의 그 물건도 목록으로 되돌렸습니다 - 노출은 꺼져 있습니다'; };
 function ctTrackSave(바로){
   clearTimeout(ctTrackT);
   /* 저장을 걸 때의 track 을 붙잡아 둔다 - 0.5초 안에 다른 계약서로 넘어가도 앞 계약서에 빈 track 을 보내 지우지 않게(2026-11-05 점검) */
@@ -17916,7 +17949,6 @@ function ctTrackSave(바로){
     if(CT.id === id){ CT.track = 새것; CT.row = { ...(CT.row || {}), track: 새것 }; }
     const 행 = (CT.list || []).find(r => r.id === id); if(행) 행.track = 새것;
     if(CT.mode === 'plan') render();
-    const 물알림 = ct물건알림(j.listing); if(물알림) toast(물알림);
   }, 바로 ? 0 : 500);
 }
 
@@ -22283,10 +22315,8 @@ function handle(a,v,el){
       const { ok, j } = await ctPost({ what:'contract-state', id: v, state: 'done' }).catch(() => ({ ok:false, j:{} }));
       if(!ok) return toast(j.error || '완료로 바꾸지 못했습니다');
       if(행) 행.track = j.track; render();
-      const 물알림 = ct물건알림(j.listing);
-      toast('잔금 완료로 표시했습니다' + (물알림 ? ' · ' + 물알림 : ''), { undo: async () => { const x = await ctPost({ what:'contract-state', id: v, state: 전 }).catch(() => ({ ok:false, j:{} }));
-        if(x.ok && 행){ 행.track = x.j.track; render(); }
-        const 되알림 = x.ok && ct물건알림(x.j.listing); if(되알림) toast(되알림); } });
+      toast('잔금 완료로 표시했습니다', { undo: async () => { const x = await ctPost({ what:'contract-state', id: v, state: 전 }).catch(() => ({ ok:false, j:{} }));
+        if(x.ok && 행){ 행.track = x.j.track; render(); } } });
     })(); return true;
     case 'ct-autoarch': { const A = CT.alert; if(!A || !A.loaded || A.need || A.err) return true; A.cfg = ct알림설정({ ...ct알림설정(A.cfg), autoArch: !ct알림설정(A.cfg).autoArch });
       ctAlertSave(); render(); toast(A.cfg.autoArch ? '완료 · 취소 건을 3개월 뒤 보관함으로 옮깁니다(매일 아침)' : '자동 보관을 껐습니다'); return true; }
@@ -22417,6 +22447,7 @@ function handle(a,v,el){
     case 'lg-f': MG.tab = 'list'; MG.f = MG.f === v ? '' : (v || ''); render(); return true;
     case 'lg-new': S.editL = null; S.form = {}; LS.files = {}; LS.done = null; LS.err = ''; go('#/partner/listing/new'); return true;
     case 'ls-go': lsGo(); return true;
+    case 'lb-go': lbGo(); return true;
     case 'ls-del': delete LS.files[v]; render(); return true;
     case 'lg-edit': { const L = S.listings.find(x => x.id === v); if(!L) return true; S.form = 물건폼(L); S.editL = L.id; go('#/partner/listing/new'); return true; }
     case 'lg-owner': { const L = S.listings.find(x => x.id === v); if(L) lgSet(v, { listing: { ownerOk: !L.ownerOk } }, !L.ownerOk ? '소유자 확인을 표시했습니다' : '소유자 확인을 껐습니다'); return true; }

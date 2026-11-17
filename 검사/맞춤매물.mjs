@@ -13,8 +13,15 @@ const { 일치율, 일치기준, matched, matchWant } = await import('../api/_ma
 /* ── 노출 기준 열 가지 ── */
 const 물건 = { id: 'aaaaaaaa-0000-4000-8000-000000000001', agent_id: 'ag1', agent_user: 'u-agent', kind: 'home', name: '미사 ○○아파트', dong: '망월동', deal: '월세',
   dep: 50000000, rent: 1500000, fee: 170000, fee_basis: '최근 3개월 평균', area: 84.97, rooms: 3, baths: 2, band: '중층', dir: '남', dir_base: '거실 기준',
-  move_in: '협의', bdong: '101', ho: '1203', hide_unit: true, owner_ok: true, vis: 'open', status: 'active', price_log: [] };
-ok(노출기준(물건).빠짐.length === 0 && 노출기준(물건).다 === 10, '열 가지를 다 채우면 빠진 것이 없다');
+  move_in: '협의', bdong: '101', ho: '1203', hide_unit: true, owner_ok: true, vis: 'open', status: 'active', price_log: [],
+  floors: 25, approved: '2015.06.30', fee_type: '관리규약에 따라 부과' };
+ok(노출기준(물건).빠짐.length === 0 && 노출기준(물건).다 === 14, '명시사항 열네 가지를 다 채우면 빠진 것이 없다 (2026-11-17 확대)');
+ok(['총 층수', '사용승인일', '관리비 부과 방식'].every(k => 노출기준({ ...물건, floors: 0, approved: '', fee_type: '' }).빠짐.includes(k)), '총 층수 · 사용승인일 · 관리비 부과 방식이 없으면 노출 못 한다');
+ok(노출기준({ ...물건, baths: 0 }).빠짐.includes('방 · 욕실 수') && !노출기준({ ...물건, rooms: 0, htype: '원룸' }).빠짐.includes('방 · 욕실 수'), '주거는 욕실 수가 있어야 하고, 원룸은 방 수를 묻지 않는다');
+ok(!노출기준(물건).빠짐.includes('주차 대수') && 노출기준({ ...물건, fee_rows: [] }).빠짐.includes('주차 대수'), '주차 대수는 0043 칸이 있을 때만 묻는다(SQL 전에 노출이 막히지 않게)');
+{ const 정액 = { ...물건, fee_rows: [], parking: '총 1,200대', fee: 170000, fee_type: '임대인이 직접부과' };
+  ok(노출기준(정액).빠짐.join() === '관리비 세부 항목', '정액관리비 월 10만원 이상은 항목표가 있어야 노출한다');
+  ok(노출기준({ ...정액, fee_rows: [{ k: 'common', amt: 150000 }] }).빠짐.length === 0 && 노출기준({ ...정액, fee: 90000 }).빠짐.length === 0, '항목을 적었거나 10만원 미만이면 된다'); }
 ok(노출기준({ ...물건, owner_ok: false }).빠짐.join() === '소유자 확인', '소유자 확인을 안 하면 노출 못 한다');
 ok(노출기준({ ...물건, dir: '' }).빠짐.includes('방향'), '주거는 방향이 있어야 한다');
 ok(!노출기준({ ...물건, kind: 'shop', dir: '', band: '', floor_no: '1' }).빠짐.includes('방향'), '상가는 방향을 묻지 않는다');
@@ -138,5 +145,13 @@ globalThis.fetch = async (url, opt = {}) => {
   { const { o, res } = 답(); await listingPicAdd(res, { id: 'ag1' }, { id: 물건.id, data: Buffer.concat([Buffer.from([0xFF, 0xD8, 0xFF]), Buffer.alloc(1300 * 1024)]).toString('base64') });
     ok(o.code === 413, '너무 큰 사진은 받지 않는다'); } }
 
+/* ── 0043 매물 상세 (2026-11-17 파트너 C1) ── */
+{ const F = await import('../api/feed.js');
+  const 줄 = F.관리비줄([{ k: 'common', amt: '150000' }, { k: 'util', real: true }, { k: 'common', amt: 1 }, { k: 'x', amt: 5 }, { k: 'net', amt: 0 }]);
+  ok(줄.length === 2 && 줄[0].amt === 150000 && 줄[1].real === true, '관리비 항목표 - 아는 항목만 · 겹치면 처음 것 · 빈 줄은 버린다');
+  const fs2 = await import('node:fs'), 원 = fs2.readFileSync(new URL('../원본/비버노크_프로토타입.html', import.meta.url), 'utf8');
+  ok(원.includes("return nameOk && !!String(g('ldong')).trim();\n}") || 원.includes("return nameOk && !!String(g('ldong')).trim();\r\n}"), '장부 보관은 이름 · 동만 있으면 된다(덜 채워도 보관)');
+  ok(원.includes("data-act=\"lfreal\"") && 원.includes("'lfacs', true") && 원.includes('data-pyeong'), '등록 화면 - 관리비 항목표 · 시설 6묶음 · 평 경고');
+  ok(원.includes("넣기('lfloors'") && 원.includes("넣기('lparking'"), '건축물대장으로 총 층수 · 주차 대수를 채운다'); }
 console.log(`\n${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

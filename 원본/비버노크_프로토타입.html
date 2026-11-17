@@ -3239,6 +3239,10 @@ body.mo .jr-trust{grid-template-columns:1fr;gap:8px}
 .ls-slot b{display:block;font-size:14px;color:var(--n900)} .ls-slot span{display:block;font-size:12.5px;color:var(--n500);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ls-msg{margin:0;font-size:13.5px;line-height:1.6;color:var(--n700)} .ls-msg.err{color:var(--danger)}
 .ls-foot{margin:0;font-size:12.5px;color:var(--n500)}
+.lf-rows{display:flex;flex-direction:column;gap:8px}
+.lf-row{display:grid;grid-template-columns:minmax(0,1fr) 180px auto;gap:10px;align-items:center} .lf-row>span{font-size:13.5px;color:var(--n700)}
+@media (max-width:640px){.lf-row{grid-template-columns:1fr auto}.lf-row>span{grid-column:1/-1}}
+.lf-facs{display:flex;flex-direction:column;gap:10px} .lf-facs small{display:block;margin-bottom:4px;font-size:12.5px;font-weight:700;color:var(--n500)}
 .ls-bld{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border:1px solid var(--ind100,#e0e3ff);border-radius:12px;background:var(--ind50)}
 .ls-bld b{display:block;font-size:14px;color:var(--n900)} .ls-bld span{display:block;font-size:12.5px;line-height:1.5;color:var(--n500)} .ls-bld .btn{flex:none}
 @media (max-width:640px){.ls-bld{flex-direction:column;align-items:stretch}}
@@ -4068,6 +4072,17 @@ const DIRS     = ['동','서','남','북','남동','남서','북동','북서'];
 const DIR_BASE = ['거실 기준','안방 기준','주된 출입구 기준'];
 const FEE_BASIS = ['최근 3개월 평균','직전 1년 평균','표시하지 않음'];
 const FEE_TYPE  = ['임대인이 직접부과','관리규약에 따라 부과','그 밖의 부과 방식','확인불가'];
+/* 관리비 항목표 (2026-11-17 파트너 C1 · 표시 · 광고 명시사항 세부기준) - 정액관리비 월 10만원 이상이면 항목을 나눠 적는다. 서버 api/feed.js 관리비줄 */
+const FEE_ROWS = [['common','공용 관리비'],['util','전기료 · 수도료 · 가스사용료 · 난방비'],['net','인터넷 · TV 사용료'],['etc','기타 관리비']];
+const 관리비직접 = '임대인이 직접부과';
+const 관리비줄폼 = f => FEE_ROWS.map(([k]) => ({ k, amt: +String(f['lfr_' + k] || '').replace(/[^0-9]/g, '') || 0, real: !!f['lfrr_' + k] })).filter(x => x.amt > 0 || x.real);
+const 관리비글 = rows => (rows || []).map(x => { const 이름 = (FEE_ROWS.find(([k]) => k === x.k) || [, ''])[1]; return x.real ? `${이름} 실비` : `${이름} ${comma(x.amt)}원`; }).join(' · ');
+/* 시설 체크 6묶음 (파트너 C1 시안 2단계 8번) - 손님 조건 대조는 '갖춰진 조건'(musts)이 맡고, 이것은 보여 주기용 */
+const FACS = [['냉방', ['벽걸이에어컨','스탠드에어컨','천장에어컨']], ['방 · 거실', ['침대','책상','옷장','붙박이장','신발장','소파','TV']],
+  ['욕실', ['샤워부스','욕조','비데','세탁기','건조기']], ['주방', ['식탁','냉장고','싱크대','식기세척기','가스레인지','인덕션','전자레인지','가스오븐']],
+  ['보안', ['경비원','비디오폰','인터폰','카드키','CCTV','사설경비','현관보안','방범창']], ['기타', ['엘리베이터','화재경보기','베란다','테라스','마당','무인택배함']]];
+/* '평' 은 법정 단위가 아니다 - 상세 설명에 쓰면 알려 준다(면적은 ㎡ 로) */
+const 평경고 = t => /\d\s*평(?![가-힣])|[0-9]+평형/.test(String(t || ''));
 const MOVEIN    = ['즉시','협의','날짜 지정'];
 
 /* 상가는 층을 정확히 적게 하므로 고·중·저 칸이 없다. 그런데 손님은 여전히
@@ -5256,6 +5271,8 @@ function listingFromRow(x){
     photos:x.photos||0, at:agoText(x.created_at), status:x.status||'active',
     /* 매물장부 (0039) */
     vis:x.vis === 'open' ? 'open' : 'private', road:x.road||'', hideUnit:x.hide_unit !== false, oneLine:x.one_line||'', ownerOk:x.owner_ok === true,
+    /* 0043 (2026-11-17) - 칸이 없는 옛 표면 undefined(노출 기준이 주차 · 관리비 세부를 묻지 않는다) */
+    feeRows:Array.isArray(x.fee_rows) ? x.fee_rows : undefined, facs:Array.isArray(x.facs) ? x.facs : [], parking:x.parking||'',
     priceLog:Array.isArray(x.price_log) ? x.price_log : [], closedAt:x.closed_at||'', closedWhy:x.closed_why||'', editedAt:x.updated_at ? agoText(x.updated_at) : agoText(x.created_at),
   };
 }
@@ -8211,7 +8228,11 @@ V['#/matched'] = () => {
       <h2 class="mt-name">${esc(L.name || '')}</h2>
       <p class="num mt-price">${esc(값)}</p>
       <p class="sub mt-spec">${esc(줄)}</p>
+      ${(() => { const 명 = [+L.floors ? `총 ${L.floors}층` : '', L.parking ? `주차 ${L.parking}` : '', L.approved ? `사용승인 ${L.approved}` : ''].filter(Boolean).join(' · ');
+        const 관 = (L.fee_rows || []).length ? 관리비글(L.fee_rows) : (L.fee_items || '');
+        return (명 ? `<p class="sub mt-spec">${esc(명)}</p>` : '') + (+L.fee && 관 ? `<p class="sub mt-spec">관리비 ${esc(관)}${L.fee_basis ? ` (${esc(L.fee_basis)})` : ''}</p>` : ''); })()}
       ${L.one_line ? `<p class="mt-one">${esc(L.one_line)}</p>` : ''}
+      ${(L.facs || []).length ? `<p class="sub mt-spec">시설 ${esc(L.facs.slice(0, 12).join(' · '))}${L.facs.length > 12 ? ' 외' : ''}</p>` : ''}
       ${(L.musts || []).length ? `<div class="mt-tags">${L.musts.slice(0, 6).map(m => `<span class="badge b-ok">✓ ${esc(m)}</span>`).join('')}</div>` : ''}
       <button type="button" class="tapx mt-more" data-act="mt-open" data-v="${L.id}" aria-expanded="${열림}">${열림 ? '점수 접기' : '점수 자세히 보기'}</button>
       ${열림 ? `<div class="mt-bars">${막대('지역', s.지역 || 0, 30)}${막대('예산', s.예산 || 0, 30)}${막대('면적 · 방', s.면적방 || 0, 20)}${막대('입주일', s.입주 || 0, 20)}</div>` : ''}
@@ -9924,10 +9945,16 @@ function 곳더하기(pl){
    서버 api/feed.js 노출기준 과 같은 목록. 소유자(집주인) 파트너에게는 예전 이름 '내 물건'으로 보인다 */
 const MG = { tab:'list', f:'', q:'', e:{}, busy:'' };
 function 물건기준(L){
-  const 주거 = L.kind === 'home', 글 = v => !!String(v ?? '').trim();
+  /* 서버 api/feed.js 노출기준 과 같다(2026-11-17 명시사항 확대). 주차 · 관리비 세부는 0043 칸이 있을 때만(feeRows 가 undefined 면 옛 표) */
+  const 주거 = L.kind === 'home', 글 = v => !!String(v ?? '').trim(), 새칸 = L.feeRows !== undefined, 원룸 = /원룸/.test(String(L.htype || ''));
   const 목록 = [['종류', 글(L.kind)], ['거래유형', 글(L.deal)], ['소재지', 글(L.dong)], ['금액', +L.dep > 0], ['면적', +L.area > 0],
-    ['층', 주거 ? 글(L.band) || 글(L.floorNo) : 글(L.floorNo)], ['방향', !주거 || (글(L.dir) && 글(L.dirBase))],
-    ['입주 가능일', 글(L.moveIn)], ['관리비 기준', 글(L.feeBasis)], ['소유자 확인', L.ownerOk === true]];
+    ['층', 주거 ? 글(L.band) || 글(L.floorNo) : 글(L.floorNo)], ['총 층수', +L.floors > 0], ['방향', !주거 || (글(L.dir) && 글(L.dirBase))],
+    ...(주거 ? [['방 · 욕실 수', (원룸 || +L.rooms > 0) && +L.baths > 0]] : []),
+    ['사용승인일', 글(L.approved)], ['입주 가능일', 글(L.moveIn)],
+    ...(새칸 ? [['주차 대수', 글(L.parking)]] : []),
+    ['관리비 기준', 글(L.feeBasis)], ['관리비 부과 방식', 글(L.feeType)],
+    ...(새칸 && +L.fee >= 100000 && L.feeType === 관리비직접 ? [['관리비 세부 항목', (L.feeRows || []).length > 0]] : []),
+    ['소유자 확인', L.ownerOk === true]];
   return { 목록, 다: 목록.length, 찬: 목록.filter(x => x[1]).length, 빠짐: 목록.filter(x => !x[1]).map(x => x[0]) };
 }
 const 물건상태 = L => L.status === 'done' ? ['거래완료', 'b-ok'] : L.opsStop && L.vis !== 'open' ? ['공개 멈춤(신고 확인)', 'b-warn'] : L.vis === 'open' && L.status === 'active' ? ['노출 중', 'b-ind'] : ['장부만', 'b-mute'];
@@ -9956,7 +9983,9 @@ function 물건폼(L){
     lrooms: L.rooms ? String(L.rooms) : '', lbaths: L.baths ? String(L.baths) : '', lband: L.band || '', lfloorNo: L.floorNo, lduplex: L.duplex ? '복층' : '단층',
     ldir: L.dir, ldirBase: L.dirBase, lmoveIn: [...입주.filter(x => 고름.includes(x)), ...(날 ? ['날짜 지정'] : [])], lmoveWhen: 날 || '',
     lhtype: L.htype, lbdong: L.bdong, lho: L.ho, lnote: L.note, lapproved: L.approved || '', lmusts: [...(L.musts || [])], lmustsFree: L.mustsFree,
-    lpark: (L.musts || []).includes('주차 가능') ? '가능' : '' };
+    lpark: (L.musts || []).includes('주차 가능') ? '가능' : '',
+    lfloors: +L.floors ? String(L.floors) : '', lparking: L.parking || '', lfacs: [...(L.facs || [])],
+    ...Object.fromEntries((L.feeRows || []).flatMap(x => [['lfr_' + x.k, x.amt ? String(x.amt) : ''], ['lfrr_' + x.k, !!x.real]])) };
 }
 V["#/partner/listings"] = () => {
   if(!LM.loaded && !LM.loading && 세션있음()) setTimeout(lmLoad);
@@ -10209,6 +10238,8 @@ function lsApply(f, s, kinds){
   넣기('lho', (u.match(/([0-9A-Za-z-]+)\s*호/) || [])[1], '호');
   if(kinds.includes('bldx')){ 넣기('larea', s.bldArea, '전용면적'); 넣기('lfloorNo', s.unitFloor, '층'); }
   넣기('lapproved', String(s.approval || '').replace(/[-/]/g, '.'), '사용승인일');
+  넣기('lfloors', (String(s.floors || '').match(/지상\s*(\d+)/) || [])[1], '총 층수');
+  넣기('lparking', s.parking ? '총 ' + s.parking : '', '주차 대수');
   if(!NONHOME(f.lkind) && 빔('lhtype')){
     const 용 = String(s.bldUse || ''), t = /오피스텔/.test(용) ? '오피스텔' : /아파트/.test(용) ? '아파트' : /다세대|연립/.test(용) ? '빌라·연립' : /다가구|단독/.test(용) ? '단독·다가구' : '';
     if(t){ f.lhtype = t; 채움.push('주택 유형'); }
@@ -10249,17 +10280,17 @@ async function lbGo(){
   if(S.form !== f){ render(); return; }
   if(!ok || !j.ok || !j.scan){ LB.err = j.error || '건축물대장을 불러오지 못했습니다'; render(); return; }
   const kinds = j.kinds || ['bld'], 채움 = lsApply(f, j.scan, kinds);
-  const 참고 = [j.scan.floors, j.scan.parking && '주차 ' + j.scan.parking, j.scan.bldUse && '용도 ' + j.scan.bldUse].filter(Boolean);
+  const 참고 = [j.scan.bldUse && '용도 ' + j.scan.bldUse, j.scan.elevators && j.scan.elevators !== '없음' && '승강기 ' + j.scan.elevators].filter(Boolean);
   LB.done = { 채움, 참고, 전유: kinds.includes('bldx'), 경고: (j.scan.warnings || []).filter(w => !/소유자 · 권리관계/.test(w)).slice(0, 2) };
   render();
   toast(채움.length ? `건축물대장에서 ${채움.length}칸을 채웠습니다 - 값을 한 번 확인해 주세요` : '채울 빈칸이 없습니다 - 이미 적은 값은 그대로 둡니다');
 }
 function lbRowHTML(){
   const d = LB.done;
-  return `<div class="ls-bld"><div style="min-width:0"><b>주소로 불러오기</b><span>${lb가능() ? '고른 주소와 동 · 호로 건물명 · 전용면적 · 사용승인일 · 주택 유형을 채웁니다' : '위에서 주소를 ‘도로명 찾기’로 고르면 서류 없이 바로 불러옵니다'}</span></div>
+  return `<div class="ls-bld"><div style="min-width:0"><b>주소로 불러오기</b><span>${lb가능() ? '고른 주소와 동 · 호로 건물명 · 전용면적 · 총 층수 · 주차 대수 · 사용승인일 · 주택 유형을 채웁니다' : '위에서 주소를 ‘도로명 찾기’로 고르면 서류 없이 바로 불러옵니다'}</span></div>
     <button type="button" class="btn sec sm" data-act="lb-go" ${LB.busy || !lb가능() ? 'disabled' : ''}>${LB.busy ? '불러오는 중…' : '건축물대장 불러오기'}</button></div>
     ${LB.err ? `<p class="ls-msg err" role="alert">${esc(LB.err)}</p>` : ''}
-    ${d ? `<p class="ls-msg" role="status">${d.채움.length ? `채운 칸: ${esc(d.채움.join(' · '))}` : '채운 칸이 없습니다'}${d.참고.length ? `<br>참고(칸 없음): ${esc(d.참고.join(' · '))}` : ''}${!d.전유 && String(S.form.lho || '').trim() ? '<br>이 동 · 호의 전유부를 찾지 못해 전용면적은 넣지 않았습니다 - 직접 적어 주세요' : !d.전유 ? '<br>동 · 호를 적고 다시 불러오면 그 호의 전용면적까지 채웁니다' : ''}${d.경고.map(w => `<br>${esc(w)}`).join('')}</p>` : ''}`;
+    ${d ? `<p class="ls-msg" role="status">${d.채움.length ? `채운 칸: ${esc(d.채움.join(' · '))}` : '채운 칸이 없습니다'}${d.참고.length ? `<br>참고: ${esc(d.참고.join(' · '))}` : ''}${!d.전유 && String(S.form.lho || '').trim() ? '<br>이 동 · 호의 전유부를 찾지 못해 전용면적은 넣지 않았습니다 - 직접 적어 주세요' : !d.전유 ? '<br>동 · 호를 적고 다시 불러오면 그 호의 전용면적까지 채웁니다' : ''}${d.경고.map(w => `<br>${esc(w)}`).join('')}</p>` : ''}`;
 }
 const LS_부터 = Date.parse('2026-11-20T15:00:00Z');   /* 처리방침 개정 안내 7일 뒤 - 서버(api/_contract.js listingScan)와 같은 날 */
 function lsCardHTML(){ return lsCardHTML0().replace('<div class="card pad ls-card">', '<div class="card pad ls-card">' + lbRowHTML()); }
@@ -10343,10 +10374,16 @@ V["#/partner/listing/new"] = () => {
         <div class="unit" style="max-width:${isMo()?'none':'220px'}"><input class="inp num" data-in="lfee" inputmode="numeric" value="${esc(comma(g('lfee')))}" placeholder="0"><span>원</span></div>${wonHint(g('lfee'))}
         <div style="margin-top:12px"><span class="lab">산정 기준 <span class="req">*</span></span>
           ${chipsHTML(FEE_BASIS, g('lfeeBasis'),'lfeeBasis',false)}</div>
-        <div style="margin-top:12px"><span class="lab">부과 방식</span>
+        <div style="margin-top:12px"><span class="lab">부과 방식 <span class="req">*</span></span>
           ${chipsHTML(FEE_TYPE, g('lfeeType'),'lfeeType',false)}</div>
-        <div style="margin-top:12px"><span class="lab">포함 비목 <span class="opt">포함되는 항목을 그대로 적어주세요</span></span>
-          <input class="inp" data-in="lfeeItems" value="${esc(g('lfeeItems'))}" placeholder="예) 수도료·청소비 포함 / 전기·가스 별도"></div>
+        <!-- 항목표 (2026-11-17 파트너 C1) - 정액관리비가 월 10만원 이상이면 항목을 나눠 표시해야 한다. 적으면 위 합계를 대신한다 -->
+        <div style="margin-top:12px"><span class="lab">항목별 금액 ${g('lfeeType') === 관리비직접 && +g('lfee') >= 100000 ? '<span class="req">*</span> <span class="opt">정액 월 10만원 이상은 항목을 나눠 적어야 합니다</span>' : '<span class="opt">정액관리비면 나눠 적어 주세요 - 적으면 합계가 자동으로 바뀝니다</span>'}</span>
+          <div class="lf-rows">${FEE_ROWS.map(([k, 이름]) => `<div class="lf-row"><span>${이름}</span>
+            <div class="unit"><input class="inp num" data-in="lfr_${k}" inputmode="numeric" value="${esc(comma(g('lfr_' + k)))}" placeholder="${f['lfrr_' + k] ? '실비' : '0'}" ${f['lfrr_' + k] ? 'disabled' : ''} aria-label="${이름} 금액"><span>원</span></div>
+            <button type="button" class="chip${f['lfrr_' + k] ? ' on' : ''}" data-act="lfreal" data-v="${k}" aria-pressed="${!!f['lfrr_' + k]}">실비</button></div>`).join('')}</div>
+          <span data-fee-sum style="display:block;margin-top:6px;font-size:13px;font-weight:700;color:var(--ind)">${관리비줄폼(f).length ? `항목 합계 월 ${comma(관리비줄폼(f).reduce((a, x) => a + x.amt, 0))}원 - 저장하면 관리비 칸에 들어갑니다` : ''}</span></div>
+        <div style="margin-top:12px"><span class="lab">그 밖에 적을 것 <span class="opt">항목표에 없는 포함 · 별도 사항</span></span>
+          <input class="inp" data-in="lfeeItems" value="${esc(g('lfeeItems'))}" placeholder="예) 청소비 포함 / 주차비 별도"></div>
       </div>
 
       <!-- 면적은 ㎡ 가 기준이다. 평은 옆에 환산해 둔다 - 적는 쪽은 한 번만 적는다. -->
@@ -10363,14 +10400,14 @@ V["#/partner/listing/new"] = () => {
            한 번도 판단된 적이 없었다. 몰라도 되는 칸이라 필수로 두지 않는다 -
            비어 있으면 지금까지처럼 아무 말도 하지 않는다. -->
       <div style="border-top:1px solid var(--hair);padding-top:16px">
-        <span class="lab">사용승인일 <span class="opt">모르시면 비워두세요 · 손님이 연식으로 거른 조건에 쓰입니다</span></span>
+        <span class="lab">사용승인일 <span class="req">*</span> <span class="opt">건축물대장 불러오기로 채울 수 있습니다 · 손님이 연식으로 거른 조건에도 쓰입니다</span></span>
         <input class="inp" data-in="lapproved" value="${esc(g('lapproved'))}" placeholder="예) 2016.06.24">
       </div>
       ${shop? '' : `
       <div><span class="lab">주택 유형 <span class="req">*</span></span>${chipsHTML(LHTYPE, g('lhtype'),'lhtype',false)}</div>
       <div class="grid2 mo1">
           ${isOneRoom(g('lhtype')) ? '' : `<div><span class="lab">방 수 <span class="req">*</span></span><div class="unit"><input class="inp num" data-in="lrooms" inputmode="numeric" value="${esc(g('lrooms'))}" placeholder="0"><span>개</span></div></div>`}
-          <div><span class="lab">화장실 수</span><div class="unit"><input class="inp num" data-in="lbaths" inputmode="numeric" value="${esc(g('lbaths'))}" placeholder="0"><span>개</span></div></div></div>`}
+          <div><span class="lab">욕실 수 <span class="req">*</span></span><div class="unit"><input class="inp num" data-in="lbaths" inputmode="numeric" value="${esc(g('lbaths'))}" placeholder="0"><span>개</span></div></div></div>`}
 
       <!-- 상가는 층을 반드시 정확히 적어야 한다 - 고·중·저로 갈음할 수 없다.
            주거는 소유자가 원하면 고·중·저로 두고, 정확한 층을 적어두면 그대로 나간다. -->
@@ -10381,6 +10418,13 @@ V["#/partner/listing/new"] = () => {
            <div><span class="lab">정확한 층 <span class="opt">소유자가 정확한 표기를 원하면</span></span>
             <input class="inp" data-in="lfloorNo" value="${esc(g('lfloorNo'))}" placeholder="예) 12 · B1"></div>`}
         <div><span class="lab">복층</span>${chipsHTML(['단층','복층'], g('lduplex')||'단층','lduplex',false)}</div>
+      </div>
+      <!-- 총 층수 · 주차 대수 (2026-11-17 명시사항) - 건축물대장 불러오기로 채워진다 -->
+      <div class="grid2 mo1">
+        <div><span class="lab">${shop ? '건물' : '해당 동'} 총 층수 <span class="req">*</span></span>
+          <div class="unit"><input class="inp num" data-in="lfloors" inputmode="numeric" value="${esc(g('lfloors'))}" placeholder="0"><span>층</span></div></div>
+        <div><span class="lab">주차 대수 <span class="req">*</span></span>
+          <input class="inp" data-in="lparking" value="${esc(g('lparking'))}" placeholder="예) 세대당 1.3대 / 총 1,200대 · 없음"></div>
       </div>
 
       ${shop ? `
@@ -10408,11 +10452,14 @@ V["#/partner/listing/new"] = () => {
           ${chipsHTML(LMUSTS, f.lmusts||[],'lmusts',true)}
           <input class="inp" data-in="lmustsFree" value="${esc(g('lmustsFree'))}" placeholder="그 밖에 내세울 점 - 예) 바로 앞 대형마트 · 초등학교 3분" style="margin-top:10px"></div>`}
 
-      <div><span class="lab">매물 특징 <span class="opt">손님에게 그대로 전해집니다</span></span>
+      ${shop ? '' : `<div><span class="lab">시설 <span class="opt">있는 것을 모두 골라주세요 - 손님 화면에 보입니다</span></span>
+        <div class="lf-facs">${FACS.map(([묶음, 줄]) => `<div><small>${묶음}</small>${chipsHTML(줄, f.lfacs || [], 'lfacs', true)}</div>`).join('')}</div></div>`}
+      <div><span class="lab">상세 설명 <span class="opt">손님에게 그대로 전해집니다 · 1,000자까지</span></span>
         <textarea class="inp" data-in="lnote" rows="4" placeholder="${shop
           ? '예) 음식점·카페 가능 · 대로변 코너 자리 · 주방 급배수와 가스 인입 완비 · 간판 자리 넓음'
           : '예) 남향 거실이라 오후까지 볕이 듭니다 · 올수리 마친 집 · 단지 바로 앞 초등학교'}"
-          style="resize:vertical;min-height:96px;line-height:1.7">${esc(g('lnote'))}</textarea>
+          style="resize:vertical;min-height:96px;line-height:1.7" maxlength="1000">${esc(g('lnote'))}</textarea>
+        <p data-pyeong role="status" style="${평경고(g('lnote')) ? '' : 'display:none;'}margin:6px 0 0;font-size:13px;color:var(--warn);font-weight:700">'평'은 법정 단위가 아닙니다 - 면적은 ㎡로 적어 주세요(표시 · 광고 기준)</p>
         ${shop?`<p style="margin:8px 0 0;background:var(--n50);padding:11px 14px;font-size:13.5px;line-height:1.7;color:var(--n500)">
           <b style="color:var(--n700)">어떤 업종이 되는 자리인지 적어주시면 좋습니다.</b>
           업종은 따로 받지 않아서, 손님이 걸어둔 업종은 <b style="color:var(--n700)">확인 필요</b>로만
@@ -10420,8 +10467,8 @@ V["#/partner/listing/new"] = () => {
     </div>
 
     <div style="display:flex;justify-content:space-between;align-items:center;gap:12px">
-      <span data-lhint style="font-size:13.5px;color:var(--n500)">${req?'등록 즉시 대기 손님과 대조합니다':'* 표시 항목을 채워주세요'}</span>
-      <button class="btn pri" data-act="save-listing" ${req&&!S.lsBusy?'':'disabled'}>${S.lsBusy?'저장하는 중…':S.editL?'고친 내용 저장':'등록하고 매칭 보기'}</button>
+      <span data-lhint style="font-size:13.5px;color:var(--n500)">${물건힌트(f, req)}</span>
+      <button class="btn pri" data-act="save-listing" ${req&&!S.lsBusy?'':'disabled'}>${S.lsBusy?'저장하는 중…':S.editL?'고친 내용 저장':'장부에 저장'}</button>
     </div>
   </div>
 </div>`;};
@@ -13652,6 +13699,10 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
+  { v:'26.11.17.3', 날:'2026-11-17', 줄:[ '매물장부 - 건물명 · 법정동만 적어도 장부에 보관됩니다(덜 채워도 저장) · 손님에게 노출하려면 * 항목을 모두 채우고 소유자를 확인해야 합니다',
+    '매물 올리기 - 관리비 항목표(공용 · 사용료 · 인터넷 · TV · 기타, 실비 표시 · 합계 자동) · 해당 동 총 층수 · 주차 대수 · 시설 6묶음 · 상세 설명 ‘평’ 경고',
+    '노출 기준 - 표시 · 광고 명시사항에 맞춰 총 층수 · 방 · 욕실 수 · 사용승인일 · 주차 대수 · 관리비 부과 방식(정액 월 10만원 이상은 항목표)을 더했습니다',
+    '건축물대장 불러오기가 총 층수 · 주차 대수도 채웁니다 · 손님 맞춤매물 카드에 총 층수 · 주차 · 사용승인일 · 관리비 항목 · 시설이 보입니다' ] },
   { v:'26.11.17.2', 날:'2026-11-17', 줄:[ '매물 올리기 - 도로명 찾기로 주소를 고르면 ‘건축물대장 불러오기’로 건물명 · 전용면적(동 · 호를 적었을 때) · 사용승인일 · 주택 유형을 서류 없이 채웁니다 · 총층 · 주차는 참고로 보입니다',
     '계약서 - 잔금 완료로 바꿔도 매물장부의 물건은 그대로 둡니다(오전에 넣은 자동 거래완료를 뺐습니다) - 노출 종료는 계약금이 들어오면 매물장부에서 직접 눌러 주세요' ] },
   { v:'26.11.16', 날:'2026-11-16', 줄:[ '매물 신고 - 운영자가 공개를 멈춘 매물은 중개사가 다시 켤 수 없습니다(신고함의 ‘멈춤 풀기’로만 풂) · 거의 같이 들어온 신고도 빠지지 않습니다 · 오래된 미처리 신고도 신고함에 모두 보입니다',
@@ -20816,7 +20867,7 @@ document.addEventListener('input', e=>{
     const D = S.draft; D[k] = el.value; D[최소 ? 'areaMin' : 'areaMax'] = 평 ? String(최소 ? Math.max(1, Math.floor(평)) : Math.ceil(평)) : '';
     const h = document.querySelector('#app [data-areahint]'); if(h) h.textContent = D.areaMin ? `약 ${D.areaMin}${D.areaMax ? `~${D.areaMax}` : ''}평으로 전달합니다` : '';
     return; }
-  const v = MONEY_IN.includes(k) ? money(el) : el.value;
+  const v = MONEY_IN.includes(k) || /^lfr_/.test(k) ? money(el) : el.value;
   if(k==='j-phone'){ S.form[k] = autoHyphen(el); refreshJoin(); return; }
   if(k==='j-reg'){ S.form[k]=v;
     /* 방금 바꾼 번호와 확인 결과는 더 이상 같은 것이 아니다 - 치운다.
@@ -20922,16 +20973,26 @@ function listingOk(f){
   const nameOk = NO_BLDG_NAME(g('lhtype')) || !!String(g('lname')).trim();
   /* 방향은 주거에서만 묻는다 - 상가·사무실에서는 값을 가르지 않는다 */
   const dirOk = shop || (!!g('ldir') && !!g('ldirBase'));
-  return nameOk && !!String(g('ldong')).trim()
-      && +g('ldep')>0 && +g('larea')>0
-      && !!g('lfeeBasis') && dirOk && lmoveArr().length > 0
-      && (shop ? !!String(g('lfloorNo')).trim() : +g('lrooms')>0);
+  /* 장부 보관은 덜 채워도 된다(2026-11-17 파트너 '매물장부는 항목을 다 채우지 않아도 보관') - 이름 · 동만 본다.
+     * 항목은 노출할 때 서버 노출기준 이 본다(아래 폼노출빠짐 이 미리 알려 준다) */
+  void dirOk; void shop;
+  return nameOk && !!String(g('ldong')).trim();
 }
+/* 등록 화면의 * 항목이 다 찼는지 - 노출 기준과 같은 것을 폼 값으로 본다(소유자 확인은 장부에서 하므로 뺀다) */
+const 폼노출빠짐 = f => { const rows = 관리비줄폼(f);
+  return 물건기준({ kind: f.lkind || 'home', deal: f.ldeal || '월세', dong: f.ldong, dep: +f.ldep || 0, area: +f.larea || 0,
+    band: NONHOME(f.lkind) ? '' : (f.lband || '중층'), floorNo: f.lfloorNo, floors: +f.lfloors || 0, dir: f.ldir, dirBase: f.ldirBase, rooms: +f.lrooms || 0, baths: +f.lbaths || 0,
+    htype: f.lhtype, approved: f.lapproved, moveIn: lmoveArr().length ? 'x' : '', parking: f.lparking || '', feeBasis: f.lfeeBasis, feeType: f.lfeeType,
+    fee: rows.length ? rows.reduce((a, x) => a + x.amt, 0) : +f.lfee || 0, feeRows: rows, ownerOk: true }).빠짐; };
+function 물건힌트(f, ok){ if(!ok) return '건물명 · 법정동을 적으면 장부에 보관할 수 있습니다';
+  const 빠 = 폼노출빠짐(f); return 빠.length ? `장부에 보관됩니다 · 노출하려면 ${빠.slice(0, 4).join(' · ')}${빠.length > 4 ? ` 외 ${빠.length - 4}개` : ''}를 채우고 소유자를 확인하세요` : '모든 * 항목을 채웠습니다 - 저장한 뒤 장부에서 소유자 확인 후 노출할 수 있습니다'; }
 function refreshListingBtn(){
   const f=S.form, g=k=>f[k]||'', shop=NONHOME(f.lkind);
   const ok = listingOk(f);
   const b=$('#app [data-act="save-listing"]'); if(b) b.disabled=!ok;
-  const hint=$('#app [data-lhint]'); if(hint) hint.textContent = ok?'등록 즉시 대기 손님과 대조합니다':'* 표시 항목을 채워주세요';
+  const hint=$('#app [data-lhint]'); if(hint) hint.textContent = 물건힌트(f, ok);
+  const 합=$('#app [data-fee-sum]'); if(합){ const rows = 관리비줄폼(f); 합.textContent = rows.length ? `항목 합계 월 ${comma(rows.reduce((a, x) => a + x.amt, 0))}원 - 저장하면 관리비 칸에 들어갑니다` : ''; }
+  const 평=$('#app [data-pyeong]'); if(평) 평.style.display = 평경고(f.lnote) ? '' : 'none';
   ['larea','lareaSup'].forEach(k=>{ const el=$(`#app [data-py="${k}"]`); if(el) el.textContent = pyTag(g(k)); });
 }
 /* 검사 목록은 한 곳에서만 만든다.
@@ -21802,7 +21863,8 @@ function handle(a,v,el){
       S.form.ldeal = v;
       if(!dealWords(S.form.ldeal||'월세').rent) S.form.lrent = '';
       render(); return true;
-    case 'lmusts': { S.form[a]=S.form[a]||[]; toggleIn(S.form[a], v); render(); return true; }
+    case 'lmusts': case 'lfacs': { S.form[a]=S.form[a]||[]; toggleIn(S.form[a], v); render(); return true; }
+    case 'lfreal': S.form['lfrr_' + v] = !S.form['lfrr_' + v]; if(S.form['lfrr_' + v]) S.form['lfr_' + v] = ''; render(); return true;
     case 'addr-find':  return addrFind(v);
     case 'addr-pick':  return addrPick(+v);
     /* ── 계약서 (2026-10-29) ── */
@@ -22365,13 +22427,18 @@ function handle(a,v,el){
          올려도 표에는 'shop' 으로 남았고 그 유형의 손님과 영영 안 맞았다. */
       const L={ id:'L'+Date.now(), kind: f.lkind || 'home', name:(f.lname||'').trim(),
         dong:(f.ldong||'').trim(), deal: f.ldeal||'월세',
-        dep:+f.ldep||0, rent:+f.lrent||0, fee:+f.lfee||0,
-        feeBasis:f.lfeeBasis||'', feeType:f.lfeeType||'', feeItems:(f.lfeeItems||'').trim(),
+        dep:+f.ldep||0, rent:+f.lrent||0,
+        /* 관리비 항목표를 적었으면 합계와 포함 비목 글을 거기서 만든다(손님 화면 · 제안은 지금처럼 fee · fee_items 를 본다) */
+        ...(()=>{ const rows = 관리비줄폼(f), 손 = (f.lfeeItems||'').trim();
+          return rows.length ? { fee: rows.reduce((a, x) => a + x.amt, 0), feeRows: rows, feeItems: [관리비글(rows), 손].filter(Boolean).join(' / ').slice(0, 200) }
+            : { fee: +f.lfee||0, feeRows: [], feeItems: 손 }; })(),
+        feeBasis:f.lfeeBasis||'', feeType:f.lfeeType||'',
+        floors: +f.lfloors||0, parking: (f.lparking||'').trim(), facs: shop ? [] : (f.lfacs||[]),
         /* 면적은 ㎡ 로 담는다. py 는 대조와 옛 화면이 아직 보므로 환산해 함께 둔다 */
         area, areaSup:+f.lareaSup||0, py:pyOf(area),
         rooms:shop?0:(+f.lrooms||0), baths:shop?0:(+f.lbaths||0),
         /* 상가는 고·중·저 칸이 없다 - 적어둔 층에서 유도해 대조에만 쓴다 */
-        band: shop ? shopBandOf(f.lfloorNo) : (f.lband||'중층'), floors:0,
+        band: shop ? shopBandOf(f.lfloorNo) : (f.lband||'중층'),
         floorNo:(f.lfloorNo||'').trim(), duplex:f.lduplex==='복층',
         dir:f.ldir||'', dirBase:f.ldirBase||'',
         /* 고른 것을 그대로 잇는다. '날짜 지정' 을 골랐으면 그 자리에 적어둔 날을 넣는다 */

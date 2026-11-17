@@ -1055,6 +1055,13 @@ const LUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const txt = (v, max = 200) => { const x = String(v ?? '').trim(); return x ? x.slice(0, max) : null; };
 const int0 = v => { const n = parseInt(v, 10); return Number.isFinite(n) ? n : null; };
 const num0 = v => { const n = parseFloat(v); return Number.isFinite(n) ? n : null; };
+/* 관리비 항목표 (0043) - 공용 · 사용료(전기 · 수도 · 가스 · 난방) · 인터넷 · TV · 기타. 금액이나 실비 표시가 있는 줄만 */
+export const 관리비키 = ['common', 'util', 'net', 'etc'];
+export const 관리비줄 = v => { const 본 = new Set();
+  return (Array.isArray(v) ? v : []).filter(x => x && 관리비키.includes(x.k) && !본.has(x.k) && 본.add(x.k))
+    .map(x => ({ k: x.k, amt: Math.max(0, Math.min(1e9, Math.round(+x.amt) || 0)), real: x.real === true })).filter(x => x.amt > 0 || x.real); };
+const 시설들 = v => (Array.isArray(v) ? v : []).map(x => String(x ?? '').trim().slice(0, 20)).filter(Boolean).slice(0, 60);
+const 새칸빼기 = o => { if (!o || !('fee_rows' in o || 'facs' in o || 'parking' in o)) return null; const { fee_rows, facs, parking, ...남 } = o; return 남; };
 const arr = (v, max = 20) => Array.isArray(v)
   ? v.map(x => String(x ?? '').trim()).filter(Boolean).slice(0, max) : null;
 
@@ -1087,12 +1094,23 @@ async function readListings(req, res, agent) {
 /* ── 매물장부 · 매물등록 (2026-11-12 파트너 기획 C1, 0039) ──
    노출 기준 열 가지 - 다 채워야 손님과 다른 중개사에게 노출(vis=open)할 수 있다. 화면(물건기준)과 같은 목록이다.
    소유자 확인은 중개사가 등기부와 대조하고 직접 체크한다(시스템이 검증하지 않는다) */
+/* 노출(손님 · 다른 중개사에게 보이기) 기준 - 중개대상물 표시 · 광고 명시사항(총 층수 · 사용승인일 · 방 · 욕실 수 · 주차 대수 · 관리비)과
+   파트너 C1 시안(2026-11-17 '모든 항목을 채워야 등록, 장부는 덜 채워도 보관'). 장부 저장은 이것을 보지 않는다.
+   주차 대수 · 관리비 세부는 0043 칸이 있을 때만 묻는다(SQL 전에 노출이 통째로 막히지 않게). 화면 물건기준 과 같아야 한다 */
+export const 관리비직접 = '임대인이 직접부과';
 export function 노출기준(m) {
-  const 주거 = m.kind === 'home', 글 = v => !!String(v ?? '').trim();
+  const 주거 = m.kind === 'home', 글 = v => !!String(v ?? '').trim(), 새칸 = 'fee_rows' in m;
+  const 원룸 = /원룸/.test(String(m.htype || '')), 줄 = Array.isArray(m.fee_rows) ? m.fee_rows : [];
   const 목록 = [
     ['종류', KINDS.includes(m.kind)], ['거래유형', 글(m.deal)], ['소재지', 글(m.dong)], ['금액', +m.dep > 0], ['면적', +m.area > 0],
-    ['층', 주거 ? 글(m.band) || 글(m.floor_no) : 글(m.floor_no)], ['방향', !주거 || (글(m.dir) && 글(m.dir_base))],
-    ['입주 가능일', 글(m.move_in)], ['관리비 기준', 글(m.fee_basis)], ['소유자 확인', m.owner_ok === true],
+    ['층', 주거 ? 글(m.band) || 글(m.floor_no) : 글(m.floor_no)], ['총 층수', +m.floors > 0], ['방향', !주거 || (글(m.dir) && 글(m.dir_base))],
+    ...(주거 ? [['방 · 욕실 수', (원룸 || +m.rooms > 0) && +m.baths > 0]] : []),
+    ['사용승인일', 글(m.approved)], ['입주 가능일', 글(m.move_in)],
+    ...(새칸 ? [['주차 대수', 글(m.parking)]] : []),
+    ['관리비 기준', 글(m.fee_basis)], ['관리비 부과 방식', 글(m.fee_type)],
+    /* 정액관리비 월 10만원 이상은 항목을 나눠 표시한다(표시 · 광고 명시사항 세부기준) */
+    ...(새칸 && +m.fee >= 100000 && m.fee_type === 관리비직접 ? [['관리비 세부 항목', 줄.length > 0]] : []),
+    ['소유자 확인', m.owner_ok === true],
   ];
   return { 다: 목록.length, 찬: 목록.filter(x => x[1]).length, 빠짐: 목록.filter(x => !x[1]).map(x => x[0]) };
 }
@@ -1106,6 +1124,8 @@ const 물건고침칸 = {
   note: v => txt(v, 1000), approved: v => txt(v, 40), moveIn: ['move_in', v => txt(v, 40)],
   road: v => txt(v, 160), admCd: ['adm_cd', v => { const x = String(v ?? '').replace(/\D/g, ''); return x.length === 10 ? x : null; }],
   hideUnit: ['hide_unit', v => v !== false], oneLine: ['one_line', v => txt(v, 40)], ownerOk: ['owner_ok', v => v === true],
+  /* 0043 (2026-11-17) */
+  feeRows: ['fee_rows', v => 관리비줄(v)], facs: v => 시설들(v), parking: v => txt(v, 40),
 };
 /* 운영자가 신고를 보고 공개를 멈춘 물건(2026-11-16 코드리뷰 - 약관 '확인 뒤 공개 중단').
    reports 안의 { stop: true } 표시가 남아 있으면 중개사가 다시 노출할 수 없다. 운영 신고함에서 '멈춤 풀기' 로만 푼다 */
@@ -1153,11 +1173,15 @@ async function setListing(res, agent, b) {
     p.updated_at = new Date().toISOString();
     const r = await fetch(sbUrl('bk_listing', `id=eq.${id}&agent_id=eq.${agent.id}`), {
       method: 'PATCH', headers: { ...sbHeaders(), Prefer: 'return=representation' }, body: JSON.stringify(p) });
-    if (!r.ok) { const t = await r.text();
+    let r2 = r;
+    if (!r.ok && 새칸빼기(p)) { const t0 = await r.clone().text();
+      if (/fee_rows|facs|parking/.test(t0) && 칸없음(t0)) r2 = await fetch(sbUrl('bk_listing', `id=eq.${id}&agent_id=eq.${agent.id}`), {
+        method: 'PATCH', headers: { ...sbHeaders(), Prefer: 'return=representation' }, body: JSON.stringify(새칸빼기(p)) }); }
+    if (!r2.ok) { const t = await r2.text();
       if (칸없음(t)) return res.status(503).json({ error: '아직 준비 중입니다 (0039 마이그레이션 필요)', need: '0039' });
-      const w = dbWhy(t); console.error('[feed:listing-set]', r.status, w.code || '-', t.slice(0, 200));
+      const w = dbWhy(t); console.error('[feed:listing-set]', r2.status, w.code || '-', t.slice(0, 200));
       return res.status(502).json({ error: w.msg || '물건을 저장하지 못했습니다' }); }
-    const 뒤행 = (await r.json())[0] || null;
+    const 뒤행 = (await r2.json())[0] || null;
     /* 주소를 바꿨으면 좌표도 다시(2026-11-14 매물지도) */
     if (뒤행 && ('road' in p || 'dong' in p) && 지도켜짐()) { const v = await 물건좌표잠깐(뒤행); Object.assign(뒤행, v || { lat: null, lng: null }); }
     return res.status(200).json({ ok: true, row: 뒤행 && 내보낼행(뒤행) });
@@ -1222,6 +1246,8 @@ async function addListing(req, res, agent, user, b) {
        여태 칸도 없고 묻지도 않아서 그 조건은 한 번도 판단된 적이 없다(0026). */
     approved: txt(L.approved, 40),
     move_in: txt(L.moveIn, 40), photos: int0(L.photos) || 0,
+    /* 0043 (2026-11-17 파트너 C1) - 관리비 항목표 · 시설 · 주차 대수 */
+    fee_rows: 관리비줄(L.feeRows), facs: 시설들(L.facs), parking: txt(L.parking, 40),
     /* 도로명 주소 (2026-11-14) - 화면이 주소 검색으로 고른 값. 전에는 싣지 않아 지도에 놓을 수 없었다 */
     ...(txt(L.road, 160) ? { road: txt(L.road, 160) } : {}),
     ...(/^\d{10}$/.test(String(L.admCd || '').replace(/\D/g, '')) ? { adm_cd: String(L.admCd).replace(/\D/g, '') } : {}),
@@ -1233,6 +1259,9 @@ async function addListing(req, res, agent, user, b) {
       body: JSON.stringify(body),
     });
     let r = await put(row);
+    /* 0043 을 아직 안 넣었으면 새 칸만 빼고 다시 - 아래 옛 물러서기와 따로 둔다 */
+    if (!r.ok) { const t1 = await r.clone().text();
+      if (/fee_rows|facs|parking/.test(t1) && /does not exist|PGRST204|Could not find the '[a-z_]+' column/i.test(t1)) r = await put(새칸빼기(row)); }
     let dropped = null;          /* 물러섰으면 무엇을 빼고 넣었는지 적어둔다 */
     /* 코드가 먼저 올라가고 마이그레이션이 아직 안 돌았을 수 있다. 그때 새 칸 때문에
        등록 자체가 막히면 안 된다 - 새 칸만 빼고 한 번 더 넣는다. 면적이 평으로만

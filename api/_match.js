@@ -62,6 +62,8 @@ function 공개(L, 사무소) {
     fee_basis: L.fee_basis, fee_type: L.fee_type, fee_items: L.fee_items, area: L.area, area_sup: L.area_sup, rooms: L.rooms, baths: L.baths,
     band: L.band, floor_no: L.kind === 'home' ? null : L.floor_no, bdong: L.hide_unit === false ? L.bdong : null, htype: L.htype,
     dir: L.dir, dir_base: L.dir_base, move_in: L.move_in, musts: L.musts || [], one_line: L.one_line, note: L.note, approved: L.approved,
+    /* 0043 (2026-11-17) - 명시사항: 총 층수 · 주차 대수 · 관리비 항목, 시설 */
+    floors: +L.floors || 0, parking: L.parking || '', fee_rows: Array.isArray(L.fee_rows) ? L.fee_rows : [], facs: Array.isArray(L.facs) ? L.facs : [],
     photos: 사진들(L.pics).length, pic0: 사진들(L.pics)[0] || '', opened_at: L.opened_at, changed: Array.isArray(L.price_log) && L.price_log.length ? L.price_log[L.price_log.length - 1] : null,
     office: (사무소 && 사무소.office) || '공인중개사사무소',
     /* 지도용 대략 위치(소수 셋째 자리 - 100m 안팎). 정확한 동 · 호는 연결 뒤에 */

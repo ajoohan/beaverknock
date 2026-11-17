@@ -221,7 +221,7 @@ async function save(res, agent, user, b) {
   return res.status(200).json({ ok: true, id: rows[0] && rows[0].id, updated_at: rows[0] && rows[0].updated_at });
 }
 
-/* 날인본으로 확정 - 지금 저장된 doc 의 지문을 서버가 내고 잠근다.
+/* 확정본으로 저장 - 지금 저장된 doc 의 지문을 서버가 내고 잠근다.
    화면이 보낸 지문을 믿지 않는다. 저장되지 않은 고침이 있으면 화면이 먼저 저장한다. */
 async function seal(res, agent, b) {
   const id = String(b.id || '');
@@ -242,7 +242,7 @@ async function seal(res, agent, b) {
     method: 'PATCH', headers: { Prefer: 'return=representation' },
     body: JSON.stringify({ status: 'sealed', sealed_at: new Date().toISOString(), sha256 }),
   });
-  if (!r.ok) return res.status(502).json({ error: '날인본으로 확정하지 못했습니다' });
+  if (!r.ok) return res.status(502).json({ error: '확정본으로 저장하지 못했습니다' });
   if (!rows.length) return res.status(409).json({ error: '그 사이 다른 곳에서 고쳐졌거나 확정·삭제됐습니다 - 다시 열어 확인해 주세요' });
   return res.status(200).json({ ok: true, sealed_at: rows[0].sealed_at, sha256 });
 }
@@ -324,7 +324,7 @@ export async function draftNote(req, res, b) {
   const 새 = { i: crypto.randomBytes(5).toString('hex'), at: new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 19), who, name, text };
   const z = await 링크번호지켜쓰기(t.id, null, (n, 지금, row) => {
     if (n !== t.n) return { 거절: '중개사무소가 이 링크를 끊었습니다 - 새 링크를 받아 주세요', code: 404 };
-    if (row && row.status === 'sealed') return { 거절: '이미 날인본으로 확정된 계약서입니다 - 중개사무소에 직접 말씀해 주세요', code: 409 };
+    if (row && row.status === 'sealed') return { 거절: '이미 확정본으로 저장된 계약서입니다 - 중개사무소에 직접 말씀해 주세요', code: 409 };
     const 있던 = 지금.notes || [];
     if (있던.length >= 의견최대) return { 거절: '의견이 많이 쌓였습니다 - 중개사무소에 직접 말씀해 주세요', code: 409 };
     return { ...지금, notes: [...있던, 새] };
@@ -370,7 +370,7 @@ async function reported(res, agent, b) {
       method: 'PATCH', headers: { Prefer: 'return=representation' }, body: JSON.stringify({ reported_at: at }),
     });
   if (!r.ok) return noTable(t) ? 준비중(res) : res.status(502).json({ error: '표시하지 못했습니다' });
-  if (!rows.length) return res.status(409).json({ error: '날인본으로 확정한 매매·주택임대차 계약서만 표시할 수 있습니다' });
+  if (!rows.length) return res.status(409).json({ error: '확정본으로 저장한 매매·주택임대차 계약서만 표시할 수 있습니다' });
   return res.status(200).json({ ok: true, reported_at: at });
 }
 

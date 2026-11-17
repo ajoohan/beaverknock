@@ -333,7 +333,7 @@ const M = new Function('esc', `${js.slice(시작, 끝)}\nreturn { dzLine, dzPill
   ok(css.includes('.pcard .row{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;width:max-content;max-width:100%')
      && css.includes('.pcard .row .btn{padding-left:16px;padding-right:16px}'),
      '첫 화면 파트너 칸 두 버튼은 같은 폭(1360px 화면의 칸 안쪽 300px 에 들어가게 여백 16px)');
-  ok(css.includes('.ctx-btns{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;'), '계약서 저장 · 날인본으로 확정은 같은 폭');
+  ok(css.includes('.ctx-btns{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;'), '계약서 저장 · 확정본으로 저장은 같은 폭');
   ok(css.includes('.ct-font button{min-width:3.7em}') && css.includes('body.mo .ct-font button{min-width:4.2em}'),
      '글꼴 고르기 명조 · 고딕도 같은 폭(고른 쪽이 굵어져도 그대로)');
   ok(js.includes("const 짝 = (a, b) => `<span class=\"eqb\">${a}${b}</span>`;") && css.includes('.nav .right > .eqb{gap:inherit}'),

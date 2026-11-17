@@ -10895,7 +10895,7 @@ function modalHTML(){
   if(S.modal.type==='ct-seal' || S.modal.type==='ct-del'){
     const 확정 = S.modal.type==='ct-seal';
     return `<div class="modal" data-act="modal-bg"><div class="box" data-stop role="dialog" aria-modal="true" aria-labelledby="mdT" tabindex="-1">
-      <h2 id="mdT" style="margin:0 0 6px;font-size:16px;font-weight:700;letter-spacing:-.03em${확정?'':';color:var(--danger)'}">${확정?'날인본으로 확정할까요?':'이 계약서를 영구 삭제할까요?'}</h2>
+      <h2 id="mdT" style="margin:0 0 6px;font-size:16px;font-weight:700;letter-spacing:-.03em${확정?'':';color:var(--danger)'}">${확정?'확정본으로 저장할까요?':'이 계약서를 영구 삭제할까요?'}</h2>
       <p style="margin:0 0 18px;font-size:14.5px;line-height:1.7;color:var(--n500)">${확정
         ? '인쇄해서 <b style="color:var(--n900)">날인까지 받은 판</b>일 때 확정하세요. 확정하면 고칠 수도 지울 수도 없습니다 - 바꿔야 하면 그 판을 두고 새 판을 만듭니다.'
         : '휴지통의 작성 중 계약서를 지금 지웁니다. 지우면 되돌릴 수 없습니다.'}</p>
@@ -13019,10 +13019,10 @@ const PHELP = [
     ['내 특약 저장', '계약 › 특약 관리에서 자주 쓰는 문구를 묶음별로 저장해 둡니다.'],
     ['계약서에 넣기', '계약서 특약 칸에서 기본 특약 · 내 특약을 골라 넣습니다. 새 특약은 끝 문장(그 밖의 사항 등) 앞에 들어갑니다.'],
     ['순서 바꾸기', '특약마다 있는 ▲ ▼ 단추로 순서를 바꿉니다.'] ] },
-  { g:'계약서', id:'ct-seal', ct:true, t:'초안 보내고 날인본으로 확정하기', steps:[
+  { g:'계약서', id:'ct-seal', ct:true, t:'초안 보내고 확정본으로 저장하기', steps:[
     ['초안 링크로 의견 받기', '확정 전에 초안 링크를 손님 · 공동중개 사무소에 보내면, 고칠 곳을 의견으로 남겨 줍니다(전화번호는 가려집니다).'],
     ['날인 받기', '인쇄해서 날인까지 받습니다.'],
-    ['날인본으로 확정', '‘날인본으로 확정’을 누르면 고칠 수도 지울 수도 없습니다. 바꿔야 하면 그 판을 두고 새 판을 만듭니다.'] ] },
+    ['확정본으로 저장', '‘확정본으로 저장’을 누르면 고칠 수도 지울 수도 없습니다. 바꿔야 하면 그 판을 두고 새 판을 만듭니다.'] ] },
   { g:'계약 진행', id:'ct-plan', ct:true, t:'일정 · 알림 받기', steps:[
     ['날짜만 넣으면', '계약서에 계약일 · 중도금일 · 잔금일을 넣으면 신고 기한 · 법무사 예약 · 잔금 준비물 안내까지 일정이 생깁니다.'],
     ['아침 9시 알림', '매일 아침 9시에 카카오톡 · 메일로 알려 드립니다. 계약 › 일정·알림에서 받을 항목을 고릅니다.'],
@@ -13712,6 +13712,7 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
+  { v:'26.11.17.7', 날:'2026-11-17', 줄:[ '계약서 단추 이름 - ‘날인본으로 확정’을 ‘확정본으로 저장’으로(안내 문구도 같이)' ] },
   { v:'26.11.17.6', 날:'2026-11-17', 줄:[ '계약서 작성 - 오른쪽 서류 위 ‘전체화면’ 단추. 화면 가득 서류를 보며 칸을 눌러 바로 고칩니다(왼쪽 입력 칸과 같이 바뀜) · Esc 나 ‘전체화면 닫기’로 돌아옴' ] },
   { v:'26.11.17.5', 날:'2026-11-17', 줄:[ '계약현황 ‘직접 추가’ - 계약서를 다 쓰지 않아도 소재지 · 당사자 · 금액 · 날짜만 적어 계약현황 줄을 만듭니다(작성 중 계약서로 남아 나중에 이어 씀)',
     '계약현황 표 ‘고치기’ - 날짜 · 금액 · 당사자를 표에서 바로 고칩니다. 날인본은 금액 · 당사자를 그대로 두고 중도금일 · 잔금일 · 계약체결일만 일정으로',
@@ -14073,7 +14074,7 @@ const BK_변경 = [
     '일정 · 체크 - ‘개인정보 수집 · 이용 동의서를 받았습니다’ 체크' ] },
   { v:'26.11.06.7', 날:'2026-11-06', 줄:[
     '확정 전 점검 - 법인명처럼 띄어쓴 이름도 등기부 소유자와 맞게 대조 · 계약서로 바로 들어와도 확인·설명서 점검',
-    '확인·설명서도 소재지가 없으면 날인본으로 확정되지 않습니다',
+    '확인·설명서도 소재지가 없으면 확정본으로 저장되지 않습니다',
     '건축물대장 - ‘101동1203호’처럼 붙여 써도 동·호를 읽습니다 · 조회는 하루 횟수 제한',
     '계약서 목록 - 이번 달 날인은 한국 날짜로, 잔금 30일 안은 바뀐 잔금일 · 완료 제외로 카드와 목록이 같게',
     '바로 적는 미리보기의 특약 번호를 인쇄본과 같게' ] },
@@ -14098,7 +14099,7 @@ const BK_변경 = [
     '계약서 목록 - 요약 카드(작성 중 · 이번 달 날인 · 신고 전 · 잔금 30일 안)와 종류 · 기간 거르기' ] },
   { v:'26.11.06.1', 날:'2026-11-06', 줄:[
     '계약서 - 오른쪽 서류의 칸을 눌러 바로 적을 수 있습니다. 왼쪽 입력 칸과 같은 값으로 함께 바뀝니다',
-    '계약서 - 필수 항목(소재지 · 대금 · 계약금 · 잔금일 · 계약일 · 당사자 성명 · 사무소 등)을 채우지 않으면 날인본으로 확정되지 않고, 빠진 칸을 양쪽에 빨갛게 보여 줍니다',
+    '계약서 - 필수 항목(소재지 · 대금 · 계약금 · 잔금일 · 계약일 · 당사자 성명 · 사무소 등)을 채우지 않으면 확정본으로 저장되지 않고, 빠진 칸을 양쪽에 빨갛게 보여 줍니다',
     '계약서 - 저장 단추를 임시저장으로 바꾸고, 멈춘 뒤 20초가 지나면 자동으로 임시저장합니다' ] },
   { v:'26.11.05.14', 날:'2026-11-05', 줄:[
     '일정·체크 - 날짜를 고치고 곧바로 다른 계약서로 넘어가도 앞 계약서의 일정이 지워지지 않게',
@@ -14524,7 +14525,7 @@ function 파트너현황계산(){
     안읽힘 ? { t:'아직 안 열린 제안', s:'손님이 보기 전입니다 - 조건을 다시 보세요', n:안읽힘, ico:'eye', go:'#/partner/proposals' } : null,
     계약없는연결 && !계약막힘() ? { t:'연결된 손님 계약서', s:'연결됐는데 계약서를 아직 안 만들었습니다', n:계약없는연결, ico:'doc', go:'#/partner/proposals' } : null,
     신고전 ? { t:'신고 안 한 날인본', s:'계약일부터 30일 안에 신고 - 마쳤으면 ‘신고 마침’ 표시', n:신고전, ico:'flag', go:'#/partner/contracts' } : null,
-    작성중 ? { t:'작성 중인 계약서', s:'날인받았으면 날인본으로 확정하세요', n:작성중, ico:'doc', go:'#/partner/contracts' } : null,
+    작성중 ? { t:'작성 중인 계약서', s:'날인받았으면 확정본으로 저장하세요', n:작성중, ico:'doc', go:'#/partner/contracts' } : null,
     계약.some(r => ct안읽은의견(r.track)) ? { t:'초안에 새 의견', s:'손님 · 공동중개 사무소가 초안 링크로 남긴 의견', n: 계약.reduce((s, r) => s + ct안읽은의견(r.track), 0), ico:'doc', go:'#/partner/contracts' } : null,
     !물건.length ? { t:'물건 올려두기', s:'올려두면 맞는 손님과 바로 대조합니다', ico:'building', go:'#/partner/listing/new' } : null,
   ].filter(Boolean);
@@ -14564,7 +14565,7 @@ function dz달력(계약){
         : '<p class="dz-cal-0">이날 잡힌 일정이 없습니다</p>'}</div>` : ''}
   </section>`;
 }
-/* 실적 (2026-11-10 파트너 기획 대시보드 '실적(건) · 실적(매출) - 매출은 대표만, 보일지 말지 선택') - 이번 달 날인본으로 확정한 계약.
+/* 실적 (2026-11-10 파트너 기획 대시보드 '실적(건) · 실적(매출) - 매출은 대표만, 보일지 말지 선택') - 이번 달 확정본으로 저장한 계약.
    매출은 그 계약서의 확인·설명서에 적은 중개보수 합계. 숨기기는 이 기기에 기억 */
 function dz실적(계약){
   const 이달 = ct오늘().slice(0, 7), 확정 = 계약.filter(r => r.status === 'sealed' && !(CT_FORMS[r.form] || {}).explain && ct한국날(r.sealed_at).slice(0, 7) === 이달);
@@ -15651,8 +15652,8 @@ function ct필수빠짐(doc = CT.doc){
 function ct필수안내HTML(){
   if(!CT.req || !CT.doc || ctSealed()) return '<div id="ctReq" hidden></div>';
   const 빠짐 = ct필수빠짐(), 줄 = ct필수(CT.doc).filter(([p]) => 빠짐.has(p));
-  if(!줄.length) return `<div id="ctReq" class="ct-req ok" role="status"><b>필수 항목을 모두 채웠습니다</b> 이제 날인본으로 확정할 수 있습니다.</div>`;
-  return `<div id="ctReq" class="ct-req" role="alert"><b>날인본으로 확정하려면 ${줄.length}칸을 더 채워야 합니다</b>
+  if(!줄.length) return `<div id="ctReq" class="ct-req ok" role="status"><b>필수 항목을 모두 채웠습니다</b> 이제 확정본으로 저장할 수 있습니다.</div>`;
+  return `<div id="ctReq" class="ct-req" role="alert"><b>확정본으로 저장하려면 ${줄.length}칸을 더 채워야 합니다</b>
     <span class="ct-req-s">누르면 그 칸으로 갑니다 · 오른쪽 서류에서 빨간 칸을 눌러 바로 적어도 됩니다</span>
     <span class="ct-req-l">${줄.map(([p, l]) => `<button type="button" class="chip" data-act="ct-req-go" data-v="${esc(p)}">${esc(l)}</button>`).join('')}</span></div>`;
 }
@@ -15669,7 +15670,7 @@ function ct진행HTML(){
   if(!CT.doc || ctSealed()) return '';
   const 전 = ct필수(CT.doc); if(!전.length) return '';
   const 남 = ct필수빠짐().size, 됨 = 전.length - 남, 퍼 = Math.round(됨 / 전.length * 100);
-  return `<div class="ct-prog${남 ? '' : ' done'}" id="ctProg" role="status"><span class="ct-prog-t"><b>필수 항목 ${됨} / ${전.length}</b>${남 ? `<span>${남}칸 남음 · 다 채우면 날인본으로 확정할 수 있습니다</span>` : '<span>모두 채웠습니다 · 날인본으로 확정할 수 있습니다</span>'}</span>
+  return `<div class="ct-prog${남 ? '' : ' done'}" id="ctProg" role="status"><span class="ct-prog-t"><b>필수 항목 ${됨} / ${전.length}</b>${남 ? `<span>${남}칸 남음 · 다 채우면 확정본으로 저장할 수 있습니다</span>` : '<span>모두 채웠습니다 · 확정본으로 저장할 수 있습니다</span>'}</span>
     <span class="ct-prog-b" aria-hidden="true"><i style="width:${퍼}%"></i></span></div>`;
 }
 /* 적을 때마다 빨간 표시 · 안내를 고친다(다시 그리지 않고) */
@@ -16271,7 +16272,7 @@ V['#/draft'] = tok => {
     <div class="ct-draftbar"><b>확정 전 초안</b><span>보기 전용 · ${끝 ? `${esc(끝)}까지 열립니다` : DR.err ? '링크를 열 수 없습니다' : '불러오는 중'} · 전화번호는 가려서 보입니다</span></div>
     ${DR.err ? `<div class="card pad"><p class="sub" style="margin:0">${esc(DR.err)}</p></div>`
       : !R ? `<div class="card pad"><p class="sub" style="margin:0">초안을 불러오는 중입니다…</p></div>`
-      : R.status === 'sealed' || !R.doc ? `<div class="card pad"><p class="sub" style="margin:0">이 계약서는 날인본으로 확정됐습니다. 초안은 더 보이지 않습니다 - 최종본은 중개사무소에서 받으세요.</p></div>`
+      : R.status === 'sealed' || !R.doc ? `<div class="card pad"><p class="sub" style="margin:0">이 계약서는 확정본으로 저장됐습니다. 초안은 더 보이지 않습니다 - 최종본은 중개사무소에서 받으세요.</p></div>`
       : `<p class="sub" style="margin:0;font-size:13.5px">마지막으로 고친 때 ${esc(String(R.updated_at || '').slice(0, 16).replace('T', ' '))} · 고칠 곳이 있으면 중개사무소에 말씀해 주세요.</p>
         <div class="ct-sheet-wrap ct-draft"><div class="ct-sheet">${ctDocHTML(R.doc)}</div></div>
         ${dr의견칸(R)}`}
@@ -16584,7 +16585,7 @@ function rm서류HTML(id){
       <span class="sub" style="font-size:13.5px">날인본 · 보기 전용 · 전화번호는 가려서 보입니다</span></div>
     ${D.loading ? `<div class="card pad">${bkLoader(28)}</div>`
       : !D.ok ? `<div class="card pad"><p class="sub" style="margin:0">${esc(j.error || '계약서를 열지 못했습니다')}</p></div>`
-      : !j.sealed ? `<div class="card pad"><p class="sub" style="margin:0">아직 날인 전입니다. 계약서를 날인본으로 확정하면 여기에서 다시 볼 수 있습니다.</p></div>`
+      : !j.sealed ? `<div class="card pad"><p class="sub" style="margin:0">아직 날인 전입니다. 계약서를 확정본으로 저장하면 여기에서 다시 볼 수 있습니다.</p></div>`
       : `<p class="sub" style="margin:0;font-size:13.5px">${esc(j.title || '')} · 날인본 확정 ${esc(ct한국날(j.sealed_at))} · 원본은 중개사무소에서 받으신 종이 계약서입니다.</p>
         <div class="ct-sheet-wrap"><div class="ct-sheet">${ctDocHTML(j.doc)}</div></div>`}
   </div>
@@ -17682,7 +17683,7 @@ V['#/partner/contract'] = (id) => {
         ${F.explain ? '' : `<button class="btn sec sm" data-act="ct-explain">확인·설명서<span class="ct-long"> 만들기</span></button>`}
         ${잠김 ? `<button class="btn sec sm" data-act="ct-revise">고쳐서 새 판 만들기</button>`
           : `<button class="btn sec sm" data-act="ct-save" ${CT.saving?'disabled':''}>${CT.saving?'저장 중…':CT.dirty||!CT.id?'<span class="dirty-dot" aria-hidden="true"></span>임시저장':'임시저장됨'}</button>
-             ${권한('ct_seal') ? `<button class="btn pri sm" data-act="ct-seal" ${CT.saving?'disabled':''}>날인본으로 확정</button>` : '<span class="sub" style="font-size:13px">확정은 대표님 권한입니다</span>'}`}
+             ${권한('ct_seal') ? `<button class="btn pri sm" data-act="ct-seal" ${CT.saving?'disabled':''}>확정본으로 저장</button>` : '<span class="sub" style="font-size:13px">확정은 대표님 권한입니다</span>'}`}
       </div>
     </div>
     ${ct안읽은의견(CT.track) ? `<p class="ct-note noprint"><button type="button" class="tapx" data-act="ct-notes-open" style="font-weight:700;color:#B25E00">초안에 새 의견 ${ct안읽은의견(CT.track)}건 - 일정·체크에서 보기</button></p>` : ''}
@@ -17744,7 +17745,7 @@ V['#/partner/contract'] = (id) => {
   ${navPartner('ct', false)}
   <div class="pad" style="flex:1;padding-top:16px;padding-bottom:32px;width:100%;max-width:880px;margin:0 auto;display:flex;flex-direction:column;gap:14px">
     ${bar}
-    ${잠김 ? '' : `<p class="ct-note" style="background:var(--warnbg,#F9F5ED)">아직 날인본이 아닙니다. 날인받은 뒤 '날인본으로 확정' 하고 그 판으로 신고하세요 - 신고한 내용과 계약서가 달라지면 안 됩니다.</p>`}
+    ${잠김 ? '' : `<p class="ct-note" style="background:var(--warnbg,#F9F5ED)">아직 날인본이 아닙니다. 날인받은 뒤 '확정본으로 저장' 하고 그 판으로 신고하세요 - 신고한 내용과 계약서가 달라지면 안 됩니다.</p>`}
     ${rpHTML(doc)}
     ${잠김 ? `<div class="card pad ct-sec"><h2>신고 마침</h2>${CT.row.reported_at
       ? `<p class="sub" style="margin:0"><b style="color:var(--ok)">${esc(String(CT.row.reported_at).slice(0,10))}</b> 에 신고 마침으로 표시했습니다. 기한 알림 메일이 멈췄습니다.</p>
@@ -17962,7 +17963,7 @@ function ctDeskShell(doc, side, 신고면){
           <div class="ctx-btns">${잠김
             ? `<button class="btn pri sm" data-act="ct-revise">고쳐서 새 판 만들기</button>`
             : `<button class="btn tool sm" data-act="ct-save" ${CT.saving?'disabled':''}>${CT.saving?'저장 중…':'임시저장'}</button>
-               ${권한('ct_seal') ? `<button class="btn pri sm" data-act="ct-seal" ${CT.saving?'disabled':''}>날인본으로 확정</button>` : '<span class="sub" style="font-size:13px">확정은 대표님 권한입니다</span>'}`}</div>
+               ${권한('ct_seal') ? `<button class="btn pri sm" data-act="ct-seal" ${CT.saving?'disabled':''}>확정본으로 저장</button>` : '<span class="sub" style="font-size:13px">확정은 대표님 권한입니다</span>'}`}</div>
         </div>
       </section>
       <section class="ctx-view${CT.full ? ' ctx-full' : ''}" aria-label="미리보기"${CT.full ? ' role="dialog" aria-modal="true"' : ''}>
@@ -17994,7 +17995,7 @@ function ct글꼴칸(doc, 잠김){
 /* 신고 도우미 - PC 입력 판 안 */
 function ctReportSide(doc){
   const 잠김 = CT.row && CT.row.status === 'sealed';
-  return `${잠김 ? '' : `<p class="ct-note" style="background:var(--warnbg,#F9F5ED)">아직 날인본이 아닙니다. 날인받은 뒤 '날인본으로 확정' 하고 그 판으로 신고하세요 - 신고한 내용과 계약서가 달라지면 안 됩니다.</p>`}
+  return `${잠김 ? '' : `<p class="ct-note" style="background:var(--warnbg,#F9F5ED)">아직 날인본이 아닙니다. 날인받은 뒤 '확정본으로 저장' 하고 그 판으로 신고하세요 - 신고한 내용과 계약서가 달라지면 안 됩니다.</p>`}
     ${rpHTML(doc)}
     ${잠김 ? `<div class="card pad ct-sec"><h2>신고 마침</h2>${CT.row.reported_at
       ? `<p class="sub" style="margin:0"><b style="color:var(--ok)">${esc(String(CT.row.reported_at).slice(0,10))}</b> 에 신고 마침으로 표시했습니다. 기한 알림 메일이 멈췄습니다.</p>
@@ -18090,7 +18091,7 @@ function ctPlanHTML(doc){
               <button class="tapx" data-act="ct-reported" data-v="off" style="font-size:13.5px;color:var(--n500)">표시 취소</button></div>`
           : `<div class="pl-chk"><span class="pl-ok off" aria-hidden="true"></span><span><b>${신고이름} 전</b><small>신고를 마쳤으면 눌러 주세요 - 기한 알림이 멈춥니다</small></span>
               <button class="btn pri sm" data-act="ct-reported" data-v="on">신고 마침</button></div>`)
-        : `<div class="pl-chk dim"><span class="pl-ok off" aria-hidden="true"></span><span><b>${신고이름}</b><small>날인본으로 확정한 뒤 신고 마침을 표시합니다</small></span></div>`) : ''}
+        : `<div class="pl-chk dim"><span class="pl-ok off" aria-hidden="true"></span><span><b>${신고이름}</b><small>확정본으로 저장한 뒤 신고 마침을 표시합니다</small></span></div>`) : ''}
     </div>
     ${허가대상 ? `<div class="card pad ct-sec"><h2>토지거래허가</h2>
       ${체크('ctk-permit', !!t.permit, '이 계약은 토지거래허가 대상입니다', '', '')}
@@ -22490,11 +22491,11 @@ function handle(a,v,el){
         CT.saving = true; render();
         const { ok, j } = await ctPost({ what:'contract-seal', id: CT.id }).catch(() => ({ ok:false, j:{} }));
         CT.saving = false;
-        if(!ok){ render(); return toast(j.error || '날인본으로 확정하지 못했습니다'); }
+        if(!ok){ render(); return toast(j.error || '확정본으로 저장하지 못했습니다'); }
         CT.row = { ...CT.row, status:'sealed', sealed_at: j.sealed_at, sha256: j.sha256 };
         CT.list = null; CT.mode = 'preview';
-        if((CT.rev || 0) !== 판){ const id = CT.id; CT.id = null; ctOpen(id); toast('날인본으로 확정했습니다 - 확정하는 사이 적은 것은 들어가지 않아 날인본을 다시 불러왔습니다'); return; }
-        CT.dirty = false; render(); toast('날인본으로 확정했습니다');
+        if((CT.rev || 0) !== 판){ const id = CT.id; CT.id = null; ctOpen(id); toast('확정본으로 저장했습니다 - 확정하는 사이 적은 것은 들어가지 않아 날인본을 다시 불러왔습니다'); return; }
+        CT.dirty = false; render(); toast('확정본으로 저장했습니다');
       })();
       return true;
     }

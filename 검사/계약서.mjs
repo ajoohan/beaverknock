@@ -1404,5 +1404,9 @@ ok(js.includes('class="lg-sw" role="tablist"') && js.includes("if(MG.f === 'done
   ok(js.includes('const ct중도더 = d => ct중도2(d) && Array.isArray(d.mids)') && js.includes("case 'ct-mid-add':") && js.split('차 중도금</th><td>${돈(`deal.mids.').length === 4 && 서버.includes('mx:doc->deal->mids'), '중도금 3~5차 - 합계 · 서류 세 양식 · 목록');
   ok(js.includes('function ct장부상태(){') && css.includes('.scan-st{display:grid;'), '공적장부 반영 상태 줄'); }
 
+/* ── 계약서 입력 방식 세 가지 (2026-11-17 대표님) ── */
+ok(js.includes("const CT_배치 = [['info', '정보 입력'") && js.includes("case 'ct-lay': ct배치바꿈(v); return true;") && js.includes("배치 !== 'both' ? ' lay-' + 배치 : ''") && js.includes("localStorage.setItem('bk.ctLay', CT.lay)")
+  && css.includes('.ctx-body.lay-info .ctx-view{display:none}') && css.includes('.ctx-body.lay-form .ctx-side .ctx-scroll{display:none}') && js.includes('data-act="ct-lay" data-v="form">서식에서 확인</button>'), '계약서 입력 방식 - 정보 입력 · 서식 입력 · 정보 + 서식을 고르고 오간다');
+
 console.log(`${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

@@ -3031,6 +3031,19 @@ body:not(.mo) .ctx-sub{flex:1 1 0;min-width:0;overflow:hidden;text-overflow:elli
 .ctx-desk{flex:1 1 auto;min-height:0;overflow:auto;padding:12px;background:var(--n100);border:1px solid var(--n200);border-radius:12px}
 /* 화면용 종이 여백만 줄인다(인쇄는 @page 여백을 따로 쓴다) - 같은 폭에서 글이 더 크게 보인다 */
 .ctx-view{position:relative}
+.ctx-lay{display:inline-flex;gap:2px;padding:3px;border:1px solid var(--n200);border-radius:10px;background:var(--n100);flex:none}
+.ctx-lay button{min-height:30px;padding:4px 12px;border:0;border-radius:7px;background:transparent;font:inherit;font-size:13px;font-weight:600;color:var(--n600,#555);cursor:pointer;white-space:nowrap}
+.ctx-lay button:hover{color:var(--n900)}
+.ctx-lay button.on{background:var(--white);color:var(--ind700,#3B3EA8);box-shadow:0 1px 2px rgba(22,23,29,.12)}
+/* 정보 입력 - 입력 판만 가운데 크게 */
+.ctx-body.lay-info{grid-template-columns:minmax(0,1fr)}
+.ctx-body.lay-info .ctx-view{display:none}
+.ctx-body.lay-info .ctx-side{width:100%;max-width:1040px;margin:0 auto}
+/* 서식 입력 - 서류만 크게, 아래에 저장 단추 줄만 남긴다 */
+.ctx-body.lay-form{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto}
+.ctx-body.lay-form .ctx-side{order:2;min-height:0}
+.ctx-body.lay-form .ctx-side .ctx-tabs,.ctx-body.lay-form .ctx-side .ctx-scroll{display:none}
+.ctx-body.lay-form .ctx-act{border-top:0}
 .ctx-view:not(.ctx-full) .ctx-desk{padding-bottom:64px}
 .ctx-fullbtn{position:absolute;right:22px;bottom:20px;z-index:2;min-height:40px;padding:9px 16px;border-radius:var(--r-full);border:1px solid var(--n200);background:var(--white);color:var(--n800);font-size:13.5px;font-weight:700;box-shadow:0 4px 14px rgba(22,23,29,.16);cursor:pointer}
 .ctx-fullbtn:hover{background:var(--n100)}
@@ -13744,6 +13757,7 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
+  { v:'26.11.17.16', 날:'2026-11-17', 줄:[ '계약서 입력 방식 세 가지 - ‘정보 입력’(입력 칸만 크게, 다 적으면 ‘서식에서 확인’) · ‘서식 입력’(계약서 서식을 크게 띄워 직접 적기) · ‘정보 + 서식’(지금까지의 방식). 작성 화면 위 단추로 언제든 오갑니다(PC)' ] },
   { v:'26.11.17.15', 날:'2026-11-17', 줄:[ '계약체결 문자 - 보낸 기록의 ‘계약현황에 추가’로 금액 · 날짜 · 목적물이 계약현황 줄로 바로 들어갑니다(입금일은 계약체결일로). 계약서를 이어 쓰면 계약서 내용이 반영됩니다',
     '계약현황 표에 공동중개(다른 사무소가 쓴) 계약서도 함께 보입니다 - 누르면 날짜 · 금액을 고칩니다',
     '중도금 3차 · 4차 · 5차 - 2차 중도금을 적으면 ‘+ 3차 중도금 더하기’가 나옵니다. 잔금은 모두 빼서 자동 계산',
@@ -18067,12 +18081,24 @@ function ctFormHTML(doc){
 /* ── PC 작성 화면 (2026-10-29 대표님: Lounge 계약서처럼) ──
    왼쪽 입력 판(판 안에서만 내려가고 맨 아래 저장·확정 줄이 붙는다) | 오른쪽 책상 위 A4 미리보기.
    미리보기는 늘 떠 있고 칸을 고치는 대로 다시 그린다(ctPvRefresh). 휴대폰은 위 화면 그대로 */
+const CT_배치 = [['info', '정보 입력', '입력 칸만 크게 - 다 적은 뒤 서식에서 확인'], ['form', '서식 입력', '계약서 서식을 크게 띄워 직접 적기'], ['both', '정보 + 서식', '입력 칸과 서식을 나란히']];
+function ct배치(){
+  if(CT.lay == null){ try{ const v = localStorage.getItem('bk.ctLay'); CT.lay = ['info', 'form'].includes(v) ? v : 'both'; }catch(_){ CT.lay = 'both'; } }
+  return CT.lay;
+}
+function ct배치바꿈(v){
+  CT.lay = ['info', 'form'].includes(v) ? v : 'both'; CT.full = false;
+  try{ localStorage.setItem('bk.ctLay', CT.lay); }catch(_){}
+  if(CT.lay !== 'both' && CT.mode !== 'edit' && CT.mode !== 'scan') CT.mode = 'edit';
+  render();
+}
 function ctDeskShell(doc, side, 신고면){
   const F = CT_FORMS[doc.form] || CT_FORMS['home-lease'];
   const 잠김 = CT.row && CT.row.status === 'sealed';
   const 신고있음 = ct신고(doc);
   const 이름 = ctTitle(doc);
   const 탭 = CT.mode === 'plan' && !F.explain ? 'p' : CT.mode === 'extra' && !F.explain ? 'x' : 신고면 ? 'r' : 'e';
+  const 고른배치 = ct배치(), 배치 = 고른배치 === 'form' && (탭 !== 'e' || CT.mode === 'scan') ? 'both' : 고른배치;
   const 상태 = 잠김
     ? `<span class="ctx-st ok">날인본 · ${esc(String(CT.row.sealed_at||'').slice(0,16).replace('T',' '))} 확정 · 지문 ${esc(String(CT.row.sha256||'').slice(0,12))}…</span>`
     : CT.saving ? `<span class="ctx-st">임시저장 중…</span>`
@@ -18088,11 +18114,12 @@ function ctDeskShell(doc, side, 신고면){
     <div class="ctx-head">
       <a class="back" data-go="#/partner/contracts"><i class="ar-l" aria-hidden="true"></i>계약서 목록</a>
       <h1 class="ctx-h1">${esc(이름)}</h1>
+      <span class="ctx-lay" role="group" aria-label="입력 방식">${CT_배치.map(([k, t, 말]) => `<button type="button" class="${고른배치 === k ? 'on' : ''}" aria-pressed="${고른배치 === k}" data-act="ct-lay" data-v="${k}" title="${말}">${t}</button>`).join('')}</span>
       <span class="badge ${잠김?'b-ok':'b-warn'}">${잠김?'날인본':'작성 중'}</span>${판줄}${ct안읽은의견(CT.track) ? `<button type="button" class="tapx ctx-rev" data-act="ct-notes-open" style="color:#B25E00;font-weight:700">초안에 새 의견 ${ct안읽은의견(CT.track)}건</button>` : ''}${!잠김 && !F.explain && CT.id ? `<button type="button" class="tapx ctx-rev" data-act="ct-share-cut">나간 초안 링크 끊기</button>` : ''}
       ${!잠김 && !F.explain ? `<span class="ctx-sub">비워 둔 칸은 밑줄 빈칸으로 인쇄됩니다 · 주민등록번호·계좌번호는 적지 않습니다</span>` : ''}
       <span class="ctx-badge">${agentBadge()}${S.user ? userMenu({ admin: true }) : ''}</span>
     </div>
-    <div class="ctx-body">
+    <div class="ctx-body${배치 !== 'both' ? ' lay-' + 배치 : ''}">
       <section class="ctx-side" aria-label="입력">
         ${F.explain ? '' : `<div class="ctx-tabs" role="tablist">
           <button type="button" role="tab" aria-selected="${탭==='e'}" class="${탭==='e'?'on':''}" data-act="ct-edit">입력</button>
@@ -18104,7 +18131,7 @@ function ctDeskShell(doc, side, 신고면){
           ${상태}
           <div class="ctx-btns">${잠김
             ? `<button class="btn pri sm" data-act="ct-revise">고쳐서 새 판 만들기</button>`
-            : `<button class="btn tool sm" data-act="ct-save" ${CT.saving?'disabled':''}>${CT.saving?'저장 중…':'임시저장'}</button>
+            : `${배치 === 'info' ? `<button class="btn sec sm" data-act="ct-lay" data-v="form">서식에서 확인</button>` : 배치 === 'form' ? `<button class="btn sec sm" data-act="ct-lay" data-v="info">정보 입력으로</button>` : ''}<button class="btn tool sm" data-act="ct-save" ${CT.saving?'disabled':''}>${CT.saving?'저장 중…':'임시저장'}</button>
                ${권한('ct_seal') ? `<button class="btn pri sm" data-act="ct-seal" ${CT.saving?'disabled':''}>확정본으로 저장</button>` : '<span class="sub" style="font-size:13px">확정은 대표님 권한입니다</span>'}`}</div>
         </div>
       </section>
@@ -22623,6 +22650,7 @@ function handle(a,v,el){
       return true;
     case 'ct-edit': CT.mode = 'edit'; render(); return true;
     case 'ct-print': return ctPrint();
+    case 'ct-lay': ct배치바꿈(v); return true;
     case 'ct-full': CT.full = !CT.full; render(); setTimeout(() => { const b = $('#app [data-act="ct-full"]'); if(b) b.focus({ preventScroll: true }); }); return true;
     case 'ct-cloud': 보관창(); return true;
     case 'cl-save': cl저장(v); return true;
@@ -22642,6 +22670,7 @@ function handle(a,v,el){
       return true; }
     case 'ct-req-go':
       if(CT.full){ CT.full = false; render(); }
+      if(CT.lay === 'form'){ CT.lay = 'both'; render(); toast('이 칸은 입력 칸에서 적습니다 - ‘정보 + 서식’으로 바꿨습니다'); }
       if(CT.mode !== 'edit'){ CT.mode = 'edit'; render(); }
       setTimeout(() => ct필수가기(v), 30); return true;
     case 'ct-seal-go': {

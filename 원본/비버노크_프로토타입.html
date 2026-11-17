@@ -3248,6 +3248,7 @@ body.mo .jr-trust{grid-template-columns:1fr;gap:8px}
 .lf-facs{display:flex;flex-direction:column;gap:10px} .lf-facs small{display:block;margin-bottom:4px;font-size:12.5px;font-weight:700;color:var(--n500)}
 .ct-st-sel{min-width:96px;padding:5px 8px;font-size:13px;height:auto} .ct-st-sel.ok{color:var(--ok)} .ct-st-sel.warn{color:var(--warn)}
 .ct-tag{display:inline-block;margin:4px 4px 0 0;padding:1px 6px;border-radius:999px;background:var(--n100);font-size:12px;color:var(--n600,#555)} .ct-tag.ok{background:var(--okbg,#e7f6ee);color:var(--ok)} .ct-tag.warn{background:var(--warnbg,#fff3e0);color:var(--warn)}
+.ct-cobrk{display:flex;flex-direction:column;gap:8px;padding:12px 0 4px;border-top:1px dashed var(--n200)}
 .ct-qedit{display:block;padding:0;margin-top:3px;font-size:12.5px;color:var(--n500);text-decoration:underline;text-underline-offset:2px}
 .ct-qbox{max-width:560px}
 .ct-pname{display:block;padding:0;font-weight:700;color:var(--ind);text-decoration:underline;text-underline-offset:2px}
@@ -13712,6 +13713,8 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
+  { v:'26.11.17.9', 날:'2026-11-17', 줄:[ '계약서 공동중개 사무소 - ‘+ 공동중개 사무소 더하기’로 4곳까지(3자 이상 공동중개). 계약서 서명란에 우리 사무소 아래로 찍힙니다',
+    '공동중개 사무소 ‘명부에서 채우기’ - 등록번호(+대표자명)를 적으면 국토교통부 중개사무소 명부에서 사무소 명칭 · 소재지를 채웁니다' ] },
   { v:'26.11.17.8', 날:'2026-11-17', 줄:[ '계약서 · 확인·설명서 소재지 - 지번으로 적고 도로명은 괄호로(당사자 주소는 도로명 그대로)',
     '소재지를 직접 적을 때 - 오타 · 띄어쓰기로 계약현황 찾기 · 신고 도우미가 틀릴 수 있으니 주소 찾기 · 공적장부로 넣으라는 안내' ] },
   { v:'26.11.17.7', 날:'2026-11-17', 줄:[ '계약서 단추 이름 - ‘날인본으로 확정’을 ‘확정본으로 저장’으로(안내 문구도 같이)' ] },
@@ -15836,6 +15839,11 @@ function ctDocHTML(doc){
       <tr><th>사무소 명칭</th><td>${ct칸('broker.office', B.office, 140)}</td><th>대표</th><td class="sign">${B.hand ? 빈칸(70) : ct칸('broker.rep', B.rep, 70)} <span class="ct-seal">(서명 및 날인)</span></td></tr>
       <tr><th>등록번호</th><td>${ct칸('broker.regNo', B.regNo, 120)}</td><th>전화</th><td>${ct칸('broker.phone', B.phone, 100)}</td></tr>
       <tr><th class="w">소속공인중개사</th><td colspan="4" class="sign">${B.hand ? 빈칸(120) : ct칸('broker.staff', B.staff, 120)} <span class="ct-seal">(서명 및 날인)</span></td></tr>
+      ${(doc.coBrokers || []).map((c, i) => { const b = `coBrokers.${i}`; return `
+      <tr><th rowspan="3" class="w">개업<br>공인중개사<br><small>(공동중개${(doc.coBrokers || []).length > 1 ? ' ' + (i + 1) : ''})</small></th><th>사무소 소재지</th><td colspan="3">${ct칸(b + '.addr', c.addr, 260)}</td></tr>
+      <tr><th>사무소 명칭</th><td>${ct칸(b + '.office', c.office, 140)}</td><th>대표</th><td class="sign">${B.hand ? 빈칸(70) : ct칸(b + '.rep', c.rep, 70)} <span class="ct-seal">(서명 및 날인)</span></td></tr>
+      <tr><th>등록번호</th><td>${ct칸(b + '.regNo', c.regNo, 120)}</td><th>전화</th><td>${ct칸(b + '.phone', c.phone, 100)}</td></tr>
+      <tr><th class="w">소속공인중개사</th><td colspan="4" class="sign">${B.hand ? 빈칸(120) : ct칸(b + '.staff', c.staff, 120)} <span class="ct-seal">(서명 및 날인)</span></td></tr>`; }).join('')}
     </table>
     <p class="ct-foot">이 양식은 비버노크가 ${F.foot}해 만든 작성 도구입니다. 내용은 작성자가 확인하고 고쳐 쓰셔야 합니다.</p>
   </div>`;
@@ -17628,6 +17636,30 @@ function ctSchedulePageHTML(전체){
 }
 
 /* ── 화면: 작성 / 미리보기 ── */
+/* 공동중개 사무소 (2026-11-17 파트너 - 공동중개 · 3자 이상도 있다) - 4곳까지. 등록번호(+대표자명)로 전국 명부에서 사무소명 · 소재지를 채운다 */
+const CT_공동중개최대 = 4;
+function ct공동중개칸(doc, 잠김){
+  const 목록 = doc.coBrokers || [];
+  return `${목록.map((c, i) => { const b = `coBrokers.${i}`, 찾는중 = CT.brk === i;
+    return `<div class="ct-cobrk"><div class="ct-party-h"><b>공동중개 사무소${목록.length > 1 ? ' ' + (i + 1) : ''}</b>${잠김 ? '' : `<button type="button" class="tapx" data-act="ct-cobrk-del" data-v="${i}" style="font-size:13.5px;color:var(--n500)">빼기</button>`}</div>
+      <div class="ct-grid">${ctIn(b + '.regNo', '등록번호', { w:4, ph:'41450-2019-00217' })}${ctIn(b + '.rep', '대표자명', { w:3 })}
+        ${잠김 ? '' : `<div class="w5" style="align-self:end"><button type="button" class="btn tool sm" data-act="ct-cobrk-find" data-v="${i}" ${찾는중 ? 'disabled' : ''}>${찾는중 ? '찾는 중…' : '명부에서 채우기'}</button></div>`}
+        ${ctIn(b + '.office', '사무소 명칭', { w:6 })}${ctIn(b + '.phone', '전화', { w:3 })}${ctIn(b + '.staff', '소속공인중개사', { w:3 })}${ctAddrIn(b + '.addr', '사무소 소재지', 12)}</div></div>`; }).join('')}
+    ${잠김 || 목록.length >= CT_공동중개최대 ? '' : `<button type="button" class="btn tool sm" data-act="ct-cobrk-add" style="align-self:flex-start">+ 공동중개 사무소 더하기</button>`}
+    ${목록.length ? '<p class="sub" style="margin:0;font-size:12.5px">등록번호와 대표자명을 적고 ‘명부에서 채우기’를 누르면 국토교통부 중개사무소 명부에서 사무소 명칭 · 소재지를 채웁니다. 전화는 직접 적어 주세요.</p>' : ''}`;
+}
+async function ctCoBrokerFind(i){
+  const 문서 = CT.doc, c = ((문서 && 문서.coBrokers) || [])[i]; if(!c || ctSealed()) return;
+  if(!String(c.regNo || '').trim()) return toast('등록번호를 먼저 적어 주세요');
+  CT.brk = i; render();
+  const { ok, j } = await ctPost({ what:'contract-broker', regNo: c.regNo, rep: c.rep || '' }).catch(() => ({ ok:false, j:{ error:'네트워크 문제로 찾지 못했습니다' } }));
+  CT.brk = null;
+  if(CT.doc !== 문서){ render(); return; }
+  if(!ok){ render(); return toast(j.error || '찾지 못했습니다 - 직접 적어 주세요'); }
+  Object.assign(c, { office: j.office || c.office || '', rep: j.rep || c.rep || '', addr: j.addr || c.addr || '', regNo: j.regNo || c.regNo });
+  ctDirty(); render();
+  toast(`명부에서 채웠습니다 - ${j.office}${+j.state && +j.state !== 1 ? ' (영업 상태를 확인해 주세요)' : ''}`);
+}
 const ctIn = (path, label, opt = {}) => {
   const v = ctGet(CT.doc, path);
   const 잠김 = CT.row && CT.row.status === 'sealed';
@@ -17914,6 +17946,7 @@ function ctFormHTML(doc){
         ${ctIn('broker.phone','전화',{w:3})}${ctIn('broker.staff','소속공인중개사',{w:3})}${ctAddrIn('broker.addr','사무소 소재지',6)}
       </div>
       <label class="ct-chk"><input type="checkbox" data-act="ct-hand" ${(doc.broker || {}).hand ? 'checked' : ''} ${잠김?'disabled':''}> 대표·소속공인중개사 성명은 자필로 - 인쇄할 때 비워 둡니다</label>
+      ${ct공동중개칸(doc, 잠김)}
       ${!잠김 && !ct사무소주소() ? `<p class="sub" style="margin:0;font-size:13.5px">사무소 주소를 <a data-go="#/account" style="color:var(--ind700);font-weight:700;cursor:pointer">마이페이지</a>에 등록해 두면 다음 계약서부터 자동으로 들어갑니다.</p>` : ''}</div>
 
     <div class="card pad ct-sec"><h2>조항 <span class="sub" style="font-weight:500;font-size:13.5px">빼면 뒤 번호가 당겨집니다</span></h2>${조항}</div>
@@ -22193,6 +22226,9 @@ function handle(a,v,el){
       x.co = [...(x.co || []), { name:'', phone:'', addr:'', share:'' }].slice(0, 4); ctDirty(); render(); } return true;
     case 'ct-co-del': if(CT.doc && !ctSealed()){ const [k, i] = String(v).split('|'), x = (CT.doc.parties || {})[k];
       if(x && x.co){ x.co.splice(+i, 1); if(!x.co.length){ delete x.co; delete x.share; } ctDirty(); render(); } } return true;
+    case 'ct-cobrk-add': if(CT.doc && !ctSealed()){ CT.doc.coBrokers = [...(CT.doc.coBrokers || []), { office:'', rep:'', regNo:'', addr:'', phone:'', staff:'' }].slice(0, CT_공동중개최대); ctDirty(); render(); } return true;
+    case 'ct-cobrk-del': if(CT.doc && !ctSealed() && CT.doc.coBrokers){ CT.doc.coBrokers.splice(+v, 1); if(!CT.doc.coBrokers.length) delete CT.doc.coBrokers; ctDirty(); render(); } return true;
+    case 'ct-cobrk-find': ctCoBrokerFind(+v); return true;
     case 'ct-hand': if(CT.doc && !ctSealed()){ const B = CT.doc.broker || (CT.doc.broker = {}); if(B.hand) delete B.hand; else B.hand = true; ctDirty(); render(); } return true;
     case 'ct-acct': if(CT.doc && !ctSealed()){ if(CT.doc.acct) delete CT.doc.acct; else CT.doc.acct = true; ctDirty(); render(); } return true;
     case 'ct-renew-sp': if(CT.doc && !ctSealed() && CT.doc.renewOf){

@@ -1363,5 +1363,12 @@ ok(js.includes("case 'ct-full': CT.full = !CT.full;") && js.includes("CT.full ? 
 /* ── 소재지는 지번 (2026-11-17 파트너) ── */
 ok(js.includes('const ct소재지 = P => P && P.jibun ?') && js.split('${ct소재지(P)}').length === 3 && js.includes('(도로명) ${esc(doc.property.road)}') && js.includes('계약서 소재지는 지번으로 적힙니다'), '계약서 · 확인·설명서 소재지는 지번 먼저, 도로명은 괄호');
 
+/* ── 공동중개 사무소 (2026-11-17 파트너) ── */
+{ ok(C.등록키('41450-2019-00217') === C.등록키('41450-2019-217') && C.등록키(' 가3665-4 ') === '가36654', '공동중개 찾기 - 등록번호 정규화(앞 0 · 옛 번호)');
+  ok(C.docCheck('sale', { schema: C.CT_SCHEMA, form: 'sale', coBrokers: [{ office: '미사중앙', regNo: '41450-2019-00217', phone: '031-000-0000' }] }) === null, '공동중개 사무소 등록번호는 주민번호로 잘못 잡히지 않는다');
+  const 서버 = fs.readFileSync(new URL('../api/_contract.js', import.meta.url), 'utf8');
+  ok(서버.includes("case 'contract-broker':") && 서버.includes("등록번호와 대표자명이 명부와 맞지 않습니다"), '명부 찾기 - 대표자명을 적었으면 맞을 때만');
+  ok(js.includes("case 'ct-cobrk-add'") && js.includes("what:'contract-broker'") && js.includes("(doc.coBrokers || []).map((c, i) =>") && js.includes('공동중개 사무소 더하기'), '계약서 공동중개 사무소 - 더하기 · 명부에서 채우기 · 서명란 인쇄'); }
+
 console.log(`${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

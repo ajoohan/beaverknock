@@ -22,6 +22,7 @@ import { notifyMany } from './_notify.js';
 import { logOps } from './_opslog.js';
 import { alimtalk } from './_kakao.js';
 import { 건축물대장, 포털오류 } from './_bld.js';
+import { findByKey } from './_brokers.js';
 
 /* 주택임대차 · 상가건물 임대차 · 부동산 매매 · 중개대상물 확인·설명서(주거용) (화면의 CT_FORMS 와 같은 이름) */
 /* 2026-10-30 계약서 종류 - 부동산 임대차(전세·월세·연세) · 전대차 · 분양권 · 조합원입주권 · 권리양도양수 · 상가 권리금 */
@@ -112,6 +113,25 @@ async function 대장(req, res, agent, b) {
   }
 }
 
+/* 공동중개 사무소 찾기 (2026-11-17 파트너 '상대 중개사의 대표자명 · 등록번호를 넣으면 정보를 끌어온다') -
+   전국 명부(api/_brokers.js · 국토교통부)에서 등록번호로 찾는다. 대표자명을 함께 적었으면 맞을 때만 알려 준다(엉뚱한 사무소를 적지 않게).
+   명부에는 전화가 없다 - 전화는 손으로 */
+const 등록신형 = /^([1-5][0-9]{4})-((?:19|20)[0-9]{2})-([0-9]{1,6})$/;
+export function 등록키(v) {
+  const t = String(v ?? '').trim().replace(/\s+/g, ''), m = 등록신형.exec(t);
+  return m ? `${m[1]}-${m[2]}-${String(Number(m[3]))}` : t.replace(/[제호()\-]/g, '').toUpperCase();
+}
+async function 중개사찾기(req, res, agent, b) {
+  if (overLimit('brk:a:' + agent.id, 100, 864e5)) return res.status(429).json({ ok: false, error: '오늘 사무소 찾기를 많이 하셨습니다 - 직접 적어 주세요' });
+  const 번호 = String(b.regNo || '').trim().slice(0, 30);
+  if (!번호 || 번호.replace(/[^0-9]/g, '').length < 3) return res.status(200).json({ ok: false, error: '등록번호를 적어 주세요' });
+  const x = findByKey(등록키(번호));
+  if (!x) return res.status(200).json({ ok: false, error: '명부에서 찾지 못했습니다 - 등록번호를 확인하거나 직접 적어 주세요' });
+  const 이름 = String(b.rep || '').replace(/\s+/g, '');
+  if (이름 && String(x.rep || '').replace(/\s+/g, '') !== 이름) return res.status(200).json({ ok: false, error: '등록번호와 대표자명이 명부와 맞지 않습니다 - 다시 확인해 주세요' });
+  return res.status(200).json({ ok: true, office: x.office || '', rep: x.rep || '', addr: x.addr || '', regNo: x.reg_no || 번호, state: x.state });
+}
+
 /* 날인본 확정 전 필수 항목 (2026-11-06 대표님) - 화면(ct필수)이 먼저 막고, 서버는 핵심 다섯 가지를 다시 본다.
    확인·설명서는 계약서가 아니라 보지 않는다 */
 export function 확정필수(form, doc) {
@@ -150,6 +170,7 @@ export async function contractRoute(req, res, agent, user, b) {
       case 'contract-bin':     await bin(res, agent, b); break;
       case 'contract-state':   await state(res, agent, b); break;
       case 'contract-bld':     await 대장(req, res, agent, b); break;
+      case 'contract-broker':  await 중개사찾기(req, res, agent, b); break;
       case 'contract-reported': await reported(res, agent, b); break;
       case 'contract-track':   await track(res, agent, b); break;
       case 'contract-note':    await note(res, agent, b); break;

@@ -1360,5 +1360,8 @@ ok(js.includes("what:'listing-bld'") && js.includes('S.form.lbun = a.bun') && js
 /* ── 계약서 전체화면 보기 (2026-11-17 대표님) ── */
 ok(js.includes("case 'ct-full': CT.full = !CT.full;") && js.includes("CT.full ? ' ctx-full' : ''") && js.includes("e.key === 'Escape' && CT.full") && js.includes("알림창(false); CT.full = false;") && css.includes('html:has(.ctx-view.ctx-full){overflow:hidden}'), '계약서 서류 전체화면 - 같은 서류로 바로 고치기 · Esc · 화면 옮기면 닫힘');
 
+/* ── 소재지는 지번 (2026-11-17 파트너) ── */
+ok(js.includes('const ct소재지 = P => P && P.jibun ?') && js.split('${ct소재지(P)}').length === 3 && js.includes('(도로명) ${esc(doc.property.road)}') && js.includes('계약서 소재지는 지번으로 적힙니다'), '계약서 · 확인·설명서 소재지는 지번 먼저, 도로명은 괄호');
+
 console.log(`${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

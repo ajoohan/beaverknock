@@ -13712,6 +13712,8 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
+  { v:'26.11.17.8', 날:'2026-11-17', 줄:[ '계약서 · 확인·설명서 소재지 - 지번으로 적고 도로명은 괄호로(당사자 주소는 도로명 그대로)',
+    '소재지를 직접 적을 때 - 오타 · 띄어쓰기로 계약현황 찾기 · 신고 도우미가 틀릴 수 있으니 주소 찾기 · 공적장부로 넣으라는 안내' ] },
   { v:'26.11.17.7', 날:'2026-11-17', 줄:[ '계약서 단추 이름 - ‘날인본으로 확정’을 ‘확정본으로 저장’으로(안내 문구도 같이)' ] },
   { v:'26.11.17.6', 날:'2026-11-17', 줄:[ '계약서 작성 - 오른쪽 서류 위 ‘전체화면’ 단추. 화면 가득 서류를 보며 칸을 눌러 바로 고칩니다(왼쪽 입력 칸과 같이 바뀜) · Esc 나 ‘전체화면 닫기’로 돌아옴' ] },
   { v:'26.11.17.5', 날:'2026-11-17', 줄:[ '계약현황 ‘직접 추가’ - 계약서를 다 쓰지 않아도 소재지 · 당사자 · 금액 · 날짜만 적어 계약현황 줄을 만듭니다(작성 중 계약서로 남아 나중에 이어 씀)',
@@ -15290,6 +15292,8 @@ function ctNewDoc0(form, from, F){
 }
 /* 가입 때 받은 사무소 주소. 명부에서 온 동 이름 하나('경기도 하남시 덕풍동')는 계약서에 쓸 주소가 아니다 - 숫자(도로·번지)가 있어야 쓴다 */
 /* 계약서의 소속공인중개사 칸 - 소속공인중개사 직원(2026-11-06)이 쓰면 그 이름으로 */
+/* 계약서 · 확인·설명서의 소재지 칸 - 지번이 있으면 지번을 쓰고 도로명은 괄호로 (2026-11-17 파트너) */
+const ct소재지 = P => P && P.jibun ? `${esc(P.jibun)}${P.road ? `<br><span class="sm">(도로명) ${esc(P.road)}</span>` : ''}` : ct값(P && P.road, 300);
 const ct직원이름 = () => { const v = S.agent && S.agent.staff; return (v && v.role === 'staff' && v.name) || ''; };
 const ct사무소주소 = () => { const v = String((S.agent && S.agent.addr) || '').trim(); return /\d/.test(v) ? v : ''; };
 
@@ -15761,13 +15765,13 @@ function ctDocHTML(doc){
     ${맞춤 ? `
     <h2>[${esc(F.fields[0].h)}]</h2>
     <table>
-      <tr><th class="w">소재지</th><td colspan="3"${CT편집칸 ? ` class="ct-road${CT.req && !P.road ? ' miss' : ''}" data-act="ct-req-go" data-v="property.road" title="소재지는 왼쪽 ‘도로명 찾기’로 넣습니다"` : ''}>${ct값(P.road, 300)}${P.jibun ? `<br><span class="sm">(지번) ${esc(P.jibun)}</span>`:''}</td></tr>
+      <tr><th class="w">소재지</th><td colspan="3"${CT편집칸 ? ` class="ct-road${CT.req && !P.road ? ' miss' : ''}" data-act="ct-req-go" data-v="property.road" title="소재지는 왼쪽 ‘주소 찾기’나 공적장부로 넣습니다"` : ''}>${ct소재지(P)}</td></tr>
       ${ctFieldRows(doc, F.fields[0].rows)}
     </table>
     ${F.fields.slice(1).map(g => `<h2>[${esc(g.h)}]</h2><table>${ctFieldRows(doc, g.rows)}</table>`).join('')}` : `
     <h2>[${매매?'부동산':doc.form==='sublease'?'전대물':상가?'임차상가건물':군==='home'?'임차주택':'임차물'}의 표시]</h2>
     <table>
-      <tr><th class="w">소재지</th><td colspan="5"${CT편집칸 ? ` class="ct-road${CT.req && !P.road ? ' miss' : ''}" data-act="ct-req-go" data-v="property.road" title="소재지는 왼쪽 ‘도로명 찾기’로 넣습니다"` : ''}>${ct값(P.road, 300)}${P.jibun ? `<br><span class="sm">(지번) ${esc(P.jibun)}</span>`:''}</td></tr>
+      <tr><th class="w">소재지</th><td colspan="5"${CT편집칸 ? ` class="ct-road${CT.req && !P.road ? ' miss' : ''}" data-act="ct-req-go" data-v="property.road" title="소재지는 왼쪽 ‘주소 찾기’나 공적장부로 넣습니다"` : ''}>${ct소재지(P)}</td></tr>
       <tr><th class="w">토지</th><th>지목</th><td>${ct칸('property.landCat', P.landCat, 70)}</td><th>면적</th><td colspan="2">${ct칸('property.landArea', P.landArea, 70, 'area')}</td></tr>
       ${매매 || (F.lease && ct집합(doc.sub)) ? `<tr><th class="w">대지권</th><td colspan="5">${ct칸('property.landRight', P.landRight, 200)}</td></tr>` : ''}
       <tr><th class="w">건물</th><th>구조·용도</th><td>${CT편집칸 ? `${ct칸('property.bldStruct', P.bldStruct, 60, 'text', { ph:'구조' })} · ${ct칸('property.bldUse', P.bldUse, 50, 'text', { ph:'용도' })}` : ct값([P.bldStruct,P.bldUse].filter(Boolean).join(' · '), 90)}</td><th>면적</th><td colspan="2">${ct칸('property.bldArea', P.bldArea, 70, 'area')}</td></tr>
@@ -17848,12 +17852,13 @@ function ctFormHTML(doc){
     <div class="card pad ct-sec"><h2>${esc(표시명)}${ct구획(doc, ['property'])}</h2>
       <div data-req="property.road" class="ct-roadbox${CT.req && !P.road ? ' miss' : ''}" tabindex="-1"><span class="lab">소재지 <span class="req">*</span></span>
         ${잠김 ? `<p style="margin:4px 0 0">${esc(P.road||'')}</p>` : P.road ? `
-        <div class="ct-addr"><b>${esc(P.road)}</b><span>${esc(P.jibun||'')}${P.admCd?` · 법정동코드 ${esc(P.admCd)}`:' · <span style="color:var(--danger)">법정동코드 없음 - ‘다시 찾기’로 주소를 골라 주세요</span>'}</span>
-          <button class="tapx" data-act="ct-addr-clear" style="font-size:13.5px;color:var(--n500)">다시 찾기</button></div>`
+        <div class="ct-addr"><b>${esc(P.jibun || P.road)}</b><span>${P.jibun && P.road ? `도로명 ${esc(P.road)}` : ''}${P.admCd?` · 법정동코드 ${esc(P.admCd)}`:' · <span style="color:var(--danger)">법정동코드 없음 - ‘다시 찾기’로 주소를 골라 주세요</span>'}</span>
+          <button class="tapx" data-act="ct-addr-clear" style="font-size:13.5px;color:var(--n500)">다시 찾기</button></div>
+        <p class="sub" style="margin:4px 0 0;font-size:12.5px">계약서 소재지는 지번으로 적힙니다(당사자 주소는 도로명).</p>`
         : addrBox('ct-addr', '도로명·지번·건물명으로 찾기 (예: 미사강변대로 220)')
           /* 검색이 꺼져 있거나 못 찾았을 때만 직접 적는다 - 그 주소에는 법정동코드가 없다고 표시된다 */
           + (ADDR.for === 'ct-addr' && ((ADDR.rows && !ADDR.rows.length) || ADDR.off)
-             ? `<div style="margin-top:10px">${ctIn('property.road','소재지 직접 적기',{wide:true, ph:'찾지 못했을 때만 - 예: 경기도 하남시 …'})}</div>` : '')}</div>
+             ? `<div style="margin-top:10px">${ctIn('property.road','소재지 직접 적기',{wide:true, ph:'찾지 못했을 때만 - 예: 경기도 하남시 망월동 1095'})}<p class="sub" style="margin:4px 0 0;font-size:12.5px">직접 적은 주소는 띄어쓰기 · 오타가 섞이기 쉬워 계약현황 찾기와 신고 도우미가 정확하지 않을 수 있습니다. 되도록 주소 찾기나 등기부 · 건축물대장 올리기로 넣어 주세요.</p></div>` : '')}</div>
       ${맞춤 ? `<div class="ct-grid">${ctFieldInputs(F.fields[0].rows)}</div></div>
     ${F.fields.slice(1).map(g => `<div class="card pad ct-sec"><h2>${esc(g.h)}</h2><div class="ct-grid">${ctFieldInputs(g.rows)}</div></div>`).join('')}` : `
       <div class="ct-grid">
@@ -19230,7 +19235,7 @@ function exPart(doc, p){
   if(p.t === 'area') return v ? esc(String(v)).replace(/\n/g, '<br>') : `<span class="ex-area"></span>`;
   if(p.t === 'note') return `<span class="ex-note">${esc(p.s)}</span>`;
   if(p.t === 'sign') return `<span class="ex-sign">${esc(p.s)} ${빈칸(90)} (서명 또는 날인)</span>`;
-  if(p.t === 'addr') return doc.property.road ? `${esc(doc.property.road)}${doc.property.jibun ? ` <span class="sm">(지번) ${esc(doc.property.jibun)}</span>` : ''}` : 빈칸(300);
+  if(p.t === 'addr') return doc.property.jibun ? `${esc(doc.property.jibun)}${doc.property.road ? ` <span class="sm">(도로명) ${esc(doc.property.road)}</span>` : ''}` : doc.property.road ? esc(doc.property.road) : 빈칸(300);
   if(p.t === 'sum'){ const n = (+ctGet(doc,'ex.fee')||0) + (+ctGet(doc,'ex.cost')||0); return n ? `${n.toLocaleString()} 원` : `${빈칸(110)} 원`; }
   return '';
 }

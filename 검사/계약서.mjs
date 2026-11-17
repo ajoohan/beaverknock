@@ -1357,5 +1357,8 @@ ok(js.includes("what:'listing-bld'") && js.includes('S.form.lbun = a.bun') && js
   ok(js.includes('data-act="ct-qedit"') && js.includes("if(m.sealed || 전.balanceDate) 넣('balanceDate'") && js.includes("넣('signDate', 날(f.sd))"), '표에서 고치기 - 날인본은 날짜만 일정으로, 계약체결일은 언제나 일정');
   ok(js.includes("r.src === 'manual' ? '<small class=\"ct-tag\">직접 입력</small>'"), '직접 입력한 줄은 표에 표시'); }
 
+/* ── 계약서 전체화면 보기 (2026-11-17 대표님) ── */
+ok(js.includes("case 'ct-full': CT.full = !CT.full;") && js.includes("CT.full ? ' ctx-full' : ''") && js.includes("e.key === 'Escape' && CT.full") && js.includes("알림창(false); CT.full = false;") && css.includes('html:has(.ctx-view.ctx-full){overflow:hidden}'), '계약서 서류 전체화면 - 같은 서류로 바로 고치기 · Esc · 화면 옮기면 닫힘');
+
 console.log(`${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

@@ -1370,5 +1370,13 @@ ok(js.includes('const ct소재지 = P => P && P.jibun ?') && js.split('${ct소�
   ok(서버.includes("case 'contract-broker':") && 서버.includes("등록번호와 대표자명이 명부와 맞지 않습니다"), '명부 찾기 - 대표자명을 적었으면 맞을 때만');
   ok(js.includes("case 'ct-cobrk-add'") && js.includes("what:'contract-broker'") && js.includes("(doc.coBrokers || []).map((c, i) =>") && js.includes('공동중개 사무소 더하기'), '계약서 공동중개 사무소 - 더하기 · 명부에서 채우기 · 서명란 인쇄'); }
 
+/* ── 법인등록번호 (2026-11-17 대표님) ── */
+{ const 문서 = (p) => ({ schema: C.CT_SCHEMA, form: 'sale', parties: p });
+  ok(C.docCheck('sale', 문서({ seller: { type: 'corp', name: '주식회사 가', corpNo: '110111-1234567' } })) === null, '법인 당사자의 법인등록번호는 저장된다');
+  ok(/주민등록번호/.test(C.docCheck('sale', 문서({ seller: { name: '홍길동', corpNo: '900101-1234567' } })) || ''), '개인 당사자에 같은 칸이 있으면 주민번호로 막는다');
+  ok(/주민등록번호/.test(C.docCheck('sale', 문서({ seller: { type: 'corp', corpNo: '110111-1234567', addr: '900101-1234567' } })) || ''), '법인이라도 다른 칸의 주민번호는 막는다');
+  ok(/13자리/.test(C.docCheck('sale', 문서({ seller: { type: 'corp', corpNo: '1101-11' } })) || ''), '법인등록번호는 13자리만');
+  ok(js.includes("ctIn(`parties.${k}.corpNo`, '법인등록번호'") && js.includes("<th>법인등록번호</th><td>${ct칸(b + '.corpNo'") && js.includes('delete x.bizNo; delete x.corpNo;'), '법인등록번호 칸 - 입력 · 인쇄 · 개인으로 바꾸면 지움'); }
+
 console.log(`${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

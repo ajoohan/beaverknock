@@ -95,8 +95,21 @@ export function docCheck(form, doc) {
   if (doc.schema !== CT_SCHEMA) return '계약서 형식이 맞지 않습니다 - 화면을 새로고침해 주세요';
   if (doc.form !== form) return '양식과 내용이 맞지 않습니다';
   if (Buffer.byteLength(JSON.stringify(doc), 'utf8') > CT_MAX) return '계약서가 너무 깁니다 - 특약을 줄여 주세요';
-  if (주민번호있나(doc)) return '주민등록번호는 적지 않습니다 - 인쇄한 뒤 손으로 적어 주세요';
+  /* 법인등록번호 (2026-11-17 대표님 '법인 등록번호는 칸을 두는 것으로') - 주민번호와 모양이 같아 법인 당사자의 그 칸만 빼고 본다.
+     13자리 숫자만 받는다. 개인 당사자에 이 칸이 있으면 빼지 않으므로 주민번호 검사에 그대로 걸린다 */
+  const 법인칸 = 법인번호들(doc);
+  if (법인칸.some(v => v && String(v).replace(/[^0-9]/g, '').length !== 13)) return '법인등록번호는 숫자 13자리로 적어 주세요';
+  if (주민번호있나(법인칸.length ? 법인번호빼기(doc) : doc)) return '주민등록번호는 적지 않습니다 - 인쇄한 뒤 손으로 적어 주세요';
   return null;
+}
+
+/* 법인 당사자(type corp)의 법인등록번호 칸 */
+const 법인당사자 = doc => Object.entries((doc && doc.parties) || {}).filter(([, x]) => x && typeof x === 'object' && x.type === 'corp' && 'corpNo' in x);
+export const 법인번호들 = doc => 법인당사자(doc).map(([, x]) => x.corpNo);
+function 법인번호빼기(doc) {
+  const parties = { ...doc.parties };
+  for (const [k, x] of 법인당사자(doc)) { const { corpNo, ...나머지 } = x; void corpNo; parties[k] = 나머지; }
+  return { ...doc, parties };
 }
 
 /* 주소로 건축물대장 (2026-11-06) - api/_bld.js */

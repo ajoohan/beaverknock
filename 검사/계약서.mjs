@@ -1406,7 +1406,11 @@ ok(js.includes('class="lg-sw" role="tablist"') && js.includes("if(MG.f === 'done
 
 /* ── 계약서 입력 방식 세 가지 (2026-11-17 대표님) ── */
 ok(js.includes("const CT_배치 = [['info', '정보 입력'") && js.includes("case 'ct-lay': ct배치바꿈(v); return true;") && js.includes("배치 !== 'both' ? ' lay-' + 배치 : ''") && js.includes("localStorage.setItem('bk.ctLay', CT.lay)")
-  && css.includes('.ctx-body.lay-info .ctx-view{display:none}') && css.includes('.ctx-body.lay-form .ctx-side .ctx-scroll{display:none}') && js.includes('data-act="ct-lay" data-v="form">서식에서 확인</button>'), '계약서 입력 방식 - 정보 입력 · 서식 입력 · 정보 + 서식을 고르고 오간다');
+  && css.includes('.ctx-body.lay-info .ctx-view{display:none}') && css.includes('.ctx-body.lay-form .ctx-side .ctx-scroll{display:none}') && js.includes('>서식에서 확인</button>'), '계약서 입력 방식 - 정보 입력 · 서식 입력 · 정보 + 서식을 고르고 오간다');
+
+/* ── 코드리뷰 · 화면 점검 (2026-11-17, 26.11.17.17) ── */
+ok(js.includes("CT.mode === 'scan' || F.explain) ? 'both' : 고른배치") && js.includes("Math.min(크게 ? 1.7 : 1,") && js.includes("if(CT.lay === 'form' && CT.mode !== 'edit'"), '입력 방식 - 확인·설명서는 서식 입력으로 가지 않고, 서식 입력 · 전체화면은 서류를 키운다');
+ok(js.includes('doc.deal.down = 0;') && js.includes("if(같은줄){ CS.rowBusy = '';") && js.includes('if(CT.id === id && CT.dirty) return toast(') && js.split("&& !n && CT.doc.deal) delete CT.doc.deal.mids;").length === 3, '체결문자 줄 중복 · 추정 계약금 없음 · 저장 전 고침 지키기 · 숨은 중도금 지우기');
 
 console.log(`${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

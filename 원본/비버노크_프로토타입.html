@@ -3245,6 +3245,8 @@ body.mo .jr-trust{grid-template-columns:1fr;gap:8px}
 .lf-facs{display:flex;flex-direction:column;gap:10px} .lf-facs small{display:block;margin-bottom:4px;font-size:12.5px;font-weight:700;color:var(--n500)}
 .ct-st-sel{min-width:96px;padding:5px 8px;font-size:13px;height:auto} .ct-st-sel.ok{color:var(--ok)} .ct-st-sel.warn{color:var(--warn)}
 .ct-tag{display:inline-block;margin:4px 4px 0 0;padding:1px 6px;border-radius:999px;background:var(--n100);font-size:12px;color:var(--n600,#555)} .ct-tag.ok{background:var(--okbg,#e7f6ee);color:var(--ok)} .ct-tag.warn{background:var(--warnbg,#fff3e0);color:var(--warn)}
+.ct-qedit{display:block;padding:0;margin-top:3px;font-size:12.5px;color:var(--n500);text-decoration:underline;text-underline-offset:2px}
+.ct-qbox{max-width:560px}
 .ct-pname{display:block;padding:0;font-weight:700;color:var(--ind);text-decoration:underline;text-underline-offset:2px}
 .ct-qall{align-self:center}
 .ls-bld{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border:1px solid var(--ind100,#e0e3ff);border-radius:12px;background:var(--ind50)}
@@ -10808,6 +10810,7 @@ function 확인창(제목, 설명 = '', opt = {}){
 const ASK_ICO = { warn:'M12 4 L21.5 20 H2.5 Z M12 10 v4.5 M12 17.5 v.01', ask:'M12 21 a9 9 0 1 0 0 -18 a9 9 0 0 0 0 18 M9.6 9.4 a2.5 2.5 0 1 1 3.4 2.4 c-.7 .3 -1 .9 -1 1.6 v.4 M12 17 v.01' };
 function modalHTML(){
   if(!S.modal) return '';
+  if(S.modal.type==='ct-quick') return ctQuickHTML(S.modal);
   if(S.modal.type==='ask'){ const m = S.modal;
     return `<div class="modal ask" data-act="modal-bg"><div class="box" data-stop role="alertdialog" aria-modal="true" aria-labelledby="mdT"${m.설명 ? ' aria-describedby="mdD"' : ''} tabindex="-1">
       <span class="ask-ico${m.위험 ? ' warn' : ''}" aria-hidden="true"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"
@@ -13706,6 +13709,9 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
+  { v:'26.11.17.5', 날:'2026-11-17', 줄:[ '계약현황 ‘직접 추가’ - 계약서를 다 쓰지 않아도 소재지 · 당사자 · 금액 · 날짜만 적어 계약현황 줄을 만듭니다(작성 중 계약서로 남아 나중에 이어 씀)',
+    '계약현황 표 ‘고치기’ - 날짜 · 금액 · 당사자를 표에서 바로 고칩니다. 날인본은 금액 · 당사자를 그대로 두고 중도금일 · 잔금일 · 계약체결일만 일정으로',
+    '계약서 종류 이름 - ‘상가임대차계약서’를 ‘상가건물임대차계약서’로(법무부 상가건물 임대차표준계약서 양식)' ] },
   { v:'26.11.17.4', 날:'2026-11-17', 줄:[ '계약현황 - 위 카드를 진행중 · 오늘 잔금 · 잔금 지연 · 이번 달 완료로 · 표에서 진행 상태를 바로 바꾸고(되돌리기) 신고 전/마침 · 전자계약 표시',
     '계약현황 표 - 계약체결일(계약금 일부가 들어온 날, 토지거래허가는 계약일과 같음) · 허가 약정금 칸 · 이름을 누르면 그 손님 대화방',
     '계약현황 찾기 - 연락처로도 찾기 · 세부 종류(양식) 거르기 · ‘보관함도 찾기’',
@@ -14987,7 +14993,7 @@ const CT_CATS = [
   { k:'rights',   ko:'권리양도양수',          hint:'점포 시설·영업 양도', form:'rights' },
   { k:'std',      ko:'표준임대차계약서',      hint:'법무부 주택임대차표준계약서', form:'home-lease' },
   { k:'premium',  ko:'상가권리금계약서',      hint:'국토교통부 표준권리금계약서 항목', form:'premium' },
-  { k:'shop',     ko:'상가임대차계약서',      hint:'법무부 상가건물 임대차표준계약서', form:'shop-lease' },
+  { k:'shop',     ko:'상가건물임대차계약서',  hint:'법무부 상가건물 임대차표준계약서', form:'shop-lease' },
   { k:'union',    ko:'조합원입주권매매계약서', hint:'재개발·재건축 입주권', form:'union' },
   { k:'sublease', ko:'전대차계약서',          hint:'주택 · 상가 전대차', subs:['주택','상가'], form:'sublease', name: s => `부동산전대차(${s})` },
 ];
@@ -17250,6 +17256,7 @@ if(typeof document !== 'undefined') document.addEventListener('change', e => { c
   if(k === 'ctq-st2') CT.qst = el.value; else if(k === 'ctq-dt') CT.qdt = el.value; else if(k === 'ctq-kd') CT.qkd = el.value; else if(k === 'ctq-ord') CT.qo = el.value;
   else if(k === 'ctq-form') CT.qf = el.value;
   else if(k === 'ct-row-st'){ ctRowState(el.dataset.v, el.value); return; }
+  else if(k === 'ctq-formsel'){ if(S.modal && S.modal.type === 'ct-quick'){ S.modal.form = CT_FORMS[el.value] ? el.value : 'home-lease'; render(); } return; }
   else if(k === 'ctq-who') CT.qw = el.value; else if(k === 'ctq-kind') CT.qk = el.value; else if(k === 'ctq-base') CT.qb = el.value; else if(k === 'ctq-per') CT.qp = el.value; else return;
   render(); });
 /* 보관함 · 휴지통 (2026-11-10 대표님 결정 1번 · 파트너 기획 '내리기 / 휴지통 30일 / 영구 삭제는 대표만')
@@ -17277,6 +17284,76 @@ async function ctRowState(id, s){
   행.track = j.track; if(CT.id === id){ CT.track = j.track; if(CT.row) CT.row = { ...CT.row, track: j.track }; }
   render();
   toast(`${CT_진행[s] || '상태 없음'}(으)로 바꿨습니다`, { undo: () => ctRowState(id, 전) });
+}
+/* ── 계약현황 직접 추가 · 빠른 고치기 (2026-11-17 파트너 D14 B ①) ──
+   계약서를 다 쓰지 않아도 계약현황 줄을 만든다(작성 중 계약서 + doc.src='manual' - 나중에 계약서로 이어 쓴다).
+   있는 줄도 표에서 바로 고친다. 작성 중이면 계약서 내용을 고치고, 날인본은 금액 · 당사자를 바꾸지 않고
+   날짜만 일정(track - 계약서 화면 '일정 · 체크'와 같은 칸)에 적는다. 계약체결일은 언제나 일정에 */
+const ct빠른날 = v => /^\d{4}-\d{2}-\d{2}$/.test(v || '') ? v : '';
+const ct빠른쓰기 = () => !(직원() && !권한('ct_edit'));
+function ctQuickOpen(id){
+  if(!ct빠른쓰기()) return toast('계약서 고치기 권한이 없습니다 - 대표님께 요청하세요');
+  if(!id){ S.modal = { type:'ct-quick', form:'home-lease', f:{} }; render(); return; }
+  const r = (CT.list || []).find(x => x.id === id); if(!r) return;
+  const F = CT_FORMS[r.form] || {}, t = r.track || {}, p = r.parties || {}, a = p[(F.a || [])[0]] || {}, b = p[(F.b || [])[0]] || {};
+  S.modal = { type:'ct-quick', id, form: r.form, sealed: r.status === 'sealed', f:{ road: r.title || '', an: a.name || '', ap: a.phone || '', bn: b.name || '', bp: b.phone || '',
+    total: +(r.price || r.deposit) || '', down: +r.down || '', cd: r.cd || '', mid: +r.mid || '', md: t.midDate || r.md || '', bd: t.balanceDate || r.bd || '', sd: t.signDate || '' } };
+  render();
+}
+function ctQuickHTML(m){
+  const F = CT_FORMS[m.form] || CT_FORMS['home-lease'], f = m.f, 잠 = !!m.sealed;
+  const 칸 = (k, 이름, o = {}) => { const 막 = 잠 && !o.open, 값 = o.money ? comma(f[k] || '') : (f[k] || '');
+    return `<label class="ct-f ${o.w || 'w6'}"><span class="lab">${이름}</span>${o.money ? '<div class="unit">' : ''}<input class="inp${o.money ? ' num' : ''}" data-in="ctq:${k}"${o.date ? ' type="date"' : ''}${o.money ? ' inputmode="numeric"' : ''}${o.tel ? ' inputmode="tel" maxlength="13"' : ''} value="${esc(값)}"${막 ? ' disabled' : ''} autocomplete="off">${o.money ? '<span>원</span></div>' : ''}</label>`; };
+  const 양식 = m.id ? `<p class="sub" style="margin:0 0 10px">${esc(F.ko || '')}${잠 ? ' · 날인본' : ' · 작성 중'}</p>`
+    : `<label class="ct-f w12"><span class="lab">계약서 종류</span><select class="inp" data-act-ch="ctq-formsel">${Object.entries(CT_FORMS).filter(([, x]) => !x.explain).map(([k, x]) => `<option value="${k}"${m.form === k ? ' selected' : ''}>${esc(x.ko)}</option>`).join('')}</select></label>`;
+  return `<div class="modal" data-act="modal-bg"><div class="box ct-qbox" data-stop role="dialog" aria-modal="true" aria-labelledby="mdT" tabindex="-1">
+    <h2 id="mdT" style="margin:0 0 6px;font-size:16px;font-weight:700;letter-spacing:-.03em">${m.id ? '계약현황 고치기' : '계약현황에 직접 추가'}</h2>
+    <p style="margin:0 0 12px;font-size:14px;line-height:1.7;color:var(--n500)">${잠 ? '날인본은 금액 · 당사자를 바꾸지 않습니다(바꾸려면 계약서에서 수정본을 만드세요). 중도금일 · 잔금일 · 계약체결일은 일정으로 고칩니다.'
+      : m.id ? '고친 내용은 계약서(작성 중)에도 그대로 들어갑니다.' : '계약서를 다 쓰지 않아도 계약현황에 줄을 만듭니다. 작성 중 계약서로 남아 나중에 이어 쓸 수 있습니다.'}</p>
+    <div class="ct-grid">${양식}
+      ${칸('road', '소재지', { w:'w12' })}
+      ${칸('an', F.a[1] + ' 이름')}${칸('ap', F.a[1] + ' 연락처', { tel:1 })}
+      ${칸('bn', F.b[1] + ' 이름')}${칸('bp', F.b[1] + ' 연락처', { tel:1 })}
+      ${칸('total', F.lease ? '보증금' : '대금', { money:1 })}${칸('down', '계약금', { money:1 })}
+      ${칸('cd', '계약일', { date:1 })}${칸('sd', '계약체결일 (계약금 일부 들어온 날)', { date:1, open:1 })}
+      ${칸('mid', '중도금', { money:1 })}${칸('md', '중도금일', { date:1, open:1 })}
+      ${칸('bd', '잔금일', { date:1, open:1, w:'w12' })}</div>
+    <p class="sub" style="margin:8px 0 0;font-size:12.5px">월세 · 특약 · 주소 세부는 계약서 화면에서 적습니다. 잔금은 ${F.lease ? '보증금' : '대금'}에서 계약금 · 중도금을 빼서 셉니다.</p>
+    <div class="eqb" style="display:flex;gap:8px;margin-top:12px">
+      <button class="btn sec" data-act="modal-close">그만두기</button>
+      <button class="btn pri" data-act="ctq-save" ${m.busy ? 'disabled' : ''}>${m.busy ? '저장하는 중…' : m.id ? '고치기' : '추가하기'}</button></div></div></div>`;
+}
+async function ctQuickSave(){
+  const m = S.modal; if(!m || m.type !== 'ct-quick' || m.busy) return;
+  const f = m.f, 날 = ct빠른날, 글 = (v, n) => String(v || '').trim().slice(0, n);
+  if(!m.id && !글(f.road, 200) && !글(f.an, 40) && !글(f.bn, 40)) return toast('소재지나 당사자 이름 가운데 하나는 적어 주세요');
+  m.busy = true; render();
+  try{
+    let id = m.id;
+    if(!m.sealed){
+      let doc;
+      if(id){ const { ok, j } = await ctPost({ what:'contract', id }); if(!ok || !j.row || !j.row.doc) throw new Error(j.error || '계약서를 불러오지 못했습니다'); doc = j.row.doc; }
+      else { doc = ctNewDoc(m.form, null); doc.src = 'manual'; }
+      const F = CT_FORMS[doc.form] || {}, 사람 = (k, n, p) => ({ ...((doc.parties || {})[k] || { name:'', phone:'', addr:'' }), name: 글(n, 40), phone: 글(p, 20) });
+      doc.property = { ...(doc.property || {}), road: 글(f.road, 200) };
+      doc.parties = { ...(doc.parties || {}), [F.a[0]]: 사람(F.a[0], f.an, f.ap), [F.b[0]]: 사람(F.b[0], f.bn, f.bp) };
+      doc.deal = { ...(doc.deal || {}), [F.lease ? 'deposit' : 'price']: +f.total || 0, down: +f.down || 0, mid: +f.mid || 0, midDate: 날(f.md), balanceDate: 날(f.bd) };
+      doc.contractDate = 날(f.cd);
+      const { ok, j } = await ctPost({ what:'contract-save', id: id || undefined, form: doc.form, doc, title: 글(f.road, 80) || undefined });
+      if(!ok) throw new Error(j.error || '저장하지 못했습니다');
+      id = id || j.id;
+    }
+    /* 일정 - 날인본은 중도금일 · 잔금일도 여기에. 작성 중인데 일정에 바뀐 날이 이미 있으면 같이 맞춘다(목록은 일정 쪽을 먼저 본다) */
+    const 행 = (CT.list || []).find(x => x.id === id), 전 = (행 && 행.track) || {}, t = { ...전 };
+    const 넣 = (k, v) => { if(v) t[k] = v; else delete t[k]; };
+    if(m.sealed || 전.midDate) 넣('midDate', 날(f.md));
+    if(m.sealed || 전.balanceDate) 넣('balanceDate', 날(f.bd));
+    넣('signDate', 날(f.sd));
+    if(id && JSON.stringify(t) !== JSON.stringify(전)){ const { ok, j } = await ctPost({ what:'contract-track', id, track: t }); if(!ok) toast(j.error || '일정(날짜)은 저장하지 못했습니다'); }
+    S.modal = null;
+    toast(m.id ? '고쳤습니다' : '계약현황에 추가했습니다 - 작성 중 계약서로 남아 언제든 이어 쓸 수 있습니다');
+    ctLoadList(true); render();
+  }catch(e){ m.busy = false; render(); toast(e.message || '저장하지 못했습니다'); }
 }
 /* 목록의 잔금일 - 계약 뒤 바뀐 잔금일(일정·체크)이 있으면 그것 */
 const ct목록잔금 = r => (r.track && r.track.balanceDate) || r.bd || '';
@@ -17315,7 +17392,7 @@ function ct현황표(rows){
     return `<td><small>${esc(ct짧은이름(ko || ''))}</small>${방 ? `<button type="button" class="tapx ct-pname" data-act="ct-room" data-v="${esc(r.id)}|${esc(k)}" aria-label="${esc(x.name)} 대화방 열기">${esc(x.name)}</button>` : `<b>${esc(x.name || '-')}</b>`}${x.phone ? `<small class="num">${esc(x.phone)}</small>` : ''}</td>`; };
   /* 상태는 표에서 바로 바꾼다(서버 contract-state) · 작은 표시: 신고 전/마침 · 전자계약 */
   const 상태칸 = r => { const t = r.track || {}, 못 = 직원() && !권한('ct_edit');
-    const 표 = [r.status === 'sealed' && ct신고(r) ? (r.reported_at ? '<small class="ct-tag ok">신고 마침</small>' : '<small class="ct-tag warn">신고 전</small>') : '', t.ec ? '<small class="ct-tag">전자계약</small>' : '', r.status !== 'sealed' ? '<small class="ct-tag">작성 중</small>' : ''].join('');
+    const 표 = [r.status === 'sealed' && ct신고(r) ? (r.reported_at ? '<small class="ct-tag ok">신고 마침</small>' : '<small class="ct-tag warn">신고 전</small>') : '', t.ec ? '<small class="ct-tag">전자계약</small>' : '', r.src === 'manual' ? '<small class="ct-tag">직접 입력</small>' : r.status !== 'sealed' ? '<small class="ct-tag">작성 중</small>' : ''].join('');
     return `<td><select class="inp ct-st-sel${t.state === 'done' ? ' ok' : t.state === 'hold' || t.state === 'cancel' ? ' warn' : ''}" data-act="ct-stop" data-act-ch="ct-row-st" data-v="${esc(r.id)}" aria-label="진행 상태" ${못 ? 'disabled' : ''}>
       <option value=""${t.state ? '' : ' selected'}>상태 없음</option>${Object.entries(CT_진행).map(([k, n]) => `<option value="${k}"${t.state === k ? ' selected' : ''}>${n}</option>`).join('')}</select>${표}</td>`; };
   return `<div class="card ct-tbl-wrap"><table class="ct-tbl"><thead><tr><th>상태</th><th>종류 · 거래 · 형태</th><th>목적물</th><th>매도인 · 임대인</th><th>매수인 · 임차인</th>
@@ -17326,12 +17403,12 @@ function ct현황표(rows){
       return `<tr data-act="ct-open" data-v="${esc(r.id)}" tabindex="0">
         ${상태칸(r)}
         <td><b>${esc(ctTitle(r).replace(/계약서$/, ''))}</b><small>${CT_거래유형[ct거래(r)]} · ${ct형태(r) === 'renew' ? '갱신' : '신규'}</small></td>
-        <td class="obj">${esc(r.title || '소재지 미입력')}</td>${사람(r, 'a')}${사람(r, 'b')}
+        <td class="obj">${esc(r.title || '소재지 미입력')}${ct빠른쓰기() ? `<button type="button" class="tapx ct-qedit" data-act="ct-qedit" data-v="${esc(r.id)}" aria-label="${esc(r.title || '이 계약')} 고치기">고치기</button>` : ''}</td>${사람(r, 'a')}${사람(r, 'b')}
         ${t.permit ? 칸날(t.permitAgreed || t.permitDue, 원(t.agreedAmt)) + 칸날(t.permitApplied, '') + 칸날(t.permitOk, '') : '<td class="mute">-</td><td class="mute">-</td><td class="mute">-</td>'}
         ${t.permit ? (r.cd ? `<td><span>${날(r.cd)}</span><small>계약일과 같음</small></td>` : '<td class="mute">-</td>') : t.signDate ? `<td><span>${날(t.signDate)}</span><small>계약금 일부</small></td>` : '<td class="mute">미정</td>'}
         ${칸날(r.cd, 원(r.down))}${+r.mid ? 칸날(t.midDate || r.md, 원(중)) : '<td class="mute">-</td>'}${칸날(t.balanceDate || r.bd, 원(잔))}</tr>`; }).join('')}
     </tbody></table></div>
-    <p class="sub ct-tbl-note">상태는 표에서 바로 바꿉니다 · 밑줄 이름은 누르면 그 손님 대화방 · 이름 아래는 연락처 · 30일 안에 다가오는 날짜는 보라색 · 계약체결일은 계약서의 ‘일정 · 체크’에서 적습니다.</p>`;
+    <p class="sub ct-tbl-note">상태는 표에서 바로 바꿉니다 · ‘고치기’로 날짜 · 금액 · 당사자를 바로 고칩니다(날인본은 날짜만) · 밑줄 이름은 누르면 그 손님 대화방 · 이름 아래는 연락처 · 30일 안에 다가오는 날짜는 보라색 · 계약체결일은 계약서의 ‘일정 · 체크’에서 적습니다.</p>`;
 }
 /* 줄 단추 - 복사 · 내리기 · 휴지통 · 되돌리기 · 영구 삭제(휴지통의 작성 중 계약서, 대표만). PC 는 마우스를 올리면, 휴대폰은 줄 아래에 */
 function ct행단추(r){
@@ -17342,7 +17419,7 @@ function ct행단추(r){
         : r.track && r.track.room ? `<span class="ct-rnote">손님 대화방이 있어 지우지 않습니다</span>`   /* 2026-11-13 - 대화 · 파일이 주인 없이 남지 않게(서버도 막는다) */
         : 직원() ? `<span class="ct-rnote">${ct휴지남은날(r)}일 뒤 지워짐</span>` : 단('ct-purge', id, '영구 삭제', '영구 삭제', true)]
     : k === 'arch' ? [단('ct-bin', `${id}|`, '되돌리기', '목록으로 되돌리기'), 단('ct-bin', `${id}|trash`, '휴지통', '휴지통으로')]
-    : [!isMo() && !(CT_FORMS[r.form] || {}).explain ? 단('ct-copy', id, '복사', '복사해서 새로') : '', 단('ct-bin', `${id}|arch`, '내리기', '보관함으로 내리기'), 단('ct-bin', `${id}|trash`, '휴지통', '휴지통으로')];
+    : [!isMo() && !(CT_FORMS[r.form] || {}).explain ? 단('ct-copy', id, '복사', '복사해서 새로') : '', CT.현황 && ct빠른쓰기() && !(CT_FORMS[r.form] || {}).explain ? 단('ct-qedit', id, '고치기', '빠르게 고치기') : '', 단('ct-bin', `${id}|arch`, '내리기', '보관함으로 내리기'), 단('ct-bin', `${id}|trash`, '휴지통', '휴지통으로')];
   return `<span class="ct-racts${isMo() ? ' mo' : ''}">${칸들.join('')}</span>`;
 }
 /* 계약서 표 - PC 는 칸(소재지·종류·당사자·고친 날·상태), 휴대폰은 두 줄. 갱신고르기면 누르면 그 계약서로 갱신계약을 연다 */
@@ -17398,7 +17475,7 @@ function ctListPageHTML(모두){
     <div class="ct-lay one"><div class="ct-main">${칸줄}${칸말}${빈자리(칸 === 'trash' ? '휴지통이 비어 있습니다' : '보관함이 비어 있습니다', 칸 === 'trash' ? '목록에서 ‘휴지통’을 누르면 여기로 옵니다.' : '끝난 계약은 목록에서 ‘내리기’를 누르면 여기로 옵니다.', '', 80)}</div></div>`;
   return `
     ${ct머리('계약서 목록', '양식을 골라 고치고, 기본 정보를 채워 바로 인쇄하세요. 주민등록번호·계좌·서명 칸은 비워서 인쇄되니 만나서 손으로 적으시면 됩니다.',
-      `<button class="btn pri sm" data-go="#/partner/contracts/new">계약서 작성</button>`)}
+      현황 && ct빠른쓰기() ? `<span class="eqb" style="display:flex;gap:8px"><button class="btn sec sm" data-act="ct-quick">직접 추가</button><button class="btn pri sm" data-go="#/partner/contracts/new">계약서 작성</button></span>` : `<button class="btn pri sm" data-go="#/partner/contracts/new">계약서 작성</button>`)}
     <div class="ct-lay${일정 ? '' : ' one'}">
       <div class="ct-main">${칸줄}${자동칸}${칸말}${칸 ? '' : ct요약HTML(전체)}${전체.length ? ct찾기줄() : ''}
         ${전체.length && !isMo() ? `<div class="ct-chips ct-viewsw" role="group" aria-label="보는 방식">${[['', '목록'], ['table', '계약현황 표']].map(([k, t]) => `<button type="button" class="chip${(CT.view || '') === k ? ' on' : ''}" aria-pressed="${(CT.view || '') === k}" data-act="ct-view" data-v="${k}">${t}</button>`).join('')}</div>` : ''}
@@ -20902,6 +20979,7 @@ document.addEventListener('input', e=>{
   if(k === 'acc-addr-v'){ if(S.accAddr) S.accAddr.v = el.value; return; }
   /* 초안 의견 칸 - 적는 대로 담기만(다시 그리지 않는다) */
   if(k === 'rm-text'){ RM.text = el.value; return; }
+  if(k.startsWith('ctq:')){ if(S.modal && S.modal.type === 'ct-quick'){ const key = k.slice(4); S.modal.f[key] = ['total', 'down', 'mid'].includes(key) ? (+String(money(el)).replace(/[^0-9]/g, '') || '') : el.value; } return; }
   if(k === 'mtr-d'){ if(S.modal && S.modal.type === 'mt-report') S.modal.d = el.value.slice(0, 300); return; }
   if(k === 'ph-q'){ PH.q = el.value; redrawKeepingCaret('ph-q'); return; }
   if(k === 'sf-sms-phone'){ if(S.modal && S.modal.type === 'sf-sms'){ S.modal.phone = el.value; const a = document.querySelector('[data-sfsms]'), n = el.value.replace(/[^\d]/g, '');
@@ -22425,7 +22503,10 @@ function handle(a,v,el){
     case 'cal-m': { const 지금 = /^\d{4}-\d{2}$/.test(CT.calM || '') ? CT.calM : ct오늘().slice(0, 7); const [y, m] = 지금.split('-').map(Number), t = new Date(Date.UTC(y, m - 1 + (+v || 0), 1));
       CT.calM = t.toISOString().slice(0, 7); CT.calD = ''; render(); return true; }
     case 'cal-d': CT.calD = /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : ''; render(); return true;
-    case 'ct-stop': return true;   /* 표 안 고르기 상자 - 줄(계약서 열기)로 번지지 않게 */
+    case 'ct-stop': return true;
+    case 'ct-quick': ctQuickOpen(); return true;
+    case 'ct-qedit': ctQuickOpen(v); return true;
+    case 'ctq-save': ctQuickSave(); return true;   /* 표 안 고르기 상자 - 줄(계약서 열기)로 번지지 않게 */
     case 'ct-room': { const [id, 자리] = String(v || '').split('|'); if(id) go(`#/partner/rooms/${id}${자리 ? '/' + 자리 : ''}`); return true; }
     case 'ctq-st2v': CT.qst = CT.qst === v ? '' : v; render(); return true;
     case 'ctq-all': CT.qall = !CT.qall; render(); return true;

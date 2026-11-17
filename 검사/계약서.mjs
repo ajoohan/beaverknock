@@ -763,7 +763,7 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
 
 /* ── 계약서 종류 (2026-10-30 대표님 '계약서 종류 전체 목록') ── */
 {
-  ok(M.CT_CATS.map(c => c.ko).join() === '부동산,분양권,권리양도양수,표준임대차계약서,상가권리금계약서,상가임대차계약서,조합원입주권매매계약서,전대차계약서',
+  ok(M.CT_CATS.map(c => c.ko).join() === '부동산,분양권,권리양도양수,표준임대차계약서,상가권리금계약서,상가건물임대차계약서,조합원입주권매매계약서,전대차계약서',
      '종류 여덟 가지 - 대표님이 준 순서 그대로');
   ok(M.CT_CATS[0].subs.join() === '아파트,주상복합,연립주택,다세대주택,다가구주택,다중주택,도시형생활주택,주택,오피스텔,원룸,상가,상가주택,상가건물,건물,사무실,토지,공장,창고,지식산업센터'
      && M.CT_CATS[0].deals.join() === '매매,전세,월세,연세', '부동산 - 세부 종류 열아홉 + 거래유형 매매·전세·월세·연세');
@@ -1348,6 +1348,14 @@ ok(js.includes("what:'listing-bld'") && js.includes('S.form.lbun = a.bun') && js
   ok(js.includes('data-act-ch="ct-row-st"') && js.includes("case 'ct-stop': return true;") && js.includes('async function ctRowState'), '계약현황 표에서 진행 상태를 바로 바꾼다(줄 열기로 번지지 않게)');
   ok(js.includes("data-act=\"ct-room\"") && js.includes('<th>계약체결일</th>') && js.includes('약정일 · 약정금'), '계약현황 표 - 이름 누르면 대화방 · 계약체결일 · 약정금 칸');
   ok(js.includes("'오늘 잔금'") && js.includes("'잔금 지연'") && js.includes('CT.qall') && js.includes("data-act-ch=\"ctq-form\""), '계약현황 요약 카드 · 보관함도 찾기 · 세부 종류 거르기'); }
+
+/* ── 계약현황 직접 추가 · 빠른 고치기 (2026-11-17 파트너 D14 B ①) ── */
+{ ok(C.docCheck('home-lease', { schema: C.CT_SCHEMA, form: 'home-lease', src: 'manual' }) === null, '직접 추가한 계약서(doc.src)도 그대로 저장된다');
+  const 서버 = fs.readFileSync(new URL('../api/_contract.js', import.meta.url), 'utf8');
+  ok(서버.includes("src:doc->>src"), '목록에 직접 입력 표시(src)를 같이 준다');
+  ok(js.includes("S.modal = { type:'ct-quick'") && js.includes("doc.src = 'manual'") && js.includes("case 'ct-quick': ctQuickOpen();") && js.includes("case 'ctq-save': ctQuickSave();"), '계약현황 직접 추가 - 작성 중 계약서로 만든다');
+  ok(js.includes('data-act="ct-qedit"') && js.includes("if(m.sealed || 전.balanceDate) 넣('balanceDate'") && js.includes("넣('signDate', 날(f.sd))"), '표에서 고치기 - 날인본은 날짜만 일정으로, 계약체결일은 언제나 일정');
+  ok(js.includes("r.src === 'manual' ? '<small class=\"ct-tag\">직접 입력</small>'"), '직접 입력한 줄은 표에 표시'); }
 
 console.log(`${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

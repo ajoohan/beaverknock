@@ -34,7 +34,9 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const LIST_COLS = 'id,created_at,updated_at,form,title,status,sealed_at,sha256,prev_id,proposal_id,reported_at,'
   + 'cat:doc->>cat,sub:doc->>sub,dt:doc->deal->>type,parties:doc->parties,renew:doc->renewOf,ci:doc->>contractId,staff:doc->broker->>staff,'
   /* 계약현황 표 · 실적 (2026-11-10 파트너 기획) - 대금 · 계약금 · 형태(신규/갱신) · 중개보수(확인·설명서) */
-  + 'price:doc->deal->>price,deposit:doc->deal->>deposit,down:doc->deal->>down,kind:doc->>kind,fee:doc->ex->>fee';
+  + 'price:doc->deal->>price,deposit:doc->deal->>deposit,down:doc->deal->>down,kind:doc->>kind,fee:doc->ex->>fee,'
+  /* 계약현황 '직접 추가'로 만든 줄 (2026-11-17 파트너 D14 B) */
+  + 'src:doc->>src';
 /* 신고가 있는 양식 - 매매(거래신고) · 주택임대차(임대차 신고). 상가 임대차·확인·설명서는 신고가 없다 */
 export const CT_REPORT_FORMS = ['sale', 'presale', 'union', 'home-lease', 'lease'];
 /* 매매 쪽 신고 - 분양권·입주권 전매도 거래신고 대상(부동산 거래신고법 제3조, 2026-11-05) */

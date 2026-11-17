@@ -450,7 +450,8 @@ export function 알림설정(x) {
 }
 /* 계약 하나의 일정·체크(track). 날짜 칸은 ISO 날짜만, 나머지는 켜짐/꺼짐만 받는다 - 다른 것은 버린다 */
 /* arch · trash (2026-11-10 대표님 결정 1번) - 보관함으로 내린 날 · 휴지통에 넣은 날. 날인본은 휴지통까지만, 작성 중은 휴지통 30일 뒤 지운다 */
-const TRACK_DATES = ['permitDue', 'permitApplied', 'midDate', 'balanceDate', 'guideAt', 'permitPaid', 'permitAgreed', 'permitOk', 'piAt', 'arch', 'trash'];
+/* signDate (2026-11-17 파트너 D14 '계약체결일') - 일반 매매 · 임대차는 계약금 일부가 들어온 날(토지거래허가는 계약일과 같아 따로 적지 않는다) */
+const TRACK_DATES = ['permitDue', 'permitApplied', 'midDate', 'balanceDate', 'guideAt', 'permitPaid', 'permitAgreed', 'permitOk', 'piAt', 'arch', 'trash', 'signDate'];
 export const 진행상태 = { ready: '준비', doing: '진행중', done: '완료', hold: '보류', cancel: '취소' };
 export const 현장사진최대 = 20;
 export function 현장사진값(x) {
@@ -471,6 +472,8 @@ export function trackCheck(t) {
     if (v) out[k] = v;
   }
   if (t.permit === true) out.permit = true;
+  /* 허가 약정금 (2026-11-17 파트너 D14 '약정일 · 약정금') - 원, 정수 */
+  if (Number.isFinite(+t.agreedAmt) && +t.agreedAmt > 0 && +t.agreedAmt < 1e13) out.agreedAmt = Math.round(+t.agreedAmt);
   if (t.off === true) out.off = true;
   /* 진행 상태(파트너 리뷰 '계약현황') - 준비 · 진행중 · 완료 · 보류 · 취소, 한방 입력 완료(기록용 체크) */
   if (Object.hasOwn(진행상태, t.state)) out.state = t.state;

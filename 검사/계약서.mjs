@@ -1341,5 +1341,13 @@ ok(!('물건따라가기' in C) && js.includes('d.listingId = 물.id') && !js.in
 /* ── 매물 등록 - 주소로 건축물대장 불러오기 (2026-11-17) ── */
 ok(js.includes("what:'listing-bld'") && js.includes('S.form.lbun = a.bun') && js.includes('lbRowHTML()'), '매물 등록 - 고른 주소의 지번으로 건축물대장을 불러온다');
 
+/* ── 계약현황 (2026-11-17 파트너 D14) ── */
+{ const x = C.trackCheck({ signDate: '2026-11-03', agreedAmt: '5000000' });
+  ok(x && x.signDate === '2026-11-03' && x.agreedAmt === 5000000, '일정 - 계약체결일 · 허가 약정금을 받는다');
+  ok(C.trackCheck({ signDate: '11월 3일' }) === null && !('agreedAmt' in C.trackCheck({ agreedAmt: -1 })), '계약체결일은 날짜 모양만, 약정금은 양수만');
+  ok(js.includes('data-act-ch="ct-row-st"') && js.includes("case 'ct-stop': return true;") && js.includes('async function ctRowState'), '계약현황 표에서 진행 상태를 바로 바꾼다(줄 열기로 번지지 않게)');
+  ok(js.includes("data-act=\"ct-room\"") && js.includes('<th>계약체결일</th>') && js.includes('약정일 · 약정금'), '계약현황 표 - 이름 누르면 대화방 · 계약체결일 · 약정금 칸');
+  ok(js.includes("'오늘 잔금'") && js.includes("'잔금 지연'") && js.includes('CT.qall') && js.includes("data-act-ch=\"ctq-form\""), '계약현황 요약 카드 · 보관함도 찾기 · 세부 종류 거르기'); }
+
 console.log(`${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

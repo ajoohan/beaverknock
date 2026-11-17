@@ -3243,6 +3243,10 @@ body.mo .jr-trust{grid-template-columns:1fr;gap:8px}
 .lf-row{display:grid;grid-template-columns:minmax(0,1fr) 180px auto;gap:10px;align-items:center} .lf-row>span{font-size:13.5px;color:var(--n700)}
 @media (max-width:640px){.lf-row{grid-template-columns:1fr auto}.lf-row>span{grid-column:1/-1}}
 .lf-facs{display:flex;flex-direction:column;gap:10px} .lf-facs small{display:block;margin-bottom:4px;font-size:12.5px;font-weight:700;color:var(--n500)}
+.ct-st-sel{min-width:96px;padding:5px 8px;font-size:13px;height:auto} .ct-st-sel.ok{color:var(--ok)} .ct-st-sel.warn{color:var(--warn)}
+.ct-tag{display:inline-block;margin:4px 4px 0 0;padding:1px 6px;border-radius:999px;background:var(--n100);font-size:12px;color:var(--n600,#555)} .ct-tag.ok{background:var(--okbg,#e7f6ee);color:var(--ok)} .ct-tag.warn{background:var(--warnbg,#fff3e0);color:var(--warn)}
+.ct-pname{display:block;padding:0;font-weight:700;color:var(--ind);text-decoration:underline;text-underline-offset:2px}
+.ct-qall{align-self:center}
 .ls-bld{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border:1px solid var(--ind100,#e0e3ff);border-radius:12px;background:var(--ind50)}
 .ls-bld b{display:block;font-size:14px;color:var(--n900)} .ls-bld span{display:block;font-size:12.5px;line-height:1.5;color:var(--n500)} .ls-bld .btn{flex:none}
 @media (max-width:640px){.ls-bld{flex-direction:column;align-items:stretch}}
@@ -3925,6 +3929,9 @@ const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>
 const M2_PY = 3.305785;
 const pyOf  = m2 => +m2 > 0 ? +(+m2 / M2_PY).toFixed(1) : 0;
 const pyTag = m2 => +m2 > 0 ? `${pyOf(m2)}평` : '';
+/* 면적은 ㎡ 가 먼저, 평은 괄호로 (2026-11-17 파트너 '모든 면적 표기는 ㎡, 평은 자동으로 함께'). 상가 손님 조건은 평 범위로 저장돼 있어 ㎡ 로 바꿔 앞에 둔다 */
+const 평제곱 = p => Math.round(+p * 3.305785);
+const 범위면적 = (lo, hi) => +lo > 0 ? `${평제곱(lo)}${+hi > 0 ? `~${평제곱(hi)}` : ''}㎡(${lo}${+hi > 0 ? `~${hi}` : ''}평)` : '';
 /* 금액은 2026-09-21 부터 **원** 단위다(그 전에는 만원이었다 - SQL 0024 가 옮겼다).
    표기는 이 함수 하나가 맡는다. 곳곳에서 `${x}만` 처럼 직접 적으면 단위를
    또 바꿀 때 빠뜨리는 자리가 생긴다 - 실제로 서른아홉 군데였다. */
@@ -4182,7 +4189,7 @@ function matchStages(L, d){
     const fl = m.floors||[];
     const floorOk = !fl.length || fl.includes(L.band) || (fl.includes('2층 이상 가능') && L.band!=='지하');
     keyOk = areaOk && floorOk;
-    keyNote = `${L.py}평 · ${L.band}`;
+    keyNote = `${+L.area ? `${(+L.area).toFixed(1).replace(/\.0$/, '')}㎡(${pyOf(L.area)}평)` : `${평제곱(L.py)}㎡(${L.py}평)`} · ${L.band}`;
   }
   st.push({k:'필수', ok:keyOk, note:keyNote});
   /* 5. 필터 - 제외가 아니라 확인 체크리스트 (데이터모델 확정 규칙)
@@ -4515,7 +4522,7 @@ const SEED_DEMANDS = [
    req:[['지역','덕풍동 전체'],['예산','보증금 3억 이하'],['유형','빌라·연립 가능'],['방 수','2룸 이상'],['입주','시기 미정']],
    det:[['층','반지하 제외'],['대출','전세대출 예정']], check:['전세대출 가능 물건인지','반지하 아님']},
   {seed:true, id:'d4', kind:'shop', deal:'학원·교습소', region:'미사2동 · 미사3동', slotsLeft:4, at:'5일 전', pct:55, urgent:false,
-   lines:['20~30평 · 2층 이상 가능','보증금 5,000만 / 월 250만','같은 건물 유해업소 없어야 함 (자동 필수)'],
+   lines:['66~99㎡(20~30평) · 2층 이상 가능','보증금 5,000만 / 월 250만','같은 건물 유해업소 없어야 함 (자동 필수)'],
    memo:'초등 영어 교습소입니다. 학원 등록 가능 건물인지가 제일 중요합니다.',
    m:{dongs:['미사2동','미사3동'],biz:'학원·교습소',depMax:50000000,rentMax:2500000,pyMin:20,pyMax:30,floors:['2층 이상 가능'],fac:[]},
    req:[['지역','미사2동 · 미사3동'],['업종','학원·교습소'],['면적','20~30평'],['예산','보증금 5,000만 / 월 250만'],['층','2층 이상 가능']],
@@ -5551,7 +5558,7 @@ function areaText(min, max){
              : `전용 ${min}평 이상 (${m2(min)}㎡ 이상)`;
 }
 function draftTitle(d){
-  if(NONHOME(d.kind)) return `${d.dongs[0]||'서울·경기'}${d.dongs.length>1?' 외 '+(d.dongs.length-1):''} · ${d.biz||(WHO[d.kind]||{}).tag||'상가'}${d.areaMin?` · ${d.areaMin}~${d.areaMax||''}평`:''}`;
+  if(NONHOME(d.kind)) return `${d.dongs[0]||'서울·경기'}${d.dongs.length>1?' 외 '+(d.dongs.length-1):''} · ${d.biz||(WHO[d.kind]||{}).tag||'상가'}${d.areaMin?` · ${범위면적(d.areaMin, d.areaMax)}`:''}`;
   const rooms = d.rooms && d.rooms!=='무관' ? ` · ${d.rooms}` : '';
   return `${d.dongs.slice(0,2).join('·')||'서울·경기'}${d.dongs.length>2?' 외':''} · ${d.deal||'전월세'}${rooms}`;
 }
@@ -7336,7 +7343,7 @@ function demandCards(rows){
         ? `보증 ${won(+r.dep||0)} / 월 ${won(+r.rent||0)}`
         : `${r.deal||''} ${won(+r.dep||0)}${+r.rent?` / 월 ${won(+r.rent||0)}`:''}`;
       const key = shop
-        ? [r.biz, r.area_min?`전용 ${r.area_min}~${r.area_max||''}평`:'', r.shop_floor_free].filter(Boolean).join(' · ')
+        ? [r.biz, r.area_min?`전용 ${범위면적(r.area_min, r.area_max)}`:'', r.shop_floor_free].filter(Boolean).join(' · ')
         : [(r.htype||[]).join('·'), r.rooms, r.when_text, (r.musts||[]).join('·')].filter(Boolean).join(' · ');
       return `
       <div style="background:var(--white);padding:14px 16px;${sent?'background:var(--n50);':''}">
@@ -8130,7 +8137,7 @@ V['#/inbox'] = () => {
       <div style="padding:16px 18px;display:flex;flex-direction:column;gap:10px">
         <div><b style="display:block;font-size:15px;font-weight:700;letter-spacing:-.02em">${esc(p.title)} ${demoTag(p,'vertical-align:middle')}</b>
         <span class="num" style="font-size:14.5px;color:var(--n700)">${p.rent? `보증금 ${won(p.dep)} / 월 ${won(p.rent)}` : `전세 ${won(p.dep)}`} · 관리비 ${won(p.fee)}</span>
-        <span style="display:block;font-size:13.5px;color:var(--n500)">${esc(p.dong)} · 전용 ${esc(p.py)}평 · ${esc(p.floor)} · 주차 ${esc(p.parking)}</span></div>
+        <span style="display:block;font-size:13.5px;color:var(--n500)">${esc(p.dong)} · 전용 ${esc(+p.py ? `${평제곱(p.py)}㎡(${p.py}평)` : '')} · ${esc(p.floor)} · 주차 ${esc(p.parking)}</span></div>
         <div style="border-top:1px solid var(--n100);padding-top:10px;display:flex;flex-direction:column;gap:6px">
           ${p.diff.map(t=>`<div style="display:flex;align-items:flex-start;gap:8px"><span class="badge b-warn" style="flex:none;font-size:13px;padding:2px 8px">다름</span><span style="font-size:13.5px;line-height:1.45;color:var(--n700)">${esc(t)}</span></div>`).join('')}
           <div style="display:flex;align-items:flex-start;gap:8px"><span class="badge b-ok" style="flex:none;font-size:13px;padding:2px 8px">일치</span><span style="font-size:13.5px;line-height:1.45;color:var(--n700)">${p.match.map(esc).join(' · ')}</span></div>
@@ -8461,7 +8468,7 @@ V['#/relax'] = () => `
       <h1 class="t" style="font-size:${isMo()?21:31}px">조건에 맞는 자리가<br>아직 없습니다</h1>
       <p style="margin:0;font-size:14.5px;line-height:1.75;color:var(--n700)">미사역 상권에서 <b>최근 3개월 실제 거래</b>를 보면 이렇습니다.</p>
       <div class="card" style="padding:6px 24px">
-        ${[['1층 · 12~18평 · 월 180 이하','1건',false],['1층 · 12~18평 · 월 210까지','9건',true],['2층 이상도 받으면','16건',false]]
+        ${[['1층 · 40~60㎡(12~18평) · 월 180 이하','1건',false],['1층 · 40~60㎡(12~18평) · 월 210까지','9건',true],['2층 이상도 받으면','16건',false]]
           .map(([l,n,hi],i)=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 0;${i<2?'border-bottom:1px solid var(--n100)':''}">
             <span style="font-size:14.5px;${hi?'font-weight:700;color:var(--ind)':'color:var(--n700)'}">${l}</span>
             <span class="num" style="font-size:15px;font-weight:${hi?700:400};${hi?'color:var(--ind)':''}">${n}${hi?' <span class="badge b-ind" style="font-size:13px">여기</span>':''}</span></div>`).join('')}
@@ -11261,7 +11268,7 @@ function opsShare(r){
   if(shop){
     put(r.kind==='storage' ? '품목   ' : r.kind==='office' ? '업무   ' : '업종   ', r.biz);
     L.push(`예산   보증금 ${won(+r.dep||0)} / 월 ${won(+r.rent||0)}${r.key_money?` · 권리금 ${won(+r.key_money)}까지`:''}`);
-    if(r.area_min) put('면적   ', `전용 ${r.area_min}~${r.area_max||''}평`);
+    if(r.area_min) put('면적   ', `전용 ${범위면적(r.area_min, r.area_max)}`);
     put('입주   ', r.open_when);
     put('층     ', r.shop_floor_free);
     if(r.kind==='office'){
@@ -12008,7 +12015,7 @@ function demandPanel(){
               ? `보증 ${won(+r.dep||0)} / 월 ${won(+r.rent||0)}`
               : `${r.deal||''} ${won(+r.dep||0)}${+r.rent?` / 월 ${won(+r.rent)}`:''}`;
             const key = shop
-              ? [r.biz, (r.area_min?`전용 ${r.area_min}~${r.area_max||''}평`:''), r.shop_floor_free, r.facilities_free].filter(Boolean).join(' · ')
+              ? [r.biz, (r.area_min?`전용 ${범위면적(r.area_min, r.area_max)}`:''), r.shop_floor_free, r.facilities_free].filter(Boolean).join(' · ')
               : [(r.htype||[]).join('·'), r.rooms,
                  (r.area_bands||[]).join('·'), (r.floor_bands||[]).join('·'),
                  r.bath_want && `화장실 ${r.bath_want}`, (r.dir_want||[]).join('·'), r.age_band,
@@ -13699,6 +13706,10 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
+  { v:'26.11.17.4', 날:'2026-11-17', 줄:[ '계약현황 - 위 카드를 진행중 · 오늘 잔금 · 잔금 지연 · 이번 달 완료로 · 표에서 진행 상태를 바로 바꾸고(되돌리기) 신고 전/마침 · 전자계약 표시',
+    '계약현황 표 - 계약체결일(계약금 일부가 들어온 날, 토지거래허가는 계약일과 같음) · 허가 약정금 칸 · 이름을 누르면 그 손님 대화방',
+    '계약현황 찾기 - 연락처로도 찾기 · 세부 종류(양식) 거르기 · ‘보관함도 찾기’',
+    '면적 표기 - 모든 면적을 ㎡ 로 먼저 쓰고 평은 괄호로(상가 손님 조건 · 운영 화면 · 예시 문구까지)' ] },
   { v:'26.11.17.3', 날:'2026-11-17', 줄:[ '매물장부 - 건물명 · 법정동만 적어도 장부에 보관됩니다(덜 채워도 저장) · 손님에게 노출하려면 * 항목을 모두 채우고 소유자를 확인해야 합니다',
     '매물 올리기 - 관리비 항목표(공용 · 사용료 · 인터넷 · TV · 기타, 실비 표시 · 합계 자동) · 해당 동 총 층수 · 주차 대수 · 시설 6묶음 · 상세 설명 ‘평’ 경고',
     '노출 기준 - 표시 · 광고 명시사항에 맞춰 총 층수 · 방 · 욕실 수 · 사용승인일 · 주차 대수 · 관리비 부과 방식(정액 월 10만원 이상은 항목표)을 더했습니다',
@@ -16793,10 +16804,10 @@ function ctFilter(rows){
     : [...a].sort((x, y) => (ct목록잔금(x) || '9999').localeCompare(ct목록잔금(y) || '9999'));
   return 줄세움(rows.filter(r => (고름 && CT.pick.cat === 'renew' ? 임대(r) : 고름 && CT.pick.cat === 'copy' ? !(CT_FORMS[r.form] || {}).explain : true)
     && (!CT.qs || (CT.qs === 'unrep' ? r.status === 'sealed' && ct신고(r) && !r.reported_at : r.status === CT.qs))
-    && 종류맞음(r) && 기간맞음(r)
+    && 종류맞음(r) && 기간맞음(r) && (!목록 || !CT.qf || r.form === CT.qf)
     && (!목록 || !CT.qst || ((r.track || {}).state || '') === CT.qst) && (!목록 || !CT.qdt || ct거래(r) === CT.qdt) && (!목록 || !CT.qkd || ct형태(r) === CT.qkd)
     && (!목록 || !CT.qw || (CT.qw === '__none' ? !String(r.staff || '').trim() : String(r.staff || '').trim() === CT.qw))
-    && 말.every(w => [r.title, ctTitle(r), ...ct이름들(r), String(r.updated_at || '').slice(0, 10), String(r.sealed_at || '').slice(0, 10)].join(' ').toLowerCase().includes(w))));
+    && 말.every(w => [r.title, ctTitle(r), ...ct이름들(r), ...Object.values(r.parties || {}).map(x => x && x.phone ? String(x.phone) + ' ' + String(x.phone).replace(/\D/g, '') : ''), String(r.updated_at || '').slice(0, 10), String(r.sealed_at || '').slice(0, 10)].join(' ').toLowerCase().includes(w))));
 }
 
 /* 계약서 하위 메뉴 (2026-10-30 대표님 '계약서 부분은 서브 메뉴까지') - 목록 · 새로 만들기 · 일정·알림 · 내 특약.
@@ -17213,10 +17224,13 @@ const ct머리 = (제목, 설명, 단추 = '') => `<div class="adm-h"><div><h1 c
     ${설명 ? `<p class="sub measure">${설명}</p>` : ''}</div>${단추}</div>`;
 /* 찾기 줄 - 소재지·이름·종류·날짜 · 작성 중/날인본 */
 const ct찾기줄 = () => `<div class="ct-find-bar">
-      <input class="inp" type="search" data-in="ctq" value="${esc(CT.q || '')}" placeholder="소재지 · 이름 · 종류 · 날짜로 찾기" aria-label="계약서 찾기" autocomplete="off">
+      <input class="inp" type="search" data-in="ctq" value="${esc(CT.q || '')}" placeholder="소재지 · 이름 · 연락처 · 종류 · 날짜로 찾기" aria-label="계약서 찾기" autocomplete="off">
       <div class="ct-chips">${[['', '전체'], ['draft', '작성 중'], ['sealed', '날인본'], ['unrep', '신고 전']].map(([k, t]) => `<button type="button" class="chip${(CT.qs || '') === k ? ' on' : ''}" data-act="ctq-st" data-v="${k}" aria-pressed="${(CT.qs || '') === k}">${t}</button>`).join('')}</div>
       ${(location.hash || '').startsWith('#/partner/contracts/new') ? '' : `<div class="ct-find-more">
         <label class="ct-sel"><span>종류</span><select class="inp" data-act-ch="ctq-kind" aria-label="계약서 종류로 거르기">${[['', '전체'], ['sale', '매매'], ['lease', '임대차'], ['etc', '분양권 · 권리 등']].map(([k, t]) => `<option value="${k}"${(CT.qk || '') === k ? ' selected' : ''}>${t}</option>`).join('')}</select></label>
+        ${(() => { const 양식 = [...new Set((CT.list || []).map(r => r.form).filter(Boolean))]; if(양식.length < 2) return '';
+          return `<label class="ct-sel"><span>세부 종류</span><select class="inp" data-act-ch="ctq-form" aria-label="계약서 양식으로 거르기"><option value="">전체</option>${양식.map(f => `<option value="${esc(f)}"${CT.qf === f ? ' selected' : ''}>${esc(ctTitle({ form: f }).replace(/계약서$/, '') || f)}</option>`).join('')}</select></label>`; })()}
+        <label class="ct-chk ct-qall"><input type="checkbox" data-act="ctq-all" ${CT.qall ? 'checked' : ''}> 보관함도 찾기</label>
         <label class="ct-sel"><span>기간</span><select class="inp" data-act-ch="ctq-base" aria-label="기간 기준">${[['u', '고친 날'], ['c', '계약일'], ['b', '잔금일']].map(([k, t]) => `<option value="${k}"${(CT.qb || 'u') === k ? ' selected' : ''}>${t}</option>`).join('')}</select>
           <select class="inp" data-act-ch="ctq-per" aria-label="기간">${[['', '전체'], ['m', '이번 달'], ['3m', '최근 3개월'], ['y', '올해'], ['next', '앞으로 30일']].map(([k, t]) => `<option value="${k}"${(CT.qp || '') === k ? ' selected' : ''}>${t}</option>`).join('')}</select></label>${ct담당고르기()}
         ${[['ctq-st2', '진행', CT.qst, [['', '전체'], ...Object.entries(CT_진행)]], ['ctq-dt', '거래', CT.qdt, [['', '전체'], ...Object.entries(CT_거래유형)]], ['ctq-kd', '형태', CT.qkd, [['', '전체'], ['new', '신규'], ['renew', '갱신']]], ['ctq-ord', '정렬', CT.qo, [['', '최근 고친 순'], ['c', '계약일 최신순'], ['b', '잔금일 가까운 순']]]].map(([k, t, 지금, 목록]) =>
@@ -17234,6 +17248,8 @@ if(typeof document !== 'undefined') document.addEventListener('change', e => { c
   const k = el.dataset.actCh;
   if(k === 'cta-settle'){ const A = CT.alert, h = +el.value; if(!A || !A.loaded || A.need || A.err || !(h >= 16 && h <= 23)) return; A.cfg = ct알림설정({ ...ct알림설정(A.cfg), settleEnd: h }); ctAlertSave(); render(); return; }
   if(k === 'ctq-st2') CT.qst = el.value; else if(k === 'ctq-dt') CT.qdt = el.value; else if(k === 'ctq-kd') CT.qkd = el.value; else if(k === 'ctq-ord') CT.qo = el.value;
+  else if(k === 'ctq-form') CT.qf = el.value;
+  else if(k === 'ct-row-st'){ ctRowState(el.dataset.v, el.value); return; }
   else if(k === 'ctq-who') CT.qw = el.value; else if(k === 'ctq-kind') CT.qk = el.value; else if(k === 'ctq-base') CT.qb = el.value; else if(k === 'ctq-per') CT.qp = el.value; else return;
   render(); });
 /* 보관함 · 휴지통 (2026-11-10 대표님 결정 1번 · 파트너 기획 '내리기 / 휴지통 30일 / 영구 삭제는 대표만')
@@ -17251,6 +17267,17 @@ async function ctBin(id, 어디, 말 = true){
   if(말) toast(어디 === 'trash' ? '휴지통으로 옮겼습니다' : 어디 === 'arch' ? '보관함으로 내렸습니다' : '목록으로 되돌렸습니다', { undo: () => ctBin(id, 전, false) });
   return true;
 }
+/* 계약현황 표에서 진행 상태 바꾸기 (2026-11-17 파트너 D14 ②) - 서버 contract-state, 되돌리기 알림 */
+async function ctRowState(id, s){
+  const 행 = (CT.list || []).find(r => r.id === id); if(!행) return;
+  const 전 = (행.track && 행.track.state) || '';
+  if(전 === s) return;
+  const { ok, j } = await ctPost({ what:'contract-state', id, state: s }).catch(() => ({ ok:false, j:{} }));
+  if(!ok){ render(); return toast(j.error || '진행 상태를 바꾸지 못했습니다'); }
+  행.track = j.track; if(CT.id === id){ CT.track = j.track; if(CT.row) CT.row = { ...CT.row, track: j.track }; }
+  render();
+  toast(`${CT_진행[s] || '상태 없음'}(으)로 바꿨습니다`, { undo: () => ctRowState(id, 전) });
+}
 /* 목록의 잔금일 - 계약 뒤 바뀐 잔금일(일정·체크)이 있으면 그것 */
 const ct목록잔금 = r => (r.track && r.track.balanceDate) || r.bd || '';
 /* sealed_at(UTC)을 한국 날짜로 */
@@ -17259,6 +17286,14 @@ const ct한국날 = s => s ? new Date(Date.parse(s) + 9 * 3600e3).toISOString().
 function ct요약HTML(전체){
   if(!전체.length) return '';
   const 오늘 = ct오늘(), 이달 = 오늘.slice(0, 7);
+  /* 계약현황 (2026-11-17 파트너 D14 시안) - 진행중 · 오늘 잔금 · 잔금 지연 · 이번 달 완료 */
+  if(CT.현황){ const st = r => (r.track || {}).state || '', 끝 = r => ['done', 'cancel'].includes(st(r)), 잔 = r => ct목록잔금(r);
+    const 진행 = 전체.filter(r => st(r) === 'doing').length, 준비 = 전체.filter(r => st(r) === 'ready').length, 보류 = 전체.filter(r => st(r) === 'hold').length;
+    const 오늘잔 = 전체.filter(r => 잔(r) === 오늘 && !끝(r)).length, 지연 = 전체.filter(r => 잔(r) && 잔(r) < 오늘 && !끝(r)).length;
+    const 완료 = 전체.filter(r => st(r) === 'done' && String(잔(r) || '').slice(0, 7) === 이달).length;
+    const 칸2 = (act, v, 이름, n, 말, 색) => `<button type="button" class="ct-sum-c" data-act="${act}" data-v="${v}"><small>${이름}</small><b class="num"${색 && n ? ` style="color:${색}"` : ''}>${n}</b><span>${말}</span></button>`;
+    return `<div class="ct-sum">${칸2('ctq-st2v', 'doing', '진행중', 진행, `준비 ${준비} · 보류 ${보류}`)}${칸2('ctq-sum-b', '', '오늘 잔금', 오늘잔, '15시부터 완료 확인')}
+      ${칸2('ctq-sum-b', '', '잔금 지연', 지연, '잔금일이 지났는데 완료 전', 'var(--danger)')}${칸2('ctq-st2v', 'done', '이번 달 완료', 완료, '3개월 뒤 자동 보관(켰을 때)')}</div>`; }
   const 작성 = 전체.filter(r => r.status !== 'sealed').length;
   const 이달확정 = 전체.filter(r => r.status === 'sealed' && ct한국날(r.sealed_at).slice(0, 7) === 이달).length;
   const 신고전 = 전체.filter(r => r.status === 'sealed' && ct신고(r) && !r.reported_at).length;
@@ -17274,20 +17309,29 @@ function ct현황표(rows){
   const 오늘 = ct오늘(), 원 = n => +n > 0 ? won(+n) : '', 날 = d => d ? d.slice(5).replace('-', '.') : '';
   const 칸날 = (d, 돈) => { if(!d && !돈) return '<td class="mute">-</td>'; const 곧 = d && d >= 오늘 && ct날차(오늘, d) <= 30;
     return `<td><span class="${곧 ? 'soon' : ''}">${날(d) || '미정'}</span>${돈 ? `<small>${돈}</small>` : ''}</td>`; };
+  /* 이름을 누르면 그 손님 대화방(대화방이 있을 때만 - 2026-11-17 파트너 D14 ③) */
   const 사람 = (r, 쪽) => { const F = CT_FORMS[r.form] || {}, [k, ko] = (쪽 === 'a' ? F.a : F.b) || ['', ''], x = (r.parties || {})[k] || {};
-    return `<td><small>${esc(ct짧은이름(ko || ''))}</small><b>${esc(x.name || '-')}</b>${x.phone ? `<small class="num">${esc(x.phone)}</small>` : ''}</td>`; };
+    const 방 = r.track && r.track.room && 권한('room') && x.name;
+    return `<td><small>${esc(ct짧은이름(ko || ''))}</small>${방 ? `<button type="button" class="tapx ct-pname" data-act="ct-room" data-v="${esc(r.id)}|${esc(k)}" aria-label="${esc(x.name)} 대화방 열기">${esc(x.name)}</button>` : `<b>${esc(x.name || '-')}</b>`}${x.phone ? `<small class="num">${esc(x.phone)}</small>` : ''}</td>`; };
+  /* 상태는 표에서 바로 바꾼다(서버 contract-state) · 작은 표시: 신고 전/마침 · 전자계약 */
+  const 상태칸 = r => { const t = r.track || {}, 못 = 직원() && !권한('ct_edit');
+    const 표 = [r.status === 'sealed' && ct신고(r) ? (r.reported_at ? '<small class="ct-tag ok">신고 마침</small>' : '<small class="ct-tag warn">신고 전</small>') : '', t.ec ? '<small class="ct-tag">전자계약</small>' : '', r.status !== 'sealed' ? '<small class="ct-tag">작성 중</small>' : ''].join('');
+    return `<td><select class="inp ct-st-sel${t.state === 'done' ? ' ok' : t.state === 'hold' || t.state === 'cancel' ? ' warn' : ''}" data-act="ct-stop" data-act-ch="ct-row-st" data-v="${esc(r.id)}" aria-label="진행 상태" ${못 ? 'disabled' : ''}>
+      <option value=""${t.state ? '' : ' selected'}>상태 없음</option>${Object.entries(CT_진행).map(([k, n]) => `<option value="${k}"${t.state === k ? ' selected' : ''}>${n}</option>`).join('')}</select>${표}</td>`; };
   return `<div class="card ct-tbl-wrap"><table class="ct-tbl"><thead><tr><th>상태</th><th>종류 · 거래 · 형태</th><th>목적물</th><th>매도인 · 임대인</th><th>매수인 · 임차인</th>
-    <th>약정일</th><th>허가 신청</th><th>허가 승인</th><th>계약일</th><th>중도금</th><th>잔금</th></tr></thead><tbody>
+    <th>약정일 · 약정금</th><th>허가 신청</th><th>허가 승인</th><th>계약체결일</th><th>계약일 · 계약금</th><th>중도금</th><th>잔금</th></tr></thead><tbody>
     ${rows.map(r => { const t = r.track || {}, 총 = +(r.price || r.deposit) || 0, 중 = (+r.mid || 0) + (+r.mid ? (+r.m2 || 0) : 0), 잔 = 총 ? Math.max(0, 총 - (+r.down || 0) - 중) : 0;
       const 상 = CT_진행[t.state] || (r.status === 'sealed' ? '날인본' : '작성 중');
+      void 상;
       return `<tr data-act="ct-open" data-v="${esc(r.id)}" tabindex="0">
-        <td><span class="badge ${t.state === 'done' ? 'b-ok' : t.state === 'hold' || t.state === 'cancel' ? 'b-warn' : 'b-mute'}">${상}</span></td>
+        ${상태칸(r)}
         <td><b>${esc(ctTitle(r).replace(/계약서$/, ''))}</b><small>${CT_거래유형[ct거래(r)]} · ${ct형태(r) === 'renew' ? '갱신' : '신규'}</small></td>
         <td class="obj">${esc(r.title || '소재지 미입력')}</td>${사람(r, 'a')}${사람(r, 'b')}
-        ${t.permit ? 칸날(t.permitAgreed || t.permitDue, '') + 칸날(t.permitApplied, '') + 칸날(t.permitOk, '') : '<td class="mute">-</td><td class="mute">-</td><td class="mute">-</td>'}
+        ${t.permit ? 칸날(t.permitAgreed || t.permitDue, 원(t.agreedAmt)) + 칸날(t.permitApplied, '') + 칸날(t.permitOk, '') : '<td class="mute">-</td><td class="mute">-</td><td class="mute">-</td>'}
+        ${t.permit ? (r.cd ? `<td><span>${날(r.cd)}</span><small>계약일과 같음</small></td>` : '<td class="mute">-</td>') : t.signDate ? `<td><span>${날(t.signDate)}</span><small>계약금 일부</small></td>` : '<td class="mute">미정</td>'}
         ${칸날(r.cd, 원(r.down))}${+r.mid ? 칸날(t.midDate || r.md, 원(중)) : '<td class="mute">-</td>'}${칸날(t.balanceDate || r.bd, 원(잔))}</tr>`; }).join('')}
     </tbody></table></div>
-    <p class="sub ct-tbl-note">이름 아래는 연락처입니다(사무소 직원 · 공동중개 사무소와 공유하는 계약서 정보). 30일 안에 다가오는 날짜는 보라색입니다.</p>`;
+    <p class="sub ct-tbl-note">상태는 표에서 바로 바꿉니다 · 밑줄 이름은 누르면 그 손님 대화방 · 이름 아래는 연락처 · 30일 안에 다가오는 날짜는 보라색 · 계약체결일은 계약서의 ‘일정 · 체크’에서 적습니다.</p>`;
 }
 /* 줄 단추 - 복사 · 내리기 · 휴지통 · 되돌리기 · 영구 삭제(휴지통의 작성 중 계약서, 대표만). PC 는 마우스를 올리면, 휴대폰은 줄 아래에 */
 function ct행단추(r){
@@ -17338,7 +17382,8 @@ function ctListPageHTML(모두){
   if(!CT.현황 && CT.bin === 'renew') CT.bin = '';
   const 현황 = !!CT.현황, 갱신탭 = 현황 && CT.bin === 'renew';
   const 칸 = ['arch', 'trash'].includes(CT.bin) ? CT.bin : '';
-  const 전체 = 모두.filter(r => ct보관칸(r) === 칸 && (!현황 || 칸 || (갱신탭 ? ct형태(r) === 'renew' : ct형태(r) === 'new')));
+  const 같이 = !칸 && CT.qall && String(CT.q || '').trim();   /* '보관함도 찾기' (2026-11-17 파트너 D14) - 찾는 말이 있을 때만 보관함 계약서도 섞는다 */
+  const 전체 = 모두.filter(r => (ct보관칸(r) === 칸 || (같이 && ct보관칸(r) === 'arch')) && (!현황 || 칸 || (갱신탭 ? ct형태(r) === 'renew' : ct형태(r) === 'new')));
   const 수 = k => k === 'renew' ? 모두.filter(r => !ct보관칸(r) && ct형태(r) === 'renew').length : 모두.filter(r => ct보관칸(r) === k && (!현황 || k || ct형태(r) === 'new')).length;
   const 칸줄 = 모두.length ? `<div class="ct-chips ct-bins" role="tablist" aria-label="계약서 보관 위치">${[['', '목록'], ...(현황 ? [['renew', '갱신']] : []), ['arch', '보관함'], ['trash', '휴지통']].map(([k, t]) =>
     `<button type="button" role="tab" class="chip${(갱신탭 ? 'renew' : 칸) === k ? ' on' : ''}" aria-selected="${(갱신탭 ? 'renew' : 칸) === k}" data-act="ct-bin-tab" data-v="${k}">${t} <span class="num">${수(k)}</span></button>`).join('')}</div>` : '';
@@ -17968,11 +18013,14 @@ function ctPlanHTML(doc){
     ${허가대상 ? `<div class="card pad ct-sec"><h2>토지거래허가</h2>
       ${체크('ctk-permit', !!t.permit, '이 계약은 토지거래허가 대상입니다', '', '')}
       ${t.permit ? `${ct허가흐름HTML(t, 못씀)}<div class="ct-grid">${ctTrackIn('permitDue', '허가 약정일')}${ctTrackIn('permitApplied', '허가 신청일')}</div>
+        <div class="ct-grid"><label class="ct-f w6"><span class="lab">허가 약정금</span><div class="unit"><input class="inp num" data-in="ctkn:agreedAmt" inputmode="numeric" value="${esc(comma(ct트랙().agreedAmt || ''))}" placeholder="0" ${못씀 ? 'disabled' : ''}><span>원</span></div></label></div>
         <p class="sub" style="margin:0;font-size:13.5px">${t.permitApplied
           ? `승인 예정일 <b>${esc(ct날짜글(ct영업일째(t.permitApplied, 15)))}</b> - 신청일을 넣고 15영업일째(토요일·공휴일 빼고)`
           : '신청하면 신청일을 넣어 주세요 - 승인 예정일(15영업일)을 계산해 알려 드립니다.'}</p>` : ''}</div>` : ''}
     <div class="card pad ct-sec"><h2>바뀐 일정 <span class="sub" style="font-weight:500;font-size:13.5px">계약 뒤 날짜가 바뀌었을 때만 - 계약서 내용은 그대로입니다</span></h2>
-      <div class="ct-grid">${+(doc.deal && doc.deal.mid) ? ctTrackIn('midDate', '바뀐 중도금일') : ''}${ctTrackIn('balanceDate', '바뀐 잔금일')}</div></div>
+      <div class="ct-grid">${+(doc.deal && doc.deal.mid) ? ctTrackIn('midDate', '바뀐 중도금일') : ''}${ctTrackIn('balanceDate', '바뀐 잔금일')}</div>
+      ${t.permit ? '' : `<div class="ct-grid">${ctTrackIn('signDate', '계약체결일 (계약금 일부가 들어온 날)')}</div>
+      <p class="sub" style="margin:0;font-size:13px">계약현황의 ‘계약체결일’ 칸에 나옵니다. 매물 노출 종료도 이날을 기준으로 해 주세요.</p>`}</div>
     <div class="card pad ct-sec"><h2>알림</h2>
       ${체크('ctk-off', !t.off, '이 계약의 일정을 알려 주세요', '끄면 이 계약은 카카오톡·메일 알림을 보내지 않습니다', '')}
       <p class="sub" style="margin:0;font-size:13.5px">받는 곳 ${[설정.kakao && '카카오톡', 설정.mail && '메일'].filter(Boolean).join('·') || '없음'} · 법무사 예약은 잔금 ${설정.lawyer[0]}~${설정.lawyer[1]}영업일 전
@@ -20819,6 +20867,12 @@ document.addEventListener('input', e=>{
   const el=e.target.closest('[data-in]'); if(!el) return;
   const k=el.dataset.in;
   /* 일정·체크의 날짜 칸 - 잠깐 멈추면 저장 */
+  if(k.startsWith('ctkn:')){
+    if(!CT.id || CT.need32) return;
+    const key = k.slice(5), n = +String(money(el)).replace(/[^0-9]/g, ''), t = { ...ct트랙() };
+    if(n > 0) t[key] = n; else delete t[key];
+    CT.track = t; ctTrackSave(false); return;
+  }
   if(k.startsWith('ctk:')){
     if(!CT.id || CT.need32) return;
     const key = k.slice(4), t = { ...ct트랙() };
@@ -22371,6 +22425,10 @@ function handle(a,v,el){
     case 'cal-m': { const 지금 = /^\d{4}-\d{2}$/.test(CT.calM || '') ? CT.calM : ct오늘().slice(0, 7); const [y, m] = 지금.split('-').map(Number), t = new Date(Date.UTC(y, m - 1 + (+v || 0), 1));
       CT.calM = t.toISOString().slice(0, 7); CT.calD = ''; render(); return true; }
     case 'cal-d': CT.calD = /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : ''; render(); return true;
+    case 'ct-stop': return true;   /* 표 안 고르기 상자 - 줄(계약서 열기)로 번지지 않게 */
+    case 'ct-room': { const [id, 자리] = String(v || '').split('|'); if(id) go(`#/partner/rooms/${id}${자리 ? '/' + 자리 : ''}`); return true; }
+    case 'ctq-st2v': CT.qst = CT.qst === v ? '' : v; render(); return true;
+    case 'ctq-all': CT.qall = !CT.qall; render(); return true;
     case 'settle-later': ct잔금미루기(v); render(); toast('1시간 뒤에 다시 묻겠습니다'); return true;
     case 'settle-done': (async () => {
       const 행 = (CT.list || []).find(r => r.id === v), 전 = (행 && 행.track && 행.track.state) || '';

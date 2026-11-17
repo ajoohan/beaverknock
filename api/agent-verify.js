@@ -31,7 +31,7 @@
 
 import { 토지원자료, 토지열쇠 } from './_bld.js';
 import { sameSecret } from './_auth.js';
-import { findByKey, findByName, STATE_NM, STD_DATE } from './_brokers.js';
+import { findByKey, findByName, STATE_NM, STD_DATE, regKey } from './_brokers.js';
 
 const API = 'https://openapi.gg.go.kr/Rlestatebrkragofc';
 const DEFAULT_SIGUN = '하남시';
@@ -65,11 +65,7 @@ export function checkShape(raw) {
 }
 
 /* 41450-2019-00217 과 41450-2019-217 은 같은 번호다 */
-function keyOf(v) {
-  const m = MODERN.exec(norm(v));
-  if (m) return `${m[1]}-${m[2]}-${String(Number(m[3]))}`;
-  return norm(v).replace(/[제호()\-]/g, '').toUpperCase();
-}
+const keyOf = regKey;
 
 /* 상호는 표기가 흔들린다 - '미사중앙공인중개사사무소' / '미사중앙 공인중개사 사무소' */
 const nameKey = v => norm(v).replace(/[()\-·.]/g, '')

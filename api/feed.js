@@ -8,7 +8,7 @@
  */
 
 import crypto from 'node:crypto';
-import { userFrom, sbHeaders, sbUrl, overLimit } from './_auth.js';
+import { userFrom, sbHeaders, sbUrl, overLimit, ipOf } from './_auth.js';
 import { dbWhy } from './_dberr.js';
 import { contractRoute, listingScan, reportDueCron, draftRead, draftNote, icsFeed, 달력표, 알림설정, 특약문구들, 특약문구고침, 문자틀들, 문자기록들, 문자고침, 단지들, 단지고침 } from './_contract.js';
 import { 날씨 } from './_weather.js';
@@ -681,7 +681,7 @@ export default async function handler(req, res) {
   /* 매물 등록 - 주소(법정동코드 · 지번)로 건축물대장 불러오기 (2026-11-17 파트너 C1 시안 '건축물대장 자동 입력').
      계약서의 contract-bld 와 같은 공공 조회(_bld.js) - 소유자 같은 개인정보는 오지 않는다. 키는 사이트 전체가 같이 써서 계약서와 같은 한도 */
   if (b.what === 'listing-bld') {
-    if (overLimit('bld:a:' + chk.agent.id, 200, 864e5)) return res.status(429).json({ ok: false, error: '오늘 건축물대장 조회를 많이 하셨습니다 - 내일 다시 해 주세요' });
+    if (overLimit('bld:a:' + chk.agent.id, 200, 864e5) || overLimit('bld:ip:' + ipOf(req), 400, 864e5)) return res.status(429).json({ ok: false, error: '오늘 건축물대장 조회를 많이 하셨습니다 - 내일 다시 해 주세요' });
     try { const o = await 건축물대장(b); return res.status(200).json(o.error ? { ok: false, error: o.error } : { ok: true, scan: o.scan, kinds: o.kinds }); }
     catch (e) { return res.status(200).json({ ok: false, error: e instanceof 포털오류 ? e.message : '건축물대장을 불러오지 못했습니다' }); }
   }

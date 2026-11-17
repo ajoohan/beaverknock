@@ -1350,12 +1350,12 @@ ok(js.includes("what:'listing-bld'") && js.includes('S.form.lbun = a.bun') && js
   ok(js.includes("'오늘 잔금'") && js.includes("'잔금 지연'") && js.includes('CT.qall') && js.includes("data-act-ch=\"ctq-form\""), '계약현황 요약 카드 · 보관함도 찾기 · 세부 종류 거르기'); }
 
 /* ── 계약현황 직접 추가 · 빠른 고치기 (2026-11-17 파트너 D14 B ①) ── */
-{ ok(C.docCheck('home-lease', { schema: C.CT_SCHEMA, form: 'home-lease', src: 'manual' }) === null, '직접 추가한 계약서(doc.src)도 그대로 저장된다');
+{ ok(C.docCheck('home-lease', { schema: C.CT_SCHEMA, form: 'home-lease', entry: 'manual' }) === null, '직접 추가한 계약서(doc.src)도 그대로 저장된다');
   const 서버 = fs.readFileSync(new URL('../api/_contract.js', import.meta.url), 'utf8');
-  ok(서버.includes("src:doc->>src"), '목록에 직접 입력 표시(src)를 같이 준다');
-  ok(js.includes("S.modal = { type:'ct-quick'") && js.includes("doc.src = 'manual'") && js.includes("case 'ct-quick': ctQuickOpen();") && js.includes("case 'ctq-save': ctQuickSave();"), '계약현황 직접 추가 - 작성 중 계약서로 만든다');
+  ok(서버.includes("entry:doc->>entry") && !서버.includes("src:doc->>src"), '목록에 직접 입력 표시(src)를 같이 준다');
+  ok(js.includes("S.modal = { type:'ct-quick'") && js.includes("doc.entry = 'manual'") && js.includes("case 'ct-quick': ctQuickOpen();") && js.includes("case 'ctq-save': ctQuickSave();"), '계약현황 직접 추가 - 작성 중 계약서로 만든다');
   ok(js.includes('data-act="ct-qedit"') && js.includes("if(m.sealed || 전.balanceDate) 넣('balanceDate'") && js.includes("넣('signDate', 날(f.sd))"), '표에서 고치기 - 날인본은 날짜만 일정으로, 계약체결일은 언제나 일정');
-  ok(js.includes("r.src === 'manual' ? '<small class=\"ct-tag\">직접 입력</small>'"), '직접 입력한 줄은 표에 표시'); }
+  ok(js.includes("r.entry === 'manual' ? '<small class=\"ct-tag\">직접 입력</small>'"), '직접 입력한 줄은 표에 표시'); }
 
 /* ── 계약서 전체화면 보기 (2026-11-17 대표님) ── */
 ok(js.includes("case 'ct-full': CT.full = !CT.full;") && js.includes("CT.full ? ' ctx-full' : ''") && js.includes("e.key === 'Escape' && CT.full") && js.includes("알림창(false); CT.full = false;") && css.includes('html:has(.ctx-view.ctx-full){overflow:hidden}'), '계약서 서류 전체화면 - 같은 서류로 바로 고치기 · Esc · 화면 옮기면 닫힘');
@@ -1375,7 +1375,7 @@ ok(js.includes('function ct소재지(P){') && js.split('${ct소재지(P)}').leng
   ok(C.docCheck('sale', 문서({ seller: { type: 'corp', name: '주식회사 가', corpNo: '110111-1234567' } })) === null, '법인 당사자의 법인등록번호는 저장된다');
   ok(/주민등록번호/.test(C.docCheck('sale', 문서({ seller: { name: '홍길동', corpNo: '900101-1234567' } })) || ''), '개인 당사자에 같은 칸이 있으면 주민번호로 막는다');
   ok(/주민등록번호/.test(C.docCheck('sale', 문서({ seller: { type: 'corp', corpNo: '110111-1234567', addr: '900101-1234567' } })) || ''), '법인이라도 다른 칸의 주민번호는 막는다');
-  ok(/13자리/.test(C.docCheck('sale', 문서({ seller: { type: 'corp', corpNo: '1101-11' } })) || ''), '법인등록번호는 13자리만');
+  ok(C.docCheck('sale', 문서({ seller: { type: 'corp', corpNo: '1101-11' } })) === null && /13자리/.test(C.확정필수('sale', 문서({ seller: { type: 'corp', corpNo: '1101-11' } })) || '') && /13자리/.test(C.docCheck('sale', 문서({ seller: { type: 'corp', corpNo: '11011112345678' } })) || ''), '법인등록번호 - 적는 도중에는 저장되고 확정할 때 13자리를 본다');
   ok(js.includes("ctIn(`parties.${k}.corpNo`, '법인등록번호'") && js.includes("<th>법인등록번호</th><td>${ct칸(b + '.corpNo'") && js.includes('delete x.bizNo; delete x.corpNo;'), '법인등록번호 칸 - 입력 · 인쇄 · 개인으로 바꾸면 지움'); }
 
 ok(js.includes('<button type="button" class="ctx-fullbtn" data-act="ct-full"') && js.split('data-act="ct-full"').length === 3 && css.includes('.ctx-fullbtn{position:absolute;'), '전체화면 단추는 단추 줄과 따로 서류 위에 떠 있다(단추 줄 구조는 그대로)');
@@ -1387,6 +1387,15 @@ ok(js.includes("V['#/partner/listings/open'] = () => V['#/partner/listings']();"
 /* ── 화면 검수 (2026-11-17 PC · 휴대폰) ── */
 ok(css.includes('.modal .box.ct-qbox{max-width:560px}') && css.includes('.ct-qbox .ct-grid > .w12{grid-column:1/-1}') && css.includes('body.mo .ct-qbox .inp{min-height:44px;font-size:16px}'), '직접 추가 창 - 폭이 모달 기본(440px)에 지지 않고, 휴대폰 입력 칸은 44px · 16px');
 ok(js.includes('class="lg-sw" role="tablist"') && js.includes("if(MG.f === 'done') MG.f = '';") && css.includes('.lg-tiles.n3{grid-template-columns:repeat(3,minmax(0,1fr))}'), '매물장부 · 매물등록 오가는 단추(휴대폰 길) · 거르기 물려받지 않음 · 요약 3칸');
+
+/* ── 코드리뷰 9건 (2026-11-17) ── */
+{ const 문서 = p => ({ schema: C.CT_SCHEMA, form: 'sale', property: p, deal: { price: 1, down: 1, balanceDate: '2026-12-01' }, contractDate: '2026-11-17' });
+  ok(C.확정필수('sale', 문서({ jibun: '망월동 1095' })) === null && /소재지/.test(C.확정필수('sale', 문서({})) || ''), '소재지 필수 - 도로명이 없어도 공적장부 지번이 있으면 채운 것');
+  ok(js.includes("if(id && CT.id === id){ CT.id = null; CT.doc = null;") && js.includes('const 소재바뀜 = !m.id || 글(f.road, 200) !== 글(m.road0, 200);'), '표 고치기 - 편집 화면의 옛 사본을 버리고, 소재지는 손댔을 때만');
+  ok(js.includes('if(!(+L.dep > 0)) return [];') && js.includes("L.status==='active' && +L.dep > 0"), '금액 없는 장부 물건은 손님과 대조하지 않는다');
+  ok(js.includes("...(P.show ? { show: P.show } : {})") && js.includes("p === 'property.road' ? (ctGet(doc, p) || ctGet(doc, 'property.jibun'))"), '확인·설명서가 찍히는 소재지를 물려받고, 화면 필수도 지번을 본다');
+  const feed = fs.readFileSync(new URL('../api/feed.js', import.meta.url), 'utf8'), 확인 = fs.readFileSync(new URL('../api/agent-verify.js', import.meta.url), 'utf8');
+  ok(feed.includes("overLimit('bld:ip:' + ipOf(req), 400, 864e5)) return res.status(429)") && 확인.includes('const keyOf = regKey;'), '매물 대장 조회 접속지 한도 · 등록번호 정규화 한 벌'); }
 
 console.log(`${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

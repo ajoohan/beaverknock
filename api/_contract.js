@@ -22,7 +22,7 @@ import { notifyMany } from './_notify.js';
 import { logOps } from './_opslog.js';
 import { alimtalk } from './_kakao.js';
 import { 건축물대장, 포털오류 } from './_bld.js';
-import { findByKey } from './_brokers.js';
+import { findByKey, regKey } from './_brokers.js';
 
 /* 주택임대차 · 상가건물 임대차 · 부동산 매매 · 중개대상물 확인·설명서(주거용) (화면의 CT_FORMS 와 같은 이름) */
 /* 2026-10-30 계약서 종류 - 부동산 임대차(전세·월세·연세) · 전대차 · 분양권 · 조합원입주권 · 권리양도양수 · 상가 권리금 */
@@ -37,7 +37,7 @@ const LIST_COLS = 'id,created_at,updated_at,form,title,status,sealed_at,sha256,p
   /* 계약현황 표 · 실적 (2026-11-10 파트너 기획) - 대금 · 계약금 · 형태(신규/갱신) · 중개보수(확인·설명서) */
   + 'price:doc->deal->>price,deposit:doc->deal->>deposit,down:doc->deal->>down,kind:doc->>kind,fee:doc->ex->>fee,'
   /* 계약현황 '직접 추가'로 만든 줄 (2026-11-17 파트너 D14 B) */
-  + 'src:doc->>src';
+  + 'entry:doc->>entry';
 /* 신고가 있는 양식 - 매매(거래신고) · 주택임대차(임대차 신고). 상가 임대차·확인·설명서는 신고가 없다 */
 export const CT_REPORT_FORMS = ['sale', 'presale', 'union', 'home-lease', 'lease'];
 /* 매매 쪽 신고 - 분양권·입주권 전매도 거래신고 대상(부동산 거래신고법 제3조, 2026-11-05) */
@@ -98,7 +98,7 @@ export function docCheck(form, doc) {
   /* 법인등록번호 (2026-11-17 대표님 '법인 등록번호는 칸을 두는 것으로') - 주민번호와 모양이 같아 법인 당사자의 그 칸만 빼고 본다.
      13자리 숫자만 받는다. 개인 당사자에 이 칸이 있으면 빼지 않으므로 주민번호 검사에 그대로 걸린다 */
   const 법인칸 = 법인번호들(doc);
-  if (법인칸.some(v => v && String(v).replace(/[^0-9]/g, '').length !== 13)) return '법인등록번호는 숫자 13자리로 적어 주세요';
+  if (법인칸.some(v => v && (/[^0-9\- ]/.test(String(v)) || String(v).replace(/[^0-9]/g, '').length > 13))) return '법인등록번호는 숫자 13자리로 적어 주세요';
   if (주민번호있나(법인칸.length ? 법인번호빼기(doc) : doc)) return '주민등록번호는 적지 않습니다 - 인쇄한 뒤 손으로 적어 주세요';
   return null;
 }
@@ -129,11 +129,7 @@ async function 대장(req, res, agent, b) {
 /* 공동중개 사무소 찾기 (2026-11-17 파트너 '상대 중개사의 대표자명 · 등록번호를 넣으면 정보를 끌어온다') -
    전국 명부(api/_brokers.js · 국토교통부)에서 등록번호로 찾는다. 대표자명을 함께 적었으면 맞을 때만 알려 준다(엉뚱한 사무소를 적지 않게).
    명부에는 전화가 없다 - 전화는 손으로 */
-const 등록신형 = /^([1-5][0-9]{4})-((?:19|20)[0-9]{2})-([0-9]{1,6})$/;
-export function 등록키(v) {
-  const t = String(v ?? '').trim().replace(/\s+/g, ''), m = 등록신형.exec(t);
-  return m ? `${m[1]}-${m[2]}-${String(Number(m[3]))}` : t.replace(/[제호()\-]/g, '').toUpperCase();
-}
+export const 등록키 = regKey;
 async function 중개사찾기(req, res, agent, b) {
   if (overLimit('brk:a:' + agent.id, 100, 864e5)) return res.status(429).json({ ok: false, error: '오늘 사무소 찾기를 많이 하셨습니다 - 직접 적어 주세요' });
   const 번호 = String(b.regNo || '').trim().slice(0, 30);
@@ -149,9 +145,11 @@ async function 중개사찾기(req, res, agent, b) {
    확인·설명서는 계약서가 아니라 보지 않는다 */
 export function 확정필수(form, doc) {
   /* 확인·설명서는 소재지만 본다 */
-  if (String(form || '').startsWith('explain')) return String((doc && doc.property && doc.property.road) || '').trim() ? null : '필수 항목이 비어 있어 확정할 수 없습니다 - 소재지';
+  const 소재 = String((doc && doc.property && (doc.property.road || doc.property.jibun)) || '').trim();
+  if (String(form || '').startsWith('explain')) return 소재 ? null : '필수 항목이 비어 있어 확정할 수 없습니다 - 소재지';
+  if (법인번호들(doc).some(v => v && String(v).replace(/[^0-9]/g, '').length !== 13)) return '법인등록번호는 숫자 13자리로 적어 주세요';
   const d = (doc && doc.deal) || {}, 빈 = [];
-  if (!String((doc && doc.property && doc.property.road) || '').trim()) 빈.push('소재지');
+  if (!소재) 빈.push('소재지');
   if (!(+(d.price != null ? d.price : d.deposit) > 0)) 빈.push(임대차양식.includes(form) ? '보증금' : '대금');
   if (!(+d.down > 0)) 빈.push('계약금');
   if (!d.balanceDate) 빈.push('잔금 지급일');
@@ -159,7 +157,7 @@ export function 확정필수(form, doc) {
   return 빈.length ? `필수 항목이 비어 있어 확정할 수 없습니다 - ${빈.join(' · ')}` : null;
 }
 
-const titleOf = (b, doc) => String(b.title || (doc.property && doc.property.road) || '').trim().slice(0, 80);
+const titleOf = (b, doc) => String(b.title || (doc.property && (doc.property.road || doc.property.jibun)) || '').trim().slice(0, 80);
 
 async function db(path, q, init = {}) {
   const r = await fetch(sbUrl(path, q), { ...init, headers: { ...sbHeaders(), ...(init.headers || {}) } });

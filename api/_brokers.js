@@ -33,6 +33,14 @@ function map() {
 const pack = (k, v) => ({ key: k, office: v[0], rep: v[1], state: v[2],
                           addr: v[3], since: v[4], reg_no: v[5] });
 
+/* 등록번호 정규화 키 (2026-11-17 코드리뷰 - 가입 확인과 공동중개 찾기가 같은 규칙을 쓴다).
+   41450-2019-00217 과 41450-2019-217 은 같은 번호다. 옛 번호('가3665-4')는 제 · 호 · 괄호 · 하이픈을 뗀다 */
+const 신형 = /^([1-5][0-9]{4})-((?:19|20)[0-9]{2})-([0-9]{1,6})$/;
+export function regKey(v) {
+  const t = String(v ?? '').trim().replace(/\s+/g, ''), m = 신형.exec(t);
+  return m ? `${m[1]}-${m[2]}-${String(Number(m[3]))}` : t.replace(/[제호()\-]/g, '').toUpperCase();
+}
+
 /** 등록번호 정규화 키로 한 곳을 찾는다. 없으면 null. */
 export function findByKey(key) {
   const v = map()[key];

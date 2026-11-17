@@ -4330,6 +4330,7 @@ function qualityScore(){
   return Math.round((vr*.4 + sr*.4 + clean*.2)*100);
 }
 function matchesFor(L){
+  if(!(+L.dep > 0)) return [];   /* 금액을 아직 안 적은 장부 물건(2026-11-17 덜 채워도 보관)은 모든 예산에 맞는 것으로 잡히므로 대조하지 않는다 */
   return S.demands.filter(d => d.slotsLeft>0 && !d.mine)
     .map(d => ({d, st: matchStages(L,d)}))
     .filter(x => x.st.slice(0,4).every(v => v.ok))
@@ -4339,7 +4340,7 @@ function matchesFor(L){
 }
 /* 수요 → 내 물건 중 맞는 것 */
 function listingsFor(d){
-  return S.listings.filter(L => L.status==='active')
+  return S.listings.filter(L => L.status==='active' && +L.dep > 0)
     .map(L => ({L, st: matchStages(L,d)}))
     .filter(x => x.st.slice(0,4).every(v => v.ok))
     /* 손님 조건 → 맞는 물건 쪽도 같은 자로 세운다.
@@ -13739,6 +13740,10 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
+  { v:'26.11.17.14', 날:'2026-11-17', 줄:[ '계약현황 ‘고치기’로 바꾼 값이 계약서를 다시 열었을 때 옛 값으로 돌아가던 문제 · 소재지는 손댔을 때만 바뀌고, 바꾸면 옛 주소 코드를 지웁니다',
+    '금액을 아직 안 적은 장부 물건은 ‘맞는 손님’에 잡히지 않습니다',
+    '등기부 · 건축물대장만 올려 지번만 있는 계약서도 소재지를 채운 것으로 봅니다(확정본으로 저장할 수 있음) · 확인·설명서가 고쳐 적은 소재지를 물려받습니다',
+    '법인등록번호를 적는 도중에도 임시저장이 됩니다(13자리는 확정할 때 확인)' ] },
   { v:'26.11.17.13', 날:'2026-11-17', 줄:[ '화면 검수(PC · 휴대폰) - 계약현황 ‘직접 추가 · 고치기’ 창 폭과 칸 배치, 휴대폰 입력 칸 크기',
     '매물장부 · 매물등록 화면 위에 서로 오가는 단추(휴대폰에서도 매물등록으로 갈 수 있음) · 매물등록 요약 카드 3칸',
     '계약현황 표 ‘고치기’를 작은 단추로 · ‘보관함도 찾기’ 줄 맞춤 · 계약서 전체화면 단추가 서류 끝 줄을 가리지 않게' ] },
@@ -15696,7 +15701,7 @@ function ct필수(doc){
 }
 function ct필수빠짐(doc = CT.doc){
   const s = new Set(); if(!doc) return s;
-  for(const [p] of ct필수(doc)){ const v = ctGet(doc, p);
+  for(const [p] of ct필수(doc)){ const v = p === 'property.road' ? (ctGet(doc, p) || ctGet(doc, 'property.jibun')) : ctGet(doc, p);
     if(v == null || String(v).trim() === '' || (/^deal\.(price|deposit|down|rent)$/.test(p) && !(+v > 0))) s.add(p); }
   return s;
 }
@@ -17359,7 +17364,7 @@ function ctQuickOpen(id){
   if(!id){ S.modal = { type:'ct-quick', form:'home-lease', f:{} }; render(); return; }
   const r = (CT.list || []).find(x => x.id === id); if(!r) return;
   const F = CT_FORMS[r.form] || {}, t = r.track || {}, p = r.parties || {}, a = p[(F.a || [])[0]] || {}, b = p[(F.b || [])[0]] || {};
-  S.modal = { type:'ct-quick', id, form: r.form, sealed: r.status === 'sealed', f:{ road: r.title || '', an: a.name || '', ap: a.phone || '', bn: b.name || '', bp: b.phone || '',
+  S.modal = { type:'ct-quick', id, form: r.form, sealed: r.status === 'sealed', road0: r.title || '', f:{ road: r.title || '', an: a.name || '', ap: a.phone || '', bn: b.name || '', bp: b.phone || '',
     total: +(r.price || r.deposit) || '', down: +r.down || '', cd: r.cd || '', mid: +r.mid || '', md: t.midDate || r.md || '', bd: t.balanceDate || r.bd || '', sd: t.signDate || '' } };
   render();
 }
@@ -17396,13 +17401,17 @@ async function ctQuickSave(){
     if(!m.sealed){
       let doc;
       if(id){ const { ok, j } = await ctPost({ what:'contract', id }); if(!ok || !j.row || !j.row.doc) throw new Error(j.error || '계약서를 불러오지 못했습니다'); doc = j.row.doc; }
-      else { doc = ctNewDoc(m.form, null); doc.src = 'manual'; }
+      else { doc = ctNewDoc(m.form, null); doc.entry = 'manual'; }
+      if(doc.src === 'manual'){ delete doc.src; doc.entry = 'manual'; }   /* 26.11.17.5~12 에 만든 줄 - doc.src 는 서류 판독값 자리라 옮긴다 */
       const F = CT_FORMS[doc.form] || {}, 사람 = (k, n, p) => ({ ...((doc.parties || {})[k] || { name:'', phone:'', addr:'' }), name: 글(n, 40), phone: 글(p, 20) });
-      doc.property = { ...(doc.property || {}), road: 글(f.road, 200) };
+      /* 소재지는 손댔을 때만 바꾼다(목록 제목은 80자로 잘려 있다). 바꾸면 옛 주소의 법정동코드 · 지번 · 찍히는 소재지는 지운다 - 다른 필지를 가리키지 않게 */
+      const 소재바뀜 = !m.id || 글(f.road, 200) !== 글(m.road0, 200);
+      if(소재바뀜){ const { admCd, bun, ji, mount, zip, jibun, show, ...남 } = doc.property || {}; void admCd; void bun; void ji; void mount; void zip; void jibun; void show;
+        doc.property = m.id ? { ...남, road: 글(f.road, 200), jibun:'', admCd:'', bun:'', ji:'', mount:false, zip:'' } : { ...(doc.property || {}), road: 글(f.road, 200) }; }
       doc.parties = { ...(doc.parties || {}), [F.a[0]]: 사람(F.a[0], f.an, f.ap), [F.b[0]]: 사람(F.b[0], f.bn, f.bp) };
       doc.deal = { ...(doc.deal || {}), [F.lease ? 'deposit' : 'price']: +f.total || 0, down: +f.down || 0, mid: +f.mid || 0, midDate: 날(f.md), balanceDate: 날(f.bd) };
       doc.contractDate = 날(f.cd);
-      const { ok, j } = await ctPost({ what:'contract-save', id: id || undefined, form: doc.form, doc, title: 글(f.road, 80) || undefined });
+      const { ok, j } = await ctPost({ what:'contract-save', id: id || undefined, form: doc.form, doc });
       if(!ok) throw new Error(j.error || '저장하지 못했습니다');
       id = id || j.id;
     }
@@ -17413,6 +17422,7 @@ async function ctQuickSave(){
     if(m.sealed || 전.balanceDate) 넣('balanceDate', 날(f.bd));
     넣('signDate', 날(f.sd));
     if(id && JSON.stringify(t) !== JSON.stringify(전)){ const { ok, j } = await ctPost({ what:'contract-track', id, track: t }); if(!ok) toast(j.error || '일정(날짜)은 저장하지 못했습니다'); }
+    if(id && CT.id === id){ CT.id = null; CT.doc = null; CT.row = null; CT.track = null; CT.dirty = false; }   /* 편집 화면의 옛 사본이 방금 고친 값을 덮지 않게(2026-11-17 코드리뷰) */
     S.modal = null;
     toast(m.id ? '고쳤습니다' : '계약현황에 추가했습니다 - 작성 중 계약서로 남아 언제든 이어 쓸 수 있습니다');
     ctLoadList(true); render();
@@ -17455,7 +17465,7 @@ function ct현황표(rows){
     return `<td><small>${esc(ct짧은이름(ko || ''))}</small>${방 ? `<button type="button" class="tapx ct-pname" data-act="ct-room" data-v="${esc(r.id)}|${esc(k)}" aria-label="${esc(x.name)} 대화방 열기">${esc(x.name)}</button>` : `<b>${esc(x.name || '-')}</b>`}${x.phone ? `<small class="num">${esc(x.phone)}</small>` : ''}</td>`; };
   /* 상태는 표에서 바로 바꾼다(서버 contract-state) · 작은 표시: 신고 전/마침 · 전자계약 */
   const 상태칸 = r => { const t = r.track || {}, 못 = 직원() && !권한('ct_edit');
-    const 표 = [r.status === 'sealed' && ct신고(r) ? (r.reported_at ? '<small class="ct-tag ok">신고 마침</small>' : '<small class="ct-tag warn">신고 전</small>') : '', t.ec ? '<small class="ct-tag">전자계약</small>' : '', r.src === 'manual' ? '<small class="ct-tag">직접 입력</small>' : r.status !== 'sealed' ? '<small class="ct-tag">작성 중</small>' : ''].join('');
+    const 표 = [r.status === 'sealed' && ct신고(r) ? (r.reported_at ? '<small class="ct-tag ok">신고 마침</small>' : '<small class="ct-tag warn">신고 전</small>') : '', t.ec ? '<small class="ct-tag">전자계약</small>' : '', r.entry === 'manual' ? '<small class="ct-tag">직접 입력</small>' : r.status !== 'sealed' ? '<small class="ct-tag">작성 중</small>' : ''].join('');
     return `<td><select class="inp ct-st-sel${t.state === 'done' ? ' ok' : t.state === 'hold' || t.state === 'cancel' ? ' warn' : ''}" data-act="ct-stop" data-act-ch="ct-row-st" data-v="${esc(r.id)}" aria-label="진행 상태" ${못 ? 'disabled' : ''}>
       <option value=""${t.state ? '' : ' selected'}>상태 없음</option>${Object.entries(CT_진행).map(([k, n]) => `<option value="${k}"${t.state === k ? ' selected' : ''}>${n}</option>`).join('')}</select>${표}</td>`; };
   return `<div class="card ct-tbl-wrap"><table class="ct-tbl"><thead><tr><th>상태</th><th>종류 · 거래 · 형태</th><th>목적물</th><th>매도인 · 임대인</th><th>매수인 · 임차인</th>
@@ -18985,7 +18995,7 @@ async function ctBldGo(){
   if(CT.doc !== 문서){ render(); return; }
   if(!ok || !j.ok || !j.scan){ CT.bld.err = j.error || '건축물대장을 불러오지 못했습니다 - 건축물대장을 올려 주세요'; render(); return; }
   const 채움 = ctApplyScan(CT.doc, j.scan, j.kinds || ['bld'], true);
-  const 앞 = CT.doc.src || {};
+  const 앞 = CT.doc.src && typeof CT.doc.src === 'object' ? CT.doc.src : {};
   CT.doc.src = { ...앞, ...Object.fromEntries(Object.entries(j.scan).filter(([k, v]) => k !== 'warnings' && v !== '' && v !== 0)),
     at: ct오늘(), kinds: [...new Set([...(앞.kinds || []), ...(j.kinds || ['bld'])])] };
   CT.filled = new Set([...(CT.filled || []), ...채움]);
@@ -19290,7 +19300,7 @@ function exNewDoc(from, form){
   return {
     ...(글꼴 === 'sans' ? { font:'sans' } : {}),
     schema: CT_SCHEMA, form: EX_FORMS[form] ? form : exFormFor(from),
-    property: { road: P.road||'', jibun: P.jibun||'', admCd: P.admCd||'', bun: P.bun||'', ji: P.ji||'', mount: !!P.mount, zip: P.zip||'',
+    property: { road: P.road||'', jibun: P.jibun||'', ...(P.show ? { show: P.show } : {}), admCd: P.admCd||'', bun: P.bun||'', ji: P.ji||'', mount: !!P.mount, zip: P.zip||'',
       bdNm: P.bdNm||'', landCat: P.landCat||'', landArea: P.landArea||'', bldStruct: P.bldStruct||'', bldUse: P.bldUse||'',
       bldArea: P.partArea || P.bldArea || '' },
     house: c.form === 'shop-lease' ? '상업용' : '', deal: from ? (임대 ? '임대' : '매매ㆍ교환') : '',
@@ -22182,6 +22192,7 @@ function handle(a,v,el){
       const 원 = { ...CT.doc, __id: CT.id }, 제안 = CT.row && CT.row.proposal_id;
       CT.id = null; CT.row = null; CT.track = {}; CT.fromProposal = 제안 || null;
       CT.doc = exNewDoc(원);
+      if(원.src && typeof 원.src !== 'object') 원.src = null;   /* 옛 '직접 입력' 표시 */
       CT.filled = new Set(원.src ? ctApplyScan(CT.doc, 원.src, 원.src.kinds || [], false) : []);
       if(원.src) CT.doc.src = 원.src;
       CT.scan = null; CT.scanWarn = (원.src && 원.src.warnings) || [];

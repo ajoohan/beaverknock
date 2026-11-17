@@ -1392,7 +1392,7 @@ ok(js.includes('class="lg-sw" role="tablist"') && js.includes("if(MG.f === 'done
 { const 문서 = p => ({ schema: C.CT_SCHEMA, form: 'sale', property: p, deal: { price: 1, down: 1, balanceDate: '2026-12-01' }, contractDate: '2026-11-17' });
   ok(C.확정필수('sale', 문서({ jibun: '망월동 1095' })) === null && /소재지/.test(C.확정필수('sale', 문서({})) || ''), '소재지 필수 - 도로명이 없어도 공적장부 지번이 있으면 채운 것');
   ok(js.includes("if(id && CT.id === id){ CT.id = null; CT.doc = null;") && js.includes('const 소재바뀜 = !m.id || 글(f.road, 200) !== 글(m.road0, 200);'), '표 고치기 - 편집 화면의 옛 사본을 버리고, 소재지는 손댔을 때만');
-  ok(js.includes('if(!(+L.dep > 0)) return [];') && js.includes("L.status==='active' && +L.dep > 0"), '금액 없는 장부 물건은 손님과 대조하지 않는다');
+  ok(js.includes('if(!(+L.dep > 0) || 대조안함(L.deal)) return [];') && js.includes("L.status==='active' && +L.dep > 0"), '금액 없는 장부 물건은 손님과 대조하지 않는다');
   ok(js.includes("...(P.show ? { show: P.show } : {})") && js.includes("p === 'property.road' ? (ctGet(doc, p) || ctGet(doc, 'property.jibun'))"), '확인·설명서가 찍히는 소재지를 물려받고, 화면 필수도 지번을 본다');
   const feed = fs.readFileSync(new URL('../api/feed.js', import.meta.url), 'utf8'), 확인 = fs.readFileSync(new URL('../api/agent-verify.js', import.meta.url), 'utf8');
   ok(feed.includes("overLimit('bld:ip:' + ipOf(req), 400, 864e5)) return res.status(429)") && 확인.includes('const keyOf = regKey;'), '매물 대장 조회 접속지 한도 · 등록번호 정규화 한 벌'); }

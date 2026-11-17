@@ -153,5 +153,9 @@ globalThis.fetch = async (url, opt = {}) => {
   ok(원.includes("return nameOk && !!String(g('ldong')).trim();\n}") || 원.includes("return nameOk && !!String(g('ldong')).trim();\r\n}"), '장부 보관은 이름 · 동만 있으면 된다(덜 채워도 보관)');
   ok(원.includes("data-act=\"lfreal\"") && 원.includes("'lfacs', true") && 원.includes('data-pyeong'), '등록 화면 - 관리비 항목표 · 시설 6묶음 · 평 경고');
   ok(원.includes("넣기('lfloors'") && 원.includes("넣기('lparking'"), '건축물대장으로 총 층수 · 주차 대수를 채운다'); }
+/* ── 연세 · 단기임대 (2026-11-17) ── */
+{ const fs = await import('node:fs'); const 서버 = fs.readFileSync(new URL('../api/_match.js', import.meta.url), 'utf8'), 화면 = fs.readFileSync(new URL('../원본/비버노크_프로토타입.html', import.meta.url), 'utf8');
+  ok(서버.includes("if (L.deal === '연세' || L.deal === '단기임대') return null;") && 화면.includes("const 대조안함 = deal => deal === '연세' || deal === '단기임대';") && 화면.includes("['전세','월세','매매','연세','단기임대']"), '연세 · 단기임대 매물은 적고 노출하되 자동 대조에서는 뺀다'); }
+
 console.log(`\n${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

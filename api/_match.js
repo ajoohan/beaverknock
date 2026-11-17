@@ -29,6 +29,7 @@ const 구간 = (값, 한도) => !(+한도 > 0) ? 1 : +값 <= +한도 ? 1 : +값 
 
 export function 일치율(d, L) {
   if (!d || !L || d.kind !== L.kind) return null;
+  if (L.deal === '연세' || L.deal === '단기임대') return null;   /* 차임 단위가 달라 월세 예산과 견주지 않는다(2026-11-17) */
   if (!집아님(d.kind) && d.deal && L.deal && d.deal !== L.deal) return null;
   /* 상가 · 사무실 · 창고 조건은 보증금 · 월세(임대)로만 받는다 - 매매 물건은 견주지 않는다 */
   if (집아님(d.kind) && L.deal === '매매') return null;

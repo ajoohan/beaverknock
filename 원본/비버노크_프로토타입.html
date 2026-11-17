@@ -4036,7 +4036,10 @@ const DEAL_WORDS = {
   '월세': {dep:'보증금',   hint:'감당 가능한 최대',       ph:'보증금',  rent:true},
   '전세': {dep:'전세 보증금', hint:'감당 가능한 최대',       ph:'전세금',  rent:false},
   '매매': {dep:'매매가',   hint:'감당 가능한 최대',       ph:'매매가',  rent:false},
+  '연세': {dep:'보증금',   hint:'',                     ph:'보증금',  rent:true, rentKo:'연세 (1년 치 차임)', per:'연'},
+  '단기임대': {dep:'보증금', hint:'',                   ph:'보증금',  rent:true, rentKo:'월세 (단기)', per:'월'},
 };
+const 대조안함 = deal => deal === '연세' || deal === '단기임대';
 const dealWords = v => DEAL_WORDS[v] || DEAL_WORDS['월세'];
 
 const DEALS=['전세','월세','매매'], HTYPES=['아파트','오피스텔','빌라·연립','원룸·투룸','상관없음'];
@@ -4349,7 +4352,7 @@ function qualityScore(){
   return Math.round((vr*.4 + sr*.4 + clean*.2)*100);
 }
 function matchesFor(L){
-  if(!(+L.dep > 0)) return [];   /* 금액을 아직 안 적은 장부 물건(2026-11-17 덜 채워도 보관)은 모든 예산에 맞는 것으로 잡히므로 대조하지 않는다 */
+  if(!(+L.dep > 0) || 대조안함(L.deal)) return [];   /* 금액을 아직 안 적은 장부 물건(2026-11-17 덜 채워도 보관)은 모든 예산에 맞는 것으로 잡히므로 대조하지 않는다 */
   return S.demands.filter(d => d.slotsLeft>0 && !d.mine)
     .map(d => ({d, st: matchStages(L,d)}))
     .filter(x => x.st.slice(0,4).every(v => v.ok))
@@ -4359,7 +4362,7 @@ function matchesFor(L){
 }
 /* 수요 → 내 물건 중 맞는 것 */
 function listingsFor(d){
-  return S.listings.filter(L => L.status==='active' && +L.dep > 0)
+  return S.listings.filter(L => L.status==='active' && +L.dep > 0 && !대조안함(L.deal))
     .map(L => ({L, st: matchStages(L,d)}))
     .filter(x => x.st.slice(0,4).every(v => v.ok))
     /* 손님 조건 → 맞는 물건 쪽도 같은 자로 세운다.
@@ -8267,7 +8270,7 @@ V['#/matched'] = () => {
   const g = { rows: g0.rows.filter(L => MT.tab === 'hide' ? 담.hide.includes(L.id) : !담.hide.includes(L.id) && (MT.tab !== 'fav' || 담.fav.includes(L.id))) };
   const 막대 = (이름, 점, 만) => `<div class="mt-bar"><span>${이름}</span><i><b style="width:${Math.round(점 / 만 * 100)}%"></b></i><em class="num">${점} / ${만}</em></div>`;
   const 카드 = L => { const s = L.score || {}, 열림 = !!MT.open[L.id];
-    const 값 = `${L.deal === '매매' ? '매매 ' : '보증금 '}${won(L.dep)}${+L.rent ? ` / 월 ${won(L.rent)}` : ''}${+L.fee ? ` · 관리비 ${won(L.fee)}` : ''}`;
+    const 값 = `${L.deal === '매매' ? '매매 ' : '보증금 '}${won(L.dep)}${+L.rent ? ` / ${L.deal === '연세' ? '연' : '월'} ${won(L.rent)}` : ''}${+L.fee ? ` · 관리비 ${won(L.fee)}` : ''}`;
     const 줄 = [L.dong, L.bdong ? `${L.bdong}동` : '', +L.area ? `전용 ${(+L.area).toFixed(1).replace(/\.0$/, '')}㎡(${pyOf(L.area)}평)` : '', +L.rooms ? `방 ${L.rooms}` : '', +L.baths ? `욕실 ${L.baths}` : '', L.band || (L.floor_no ? `${L.floor_no}층` : ''), L.dir ? (/향$/.test(L.dir) ? L.dir : `${L.dir}향`) : '', L.move_in ? `입주 ${L.move_in}` : ''].filter(Boolean).join(' · ');
     const 더 = MT.pics[L.id];
     return `<article class="card pad mt-card fade">
@@ -9795,8 +9798,8 @@ V["#/partner/settings"] = () => {
 /* 물건 가격 한 줄. 주거가 아니면 늘 보증금/월세다 - 전에는 'shop' 하나만 보아
    사무실·창고 물건에 월세가 0 이면 '전세 …' 로 나왔다. */
 const priceOf = L => NONHOME(L.kind) || L.rent
-  ? `보증금 ${won(L.dep)} / 월 ${won(L.rent)}${L.fee?` · 관리비 ${won(L.fee)}`:''}`
-  : `전세 ${won(L.dep)}${L.fee?` · 관리비 ${won(L.fee)}`:''}`;
+  ? `${대조안함(L.deal) ? L.deal + ' · ' : ''}보증금 ${won(L.dep)} / ${L.deal === '연세' ? '연' : '월'} ${won(L.rent)}${L.fee?` · 관리비 ${won(L.fee)}`:''}`
+  : `${L.deal === '매매' ? '매매' : '전세'} ${won(L.dep)}${L.fee?` · 관리비 ${won(L.fee)}`:''}`;
 /* 고른 것과 직접 적은 것을 한 줄로 잇는다. 제안 한마디에도 이 문장이 그대로 들어간다 */
 /* 물건의 강점 한 줄. 상가도 musts 를 본다 - 주차를 거기에 담기로 했으므로
    전에 보던 fac 은 상가에서 늘 비어 있었다(0027 에서 칸도 지웠다).
@@ -10417,10 +10420,10 @@ V["#/partner/listing/new"] = () => {
           <span style="display:block;margin-top:6px;font-size:13.5px;line-height:1.6;color:var(--n500)">
             중개사님과 운영자에게만 보입니다. 어느 집인지 헷갈리지 않으시도록 받아둡니다.</span></div>
       </div>
-      <div><span class="lab">거래 방식</span>${chipsHTML(['전세','월세','매매'], g('ldeal')||'월세','ldeal',false)}</div>
+      <div><span class="lab">거래 방식</span>${chipsHTML(['전세','월세','매매','연세','단기임대'], g('ldeal')||'월세','ldeal',false)}${대조안함(g('ldeal')) ? '<p class="sub" style="margin:6px 0 0;font-size:12.5px">연세 · 단기임대는 손님 조건(전세 · 월세 · 매매)과 자동으로 대조하지 않습니다. 장부에 보관하고, 노출하면 매물지도에서 보입니다.</p>' : ''}</div>
       <div class="grid2 mo1">
         <div><span class="lab">${dealWords(g('ldeal')||'월세').dep} <span class="req">*</span></span><div class="unit"><input class="inp num" data-in="ldep" inputmode="numeric" value="${esc(comma(g('ldep')))}" placeholder="0"><span>원</span></div>${wonHint(g('ldep'))}</div>
-        ${dealWords(g('ldeal')||'월세').rent?`<div><span class="lab">월세 <span class="req">*</span></span><div class="unit"><input class="inp num" data-in="lrent" inputmode="numeric" value="${esc(comma(g('lrent')))}" placeholder="0"><span>원</span></div>${wonHint(g('lrent'))}</div>`:''}
+        ${dealWords(g('ldeal')||'월세').rent?`<div><span class="lab">${dealWords(g('ldeal')||'월세').rentKo || '월세'} <span class="req">*</span></span><div class="unit"><input class="inp num" data-in="lrent" inputmode="numeric" value="${esc(comma(g('lrent')))}" placeholder="0"><span>원</span></div>${wonHint(g('lrent'))}</div>`:''}
       </div>
 
       <!-- 관리비는 금액만으로는 표시·광고 요건을 못 채운다. 어떤 기간으로 계산한
@@ -13759,6 +13762,7 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
+  { v:'26.11.17.20', 날:'2026-11-17', 줄:[ '매물 거래 방식에 연세 · 단기임대 - 장부에 적고 노출할 수 있습니다(손님 조건과 자동 대조는 하지 않습니다 · 금액 표시는 연세면 ‘연’으로)' ] },
   { v:'26.11.17.19', 날:'2026-11-17', 줄:[ '매물 - 비공개 메모에 ‘등기부상 소유자 이름’ 칸. 이름을 적고 저장해야 ‘소유자와 일치함’ 체크를 켤 수 있습니다(손님에게는 나가지 않습니다)',
     '계약현황 표 - 처음 정한 날짜에서 바뀐 중도금일 · 잔금일은 주황색으로 보입니다(공동중개 계약서는 고친 날짜)',
     '공동중개 계약서 올리기 - ‘계약서에서 날짜 · 금액 읽기’(11월 24일부터 · 개인정보 처리방침 개정 안내 기간) · 소재지 · 거래 · 금액 · 날짜만 읽습니다' ] },

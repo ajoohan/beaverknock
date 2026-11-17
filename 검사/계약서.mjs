@@ -1378,5 +1378,7 @@ ok(js.includes('const ct소재지 = P => P && P.jibun ?') && js.split('${ct소�
   ok(/13자리/.test(C.docCheck('sale', 문서({ seller: { type: 'corp', corpNo: '1101-11' } })) || ''), '법인등록번호는 13자리만');
   ok(js.includes("ctIn(`parties.${k}.corpNo`, '법인등록번호'") && js.includes("<th>법인등록번호</th><td>${ct칸(b + '.corpNo'") && js.includes('delete x.bizNo; delete x.corpNo;'), '법인등록번호 칸 - 입력 · 인쇄 · 개인으로 바꾸면 지움'); }
 
+ok(js.includes('<button type="button" class="ctx-fullbtn" data-act="ct-full"') && js.split('data-act="ct-full"').length === 3 && css.includes('.ctx-fullbtn{position:absolute;'), '전체화면 단추는 단추 줄과 따로 서류 위에 떠 있다(단추 줄 구조는 그대로)');
+
 console.log(`${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

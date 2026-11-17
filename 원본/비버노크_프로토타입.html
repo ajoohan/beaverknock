@@ -13758,6 +13758,7 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
+  { v:'26.11.17.18', 날:'2026-11-17', 줄:[ '3차 · 4차 · 5차 중도금도 다가오는 일정 · 달력 · 아침 알림 · 달력 구독에 들어가고, 영수증도 차수마다 뽑을 수 있습니다' ] },
   { v:'26.11.17.17', 날:'2026-11-17', 줄:[ '서식 입력 · 전체화면에서 계약서 서식을 화면 폭에 맞춰 크게(1.7배까지) 보여 줍니다 · 확인·설명서는 입력 칸에서 적으므로 ‘서식 입력’을 꺼 둡니다',
     '계약체결 문자 ‘계약현황에 추가’ - 같은 문자를 두 번 넣지 않고, 계약금은 추정값(10%)을 넣지 않습니다',
     '계약현황 ‘직접 추가 · 고치기’ 창에서 Enter 로 저장 · 임시저장 전 고침이 있는 계약서는 먼저 저장하라고 알려 줍니다',
@@ -15460,6 +15461,7 @@ function ct일정목록(c, 설정 = ct알림설정()){
   if(cd) out.push({ k: 'contract', 날: cd, 메모: '계약서 내용을 마지막으로 확인하세요' });
   if(md && +c.mid > 0) out.push({ k: 'mid', 날: md, 바뀜: !!ct날만(t.midDate), 메모: '중도금 금액과 입금 계좌를 확인하세요' });
   if(ct날만(c.md2) && +c.mid > 0 && +c.m2 > 0) out.push({ k: 'mid', 이름: '2차 중도금', 날: ct날만(c.md2), 메모: '2차 중도금 금액과 입금 계좌를 확인하세요' });
+  if(+c.mid > 0 && +c.m2 > 0) (Array.isArray(c.mx) ? c.mx : []).slice(0, 3).forEach((x, i) => { if(x && +x.amt > 0 && ct날만(x.date)) out.push({ k: 'mid', 이름: `${i + 3}차 중도금`, 날: ct날만(x.date), 메모: `${i + 3}차 중도금 금액과 입금 계좌를 확인하세요` }); });
   if(bd) out.push({ k: 'balance', 날: bd, 바뀜: !!ct날만(t.balanceDate),
     메모: ct날만(t.guideAt) ? '잔금안내 마침 · 준비서류를 확인하세요' : '잔금안내(이체한도·준비서류) 전입니다' });
   if(cd && ct신고({ form: c.form, sub: c.sub })) out.push({ k: 'report', 이름: ct매매신고(c.form) ? '실거래신고 기한' : '임대차 신고 기한',
@@ -18645,14 +18647,16 @@ const ct영수칸 = (label, x) => `
     <tr><th rowspan="2" class="w">${label}</th><th>주소</th><td colspan="3">${ct값(x.addr, 260)}</td></tr>
     <tr><th>연락처</th><td>${ct값(x.phone, 110)}</td><th>성명</th><td class="sign">${ct값(x.name, 90)} <span class="ct-seal">(서명 또는 날인)</span></td></tr>`;
 /* 영수증 고른 돈 - 없는 중도금을 골라 두었으면 계약금으로 */
-const ct영수고름 = D => { const k = CT.extraRc || 'down'; return (k === 'mid' && !+D.mid) || (k === 'mid2' && !ct중도2(D)) ? 'down' : k; };
+const ct영수더 = (D, k) => { const m = /^mx([0-2])$/.exec(k || ''); return m ? ct중도더(D)[+m[1]] || null : null; };
+const ct영수고름 = D => { const k = CT.extraRc || 'down'; return (k === 'mid' && !+D.mid) || (k === 'mid2' && !ct중도2(D)) || (/^mx/.test(k) && !ct영수더(D, k)) ? 'down' : k; };
 function ctReceiptDocHTML(doc){
   const F = CT_FORMS[doc.form] || {}, D = doc.deal || {}, t = CT.track || {};
   const [aKey, aKo] = F.a || ['', ''], [bKey, bKo] = F.b || ['', ''], 사람 = doc.parties || {};
   const 무엇 = ct영수고름(D);
-  const 항목 = { down:'계약금', mid: ct중도2(D) ? '1차 중도금' : '중도금', mid2:'2차 중도금', bal:'잔금' }[무엇];
-  const 금액 = 무엇 === 'down' ? D.down : 무엇 === 'mid' ? D.mid : 무엇 === 'mid2' ? D.mid2 : ctBalance(D);
-  const 날 = 무엇 === 'down' ? doc.contractDate : 무엇 === 'mid' ? (t.midDate || D.midDate) : 무엇 === 'mid2' ? D.mid2Date : (t.balanceDate || D.balanceDate);
+  const 더 = ct영수더(D, 무엇);
+  const 항목 = 더 ? `${+무엇.slice(2) + 3}차 중도금` : { down:'계약금', mid: ct중도2(D) ? '1차 중도금' : '중도금', mid2:'2차 중도금', bal:'잔금' }[무엇];
+  const 금액 = 더 ? 더.amt : 무엇 === 'down' ? D.down : 무엇 === 'mid' ? D.mid : 무엇 === 'mid2' ? D.mid2 : ctBalance(D);
+  const 날 = 더 ? 더.date : 무엇 === 'down' ? doc.contractDate : 무엇 === 'mid' ? (t.midDate || D.midDate) : 무엇 === 'mid2' ? D.mid2Date : (t.balanceDate || D.balanceDate);
   const 동사 = F.verb || (F.lease ? '임대차' : '매매');
   return `${ct부속머리(doc)}
     <h1>영 수 증</h1>
@@ -18753,7 +18757,7 @@ function ctExtraHTML(doc){
   if(탭 === 'rc'){
     const 무엇 = ct영수고름(D);
     본 = `<div class="card pad ct-sec"><h2>어느 돈의 영수증인가요</h2>
-      <div class="ct-chips">${[['down','계약금'], ...(+D.mid ? [['mid', ct중도2(D) ? '1차 중도금' : '중도금']] : []), ...(ct중도2(D) ? [['mid2','2차 중도금']] : []), ['bal','잔금']].map(([k, t]) =>
+      <div class="ct-chips">${[['down','계약금'], ...(+D.mid ? [['mid', ct중도2(D) ? '1차 중도금' : '중도금']] : []), ...(ct중도2(D) ? [['mid2','2차 중도금']] : []), ...ct중도더(D).map((x, i) => [`mx${i}`, `${i + 3}차 중도금`]), ['bal','잔금']].map(([k, t]) =>
         `<button type="button" class="chip${무엇 === k ? ' on' : ''}" data-act="cte-rc" data-v="${k}">${t}</button>`).join('')}</div>
       <p class="sub" style="margin:0;font-size:13.5px">금액·날짜·부동산·당사자는 계약서에서 가져옵니다. 영수인·지급인 모두 성명·주소·연락처를 적고 날인합니다 - 거래신고 때 대금 지급 증빙으로 냅니다.</p></div>`;
   } else if(탭 === 'pw' || 탭 === 'rt' || 탭 === 'pi'){
@@ -22539,7 +22543,7 @@ function handle(a,v,el){
     case 'cs-paste': { const el = document.getElementById('csPaste'), n = cs붙여넣기(el ? el.value : '');
       if(!n) return toast('문자에서 칸을 찾지 못했습니다 - 같은 틀로 보낸 문자인지 확인해 주세요'), true;
       render(); toast(`붙여 넣은 문자에서 ${n}칸을 채웠습니다`); return true; }
-    case 'cte-rc': if(['down','mid','mid2','bal'].includes(v)){ CT.extraRc = v; render(); } return true;
+    case 'cte-rc': if(['down','mid','mid2','mx0','mx1','mx2','bal'].includes(v)){ CT.extraRc = v; render(); } return true;
     case 'cte-day': ct부속고침({ dayOwner: v === 'a' ? 'a' : '' }); return true;
     case 'cte-dir': { const [k, d] = String(v).split('|'); const x = ct부속(); ct부속고침({ dirs: { ...(x.dirs || {}), [k]: d === '-' ? '-' : '+' } }); return true; }
     case 'cte-add-dir': { const i = +v, a = (ct부속().adds || []).slice(); if(a[i]){ a[i] = { ...a[i], dir: a[i].dir === '-' ? '+' : '-' }; ct부속고침({ adds: a }); } return true; }

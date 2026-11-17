@@ -1412,5 +1412,10 @@ ok(js.includes("const CT_배치 = [['info', '정보 입력'") && js.includes("ca
 ok(js.includes("CT.mode === 'scan' || F.explain) ? 'both' : 고른배치") && js.includes("Math.min(크게 ? 1.7 : 1,") && js.includes("if(CT.lay === 'form' && CT.mode !== 'edit'"), '입력 방식 - 확인·설명서는 서식 입력으로 가지 않고, 서식 입력 · 전체화면은 서류를 키운다');
 ok(js.includes('doc.deal.down = 0;') && js.includes("if(같은줄){ CS.rowBusy = '';") && js.includes('if(CT.id === id && CT.dirty) return toast(') && js.split("&& !n && CT.doc.deal) delete CT.doc.deal.mids;").length === 3, '체결문자 줄 중복 · 추정 계약금 없음 · 저장 전 고침 지키기 · 숨은 중도금 지우기');
 
+/* ── 3~5차 중도금 일정 · 영수증 (2026-11-17) ── */
+{ const 서버 = fs.readFileSync(new URL('../api/_contract.js', import.meta.url), 'utf8');
+  ok(서버.includes("이름: `${i + 3}차 중도금`, 날: 날만(x.date)") && js.includes("이름: `${i + 3}차 중도금`, 날: ct날만(x.date)"), '3~5차 중도금 일정 - 서버와 화면이 같은 규칙');
+  ok(js.includes('const ct영수더 = (D, k) =>') && js.includes("['down','mid','mid2','mx0','mx1','mx2','bal'].includes(v)"), '영수증 - 3~5차 중도금도 고른다'); }
+
 console.log(`${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

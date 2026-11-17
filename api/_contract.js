@@ -762,6 +762,8 @@ export function 일정목록(c, 설정 = 알림설정()) {
   if (md && +c.mid > 0) out.push({ k: 'mid', 날: md, 바뀜: !!날만(t.midDate), 메모: '중도금 금액과 입금 계좌를 확인하세요' });
   /* 2차 중도금 (2026-11-10) - 1차가 있을 때만 */
   if (날만(c.md2) && +c.mid > 0 && +c.m2 > 0) out.push({ k: 'mid', 이름: '2차 중도금', 날: 날만(c.md2), 메모: '2차 중도금 금액과 입금 계좌를 확인하세요' });
+  /* 3~5차 (2026-11-17) - 2차가 있을 때만 */
+  if (+c.mid > 0 && +c.m2 > 0) (Array.isArray(c.mx) ? c.mx : []).slice(0, 3).forEach((x, i) => { if (x && +x.amt > 0 && 날만(x.date)) out.push({ k: 'mid', 이름: `${i + 3}차 중도금`, 날: 날만(x.date), 메모: `${i + 3}차 중도금 금액과 입금 계좌를 확인하세요` }); });
   if (bd) out.push({ k: 'balance', 날: bd, 바뀜: !!날만(t.balanceDate),
     메모: 날만(t.guideAt) ? '잔금안내 마침 · 준비서류를 확인하세요' : '잔금안내(이체한도·준비서류) 전입니다' });
   if (cd && 신고대상(c.form, { sub: c.sub })) out.push({ k: 'report', 이름: 매매신고(c.form) ? '실거래신고 기한' : '임대차 신고 기한',

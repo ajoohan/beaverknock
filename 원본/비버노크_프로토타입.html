@@ -3609,6 +3609,12 @@ body.mo .dz-more::after{content:"";position:absolute;left:-6px;right:-6px;top:-5
 body.mo .gm-lay{grid-template-columns:minmax(0,1fr)}
 body.mo .gm-box{height:56vh;min-height:320px}
 body.mo .gm-side{max-height:none}
+.gp-kac{display:flex;flex-direction:column;gap:6px}
+.gp-kres{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;border:1px solid var(--n200);border-radius:10px;overflow:hidden}
+.gp-kres:empty{display:none}
+.gp-kres button{display:flex;flex-direction:column;align-items:flex-start;gap:1px;width:100%;padding:9px 12px;border:0;border-bottom:1px solid var(--n100);background:var(--white);font:inherit;text-align:left;cursor:pointer;min-height:44px}
+.gp-kres button:hover{background:var(--n50)}
+.gp-kres small{font-size:12.5px;color:var(--n500)} .gp-kno{padding:10px 12px;font-size:13px;color:var(--n500)}
 .gp-box{display:flex;flex-direction:column;gap:8px;margin-top:14px;padding:14px 16px;background:var(--n50);border-radius:var(--r-md)}
 .gp-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
 .gp-list li{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#fff;border:1px solid var(--hair);border-radius:10px;padding:8px 12px}
@@ -9831,12 +9837,14 @@ const specOf = L => (L.kind==='home'
    화면 열쇠는 서버가 준다(/api/feed?maps=1 - GOOGLE_MAPS_KEY, 사이트 주소로 묶인 공개 열쇠). 없으면 '준비 중' 으로 남는다.
    지도는 한 번 만든 것을 계속 쓴다 - render() 가 #app 을 통째로 다시 그려도, 그린 뒤 [data-gmap] 자리로 옮겨 붙인다(지도붙이기).
    좌표는 서버가 도로명 주소로 찾아 둔다(api/_geo.js). 손님에게는 대략 위치(약 100m)만 간다 */
-const GM = { st:'', el:null, map:null, marks:[], circles:[], info:null, last:'', ac:null, acBusy:false };
+const GM = { st:'', el:null, map:null, marks:[], circles:[], info:null, last:'', ac:null, acBusy:false, p:'google' };
 function 구글지도(){
   if(GM.st) return;
   GM.st = 'loading';
   fetch('/api/feed?maps=1').then(r => r.json()).then(j => {
     if(!j.key) throw new Error('nokey');
+    GM.p = j.provider === 'kakao' ? 'kakao' : 'google';
+    if(GM.p === 'kakao') return 카카오불러오기(j.key);
     return new Promise((ok, no) => {
       window.gm_authFailure = () => { GM.st = 'bad'; render(); };   /* 열쇠가 막혔거나 이 주소에서 못 쓰는 열쇠 */
       window.__bkGm = () => ok();
@@ -9851,6 +9859,7 @@ const 지도글 = () => GM.st === 'nokey' ? '지도를 준비 중입니다 - 곧
   : GM.st === 'err' ? '네트워크 문제로 지도를 불러오지 못했습니다. 새로 고침해 주세요.' : '지도를 불러오는 중입니다…';
 const 지도표시 = {};   /* [data-gmap] 이름 → () => { points:[{id,lat,lng,t,html,on}], circles:[{lat,lng,r}] } */
 function 지도붙이기(){
+  if(GM.st === 'ok' && GM.p === 'kakao') return 카카오붙이기();
   if(GM.st !== 'ok' || typeof google === 'undefined' || !google.maps) return;
   const 자리 = document.querySelector('#app [data-gmap]');
   if(자리){
@@ -9883,8 +9892,99 @@ function 지도그리기(표){
   if(표.points.length + 표.circles.length > 1) GM.map.fitBounds(틀, 48);
   else if(표.points.length + 표.circles.length === 1){ GM.map.setCenter(틀.getCenter()); GM.map.setZoom(15); }
 }
-function 지도가기(id){ const m = GM.byId && GM.byId[id]; if(!m) return; GM.map.panTo(m.getPosition()); if(GM.map.getZoom() < 15) GM.map.setZoom(15); google.maps.event.trigger(m, 'click'); }
+function 지도가기(id){ const m = GM.byId && GM.byId[id]; if(!m) return;
+  if(GM.p === 'kakao') return 카카오가기(id);
+  GM.map.panTo(m.getPosition()); if(GM.map.getZoom() < 15) GM.map.setZoom(15); google.maps.event.trigger(m, 'click'); }
 const 지도값 = x => `${x.deal === '매매' ? '매매 ' : '보증금 '}${won(x.dep)}${+x.rent ? ` / 월 ${won(x.rent)}` : ''}`;
+
+/* ── 카카오 지도 (2026-11-17 대표님 · 구글 코드는 그대로 두고 갈라 쓴다) ──
+   서버가 /api/feed?maps=1 에서 provider 와 열쇠(카카오는 JavaScript 키)를 내준다. 지도 · 장소 검색은 카카오 JS SDK(libraries=services)를 쓴다.
+   표시(지도표시)와 고른 곳(d.places)의 모양은 구글과 같다 - 서버 · 일치율 계산은 어느 지도든 같은 좌표를 본다 */
+function 카카오불러오기(열쇠){
+  return new Promise((ok, no) => {
+    const 끝 = setTimeout(() => { GM.st = 'bad'; render(); no(new Error('kakao-timeout')); }, 10000);   /* 열쇠 · 사이트 주소 등록이 틀리면 SDK 가 조용히 멈춘다 */
+    const s = document.createElement('script');
+    s.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${encodeURIComponent(열쇠)}&libraries=services&autoload=false`;
+    s.async = true; s.onerror = () => { clearTimeout(끝); no(new Error('load')); };
+    s.onload = () => { try{ kakao.maps.load(() => { clearTimeout(끝); ok(); }); }catch(_){ clearTimeout(끝); no(new Error('load')); } };
+    document.head.appendChild(s);
+  });
+}
+const 카카오점 = (x) => { const el = document.createElement('div'); el.style.cssText = `width:18px;height:18px;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 4px rgba(22,23,29,.35);cursor:pointer;background:${x.on ? '#5B3FD6' : '#8A8FA0'}`; el.title = x.t || ''; return el; };
+function 카카오붙이기(){
+  if(typeof kakao === 'undefined' || !kakao.maps || !kakao.maps.Map) return;
+  const 자리 = document.querySelector('#app [data-gmap]');
+  if(자리){
+    if(!GM.el){
+      GM.el = document.createElement('div'); GM.el.className = 'gm-map';
+      GM.map = new kakao.maps.Map(GM.el, { center: new kakao.maps.LatLng(37.545, 127.2), level: 6 });
+      GM.info = new kakao.maps.InfoWindow({ removable: true });
+    }
+    if(GM.el.parentNode !== 자리){ 자리.textContent = ''; 자리.appendChild(GM.el); setTimeout(() => { try{ GM.map.relayout(); }catch(_){} }); }
+    const 표 = (지도표시[자리.dataset.gmap] || (() => ({ points: [], circles: [] })))();
+    const 열쇠 = 자리.dataset.gmap + JSON.stringify([표.points.map(x => [x.id, x.lat, x.lng, x.on]), 표.circles]);
+    if(GM.last !== 열쇠){ GM.last = 열쇠; 카카오그리기(표); }
+  }
+  const 칸 = document.querySelector('#app [data-gplace]');
+  if(칸) 카카오검색붙이기(칸);
+}
+function 카카오그리기(표){
+  GM.marks.forEach(m => m.setMap(null)); GM.circles.forEach(c => c.setMap(null)); GM.marks = []; GM.circles = []; GM.byId = {};
+  const 틀 = new kakao.maps.LatLngBounds();
+  for(const x of 표.points){
+    const pos = new kakao.maps.LatLng(x.lat, x.lng), el = 카카오점(x);
+    const o = new kakao.maps.CustomOverlay({ position: pos, content: el, yAnchor: .5, xAnchor: .5, clickable: true });
+    const 열기 = () => { GM.info.setContent(`<div style="padding:8px 10px;min-width:160px;font-size:13px;line-height:1.5">${x.html}</div>`); GM.info.setPosition(pos); GM.info.open(GM.map); };
+    el.addEventListener('click', 열기);
+    o.setMap(GM.map); o.getPosition = () => pos; o.열기 = 열기;
+    GM.marks.push(o); GM.byId[x.id] = o; 틀.extend(pos);
+  }
+  for(const c of 표.circles){
+    const ci = new kakao.maps.Circle({ center: new kakao.maps.LatLng(c.lat, c.lng), radius: c.r, strokeWeight: 1.5, strokeColor: '#5B3FD6', strokeOpacity: .6, fillColor: '#5B3FD6', fillOpacity: .06 });
+    ci.setMap(GM.map); GM.circles.push(ci);
+    틀.extend(new kakao.maps.LatLng(c.lat + c.r / 111000, c.lng)); 틀.extend(new kakao.maps.LatLng(c.lat - c.r / 111000, c.lng));
+  }
+  const 수 = 표.points.length + 표.circles.length;
+  if(수 > 1) GM.map.setBounds(틀);
+  else if(수 === 1){ GM.map.setCenter(표.points[0] ? new kakao.maps.LatLng(표.points[0].lat, 표.points[0].lng) : new kakao.maps.LatLng(표.circles[0].lat, 표.circles[0].lng)); GM.map.setLevel(4); }
+}
+function 카카오가기(id){ const m = GM.byId && GM.byId[id]; if(!m) return; GM.map.panTo(m.getPosition()); if(GM.map.getLevel() > 4) GM.map.setLevel(4); m.열기(); }
+/* 장소 검색 - 입력창 + 결과 목록(카카오 키워드 검색). 고르면 d.places 에 구글과 같은 모양으로 담는다 */
+function 카카오검색붙이기(칸){
+  if(typeof kakao === 'undefined' || !kakao.maps || !kakao.maps.services) return;
+  if(!GM.kac){
+    const 틀 = document.createElement('div'); 틀.className = 'gp-kac';
+    const 입력 = document.createElement('input'); 입력.className = 'inp'; 입력.type = 'search'; 입력.placeholder = '역 · 아파트 단지 · 장소 이름'; 입력.autocomplete = 'off'; 입력.setAttribute('aria-label', '장소 검색');
+    const 목록 = document.createElement('ul'); 목록.className = 'gp-kres'; 목록.setAttribute('role', 'listbox');
+    틀.append(입력, 목록);
+    const 장소 = new kakao.maps.services.Places(); let 타이머 = 0, 번 = 0;
+    입력.addEventListener('input', () => { clearTimeout(타이머); const q = 입력.value.trim(); if(q.length < 2){ 목록.textContent = ''; return; }
+      타이머 = setTimeout(() => { const 이번 = ++번;
+        장소.keywordSearch(q, (자료, 상태) => { if(이번 !== 번) return; 목록.textContent = '';
+          if(상태 !== kakao.maps.services.Status.OK){ const li = document.createElement('li'); li.className = 'gp-kno'; li.textContent = '찾지 못했습니다 - 다른 이름으로 찾아 보세요'; 목록.appendChild(li); return; }
+          for(const p of 자료.slice(0, 8)){ const li = document.createElement('li'), b = document.createElement('button'); b.type = 'button'; b.setAttribute('role', 'option');
+            const t = document.createElement('b'); t.textContent = p.place_name; const a = document.createElement('small'); a.textContent = p.road_address_name || p.address_name || ''; b.append(t, a);
+            b.addEventListener('click', () => { 카카오곳더하기(p); 입력.value = ''; 목록.textContent = ''; }); li.appendChild(b); 목록.appendChild(li); } },
+          { location: new kakao.maps.LatLng(37.55, 127.05), size: 8 }); }, 280); });
+    GM.kac = 틀;
+  }
+  if(GM.kac.parentNode !== 칸) 칸.appendChild(GM.kac);
+}
+function 카카오곳더하기(p){
+  const d = S.draft; d.places = d.places || []; d.dongs = d.dongs || [];
+  const lat = +p.y, lng = +p.x; if(!(lat > 33 && lat < 39 && lng > 124 && lng < 132)) return toast('위치를 알 수 없는 곳입니다');
+  const 주소 = String(p.address_name || p.road_address_name || '').split(/\s+/), 시도 = 주소[0] || '';
+  if(!/서울|경기/.test(시도)) return toast('서울 · 경기 안의 곳만 고를 수 있습니다');
+  const area = String(주소[1] || '').trim();
+  if(!area) return toast('이 곳의 시 · 구를 알 수 없습니다 - 다른 이름으로 찾아 주세요');
+  const 이름 = String(p.place_name || '').trim().slice(0, 40);
+  if(d.places.some(x => x.name === 이름)) return toast('이미 고른 곳입니다');
+  if(d.dongs.length + d.places.length >= 5) return toast('지역은 5곳까지 고를 수 있습니다 - 하나를 빼고 골라 주세요');
+  const t = p.category_group_code === 'SW8' ? 'station'
+    : /아파트|단지|빌라|타운|마을|힐스|자이|래미안|푸르지오|편한세상|더샵|아이파크|캐슬|센트럴|파크|하이츠|맨션/.test(이름) ? 'complex' : 'radius';
+  d.places.push({ t, name: 이름, lat: +lat.toFixed(6), lng: +lng.toFixed(6), r: { station: 1000, complex: 300, radius: 1000 }[t], area });
+  render();
+}
 
 /* 파트너 매물지도 - 우리 사무소 매물장부. 노출 중은 보라, 장부만은 회색 */
 function 매물좌표채우기(){
@@ -9961,6 +10061,7 @@ function 고른곳HTML(d){
   </div>`;
 }
 async function 자동완성붙이기(칸){
+  if(GM.p === 'kakao') return 카카오검색붙이기(칸);
   if(!GM.ac){
     if(GM.acBusy) return; GM.acBusy = true;
     try{
@@ -13765,6 +13866,7 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
+  { v:'26.11.17.22', 날:'2026-11-17', 줄:[ '지도 - 구글 지도에 더해 카카오 지도도 쓸 수 있습니다(운영 설정으로 고름 · 구글 코드는 그대로 남아 있음). 카카오 지도는 개인정보 처리방침 개정 안내 기간이 끝나는 11월 24일부터 켜집니다' ] },
   { v:'26.11.17.21', 날:'2026-11-17', 줄:[ '손님 - ‘보고 싶어요’를 누른 매물의 금액이 바뀌면 카카오 알림톡으로 알려 드립니다(제안 상세에서 끌 수 있음 · 알림톡 템플릿 심사가 끝나면 켜집니다)',
     '계약서 일정 · 체크 - 공동중개 상대 사무소와 날짜 · 금액만 나누는 공유 코드(당사자 · 소재지 · 연락처는 보이지 않음). 상대가 코드를 넣으면 계약일 · 중도금일 · 잔금일 · 보증금이 따라가고, 상대가 바꾸면 주황으로 알려 줍니다' ] },
   { v:'26.11.17.20', 날:'2026-11-17', 줄:[ '매물 거래 방식에 연세 · 단기임대 - 장부에 적고 노출할 수 있습니다(손님 조건과 자동 대조는 하지 않습니다 · 금액 표시는 연세면 ‘연’으로)' ] },

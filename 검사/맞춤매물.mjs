@@ -157,5 +157,27 @@ globalThis.fetch = async (url, opt = {}) => {
 { const fs = await import('node:fs'); const 서버 = fs.readFileSync(new URL('../api/_match.js', import.meta.url), 'utf8'), 화면 = fs.readFileSync(new URL('../원본/비버노크_프로토타입.html', import.meta.url), 'utf8');
   ok(서버.includes("if (L.deal === '연세' || L.deal === '단기임대') return null;") && 화면.includes("const 대조안함 = deal => deal === '연세' || deal === '단기임대';") && 화면.includes("['전세','월세','매매','연세','단기임대']"), '연세 · 단기임대 매물은 적고 노출하되 자동 대조에서는 뺀다'); }
 
+/* ── 카카오 지도 (2026-11-17 대표님 · 구글은 그대로) ── */
+{ const fs = await import('node:fs'); const G2 = await import('../api/_geo.js');
+  const 환경 = ['MAP_PROVIDER', 'KAKAO_MAPS_KEY', 'KAKAO_MAPS_REST_KEY', 'GOOGLE_MAPS_SERVER_KEY', 'GOOGLE_MAPS_KEY'], 옛값 = Object.fromEntries(환경.map(k => [k, process.env[k]])), 원fetch = globalThis.fetch;
+  const 지움 = () => 환경.forEach(k => delete process.env[k]);
+  지움(); ok(G2.지도제공자() === '' && !G2.지도켜짐(), '열쇠가 없으면 지도는 꺼져 있다');
+  process.env.GOOGLE_MAPS_SERVER_KEY = 'g'; process.env.GOOGLE_MAPS_KEY = 'gk'; ok(G2.지도제공자() === 'google' && G2.화면지도().key === 'gk', '구글 열쇠만 있으면 구글(예전 그대로)');
+  process.env.KAKAO_MAPS_KEY = 'kj'; process.env.KAKAO_MAPS_REST_KEY = 'kr'; G2.__setKakaoFrom(Date.now() + 1e9);
+  ok(G2.지도제공자() === 'google', '카카오는 처리방침 안내 기간(11월 24일) 전에는 켜지지 않는다');
+  G2.__setKakaoFrom(0); ok(G2.지도제공자() === 'kakao' && G2.화면지도().provider === 'kakao' && G2.화면지도().key === 'kj' && !JSON.stringify(G2.화면지도()).includes('kr'), '둘 다 있으면 카카오 · 화면에는 JavaScript 키만 나간다(REST 키는 서버에만)');
+  process.env.MAP_PROVIDER = 'google'; ok(G2.지도제공자() === 'google', 'MAP_PROVIDER=google 이면 구글');
+  delete process.env.MAP_PROVIDER; let 쓴주소 = '';
+  globalThis.fetch = async (u, o = {}) => { 쓴주소 = String(u) + '|' + ((o.headers || {}).Authorization || ''); return new Response(JSON.stringify(/address\.json/.test(String(u)) ? { documents: [{ x: '127.2', y: '37.56' }] } : { documents: [] }), { status: 200 }); };
+  const z = await G2.좌표찾기('경기도 하남시 미사강변대로 1');
+  ok(z.sure && z.v && z.v.lat === 37.56 && z.v.lng === 127.2 && /dapi\.kakao\.com\/v2\/local\/search\/address\.json/.test(쓴주소) && /KakaoAK kr$/.test(쓴주소), '카카오 주소 검색으로 좌표를 찾는다(REST 키는 헤더로)');
+  globalThis.fetch = async () => new Response('', { status: 401 }); G2.__setKakaoFrom(0);
+  const 실패 = await G2.좌표찾기('다른 주소로 2'); ok(!실패.v && !실패.sure, '열쇠 거절 · 한도 초과는 찾아 봤음으로 남기지 않는다');
+  globalThis.fetch = 원fetch; 지움(); for (const [k, v] of Object.entries(옛값)) if (v !== undefined) process.env[k] = v; G2.__setKakaoFrom(Date.parse('2026-11-23T15:00:00Z'));
+  const 화면 = fs.readFileSync(new URL('../원본/비버노크_프로토타입.html', import.meta.url), 'utf8'), 방침 = fs.readFileSync(new URL('../privacy.html', import.meta.url), 'utf8'), 설정 = fs.readFileSync(new URL('../vercel.json', import.meta.url), 'utf8');
+  ok(화면.includes("if(GM.p === 'kakao') return 카카오불러오기(j.key);") && 화면.includes('function 카카오그리기(표){') && 화면.includes('function 카카오곳더하기(p){') && 화면.includes('const { PlaceAutocompleteElement } = await google.maps.importLibrary') && 화면.includes('new google.maps.Map(GM.el'), '화면 - 카카오를 더하고 구글 지도 · 장소 검색 코드는 그대로 남아 있다');
+  ok(/script-src[^;]*https:\/\/dapi\.kakao\.com[^;]*https:\/\/\*\.daumcdn\.net/.test(설정) && /connect-src[^;]*https:\/\/maps\.googleapis\.com[^;]*https:\/\/dapi\.kakao\.com/.test(설정), '보안 규칙 - 카카오 주소를 열고 구글 주소도 그대로');
+  ok(방침.includes('카카오 (대한민국) - 지도') && 방침.includes('Google LLC (미국) - 지도'), '처리방침 - 카카오 지도 항목을 더하고 구글 항목도 남긴다'); }
+
 console.log(`\n${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

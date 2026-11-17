@@ -20,7 +20,7 @@ import { 직원이력, 이력한줄, 보조원잠금, 자격증크기, 자격증
 import { 직원들, 직원고침, 직원사무소, 직원들어옴, 직원역할, 다른사무소직원 } from './_staff.js';
 import { notify, mailWithFile } from './_notify.js';
 import { roomAgent, invitePeek } from './_room.js';
-import { 지도켜짐, 물건좌표잠깐, 내물건좌표 } from './_geo.js';
+import { 지도켜짐, 화면지도, 물건좌표잠깐, 내물건좌표 } from './_geo.js';
 import { 건축물대장, 포털오류 } from './_bld.js';
 
 const KIND_KO = { home: '주거', shop: '상가', office: '오피스', storage: '창고' };
@@ -580,7 +580,7 @@ export default async function handler(req, res) {
   /* 구글 지도 화면 열쇠 (2026-11-14) - 사이트 주소로 묶인 공개 열쇠라 로그인 없이 준다. 없으면 빈 값(화면이 '준비 중') */
   if (req.method === 'GET' && req.query && req.query.maps) {
     res.setHeader('Cache-Control', 'public, max-age=300');
-    return res.status(200).json({ ok: true, key: String(process.env.GOOGLE_MAPS_KEY || '').trim(), geo: 지도켜짐() });
+    return res.status(200).json({ ok: true, ...화면지도(), geo: 지도켜짐() });
   }
   /* 일정 달력 구독(휴대폰 · 구글 달력이 몇 시간마다 읽는다) - 사무소마다 서명한 주소로만. api/_contract.js icsFeed */
   if (req.method === 'GET' && req.query && req.query.ics) {

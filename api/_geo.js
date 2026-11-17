@@ -7,15 +7,55 @@
  * 좌표는 bk_listing.lat · lng · geo_at 에 둔다(0042). 칸이 없으면 조용히 넘어간다. */
 import { sbHeaders, sbUrl } from './_auth.js';
 
-export const 지도켜짐 = () => !!String(process.env.GOOGLE_MAPS_SERVER_KEY || '').trim();
+/* 어느 지도를 쓰는가 (2026-11-17) - 구글(GOOGLE_MAPS_KEY · GOOGLE_MAPS_SERVER_KEY)과 카카오(KAKAO_MAPS_KEY · KAKAO_MAPS_REST_KEY) 둘 다 지원한다.
+   MAP_PROVIDER=google|kakao 로 고르고, 안 정하면 카카오 열쇠가 다 있으면 카카오 · 아니면 구글 · 둘 다 없으면 꺼짐.
+   카카오는 개인정보 처리방침 개정(2026-11-17 게시)의 안내 기간이 끝나는 2026-11-24 0시(한국)부터 켜진다 */
+const 열쇠 = k => String(process.env[k] || '').trim();
+let 카카오부터 = Date.parse('2026-11-23T15:00:00Z');
+export const __setKakaoFrom = ms => { 카카오부터 = ms; };
+const 카카오열림 = () => Date.now() >= 카카오부터 && !!열쇠('KAKAO_MAPS_KEY') && !!열쇠('KAKAO_MAPS_REST_KEY');
+const 구글열림 = () => !!열쇠('GOOGLE_MAPS_SERVER_KEY');
+export function 지도제공자() {
+  const w = 열쇠('MAP_PROVIDER').toLowerCase();
+  if (w === 'google') return 구글열림() ? 'google' : '';
+  if (w === 'kakao') return 카카오열림() ? 'kakao' : '';
+  return 카카오열림() ? 'kakao' : 구글열림() ? 'google' : '';
+}
+export const 지도켜짐 = () => 지도제공자() !== '';
+/* 화면에 내줄 지도 열쇠 - 켜진 제공자의 공개 열쇠(카카오는 JavaScript 키 · 구글은 Maps 키). 서버 열쇠는 나가지 않는다 */
+export function 화면지도() {
+  const p = 지도제공자();
+  if (p === 'kakao') return { provider: 'kakao', key: 열쇠('KAKAO_MAPS_KEY') };
+  if (p === 'google' || 열쇠('GOOGLE_MAPS_KEY')) return { provider: 'google', key: 열쇠('GOOGLE_MAPS_KEY') };
+  return { provider: '', key: '' };
+}
+/* 카카오 로컬 API - 주소 → 좌표(없으면 키워드로 한 번 더). REST 키는 서버에만 둔다 */
+async function 카카오좌표(q) {
+  const 머리 = { Authorization: 'KakaoAK ' + 열쇠('KAKAO_MAPS_REST_KEY') };
+  const 부르기 = async 경로 => { const r = await fetch('https://dapi.kakao.com/v2/local/search/' + 경로, { headers: 머리, signal: AbortSignal.timeout(6000) });
+    if (!r.ok) { console.error('[geo-kakao]', r.status); return { 실패: true }; }
+    return { docs: ((await r.json().catch(() => ({}))).documents) || [] }; };
+  let a = await 부르기('address.json?size=1&query=' + encodeURIComponent(q));
+  if (a.실패) return { v: null, sure: false };
+  let d = a.docs[0];
+  if (!d) { a = await 부르기('keyword.json?size=1&query=' + encodeURIComponent(q)); if (a.실패) return { v: null, sure: false }; d = a.docs[0]; }
+  const lat = d ? +d.y : NaN, lng = d ? +d.x : NaN;
+  const v = d && lat > 33 && lat < 39 && lng > 124 && lng < 132 ? { lat: +lat.toFixed(6), lng: +lng.toFixed(6) } : null;
+  return { v, sure: true };
+}
 const 캐시 = new Map();
 
 /* 주소 하나 → { v: {lat,lng}|null, sure }. sure = 구글이 확실히 답했다(OK · ZERO_RESULTS).
  * 시간 초과 · 열쇠 거절 · 사용량 초과처럼 잠깐 생긴 실패는 sure=false - 기록하지 않고 다음에 다시 찾는다 */
 export async function 좌표찾기(주소) {
   const q = String(주소 || '').replace(/\s*\(.*$/, '').replace(/\s+/g, ' ').trim().slice(0, 160);
-  if (!q || !지도켜짐()) return { v: null, sure: false };
-  if (캐시.has(q)) return { v: 캐시.get(q), sure: true };
+  const 제공 = 지도제공자();
+  if (!q || !제공) return { v: null, sure: false };
+  const 캐시키 = 제공 + '|' + q;
+  if (캐시.has(캐시키)) return { v: 캐시.get(캐시키), sure: true };
+  if (제공 === 'kakao') {
+    try { const z = await 카카오좌표(q); if (캐시.size > 500) 캐시.clear(); if (z.sure) 캐시.set(캐시키, z.v); return z; } catch { return { v: null, sure: false }; }
+  }
   try {
     const u = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(q)}&region=kr&language=ko&components=country:KR&key=${encodeURIComponent(process.env.GOOGLE_MAPS_SERVER_KEY.trim())}`;
     const r = await fetch(u, { signal: AbortSignal.timeout(6000) });
@@ -26,7 +66,7 @@ export async function 좌표찾기(주소) {
     const sure = st === 'OK' || st === 'ZERO_RESULTS';
     if (!sure && st) console.error('[geo]', st, String(j.error_message || '').slice(0, 120));
     if (캐시.size > 500) 캐시.clear();
-    if (sure) 캐시.set(q, v);
+    if (sure) 캐시.set(캐시키, v);
     return { v, sure };
   } catch { return { v: null, sure: false }; }
 }

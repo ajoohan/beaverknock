@@ -13617,6 +13617,7 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
+  { v:'26.11.17', 날:'2026-11-17', 줄:[ '계약서 ↔ 매물장부 - 등록 물건에서 시작한 계약서를 잔금 완료로 바꾸면 그 물건이 매물장부에서 거래완료로 옮겨지고 노출도 꺼집니다 · 완료를 되돌리면 물건도 목록으로 돌아옵니다' ] },
   { v:'26.11.16', 날:'2026-11-16', 줄:[ '매물 신고 - 운영자가 공개를 멈춘 매물은 중개사가 다시 켤 수 없습니다(신고함의 ‘멈춤 풀기’로만 풂) · 거의 같이 들어온 신고도 빠지지 않습니다 · 오래된 미처리 신고도 신고함에 모두 보입니다',
     '매물지도 - 좌표 찾기가 잠깐 실패하면 다음에 다시 찾습니다 · 지도를 열 때 좌표를 여러 개씩 함께 찾고, 물건 저장은 좌표를 오래 기다리지 않습니다',
     '손님 개인정보 - 열람 전 요약에는 손님이 고른 곳의 정확한 위치가 실리지 않습니다(반경 중심은 시 · 구로만)' ] },
@@ -15294,7 +15295,8 @@ function ctMake(catK, sub, deal){
   CT.filled = new Set(); CT.scan = null; CT.scanWarn = [];
   /* 시작 방법 (2026-11-12) - 등록 물건의 건물명 · 금액을 옮긴다. 주소는 물건에 없어 계약서에서 찾는다 */
   const 물 = CT.start === 'listing' && CT.startL ? (S.listings || []).find(x => x.id === CT.startL) : null;
-  if(물){ const d = CT.doc; d.property = { ...(d.property || {}), bdNm: 물.name || '' };
+  /* listingId - 잔금 완료로 바꾸면 이 물건도 거래완료로 옮긴다(2026-11-17 파트너 방향, 서버 물건따라가기) */
+  if(물){ const d = CT.doc; d.property = { ...(d.property || {}), bdNm: 물.name || '' }; if(/^[0-9a-f-]{36}$/i.test(String(물.id || ''))) d.listingId = 물.id;
     if(form === 'sale'){ if(+물.dep) d.deal.price = +물.dep; }
     else { if(+물.dep) d.deal.deposit = +물.dep; if(+물.rent && deal !== '전세') d.deal.rent = +물.rent; if(+물.fee) d.deal.fee = +물.fee; } }
   CT.startL = null;
@@ -16664,7 +16666,7 @@ function ctWizHTML(전체){
   const 복사중 = p.cat === 'copy' || p.cat === 'renew', 시작 = 복사중 ? 'copy' : (CT.start || 'docs');
   const 물건 = (S.listings || []).filter(l => !l.seed && l.status !== 'closed');
   const 시작줄 = `<div class="ctw-start"><span class="lab">시작 방법</span><div class="ctw-sts" role="radiogroup" aria-label="시작 방법">${
-    [['listing', '등록 물건에서', '내 물건을 고르면 건물명 · 금액이 들어갑니다'], ['docs', '서류로 채우기', '등기부 · 건축물대장 · 토지이용계획 - 사진도 됩니다'], ['copy', '기존 계약서 복사', '지난 계약서의 목적물 · 당사자 · 특약'], ['blank', '빈 양식에 직접', '자동 입력 없이 바로 적기']]
+    [['listing', '등록 물건에서', '건물명 · 금액이 들어가고, 잔금 완료 때 물건도 거래완료로'], ['docs', '서류로 채우기', '등기부 · 건축물대장 · 토지이용계획 - 사진도 됩니다'], ['copy', '기존 계약서 복사', '지난 계약서의 목적물 · 당사자 · 특약'], ['blank', '빈 양식에 직접', '자동 입력 없이 바로 적기']]
       .map(([k, b, s]) => `<button type="button" class="ctw-st${시작 === k ? ' on' : ''}" data-act="ctp-start" data-v="${k}" role="radio" aria-checked="${시작 === k}"><b>${b}</b><span>${s}</span></button>`).join('')}</div>
     ${시작 === 'listing' ? (물건.length ? `<div class="ctw-ls" role="group" aria-label="내 물건 고르기">${물건.slice(0, 12).map(l => `<button type="button" class="ctw-c${CT.startL === l.id ? ' on' : ''}" data-act="ctp-listing" data-v="${esc(l.id)}" aria-pressed="${CT.startL === l.id}">${esc(l.name || '이름 없는 물건')}${l.deal ? ` · ${esc(l.deal)}` : ''}</button>`).join('')}</div>`
       : `<p class="ctw-note" style="margin:0">올려 둔 물건이 없습니다. <a class="lnk" data-go="#/partner/listing/new">물건 올리기</a> 뒤에 고를 수 있습니다 - 지금은 다른 방법으로 시작하세요.</p>`) : ''}</div>`;
@@ -17897,6 +17899,10 @@ function ctTrackSet(patch){
   CT.track = t; render(); ctTrackSave(true);
 }
 let ctTrackT = 0;
+/* 계약 진행 상태를 완료로(또는 되돌림) 바꾸면 서버가 그 계약서를 시작한 등록 물건도 따라 옮긴다 - 알림 문구 */
+const ct물건알림 = l => { if(l !== 'done' && l !== 'active') return '';
+  if(typeof loadListings === 'function') loadListings(true);
+  return l === 'done' ? '매물장부의 그 물건도 거래완료로 옮겼습니다' : '매물장부의 그 물건도 목록으로 되돌렸습니다 - 노출은 꺼져 있습니다'; };
 function ctTrackSave(바로){
   clearTimeout(ctTrackT);
   /* 저장을 걸 때의 track 을 붙잡아 둔다 - 0.5초 안에 다른 계약서로 넘어가도 앞 계약서에 빈 track 을 보내 지우지 않게(2026-11-05 점검) */
@@ -17910,6 +17916,7 @@ function ctTrackSave(바로){
     if(CT.id === id){ CT.track = 새것; CT.row = { ...(CT.row || {}), track: 새것 }; }
     const 행 = (CT.list || []).find(r => r.id === id); if(행) 행.track = 새것;
     if(CT.mode === 'plan') render();
+    const 물알림 = ct물건알림(j.listing); if(물알림) toast(물알림);
   }, 바로 ? 0 : 500);
 }
 
@@ -22276,8 +22283,10 @@ function handle(a,v,el){
       const { ok, j } = await ctPost({ what:'contract-state', id: v, state: 'done' }).catch(() => ({ ok:false, j:{} }));
       if(!ok) return toast(j.error || '완료로 바꾸지 못했습니다');
       if(행) 행.track = j.track; render();
-      toast('잔금 완료로 표시했습니다', { undo: async () => { const x = await ctPost({ what:'contract-state', id: v, state: 전 }).catch(() => ({ ok:false, j:{} }));
-        if(x.ok && 행){ 행.track = x.j.track; render(); } } });
+      const 물알림 = ct물건알림(j.listing);
+      toast('잔금 완료로 표시했습니다' + (물알림 ? ' · ' + 물알림 : ''), { undo: async () => { const x = await ctPost({ what:'contract-state', id: v, state: 전 }).catch(() => ({ ok:false, j:{} }));
+        if(x.ok && 행){ 행.track = x.j.track; render(); }
+        const 되알림 = x.ok && ct물건알림(x.j.listing); if(되알림) toast(되알림); } });
     })(); return true;
     case 'ct-autoarch': { const A = CT.alert; if(!A || !A.loaded || A.need || A.err) return true; A.cfg = ct알림설정({ ...ct알림설정(A.cfg), autoArch: !ct알림설정(A.cfg).autoArch });
       ctAlertSave(); render(); toast(A.cfg.autoArch ? '완료 · 취소 건을 3개월 뒤 보관함으로 옮깁니다(매일 아침)' : '자동 보관을 껐습니다'); return true; }

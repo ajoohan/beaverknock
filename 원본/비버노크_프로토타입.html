@@ -3117,6 +3117,10 @@ body.mo .scan-flow small{display:none}
 .scan-done span{display:block;font-size:13px;line-height:1.5;color:var(--n700)}
 .scan-done ul{margin:6px 0 0;padding-left:16px;font-size:13.5px;line-height:1.55;color:var(--warn)}
 .scan-mini{align-items:center;background:var(--n50);border:1px dashed var(--n300)}
+.scan-st{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:8px 0 0;padding:0;list-style:none}
+.scan-st li{display:flex;flex-direction:column;gap:2px;padding:7px 9px;border:1px solid var(--n200);border-radius:8px;background:var(--white);font-size:12.5px;color:var(--n500)}
+.scan-st li b{font-size:12.5px;color:var(--warn,#9A6700)} .scan-st li.ok b{color:var(--ok)} .scan-st li.ok{border-color:rgba(27,122,70,.3)}
+body.mo .scan-st{grid-template-columns:repeat(2,minmax(0,1fr))}
 .ls-card{display:flex;flex-direction:column;gap:12px}
 /* 가입 첫 화면 - 역할 고르기 (2026-11-12) */
 /* 시작 가이드 (2026-11-12) */
@@ -13740,6 +13744,10 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
+  { v:'26.11.17.15', 날:'2026-11-17', 줄:[ '계약체결 문자 - 보낸 기록의 ‘계약현황에 추가’로 금액 · 날짜 · 목적물이 계약현황 줄로 바로 들어갑니다(입금일은 계약체결일로). 계약서를 이어 쓰면 계약서 내용이 반영됩니다',
+    '계약현황 표에 공동중개(다른 사무소가 쓴) 계약서도 함께 보입니다 - 누르면 날짜 · 금액을 고칩니다',
+    '중도금 3차 · 4차 · 5차 - 2차 중도금을 적으면 ‘+ 3차 중도금 더하기’가 나옵니다. 잔금은 모두 빼서 자동 계산',
+    '계약서 작성 - 공적장부(등기부 · 건축물대장 표제부 · 전유부 · 토지이용계획)가 반영됐는지 한 줄로 보입니다' ] },
   { v:'26.11.17.14', 날:'2026-11-17', 줄:[ '계약현황 ‘고치기’로 바꾼 값이 계약서를 다시 열었을 때 옛 값으로 돌아가던 문제 · 소재지는 손댔을 때만 바뀌고, 바꾸면 옛 주소 코드를 지웁니다',
     '금액을 아직 안 적은 장부 물건은 ‘맞는 손님’에 잡히지 않습니다',
     '등기부 · 건축물대장만 올려 지번만 있는 계약서도 소재지를 채운 것으로 봅니다(확정본으로 저장할 수 있음) · 확인·설명서가 고쳐 적은 소재지를 물려받습니다',
@@ -15360,7 +15368,10 @@ function ctSet(o, path, v){ const ks = path.split('.'); const last = ks.pop();
 const ctTotal = d => +(d.price != null ? d.price : d.deposit) || 0;
 /* 2차 중도금 (2026-11-10 파트너 자료 - 한방 권리양도양수 · 잔금정산서는 1차 · 2차) - 1차가 있을 때만 센다(1차를 지우면 숨은 2차가 잔금을 깎지 않게) */
 const ct중도2 = d => +(d && d.mid) ? (+d.mid2 || 0) : 0;
-const ct중도합 = d => (+(d && d.mid) || 0) + ct중도2(d);
+/* 3차부터는 deal.mids 에 차례로(2026-11-17) - 2차가 있을 때만 센다. 5차까지 */
+const CT_중도더최대 = 3;
+const ct중도더 = d => ct중도2(d) && Array.isArray(d.mids) ? d.mids.slice(0, CT_중도더최대) : [];
+const ct중도합 = d => (+(d && d.mid) || 0) + ct중도2(d) + ct중도더(d).reduce((a, x) => a + (+(x && x.amt) || 0), 0);
 const ctBalance = d => Math.max(0, ctTotal(d) - (+d.down||0) - ct중도합(d));
 
 /* ── 계약 일정·알림 (2026-10-30 대표님 '카카오 알림설정') ──
@@ -15448,7 +15459,7 @@ function ct일정목록(c, 설정 = ct알림설정()){
 }
 /* 화면의 계약서 → 일정 계산 모양 */
 const ct일정자료 = (doc, row, track) => ({ form: doc.form, sub: doc.sub, status: row && row.status, reported_at: row && row.reported_at,
-  cd: doc.contractDate, mid: doc.deal && doc.deal.mid, md: doc.deal && doc.deal.midDate, m2: doc.deal && doc.deal.mid2, md2: doc.deal && doc.deal.mid2Date, bd: doc.deal && doc.deal.balanceDate, ex: doc.period && doc.period.to, track: track || {} });
+  cd: doc.contractDate, mid: doc.deal && doc.deal.mid, md: doc.deal && doc.deal.midDate, m2: doc.deal && doc.deal.mid2, md2: doc.deal && doc.deal.mid2Date, mx: doc.deal && doc.deal.mids, bd: doc.deal && doc.deal.balanceDate, ex: doc.period && doc.period.to, track: track || {} });
 
 /* 고른 종류로 새 계약서를 연다 */
 function ctMake(catK, sub, deal){
@@ -15631,7 +15642,7 @@ async function ctSave(silent){
     const 대금 = 문서.deal || {};
     ctListPut({ id: j.id, status:'draft', updated_at: j.updated_at, form: 문서.form, proposal_id: 제안,
       title: (문서.property && 문서.property.road) || '', cat: 문서.cat, sub: 문서.sub, dt: 대금.type, parties: 문서.parties,
-      cd: 문서.contractDate, mid: 대금.mid, md: 대금.midDate, m2: 대금.mid2, md2: 대금.mid2Date, bd: 대금.balanceDate, ex: 문서.period && 문서.period.to, ...(CT.row && CT.row.track ? { track: CT.row.track } : {}) });
+      cd: 문서.contractDate, mid: 대금.mid, md: 대금.midDate, m2: 대금.mid2, md2: 대금.mid2Date, mx: 대금.mids, bd: 대금.balanceDate, ex: 문서.period && 문서.period.to, ...(CT.row && CT.row.track ? { track: CT.row.track } : {}) });
     if(새것 && (location.hash || '').startsWith('#/partner/contract/')) history.replaceState(null, '', '#/partner/contract/' + j.id), S.route = S.lastRoute = '#/partner/contract/' + j.id;
     render(); if(!silent || CT.dirty) toast(CT.dirty ? '임시저장했습니다 - 그 뒤에 고친 것은 아직 저장 전입니다' : '임시저장했습니다');
     return !CT.dirty;
@@ -15846,7 +15857,7 @@ function ctDocHTML(doc){
       <tr><th class="w">${esc(F.pay.price)}</th><td>${돈('deal.price', D.price, `금 ${빈칸(160)}원정(₩${빈칸(90)})`)}</td></tr>
       <tr><th class="w">계약금</th><td>${돈('deal.down', D.down, `금 ${빈칸(140)}원정`)} 은 계약할 때 지급하고 영수함. 영수자 ${빈칸(70)} (인)</td></tr>
       ${+D.mid ? `<tr><th class="w">${ct중도2(D) ? '1차 중도금' : '중도금'}</th><td>${돈('deal.mid', D.mid, '')} 은 ${날('deal.midDate', D.midDate)}에 지급하며</td></tr>` : ''}
-      ${ct중도2(D) ? `<tr><th class="w">2차 중도금</th><td>${돈('deal.mid2', D.mid2, '')} 은 ${날('deal.mid2Date', D.mid2Date)}에 지급하며</td></tr>` : ''}
+      ${ct중도2(D) ? `<tr><th class="w">2차 중도금</th><td>${돈('deal.mid2', D.mid2, '')} 은 ${날('deal.mid2Date', D.mid2Date)}에 지급하며</td></tr>` : ''}${ct중도더(D).map((x, i) => `<tr><th class="w">${i + 3}차 중도금</th><td>${돈(`deal.mids.${i}.amt`, x.amt, '')} 은 ${날(`deal.mids.${i}.date`, x.date)}에 지급하며</td></tr>`).join('')}
       <tr><th class="w">잔금</th><td>${잔금글()} 은 ${날('deal.balanceDate', D.balanceDate)}에 지급한다</td></tr>
     </table>
     <p class="ct-art"><b>제2조(${esc(F.art2t)})</b> ${F.art2(doc)}</p>`
@@ -15856,7 +15867,7 @@ function ctDocHTML(doc){
       <tr><th class="w">매매대금</th><td>${돈('deal.price', D.price, `금 ${빈칸(160)}원정(₩${빈칸(90)})`)}</td></tr>
       <tr><th class="w">계약금</th><td>${돈('deal.down', D.down, `금 ${빈칸(140)}원정`)} 은 계약할 때 지급하고 영수함. 영수자 ${빈칸(70)} (인)</td></tr>
       ${+D.mid ? `<tr><th class="w">${ct중도2(D) ? '1차 중도금' : '중도금'}</th><td>${돈('deal.mid', D.mid, '')} 은 ${날('deal.midDate', D.midDate)}에 지급하며</td></tr>` : ''}
-      ${ct중도2(D) ? `<tr><th class="w">2차 중도금</th><td>${돈('deal.mid2', D.mid2, '')} 은 ${날('deal.mid2Date', D.mid2Date)}에 지급하며</td></tr>` : ''}
+      ${ct중도2(D) ? `<tr><th class="w">2차 중도금</th><td>${돈('deal.mid2', D.mid2, '')} 은 ${날('deal.mid2Date', D.mid2Date)}에 지급하며</td></tr>` : ''}${ct중도더(D).map((x, i) => `<tr><th class="w">${i + 3}차 중도금</th><td>${돈(`deal.mids.${i}.amt`, x.amt, '')} 은 ${날(`deal.mids.${i}.date`, x.date)}에 지급하며</td></tr>`).join('')}
       <tr><th class="w">잔금</th><td>${잔금글()} 은 ${날('deal.balanceDate', D.balanceDate)}에 지급한다</td></tr>
     </table>
     <p class="ct-art"><b>제2조(소유권 이전 등)</b> 매도인은 매매대금의 잔금을 받음과 동시에 매수인에게 소유권이전등기에 필요한 모든 서류를 교부하고 등기 절차에 협력하며, 위 부동산을 ${CT편집칸 ? 날('period.handover', R.handover, D.balanceDate ? `${ct날짜(D.balanceDate)}(잔금일)` : '') : ct날짜(R.handover || D.balanceDate)}에 인도한다.</p>`
@@ -15866,7 +15877,7 @@ function ctDocHTML(doc){
       <tr><th class="w">보증금</th><td>${돈('deal.deposit', D.deposit, `금 ${빈칸(160)}원정(₩${빈칸(90)})`)}</td></tr>
       <tr><th class="w">계약금</th><td>${돈('deal.down', D.down, `금 ${빈칸(140)}원정`)} 은 계약할 때 지급하고 영수함. 영수자 ${빈칸(70)} (인)</td></tr>
       ${+D.mid ? `<tr><th class="w">${ct중도2(D) ? '1차 중도금' : '중도금'}</th><td>${돈('deal.mid', D.mid, '')} 은 ${날('deal.midDate', D.midDate)}에 지급하며</td></tr>` : ''}
-      ${ct중도2(D) ? `<tr><th class="w">2차 중도금</th><td>${돈('deal.mid2', D.mid2, '')} 은 ${날('deal.mid2Date', D.mid2Date)}에 지급하며</td></tr>` : ''}
+      ${ct중도2(D) ? `<tr><th class="w">2차 중도금</th><td>${돈('deal.mid2', D.mid2, '')} 은 ${날('deal.mid2Date', D.mid2Date)}에 지급하며</td></tr>` : ''}${ct중도더(D).map((x, i) => `<tr><th class="w">${i + 3}차 중도금</th><td>${돈(`deal.mids.${i}.amt`, x.amt, '')} 은 ${날(`deal.mids.${i}.date`, x.date)}에 지급하며</td></tr>`).join('')}
       <tr><th class="w">잔금</th><td>${잔금글()} 은 ${날('deal.balanceDate', D.balanceDate)}에 지급한다</td></tr>
       ${월세 ? `<tr><th class="w">차임(월세)</th><td>${돈('deal.rent', D.rent, `금 ${빈칸(140)}원정`)}${ct부가글(ct부가(doc))} 은 매월 ${CT편집칸 ? ct칸('deal.rentDay', String(D.rentDay || '').replace(/^매월\s*/, '').replace(/일$/, ''), 30) : D.rentDay?esc(String(D.rentDay).replace(/^매월\s*/, '').replace(/일$/, '')):빈칸(30)}일에 지급한다(${esc(D.rentWhen||'선불')}). 입금계좌: ${빈칸(200)}</td></tr>` : ''}
       ${연세 ? `<tr><th class="w">차임(연세)</th><td>${돈('deal.rent', D.rent, `금 ${빈칸(140)}원정`)}${ct부가글(ct부가(doc))} 은 ${CT편집칸 ? ct칸('deal.rentDay', D.rentDay, 90) : D.rentDay?esc(D.rentDay):빈칸(90)}에 1년분을 한꺼번에 지급한다(${esc(D.rentWhen||'선불')}). 입금계좌: ${빈칸(200)}</td></tr>` : ''}
@@ -17127,14 +17138,13 @@ function cs기록(){
 }
 const cs받는번호 = () => [CS.to.a, CS.to.b].map(x => String(x || '').replace(/[^0-9]/g, '')).filter(x => x.length >= 9);
 /* 보낸 기록 → 새 계약서. 금액·날짜·목적물을 옮기고, 채권최고액은 근저당 특약에 넣는다(계좌는 옮기지 않는다 - 손으로) */
-function cs계약서(e){
+function cs문서(e){
   const v = e.vals || {}, none = new Set(e.none || []), 이름 = String(e.tpl || '');
   const 상가 = /상가/.test(이름), 매매 = (v.매매대금 != null || /매매|약정/.test(이름)) && v.보증금 == null;
   const 월세 = v.월차임 != null || /월세/.test(이름);
   const form = 매매 ? 'sale' : 상가 ? 'shop-lease' : 'lease';
-  CT.pick = null; CT.prevId = null; CT.id = null; CT.row = null; CT.track = {}; CT.fromProposal = null;
-  CT.doc = ctNewDoc(form, null, { cat: form === 'shop-lease' ? 'shop' : 'realty', sub: 상가 ? (매매 ? '상가' : '') : '아파트', deal: 매매 ? undefined : 월세 ? 'monthly' : 'jeonse' });
-  const d = CT.doc, D = d.deal;
+  const d = ctNewDoc(form, null, { cat: form === 'shop-lease' ? 'shop' : 'realty', sub: 상가 ? (매매 ? '상가' : '') : '아파트', deal: 매매 ? undefined : 월세 ? 'monthly' : 'jeonse' });
+  const D = d.deal;
   d.property.road = String(v.목적물 || '').slice(0, 200);
   if(매매) D.price = +v.매매대금 || 0; else D.deposit = +v.보증금 || 0;
   const 총 = ctTotal(D); if(총) D.down = Math.round(총 * 0.1);
@@ -17149,6 +17159,27 @@ function cs계약서(e){
   else if(최고) d.specials.unshift(`${매매 ? '매도인' : '임대인'}은 등기사항증명서상 설정되어 있는 근저당권(채권최고액 금 ${한글금액(최고)}원)을 잔금일까지 전액 상환하고 말소한다.`);
   else if(none.has('채권최고액')) d.specials = d.specials.filter(t => !근저당(t));
   if(+v.임차보증금 && !none.has('임차보증금')) ct특약넣기(d, `현 임차인의 임대차(보증금 금 ${한글금액(v.임차보증금)}원${+v.임차월세 ? ` / 월차임 금 ${한글금액(v.임차월세)}원` : ''})는 매수인이 승계한다.`);
+  return d;
+}
+/* 보낸 기록 → 계약현황 줄 (2026-11-17 파트너 D14 '체결문자에서 바로 계약현황으로') - 작성 중 계약서로 저장한다(doc.entry='sms').
+   나중에 그 줄을 열어 계약서를 이어 쓰면 계약서 내용이 그대로 줄에 반영된다(계약서가 우선). 입금일은 계약체결일로 */
+async function cs현황줄(e){
+  if(직원() && !권한('ct_edit')) return toast('계약서 고치기 권한이 없습니다 - 대표님께 요청하세요');
+  if(CS.rowBusy) return; CS.rowBusy = e.id; render();
+  try{
+    const doc = cs문서(e); doc.entry = 'sms';
+    const { ok, j } = await ctPost({ what:'contract-save', form: doc.form, doc });
+    if(!ok) throw new Error(j.error || '계약현황에 추가하지 못했습니다');
+    const 입금 = /^\d{4}-\d{2}-\d{2}$/.test(String((e.vals || {}).입금일 || '')) ? e.vals.입금일 : '';
+    if(입금 && j.id) await ctPost({ what:'contract-track', id: j.id, track: { signDate: 입금, state: 'doing' } }).catch(() => {});
+    CS.rowBusy = ''; ctLoadList(true);
+    toast('계약현황에 추가했습니다 - 작성 중 계약서로 남아, 계약서를 이어 쓰면 그 내용이 반영됩니다');
+    go('#/partner/contracts/status');
+  }catch(err){ CS.rowBusy = ''; render(); toast(err.message || '계약현황에 추가하지 못했습니다'); }
+}
+function cs계약서(e){
+  CT.pick = null; CT.prevId = null; CT.id = null; CT.row = null; CT.track = {}; CT.fromProposal = null;
+  CT.doc = cs문서(e);
   CT.filled = new Set(); CT.scan = null; CT.scanWarn = [];
   CT.dirty = true; CT.mode = 'edit'; ctGo('#/partner/contract/new');
   toast('문자 내용으로 계약서를 열었습니다 - 주소는 ‘다시 찾기’로 골라 주세요');
@@ -17179,6 +17210,7 @@ function csPageHTML(){
       <span class="cs-log-b">
         <button type="button" class="chip${e.a ? ' on' : ''}" data-act="cs-log-agree" data-v="${esc(e.id)}|a" aria-pressed="${!!e.a}">${e.a ? '✓ ' : ''}${/임대|전세|월세/.test(e.tpl || '') ? '임대인' : '매도인'} 동의</button>
         <button type="button" class="chip${e.b ? ' on' : ''}" data-act="cs-log-agree" data-v="${esc(e.id)}|b" aria-pressed="${!!e.b}">${e.b ? '✓ ' : ''}${/임대|전세|월세/.test(e.tpl || '') ? '임차인' : '매수인'} 동의</button>
+        <button type="button" class="btn sec sm" data-act="cs-log-row" data-v="${esc(e.id)}" ${CS.rowBusy ? 'disabled' : ''}>${CS.rowBusy === e.id ? '추가하는 중…' : '계약현황에 추가'}</button>
         <button type="button" class="btn pri sm" data-act="cs-log-ct" data-v="${esc(e.id)}">이 내용으로 계약서</button>
         <button type="button" class="tapx" data-act="cs-log-again" data-v="${esc(e.id)}" style="font-size:13.5px;color:var(--ind700);font-weight:700">다시 열기</button>
         <button type="button" class="tapx" data-act="cs-log-del" data-v="${esc(e.id)}" style="font-size:13.5px;color:var(--n500)">지우기</button></span></li>`).join('')}</ul>`
@@ -17454,8 +17486,14 @@ function ct요약HTML(전체){
 }
 /* 계약현황 표 (2026-11-10 파트너 기획 ①-1 '계약현황 전체보기') - 상태 · 종류 · 거래유형 · 형태 · 목적물 · 당사자(연락처) ·
    약정일 · 허가 신청 · 허가 승인 · 계약일 · 중도금 · 잔금, 날짜 아래 금액. 줄을 누르면 그 계약서. 다가오는 날짜(30일 안)는 보라 */
-function ct현황표(rows){
-  if(!rows.length) return 빈자리('찾는 계약서가 없습니다', '거르기를 바꿔 보세요.', '', 80);
+/* 다른 사무소가 쓴 계약서(공동중개, api/_ext.js)도 계약현황 표에 같이 보인다 - 찾는 말이 있으면 같은 말로 거른다. 상태 · 종류 거르기를 걸었을 때는 뺀다 */
+function ct외부줄들(){
+  if(CT.qst || CT.qf || CT.qdt || CT.qkd) return [];
+  const q = String(CT.q || '').trim();
+  return (CT.ext || []).filter(e => !q || [e.title, e.office, e.kind, e.memo].join(' ').includes(q));
+}
+function ct현황표(rows, 외부 = []){
+  if(!rows.length && !외부.length) return 빈자리('찾는 계약서가 없습니다', '거르기를 바꿔 보세요.', '', 80);
   const 오늘 = ct오늘(), 원 = n => +n > 0 ? won(+n) : '', 날 = d => d ? d.slice(5).replace('-', '.') : '';
   const 칸날 = (d, 돈) => { if(!d && !돈) return '<td class="mute">-</td>'; const 곧 = d && d >= 오늘 && ct날차(오늘, d) <= 30;
     return `<td><span class="${곧 ? 'soon' : ''}">${날(d) || '미정'}</span>${돈 ? `<small>${돈}</small>` : ''}</td>`; };
@@ -17465,12 +17503,12 @@ function ct현황표(rows){
     return `<td><small>${esc(ct짧은이름(ko || ''))}</small>${방 ? `<button type="button" class="tapx ct-pname" data-act="ct-room" data-v="${esc(r.id)}|${esc(k)}" aria-label="${esc(x.name)} 대화방 열기">${esc(x.name)}</button>` : `<b>${esc(x.name || '-')}</b>`}${x.phone ? `<small class="num">${esc(x.phone)}</small>` : ''}</td>`; };
   /* 상태는 표에서 바로 바꾼다(서버 contract-state) · 작은 표시: 신고 전/마침 · 전자계약 */
   const 상태칸 = r => { const t = r.track || {}, 못 = 직원() && !권한('ct_edit');
-    const 표 = [r.status === 'sealed' && ct신고(r) ? (r.reported_at ? '<small class="ct-tag ok">신고 마침</small>' : '<small class="ct-tag warn">신고 전</small>') : '', t.ec ? '<small class="ct-tag">전자계약</small>' : '', r.entry === 'manual' ? '<small class="ct-tag">직접 입력</small>' : r.status !== 'sealed' ? '<small class="ct-tag">작성 중</small>' : ''].join('');
+    const 표 = [r.status === 'sealed' && ct신고(r) ? (r.reported_at ? '<small class="ct-tag ok">신고 마침</small>' : '<small class="ct-tag warn">신고 전</small>') : '', t.ec ? '<small class="ct-tag">전자계약</small>' : '', r.entry === 'manual' ? '<small class="ct-tag">직접 입력</small>' : r.entry === 'sms' && r.status !== 'sealed' ? '<small class="ct-tag">체결문자</small>' : r.status !== 'sealed' ? '<small class="ct-tag">작성 중</small>' : ''].join('');
     return `<td><select class="inp ct-st-sel${t.state === 'done' ? ' ok' : t.state === 'hold' || t.state === 'cancel' ? ' warn' : ''}" data-act="ct-stop" data-act-ch="ct-row-st" data-v="${esc(r.id)}" aria-label="진행 상태" ${못 ? 'disabled' : ''}>
       <option value=""${t.state ? '' : ' selected'}>상태 없음</option>${Object.entries(CT_진행).map(([k, n]) => `<option value="${k}"${t.state === k ? ' selected' : ''}>${n}</option>`).join('')}</select>${표}</td>`; };
   return `<div class="card ct-tbl-wrap"><table class="ct-tbl"><thead><tr><th>상태</th><th>종류 · 거래 · 형태</th><th>목적물</th><th>매도인 · 임대인</th><th>매수인 · 임차인</th>
     <th>약정일 · 약정금</th><th>허가 신청</th><th>허가 승인</th><th>계약체결일</th><th>계약일 · 계약금</th><th>중도금</th><th>잔금</th></tr></thead><tbody>
-    ${rows.map(r => { const t = r.track || {}, 총 = +(r.price || r.deposit) || 0, 중 = (+r.mid || 0) + (+r.mid ? (+r.m2 || 0) : 0), 잔 = 총 ? Math.max(0, 총 - (+r.down || 0) - 중) : 0;
+    ${rows.map(r => { const t = r.track || {}, 총 = +(r.price || r.deposit) || 0, 중 = (+r.mid || 0) + (+r.mid ? (+r.m2 || 0) + (+r.m2 && Array.isArray(r.mx) ? r.mx.slice(0, CT_중도더최대).reduce((a, x) => a + (+(x && x.amt) || 0), 0) : 0) : 0), 잔 = 총 ? Math.max(0, 총 - (+r.down || 0) - 중) : 0;
       const 상 = CT_진행[t.state] || (r.status === 'sealed' ? '날인본' : '작성 중');
       void 상;
       return `<tr data-act="ct-open" data-v="${esc(r.id)}" tabindex="0">
@@ -17480,8 +17518,14 @@ function ct현황표(rows){
         ${t.permit ? 칸날(t.permitAgreed || t.permitDue, 원(t.agreedAmt)) + 칸날(t.permitApplied, '') + 칸날(t.permitOk, '') : '<td class="mute">-</td><td class="mute">-</td><td class="mute">-</td>'}
         ${t.permit ? (r.cd ? `<td><span>${날(r.cd)}</span><small>계약일과 같음</small></td>` : '<td class="mute">-</td>') : t.signDate ? `<td><span>${날(t.signDate)}</span><small>계약금 일부</small></td>` : '<td class="mute">미정</td>'}
         ${칸날(r.cd, 원(r.down))}${+r.mid ? 칸날(t.midDate || r.md, 원(중)) : '<td class="mute">-</td>'}${칸날(t.balanceDate || r.bd, 원(잔))}</tr>`; }).join('')}
+    ${외부.map(e => `<tr data-act="ext-edit" data-v="${esc(e.id)}" tabindex="0">
+        <td>${e.state ? `<span class="badge ${e.state === 'done' ? 'b-ok' : 'b-warn'}">${e.state === 'done' ? '완료' : '취소'}</span>` : '<span class="badge b-mute">진행</span>'}<small class="ct-tag">공동중개</small></td>
+        <td><b>${esc(e.kind)}</b><small>다른 사무소 작성${e.file ? ' · 파일 있음' : ''}</small></td>
+        <td class="obj">${esc(e.title)}</td><td colspan="2"><small>작성 사무소</small><b>${esc(e.office || '-')}</b>${e.memo ? `<small>${esc(e.memo)}</small>` : ''}</td>
+        <td class="mute">-</td><td class="mute">-</td><td class="mute">-</td><td class="mute">-</td>
+        ${칸날(e.cd, e.price ? won(e.price) : '')}${칸날(e.md, '')}${칸날(e.bd, '')}</tr>`).join('')}
     </tbody></table></div>
-    <p class="sub ct-tbl-note">상태는 표에서 바로 바꿉니다 · ‘고치기’로 날짜 · 금액 · 당사자를 바로 고칩니다(날인본은 날짜만) · 밑줄 이름은 누르면 그 손님 대화방 · 이름 아래는 연락처 · 30일 안에 다가오는 날짜는 보라색 · 계약체결일은 계약서의 ‘일정 · 체크’에서 적습니다.</p>`;
+    <p class="sub ct-tbl-note">상태는 표에서 바로 바꿉니다 · ‘고치기’로 날짜 · 금액 · 당사자를 바로 고칩니다(날인본은 날짜만) · ‘공동중개’ 줄은 다른 사무소가 쓴 계약서로, 누르면 날짜 · 금액을 고칩니다 · 밑줄 이름은 누르면 그 손님 대화방 · 이름 아래는 연락처 · 30일 안에 다가오는 날짜는 보라색 · 계약체결일은 계약서의 ‘일정 · 체크’에서 적습니다.</p>`;
 }
 /* 줄 단추 - 복사 · 내리기 · 휴지통 · 되돌리기 · 영구 삭제(휴지통의 작성 중 계약서, 대표만). PC 는 마우스를 올리면, 휴대폰은 줄 아래에 */
 function ct행단추(r){
@@ -17552,7 +17596,7 @@ function ctListPageHTML(모두){
     <div class="ct-lay${일정 ? '' : ' one'}">
       <div class="ct-main">${칸줄}${자동칸}${칸말}${칸 ? '' : ct요약HTML(전체)}${전체.length ? ct찾기줄() : ''}
         ${전체.length && !isMo() ? `<div class="ct-chips ct-viewsw" role="group" aria-label="보는 방식">${[['', '목록'], ['table', '계약현황 표']].map(([k, t]) => `<button type="button" class="chip${(CT.view || '') === k ? ' on' : ''}" aria-pressed="${(CT.view || '') === k}" data-act="ct-view" data-v="${k}">${t}</button>`).join('')}</div>` : ''}
-        ${CT.view === 'table' && !isMo() && 전체.length ? ct현황표(ctFilter(전체).filter(r => !(CT_FORMS[r.form] || {}).explain)) : ctRowsHTML(전체, ctFilter(전체), false)}
+        ${CT.view === 'table' && !isMo() && 전체.length ? ct현황표(ctFilter(전체).filter(r => !(CT_FORMS[r.form] || {}).explain), 현황 && !칸 && !갱신탭 ? ct외부줄들() : []) : ctRowsHTML(전체, ctFilter(전체), false)}
         ${칸 ? '' : ctExtHTML()}</div>
       ${일정 ? `<aside class="ct-aside">${일정}</aside>` : ''}
     </div>`;
@@ -17974,6 +18018,8 @@ function ctFormHTML(doc){
         ${+D.mid ? ctIn('deal.midDate','중도금 지급일',{type:'date'}) : ''}
         ${+D.mid ? ctIn('deal.mid2','2차 중도금(원)',{money:true, ph:'없으면 비움'}) : ''}
         ${ct중도2(D) ? ctIn('deal.mid2Date','2차 중도금 지급일',{type:'date'}) : ''}
+        ${ct중도더(D).map((x, i) => ctIn(`deal.mids.${i}.amt`, `${i + 3}차 중도금(원)`, {money:true}) + ctIn(`deal.mids.${i}.date`, `${i + 3}차 중도금 지급일`, {type:'date'})).join('')}
+        ${ct중도2(D) && !잠김 ? `<div class="ct-f w12" style="display:flex;gap:8px;flex-wrap:wrap">${ct중도더(D).length < CT_중도더최대 ? `<button type="button" class="btn tool sm" data-act="ct-mid-add">+ ${ct중도더(D).length + 3}차 중도금 더하기</button>` : ''}${ct중도더(D).length ? `<button type="button" class="btn tool sm" data-act="ct-mid-del">${ct중도더(D).length + 2}차 빼기</button>` : ''}</div>` : ''}
         <label class="ct-f w4"><span class="lab">잔금(원) · 자동 계산</span><input class="inp" value="${esc(ctBalance(D)?comma(String(ctBalance(D))):'')}" disabled data-ctbal>
           <span class="ct-won${ct금액넘침(D) ? ' warn' : ''}" data-ctbalwon>${esc(ct금액넘침(D) || (한글금액(ctBalance(D))?`금 ${한글금액(ctBalance(D))}원정`:''))}</span></label>
         ${ctIn('deal.balanceDate','잔금 지급일',{type:'date'})}
@@ -18615,7 +18661,7 @@ function ctSettleDocHTML(doc){
       <tr><th class="w">${esc(총)}</th><td class="r">${원(ctTotal(D))}</td><td></td></tr>
       <tr><th class="w">계약금</th><td class="r">${원(D.down)}</td><td class="sm">${doc.renewOf ? '기존 보증금으로 갈음' : `${ct날짜(doc.contractDate)} 지급`}</td></tr>
       ${+D.mid ? `<tr><th class="w">${ct중도2(D) ? '1차 중도금' : '중도금'}</th><td class="r">${원(D.mid)}</td><td class="sm">${ct날짜((CT.track || {}).midDate || D.midDate)} 지급</td></tr>` : ''}
-      ${ct중도2(D) ? `<tr><th class="w">2차 중도금</th><td class="r">${원(D.mid2)}</td><td class="sm">${ct날짜(D.mid2Date)} 지급</td></tr>` : ''}
+      ${ct중도2(D) ? `<tr><th class="w">2차 중도금</th><td class="r">${원(D.mid2)}</td><td class="sm">${ct날짜(D.mid2Date)} 지급</td></tr>` : ''}${ct중도더(D).map((x, i) => `<tr><th class="w">${i + 3}차 중도금</th><td class="r">${원(x.amt)}</td><td class="sm">${ct날짜(x.date)} 지급</td></tr>`).join('')}
       <tr><th class="w">잔금</th><td class="r"><b>${원(S0.잔금)}</b></td><td></td></tr>
     </table>
     <h2>[관리비 등 정산]</h2>
@@ -19004,8 +19050,17 @@ async function ctBldGo(){
   toast(채움.length ? `공적장부(건축물대장 · 토지)에서 ${채움.length}칸을 채웠습니다 - 남색 칸을 확인하세요` : '건축물대장 값이 이미 다 들어 있습니다 - 비어 있던 칸이 없습니다');
 }
 /* 입력 판 맨 위 - 채운 결과·확인할 점·다시 채우기 */
+/* 공적장부 네 가지가 들어왔는지 한 줄로 - 서류로 올렸거나 주소로 불러왔으면 '반영', 아니면 '필요'. 무엇을 올렸는지는 doc.src.kinds 에 남는다 */
+function ct장부상태(){
+  const src = CT.doc && CT.doc.src && typeof CT.doc.src === 'object' ? CT.doc.src : {}, 종 = new Set(src.kinds || []);
+  const 줄 = [['reg', '등기부'], ['bld', '건축물대장 표제부'], ['bldx', '건축물대장 전유부'], ['land', '토지이용계획']];
+  return `<ul class="scan-st" aria-label="공적장부 반영 상태">${줄.map(([k, t]) => `<li class="${종.has(k) ? 'ok' : ''}"><span>${t}</span><b>${종.has(k) ? '반영' : '필요'}</b></li>`).join('')}</ul>`;
+}
 function ctScanBanner(){
   if(CT.row && CT.row.status === 'sealed') return '';
+  return ctScanBanner0() + ((CT_FORMS[(CT.doc || {}).form] || {}).explain ? '' : ct장부상태());
+}
+function ctScanBanner0(){
   const n = CT.filled ? CT.filled.size : 0, 경고 = CT.scanWarn || [];
   if(!n) return `<div class="scan-mini"><span>등기부등본·건축물대장·토지이용계획확인서로 칸을 채울 수 있습니다${ct대장가능() ? ' · 건축물대장은 주소만으로도 불러옵니다' : ''}</span>
     <span class="eqb" style="gap:6px">${ct대장가능() ? ct대장단추() : ''}<button class="btn tool sm" data-act="ct-scan-open">서류로 채우기</button></span></div>${ct대장오류()}`;
@@ -22288,6 +22343,8 @@ function handle(a,v,el){
       x.co = [...(x.co || []), { name:'', phone:'', addr:'', share:'' }].slice(0, 4); ctDirty(); render(); } return true;
     case 'ct-co-del': if(CT.doc && !ctSealed()){ const [k, i] = String(v).split('|'), x = (CT.doc.parties || {})[k];
       if(x && x.co){ x.co.splice(+i, 1); if(!x.co.length){ delete x.co; delete x.share; } ctDirty(); render(); } } return true;
+    case 'ct-mid-add': if(CT.doc && !ctSealed() && CT.doc.deal){ const D = CT.doc.deal; D.mids = [...(Array.isArray(D.mids) ? D.mids : []), { amt: 0, date: '' }].slice(0, CT_중도더최대); ctDirty(); render(); } return true;
+    case 'ct-mid-del': if(CT.doc && !ctSealed() && CT.doc.deal && Array.isArray(CT.doc.deal.mids)){ CT.doc.deal.mids.pop(); if(!CT.doc.deal.mids.length) delete CT.doc.deal.mids; ctDirty(); render(); } return true;
     case 'ct-cobrk-add': if(CT.doc && !ctSealed()){ CT.doc.coBrokers = [...(CT.doc.coBrokers || []), { office:'', rep:'', regNo:'', addr:'', phone:'', staff:'' }].slice(0, CT_공동중개최대); ctDirty(); render(); } return true;
     case 'ct-cobrk-del': if(CT.doc && !ctSealed() && CT.doc.coBrokers){ CT.doc.coBrokers.splice(+v, 1); if(!CT.doc.coBrokers.length) delete CT.doc.coBrokers; ctDirty(); render(); } return true;
     case 'ct-cobrk-find': ctCoBrokerFind(+v); return true;
@@ -22407,6 +22464,7 @@ function handle(a,v,el){
           if(!CS.log.some(x => x.id === v)) CS.log.splice(Math.min(자리, CS.log.length), 0, 뺀); render(); } }); });
       return true; }
     case 'cs-log-ct': { const e = CS.log.find(x => x.id === v); if(e) cs계약서(e); return true; }
+    case 'cs-log-row': { const e = CS.log.find(x => x.id === v); if(e) cs현황줄(e); return true; }
     case 'cs-log-again': { const e = CS.log.find(x => x.id === v); if(!e) return true;
       const t = cs틀들().find(x => x.name === e.tpl); if(t) CS.sel = t.id;
       CS.vals = { ...(e.vals || {}) }; CS.none = Object.fromEntries((e.none || []).map(k => [k, true])); render(); toast('보낸 내용을 다시 열었습니다 - 계좌는 다시 적어 주세요'); return true; }

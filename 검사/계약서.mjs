@@ -1397,5 +1397,12 @@ ok(js.includes('class="lg-sw" role="tablist"') && js.includes("if(MG.f === 'done
   const feed = fs.readFileSync(new URL('../api/feed.js', import.meta.url), 'utf8'), 확인 = fs.readFileSync(new URL('../api/agent-verify.js', import.meta.url), 'utf8');
   ok(feed.includes("overLimit('bld:ip:' + ipOf(req), 400, 864e5)) return res.status(429)") && 확인.includes('const keyOf = regKey;'), '매물 대장 조회 접속지 한도 · 등록번호 정규화 한 벌'); }
 
+/* ── 체결문자 → 계약현황 · 공동중개 줄 · 중도금 n차 · 공적장부 상태 (2026-11-17) ── */
+{ const 서버 = fs.readFileSync(new URL('../api/_contract.js', import.meta.url), 'utf8');
+  ok(js.includes('async function cs현황줄(e){') && js.includes("doc.entry = 'sms';") && js.includes('CT.doc = cs문서(e);') && js.includes('data-act="cs-log-row"'), '체결문자 보낸 기록 → 계약현황 줄(작성 중 계약서) · 계약서 열기와 같은 문서 만들기를 쓴다');
+  ok(js.includes('function ct현황표(rows, 외부 = []){') && js.includes('<tr data-act="ext-edit"') && js.includes('function ct외부줄들(){'), '계약현황 표에 다른 사무소 계약서(공동중개) 줄');
+  ok(js.includes('const ct중도더 = d => ct중도2(d) && Array.isArray(d.mids)') && js.includes("case 'ct-mid-add':") && js.split('차 중도금</th><td>${돈(`deal.mids.').length === 4 && 서버.includes('mx:doc->deal->mids'), '중도금 3~5차 - 합계 · 서류 세 양식 · 목록');
+  ok(js.includes('function ct장부상태(){') && css.includes('.scan-st{display:grid;'), '공적장부 반영 상태 줄'); }
+
 console.log(`${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

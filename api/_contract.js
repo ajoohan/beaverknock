@@ -791,7 +791,7 @@ export const 알림제목 = e => e.k === 'lawyer' ? '법무사 예약할 때입�
   : `${e.이름} ${e.남음 === 0 ? '당일' : e.남음 === 1 ? '전날' : `${e.남음}일 전`}`;
 
 /* 목록·한 장 읽기 - 일정 계산에 쓰는 날짜를 doc 에서 꺼내 같이 준다. track 칸이 아직 없으면(0032 전) 빼고 다시 읽는다 */
-const 일정열 = ',cd:doc->>contractDate,mid:doc->deal->>mid,md:doc->deal->>midDate,m2:doc->deal->>mid2,md2:doc->deal->>mid2Date,bd:doc->deal->>balanceDate,ex:doc->period->>to';
+const 일정열 = ',cd:doc->>contractDate,mid:doc->deal->>mid,md:doc->deal->>midDate,m2:doc->deal->>mid2,md2:doc->deal->>mid2Date,mx:doc->deal->mids,bd:doc->deal->>balanceDate,ex:doc->period->>to';
 async function 읽기(q) {
   const x = await db('bk_contract', q.replace('{track}', ',track'));
   if (x.r.ok || !/track/.test(x.t || '')) return x;

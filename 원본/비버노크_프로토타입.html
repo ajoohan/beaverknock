@@ -1455,6 +1455,10 @@ body.mo .hp-nav .right{gap:8px}
 .hm-h2{margin:0;font-size:clamp(28px,2.5vw,40px);line-height:1.28;letter-spacing:-.035em;font-weight:800;color:var(--n900)}
 .hm-p{margin:16px 0 0;max-width:46ch;font-size:16px;line-height:1.8;color:var(--n700)}
 .hm-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px;margin-top:36px}
+.hm-grid.hp6{grid-template-columns:repeat(3,minmax(0,1fr))}
+.hm-partner-band{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-top:28px;padding:18px 22px;border:1px solid var(--hair);border-radius:16px;background:var(--n50,#F7F7F9);text-align:left}
+.hm-partner-band b{display:block;font-size:15.5px;color:var(--n900);margin-bottom:4px}
+.hm-partner-band span{font-size:14px;color:var(--n600,#555);line-height:1.6}
 .hm-card{padding:26px 24px 28px;border-radius:24px;transition:transform .25s var(--e-out),box-shadow .25s}
 .hm-card:hover{transform:translateY(-4px)}
 .hm-ic{display:grid;place-items:center;width:46px;height:46px;border-radius:15px;margin-bottom:18px;color:var(--ind);
@@ -5885,7 +5889,7 @@ function hm손님(){
         <p class="hm-k">손님 화면</p>
         <h2 class="hm-h2">내 조건과 다른 점부터<br>보여드립니다</h2>
         <p class="hm-p">중개사가 보낸 제안마다 무엇이 맞고 무엇이 다른지 먼저 적혀 옵니다. 사진 · 관리비 · 건물 정보까지 한 화면에서 비교하세요.</p>
-        ${hm목록(['일치 · 다름이 제안마다 한눈에', '새 제안은 카카오톡과 메일로 바로 알림', '조건은 3개월 뒤 자동으로 지워집니다'])}
+        ${hm목록(['일치 · 다름이 제안마다 한눈에', '새 제안은 카카오톡과 메일로 바로 알림', '보고 싶은 매물의 가격이 바뀌면 카카오톡으로 알림 - 언제든 끌 수 있어요', '조건은 3개월 뒤 자동으로 지워집니다'])}
         <button class="btn sec" data-go="#/guide">이용 안내 보기</button>
       </div>
       <figure class="hm-shot lg"><img src="img/home/proposal.v2.webp" width="1400" height="830" loading="lazy" decoding="async" alt="제안 상세 화면 - 보증금·월세, 내 조건과 비교(다름·일치), 매물 특징, 중개사님의 한마디"></figure>
@@ -5900,6 +5904,8 @@ function hm마무리(){
         <h2 class="hm-h2">조건 하나 걸어두고,<br>기다리기만 하세요</h2>
         <p class="hm-p">맞는 물건이 생기면 중개사가 먼저 연락합니다. 맞는 곳이 없으면 아무 연락도 가지 않습니다.</p>
         <button class="btn pri" data-go="#/kind">내 조건 걸어두기</button>
+        <div class="hm-partner-band"><div><b>공인중개사이신가요?</b><span>조건을 걸어둔 손님에게 1:1로 제안하고, 매물장부부터 계약서 · 잔금 알림까지 한 화면에서. 제안 비용 0원 · Free</span></div>
+          <button class="btn sec sm" data-go="#/partner">파트너 안내 보기</button></div>
       </div>
     </div>
   </section>`;
@@ -8629,8 +8635,8 @@ V['#/partner'] = () => `
   <section class="hm-sec">
     <div class="hm-in">
       <p class="hm-k">비버노크 파트너가 얻는 것</p>
-      <h2 class="hm-h2">영업부터 잔금까지,<br>놓치는 일 없이</h2>
-      <div class="hm-grid">${HP_장점.map(([g, t, d], i) => `<article class="hm-card lg hp-card"><span class="hm-ic">${hm그림(g)}</span><h3>${t}</h3><p>${d}</p><button type="button" class="hp-more" data-act="hp-jump" data-v="hp-f${i + 1}" aria-label="${t} 자세히 보기">자세히 ${hm그림('arrow', 16)}</button></article>`).join('')}</div>
+      <h2 class="hm-h2">영업부터 잔금까지,<br>한 화면에서</h2>
+      <div class="hm-grid hp6">${HP_장점.map(([g, t, d, f]) => `<article class="hm-card lg hp-card"><span class="hm-ic">${hm그림(g)}</span><h3>${t}</h3><p>${d}</p>${f ? `<button type="button" class="hp-more" data-act="hp-jump" data-v="hp-f${f}" aria-label="${t} 자세히 보기">자세히 ${hm그림('arrow', 16)}</button>` : ''}</article>`).join('')}</div>
     </div>
   </section>
 
@@ -8686,11 +8692,14 @@ V['#/partner'] = () => `
   ${siteFooter()}
 </div>`;
 /* 파트너 안내의 장점 넷 - 아래 자세한 칸(hp-f1~4)과 같은 순서 */
+/* [그림, 제목, 설명, 자세한 칸 번호(hp-f1~4 · 없으면 단추 없음)] - 2026-11-18 여섯 기둥 */
 const HP_장점 = [
-  ['target', '1:1 제안', '조건을 걸어둔 손님에게만 제안합니다. 조건 1건에 최대 5곳 · 제안 비용 0원.'],
-  ['doc', '계약서 관리', '양식 · 서류로 채우기 · 초안 링크 · 특약 · 저장과 보내기까지 한 화면에서.'],
-  ['bell', '자동 알림', '계약일 · 중도금 · 잔금 · 신고 기한을 매일 아침 카카오톡으로 알려 드립니다.'],
-  ['cal', '일정 체크', '앞으로 60일 일정을 D-day 로 · 잔금 완료 확인과 진행 상태 관리.'],
+  ['target', '1:1 제안', '조건을 걸어둔 손님에게만 제안합니다. 조건 1건에 최대 5곳 · 제안 비용 0원.', 1],
+  ['search', '매물장부 · 매물등록', '장부엔 덜 채워도 보관하고, 명시사항을 다 채우면 손님 · 다른 중개사에게 노출. 등록중 · 임시저장 · 노출종료 · 등록실패를 한눈에.', 0],
+  ['doc', '계약서 작성', '정보 입력 · 서식 입력 · 둘 다 - 편한 방식으로. 서류 · 건축물대장 · 계약체결 문자로 칸을 채우고 전체화면으로 고칩니다.', 2],
+  ['check', '계약현황', '내가 쓴 계약 · 직접 추가 · 공동중개 계약을 한 표에. 중도금 5차까지, 상대 사무소와 날짜 · 금액을 공유합니다.', 0],
+  ['bell', '자동 알림 · 일정', '계약일 · 중도금 · 잔금 · 신고 기한 · 법무사 예약을 매일 아침 카카오톡으로. 휴대폰 달력 구독까지.', 3],
+  ['chat', '사무소 운영', '직원 · 중개보조원 권한, 손님 대화방, 계약체결 문자, 성과까지. 모두 무료로 씁니다.', 0],
 ];
 const HP_실수없이 = [
   ['sun', '오늘의 브리핑', '대시보드 맨 위에 오늘 손댈 일을 먼저 모아 둡니다. 아침에 한 번 보면 하루가 정리됩니다.'],
@@ -13930,6 +13939,8 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
+  { v:'26.11.18.9', 날:'2026-11-18', 줄:[ '파트너 안내 - 큰 제목 ‘영업부터 잔금까지, 한 화면에서’ · 기둥 여섯(1:1 제안 · 매물장부 · 계약서 작성 · 계약현황 · 자동 알림 · 사무소 운영)',
+    '손님 메인 - 가격 변동 알림 한 줄 · 아래에 ‘공인중개사이신가요?’ 띠(제안 비용 0원 · Free)' ] },
   { v:'26.11.18.8', 날:'2026-11-18', 줄:[ '코드리뷰 반영 - 보고 싶어요로 되살린 제안은 지금 매물 값으로 새로 보내고 중개사에게 알립니다(중개사가 거둔 제안은 되살리지 않음)',
     '계약현황 - 오늘 잔금 / 잔금 지연으로 거르면 기간 칸에 그대로 보이고, 지연 숫자는 대시보드와 같은 판정(날인본 · 직접 추가 · 체결문자 계약, 오늘은 끝 시각 뒤)',
     '매물 등록 - 주거 주차 가능 여부와 갖춰진 조건의 ‘주차 가능’이 함께 맞춰집니다 · 덜 채운 물건도 노출 기준 3분의 1까지 빠졌으면 매물등록 현황(등록실패)에 보입니다 · 같은 종류를 다시 눌러도 예전 매물 구분이 지워지지 않습니다',

@@ -2279,6 +2279,9 @@ body.mo .lp-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
 .lg-acts{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:8px}   /* 나란한 단추는 같은 폭(리뷰 11-12) */
 body.mo .lg-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}
 .lg-tiles.n3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.lg-tiles.n5{grid-template-columns:repeat(5,minmax(0,1fr))}
+body.mo .lg-tiles.n5{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px} body.mo .lg-tiles.n5 .lg-tile span{display:none} body.mo .lg-tiles.n5 .lg-tile{padding:12px 10px}
+.lg-why{display:block;margin-top:4px;font-size:12.5px;color:var(--n500);line-height:1.4} .lg-why.fail{color:var(--danger)}
 body.mo .lg-tiles.n3{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px} body.mo .lg-tiles.n3 .lg-tile{padding:12px 10px} body.mo .lg-tiles.n3 .lg-tile span{display:none}
 .lg-sw{display:flex;gap:6px} .lg-sw .chip{min-height:36px} body.mo .lg-sw .chip{min-height:44px;flex:1;justify-content:center}
 body.mo .lg-th{display:none}
@@ -5333,7 +5336,7 @@ function listingFromRow(x){
     vis:x.vis === 'open' ? 'open' : 'private', road:x.road||'', hideUnit:x.hide_unit !== false, oneLine:x.one_line||'', ownerOk:x.owner_ok === true,
     /* 0043 (2026-11-17) - 칸이 없는 옛 표면 undefined(노출 기준이 주차 · 관리비 세부를 묻지 않는다) */
     feeRows:Array.isArray(x.fee_rows) ? x.fee_rows : undefined, facs:Array.isArray(x.facs) ? x.facs : [], parking:x.parking||'',
-    priceLog:Array.isArray(x.price_log) ? x.price_log : [], closedAt:x.closed_at||'', closedWhy:x.closed_why||'', editedAt:x.updated_at ? agoText(x.updated_at) : agoText(x.created_at),
+    priceLog:Array.isArray(x.price_log) ? x.price_log : [], openedAt:x.opened_at||'', closedAt:x.closed_at||'', closedWhy:x.closed_why||'', editedAt:x.updated_at ? agoText(x.updated_at) : agoText(x.created_at),
   };
 }
 
@@ -10113,6 +10116,19 @@ function 물건기준(L){
     ['소유자 확인', L.ownerOk === true]];
   return { 목록, 다: 목록.length, 찬: 목록.filter(x => x[1]).length, 빠짐: 목록.filter(x => !x[1]).map(x => x[0]) };
 }
+/* 매물등록 현황 상태 - 등록실패는 '거의 다 채웠는데 노출이 안 되는 물건'(빠진 항목 3개 이하 · 소유자 확인 포함)이나 신고로 멈춘 물건.
+   그보다 덜 채운 물건은 매물장부에만 둔다(장부와 등록 현황이 같은 목록이 되지 않게) */
+const 등록날 = v => String(v || '').slice(0, 10).replace(/-/g, '.');
+function 등록상태(L){
+  const g = 물건기준(L), 필수 = g.빠짐.filter(x => x !== '소유자 확인');
+  if(L.status === 'done') return { k:'end', 상:'노출종료', 색:'b-warn', 덧:`거래완료${L.closedAt ? ' (' + 등록날(L.closedAt) + ')' : ''}${L.closedWhy ? ' · ' + L.closedWhy : ''}` };
+  if(L.vis === 'open' && L.status === 'active') return { k:'open', 상:'등록중 · 노출', 색:'b-ind', 덧:'' };
+  if(L.opsStop) return { k:'fail', 상:'등록실패', 색:'b-danger', 덧:'신고 확인으로 공개 멈춤 - 고객센터 문의' };
+  if(L.openedAt && !g.빠짐.length) return { k:'end', 상:'노출종료', 색:'b-warn', 덧:`노출 종료 · ${L.editedAt}` };
+  if(!g.빠짐.length) return { k:'wait', 상:'임시저장', 색:'b-mute', 덧:'노출 전 · 바로 노출할 수 있음' };
+  if(L.openedAt || g.빠짐.length <= 3) return { k:'fail', 상:'등록실패', 색:'b-danger', 덧:[!L.ownerOk && '소유자 일치 미체크', 필수.length && `필수 ${필수.length}개 누락`].filter(Boolean).join(' · ') };
+  return null;
+}
 const 물건상태 = L => L.status === 'done' ? ['거래완료', 'b-ok'] : L.opsStop && L.vis !== 'open' ? ['공개 멈춤(신고 확인)', 'b-warn'] : L.vis === 'open' && L.status === 'active' ? ['노출 중', 'b-ind'] : ['장부만', 'b-mute'];
 const 노출권한 = () => 권한('listing') && 권한('listing_open');   /* 중개보조원은 표시 · 광고를 할 수 없다(공인중개사법 제18조의2) */
 function 물건바꿈(row){ const L = listingFromRow(row), i = S.listings.findIndex(x => x.id === L.id); if(i >= 0) S.listings[i] = L; else S.listings.unshift(L); return L; }
@@ -10147,20 +10163,20 @@ V["#/partner/listings"] = () => {
   if(!LM.loaded && !LM.loading && 세션있음()) setTimeout(lmLoad);
   const 등록 = S.route === '#/partner/listings/open';   /* 매물등록 현황 - 노출 중이거나 명시사항을 다 채운 물건만 */
   if(등록){ MG.tab = 'list'; if(MG.f === 'done') MG.f = ''; }
-  const 전체 = S.listings, 목록 = 전체.filter(L => 등록 ? (L.status === 'active' || !L.status) && !L.seed && (L.vis === 'open' || !물건기준(L).빠짐.length) : L.status === 'active' || L.status === 'done' || L.seed || !L.status), 보관 = 전체.filter(L => L.status === 'arch'), 휴지 = 전체.filter(L => L.status === 'trash');
+  const 전체 = S.listings, 목록 = 전체.filter(L => 등록 ? (L.status === 'active' || L.status === 'done' || !L.status) && !L.seed && !!등록상태(L) : L.status === 'active' || L.status === 'done' || L.seed || !L.status), 보관 = 전체.filter(L => L.status === 'arch'), 휴지 = 전체.filter(L => L.status === 'trash');
   const 탭줄 = MG.tab === 'arch' ? 보관 : MG.tab === 'trash' ? 휴지 : 목록;
   const 말 = String(MG.q || '').trim().toLowerCase().split(/\s+/).filter(Boolean);
-  const 거름 = 탭줄.filter(L => (MG.tab !== 'list' || !MG.f || (MG.f === 'open' ? L.vis === 'open' && L.status === 'active' : MG.f === 'done' ? L.status === 'done' : L.vis !== 'open' && L.status !== 'done'))
+  const 거름 = 탭줄.filter(L => (MG.tab !== 'list' || !MG.f || (등록 ? (등록상태(L) || {}).k === MG.f : MG.f === 'open' ? L.vis === 'open' && L.status === 'active' : MG.f === 'done' ? L.status === 'done' : L.vis !== 'open' && L.status !== 'done'))
     && 말.every(w => { const m = LM.memos[L.id] || {}; return [L.name, L.dong, L.deal, L.bdong, L.ho, m.who, m.note].join(' ').toLowerCase().includes(w); }));
   const 쓸수 = 권한('listing'), 노출 = 노출권한();
   const 단 = (act, v, t, cls = '') => `<button type="button" class="btn tool sm${cls}" data-act="${act}" data-v="${esc(v)}" ${MG.busy ? 'disabled' : ''}>${t}</button>`;
-  const 줄 = L => { const [상, 색] = 물건상태(L), g = 물건기준(L), m = LM.memos[L.id] || {}, ms = L.status === 'active' ? matchesFor(L) : [];
+  const 줄 = L => { const 등상 = 등록 ? 등록상태(L) : null, [상, 색] = 등상 ? [등상.상, 등상.색] : 물건상태(L), g = 물건기준(L), m = LM.memos[L.id] || {}, ms = L.status === 'active' ? matchesFor(L) : [];
     const 관리 = L.seed || !쓸수 ? '' : MG.tab === 'trash' ? 단('lg-state', L.id + '|active', '되돌리기')
       : MG.tab === 'arch' ? 단('lg-state', L.id + '|active', '되돌리기') + 단('lg-state', L.id + '|trash', '삭제', ' dng')
       : L.status === 'done' ? 단('lg-state', L.id + '|active', '되돌리기') + 단('lg-state', L.id + '|arch', '내리기')
       : (노출 ? (L.vis === 'open' ? 단('lg-vis', L.id + '|private', '노출 종료') : 단('lg-vis', L.id + '|open', '노출하기', g.빠짐.length ? ' off' : ' on')) : '') + 단('lg-state', L.id + '|arch', '내리기') + 단('lg-state', L.id + '|trash', '삭제', ' dng');
     return `<div class="lg-row${L.status === 'done' ? ' done' : ''}">
-      <div class="lg-c1"><span class="badge ${색}">${상}</span>${ms.length ? `<small class="lg-m">맞는 손님 ${ms.length}명</small>` : ''}</div>
+      <div class="lg-c1"><span class="badge ${색}">${상}</span>${등상 && 등상.덧 ? `<small class="lg-why${등상.k === 'fail' ? ' fail' : ''}">${esc(등상.덧)}</small>` : ''}${ms.length ? `<small class="lg-m">맞는 손님 ${ms.length}명</small>` : ''}</div>
       <a class="lg-c2" data-go="#/partner/listing/${L.id}"><b>${esc(L.name)} ${demoTag(L, 'vertical-align:middle')}</b><span>${esc(specOf(L))}</span></a>
       <div class="lg-c3"><b class="num">${priceOf(L)}</b>${L.priceLog.length ? `<small class="lg-chg">금액 변경 ${L.priceLog.length}회</small>` : ''}</div>
       <div class="lg-c4 lg-priv" data-l="의뢰인">${m.who || m.phone ? `<b>${esc(m.who || '')}</b><span class="num">${esc(m.phone || '')}</span>` : '<span class="lg-none">-</span>'}</div>
@@ -10177,12 +10193,14 @@ V["#/partner/listings"] = () => {
   <div class="pad adm-page" style="flex:1;padding-top:${isMo()?18:30}px;padding-bottom:24px;max-width:${isMo()?'none':'1240px'};margin:0 auto;width:100%;display:flex;flex-direction:column;gap:14px">
     <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap">
       <div><h1 class="t" style="font-size:${isMo()?21:25}px;margin-top:8px">${등록 ? '매물등록 현황' : 물건이름()} <span style="color:var(--ind)">${목록.length}건</span></h1>
-        ${등록 ? '<p class="sub" style="font-size:14.5px">손님에게 <b style="color:var(--n900)">노출 중</b>이거나, 명시사항을 다 채워 <b style="color:var(--n900)">바로 노출할 수 있는</b> 매물만 모았습니다. 덜 채운 물건은 매물장부에 있습니다.</p>' : ''}
+        ${등록 ? '<p class="sub" style="font-size:14.5px">손님과 다른 중개사에게 보이는 매물과, 노출을 앞둔 매물입니다. <b style="color:var(--n900)">등록실패</b>는 소유자 확인이나 필수 항목이 조금 모자란 물건 - 채우면 바로 노출할 수 있습니다. 많이 덜 채운 물건은 매물장부에 있습니다.</p>' : ''}
         <p class="sub" style="font-size:14.5px"${등록 ? ' hidden' : ''}>우리 사무소 안에서만 보는 장부입니다. 올려두면 들어와 있는 조건과 <b style="color:var(--n900)">바로 대조</b>하고, 기준을 다 채운 물건은 손님에게 <b style="color:var(--n900)">노출</b>할 수 있습니다.</p></div>
       ${쓸수 ? `<button class="btn pri sm" data-act="lg-new">${등록 ? '+ 매물 등록' : '+ 장부에 새로 적기'}</button>` : ''}
     </div>
     ${ownerSide() ? '' : `<div class="lg-sw" role="tablist" aria-label="매물장부 · 매물등록">${[['#/partner/listings', '매물장부', !등록], ['#/partner/listings/open', '매물등록', 등록]].map(([h, t, on]) => `<button type="button" class="chip${on ? ' on' : ''}" role="tab" aria-selected="${on}" data-go="${h}">${t}</button>`).join('')}</div>`}
-    <div class="lg-tiles${등록 ? ' n3' : ''}">${타일('', '전체', 목록.length, '목록에 있는 물건')}${타일('open', '노출 중', 세.open, '손님 · 다른 중개사에게 보임')}${등록 ? 타일('private', '노출 대기', 목록.length - 세.open, '명시사항을 다 채움 · 노출 전') : 타일('private', '장부만', 목록.length - 세.open - 세.done, '우리 사무소만 봄') + 타일('done', '거래완료', 세.done, '계약으로 끝난 물건')}</div>
+    <div class="lg-tiles${등록 ? ' n5' : ''}">${등록 ? (() => { const 수 = k => 목록.filter(L => (등록상태(L) || {}).k === k).length;
+      return 타일('', '전체', 목록.length, '등록 현황의 매물') + 타일('open', '등록중 · 노출', 수('open'), '손님 · 다른 중개사에게 보임') + 타일('wait', '임시저장', 수('wait'), '다 채움 · 노출 전') + 타일('end', '노출종료', 수('end'), '거래완료 · 노출 끝') + 타일('fail', '등록실패', 수('fail'), '소유자 확인 · 필수 항목 부족'); })()
+      : 타일('', '전체', 목록.length, '목록에 있는 물건') + 타일('open', '노출 중', 세.open, '손님 · 다른 중개사에게 보임') + 타일('private', '장부만', 목록.length - 세.open - 세.done, '우리 사무소만 봄') + 타일('done', '거래완료', 세.done, '계약으로 끝난 물건')}</div>
     ${total ? `<div class="card pad" style="border-color:rgba(27,122,70,.35);background:var(--okbg);box-shadow:none;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
       <b style="font-size:14.5px;line-height:1.5;color:var(--ok)">지금 바로 제안할 수 있는 손님이 ${total}명 있습니다</b>
       <span style="font-size:13.5px;line-height:1.5;color:var(--n700)">물건을 눌러 확인하세요</span></div>` : ''}
@@ -13866,6 +13884,7 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
+  { v:'26.11.18', 날:'2026-11-18', 줄:[ '매물등록 현황 - 상태를 등록중 · 노출 / 임시저장 / 노출종료(사유 · 날짜) / 등록실패(소유자 일치 미체크 · 필수 항목 누락)로 나눠 보여 주고, 위 카드로 거릅니다' ] },
   { v:'26.11.17.22', 날:'2026-11-17', 줄:[ '지도 - 구글 지도에 더해 카카오 지도도 쓸 수 있습니다(운영 설정으로 고름 · 구글 코드는 그대로 남아 있음). 카카오 지도는 개인정보 처리방침 개정 안내 기간이 끝나는 11월 24일부터 켜집니다' ] },
   { v:'26.11.17.21', 날:'2026-11-17', 줄:[ '손님 - ‘보고 싶어요’를 누른 매물의 금액이 바뀌면 카카오 알림톡으로 알려 드립니다(제안 상세에서 끌 수 있음 · 알림톡 템플릿 심사가 끝나면 켜집니다)',
     '계약서 일정 · 체크 - 공동중개 상대 사무소와 날짜 · 금액만 나누는 공유 코드(당사자 · 소재지 · 연락처는 보이지 않음). 상대가 코드를 넣으면 계약일 · 중도금일 · 잔금일 · 보증금이 따라가고, 상대가 바꾸면 주황으로 알려 줍니다' ] },

@@ -1382,7 +1382,7 @@ ok(js.includes('<button type="button" class="ctx-fullbtn" data-act="ct-full"') &
 
 /* ── 소재지 따로 고치기 · 공적장부 우선 · 매물등록 메뉴 (2026-11-17 대표님) ── */
 ok(js.includes("ct칸('property.show', 글 || P.road, 300)") && js.includes("ctIn('property.show', '계약서에 찍히는 소재지'") && js.includes('const ct소재지다름 = P =>') && js.includes("if(ctGet(doc, 'property.jibun') !== s.jibun){ ctSet(doc, 'property.jibun', s.jibun);"), '소재지 - 찍히는 글자는 따로 고치고 찾은 주소는 그대로 · 공적장부 지번이 먼저');
-ok(js.includes("V['#/partner/listings/open'] = () => V['#/partner/listings']();") && js.includes("['#/partner/listings/open', '매물등록', 'list', 'lr']") && js.includes("(L.vis === 'open' || !물건기준(L).빠짐.length)"), '매물등록 메뉴 - 노출 중 · 노출할 수 있는 매물만(매물장부는 그대로)');
+ok(js.includes("V['#/partner/listings/open'] = () => V['#/partner/listings']();") && js.includes("['#/partner/listings/open', '매물등록', 'list', 'lr']") && js.includes("!L.seed && !!등록상태(L)"), '매물등록 메뉴 - 노출 중 · 노출할 수 있는 매물만(매물장부는 그대로)');
 
 /* ── 화면 검수 (2026-11-17 PC · 휴대폰) ── */
 ok(css.includes('.modal .box.ct-qbox{max-width:560px}') && css.includes('.ct-qbox .ct-grid > .w12{grid-column:1/-1}') && css.includes('body.mo .ct-qbox .inp{min-height:44px;font-size:16px}'), '직접 추가 창 - 폭이 모달 기본(440px)에 지지 않고, 휴대폰 입력 칸은 44px · 16px');
@@ -1441,6 +1441,9 @@ ok(js.includes('doc.deal.down = 0;') && js.includes("if(같은줄){ CS.rowBusy =
   ok(서버.includes("title") === true && 서버.includes('share: { price: s.price, cd: s.cd, md: s.md, bd: s.bd }') && !/share: \{[^}]*(title|parties|road|phone)/.test(서버), '공유로 나가는 것은 금액 · 날짜뿐(당사자 · 소재지 · 연락처 없음)');
   ok(매치.includes("process.env.SOLAPI_TPL_PRICE") && 매치.includes('price_alert=eq.true') && 매치.includes('6 * 3600e3') && 매치.includes("price_alert: on") && 내.includes("body.what === 'match-alert'") && feed3.includes('await Promise.race([가격바뀜알림(뒤행, cur)'), '가격 변동 알림톡 - 템플릿이 있을 때만 · 끈 손님 제외 · 6시간에 한 번 · 손님이 끌 수 있다');
   ok(js.includes('data-act="pa-toggle"') && js.includes("what:'match-alert'") && js.includes('data-act="ext-link"') && js.includes('function ct공유카드(){'), '화면 - 손님 가격 알림 끄기 · 공유 코드 만들기 · 코드로 불러오기'); }
+
+/* ── 매물등록 현황 네 상태 (2026-11-18 파트너 C1 시안) ── */
+ok(js.includes('function 등록상태(L){') && js.includes("상:'등록실패'") && js.includes("상:'임시저장'") && js.includes("상:'노출종료'") && js.includes("openedAt:x.opened_at||''") && css.includes('.lg-tiles.n5{'), '매물등록 현황 - 등록중·노출 / 임시저장 / 노출종료 / 등록실패');
 
 console.log(`${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

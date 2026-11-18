@@ -10139,7 +10139,7 @@ function 물건기준(L){
     ['사용승인일', 글(L.approved)], ['입주 가능일', 글(L.moveIn)],
     ...(새칸 ? [['주차 가능 여부 · 대수', 주차됨(L.parking)]] : []),
     ['관리비 기준', 글(L.feeBasis)], ['관리비 부과 방식', 글(L.feeType)],
-    ...(새칸 && (임대차(L.deal) || +L.fee >= 100000 && L.feeType === 관리비직접) ? [['관리비 세부 항목', (L.feeRows || []).length > 0]] : []),
+    ...(새칸 && (임대차(L.deal) || +L.fee >= 100000 && L.feeType === 관리비직접) ? [['관리비 세부 항목', (L.feeRows || []).length > 0 || !(+L.fee > 0) && 글(L.feeItems)]] : []),
     ['상세 설명', 글(L.note)],
     ['소유자 확인', L.ownerOk === true]];
   return { 목록, 다: 목록.length, 찬: 목록.filter(x => x[1]).length, 빠짐: 목록.filter(x => !x[1]).map(x => x[0]) };
@@ -10591,7 +10591,7 @@ V["#/partner/listing/new"] = () => {
         <div style="margin-top:12px"><span class="lab">부과 방식 <span class="req">*</span></span>
           ${chipsHTML(FEE_TYPE, g('lfeeType'),'lfeeType',false)}</div>
         <!-- 항목표 (2026-11-17 파트너 C1) - 정액관리비가 월 10만원 이상이면 항목을 나눠 표시해야 한다. 적으면 위 합계를 대신한다 -->
-        <div style="margin-top:12px"><span class="lab">항목별 금액 ${임대차(g('ldeal') || '월세') ? '<span class="req">*</span> <span class="opt">임대차는 확인설명서에 적는 항목이라 꼭 적어 주세요 - 실비는 ‘실비’를 누릅니다</span>' : g('lfeeType') === 관리비직접 && +g('lfee') >= 100000 ? '<span class="req">*</span> <span class="opt">정액 월 10만원 이상은 항목을 나눠 적어야 합니다</span>' : '<span class="opt">정액관리비면 나눠 적어 주세요 - 적으면 합계가 자동으로 바뀝니다</span>'}</span>
+        <div style="margin-top:12px"><span class="lab">항목별 금액 ${임대차(g('ldeal') || '월세') ? '<span class="req">*</span> <span class="opt">임대차는 확인설명서에 적는 항목이라 꼭 적어 주세요 - 실비는 ‘실비’ · 관리비가 없으면 0원으로 두고 아래 ‘그 밖에 적을 것’에 사유를 적습니다</span>' : g('lfeeType') === 관리비직접 && +g('lfee') >= 100000 ? '<span class="req">*</span> <span class="opt">정액 월 10만원 이상은 항목을 나눠 적어야 합니다</span>' : '<span class="opt">정액관리비면 나눠 적어 주세요 - 적으면 합계가 자동으로 바뀝니다</span>'}</span>
           <div class="lf-rows">${FEE_ROWS.map(([k, 이름]) => `<div class="lf-row"><span>${이름}</span>
             <div class="unit"><input class="inp num" data-in="lfr_${k}" inputmode="numeric" value="${esc(comma(g('lfr_' + k)))}" placeholder="${f['lfrr_' + k] ? '실비' : '0'}" ${f['lfrr_' + k] ? 'disabled' : ''} aria-label="${이름} 금액"><span>원</span></div>
             <button type="button" class="chip${f['lfrr_' + k] ? ' on' : ''}" data-act="lfreal" data-v="${k}" aria-pressed="${!!f['lfrr_' + k]}">실비</button></div>`).join('')}</div>
@@ -13919,6 +13919,7 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
+  { v:'26.11.18.6', 날:'2026-11-18', 줄:[ '매물 등록 - 관리비가 없는 임대 매물은 관리비 0원 + ‘그 밖에 적을 것’에 사유를 적으면 노출할 수 있습니다' ] },
   { v:'26.11.18.5', 날:'2026-11-18', 줄:[ '매물 등록 - 임대차(전세 · 월세 · 연세 · 단기임대)는 관리비 항목별 금액을 꼭 적습니다(확인설명서 기재 사항). 매매는 지금처럼 선택' ] },
   { v:'26.11.18.4', 날:'2026-11-18', 줄:[ '매물 등록 - 매물 구분을 계약서의 구분(아파트 · 주상복합 · 연립주택 · 다세대주택 … · 상가 · 사무실 · 창고 등)과 같게 바꾸고, 상가 · 사무실 · 창고에도 고르게 했습니다',
     '주차를 가능 / 불가능으로 고르고, 가능이면 세대당 · 총 주차 대수를 적습니다',
@@ -21592,7 +21593,7 @@ const 폼노출빠짐 = f => { const rows = 관리비줄폼(f);
   return 물건기준({ kind: f.lkind || 'home', deal: f.ldeal || '월세', dong: f.ldong, dep: +f.ldep || 0, area: +f.larea || 0,
     band: NONHOME(f.lkind) ? '' : (f.lband || '중층'), floorNo: f.lfloorNo, floors: +f.lfloors || 0, dir: f.ldir, dirBase: f.ldirBase, rooms: +f.lrooms || 0, baths: +f.lbaths || 0,
     htype: f.lhtype, approved: f.lapproved, moveIn: lmoveArr().length ? 'x' : '', parking: 주차글(f), feeBasis: f.lfeeBasis, feeType: f.lfeeType,
-    areaSup: +f.lareaSup || 0, note: f.lnote, bdong: f.lbdong, ho: f.lho,
+    areaSup: +f.lareaSup || 0, note: f.lnote, bdong: f.lbdong, ho: f.lho, feeItems: f.lfeeItems,
     fee: rows.length ? rows.reduce((a, x) => a + x.amt, 0) : +f.lfee || 0, feeRows: rows, ownerOk: true }).빠짐; };
 function 물건힌트(f, ok){ if(!ok) return '건물명 · 법정동을 적으면 장부에 보관할 수 있습니다';
   const 빠 = 폼노출빠짐(f); return 빠.length ? `장부에 보관됩니다 · 노출하려면 ${빠.slice(0, 4).join(' · ')}${빠.length > 4 ? ` 외 ${빠.length - 4}개` : ''}를 채우고 소유자를 확인하세요` : '모든 * 항목을 채웠습니다 - 저장한 뒤 장부에서 소유자 확인 후 노출할 수 있습니다'; }

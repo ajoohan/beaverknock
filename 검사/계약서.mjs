@@ -1448,5 +1448,8 @@ ok(js.includes('function 등록상태(L){') && js.includes("상:'등록실패'")
 /* ── 실제 화면 확인에서 찾은 것 (2026-11-18) ── */
 ok(js.includes("if(CT.lay === 'form' && CT.mode !== 'edit') CT.mode = 'edit';") && js.includes('<span class="eqb ct-headb">') && !js.includes('<span class="eqb" style="display:flex;gap:8px"><button class="btn sec sm" data-act="ct-quick">') && css.includes('.ext-box .eqb{width:100%}'), '서류 채우기 단계에서도 서식 입력이 먹고 · 계약현황 머리 단추 세 개는 한 묶음 같은 폭');
 
+/* ── 작성 중 계약서에 체결문자 적용 (2026-11-18 파트너) ── */
+ok(js.includes('function ct문자적용(e){') && js.includes("data-act=\"ct-sms-pick\"") && js.includes("case 'ct-sms-use':") && js.includes("if(!(+D.down > 0) && +N.down > 0)"), '작성 중인 계약서에 체결문자 적용 - 금액 · 날짜 · 계약금은 비어 있을 때만');
+
 console.log(`${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

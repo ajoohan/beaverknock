@@ -10985,6 +10985,7 @@ const ASK_ICO = { warn:'M12 4 L21.5 20 H2.5 Z M12 10 v4.5 M12 17.5 v.01', ask:'M
 function modalHTML(){
   if(!S.modal) return '';
   if(S.modal.type==='ct-quick') return ctQuickHTML(S.modal);
+  if(S.modal.type==='ct-sms-pick') return ct문자고르기HTML();
   if(S.modal.type==='ask'){ const m = S.modal;
     return `<div class="modal ask" data-act="modal-bg"><div class="box" data-stop role="alertdialog" aria-modal="true" aria-labelledby="mdT"${m.설명 ? ' aria-describedby="mdD"' : ''} tabindex="-1">
       <span class="ask-ico${m.위험 ? ' warn' : ''}" aria-hidden="true"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"
@@ -13886,6 +13887,7 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
+  { v:'26.11.18.3', 날:'2026-11-18', 줄:[ '계약서 작성 - ‘체결문자 적용’ 단추: 보낸 계약체결 문자를 골라 금액 · 날짜를 작성 중인 계약서에 바로 채웁니다(서류로 채우기 · 건축물대장 옆)' ] },
   { v:'26.11.18.2', 날:'2026-11-18', 줄:[ '계약서 작성 - 서류로 채우기 단계에서 ‘서식 입력’을 누르면 그 단계를 건너뛰고 서식이 크게 열립니다(전에는 안내만 뜨고 그대로였습니다)',
     '계약현황 위 단추 세 개(직접 추가 · 계약체결 문자에서 가져오기 · 계약서 작성)를 같은 폭으로 · 다른 사무소 계약서 창의 취소 · 저장 단추를 넓게' ] },
   { v:'26.11.18', 날:'2026-11-18', 줄:[ '매물등록 현황 - 상태를 등록중 · 노출 / 임시저장 / 노출종료(사유 · 날짜) / 등록실패(소유자 일치 미체크 · 필수 항목 누락)로 나눠 보여 주고, 위 카드로 거릅니다' ] },
@@ -19309,13 +19311,42 @@ function ctScanBanner(){
   if(CT.row && CT.row.status === 'sealed') return '';
   return ctScanBanner0() + ((CT_FORMS[(CT.doc || {}).form] || {}).explain ? '' : ct장부상태());
 }
+function ct문자적용단추(){
+  if(ctSealed() || (CT_FORMS[(CT.doc || {}).form] || {}).explain) return '';
+  return `<button class="btn tool sm" data-act="ct-sms-pick">체결문자 적용</button>`;
+}
+function ct문자고르기HTML(){
+  if(!CS.loaded && !CS.loading) setTimeout(csLoad);
+  const 줄 = (CS.log || []).slice(0, 30);
+  return `<div class="modal" data-act="modal-bg"><div class="box" data-stop role="dialog" aria-modal="true" aria-labelledby="mdT" tabindex="-1" style="max-width:520px">
+    <h2 id="mdT" style="margin:0 0 6px;font-size:16px;font-weight:700;letter-spacing:-.03em">체결문자 적용</h2>
+    <p style="margin:0 0 12px;font-size:14px;line-height:1.7;color:var(--n500)">보낸 계약체결 문자를 고르면 금액 · 날짜를 이 계약서에 채웁니다. 이미 적은 소재지는 그대로 두고, 계약금은 비어 있을 때만 채웁니다.</p>
+    ${CS.loading && !CS.loaded ? '<p class="sub">문자 기록을 불러오는 중입니다…</p>'
+      : 줄.length ? `<ul class="cs-log" style="max-height:52vh;overflow:auto">${줄.map(e => `<li><span class="cs-log-t"><b>${esc(e.vals && e.vals.목적물 ? String(e.vals.목적물).slice(0, 40) : '(목적물 없음)')}</b><small>${esc(e.tpl || '')} · ${esc(String(e.at || '').slice(0, 16).replace('T', ' '))}</small></span>
+          <button type="button" class="btn sec sm" data-act="ct-sms-use" data-v="${esc(e.id)}">이것으로 채우기</button></li>`).join('')}</ul>`
+      : '<p class="sub">보낸 계약체결 문자 기록이 없습니다. ‘계약체결 문자’ 메뉴에서 문자를 보내면 여기에 나옵니다.</p>'}
+    <div class="eqb" style="display:flex;gap:8px;margin-top:12px;width:100%"><button class="btn sec" data-act="modal-close">닫기</button></div></div></div>`;
+}
+function ct문자적용(e){
+  const d = CT.doc; if(!d || ctSealed()) return;
+  const 새 = cs문서(e), D = d.deal = d.deal || {}, N = 새.deal || {}, 채움 = [];
+  const 넣 = (k, 이름) => { if(N[k] != null && N[k] !== '' && N[k] !== 0 && D[k] !== N[k]){ D[k] = N[k]; 채움.push(이름); } };
+  if(N.price != null && 'price' in D) 넣('price', '매매대금'); else 넣('deposit', '보증금');
+  넣('mid', '중도금'); 넣('midDate', '중도금일'); 넣('balanceDate', '잔금일'); 넣('rent', '월차임'); 넣('rentDay', '지급일');
+  if(!(+D.down > 0) && +N.down > 0){ D.down = N.down; 채움.push('계약금(대금의 10% - 확인해 주세요)'); }
+  if(새.contractDate && d.contractDate !== 새.contractDate){ d.contractDate = 새.contractDate; 채움.push('계약일'); }
+  if(새.period && 새.period.handover && !(d.period && d.period.handover)){ d.period = { ...(d.period || {}), handover: 새.period.handover, ...(새.period.to ? { to: 새.period.to } : {}) }; 채움.push('인도일'); }
+  if(!String((d.property || {}).road || '').trim() && 새.property && 새.property.road){ d.property = { ...(d.property || {}), road: 새.property.road }; 채움.push('소재지(주소 찾기로 다시 골라 주세요)'); }
+  S.modal = null; ctDirty(); render();
+  toast(채움.length ? `체결문자에서 채웠습니다 - ${채움.join(' · ')}` : '채울 값이 없습니다 - 이미 같은 값이 들어 있습니다');
+}
 function ctScanBanner0(){
   const n = CT.filled ? CT.filled.size : 0, 경고 = CT.scanWarn || [];
   if(!n) return `<div class="scan-mini"><span>등기부등본·건축물대장·토지이용계획확인서로 칸을 채울 수 있습니다${ct대장가능() ? ' · 건축물대장은 주소만으로도 불러옵니다' : ''}</span>
-    <span class="eqb" style="gap:6px">${ct대장가능() ? ct대장단추() : ''}<button class="btn tool sm" data-act="ct-scan-open">서류로 채우기</button></span></div>${ct대장오류()}`;
+    <span class="eqb" style="gap:6px">${ct문자적용단추()}${ct대장가능() ? ct대장단추() : ''}<button class="btn tool sm" data-act="ct-scan-open">서류로 채우기</button></span></div>${ct대장오류()}`;
   return `<div class="scan-done" role="status"><div><b>서류에서 ${n}칸을 채웠습니다</b><span>남색 칸을 서류와 맞춰 확인하세요 - 고치면 표시가 사라집니다</span>
       ${경고.length ? `<ul>${경고.map(w => `<li>${esc(w)}</li>`).join('')}</ul>` : ''}</div>
-    <span class="eqb" style="gap:6px">${ct대장가능() ? ct대장단추() : ''}<button class="btn tool sm" data-act="ct-scan-open">서류로 다시 채우기</button></span></div>${ct대장오류()}`;
+    <span class="eqb" style="gap:6px">${ct문자적용단추()}${ct대장가능() ? ct대장단추() : ''}<button class="btn tool sm" data-act="ct-scan-open">서류로 다시 채우기</button></span></div>${ct대장오류()}`;
 }
 
 
@@ -22875,6 +22906,8 @@ function handle(a,v,el){
     case 'ct-edit': CT.mode = 'edit'; render(); return true;
     case 'ct-print': return ctPrint();
     case 'ct-lay': ct배치바꿈(v); return true;
+    case 'ct-sms-pick': S.modal = { type:'ct-sms-pick' }; render(); return true;
+    case 'ct-sms-use': { const e = (CS.log || []).find(x => x.id === v); if(e) ct문자적용(e); return true; }
     case 'pa-toggle': { const p = S.props.find(x => x.id === v); if(!p) return true; const 켜기 = !p.priceAlert;
       apiFetch('/api/my', { method:'POST', body: JSON.stringify({ what:'match-alert', proposal_id: v, on: 켜기 }) }).then(r => r.json().catch(() => ({})).then(j => {
         if(r.ok && j.ok){ p.priceAlert = 켜기; render(); toast(켜기 ? '가격이 바뀌면 카카오톡으로 알려 드립니다' : '가격 변동 알림을 껐습니다'); }

@@ -1445,5 +1445,8 @@ ok(js.includes('doc.deal.down = 0;') && js.includes("if(같은줄){ CS.rowBusy =
 /* ── 매물등록 현황 네 상태 (2026-11-18 파트너 C1 시안) ── */
 ok(js.includes('function 등록상태(L){') && js.includes("상:'등록실패'") && js.includes("상:'임시저장'") && js.includes("상:'노출종료'") && js.includes("openedAt:x.opened_at||''") && css.includes('.lg-tiles.n5{'), '매물등록 현황 - 등록중·노출 / 임시저장 / 노출종료 / 등록실패');
 
+/* ── 실제 화면 확인에서 찾은 것 (2026-11-18) ── */
+ok(js.includes("if(CT.lay === 'form' && CT.mode !== 'edit') CT.mode = 'edit';") && js.includes('<span class="eqb ct-headb">') && !js.includes('<span class="eqb" style="display:flex;gap:8px"><button class="btn sec sm" data-act="ct-quick">') && css.includes('.ext-box .eqb{width:100%}'), '서류 채우기 단계에서도 서식 입력이 먹고 · 계약현황 머리 단추 세 개는 한 묶음 같은 폭');
+
 console.log(`${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

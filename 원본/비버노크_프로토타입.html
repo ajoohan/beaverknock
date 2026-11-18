@@ -8600,7 +8600,7 @@ V['#/partner'] = () => `
   <div class="hm-navwrap hp-nav">
     <div class="nav hm-nav">
       <span style="flex:none">${logoLockup({h:isMo()?20:24,mode:'dark',partner:!isMo(),tag:false})}</span>
-      ${isMo() ? '' : `<nav class="hp-links" aria-label="기능 바로 가기">${HP_장점.map(([, t], i) => `<button type="button" data-act="hp-jump" data-v="hp-f${i + 1}">${t}</button>`).join('')}</nav>`}
+      ${isMo() ? '' : `<nav class="hp-links" aria-label="기능 바로 가기">${['1:1 제안', '계약서 관리', '자동 알림', '일정 체크'].map((t, i) => `<button type="button" data-act="hp-jump" data-v="hp-f${i + 1}">${t}</button>`).join('')}</nav>`}
       <div class="right">
         <a class="hp-cust tapx" data-go="#/">${isMo() ? '손님 화면' : '손님 화면 가기'}${hm그림('arrow', 15)}</a>
         ${S.agent
@@ -13939,6 +13939,7 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
+  { v:'26.11.18.10', 날:'2026-11-18', 줄:[ '파트너 안내 - 상단 바로 가기를 아래 자세한 칸 넷(1:1 제안 · 계약서 관리 · 자동 알림 · 일정 체크)에 맞춤' ] },
   { v:'26.11.18.9', 날:'2026-11-18', 줄:[ '파트너 안내 - 큰 제목 ‘영업부터 잔금까지, 한 화면에서’ · 기둥 여섯(1:1 제안 · 매물장부 · 계약서 작성 · 계약현황 · 자동 알림 · 사무소 운영)',
     '손님 메인 - 가격 변동 알림 한 줄 · 아래에 ‘공인중개사이신가요?’ 띠(제안 비용 0원 · Free)' ] },
   { v:'26.11.18.8', 날:'2026-11-18', 줄:[ '코드리뷰 반영 - 보고 싶어요로 되살린 제안은 지금 매물 값으로 새로 보내고 중개사에게 알립니다(중개사가 거둔 제안은 되살리지 않음)',

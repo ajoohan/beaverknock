@@ -189,5 +189,16 @@ globalThis.fetch = async (url, opt = {}) => {
 /* ── 매물 등록 필수 · 매물 구분 · 주차 (2026-11-18 파트너) ── */
 { const 원2 = fs0.readFileSync(new URL('../원본/비버노크_프로토타입.html', import.meta.url), 'utf8');
   ok(원2.includes("const 매물구분 = k =>") && 원2.includes("data-in=\"lparkTot\"") && 원2.includes("const 손님유형 = t =>") && 원2.includes("['상세 설명', 글(L.note)]") && 원2.includes("const LPARK = ['가능', '불가능'];"), '매물 구분은 계약서 구분 · 주차는 가능/불가능 + 세대당 · 총 · 상세 설명 필수'); }
+/* ── 화면 · 서버 규칙이 같은가 · 2026-11-18 리뷰 반영 ── */
+{ const 원3 = fs0.readFileSync(new URL('../원본/비버노크_프로토타입.html', import.meta.url), 'utf8'), 피드 = fs0.readFileSync(new URL('../api/feed.js', import.meta.url), 'utf8');
+  const 뽑 = (s, re) => (s.match(re) || [])[1];
+  const 화주 = 뽑(원3, /const 주차됨 = p => \{ p = String\(p \|\| ''\); return (.+?); \};/), 서주 = 뽑(피드, /export const 주차됨 = p => \{ p = String\(p \|\| ''\); return (.+?); \};/);
+  const 목 = (s, 이름) => (뽑(s, new RegExp('const ' + 이름 + ' = t => \\[(.+?)\\]\\.includes')) || '').replace(/\s/g, '');
+  ok(화주 && 화주 === 서주 && 목(원3, '호필요') && 목(원3, '호필요') === 목(피드, '호필요') && 목(원3, '동필요') === 목(피드, '동필요'), '노출 기준의 주차 · 동호 규칙이 화면과 서버에서 똑같다');
+  const 내 = fs0.readFileSync(new URL('../api/my.js', import.meta.url), 'utf8'), 맞 = fs0.readFileSync(new URL('../api/_match.js', import.meta.url), 'utf8');
+  ok(내.includes('status: d.status, expires_at: d.expires_at') && 내.includes("listing_id: p.listing_id || '', price_alert: p.price_alert"), '손님 내 조건 - 상태 · 기한 · 가격 알림 칸을 내보낸다');
+  ok(맞.includes("전.status === 'withdrawn') return res.status(409)") && 맞.includes('&status=eq.expired') && 맞.includes('body: JSON.stringify({ ...row, created_at'), '보고 싶어요 - 만료 제안은 지금 값으로 되살리고 회수한 제안은 그대로');
+  ok(원3.includes('function ct잔금판정(r){') && 원3.includes("const 잔금지연 = 계약.filter(r => ct잔금판정(r) === 'late')") && 원3.includes("[['today', '오늘 잔금'], ['late', '잔금 지연']]"), '계약현황 · 대시보드 잔금 지연이 같은 판정 · 거르기가 기간 칸에 보인다'); }
+
 console.log(`\n${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

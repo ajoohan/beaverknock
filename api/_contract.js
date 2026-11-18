@@ -1013,10 +1013,13 @@ export async function reportDueCron(req, res) {
   /* 다른 사무소가 쓴 계약서(공동중개 · 2026-11-10) - 사무소 설정의 목록. 계약일 · 중도금 · 잔금만 */
   {
     const x = await db('bk_agent', `select=id,name,phone,user_id,alert:settings->alert,ext:settings->ext&settings->ext=not.is.null&limit=1000`).catch(() => null);
-    const { 외부들, 외부일정 } = await import('./_ext.js');
-    for (const a of (x && x.r.ok ? x.rows : [])) {
+    const { 외부들, 외부일정, 공유합치기 } = await import('./_ext.js');
+    const 사무소들 = x && x.r.ok ? x.rows : [];
+    const 모든코드 = [...new Set(사무소들.flatMap(a => 외부들(a.ext).filter(e => e.link).map(e => e.link)))], 맵 = {};
+    for (let i = 0; i < 모든코드.length; i += 100) Object.assign(맵, (await 공유찾기(모든코드.slice(i, i + 100)).catch(() => null)) || {});
+    for (const a of 사무소들) {
       const 설정 = 알림설정(a.alert);
-      const 오늘것 = (await 외부최신(a.ext)).flatMap(e => 외부일정(e).filter(v => !설정.off.includes(v.k)).map(v => ({ ...v, 남음: 날차(오늘, v.날), title: `${e.title} (공동중개)` })))
+      const 오늘것 = 공유합치기(외부들(a.ext), 맵).stored.flatMap(e => 외부일정(e).filter(v => !설정.off.includes(v.k)).map(v => ({ ...v, 남음: 날차(오늘, v.날), title: `${e.title} (공동중개)` })))
         .filter(v => (알림날[v.k] || []).includes(v.남음));
       if (!오늘것.length) continue;
       if (!사람별.has(a.id)) 사람별.set(a.id, { a, 설정, uid: a.user_id, 목록: [] });

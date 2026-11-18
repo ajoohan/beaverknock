@@ -218,27 +218,33 @@ export async function matchWant(req, res, user, b) {
     const addr = String(L.road || [L.dong, L.name].filter(Boolean).join(' ')).replace(/[<>"'`]/g, '').slice(0, 200);
     const 있던 = await fetch(sbUrl('bk_proposal', `select=id,status&demand_id=eq.${did}&agent_id=eq.${L.agent_id}&addr=eq.${encodeURIComponent(addr)}&limit=1`), { headers: sbHeaders() });
     const 전 = 있던.ok ? (await 있던.json())[0] : null;
-    if (전 && ['expired', 'withdrawn'].includes(전.status)) {
-      /* 만료 · 철회된 제안으로 보내면 연결이 막힌다 - 다시 보낸 제안으로 되살린다(2026-11-18 점검) */
-      const 살림 = await fetch(sbUrl('bk_proposal', `id=eq.${전.id}`), { method: 'PATCH', headers: { ...sbHeaders(), Prefer: 'return=minimal' },
-        body: JSON.stringify({ status: 'sent', created_at: new Date().toISOString() }) }).catch(() => null);
-      if (살림 && 살림.ok) return res.status(200).json({ ok: true, id: 전.id, again: true });
-    } else if (전) return res.status(200).json({ ok: true, id: 전.id, again: true });
+    /* 중개사가 거둔 제안은 되살리지 않는다 - 중개사의 뜻이다 */
+    if (전 && 전.status === 'withdrawn') return res.status(409).json({ error: '중개사가 이 매물의 제안을 거둬들였습니다 - 다른 매물을 봐 주세요', status: 'withdrawn' });
+    if (전 && 전.status !== 'expired') return res.status(200).json({ ok: true, id: 전.id, again: true });
     const row = { demand_id: did, agent_id: L.agent_id, agent_user: L.agent_user, addr, bname: L.name,
       dep: L.dep, rent: L.rent, fee: L.fee, fee_type: L.fee_type, fee_items: L.fee_items, fee_basis: L.fee_basis, note: L.note,
       area_sup: L.area_sup, area: L.area, rooms: L.rooms != null ? String(L.rooms) : null, baths: L.kind === 'home' && L.baths != null ? String(L.baths) : '',
       dir: L.dir, dir_base: L.dir_base, floor_no: L.kind === 'home' ? null : L.floor_no, band: L.band, bdong: L.hide_unit === false ? L.bdong : null, htype: L.htype,
       duplex: L.duplex === true, move_in: L.move_in, approved: L.approved, photos: L.photos || 0,
       status: 'sent', msg: `맞춤매물에서 손님이 ‘보고 싶어요’를 눌렀습니다 (일치율 ${s.점}점)` };
+    const 알리기 = () => emailOf(L.agent_user).then(to => to && notify(req, { to, subject: `‘${L.name}’을 보고 싶다는 손님이 있습니다`,
+      rows: [['물건', L.name], ['가격', `보증금 ${won(L.dep)}${L.rent ? ` / 월 ${won(L.rent)}` : ''}`], ['일치율', `${s.점}점`]],
+      link: '/#/partner/proposals', cta: '내 제안에서 보기', note: '손님이 연결을 누르면 이름과 연락처가 전달됩니다.' })).catch(() => {});
+    if (전) {
+      /* 7일 동안 열리지 않아 만료된 제안 - 지금 매물 값으로 다시 보낸 제안으로 되살린다(옛 금액이 남지 않게 · 2026-11-18 리뷰) */
+      const 살림 = await fetch(sbUrl('bk_proposal', `id=eq.${전.id}&status=eq.expired`), { method: 'PATCH', headers: { ...sbHeaders(), Prefer: 'return=minimal' },
+        body: JSON.stringify({ ...row, created_at: new Date().toISOString() }) }).catch(() => null);
+      if (!살림 || !살림.ok) return res.status(502).json({ error: '요청을 남기지 못했습니다' });
+      알리기();
+      return res.status(200).json({ ok: true, id: 전.id, again: true });
+    }
     const 올리기 = body => fetch(sbUrl('bk_proposal'), { method: 'POST', headers: { ...sbHeaders(), Prefer: 'return=representation' }, body: JSON.stringify(body) });
     /* 어느 매물인지(listing_id)를 남겨 가격이 바뀌면 알림톡을 보낸다 - 0044 를 넣기 전이면 이 칸만 빼고 다시 올린다 */
     let ir = await 올리기({ ...row, listing_id: lid });
     if (!ir.ok) { const t0 = await ir.clone().text().catch(() => ''); if (/listing_id|PGRST204|does not exist/i.test(t0)) ir = await 올리기(row); }
     if (!ir.ok) { console.error('[match-want]', ir.status, (await ir.text()).slice(0, 200)); return res.status(502).json({ error: '요청을 남기지 못했습니다' }); }
     const saved = (await ir.json())[0] || {};
-    emailOf(L.agent_user).then(to => to && notify(req, { to, subject: `‘${L.name}’을 보고 싶다는 손님이 있습니다`,
-      rows: [['물건', L.name], ['가격', `보증금 ${won(L.dep)}${L.rent ? ` / 월 ${won(L.rent)}` : ''}`], ['일치율', `${s.점}점`]],
-      link: '/#/partner/proposals', cta: '내 제안에서 보기', note: '손님이 연결을 누르면 이름과 연락처가 전달됩니다.' })).catch(() => {});
+    알리기();
     return res.status(201).json({ ok: true, id: saved.id });
   } catch (e) { return res.status(502).json({ error: 'DB에 닿지 못했습니다' }); }
 }

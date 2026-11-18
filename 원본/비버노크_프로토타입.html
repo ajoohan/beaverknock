@@ -10165,7 +10165,7 @@ function 등록상태(L){
   if(L.opsStop) return { k:'fail', 상:'등록실패', 색:'b-danger', 덧:'신고 확인으로 공개 멈춤 - 고객센터 문의' };
   if(L.openedAt && !g.빠짐.length) return { k:'end', 상:'노출종료', 색:'b-warn', 덧:`노출 종료 · ${L.editedAt}` };
   if(!g.빠짐.length) return { k:'wait', 상:'임시저장', 색:'b-mute', 덧:'노출 전 · 바로 노출할 수 있음' };
-  if(L.openedAt || g.빠짐.length <= 3) return { k:'fail', 상:'등록실패', 색:'b-danger', 덧:[!L.ownerOk && '소유자 일치 미체크', 필수.length && `필수 ${필수.length}개 누락`].filter(Boolean).join(' · ') };
+  if(L.openedAt || g.빠짐.length <= Math.ceil(g.다 / 3)) return { k:'fail', 상:'등록실패', 색:'b-danger', 덧:[!L.ownerOk && '소유자 일치 미체크', 필수.length && `필수 ${필수.length}개 누락`].filter(Boolean).join(' · ') };
   return null;
 }
 const 물건상태 = L => L.status === 'done' ? ['거래완료', 'b-ok'] : L.opsStop && L.vis !== 'open' ? ['공개 멈춤(신고 확인)', 'b-warn'] : L.vis === 'open' && L.status === 'active' ? ['노출 중', 'b-ind'] : ['장부만', 'b-mute'];
@@ -13930,6 +13930,10 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
+  { v:'26.11.18.8', 날:'2026-11-18', 줄:[ '코드리뷰 반영 - 보고 싶어요로 되살린 제안은 지금 매물 값으로 새로 보내고 중개사에게 알립니다(중개사가 거둔 제안은 되살리지 않음)',
+    '계약현황 - 오늘 잔금 / 잔금 지연으로 거르면 기간 칸에 그대로 보이고, 지연 숫자는 대시보드와 같은 판정(날인본 · 직접 추가 · 체결문자 계약, 오늘은 끝 시각 뒤)',
+    '매물 등록 - 주거 주차 가능 여부와 갖춰진 조건의 ‘주차 가능’이 함께 맞춰집니다 · 덜 채운 물건도 노출 기준 3분의 1까지 빠졌으면 매물등록 현황(등록실패)에 보입니다 · 같은 종류를 다시 눌러도 예전 매물 구분이 지워지지 않습니다',
+    '신고 도우미 - 계약일이 2026.11.18 꼴이어도 기한을 계산합니다 · 아침 알림의 공유 코드 조회를 한 번으로 묶었습니다' ] },
   { v:'26.11.18.7', 날:'2026-11-18', 줄:[ '계약서 작성 - ‘정보 입력’ 방식은 국토부 전자계약처럼 왼쪽에 기능 묶음(체결문자 적용 · 공적장부 · 건축물대장 · 특약 · 미리보기), 오른쪽에 입력 칸. 새 계약서는 정보 입력으로 열립니다',
     '계약현황 - 안내문을 계약현황에 맞게 · 오늘 잔금 / 잔금 지연 카드가 각자의 목록으로 거르고, 지연 숫자는 대시보드와 같게(보류 빼고 60일 안)',
     '잔금정산서 일할 줄의 이름 · 방향을 고치면 그대로 남습니다 · 직접 고치기가 다른 기기에서 바꾼 진행 상태를 되돌리지 않습니다 · 보류 계약에는 잔금 완료 확인을 묻지 않습니다',
@@ -14767,7 +14771,7 @@ function 파트너현황계산(){
   ct잔금다시그림([...오늘잔금.map(r => 미룸[r.id]).filter(t => t > Date.now()), ...(다음정각 ? [다음정각] : [])]);
   /* 지연은 잔금일이 60일 안에 지난 것만 - 진행 상태가 없던 예전 날인본이 끝없이 쌓이지 않게 */
   const 육십일전 = new Date(지금시.getTime() - 60 * 864e5).toISOString().slice(0, 10);
-  const 잔금지연 = 계약.filter(r => 끝안남(r) && 잔금날(r) && 잔금날(r) >= 육십일전 && (잔금날(r) < 오늘글 ? 시 >= 9 : 잔금날(r) === 오늘글 && 시 >= 끝시));
+  const 잔금지연 = 계약.filter(r => ct잔금판정(r) === 'late'); void 육십일전;
   /* 잔금 10일 안 - 매매 날인본인데 잔금안내(준비물)를 아직 안 했다 (2026-11-10 파트너 기획) */
   const 준비물전 = 계약.filter(r => 끝안남(r) && ct매매신고(r.form) && 잔금날(r) && !(r.track || {}).guideAt && (n => n >= 0 && n <= 10)(ct날차(오늘글, 잔금날(r))));
   const 잔금칸 = (rows, t, s) => !rows.length ? null : rows.length === 1
@@ -17559,7 +17563,7 @@ const ct찾기줄 = () => `<div class="ct-find-bar">
           return `<label class="ct-sel"><span>세부 종류</span><select class="inp" data-act-ch="ctq-form" aria-label="계약서 양식으로 거르기"><option value="">전체</option>${양식.map(f => `<option value="${esc(f)}"${CT.qf === f ? ' selected' : ''}>${esc(ctTitle({ form: f }).replace(/계약서$/, '') || f)}</option>`).join('')}</select></label>`; })()}
         <label class="ct-chk ct-qall"><input type="checkbox" data-act="ctq-all" ${CT.qall ? 'checked' : ''}> 보관함도 찾기</label>
         <label class="ct-sel"><span>기간</span><select class="inp" data-act-ch="ctq-base" aria-label="기간 기준">${[['u', '고친 날'], ['c', '계약일'], ['b', '잔금일']].map(([k, t]) => `<option value="${k}"${(CT.qb || 'u') === k ? ' selected' : ''}>${t}</option>`).join('')}</select>
-          <select class="inp" data-act-ch="ctq-per" aria-label="기간">${[['', '전체'], ['m', '이번 달'], ['3m', '최근 3개월'], ['y', '올해'], ['next', '앞으로 30일']].map(([k, t]) => `<option value="${k}"${(CT.qp || '') === k ? ' selected' : ''}>${t}</option>`).join('')}</select></label>${ct담당고르기()}
+          <select class="inp" data-act-ch="ctq-per" aria-label="기간">${[['', '전체'], ['m', '이번 달'], ['3m', '최근 3개월'], ['y', '올해'], ['next', '앞으로 30일'], ...(CT.현황 || ['today', 'late'].includes(CT.qp) ? [['today', '오늘 잔금'], ['late', '잔금 지연']] : [])].map(([k, t]) => `<option value="${k}"${(CT.qp || '') === k ? ' selected' : ''}>${t}</option>`).join('')}</select></label>${ct담당고르기()}
         ${[['ctq-st2', '진행', CT.qst, [['', '전체'], ...Object.entries(CT_진행)]], ['ctq-dt', '거래', CT.qdt, [['', '전체'], ...Object.entries(CT_거래유형)]], ['ctq-kd', '형태', CT.qkd, [['', '전체'], ['new', '신규'], ['renew', '갱신']]], ['ctq-ord', '정렬', CT.qo, [['', '최근 고친 순'], ['c', '계약일 최신순'], ['b', '잔금일 가까운 순']]]].map(([k, t, 지금, 목록]) =>
           `<label class="ct-sel"><span>${t}</span><select class="inp" data-act-ch="${k}" aria-label="${k === 'ctq-ord' ? '정렬' : t + '로 거르기'}">${목록.map(([v, n]) => `<option value="${v}"${(지금 || '') === v ? ' selected' : ''}>${n}</option>`).join('')}</select></label>`).join('')}</div>`}</div>`;
 /* 거래유형 · 형태 (2026-11-10 파트너 기획 '계약현황 검색 - 상태 · 종류 · 거래유형 · 형태') */
@@ -17690,11 +17694,16 @@ const ct목록잔금 = r => (r.track && r.track.balanceDate) || r.bd || '';
 const ct한국날 = s => s ? new Date(Date.parse(s) + 9 * 3600e3).toISOString().slice(0, 10) : '';
 /* 목록 위 요약 (2026-11-06 · 파트너 기획 [73] '요약 카드') - 누르면 그 상태로 거른다 */
 /* 계약현황의 오늘 잔금 · 잔금 지연 - 완료 · 취소 · 보류는 빼고, 지연은 잔금일이 60일 안에 지난 것만(대시보드와 같다) */
-function ct현황잔금(r, k){
+/* 잔금 판정 - 'today'(오늘 잔금, 끝 시각 전) · 'late'(지난 잔금 60일 안 · 오늘이면 끝 시각 뒤) · ''. 날인본이나 직접 추가 · 체결문자로 올린 계약만.
+   대시보드 잔금 지연과 같은 함수를 쓴다(2026-11-18 리뷰) */
+function ct잔금판정(r){
   const st = (r.track || {}).state || '', 잔 = ct목록잔금(r), 오늘 = ct오늘();
-  if(!잔 || ['done', 'cancel', 'hold'].includes(st)) return false;
-  return k === 'today' ? 잔 === 오늘 : 잔 < 오늘 && 잔 >= ct날더하기(오늘, -60);
+  if(!잔 || ['done', 'cancel', 'hold'].includes(st) || !(r.status === 'sealed' || ['manual', 'sms'].includes(r.entry))) return '';
+  const 시 = new Date(Date.now() + 9 * 3600e3).getUTCHours(), 끝시 = ct알림설정(CT.alert && CT.alert.cfg).settleEnd;
+  if(잔 === 오늘) return 시 >= 끝시 ? 'late' : 'today';
+  return 잔 < 오늘 && 잔 >= ct날더하기(오늘, -60) && 시 >= 9 ? 'late' : '';
 }
+function ct현황잔금(r, k){ return ct잔금판정(r) === k; }
 function ct요약HTML(전체){
   if(!전체.length) return '';
   const 오늘 = ct오늘(), 이달 = 오늘.slice(0, 7);
@@ -20104,7 +20113,9 @@ function rp기한(doc){
   if(!doc.contractDate) return { 날:'', 남음:null };
   /* 계약일 다음 날부터 세어 30일째(초일 불산입). toISOString 은 UTC 로 바꿔 적어 한국 시간에서는 하루 앞당겨진다 -
      현지 날짜 그대로 적는다 */
-  const 날 = ct날더하기(String(doc.contractDate).slice(0, 10), 30);   /* 한국 날짜로 센다(기기 시간대와 무관 · 2026-11-18 점검) */
+  const cd = ct날만(String(doc.contractDate).trim().replace(/[./]/g, '-').slice(0, 10));
+  if(!cd) return { 날:'', 남음:null };
+  const 날 = ct날더하기(cd, 30);   /* 한국 날짜로 센다(기기 시간대와 무관 · 2026-11-18 점검) */
   return { 날, 남음: ct날차(ct오늘(), 날) };
 }
 /* [섹션, 칸 이름, 값, 안내] 의 줄들 */
@@ -22493,15 +22504,18 @@ function handle(a,v,el){
     case 'lkindpick': {
       /* 글자로 유형을 되짚지 않는다 - 전에 칩 글자만 바꿨다가 유형이 영영
          안 바뀌던 일이 있었다(2026-09-21). 이제 표(LKINDS)에서 찾는다. */
+      const 전종류 = S.form.lkind || 'home';
       S.form.lkind = (LKINDS.find(x => x.t === v) || LKINDS[0]).k;
       const shop2 = NONHOME(S.form.lkind);
       if(shop2){ S.form.lrooms=''; S.form.lbaths=''; S.form.lmusts=[]; S.form.lmustsFree=''; S.form.lband=''; }
-      if(S.form.lhtype && !매물구분(S.form.lkind).includes(S.form.lhtype)) S.form.lhtype='';
+      if(전종류 !== S.form.lkind && S.form.lhtype && !매물구분(S.form.lkind).includes(S.form.lhtype)) S.form.lhtype='';
       else { S.form.lfloorNo=''; }
       render(); return true; }
     case 'lband': case 'lduplex': case 'lfeeBasis': case 'lfeeType':
     case 'ldir': case 'ldirBase': case 'lhtype': case 'lpark':
       S.form[a] = v;
+      /* 주거는 갖춰진 조건의 '주차 가능' 칩도 함께 맞춘다 - 둘이 엇갈려 손님에게 '불가'와 '가능'이 같이 보이지 않게(2026-11-18 리뷰) */
+      if(a === 'lpark' && !NONHOME(S.form.lkind)){ const m = (S.form.lmusts || []).filter(x => x !== '주차 가능'); S.form.lmusts = v === '가능' ? [...m, '주차 가능'] : m; }
       /* 원룸은 방이 하나다 - 방 수 칸이 사라지므로 적어둔 값도 같이 치운다.
          남겨두면 화면에 없는 값이 조용히 저장된다. */
       if(a==='lhtype' && isOneRoom(S.form.lhtype)) S.form.lrooms = '';
@@ -22515,7 +22529,9 @@ function handle(a,v,el){
       S.form.ldeal = v;
       if(!dealWords(S.form.ldeal||'월세').rent) S.form.lrent = '';
       render(); return true;
-    case 'lmusts': case 'lfacs': { S.form[a]=S.form[a]||[]; toggleIn(S.form[a], v); render(); return true; }
+    case 'lmusts': case 'lfacs': { S.form[a]=S.form[a]||[]; toggleIn(S.form[a], v);
+      if(a === 'lmusts' && v === '주차 가능' && !NONHOME(S.form.lkind)) S.form.lpark = S.form.lmusts.includes('주차 가능') ? '가능' : (S.form.lpark === '가능' ? '' : S.form.lpark);
+      render(); return true; }
     case 'lfreal': S.form['lfrr_' + v] = !S.form['lfrr_' + v]; if(S.form['lfrr_' + v]) S.form['lfr_' + v] = ''; render(); return true;
     case 'addr-find':  return addrFind(v);
     case 'addr-pick':  return addrPick(+v);
@@ -23137,7 +23153,7 @@ function handle(a,v,el){
         /* 상가·사무실의 주차는 새 칸을 파지 않고 musts 에 담는다 - 손님 조건 쪽
            '주차 가능' 과 같은 말이라 대조도 그대로 된다. '불가' 는 담지 않는다:
            없다는 것을 굳이 적어 보내면 매물이 깎여 보일 뿐이다. */
-        musts: shop ? (f.lpark === '가능' ? ['주차 가능'] : []) : (f.lmusts||[]),
+        musts: shop ? (f.lpark === '가능' ? ['주차 가능'] : []) : /불가/.test(f.lpark || '') ? (f.lmusts||[]).filter(x => x !== '주차 가능') : (f.lmusts||[]),
         mustsFree:shop?'':(f.lmustsFree||'').trim(),
         /* 도로명 주소 (2026-11-14 매물지도) - 서버가 이것으로 좌표를 찾는다 */
         ...(String(f.laddr||'').trim() ? { road: String(f.laddr).trim(), admCd: f.ladmCd || '' } : {}),

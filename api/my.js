@@ -144,6 +144,8 @@ export default async function handler(req, res) {
         key_ok: d.key_ok || null, sign_need: d.sign_need || null, park_need: d.park_need ?? null,
         shop_note: d.shop_note || null,
         slots: d.slots, slots_left: d.slots_left,
+        /* 종료 · 멈춤과 남은 기한(연장 단추) - 빠져 있어 늘 '활성 · 30일'로 보였다(2026-11-18 점검) */
+        status: d.status, expires_at: d.expires_at,
         created_at: d.created_at,
       })),
       proposals: proposals.map(p => ({
@@ -166,6 +168,8 @@ export default async function handler(req, res) {
         duplex: p.duplex === true,
         move_in: p.move_in, park: p.park, approved: p.approved, photos: p.photos,
         msg: p.msg, created_at: p.created_at,
+        /* '보고 싶어요'로 만든 제안 - 가격 변동 알림을 손님이 켜고 끈다(0044) */
+        listing_id: p.listing_id || '', price_alert: p.price_alert,
         /* 연결한 뒤에야 상대가 누구인지 나간다. 새로고침해도 번호가 남아 있어야
            손님이 나중에 다시 걸 수 있다. */
         contact: p.status === 'accepted' ? (contact[p.agent_id] || null) : null,

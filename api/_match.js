@@ -218,7 +218,12 @@ export async function matchWant(req, res, user, b) {
     const addr = String(L.road || [L.dong, L.name].filter(Boolean).join(' ')).replace(/[<>"'`]/g, '').slice(0, 200);
     const 있던 = await fetch(sbUrl('bk_proposal', `select=id,status&demand_id=eq.${did}&agent_id=eq.${L.agent_id}&addr=eq.${encodeURIComponent(addr)}&limit=1`), { headers: sbHeaders() });
     const 전 = 있던.ok ? (await 있던.json())[0] : null;
-    if (전) return res.status(200).json({ ok: true, id: 전.id, again: true });
+    if (전 && ['expired', 'withdrawn'].includes(전.status)) {
+      /* 만료 · 철회된 제안으로 보내면 연결이 막힌다 - 다시 보낸 제안으로 되살린다(2026-11-18 점검) */
+      const 살림 = await fetch(sbUrl('bk_proposal', `id=eq.${전.id}`), { method: 'PATCH', headers: { ...sbHeaders(), Prefer: 'return=minimal' },
+        body: JSON.stringify({ status: 'sent', created_at: new Date().toISOString() }) }).catch(() => null);
+      if (살림 && 살림.ok) return res.status(200).json({ ok: true, id: 전.id, again: true });
+    } else if (전) return res.status(200).json({ ok: true, id: 전.id, again: true });
     const row = { demand_id: did, agent_id: L.agent_id, agent_user: L.agent_user, addr, bname: L.name,
       dep: L.dep, rent: L.rent, fee: L.fee, fee_type: L.fee_type, fee_items: L.fee_items, fee_basis: L.fee_basis, note: L.note,
       area_sup: L.area_sup, area: L.area, rooms: L.rooms != null ? String(L.rooms) : null, baths: L.kind === 'home' && L.baths != null ? String(L.baths) : '',

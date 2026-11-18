@@ -3040,9 +3040,20 @@ body:not(.mo) .ctx-sub{flex:1 1 0;min-width:0;overflow:hidden;text-overflow:elli
 .ctx-lay button:disabled{opacity:.45;cursor:not-allowed}
 .ctx-lay button.on{background:var(--white);color:var(--ind700,#3B3EA8);box-shadow:0 1px 2px rgba(22,23,29,.12)}
 /* 정보 입력 - 입력 판만 가운데 크게 */
-.ctx-body.lay-info{grid-template-columns:minmax(0,1fr)}
+.ctx-body.lay-info{grid-template-columns:208px minmax(0,1fr)}
 .ctx-body.lay-info .ctx-view{display:none}
-.ctx-body.lay-info .ctx-side{width:100%;max-width:1040px;margin:0 auto}
+.ctx-body.lay-info .ctx-view.ctx-full{display:flex}
+.ctx-body.lay-info .ctx-side{width:100%;max-width:1040px}
+.ctx-toolcol{display:none}
+.ctx-body.lay-info .ctx-toolcol{display:flex;flex-direction:column;gap:8px;align-self:start;position:sticky;top:0;padding:14px;border:1px solid var(--hair);border-radius:14px;background:var(--white)}
+.ctx-toolcol h2{margin:0 0 2px;font-size:13px;font-weight:700;color:var(--n500);letter-spacing:-.01em}
+.ctx-toolcol .btn{width:100%;justify-content:flex-start;text-align:left;white-space:normal;line-height:1.35}
+.ctx-toolcol hr{border:0;border-top:1px solid var(--hair);margin:4px 0}
+.ctx-body.lay-info .ctx-side .scan-mini .eqb,.ctx-body.lay-info .ctx-side .scan-done .eqb{display:none}
+body.mo .ctx-body.lay-info{grid-template-columns:minmax(0,1fr)}
+body.mo .ctx-body.lay-info .ctx-toolcol{position:static;flex-direction:row;flex-wrap:wrap}
+body.mo .ctx-body.lay-info .ctx-toolcol h2,body.mo .ctx-body.lay-info .ctx-toolcol hr{display:none}
+body.mo .ctx-body.lay-info .ctx-toolcol .btn{width:auto;flex:1 1 140px}
 /* 서식 입력 - 서류만 크게, 아래에 저장 단추 줄만 남긴다 */
 .ctx-body.lay-form{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto}
 .ctx-body.lay-form .ctx-side{order:2;min-height:0}
@@ -13518,7 +13529,7 @@ const FAQ = [
   ['보이는 매물은 믿을 수 있나요',
    '매물은 개업공인중개사만 공개할 수 있고, 소유자 확인을 받은 것만 보입니다. 거래가 끝났거나 사실과 다르면 맞춤매물의 ‘이 매물 신고’로 알려 주세요. 확인한 뒤 공개를 멈춥니다.'],
   ['맞는 곳이 없다고 나오면 어떻게 하나요',
-   '조건은 3개월 동안 그대로 남아 있고, 그 사이 맞는 물건을 찾은 중개사가 제안을 보내면 카카오톡과 가입하신 메일로 알려드립니다. 기다리기 어려우시면 조건을 조금 넓혀 보시는 것도 방법입니다.'],
+   '조건은 30일 동안 제안을 받고(끝나기 7일 전부터 내 조건에서 연장할 수 있습니다), 그 사이 맞는 물건을 찾은 중개사가 제안을 보내면 카카오톡과 가입하신 메일로 알려드립니다. 조건은 3개월 뒤 지워집니다. 기다리기 어려우시면 조건을 조금 넓혀 보시는 것도 방법입니다.'],
   ['어느 지역까지 되나요',
    '<b style="color:var(--n900)">서울·경기</b>에서 시작합니다. 지역에 따라 함께하는 중개사 수가 달라 제안이 늦을 수 있습니다.'],
   ['중개사인데 어떻게 참여하나요',
@@ -13919,6 +13930,11 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
+  { v:'26.11.18.7', 날:'2026-11-18', 줄:[ '계약서 작성 - ‘정보 입력’ 방식은 국토부 전자계약처럼 왼쪽에 기능 묶음(체결문자 적용 · 공적장부 · 건축물대장 · 특약 · 미리보기), 오른쪽에 입력 칸. 새 계약서는 정보 입력으로 열립니다',
+    '계약현황 - 안내문을 계약현황에 맞게 · 오늘 잔금 / 잔금 지연 카드가 각자의 목록으로 거르고, 지연 숫자는 대시보드와 같게(보류 빼고 60일 안)',
+    '잔금정산서 일할 줄의 이름 · 방향을 고치면 그대로 남습니다 · 직접 고치기가 다른 기기에서 바꾼 진행 상태를 되돌리지 않습니다 · 보류 계약에는 잔금 완료 확인을 묻지 않습니다',
+    '공동중개(공유 코드) 계약의 아침 알림 · 달력에 상대가 바꾼 날짜가 바로 반영됩니다 · 잔금일 15시 질문이 화면을 켜 둔 채로도 뜹니다 · 신고 기한을 한국 날짜로 셉니다',
+    '손님 - 내 조건의 상태 · 남은 기한과 연장 단추가 제대로 보이고, 보고 싶어요 제안에서 가격 변동 알림을 켜고 끌 수 있습니다 · 만료된 제안을 다시 보고 싶어요 하면 되살립니다 · 조건 기한 안내 문구 바로잡음' ] },
   { v:'26.11.18.6', 날:'2026-11-18', 줄:[ '매물 등록 - 관리비가 없는 임대 매물은 관리비 0원 + ‘그 밖에 적을 것’에 사유를 적으면 노출할 수 있습니다' ] },
   { v:'26.11.18.5', 날:'2026-11-18', 줄:[ '매물 등록 - 임대차(전세 · 월세 · 연세 · 단기임대)는 관리비 항목별 금액을 꼭 적습니다(확인설명서 기재 사항). 매매는 지금처럼 선택' ] },
   { v:'26.11.18.4', 날:'2026-11-18', 줄:[ '매물 등록 - 매물 구분을 계약서의 구분(아파트 · 주상복합 · 연립주택 · 다세대주택 … · 상가 · 사무실 · 창고 등)과 같게 바꾸고, 상가 · 사무실 · 창고에도 고르게 했습니다',
@@ -14746,7 +14762,9 @@ function 파트너현황계산(){
   const 끝안남 = r => r.status === 'sealed' && !['done', 'cancel', 'hold'].includes((r.track || {}).state);
   const 오늘잔금 = 계약.filter(r => 끝안남(r) && 잔금날(r) === 오늘글 && 오후3시 && 시 < 끝시);
   const 잔금물음 = 오늘잔금.filter(r => !(미룸[r.id] > Date.now()));
-  ct잔금다시그림(오늘잔금.map(r => 미룸[r.id]).filter(t => t > Date.now()));
+  const 오늘잔금있음 = 계약.some(r => 끝안남(r) && 잔금날(r) === 오늘글) && 시 < 끝시;
+  const 다음정각 = 오늘잔금있음 ? Date.now() + (((시 < 15 ? 15 : 시 + 1) - 시) * 3600 - 지금시.getUTCMinutes() * 60 - 지금시.getUTCSeconds()) * 1000 : 0;
+  ct잔금다시그림([...오늘잔금.map(r => 미룸[r.id]).filter(t => t > Date.now()), ...(다음정각 ? [다음정각] : [])]);
   /* 지연은 잔금일이 60일 안에 지난 것만 - 진행 상태가 없던 예전 날인본이 끝없이 쌓이지 않게 */
   const 육십일전 = new Date(지금시.getTime() - 60 * 864e5).toISOString().slice(0, 10);
   const 잔금지연 = 계약.filter(r => 끝안남(r) && 잔금날(r) && 잔금날(r) >= 육십일전 && (잔금날(r) < 오늘글 ? 시 >= 9 : 잔금날(r) === 오늘글 && 시 >= 끝시));
@@ -15650,7 +15668,7 @@ function ct일정목록(c, 설정 = ct알림설정()){
     const [a, b] = 설정.lawyer;
     out.push({ k: 'lawyer', 날: ct영업일전(bd, b), 끝: ct영업일전(bd, a), 메모: `잔금 ${bd} 기준 ${a}~${b}영업일 전에 예약하세요` });
   }
-  if(bd && t.state !== 'done' && t.state !== 'cancel') out.push({ k: 'settle', 날: ct날더하기(bd, 1), 메모: '잔금을 마쳤으면 진행 상태를 완료로 바꾸세요 - 안 끝났으면 잔금 지연입니다' });
+  if(bd && t.state !== 'done' && t.state !== 'cancel' && t.state !== 'hold') out.push({ k: 'settle', 날: ct날더하기(bd, 1), 메모: '잔금을 마쳤으면 진행 상태를 완료로 바꾸세요 - 안 끝났으면 잔금 지연입니다' });
   const ex = ct날만(c.ex);
   if(ex && ['home-lease', 'shop-lease', 'lease', 'sublease'].includes(c.form)) out.push({ k: 'expiry', 날: ct달빼기(ex, 6), 메모: `만기 ${ex} - 임대인·임차인의 갱신 의사를 확인하세요` });
   return out.map(e => ({ 이름: CT_알림종류[e.k], ...e })).sort((x, y) => (x.날 > y.날) - (x.날 < y.날));
@@ -17081,6 +17099,7 @@ function ctFilter(rows){
     if(CT.qp === 'y') return d.slice(0, 4) === 오늘.slice(0, 4);
     if(CT.qp === '3m') return d >= ct날더하기(오늘, -92) && d <= 오늘;
     if(CT.qp === 'next') return d >= 오늘 && d <= ct날더하기(오늘, 30) && !(CT.qb === 'b' && r.track && r.track.state === 'done');
+    if(CT.qp === 'today' || CT.qp === 'late') return ct현황잔금(r, CT.qp);
     return true; };
   /* 정렬 (2026-11-12 파트너 기획 D1 '정렬') - 기본은 최근 고친 순(서버가 준 순서) */
   const 줄세움 = a => !목록 || !CT.qo ? a : CT.qo === 'c' ? [...a].sort((x, y) => String(y.cd || '').localeCompare(String(x.cd || '')))
@@ -17651,7 +17670,9 @@ async function ctQuickSave(){
       id = id || j.id;
     }
     /* 일정 - 날인본은 중도금일 · 잔금일도 여기에. 작성 중인데 일정에 바뀐 날이 이미 있으면 같이 맞춘다(목록은 일정 쪽을 먼저 본다) */
-    const 행 = (CT.list || []).find(x => x.id === id), 전 = (행 && 행.track) || {}, t = { ...전 };
+    const 행 = (CT.list || []).find(x => x.id === id), 새로 = id ? await ctPost({ what:'contract', id }).catch(() => null) : null;
+    /* 다른 기기에서 바꾼 진행 상태 · 보관 · 정산서 값을 되돌리지 않게 저장 직전에 다시 읽는다(2026-11-18 점검) */
+    const 전 = (새로 && 새로.ok && 새로.j.row && 새로.j.row.track && typeof 새로.j.row.track === 'object' ? 새로.j.row.track : null) || (행 && 행.track) || {}, t = { ...전 };
     const 넣 = (k, v) => { if(v) t[k] = v; else delete t[k]; };
     if(m.sealed || 전.midDate) 넣('midDate', 날(f.md));
     if(m.sealed || 전.balanceDate) 넣('balanceDate', 날(f.bd));
@@ -17668,17 +17689,23 @@ const ct목록잔금 = r => (r.track && r.track.balanceDate) || r.bd || '';
 /* sealed_at(UTC)을 한국 날짜로 */
 const ct한국날 = s => s ? new Date(Date.parse(s) + 9 * 3600e3).toISOString().slice(0, 10) : '';
 /* 목록 위 요약 (2026-11-06 · 파트너 기획 [73] '요약 카드') - 누르면 그 상태로 거른다 */
+/* 계약현황의 오늘 잔금 · 잔금 지연 - 완료 · 취소 · 보류는 빼고, 지연은 잔금일이 60일 안에 지난 것만(대시보드와 같다) */
+function ct현황잔금(r, k){
+  const st = (r.track || {}).state || '', 잔 = ct목록잔금(r), 오늘 = ct오늘();
+  if(!잔 || ['done', 'cancel', 'hold'].includes(st)) return false;
+  return k === 'today' ? 잔 === 오늘 : 잔 < 오늘 && 잔 >= ct날더하기(오늘, -60);
+}
 function ct요약HTML(전체){
   if(!전체.length) return '';
   const 오늘 = ct오늘(), 이달 = 오늘.slice(0, 7);
   /* 계약현황 (2026-11-17 파트너 D14 시안) - 진행중 · 오늘 잔금 · 잔금 지연 · 이번 달 완료 */
   if(CT.현황){ const st = r => (r.track || {}).state || '', 끝 = r => ['done', 'cancel'].includes(st(r)), 잔 = r => ct목록잔금(r);
     const 진행 = 전체.filter(r => st(r) === 'doing').length, 준비 = 전체.filter(r => st(r) === 'ready').length, 보류 = 전체.filter(r => st(r) === 'hold').length;
-    const 오늘잔 = 전체.filter(r => 잔(r) === 오늘 && !끝(r)).length, 지연 = 전체.filter(r => 잔(r) && 잔(r) < 오늘 && !끝(r)).length;
+    const 오늘잔 = 전체.filter(r => ct현황잔금(r, 'today')).length, 지연 = 전체.filter(r => ct현황잔금(r, 'late')).length;
     const 완료 = 전체.filter(r => st(r) === 'done' && String(잔(r) || '').slice(0, 7) === 이달).length;
     const 칸2 = (act, v, 이름, n, 말, 색) => `<button type="button" class="ct-sum-c" data-act="${act}" data-v="${v}"><small>${이름}</small><b class="num"${색 && n ? ` style="color:${색}"` : ''}>${n}</b><span>${말}</span></button>`;
-    return `<div class="ct-sum">${칸2('ctq-st2v', 'doing', '진행중', 진행, `준비 ${준비} · 보류 ${보류}`)}${칸2('ctq-sum-b', '', '오늘 잔금', 오늘잔, '15시부터 완료 확인')}
-      ${칸2('ctq-sum-b', '', '잔금 지연', 지연, '잔금일이 지났는데 완료 전', 'var(--danger)')}${칸2('ctq-st2v', 'done', '이번 달 완료', 완료, '3개월 뒤 자동 보관(켰을 때)')}</div>`; }
+    return `<div class="ct-sum">${칸2('ctq-st2v', 'doing', '진행중', 진행, `준비 ${준비} · 보류 ${보류}`)}${칸2('ctq-sum-bal', 'today', '오늘 잔금', 오늘잔, '15시부터 완료 확인')}
+      ${칸2('ctq-sum-bal', 'late', '잔금 지연', 지연, '잔금일이 지났는데 완료 전 (60일 안)', 'var(--danger)')}${칸2('ctq-st2v', 'done', '이번 달 완료', 완료, '3개월 뒤 자동 보관(켰을 때)')}</div>`; }
   const 작성 = 전체.filter(r => r.status !== 'sealed').length;
   const 이달확정 = 전체.filter(r => r.status === 'sealed' && ct한국날(r.sealed_at).slice(0, 7) === 이달).length;
   const 신고전 = 전체.filter(r => r.status === 'sealed' && ct신고(r) && !r.reported_at).length;
@@ -17770,7 +17797,7 @@ function ctRowsHTML(전체, rows, 갱신고르기){
       </button>${갱신고르기 ? '' : ct행단추(r)}</div>`).join('')}</div>`;
   if(전체.length) return 갱신고르기 === 'copy' ? 빈자리('복사할 계약서가 없습니다', '다른 말로 찾아 보세요.', '', 80) : 갱신고르기 ? 빈자리('갱신할 임대차·전대차 계약서가 없습니다', '임대차·전대차 계약서를 만들어 두면 여기서 골라 갱신계약을 씁니다.', '', 80)
     : 빈자리('찾는 계약서가 없습니다', '소재지 · 이름 · 종류 · 날짜 가운데 다른 말로 찾아 보세요.', '', 80);
-  return 빈자리('아직 만든 계약서가 없습니다', '양식을 골라 시작하거나, 연결된 제안에서 ‘계약서 만들기’를 누르면 물건 정보가 채워진 채로 열립니다.',
+  return CT.현황 ? 빈자리('아직 계약현황에 올린 계약이 없습니다', '계약서를 작성하거나, 다른 곳에서 쓴 계약은 ‘직접 추가’ · ‘계약체결 문자에서 가져오기’로 올리면 여기서 일정과 진행 상태를 함께 봅니다.', `<button class="btn pri md" data-go="#/partner/contracts/new">계약서 작성</button>`) : 빈자리('아직 만든 계약서가 없습니다', '양식을 골라 시작하거나, 연결된 제안에서 ‘계약서 만들기’를 누르면 물건 정보가 채워진 채로 열립니다.',
     `<button class="btn pri md" data-go="#/partner/contracts/new">계약서 작성</button>`);
 }
 /* 계약서 목록 - 표 | 옆에 2주 안 일정 */
@@ -17795,7 +17822,7 @@ function ctListPageHTML(모두){
     ${ct머리('계약서 목록', '보관함과 휴지통에 옮긴 계약서입니다.', `<button class="btn pri sm" data-go="#/partner/contracts/new">계약서 작성</button>`)}
     <div class="ct-lay one"><div class="ct-main">${칸줄}${칸말}${빈자리(칸 === 'trash' ? '휴지통이 비어 있습니다' : '보관함이 비어 있습니다', 칸 === 'trash' ? '목록에서 ‘휴지통’을 누르면 여기로 옵니다.' : '끝난 계약은 목록에서 ‘내리기’를 누르면 여기로 옵니다.', '', 80)}</div></div>`;
   return `
-    ${ct머리('계약서 목록', '양식을 골라 고치고, 기본 정보를 채워 바로 인쇄하세요. 주민등록번호·계좌·서명 칸은 비워서 인쇄되니 만나서 손으로 적으시면 됩니다.',
+    ${ct머리('계약서 목록', 현황 ? '작성한 계약서 · 직접 추가한 계약 · 계약체결 문자로 가져온 계약을 한곳에서 봅니다. 계약일 · 중도금 · 잔금과 진행 상태를 표로 확인하세요.' : '양식을 골라 고치고, 기본 정보를 채워 바로 인쇄하세요. 주민등록번호·계좌·서명 칸은 비워서 인쇄되니 만나서 손으로 적으시면 됩니다.',
       현황 && ct빠른쓰기() ? `<span class="eqb ct-headb"><button class="btn sec sm" data-act="ct-quick">직접 추가</button><button class="btn tool sm" data-go="#/partner/contracts/sms" title="보낸 문자 기록에서 ‘계약현황에 추가’ 또는 ‘이 내용으로 계약서’를 누릅니다">계약체결 문자에서 가져오기</button><button class="btn pri sm" data-go="#/partner/contracts/new" data-head="1">계약서 작성</button></span>` : `<button class="btn pri sm" data-go="#/partner/contracts/new">계약서 작성</button>`)}
     <div class="ct-lay${일정 ? '' : ' one'}">
       <div class="ct-main">${칸줄}${자동칸}${칸말}${칸 ? '' : ct요약HTML(전체)}${전체.length ? ct찾기줄() : ''}
@@ -18323,7 +18350,7 @@ function ctFormHTML(doc){
 
     <div class="card pad ct-sec"><h2>조항 <span class="sub" style="font-weight:500;font-size:13.5px">빼면 뒤 번호가 당겨집니다</span></h2>${조항}</div>
 
-    <div class="card pad ct-sec"><h2>특약사항</h2>
+    <div class="card pad ct-sec" id="ctSecSp"><h2>특약사항</h2>
       ${특약 || '<p class="sub" style="margin:0">아직 넣은 특약이 없습니다. 아래 모음에서 고르거나 빈 줄을 넣으세요 - 비워 두면 손으로 적을 줄이 인쇄됩니다.</p>'}
       ${(doc.form === 'sale' || F.lease) ? `<label class="ct-chk"><input type="checkbox" data-act="ct-acct" ${doc.acct ? 'checked' : ''} ${잠김?'disabled':''}> 특약 마지막 줄에 ‘${esc(ct짧은이름(aKo))} 계좌’ 적을 줄 넣기</label>` : ''}
       ${잠김 ? '' : `<div class="ct-lib">${doc.renewOf ? `<button class="chip on" data-act="ct-renew-sp">갱신 특약을 지금 금액으로 다시 쓰기</button>` : ''}${ct기본특약(doc).length ? `<button class="chip" data-act="ct-base-sp">+ 기본 특약 다시 넣기</button>` : ''}${ctSpecialSet(doc).map(([t],i)=>`<button class="chip" data-act="ct-sp-add" data-v="${i}">+ ${esc(t)}</button>`).join('')}
@@ -18337,15 +18364,30 @@ function ctFormHTML(doc){
    미리보기는 늘 떠 있고 칸을 고치는 대로 다시 그린다(ctPvRefresh). 휴대폰은 위 화면 그대로 */
 const CT_배치 = [['info', '정보 입력', '입력 칸만 크게 - 다 적은 뒤 서식에서 확인'], ['form', '서식 입력', '계약서 서식을 크게 띄워 직접 적기'], ['both', '정보 + 서식', '입력 칸과 서식을 나란히']];
 function ct배치(){
-  if(CT.lay == null){ try{ const v = localStorage.getItem('bk.ctLay'); CT.lay = ['info', 'form'].includes(v) ? v : 'both'; }catch(_){ CT.lay = 'both'; } }
+  if(CT.lay == null){ try{ const v = localStorage.getItem('bk.ctLay'); CT.lay = ['info', 'form', 'both'].includes(v) ? v : 'info'; }catch(_){ CT.lay = 'info'; } }
   return CT.lay;
 }
 function ct배치바꿈(v){
-  CT.lay = ['info', 'form'].includes(v) ? v : 'both'; CT.full = false;
+  CT.lay = ['info', 'form', 'both'].includes(v) ? v : 'info'; CT.full = false;
   try{ localStorage.setItem('bk.ctLay', CT.lay);
     if(!localStorage.getItem('bk.ctLayTip')){ localStorage.setItem('bk.ctLayTip', '1'); setTimeout(() => toast(CT.lay === 'form' ? '서식의 칸을 눌러 바로 적습니다 - 주소 찾기처럼 입력 칸이 필요한 항목은 누르면 ‘정보 + 서식’으로 바뀝니다' : CT.lay === 'info' ? '다 적은 뒤 아래 ‘서식에서 확인’을 누르면 계약서에 들어간 모습을 봅니다' : '왼쪽에 적으면 오른쪽 서식에 바로 보입니다'), 80); } }catch(_){}
   if(CT.lay === 'form' && CT.mode !== 'edit') CT.mode = 'edit';
   render();
+}
+/* 정보 입력의 왼쪽 기능 칸 - 체결문자 적용 · 공적장부(서류로 채우기) · 건축물대장 · 특약 · 미리보기 */
+function ct기능칸(doc, 잠김, 탭){
+  const F = CT_FORMS[doc.form] || {}, 입력 = 탭 === 'e' && !잠김;
+  const 줄 = [
+    입력 ? ct문자적용단추() : '',
+    입력 ? `<button class="btn tool sm" data-act="ct-scan-open">공적장부 · 서류로 채우기</button>` : '',
+    입력 && ct대장가능() ? ct대장단추() : '',
+    입력 && !F.explain ? `<button class="btn tool sm" data-act="ct-go-sp">특약 넣기</button>` : '',
+  ].filter(Boolean);
+  return `<aside class="ctx-toolcol" aria-label="기능">
+    ${줄.length ? `<h2>기능</h2>${줄.join('')}<hr>` : ''}
+    <h2>확인</h2><button class="btn sec sm" data-act="ct-full">미리보기 (인쇄 모양)</button>
+    ${F.explain ? '' : `<button class="btn tool sm" data-act="ct-lay" data-v="form">서식 입력으로</button>`}
+  </aside>`;
 }
 function ctDeskShell(doc, side, 신고면){
   const F = CT_FORMS[doc.form] || CT_FORMS['home-lease'];
@@ -18376,6 +18418,7 @@ function ctDeskShell(doc, side, 신고면){
       <span class="ctx-badge">${agentBadge()}${S.user ? userMenu({ admin: true }) : ''}</span>
     </div>
     <div class="ctx-body${배치 !== 'both' ? ' lay-' + 배치 : ''}">
+      ${배치 === 'info' ? ct기능칸(doc, 잠김, 탭) : ''}
       <section class="ctx-side" aria-label="입력">
         ${F.explain ? '' : `<div class="ctx-tabs" role="tablist">
           <button type="button" role="tab" aria-selected="${탭==='e'}" class="${탭==='e'?'on':''}" data-act="ct-edit">입력</button>
@@ -20061,11 +20104,8 @@ function rp기한(doc){
   if(!doc.contractDate) return { 날:'', 남음:null };
   /* 계약일 다음 날부터 세어 30일째(초일 불산입). toISOString 은 UTC 로 바꿔 적어 한국 시간에서는 하루 앞당겨진다 -
      현지 날짜 그대로 적는다 */
-  const d = new Date(doc.contractDate + 'T00:00:00'); d.setDate(d.getDate() + 30);
-  const 두 = n => String(n).padStart(2, '0');
-  const 날 = `${d.getFullYear()}-${두(d.getMonth() + 1)}-${두(d.getDate())}`;
-  const 오늘 = new Date(); 오늘.setHours(0,0,0,0);
-  return { 날, 남음: Math.round((d - 오늘) / 86400000) };
+  const 날 = ct날더하기(String(doc.contractDate).slice(0, 10), 30);   /* 한국 날짜로 센다(기기 시간대와 무관 · 2026-11-18 점검) */
+  return { 날, 남음: ct날차(ct오늘(), 날) };
 }
 /* [섹션, 칸 이름, 값, 안내] 의 줄들 */
 function rpItems(doc){
@@ -22516,6 +22556,7 @@ function handle(a,v,el){
     case 'ctq-st': CT.qs = CT.qs === v && v ? '' : (v || ''); render(); return true;
     case 'ctq-sum-m': CT.qs = 'sealed'; CT.qb = 'u'; CT.qp = 'm'; render(); return true;
     case 'ctq-sum-b': CT.qs = ''; CT.qb = 'b'; CT.qp = 'next'; render(); return true;
+    case 'ctq-sum-bal': CT.qs = ''; CT.qb = 'b'; CT.qp = v === 'late' ? 'late' : 'today'; render(); return true;
     case 'ct-renew': ctRenew(v); return true;
     case 'ct-copy': ctCopy(v); return true;
     case 'ctf-office': CT.formsOffice = CT.formsOffice === false; render(); return true;
@@ -22956,6 +22997,7 @@ function handle(a,v,el){
     case 'ct-xcopy': { const c = ct트랙().xcode || ''; if(c && navigator.clipboard) navigator.clipboard.writeText(c).then(() => toast('공유 코드를 복사했습니다 - 상대 사무소에 알려 주세요'), () => toast('복사하지 못했습니다 - 코드를 직접 알려 주세요')); return true; }
     case 'ext-link': ctExtLink(); return true;
     case 'ext-ack': ctExtAck(v); return true;
+    case 'ct-go-sp': { const el = document.getElementById('ctSecSp'); if(el) el.scrollIntoView({ behavior:'smooth', block:'start' }); else { CT.mode = 'edit'; render(); setTimeout(() => { const e2 = document.getElementById('ctSecSp'); if(e2) e2.scrollIntoView({ block:'start' }); }, 60); } return true; }
     case 'ct-full': CT.full = !CT.full; render(); setTimeout(() => { const b = $('#app [data-act="ct-full"]'); if(b) b.focus({ preventScroll: true }); }); return true;
     case 'ct-cloud': 보관창(); return true;
     case 'cl-save': cl저장(v); return true;

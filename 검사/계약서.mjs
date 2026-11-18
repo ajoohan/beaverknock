@@ -1378,7 +1378,8 @@ ok(js.includes('function ct소재지(P){') && js.split('${ct소재지(P)}').leng
   ok(C.docCheck('sale', 문서({ seller: { type: 'corp', corpNo: '1101-11' } })) === null && /13자리/.test(C.확정필수('sale', 문서({ seller: { type: 'corp', corpNo: '1101-11' } })) || '') && /13자리/.test(C.docCheck('sale', 문서({ seller: { type: 'corp', corpNo: '11011112345678' } })) || ''), '법인등록번호 - 적는 도중에는 저장되고 확정할 때 13자리를 본다');
   ok(js.includes("ctIn(`parties.${k}.corpNo`, '법인등록번호'") && js.includes("<th>법인등록번호</th><td>${ct칸(b + '.corpNo'") && js.includes('delete x.bizNo; delete x.corpNo;'), '법인등록번호 칸 - 입력 · 인쇄 · 개인으로 바꾸면 지움'); }
 
-ok(js.includes('<button type="button" class="ctx-fullbtn" data-act="ct-full"') && js.split('data-act="ct-full"').length === 3 && css.includes('.ctx-fullbtn{position:absolute;'), '전체화면 단추는 단추 줄과 따로 서류 위에 떠 있다(단추 줄 구조는 그대로)');
+ok(js.includes('<button type="button" class="ctx-fullbtn" data-act="ct-full"') && js.split('data-act="ct-full"').length === 4 && css.includes('.ctx-fullbtn{position:absolute;'), '전체화면 단추는 단추 줄과 따로 서류 위에 떠 있다(단추 줄 구조는 그대로 · 정보 입력 왼쪽 칸의 미리보기 하나 더)');
+ok(js.includes('function ct기능칸(doc, 잠김, 탭){') && js.includes("${배치 === 'info' ? ct기능칸(doc, 잠김, 탭) : ''}") && js.includes("CT.lay = ['info', 'form', 'both'].includes(v) ? v : 'info';") && css.includes('.ctx-body.lay-info .ctx-toolcol{'), '정보 입력 - 왼쪽 기능 칸(전자계약 순서) · 새 계약서는 정보 입력으로 (2026-11-18 파트너 · 대표님)');
 
 /* ── 소재지 따로 고치기 · 공적장부 우선 · 매물등록 메뉴 (2026-11-17 대표님) ── */
 ok(js.includes("ct칸('property.show', 글 || P.road, 300)") && js.includes("ctIn('property.show', '계약서에 찍히는 소재지'") && js.includes('const ct소재지다름 = P =>') && js.includes("if(ctGet(doc, 'property.jibun') !== s.jibun){ ctSet(doc, 'property.jibun', s.jibun);"), '소재지 - 찍히는 글자는 따로 고치고 찾은 주소는 그대로 · 공적장부 지번이 먼저');
@@ -1450,6 +1451,11 @@ ok(js.includes("if(CT.lay === 'form' && CT.mode !== 'edit') CT.mode = 'edit';") 
 
 /* ── 작성 중 계약서에 체결문자 적용 (2026-11-18 파트너) ── */
 ok(js.includes('function ct문자적용(e){') && js.includes("data-act=\"ct-sms-pick\"") && js.includes("case 'ct-sms-use':") && js.includes("if(!(+D.down > 0) && +N.down > 0)"), '작성 중인 계약서에 체결문자 적용 - 금액 · 날짜 · 계약금은 비어 있을 때만');
+
+/* ── 2026-11-18 점검 ── */
+{ const v = C.부속값({ fee: 100000, names: { fee: '관리비 정산', rent: '', x: 'y' }, dirs: { fee: '+', rent: '-', bad: '+' } });
+  ok(v && v.names && v.names.fee === '관리비 정산' && !('rent' in v.names) && v.dirs.fee === '+' && v.dirs.rent === '-' && !('bad' in v.dirs), '정산서 일할 두 줄의 이름 · 방향이 저장된다'); }
+ok(!C.일정목록({ form: 'sale', bd: '2026-12-01', track: { state: 'hold' } }, C.알림설정 ? C.알림설정({}) : undefined).some(e => e.k === 'settle'), '보류 계약에는 잔금 완료 확인을 넣지 않는다');
 
 console.log(`${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

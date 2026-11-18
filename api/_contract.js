@@ -134,6 +134,14 @@ export const XCODE = /^[A-HJKMNP-Z2-9]{8}$/;
 const 코드글자 = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 const 새공유코드 = () => Array.from({ length: 8 }, () => 코드글자[crypto.randomInt(코드글자.length)]).join('');
 /* 코드들 → { 코드: { price, cd, md, bd, agent_id } } . 못 읽으면 null(끊긴 것으로 오해하지 않게) */
+/* 사무소 설정의 다른 사무소 계약 목록 - 공유 코드로 이어진 것은 상대 계약의 지금 날짜 · 금액으로(알림 · 달력용, 저장은 목록 화면이 한다) */
+async function 외부최신(ext) {
+  const { 외부들, 공유합치기 } = await import('./_ext.js');
+  const L = 외부들(ext), 코드 = L.filter(e => e.link).map(e => e.link);
+  if (!코드.length) return L;
+  const 맵 = await 공유찾기(코드).catch(() => null);
+  return 맵 ? 공유합치기(L, 맵).stored : L;
+}
 export async function 공유찾기(codes) {
   const 목록 = [...new Set((codes || []).filter(c => XCODE.test(String(c))))].slice(0, 100);
   if (!목록.length) return {};
@@ -618,8 +626,14 @@ export function 부속값(x) {
   if (x.dayOwner === 'a') o.dayOwner = 'a';
   if (x.dirs && typeof x.dirs === 'object') {
     const d = {};
-    for (const k of ['prepaid', 'ltm']) if (x.dirs[k] === '-' || x.dirs[k] === '+') d[k] = x.dirs[k];
+    for (const k of ['prepaid', 'ltm', 'fee', 'rent']) if (x.dirs[k] === '-' || x.dirs[k] === '+') d[k] = x.dirs[k];
     if (Object.keys(d).length) o.dirs = d;
+  }
+  /* 일할 두 줄(관리비 · 차임)의 이름 - 화면에서 고친 이름이 저장 뒤 되돌아가지 않게(2026-11-18 점검) */
+  if (x.names && typeof x.names === 'object') {
+    const n = {};
+    for (const k of ['fee', 'rent']) { const v = 부속글(x.names[k], 30); if (v) n[k] = v; }
+    if (Object.keys(n).length) o.names = n;
   }
   const adds = (Array.isArray(x.adds) ? x.adds : []).slice(0, 10)
     .map(a => ({ n: 부속글(a && a.n, 30), amt: 부속돈(a && a.amt), dir: a && a.dir === '-' ? '-' : '+' }));
@@ -821,7 +835,7 @@ export function 일정목록(c, 설정 = 알림설정()) {
     out.push({ k: 'lawyer', 날: 영업일전(bd, b), 끝: 영업일전(bd, a), 메모: `잔금 ${bd} 기준 ${a}~${b}영업일 전에 예약하세요` });
   }
   /* 잔금 다음 날 아침 - 진행 상태를 '완료'로 바꾸지 않았으면 묻는다(파트너 리뷰 '잔금 완료 확인'. 예약 실행이 하루 한 번이라 시간마다는 못 한다) */
-  if (bd && t.state !== 'done' && t.state !== 'cancel') out.push({ k: 'settle', 날: 날더하기(bd, 1), 메모: '잔금을 마쳤으면 진행 상태를 완료로 바꾸세요 - 안 끝났으면 잔금 지연입니다' });
+  if (bd && t.state !== 'done' && t.state !== 'cancel' && t.state !== 'hold') out.push({ k: 'settle', 날: 날더하기(bd, 1), 메모: '잔금을 마쳤으면 진행 상태를 완료로 바꾸세요 - 안 끝났으면 잔금 지연입니다' });
   const ex = 날만(c.ex);
   if (ex && 임대차양식.includes(c.form)) out.push({ k: 'expiry', 날: 달빼기(ex, 6), 메모: `만기 ${ex} - 임대인·임차인의 갱신 의사를 확인하세요` });
   return out.map(e => ({ 이름: 알림종류[e.k], ...e })).sort((x, y) => (x.날 > y.날) - (x.날 < y.날));
@@ -1002,7 +1016,7 @@ export async function reportDueCron(req, res) {
     const { 외부들, 외부일정 } = await import('./_ext.js');
     for (const a of (x && x.r.ok ? x.rows : [])) {
       const 설정 = 알림설정(a.alert);
-      const 오늘것 = 외부들(a.ext).flatMap(e => 외부일정(e).filter(v => !설정.off.includes(v.k)).map(v => ({ ...v, 남음: 날차(오늘, v.날), title: `${e.title} (공동중개)` })))
+      const 오늘것 = (await 외부최신(a.ext)).flatMap(e => 외부일정(e).filter(v => !설정.off.includes(v.k)).map(v => ({ ...v, 남음: 날차(오늘, v.날), title: `${e.title} (공동중개)` })))
         .filter(v => (알림날[v.k] || []).includes(v.남음));
       if (!오늘것.length) continue;
       if (!사람별.has(a.id)) 사람별.set(a.id, { a, 설정, uid: a.user_id, 목록: [] });
@@ -1208,13 +1222,13 @@ export async function icsFeed(req, res) {
     if (앞판.has(c.id) || (c.track && (c.track.arch || c.track.trash || c.track.off))) continue;
     for (const e of 일정목록(c, 설정)) {
       if (e.날 < 부터 || (e.k === 'report' && (c.status !== 'sealed' || c.reported_at)) || (['expiry', 'settle', 'prep'].includes(e.k) && c.status !== 'sealed')) continue;
-      if (e.k === 'settle' && c.track && ['done', 'cancel'].includes(c.track.state)) continue;
+      if (e.k === 'settle' && c.track && ['done', 'cancel', 'hold'].includes(c.track.state)) continue;
       일들.push({ uid: `${c.id}-${e.k}-${e.날}`, 날: e.날, 끝: e.끝 && e.끝 > e.날 ? e.끝 : '', 제목: `${e.마침 ? '[마침] ' : ''}${e.이름} · ${c.title || '소재지 미입력'}`,
         설명: `${e.메모}\n${c.status === 'sealed' ? '날인본' : '작성 중'} 계약서 - https://beaverknock.co.kr/#/partner/contract/${c.id}` });
     }
   }
   const { 외부들, 외부일정 } = await import('./_ext.js');
-  for (const e of 외부들(사.ext)) for (const v of 외부일정(e)) if (v.날 >= 부터)
+  for (const e of await 외부최신(사.ext)) for (const v of 외부일정(e)) if (v.날 >= 부터)
     일들.push({ uid: `x${e.id}-${v.k}-${v.날}`, 날: v.날, 끝: '', 제목: `${v.이름} · ${e.title} (공동중개)`, 설명: `${e.office ? e.office + ' 작성 · ' : ''}다른 사무소가 쓴 계약서` });
   일들.sort((p, q) => (p.날 > q.날) - (p.날 < q.날));
   res.setHeader('Content-Type', 'text/calendar; charset=utf-8');

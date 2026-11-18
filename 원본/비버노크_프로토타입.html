@@ -4075,6 +4075,27 @@ const LHTYPE = ['아파트','오피스텔','빌라·연립','원룸','단독·�
 const LKINDS = [{k:'home',t:'주거'},{k:'shop',t:'상가·점포'},
                 {k:'office',t:'사무실'},{k:'storage',t:'창고'}];
 const isOneRoom = t => t === '원룸';
+/* 매물 구분 - 계약서(부동산)의 세부 구분과 같은 말을 쓴다(2026-11-18 파트너 '매물구분은 계약서의 구분과 동일하게').
+   CT_SUB_HOME 은 아래에서 정의되므로 함수로 늦게 읽는다. 예전 값(빌라·연립 등)이 들어 있으면 끝에 남겨 보여 준다 */
+const 매물구분 = k => k === 'shop' ? ['상가','상가주택','상가건물','건물'] : k === 'office' ? ['사무실','지식산업센터','건물']
+  : k === 'storage' ? ['창고','공장','토지'] : CT_SUB_HOME;
+const 매물구분칩 = (k, v) => { const 목 = 매물구분(k); return v && !목.includes(v) ? [...목, v] : 목; };
+/* 손님 조건의 주택 유형(HTYPES)과 견줄 때 쓰는 이름 - 견줄 수 없는 구분(다가구 · 단독 등)은 null 이라 말하지 않는다 */
+const 손님유형 = t => ({ 아파트:'아파트', 주상복합:'아파트', 오피스텔:'오피스텔', 연립주택:'빌라·연립', 다세대주택:'빌라·연립', '빌라·연립':'빌라·연립',
+  원룸:'원룸·투룸', 도시형생활주택:'원룸·투룸' })[t] || null;
+/* 동 · 호를 꼭 적는 구분(공동주택 · 오피스텔). 동은 단지형(아파트 · 주상복합)만 */
+const 호필요 = t => ['아파트','주상복합','연립주택','다세대주택','도시형생활주택','오피스텔','빌라·연립'].includes(t);
+const 동필요 = t => ['아파트','주상복합'].includes(t);
+/* 주차 - 가능/불가능 + 세대당 · 총 대수(2026-11-18 파트너). 저장은 한 줄 글(parking)로: '가능 · 세대당 1.3대 · 총 1,200대' / '불가' */
+const 주차됨 = p => { p = String(p || ''); return /불가|없음/.test(p) || /총\s*[\d,]+\s*대/.test(p) || (!/세대당|^가능/.test(p) && /\d\s*대/.test(p)); };
+const 주차글 = f => { const p = f.lpark || '', n = v => String(v || '').replace(/[^\d.]/g, '');
+  if(/불가/.test(p)) return '불가';
+  if(p !== '가능') return String(f.lparking || '').trim();
+  const 세 = n(f.lparkPer), 총 = String(f.lparkTot || '').replace(/[^\d]/g, '');
+  return ['가능', 세 && `세대당 ${세}대`, 총 && `총 ${comma(총)}대`].filter(Boolean).join(' · '); };
+const 주차폼 = (p, musts) => { p = String(p || ''); const 수 = re => ((p.match(re) || [])[1] || '').replace(/,/g, '');
+  const 불 = /불가|없음/.test(p), 세 = 수(/세대당\s*([\d.,]+)/), 총 = 수(/총\s*([\d,]+)/) || (!세 ? 수(/([\d,]+)\s*대/) : '');
+  return { lpark: 불 ? '불가능' : (세 || 총 || (musts || []).includes('주차 가능')) ? '가능' : '', lparkPer: 세, lparkTot: 총, lparking: p }; };
 /* 입주 가능시기는 여러 개가 된다. 예전 행은 문자열 하나라 그것도 받아준다 -
    바꾸기 전에 올린 물건이 화면에서 빈칸으로 보이면 안 된다. */
 const lmoveArr = () => { const v = S.form.lmoveIn;
@@ -4121,13 +4142,13 @@ const LMUSTS = [...MUSTS, '신축', '올수리', '풀옵션', '한강 조망', '
   '산책로', '등산로', '숲세권', '대단지', '남향'];
 /* 상가·사무실의 주차. 주거는 LMUSTS 의 '주차 가능' 칩이 이미 하고 있어서 따로 두지 않는다.
    '문의' 를 넣지 않았다 - 고르지 않으면 그것이 곧 문의다. 보기를 늘리면 고민만 늘어난다. */
-const LPARK = ['가능', '불가'];
+const LPARK = ['가능', '불가능'];
 /* 건물·단지명이 없는 것이 정상인 유형.
    단독·다가구와 상가주택은 '○○아파트' 같은 이름이 아예 없는 경우가 흔하고,
    억지로 적게 하면 소유자 이름이나 지번이 그 칸에 들어간다.
    중개사가 직접 찾아주는 지금 구조에서는 **동까지만 알아도 매칭이 된다** -
    정확한 자리는 연결된 뒤에 오가면 된다(중개사 회신 2026-09-23). */
-const NO_BLDG_NAME = t => t === '단독·다가구' || t === '상가주택';
+const NO_BLDG_NAME = t => ['단독·다가구','상가주택','다가구주택','다중주택','주택','토지','공장','창고'].includes(t);
 
 /* 중개대상물 표시·광고 명시사항.
    방향은 어디를 기준으로 잰 것인지까지 적어야 하고, 관리비는 얼마인지만이 아니라
@@ -4325,8 +4346,8 @@ function matchStages(L, d){
   /* 주택유형 - 주거 5위. m 에 실어두지 않아 여태 대조되지 않던 것이다.
      양쪽에 값이 다 있을 때만 말한다. */
   if(L.kind === 'home'){
-    const H = m.htype || [];
-    if(H.length && L.htype && !H.includes(L.htype))
+    const H = m.htype || [], 손 = 손님유형(L.htype);
+    if(H.length && 손 && !H.includes('상관없음') && !H.includes(손))
       add('주택유형', `${L.htype} (요청 ${H.join('·')})`);
   }
   /* 우선순위대로 줄을 세운다. 같은 순위면 넣은 차례를 지킨다(sort 는 안정적이다). */
@@ -10108,13 +10129,17 @@ const MG = { tab:'list', f:'', q:'', e:{}, busy:'' };
 function 물건기준(L){
   /* 서버 api/feed.js 노출기준 과 같다(2026-11-17 명시사항 확대). 주차 · 관리비 세부는 0043 칸이 있을 때만(feeRows 가 undefined 면 옛 표) */
   const 주거 = L.kind === 'home', 글 = v => !!String(v ?? '').trim(), 새칸 = L.feeRows !== undefined, 원룸 = /원룸/.test(String(L.htype || ''));
-  const 목록 = [['종류', 글(L.kind)], ['거래유형', 글(L.deal)], ['소재지', 글(L.dong)], ['금액', +L.dep > 0], ['면적', +L.area > 0],
+  /* 2026-11-18 파트너 - 관리비 항목별 금액 · 그 밖에 적을 것 · 갖춰진 조건 · 시설 말고는 모두 필수 */
+  const 목록 = [['종류', 글(L.kind)], ['매물 구분', 글(L.htype)], ['거래유형', 글(L.deal)], ['소재지', 글(L.dong)],
+    ...(호필요(L.htype) ? [['동 · 호', 글(L.ho) && (!동필요(L.htype) || 글(L.bdong))]] : []),
+    ['금액', +L.dep > 0], ['면적', +L.area > 0], [주거 ? '공급면적' : '계약면적', +L.areaSup > 0],
     ['층', 주거 ? 글(L.band) || 글(L.floorNo) : 글(L.floorNo)], ['총 층수', +L.floors > 0], ['방향', !주거 || (글(L.dir) && 글(L.dirBase))],
     ...(주거 ? [['방 · 욕실 수', (원룸 || +L.rooms > 0) && +L.baths > 0]] : []),
     ['사용승인일', 글(L.approved)], ['입주 가능일', 글(L.moveIn)],
-    ...(새칸 ? [['주차 대수', 글(L.parking)]] : []),
+    ...(새칸 ? [['주차 가능 여부 · 대수', 주차됨(L.parking)]] : []),
     ['관리비 기준', 글(L.feeBasis)], ['관리비 부과 방식', 글(L.feeType)],
     ...(새칸 && +L.fee >= 100000 && L.feeType === 관리비직접 ? [['관리비 세부 항목', (L.feeRows || []).length > 0]] : []),
+    ['상세 설명', 글(L.note)],
     ['소유자 확인', L.ownerOk === true]];
   return { 목록, 다: 목록.length, 찬: 목록.filter(x => x[1]).length, 빠짐: 목록.filter(x => !x[1]).map(x => x[0]) };
 }
@@ -10157,8 +10182,8 @@ function 물건폼(L){
     lrooms: L.rooms ? String(L.rooms) : '', lbaths: L.baths ? String(L.baths) : '', lband: L.band || '', lfloorNo: L.floorNo, lduplex: L.duplex ? '복층' : '단층',
     ldir: L.dir, ldirBase: L.dirBase, lmoveIn: [...입주.filter(x => 고름.includes(x)), ...(날 ? ['날짜 지정'] : [])], lmoveWhen: 날 || '',
     lhtype: L.htype, lbdong: L.bdong, lho: L.ho, lnote: L.note, lapproved: L.approved || '', lmusts: [...(L.musts || [])], lmustsFree: L.mustsFree,
-    lpark: (L.musts || []).includes('주차 가능') ? '가능' : '',
-    lfloors: +L.floors ? String(L.floors) : '', lparking: L.parking || '', lfacs: [...(L.facs || [])],
+    ...주차폼(L.parking, L.musts),
+    lfloors: +L.floors ? String(L.floors) : '', lfacs: [...(L.facs || [])],
     ...Object.fromEntries((L.feeRows || []).flatMap(x => [['lfr_' + x.k, x.amt ? String(x.amt) : ''], ['lfrr_' + x.k, !!x.real]])) };
 }
 V["#/partner/listings"] = () => {
@@ -10422,10 +10447,15 @@ function lsApply(f, s, kinds){
   if(kinds.includes('bldx')){ 넣기('larea', s.bldArea, '전용면적'); 넣기('lfloorNo', s.unitFloor, '층'); }
   넣기('lapproved', String(s.approval || '').replace(/[-/]/g, '.'), '사용승인일');
   넣기('lfloors', (String(s.floors || '').match(/지상\s*(\d+)/) || [])[1], '총 층수');
-  넣기('lparking', s.parking ? '총 ' + s.parking : '', '주차 대수');
-  if(!NONHOME(f.lkind) && 빔('lhtype')){
-    const 용 = String(s.bldUse || ''), t = /오피스텔/.test(용) ? '오피스텔' : /아파트/.test(용) ? '아파트' : /다세대|연립/.test(용) ? '빌라·연립' : /다가구|단독/.test(용) ? '단독·다가구' : '';
-    if(t){ f.lhtype = t; 채움.push('주택 유형'); }
+  { const 총 = String(s.parking || '').replace(/[^\d]/g, '');
+    if(+총 > 0 && 빔('lparkTot') && !/불가/.test(f.lpark || '')){ f.lparkTot = 총; f.lpark = '가능'; 채움.push('주차 대수'); } }
+  if(빔('lhtype')){
+    const 용 = String(s.bldUse || ''), k = f.lkind || 'home';
+    const t = k === 'home' ? (/오피스텔/.test(용) ? '오피스텔' : /아파트/.test(용) ? '아파트' : /다세대/.test(용) ? '다세대주택' : /연립/.test(용) ? '연립주택'
+        : /다중/.test(용) ? '다중주택' : /다가구/.test(용) ? '다가구주택' : /단독/.test(용) ? '주택' : '')
+      : k === 'shop' ? (/근린|판매/.test(용) ? '상가' : '') : k === 'office' ? (/업무/.test(용) ? '사무실' : '')
+      : (/공장/.test(용) ? '공장' : /창고/.test(용) ? '창고' : '');
+    if(t){ f.lhtype = t; 채움.push('매물 구분'); }
   }
   return 채움;
 }
@@ -10537,9 +10567,9 @@ V["#/partner/listing/new"] = () => {
            연결 전에 나갈 이유가 없다. 연락처와 같은 원칙이다.
            ※ 화면에서 감추는 것으로는 부족하다 - 서버가 아예 안 싣는다. -->
       <div class="grid2 mo1">
-        <div><span class="lab">동 <span class="opt">아파트·오피스텔의 동</span></span>
+        <div><span class="lab">동 ${동필요(g('lhtype')) ? '<span class="req">*</span> ' : ''}<span class="opt">아파트·오피스텔의 동</span></span>
           <div class="unit"><input class="inp" data-in="lbdong" value="${esc(g('lbdong'))}" placeholder="예) 101"><span>동</span></div></div>
-        <div><span class="lab">호 <span class="opt">손님에게는 보이지 않습니다</span></span>
+        <div><span class="lab">호 ${호필요(g('lhtype')) ? '<span class="req">*</span> ' : ''}<span class="opt">손님에게는 보이지 않습니다</span></span>
           <div class="unit"><input class="inp" data-in="lho" value="${esc(g('lho'))}" placeholder="예) 1203"><span>호</span></div>
           <span style="display:block;margin-top:6px;font-size:13.5px;line-height:1.6;color:var(--n500)">
             중개사님과 운영자에게만 보입니다. 어느 집인지 헷갈리지 않으시도록 받아둡니다.</span></div>
@@ -10574,7 +10604,7 @@ V["#/partner/listing/new"] = () => {
         <div><span class="lab">전용면적 <span class="req">*</span></span>
           <div class="unit"><input class="inp num" data-in="larea" inputmode="decimal" value="${esc(g('larea'))}" placeholder="0"><span>㎡</span></div>
           <span data-py="larea" style="display:block;margin-top:4px;font-size:13.5px;font-weight:700;color:var(--ind)">${pyTag(g('larea'))}</span></div>
-        <div><span class="lab">${shop?'계약면적':'공급면적'}</span>
+        <div><span class="lab">${shop?'계약면적':'공급면적'} <span class="req">*</span></span>
           <div class="unit"><input class="inp num" data-in="lareaSup" inputmode="decimal" value="${esc(g('lareaSup'))}" placeholder="0"><span>㎡</span></div>
           <span data-py="lareaSup" style="display:block;margin-top:4px;font-size:13.5px;font-weight:700;color:var(--n500)">${pyTag(g('lareaSup'))}</span></div>
       </div>
@@ -10586,8 +10616,8 @@ V["#/partner/listing/new"] = () => {
         <span class="lab">사용승인일 <span class="req">*</span> <span class="opt">건축물대장 불러오기로 채울 수 있습니다 · 손님이 연식으로 거른 조건에도 쓰입니다</span></span>
         <input class="inp" data-in="lapproved" value="${esc(g('lapproved'))}" placeholder="예) 2016.06.24">
       </div>
+      <div><span class="lab">매물 구분 <span class="req">*</span> <span class="opt">계약서의 구분과 같습니다</span></span>${chipsHTML(매물구분칩(f.lkind, g('lhtype')), g('lhtype'),'lhtype',false)}</div>
       ${shop? '' : `
-      <div><span class="lab">주택 유형 <span class="req">*</span></span>${chipsHTML(LHTYPE, g('lhtype'),'lhtype',false)}</div>
       <div class="grid2 mo1">
           ${isOneRoom(g('lhtype')) ? '' : `<div><span class="lab">방 수 <span class="req">*</span></span><div class="unit"><input class="inp num" data-in="lrooms" inputmode="numeric" value="${esc(g('lrooms'))}" placeholder="0"><span>개</span></div></div>`}
           <div><span class="lab">욕실 수 <span class="req">*</span></span><div class="unit"><input class="inp num" data-in="lbaths" inputmode="numeric" value="${esc(g('lbaths'))}" placeholder="0"><span>개</span></div></div></div>`}
@@ -10606,18 +10636,19 @@ V["#/partner/listing/new"] = () => {
       <div class="grid2 mo1">
         <div><span class="lab">${shop ? '건물' : '해당 동'} 총 층수 <span class="req">*</span></span>
           <div class="unit"><input class="inp num" data-in="lfloors" inputmode="numeric" value="${esc(g('lfloors'))}" placeholder="0"><span>층</span></div></div>
-        <div><span class="lab">주차 대수 <span class="req">*</span></span>
-          <input class="inp" data-in="lparking" value="${esc(g('lparking'))}" placeholder="예) 세대당 1.3대 / 총 1,200대 · 없음"></div>
       </div>
+      <!-- 주차 (2026-11-18 파트너) - 가능 / 불가능, 가능이면 세대당 · 총 대수 -->
+      <div><span class="lab">주차 가능 여부 <span class="req">*</span></span>${chipsHTML(LPARK, g('lpark'),'lpark',false)}
+        ${g('lpark') === '가능' ? `<div class="grid2 mo1" style="margin-top:10px">
+          <div><span class="lab">세대당 주차 대수</span><div class="unit"><input class="inp" data-in="lparkPer" inputmode="decimal" value="${esc(g('lparkPer'))}" placeholder="예) 1.3"><span>대</span></div></div>
+          <div><span class="lab">총 주차 대수 <span class="req">*</span></span><div class="unit"><input class="inp num" data-in="lparkTot" inputmode="numeric" value="${esc(comma(g('lparkTot')))}" placeholder="0"><span>대</span></div></div></div>`
+        : !g('lpark') && g('lparking') ? `<p class="sub" style="margin:6px 0 0;font-size:12.5px">예전에 적은 값: ${esc(g('lparking'))} - 가능 · 불가능을 골라 주세요</p>` : ''}</div>
 
       ${shop ? `
       <!-- 상가·사무실은 방향을 묻지 않는다(중개사 회신 2026-09-23).
            해가 드는 쪽이 값을 가르는 것은 사는 집 이야기고, 여기서 실제로 갈리는 것은
            주차다 - 그 자리를 방향 대신 준다. 새 칸을 파지 않고 musts 에 담는다. -->
-      <div style="border-top:1px solid var(--hair);padding-top:16px">
-        <span class="lab">주차</span>
-        ${chipsHTML(LPARK, g('lpark'),'lpark',false)}
-      </div>` : `
+      ` : `
       <!-- 방향은 표시·광고 명시사항이다. 어디를 기준으로 잰 방향인지도 함께 적어야 한다. -->
       <div style="border-top:1px solid var(--hair);padding-top:16px">
         <span class="lab">방향 <span class="req">*</span></span>${chipsHTML(DIRS, g('ldir'),'ldir',false)}
@@ -10637,7 +10668,7 @@ V["#/partner/listing/new"] = () => {
 
       ${shop ? '' : `<div><span class="lab">시설 <span class="opt">있는 것을 모두 골라주세요 - 손님 화면에 보입니다</span></span>
         <div class="lf-facs">${FACS.map(([묶음, 줄]) => `<div><small>${묶음}</small>${chipsHTML(줄, f.lfacs || [], 'lfacs', true)}</div>`).join('')}</div></div>`}
-      <div><span class="lab">상세 설명 <span class="opt">손님에게 그대로 전해집니다 · 1,000자까지</span></span>
+      <div><span class="lab">상세 설명 <span class="req">*</span> <span class="opt">손님에게 그대로 전해집니다 · 1,000자까지</span></span>
         <textarea class="inp" data-in="lnote" rows="4" placeholder="${shop
           ? '예) 음식점·카페 가능 · 대로변 코너 자리 · 주방 급배수와 가스 인입 완비 · 간판 자리 넓음'
           : '예) 남향 거실이라 오후까지 볕이 듭니다 · 올수리 마친 집 · 단지 바로 앞 초등학교'}"
@@ -13887,6 +13918,9 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
+  { v:'26.11.18.4', 날:'2026-11-18', 줄:[ '매물 등록 - 매물 구분을 계약서의 구분(아파트 · 주상복합 · 연립주택 · 다세대주택 … · 상가 · 사무실 · 창고 등)과 같게 바꾸고, 상가 · 사무실 · 창고에도 고르게 했습니다',
+    '주차를 가능 / 불가능으로 고르고, 가능이면 세대당 · 총 주차 대수를 적습니다',
+    '관리비 항목별 금액 · 그 밖에 적을 것 · 갖춰진 조건 · 시설 말고는 모두 필수 - 매물 구분 · 공급(계약)면적 · 동 · 호(공동주택) · 주차 · 상세 설명을 노출 기준에 더했습니다' ] },
   { v:'26.11.18.3', 날:'2026-11-18', 줄:[ '계약서 작성 - ‘체결문자 적용’ 단추: 보낸 계약체결 문자를 골라 금액 · 날짜를 작성 중인 계약서에 바로 채웁니다(서류로 채우기 · 건축물대장 옆)' ] },
   { v:'26.11.18.2', 날:'2026-11-18', 줄:[ '계약서 작성 - 서류로 채우기 단계에서 ‘서식 입력’을 누르면 그 단계를 건너뛰고 서식이 크게 열립니다(전에는 안내만 뜨고 그대로였습니다)',
     '계약현황 위 단추 세 개(직접 추가 · 계약체결 문자에서 가져오기 · 계약서 작성)를 같은 폭으로 · 다른 사무소 계약서 창의 취소 · 저장 단추를 넓게' ] },
@@ -21555,7 +21589,8 @@ function listingOk(f){
 const 폼노출빠짐 = f => { const rows = 관리비줄폼(f);
   return 물건기준({ kind: f.lkind || 'home', deal: f.ldeal || '월세', dong: f.ldong, dep: +f.ldep || 0, area: +f.larea || 0,
     band: NONHOME(f.lkind) ? '' : (f.lband || '중층'), floorNo: f.lfloorNo, floors: +f.lfloors || 0, dir: f.ldir, dirBase: f.ldirBase, rooms: +f.lrooms || 0, baths: +f.lbaths || 0,
-    htype: f.lhtype, approved: f.lapproved, moveIn: lmoveArr().length ? 'x' : '', parking: f.lparking || '', feeBasis: f.lfeeBasis, feeType: f.lfeeType,
+    htype: f.lhtype, approved: f.lapproved, moveIn: lmoveArr().length ? 'x' : '', parking: 주차글(f), feeBasis: f.lfeeBasis, feeType: f.lfeeType,
+    areaSup: +f.lareaSup || 0, note: f.lnote, bdong: f.lbdong, ho: f.lho,
     fee: rows.length ? rows.reduce((a, x) => a + x.amt, 0) : +f.lfee || 0, feeRows: rows, ownerOk: true }).빠짐; };
 function 물건힌트(f, ok){ if(!ok) return '건물명 · 법정동을 적으면 장부에 보관할 수 있습니다';
   const 빠 = 폼노출빠짐(f); return 빠.length ? `장부에 보관됩니다 · 노출하려면 ${빠.slice(0, 4).join(' · ')}${빠.length > 4 ? ` 외 ${빠.length - 4}개` : ''}를 채우고 소유자를 확인하세요` : '모든 * 항목을 채웠습니다 - 저장한 뒤 장부에서 소유자 확인 후 노출할 수 있습니다'; }
@@ -22417,7 +22452,8 @@ function handle(a,v,el){
          안 바뀌던 일이 있었다(2026-09-21). 이제 표(LKINDS)에서 찾는다. */
       S.form.lkind = (LKINDS.find(x => x.t === v) || LKINDS[0]).k;
       const shop2 = NONHOME(S.form.lkind);
-      if(shop2){ S.form.lrooms=''; S.form.lbaths=''; S.form.lmusts=[]; S.form.lmustsFree=''; S.form.lband=''; S.form.lhtype=''; }
+      if(shop2){ S.form.lrooms=''; S.form.lbaths=''; S.form.lmusts=[]; S.form.lmustsFree=''; S.form.lband=''; }
+      if(S.form.lhtype && !매물구분(S.form.lkind).includes(S.form.lhtype)) S.form.lhtype='';
       else { S.form.lfloorNo=''; }
       render(); return true; }
     case 'lband': case 'lduplex': case 'lfeeBasis': case 'lfeeType':
@@ -23036,7 +23072,7 @@ function handle(a,v,el){
           return rows.length ? { fee: rows.reduce((a, x) => a + x.amt, 0), feeRows: rows, feeItems: [관리비글(rows), 손].filter(Boolean).join(' / ').slice(0, 200) }
             : { fee: +f.lfee||0, feeRows: [], feeItems: 손 }; })(),
         feeBasis:f.lfeeBasis||'', feeType:f.lfeeType||'',
-        floors: +f.lfloors||0, parking: (f.lparking||'').trim(), facs: shop ? [] : (f.lfacs||[]),
+        floors: +f.lfloors||0, parking: 주차글(f), facs: shop ? [] : (f.lfacs||[]),
         /* 면적은 ㎡ 로 담는다. py 는 대조와 옛 화면이 아직 보므로 환산해 함께 둔다 */
         area, areaSup:+f.lareaSup||0, py:pyOf(area),
         rooms:shop?0:(+f.lrooms||0), baths:shop?0:(+f.lbaths||0),

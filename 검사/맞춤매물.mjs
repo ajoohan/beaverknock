@@ -1,3 +1,4 @@
+import * as fs0 from 'node:fs';
 /* 매물장부 노출 기준 · 맞춤매물 일치율 (2026-11-12 파트너 기획 C1 · C1-2)
    ⚠ 손님에게 나가는 물건 값에 호수 · 숨긴 동이 실리면 안 된다 - 서버까지 눌러 본다. */
 process.env.BK_URL = 'https://fake.supabase.co';
@@ -14,11 +15,15 @@ const { 일치율, 일치기준, matched, matchWant } = await import('../api/_ma
 const 물건 = { id: 'aaaaaaaa-0000-4000-8000-000000000001', agent_id: 'ag1', agent_user: 'u-agent', kind: 'home', name: '미사 ○○아파트', dong: '망월동', deal: '월세',
   dep: 50000000, rent: 1500000, fee: 170000, fee_basis: '최근 3개월 평균', area: 84.97, rooms: 3, baths: 2, band: '중층', dir: '남', dir_base: '거실 기준',
   move_in: '협의', bdong: '101', ho: '1203', hide_unit: true, owner_ok: true, vis: 'open', status: 'active', price_log: [],
-  floors: 25, approved: '2015.06.30', fee_type: '관리규약에 따라 부과' };
-ok(노출기준(물건).빠짐.length === 0 && 노출기준(물건).다 === 14, '명시사항 열네 가지를 다 채우면 빠진 것이 없다 (2026-11-17 확대)');
+  floors: 25, approved: '2015.06.30', fee_type: '관리규약에 따라 부과', htype: '아파트', area_sup: 112.4, note: '남향 · 올수리' };
+ok(노출기준(물건).빠짐.length === 0 && 노출기준(물건).다 === 18, '명시사항 열여덟 가지를 다 채우면 빠진 것이 없다 (2026-11-18 파트너 - 그 밖은 모두 필수)');
+ok(['매물 구분', '공급면적', '상세 설명'].every(k => 노출기준({ ...물건, htype: '', area_sup: 0, note: '' }).빠짐.includes(k)), '매물 구분 · 공급면적 · 상세 설명이 없으면 노출 못 한다');
+ok(노출기준({ ...물건, ho: '' }).빠짐.includes('동 · 호') && 노출기준({ ...물건, htype: '다세대주택', bdong: '' }).빠짐.length === 0 && 노출기준({ ...물건, htype: '다가구주택', bdong: '', ho: '' }).빠짐.length === 0, '공동주택은 호(아파트는 동까지), 다가구는 묻지 않는다');
 ok(['총 층수', '사용승인일', '관리비 부과 방식'].every(k => 노출기준({ ...물건, floors: 0, approved: '', fee_type: '' }).빠짐.includes(k)), '총 층수 · 사용승인일 · 관리비 부과 방식이 없으면 노출 못 한다');
 ok(노출기준({ ...물건, baths: 0 }).빠짐.includes('방 · 욕실 수') && !노출기준({ ...물건, rooms: 0, htype: '원룸' }).빠짐.includes('방 · 욕실 수'), '주거는 욕실 수가 있어야 하고, 원룸은 방 수를 묻지 않는다');
-ok(!노출기준(물건).빠짐.includes('주차 대수') && 노출기준({ ...물건, fee_rows: [] }).빠짐.includes('주차 대수'), '주차 대수는 0043 칸이 있을 때만 묻는다(SQL 전에 노출이 막히지 않게)');
+ok(!노출기준(물건).빠짐.includes('주차 가능 여부 · 대수') && 노출기준({ ...물건, fee_rows: [] }).빠짐.includes('주차 가능 여부 · 대수'), '주차는 0043 칸이 있을 때만 묻는다(SQL 전에 노출이 막히지 않게)');
+{ const P = p => !노출기준({ ...물건, fee_rows: [], parking: p }).빠짐.includes('주차 가능 여부 · 대수');
+  ok(P('불가') && P('가능 · 세대당 1.3대 · 총 1,200대') && P('총 30대') && P('세대당 1.3대 / 총 1,200대') && !P('가능') && !P('가능 · 세대당 1대'), '주차는 불가능이거나 총 대수가 있어야 한다(가능만 고르고 대수를 안 적으면 안 된다)'); }
 { const 정액 = { ...물건, fee_rows: [], parking: '총 1,200대', fee: 170000, fee_type: '임대인이 직접부과' };
   ok(노출기준(정액).빠짐.join() === '관리비 세부 항목', '정액관리비 월 10만원 이상은 항목표가 있어야 노출한다');
   ok(노출기준({ ...정액, fee_rows: [{ k: 'common', amt: 150000 }] }).빠짐.length === 0 && 노출기준({ ...정액, fee: 90000 }).빠짐.length === 0, '항목을 적었거나 10만원 미만이면 된다'); }
@@ -152,7 +157,7 @@ globalThis.fetch = async (url, opt = {}) => {
   const fs2 = await import('node:fs'), 원 = fs2.readFileSync(new URL('../원본/비버노크_프로토타입.html', import.meta.url), 'utf8');
   ok(원.includes("return nameOk && !!String(g('ldong')).trim();\n}") || 원.includes("return nameOk && !!String(g('ldong')).trim();\r\n}"), '장부 보관은 이름 · 동만 있으면 된다(덜 채워도 보관)');
   ok(원.includes("data-act=\"lfreal\"") && 원.includes("'lfacs', true") && 원.includes('data-pyeong'), '등록 화면 - 관리비 항목표 · 시설 6묶음 · 평 경고');
-  ok(원.includes("넣기('lfloors'") && 원.includes("넣기('lparking'"), '건축물대장으로 총 층수 · 주차 대수를 채운다'); }
+  ok(원.includes("넣기('lfloors'") && 원.includes("f.lparkTot = 총; f.lpark = '가능';"), '건축물대장으로 총 층수 · 주차 대수를 채운다'); }
 /* ── 연세 · 단기임대 (2026-11-17) ── */
 { const fs = await import('node:fs'); const 서버 = fs.readFileSync(new URL('../api/_match.js', import.meta.url), 'utf8'), 화면 = fs.readFileSync(new URL('../원본/비버노크_프로토타입.html', import.meta.url), 'utf8');
   ok(서버.includes("if (L.deal === '연세' || L.deal === '단기임대') return null;") && 화면.includes("const 대조안함 = deal => deal === '연세' || deal === '단기임대';") && 화면.includes("['전세','월세','매매','연세','단기임대']"), '연세 · 단기임대 매물은 적고 노출하되 자동 대조에서는 뺀다'); }
@@ -179,5 +184,8 @@ globalThis.fetch = async (url, opt = {}) => {
   ok(/script-src[^;]*https:\/\/dapi\.kakao\.com[^;]*https:\/\/\*\.daumcdn\.net/.test(설정) && /connect-src[^;]*https:\/\/maps\.googleapis\.com[^;]*https:\/\/dapi\.kakao\.com/.test(설정), '보안 규칙 - 카카오 주소를 열고 구글 주소도 그대로');
   ok(방침.includes('카카오 (대한민국) - 지도') && 방침.includes('Google LLC (미국) - 지도'), '처리방침 - 카카오 지도 항목을 더하고 구글 항목도 남긴다'); }
 
+/* ── 매물 등록 필수 · 매물 구분 · 주차 (2026-11-18 파트너) ── */
+{ const 원2 = fs0.readFileSync(new URL('../원본/비버노크_프로토타입.html', import.meta.url), 'utf8');
+  ok(원2.includes("const 매물구분 = k =>") && 원2.includes("data-in=\"lparkTot\"") && 원2.includes("const 손님유형 = t =>") && 원2.includes("['상세 설명', 글(L.note)]") && 원2.includes("const LPARK = ['가능', '불가능'];"), '매물 구분은 계약서 구분 · 주차는 가능/불가능 + 세대당 · 총 · 상세 설명 필수'); }
 console.log(`\n${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

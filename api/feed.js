@@ -1136,18 +1136,25 @@ async function readListings(req, res, agent) {
    파트너 C1 시안(2026-11-17 '모든 항목을 채워야 등록, 장부는 덜 채워도 보관'). 장부 저장은 이것을 보지 않는다.
    주차 대수 · 관리비 세부는 0043 칸이 있을 때만 묻는다(SQL 전에 노출이 통째로 막히지 않게). 화면 물건기준 과 같아야 한다 */
 export const 관리비직접 = '임대인이 직접부과';
+/* 2026-11-18 파트너 - 매물 구분(계약서 구분) · 동 · 호(공동주택) · 공급면적 · 주차 가능 여부와 대수 · 상세 설명도 필수. 화면 호필요 · 동필요 · 주차됨 과 같다 */
+const 호필요 = t => ['아파트', '주상복합', '연립주택', '다세대주택', '도시형생활주택', '오피스텔', '빌라·연립'].includes(t);
+const 동필요 = t => ['아파트', '주상복합'].includes(t);
+export const 주차됨 = p => { p = String(p || ''); return /불가|없음/.test(p) || /총\s*[\d,]+\s*대/.test(p) || (!/세대당|^가능/.test(p) && /\d\s*대/.test(p)); };
 export function 노출기준(m) {
   const 주거 = m.kind === 'home', 글 = v => !!String(v ?? '').trim(), 새칸 = 'fee_rows' in m;
   const 원룸 = /원룸/.test(String(m.htype || '')), 줄 = Array.isArray(m.fee_rows) ? m.fee_rows : [];
   const 목록 = [
-    ['종류', KINDS.includes(m.kind)], ['거래유형', 글(m.deal)], ['소재지', 글(m.dong)], ['금액', +m.dep > 0], ['면적', +m.area > 0],
+    ['종류', KINDS.includes(m.kind)], ['매물 구분', 글(m.htype)], ['거래유형', 글(m.deal)], ['소재지', 글(m.dong)],
+    ...(호필요(m.htype) ? [['동 · 호', 글(m.ho) && (!동필요(m.htype) || 글(m.bdong))]] : []),
+    ['금액', +m.dep > 0], ['면적', +m.area > 0], [주거 ? '공급면적' : '계약면적', +m.area_sup > 0],
     ['층', 주거 ? 글(m.band) || 글(m.floor_no) : 글(m.floor_no)], ['총 층수', +m.floors > 0], ['방향', !주거 || (글(m.dir) && 글(m.dir_base))],
     ...(주거 ? [['방 · 욕실 수', (원룸 || +m.rooms > 0) && +m.baths > 0]] : []),
     ['사용승인일', 글(m.approved)], ['입주 가능일', 글(m.move_in)],
-    ...(새칸 ? [['주차 대수', 글(m.parking)]] : []),
+    ...(새칸 ? [['주차 가능 여부 · 대수', 주차됨(m.parking)]] : []),
     ['관리비 기준', 글(m.fee_basis)], ['관리비 부과 방식', 글(m.fee_type)],
     /* 정액관리비 월 10만원 이상은 항목을 나눠 표시한다(표시 · 광고 명시사항 세부기준) */
     ...(새칸 && +m.fee >= 100000 && m.fee_type === 관리비직접 ? [['관리비 세부 항목', 줄.length > 0]] : []),
+    ['상세 설명', 글(m.note)],
     ['소유자 확인', m.owner_ok === true],
   ];
   return { 다: 목록.length, 찬: 목록.filter(x => x[1]).length, 빠짐: 목록.filter(x => !x[1]).map(x => x[0]) };
@@ -1199,7 +1206,8 @@ async function setListing(res, agent, b) {
     if (뒤.vis === 'open') {
       if ((cur.status || 'active') !== 'active') return res.status(400).json({ error: '목록에 있는 물건만 노출할 수 있습니다' });
       if (cur.vis !== 'open' && 운영멈춤(cur.reports)) return res.status(403).json({ error: '신고 확인으로 공개가 멈춘 매물입니다 - 다시 노출하려면 고객센터로 문의해 주세요', need: 'ops_stop' });
-      const 기준 = 노출기준(뒤);
+      const 기준 = 노출기준(뒤), 전빠짐 = cur.vis === 'open' ? 노출기준(cur).빠짐 : [];
+      기준.빠짐 = 기준.빠짐.filter(k => !전빠짐.includes(k));
       if (기준.빠짐.length) return res.status(400).json({ error: `노출하려면 ${기준.빠짐.join(' · ')} 항목을 채워 주세요`, miss: 기준.빠짐 });
       if (cur.vis !== 'open') p.opened_at = new Date().toISOString();
     }

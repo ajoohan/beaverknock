@@ -772,7 +772,7 @@ export function 특약문구들(x) {
     if (!t) continue;
     본.add(p.id);
     /* base - 새 계약서를 열면 기본 특약으로 들어가는 문구(2026-11-05 파트너 리뷰) */
-    out.push({ id: p.id, g: Object.hasOwn(특약묶음, p.g) ? p.g : 'etc', t, tag: 문구종류(p.tag), ...(p.base === true ? { base: true } : {}) });
+    out.push({ id: p.id, g: Object.hasOwn(특약묶음, p.g) ? p.g : 'etc', t, tag: 문구종류(p.tag), ...(문구종류(p.name) ? { name: 문구종류(p.name) } : {}), ...(p.base === true ? { base: true } : {}) });
     if (out.length >= 특약문구최대) break;
   }
   return out;
@@ -789,7 +789,7 @@ export function 특약문구고침(list, b) {
     if (지금.some(p => p.g === g && p.t === t)) return { error: `이미 내 특약(${특약묶음[g]})에 있는 문구입니다`, code: 409 };
     if (지금.length >= 특약문구최대) return { error: `내 특약은 ${특약문구최대}개까지 저장합니다 - 안 쓰는 문구를 지워 주세요`, code: 400 };
     const id = crypto.randomBytes(6).toString('hex');
-    return { list: [...지금, { id, g, t, tag: 문구종류(b.tag) }], id };
+    return { list: [...지금, { id, g, t, tag: 문구종류(b.tag), ...(문구종류(b.name) ? { name: 문구종류(b.name) } : {}) }], id };
   }
   if (op !== 'del' && op !== 'set') return { error: '알 수 없는 요청입니다', code: 400 };
   const 그것 = 지금.find(p => p.id === String(b.id == null ? '' : b.id));
@@ -805,6 +805,8 @@ export function 특약문구고침(list, b) {
     if (틀림) return { error: 틀림, code: 400 };
     새것.t = t;
   }
+  /* 제목(추가1 …) - 비우면 지운다 */
+  if (b.name != null) { const n = 문구종류(b.name); if (n) 새것.name = n; else delete 새것.name; }
   if (b.base === true) 새것.base = true;
   else if (b.base === false) delete 새것.base;
   return { list: 지금.map(p => p === 그것 ? 새것 : p), id: 새것.id };

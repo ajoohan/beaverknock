@@ -1,7 +1,7 @@
 /* 중개사 계약서 (2026-10-29).
  *
  * 중개사가 양식을 골라 고치고 기본 정보를 채워 **인쇄**한다. 만나서 수기·날인하는 것이 지금
- * 현실이라 전자서명은 하지 않는다. 날인받은 판은 '날인본' 으로 확정해 잠근다 - 나중에 거래신고를
+ * 현실이라 전자서명은 하지 않는다. 날인받은 판은 '확정본' 으로 확정해 잠근다 - 나중에 거래신고를
  * 그 판에서 출발시키려는 것이다(01_기획/계약서_거래신고_방향.md).
  *
  * 파트너 API(feed.js) 안에서 부른다. 함수 상한(12개) 때문에 새 경로를 만들지 않는다.
@@ -11,7 +11,7 @@
  *  ① 회사는 양식·작성 도구만 준다. 내용과 신고 책임은 작성한 중개사에게 있다(약관 제N조).
  *  ② 주민등록번호·계좌번호는 담지 않는다. 그 칸은 인쇄할 때 빈칸으로 나가 손으로 적는다.
  *     화면이 안 보내도 바로 찔러 넣는 길이 있으므로 여기서 한 번 더 막는다.
- *  ③ 날인본은 고치지도 지우지도 않는다. 고치려면 새 판을 만든다(DB 트리거도 막는다, 0031).
+ *  ③ 확정본은 고치지도 지우지도 않는다. 고치려면 새 판을 만든다(DB 트리거도 막는다, 0031).
  *
  * 내부 표준은 스키마 버전이 붙은 JSON 하나다(bk-contract/1). 소재지는 주소 검색 결과
  * (법정동코드·본번·부번·산)를 그대로 담는다 - 나중에 어디로 보내더라도 보낼 때 바꿀 것이 없게.
@@ -190,7 +190,7 @@ async function 중개사찾기(req, res, agent, b) {
   return res.status(200).json({ ok: true, office: x.office || '', rep: x.rep || '', addr: x.addr || '', regNo: x.reg_no || 번호, state: x.state });
 }
 
-/* 날인본 확정 전 필수 항목 (2026-11-06 대표님) - 화면(ct필수)이 먼저 막고, 서버는 핵심 다섯 가지를 다시 본다.
+/* 확정본 저장 전 필수 항목 (2026-11-06 대표님) - 화면(ct필수)이 먼저 막고, 서버는 핵심 다섯 가지를 다시 본다.
    확인·설명서는 계약서가 아니라 보지 않는다 */
 export function 확정필수(form, doc) {
   /* 확인·설명서는 소재지만 본다 */
@@ -275,12 +275,12 @@ async function save(res, agent, user, b) {
   if (b.id) {
     const id = String(b.id);
     if (!UUID.test(id)) return res.status(400).json({ error: '어느 계약서인지 알 수 없습니다' });
-    /* 작성 중인 내 계약서만 고친다. 날인본이면 0행이 나온다 */
+    /* 작성 중인 내 계약서만 고친다. 확정본이면 0행이 나온다 */
     const { r, t, rows } = await db('bk_contract', `id=eq.${id}&agent_id=eq.${agent.id}&status=eq.draft`, {
       method: 'PATCH', headers: { Prefer: 'return=representation' }, body: JSON.stringify(body),
     });
     if (!r.ok) return noTable(t) ? 준비중(res) : res.status(502).json({ error: '저장하지 못했습니다' });
-    if (!rows.length) return res.status(409).json({ error: '날인본이거나 지워진 계약서라 고칠 수 없습니다 - 새 판을 만드세요' });
+    if (!rows.length) return res.status(409).json({ error: '확정본이거나 지워진 계약서라 고칠 수 없습니다 - 새 판을 만드세요' });
     return res.status(200).json({ ok: true, id, updated_at: rows[0].updated_at });
   }
 
@@ -313,7 +313,7 @@ async function seal(res, agent, b) {
   if (!got.r.ok) return noTable(got.t) ? 준비중(res) : res.status(502).json({ error: '계약서를 불러오지 못했습니다' });
   const row = got.rows[0];
   if (!row) return res.status(404).json({ error: '내 계약서가 아니거나 지워진 계약서입니다' });
-  if (row.status === 'sealed') return res.status(409).json({ error: '이미 날인본입니다' });
+  if (row.status === 'sealed') return res.status(409).json({ error: '이미 확정본입니다' });
   const why = docCheck(row.doc && row.doc.form, row.doc) || 확정필수(row.doc && row.doc.form, row.doc);
   if (why) return res.status(400).json({ error: why });
 
@@ -330,10 +330,10 @@ async function seal(res, agent, b) {
   return res.status(200).json({ ok: true, sealed_at: rows[0].sealed_at, sha256 });
 }
 
-/* 날인본을 고쳐야 하면 그 판을 그대로 두고 새 판(작성 중)을 만든다 */
+/* 확정본을 고쳐야 하면 그 판을 그대로 두고 새 판(작성 중)을 만든다 */
 /* ── 확정 전 초안 공유 (2026-11-05 파트너 리뷰) ── 보기 전용 링크. 표 = 계약서 번호 · 기한(7일) · 서명.
    서명 열쇠는 서버 비밀값에서 나온다(BK_SECRET_KEY 가 바뀌면 나간 링크가 모두 죽는다). 전화번호는 가려서 보인다.
-   날인본은 공유하지 않는다 - 초안을 미리 보여 주는 길이다 */
+   확정본은 공유하지 않는다 - 초안을 미리 보여 주는 길이다 */
 const 초안열쇠 = () => crypto.createHash('sha256').update('bk-draft|' + String(process.env.BK_SECRET_KEY || ''), 'utf8').digest();
 /* 표 = D2.번호.기한.링크번호.서명 - 링크번호(track.shareN)를 올리면 그 계약서의 나간 링크만 끊긴다(2026-11-05 리뷰) */
 const 초안서명 = (id, until, n) => crypto.createHmac('sha256', 초안열쇠()).update(`${id}.${until}.${n}`).digest('base64url');
@@ -364,7 +364,7 @@ async function share(res, agent, b) {
   const got = await 읽기(`select=id,status,form{track}&id=eq.${id}&agent_id=eq.${agent.id}&limit=1`);
   if (!got.r.ok) return noTable(got.t) ? 준비중(res) : res.status(502).json({ error: '계약서를 불러오지 못했습니다' });
   if (!got.rows.length) return res.status(404).json({ error: '내 계약서가 아니거나 지워진 계약서입니다' });
-  if (got.rows[0].status === 'sealed') return res.status(409).json({ error: '날인본은 인쇄해서 드리세요 - 초안 공유는 작성 중인 계약서만 됩니다' });
+  if (got.rows[0].status === 'sealed') return res.status(409).json({ error: '확정본은 인쇄해서 드리세요 - 초안 공유는 작성 중인 계약서만 됩니다' });
   /* 확인·설명서는 당사자 생년월일·권리관계가 많이 든다 - 링크로 내보내지 않는다(2026-11-05 리뷰) */
   if (String(got.rows[0].form || '').startsWith('explain')) return res.status(409).json({ error: '확인·설명서는 초안 링크로 보내지 않습니다 - 만나서 설명하고 교부해 주세요' });
   const n = (trackCheck((got.rows[0] || {}).track || {}) || {}).shareN || 0;
@@ -442,7 +442,7 @@ async function revise(res, agent, user, b) {
   return res.status(200).json({ ok: true, id: rows[0] && rows[0].id });
 }
 
-/* '신고 마침' - 날인본에서 바꿀 수 있는 유일한 칸(0031 트리거가 이것만 통과시킨다).
+/* '신고 마침' - 확정본에서 바꿀 수 있는 유일한 칸(0031 트리거가 이것만 통과시킨다).
    on:false 면 되돌린다(잘못 눌렀을 때). 이 표시가 있으면 기한 알림이 멈춘다. */
 async function reported(res, agent, b) {
   const id = String(b.id || '');
@@ -468,8 +468,8 @@ export function 신고남은날(contractDate, 오늘 = 한국오늘()) {
    일정: 토지거래허가 약정일 · 토지거래허가 승인 예정일(신청일 포함 15영업일) · 계약일 · 중도금 · 잔금 ·
          실거래(임대차) 신고 기한(계약일 + 30일) · 법무사 예약(잔금일 7~10영업일 전 - 중개사마다 바꿀 수 있다).
    체크: 잔금안내(이체한도·준비서류) · 토지거래허가 신청 · 신고 마침(reported_at).
-   일정·체크는 계약서 본문(doc)이 아니라 track 칸에 둔다 - 날인본이어도 날짜는 바뀌고 체크는 늘어난다
-   (0032 트리거가 날인본에서도 track 만은 통과시킨다).
+   일정·체크는 계약서 본문(doc)이 아니라 track 칸에 둔다 - 확정본이어도 날짜는 바뀌고 체크는 늘어난다
+   (0032 트리거가 확정본에서도 track 만은 통과시킨다).
    화면(비버노크_프로토타입.html)에 같은 규칙이 한 벌 더 있다 - 검사(계약서.mjs)가 둘을 맞춰 본다. */
 
 /* 관공서 공휴일 - 「관공서의 공휴일에 관한 규정」, 대체공휴일 포함. 노동절(5/1)·제헌절(7/17)은 2026년부터 들어갔다.
@@ -534,7 +534,7 @@ export function 알림설정(x) {
     autoArch: o.autoArch === true };   /* 완료 · 취소 건 3개월 뒤 자동 보관함(2026-11-10 파트너 기획) */
 }
 /* 계약 하나의 일정·체크(track). 날짜 칸은 ISO 날짜만, 나머지는 켜짐/꺼짐만 받는다 - 다른 것은 버린다 */
-/* arch · trash (2026-11-10 대표님 결정 1번) - 보관함으로 내린 날 · 휴지통에 넣은 날. 날인본은 휴지통까지만, 작성 중은 휴지통 30일 뒤 지운다 */
+/* arch · trash (2026-11-10 대표님 결정 1번) - 보관함으로 내린 날 · 휴지통에 넣은 날. 확정본은 휴지통까지만, 작성 중은 휴지통 30일 뒤 지운다 */
 /* signDate (2026-11-17 파트너 D14 '계약체결일') - 일반 매매 · 임대차는 계약금 일부가 들어온 날(토지거래허가는 계약일과 같아 따로 적지 않는다) */
 const TRACK_DATES = ['permitDue', 'permitApplied', 'midDate', 'balanceDate', 'guideAt', 'permitPaid', 'permitAgreed', 'permitOk', 'piAt', 'arch', 'trash', 'signDate'];
 export const 진행상태 = { ready: '준비', doing: '진행중', done: '완료', hold: '보류', cancel: '취소' };
@@ -615,7 +615,7 @@ export function 의견들(x) {
   }
   return out;
 }
-/* 부속 서류(2026-11-05 파트너 리뷰) - 잔금정산서 금액 · 추가 항목 · 물품 인계 목록. 날인본이어도 적는다(track 안).
+/* 부속 서류(2026-11-05 파트너 리뷰) - 잔금정산서 금액 · 추가 항목 · 물품 인계 목록. 확정본이어도 적는다(track 안).
    금액은 0 초과 정수, 글은 짧게 자르고, 주민등록번호 모양이 든 글은 버린다 */
 const 부속돈 = v => { const n = Math.round(+v); return Number.isFinite(n) && n > 0 && n < 1e13 ? n : 0; };
 const 부속글 = (v, n) => { const s = String(v == null ? '' : v).replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, n); return 주민번호있나(s) ? '' : s; };
@@ -842,7 +842,7 @@ export function 일정목록(c, 설정 = 알림설정()) {
   if (ex && 임대차양식.includes(c.form)) out.push({ k: 'expiry', 날: 달빼기(ex, 6), 메모: `만기 ${ex} - 임대인·임차인의 갱신 의사를 확인하세요` });
   return out.map(e => ({ 이름: 알림종류[e.k], ...e })).sort((x, y) => (x.날 > y.날) - (x.날 < y.날));
 }
-/* 오늘 아침 알릴 것 - 이 계약 알림을 껐거나 그 항목을 껐으면 빼고, 신고 기한은 날인본에서 신고 전일 때만 */
+/* 오늘 아침 알릴 것 - 이 계약 알림을 껐거나 그 항목을 껐으면 빼고, 신고 기한은 확정본에서 신고 전일 때만 */
 export function 오늘알림(c, 설정, 오늘) {
   if (c.track && c.track.off) return [];
   return 일정목록(c, 설정)
@@ -884,7 +884,7 @@ async function state(res, agent, b) {
   return res.status(200).json({ ok: true, track: z.track });
 }
 
-/* 일정·체크 저장 - 날인본도 된다(트리거가 track 만 통과시킨다). 내 계약서만 */
+/* 일정·체크 저장 - 확정본도 된다(트리거가 track 만 통과시킨다). 내 계약서만 */
 async function track(res, agent, b) {
   const id = String(b.id || '');
   if (!UUID.test(id)) return res.status(400).json({ error: '어느 계약서인지 알 수 없습니다' });
@@ -955,7 +955,7 @@ export async function reportDueCron(req, res) {
   const 앞판 = new Set(rows.map(c => c.prev_id).filter(Boolean));
   /* 보관함 · 휴지통에 넣은 계약서는 알리지 않는다(2026-11-10) */
   const 살아있음 = rows.filter(c => c.agent_id && !앞판.has(c.id) && !(c.track && (c.track.arch || c.track.trash)));
-  /* 휴지통 30일이 지난 작성 중 계약서는 지운다 - 날인본은 휴지통에 남는다(지우지 않음) */
+  /* 휴지통 30일이 지난 작성 중 계약서는 지운다 - 확정본은 휴지통에 남는다(지우지 않음) */
   if (트랙) {
     /* 지우기 전에 그 계약서들의 현장 사진 파일부터 지운다(2026-11-12) */
     try {
@@ -1107,7 +1107,7 @@ async function scan(req, res, b, user) {
   }
 }
 
-/* 현장 체크리스트 사진 (2026-11-12) - 사무소 보관용. 날인본이어도 붙인다(track 안). 손님 · 초안 링크에는 나가지 않는다 */
+/* 현장 체크리스트 사진 (2026-11-12) - 사무소 보관용. 확정본이어도 붙인다(track 안). 손님 · 초안 링크에는 나가지 않는다 */
 const 현장경로 = (사무소, 계약, i) => `field/${사무소}/${계약}/${i}.jpg`;
 async function fieldPics(res, agent, b) {
   const id = String(b.id || ''); if (!UUID.test(id)) return res.status(400).json({ error: '어느 계약서인지 알 수 없습니다' });
@@ -1162,7 +1162,7 @@ export async function listingScan(req, res, user, b) {
   return scan(req, res, { files }, user);
 }
 
-/* 작성 중인 것만 지운다(영구 삭제). 날인본은 지우지 않는다(트리거도 막는다).
+/* 작성 중인 것만 지운다(영구 삭제). 확정본은 지우지 않는다(트리거도 막는다).
    2026-11-10 - 휴지통에 들어간 것만, 대표만 지운다(직원은 feed.js 대표만에서 막힌다) */
 async function del(res, agent, b) {
   const id = String(b.id || '');
@@ -1176,7 +1176,7 @@ async function del(res, agent, b) {
   if (!rows.length) {
     const 있나 = await db('bk_contract', `select=status,track&id=eq.${id}&agent_id=eq.${agent.id}&limit=1`);
     const 행 = (있나.rows || [])[0];
-    return res.status(409).json({ error: 행 && 행.status === 'draft' && 행.track && 행.track.room ? '손님 대화방이 있는 계약서는 지우지 않습니다 - 휴지통에 그대로 둡니다' : '날인본은 지울 수 없습니다' });
+    return res.status(409).json({ error: 행 && 행.status === 'draft' && 행.track && 행.track.room ? '손님 대화방이 있는 계약서는 지우지 않습니다 - 휴지통에 그대로 둡니다' : '확정본은 지울 수 없습니다' });
   }
   return res.status(200).json({ ok: true });
 }
@@ -1229,7 +1229,7 @@ export async function icsFeed(req, res) {
       if (e.날 < 부터 || (e.k === 'report' && (c.status !== 'sealed' || c.reported_at)) || (['expiry', 'settle', 'prep'].includes(e.k) && c.status !== 'sealed')) continue;
       if (e.k === 'settle' && c.track && ['done', 'cancel', 'hold'].includes(c.track.state)) continue;
       일들.push({ uid: `${c.id}-${e.k}-${e.날}`, 날: e.날, 끝: e.끝 && e.끝 > e.날 ? e.끝 : '', 제목: `${e.마침 ? '[마침] ' : ''}${e.이름} · ${c.title || '소재지 미입력'}`,
-        설명: `${e.메모}\n${c.status === 'sealed' ? '날인본' : '작성 중'} 계약서 - https://beaverknock.co.kr/#/partner/contract/${c.id}` });
+        설명: `${e.메모}\n${c.status === 'sealed' ? '확정본' : '작성 중'} 계약서 - https://beaverknock.co.kr/#/partner/contract/${c.id}` });
     }
   }
   const { 외부들, 외부일정 } = await import('./_ext.js');

@@ -47,7 +47,7 @@ ok(R.말다듬기('900101-1234567 입니다').error && R.말다듬기('  ').erro
 
 /* 2. 초대 → 들어오기 */
 let r = await 중({ what: 'room-invite', id: CID, side: 'buyer' });
-ok(r.code === 200 && R.초대표읽기(r.body.token) && 계약.track && 계약.track.room && r.body.room, '날인본에서 초대 링크를 만들면 방이 생긴다');
+ok(r.code === 200 && R.초대표읽기(r.body.token) && 계약.track && 계약.track.room && r.body.room, '확정본에서 초대 링크를 만들면 방이 생긴다');
 const 표 = r.body.token;
 /* 2026-11-13 파트너 기획 E4 '체결문자 단계부터 초대' - 작성 중에도 초대한다 · 휴지통의 계약서는 막는다 */
 { const 원 = 계약; 계약 = { ...원, status: 'draft' };
@@ -60,10 +60,10 @@ r = await 손(손님1, { what: 'invite-join', token: 표 });
 ok(r.code === 200 && r.body.id === CID && 계약.track.room.buyer.uid === 손님1.id, '손님이 링크로 들어오면 그 자리에 계정이 묶인다');
 ok((await 손(손님2, { what: 'invite-join', token: 표 })).code === 409, '다른 계정은 같은 자리에 들어오지 못한다');
 ok((await 손(손님1, { what: 'invite-join', token: 표 })).body.already === true, '같은 분이 다시 누르면 그냥 들어간다');
-/* 지난 계약 서류 다시 보기 (2026-11-13 E4) - 들어온 당사자만, 날인본만, 전화번호 · 생년월일은 가림 */
+/* 지난 계약 서류 다시 보기 (2026-11-13 E4) - 들어온 당사자만, 확정본만, 전화번호 · 생년월일은 가림 */
 { const 원 = 계약; 계약 = { ...원, doc: { form: 'sale', parties: { seller: { name: '김매도', phone: '010-1111-2222', birth: '1970-01-01' }, buyer: { name: '이매수', phone: '010-3333-4444' } } } };
   const r1 = await 손(손님1, { what: 'my-room-doc', id: CID }), 문 = JSON.stringify(r1.body.doc || {});
-  ok(r1.code === 200 && r1.body.sealed === true && /김매도/.test(문) && !/1111-2222|3333-4444|1970/.test(문) && /010-\*{4}-2222/.test(문), '손님 - 날인본 계약서를 보기 전용으로(전화번호 · 생년월일은 가림)');
+  ok(r1.code === 200 && r1.body.sealed === true && /김매도/.test(문) && !/1111-2222|3333-4444|1970/.test(문) && /010-\*{4}-2222/.test(문), '손님 - 확정본 계약서를 보기 전용으로(전화번호 · 생년월일은 가림)');
   ok((await 손(손님2, { what: 'my-room-doc', id: CID })).code === 403, '손님 - 이 계약에 들어오지 않은 계정은 계약서를 못 본다');
   계약 = { ...계약, status: 'draft' };
   const r2 = await 손(손님1, { what: 'my-room-doc', id: CID });

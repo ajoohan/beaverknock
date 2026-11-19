@@ -115,7 +115,7 @@ ok(r.code === 200 && 계약.track.guideAt && r.body.track && r.body.track.guideA
      '일정 - 매매만 잔금 10일 전 "잔금 준비물 안내", 잔금안내를 했으면 마침');
   ok(C.오늘알림({ form: 'sale', status: 'sealed', bd: '2026-12-20', track: {} }, C.알림설정(), '2026-12-10').some(e => e.k === 'prep')
      && !C.오늘알림({ form: 'sale', status: 'sealed', bd: '2026-12-20', track: { guideAt: '2026-12-01' } }, C.알림설정(), '2026-12-10').some(e => e.k === 'prep')
-     && !C.오늘알림({ form: 'sale', status: 'draft', bd: '2026-12-20', track: {} }, C.알림설정(), '2026-12-10').some(e => e.k === 'prep'), '아침 알림 - 날인본 · 안내 전일 때 그날 아침 한 번'); }
+     && !C.오늘알림({ form: 'sale', status: 'draft', bd: '2026-12-20', track: {} }, C.알림설정(), '2026-12-10').some(e => e.k === 'prep'), '아침 알림 - 확정본 · 안내 전일 때 그날 아침 한 번'); }
 
 /* 4. 달력 구독 */
 const 표 = C.달력표(AID, 0);

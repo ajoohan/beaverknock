@@ -2,7 +2,7 @@
    ── 왜 있나 ──
    ① 주민등록번호는 어디에도 저장되면 안 된다. 화면이 칸을 안 만들어도, 특약 글 속에 적거나
       바로 찔러 넣는 길이 있다 - 서버가 모양을 보고 거절해야 한다.
-   ② 날인본은 고치지도 지우지도 못한다. 서버는 '작성 중' 인 것만 고치고, 지문은 서버가 DB 의 doc 으로 낸다.
+   ② 확정본은 고치지도 지우지도 못한다. 서버는 '작성 중' 인 것만 고치고, 지문은 서버가 DB 의 doc 으로 낸다.
    ③ 문서는 조항을 빼면 번호가 당겨진다. 다른 조항을 가리키는 말이 엉뚱한 번호를 가리키면 안 된다.
    ④ 금액은 숫자와 한글이 같은 말을 해야 한다. 잔금은 보증금에서 계약금·중도금을 뺀 값이다. */
 import fs from 'node:fs';
@@ -68,7 +68,7 @@ const html = 길.html(), js = 길.js(), css = 길.css();
   ok(불린[0].m === 'PATCH' && /agent_id=eq\.1111/.test(불린[0].u) && /status=eq\.draft/.test(불린[0].u), '고칠 때는 내 것·작성 중인 것만 고친다');
   답 = () => new Response('[]', { status: 200 });
   ({ res } = await 돌려({ what: 'contract-save', id: '33333333-3333-3333-3333-333333333333', form: 'home-lease', doc }));
-  ok(res.code === 409, '날인본(0행)이면 409 - 새 판을 만들라고 한다');
+  ok(res.code === 409, '확정본(0행)이면 409 - 새 판을 만들라고 한다');
 
   /* 확정: DB 에 있는 doc 으로 지문을 낸다 - 화면이 보낸 값은 쓰지 않는다 */
   const db도c = { ...doc, property: { road: 'DB 에 저장된 주소' }, deal: { deposit: 100000000, down: 10000000, balanceDate: '2026-12-01' }, contractDate: '2026-11-06' };
@@ -109,11 +109,11 @@ const html = 길.html(), js = 길.js(), css = 길.css();
   ({ res } = await 돌려({ what: 'contract-save', form: 'home-lease', doc, proposal_id: 제안 }));
   ok(JSON.parse(불린[1].b).proposal_id === 제안, '내 제안이면 잇는다');
   답 = () => new Response(JSON.stringify([{ id: 'x', status: 'sealed', doc: db도c }]), { status: 200 });
-  ok((await 돌려({ what: 'contract-seal', id: '33333333-3333-3333-3333-333333333333' })).res.code === 409, '이미 날인본이면 다시 확정하지 않는다');
+  ok((await 돌려({ what: 'contract-seal', id: '33333333-3333-3333-3333-333333333333' })).res.code === 409, '이미 확정본이면 다시 확정하지 않는다');
 
   답 = () => new Response('[]', { status: 200 });
   ({ res } = await 돌려({ what: 'contract-del', id: '33333333-3333-3333-3333-333333333333' }));
-  ok(불린[0].m === 'DELETE' && /status=eq\.draft/.test(불린[0].u) && res.code === 409, '지우기는 작성 중인 것만 - 날인본이면 409');
+  ok(불린[0].m === 'DELETE' && /status=eq\.draft/.test(불린[0].u) && res.code === 409, '지우기는 작성 중인 것만 - 확정본이면 409');
 
   답 = () => new Response(JSON.stringify([{ id: 'old', form: 'home-lease', title: 't', doc: db도c, proposal_id: null }]), { status: 200 });
   ({ res } = await 돌려({ what: 'contract-revise', id: '33333333-3333-3333-3333-333333333333' }));
@@ -136,7 +136,7 @@ const html = 길.html(), js = 길.js(), css = 길.css();
 {
   const sql = fs.readFileSync(new URL('../../beaverknock-app/supabase/migrations/0031_contract.sql', import.meta.url), 'utf8');
   ok(/enable row level security/.test(sql) && !/create policy/i.test(sql), '표는 RLS 를 켜고 정책을 두지 않는다 - 서버만 닿는다');
-  ok(/before update or delete on public\.bk_contract/.test(sql) && /old\.status = 'sealed'/.test(sql), '날인본은 DB 트리거가 고침·지움을 막는다');
+  ok(/before update or delete on public\.bk_contract/.test(sql) && /old\.status = 'sealed'/.test(sql), '확정본은 DB 트리거가 고침·지움을 막는다');
   ok(/old\.status = 'sealed'\s+and exists \(select 1 from public\.bk_agent a where a\.id = old\.agent_id\)/.test(sql),
      '중개사 계정이 지워지는 연쇄 삭제는 막지 않는다 - 막으면 탈퇴·파기 자체가 실패한다');
   ok(!/rrn|jumin|주민등록번호\s+text/i.test(sql), '주민번호 칸이 없다');
@@ -369,7 +369,7 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
      '계약서에서: 상가 → 비주거용 · 주택 → 주거용 · 매매는 건물 용도로 · 건물 없으면 토지');
   const 상 = M.ctDocHTML(M.exNewDoc({ ...M.ctNewDoc('shop-lease'), __id: 'x' }));
   ok(/중개대상물 확인ㆍ설명서\[Ⅱ\] \(비주거용 건축물\)/.test(상) && /\[√\]상업용/.test(상) && /\[√\]임대/.test(상) && !/주택 유형/.test(상), '상가 계약서에서 만든 비주거용 - 상업용·임대에 표시');
-  ok(/case 'ex-form': if\(CT\.doc && EX_FORMS\[v\] && !\(CT\.row && CT\.row\.status === 'sealed'\)\)/.test(js), '서식 바꾸기는 날인본에서 막는다');
+  ok(/case 'ex-form': if\(CT\.doc && EX_FORMS\[v\] && !\(CT\.row && CT\.row\.status === 'sealed'\)\)/.test(js), '서식 바꾸기는 확정본에서 막는다');
 }
 
 /* ── 거래신고 도우미 (2단계) - 별지 제1호서식(2026. 2. 6.) · 별지 제5호의2서식(2023. 12. 29.) ── */
@@ -435,7 +435,7 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
   await C.contractRoute({}, res, agent, user, { what: 'contract-reported', id: '33333333-3333-3333-3333-333333333333' });
   const 본 = JSON.parse(불린[0].b);
   ok(불린[0].m === 'PATCH' && /status=eq\.sealed/.test(불린[0].u) && /form=in\.\(sale,presale,union,home-lease,lease\)/.test(불린[0].u) && Object.keys(본).join() === 'reported_at' && 본.reported_at,
-     '신고 마침은 내 날인본 · 매매(분양권·입주권 포함)·주택임대차에만 · reported_at 한 칸만 바꾼다');
+     '신고 마침은 내 확정본 · 매매(분양권·입주권 포함)·주택임대차에만 · reported_at 한 칸만 바꾼다');
   res = 응답(); 불린 = [];
   await C.contractRoute({}, res, agent, user, { what: 'contract-reported', id: '33333333-3333-3333-3333-333333333333', on: false });
   ok(JSON.parse(불린[0].b).reported_at === null, '표시 취소는 reported_at 을 비운다');
@@ -491,7 +491,7 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
   ok(res.code === 200 && 메일 && 메일.length === 1 && 메일[0].to[0] === 'agent1@example.com' && /오늘 챙기실 계약 일정이 3건/.test(메일[0].subject)
      && 메일[0].html.includes('잠실 아파트') && 메일[0].html.includes('미사 802호') && 메일[0].html.includes('잔금 사흘 전')
      && !메일[0].html.includes('알릴 날 아님') && !메일[0].html.includes('새 판으로 바뀐 앞 판') && !메일[0].html.includes('작성 중인 새 판'),
-     '메일은 중개사별 하루 한 통 - 신고 기한(날인본·신고 전) · 잔금 3일 전(작성 중도) · 새 판으로 바뀐 앞 판은 뺀다');
+     '메일은 중개사별 하루 한 통 - 신고 기한(확정본·신고 전) · 잔금 3일 전(작성 중도) · 새 판으로 바뀐 앞 판은 뺀다');
   ok(메일[0].html.includes('잔금안내(이체한도·준비서류) 전입니다') && /알림 설정/.test(메일[0].text), '잔금 알림에 잔금안내 여부 · 메일에 알림 설정 안내');
   ok(불린.filter(x => /bk_agent/.test(x.u) && !/ext:settings->ext/.test(decodeURIComponent(x.u))).every(x => /select=id,name,phone,alert:settings->alert&/.test(decodeURIComponent(x.u))),
      '중개사는 알림 설정만 꺼내 읽는다 - settings 통째(내 특약 문구 최대 200개)를 날마다 끌어오지 않는다');
@@ -544,7 +544,7 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
   ok((설정.crons || []).some(c => c.path === '/api/feed?cron=report-due' && c.schedule === '0 0 * * *'), '예약 실행: 매일 UTC 0시(한국 9시) /api/feed?cron=report-due');
   const feed = fs.readFileSync(new URL('../api/feed.js', import.meta.url), 'utf8');
   ok(feed.indexOf("req.query.cron === 'report-due'") < feed.indexOf("if (req.method !== 'POST')"), '예약 실행 갈래는 POST 문 앞에 있다(GET 으로 온다)');
-  ok(/case 'ct-reported':/.test(js) && /신고 안 한 날인본/.test(js) && /badge b-warn">신고 전/.test(js), '화면: 신고 마침 단추 · 목록 배지(신고 전/마침) · 대시보드 할 일');
+  ok(/case 'ct-reported':/.test(js) && /신고 안 한 확정본/.test(js) && /badge b-warn">신고 전/.test(js), '화면: 신고 마침 단추 · 목록 배지(신고 전/마침) · 대시보드 할 일');
 }
 
 /* ── 약관 · 처리방침 ── */
@@ -560,7 +560,7 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
 /* ── 양쪽에서 적기 · 필수 항목 · 임시저장 (2026-11-06 대표님) ── */
 {
   ok(/id="ctPv">\$\{ct책상HTML\(doc\)\}/.test(js) && /box\.innerHTML = typeof html === 'string' \? html : ct보기HTML\(CT\.doc\);/.test(js) && /CT편집칸 = !ctSealed\(\) && CT\.mode !== 'extra';\s*try\{ return ct보기HTML\(doc\); \} finally \{ CT편집칸 = false; \}/.test(js),
-     '바로 적는 칸은 PC 책상 미리보기에서만 - 인쇄 · 날인본 · 부속 서류는 종이 그대로');
+     '바로 적는 칸은 PC 책상 미리보기에서만 - 인쇄 · 확정본 · 부속 서류는 종이 그대로');
   ok(/if\(pv\.contains\(document\.activeElement\)\)\{ CT\.pvStale = true; return; \}/.test(js),
      '오른쪽 서류에서 적는 중에는 미리보기를 다시 그리지 않는다(커서 지킴)');
   ok(/ctSet\(CT\.doc, path, 글\); const L = 왼\('ct:' \+ path\); if\(L\) L\.value = 글;/.test(js) && /const L = 왼\('ct\$:' \+ path\); if\(L\) L\.value = n \? comma\(String\(n\)\) : '';/.test(js),
@@ -654,7 +654,7 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
   ok(res.code === 404 && !불린.some(x => x.m === 'PATCH'), '끊긴 링크(링크 번호가 다름)로는 의견을 못 남긴다');
   지금 = { track: { tv: 5 }, status: 'sealed' };
   res = await 보내({ who: '매수인', text: '확인' });
-  ok(res.code === 409 && !불린.some(x => x.m === 'PATCH'), '날인본에는 의견을 못 남긴다');
+  ok(res.code === 409 && !불린.some(x => x.m === 'PATCH'), '확정본에는 의견을 못 남긴다');
   /* 중개사 일정 저장은 의견을 덮지 않는다 · 읽은 판 그대로일 때만 */
   지금 = { track: { tv: 3, notes: [{ i: 'abcdef0123', at: '2026-11-06T10:00', who: '매도인', name: '', text: '확인했습니다' }] } };
   const agent = { id: '11111111-1111-1111-1111-111111111111', role: 'agent' };
@@ -735,9 +735,9 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
   ok(/CT\.dirty = false; CT\.doc = null; CT\.id = null; CT\.row = null;/.test(js), '나가기를 고르면 버린 고침을 메모리에서도 버린다 - 다시 열면 서버 판');
   ok(/case 'ct-kind': if\(CT\.doc && !ctSealed\(\)\)/.test(js) && /case 'ct-vat': if\(CT\.doc && !ctSealed\(\)\)/.test(js) && /case 'ct-deal': if\(CT\.doc && !ctSealed\(\)\)/.test(js)
      && /'ct-kind', false, 잠김\)/.test(js) && /data-v="\$\{esc\(v\)\}" \$\{off\?'disabled':''\}/.test(js),
-     '날인본은 칩(계약 종류·전월세·부가세)으로도 못 바꾼다 - 처리기도 막고 칩도 꺼 둔다');
+     '확정본은 칩(계약 종류·전월세·부가세)으로도 못 바꾼다 - 처리기도 막고 칩도 꺼 둔다');
   ok(/const 판 = CT\.rev \|\| 0;\s*CT\.saving = true; render\(\);/.test(js) && /if\(\(CT\.rev \|\| 0\) !== 판\)\{ const id = CT\.id; CT\.id = null; ctOpen\(id\);/.test(js),
-     '확정하는 사이 적은 것이 있으면 확정 뒤 날인본을 다시 불러와 화면·인쇄를 날인본과 맞춘다');
+     '확정하는 사이 적은 것이 있으면 확정 뒤 확정본을 다시 불러와 화면·인쇄를 확정본과 맞춘다');
   ok(/r\.proposal_id === v && r\.status === 'draft' && !\(CT_FORMS\[r\.form\] \|\| \{\}\)\.explain/.test(js), "제안의 '계약서 만들기' 는 확인·설명서 초안을 열지 않는다");
   ok(/F\.explain \? exEditor\(doc\) \+ \(잠김\|\|!CT\.id \? '' : `<button class="tapx" data-act="ct-trash-cur"/.test(js), 'PC 에서도 확인·설명서를 휴지통으로 옮길 수 있다');
   ok(/const 자리 = CT\.스크롤키 === 키 && CT\.스크롤문서 === doc \?/.test(js) && !/const 키 = \(CT\.id \|\| 'new'\)/.test(js), '스크롤 자리는 문서에 붙는다 - 처음 저장·확정해도 맨 위로 튀지 않는다');
@@ -845,7 +845,7 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
      '서류마다 받는 곳으로 바로(세움터 발급 · 토지이음 열람 화면) · 인터넷등기소는 메뉴 이름까지 · 건축물대장은 표제부·전유부 둘');
 
   /* 목록 찾기 */
-  ok(/data-in="ctq"/.test(js) && /function ctFilter\(rows\)/.test(js) && /data-act="ctq-st"/.test(js), '계약서 목록을 소재지·이름·종류·날짜로 찾는다 · 작성 중/날인본으로 거른다');
+  ok(/data-in="ctq"/.test(js) && /function ctFilter\(rows\)/.test(js) && /data-act="ctq-st"/.test(js), '계약서 목록을 소재지·이름·종류·날짜로 찾는다 · 작성 중/확정본으로 거른다');
 }
 
 /* ── 갱신계약 - 원래 계약서는 그대로 (2026-10-30) ── */
@@ -935,13 +935,13 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
      && 오늘것(표본[0], '2026-11-07') === 'permitDue:3' && 오늘것(표본[0], '2026-11-24') === 'permitExpect:0' && 오늘것(표본[0], '2026-11-01') === 'contract:1',
      '알릴 날 - 계약일 전날·당일, 잔금 7·3일 전·당일, 허가 약정일 3일 전·당일, 승인 예정일 당일, 법무사 예약 시작일');
   ok(오늘것(표본[0], '2026-11-25') === 'report:7' && 오늘것({ ...표본[0], status: 'draft' }, '2026-11-25') === '' && 오늘것({ ...표본[0], reported_at: '2026-11-20' }, '2026-11-25') === '',
-     '신고 기한 알림은 날인본·신고 전일 때만');
+     '신고 기한 알림은 확정본·신고 전일 때만');
   ok(오늘것(표본[3], '2027-02-15') === '' && 오늘것(표본[0], '2026-12-14', C.알림설정({ off: ['balance'] })) === '', '이 계약 알림을 끄거나 그 항목을 끄면 보내지 않는다');
   ok(C.알림제목({ k: 'balance', 이름: '잔금', 남음: 3 }) === '잔금 3일 전' && C.알림제목({ k: 'contract', 이름: '계약일', 남음: 1 }) === '계약일 전날'
      && C.알림제목({ k: 'mid', 이름: '중도금', 남음: 0 }) === '중도금 당일' && C.알림제목({ k: 'lawyer', 남음: 0 }) === '법무사 예약할 때입니다'
      && C.날짜글('2026-12-18') === '2026. 12. 18.(금)', '알림 제목 · 날짜 글');
 
-  /* 일정·체크 저장 - 날인본도, 내 계약서만, track 한 칸만 */
+  /* 일정·체크 저장 - 확정본도, 내 계약서만, track 한 칸만 */
   const 응답 = () => { const r = { code: 0, body: null }; r.status = c => (r.code = c, r); r.json = b => (r.body = b, r); return r; };
   let 불린 = [], 답 = () => new Response('[{"id":"x"}]', { status: 200 });
   globalThis.fetch = async (u, o = {}) => { 불린.push({ u: String(u), m: o.method || 'GET', b: o.body }); return 답(u, o); };
@@ -951,7 +951,7 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
   await C.contractRoute({}, res, agent, user, { what: 'contract-track', id: '33333333-3333-3333-3333-333333333333', track: { guideAt: '2026-12-10', 뭐: 1 } });
   { const 패 = 불린.find(x => x.m === 'PATCH');
   ok(res.code === 200 && 패 && /agent_id=eq\.11111111/.test(패.u) && !/status=eq/.test(패.u) && /select=id/.test(패.u)
-     && JSON.stringify(JSON.parse(패.b)) === '{"track":{"guideAt":"2026-12-10","tv":1}}', '일정·체크 저장 - 내 계약서의 track 한 칸만(날인본도 된다)'); }
+     && JSON.stringify(JSON.parse(패.b)) === '{"track":{"guideAt":"2026-12-10","tv":1}}', '일정·체크 저장 - 내 계약서의 track 한 칸만(확정본도 된다)'); }
   /* 링크 번호는 끊기만 올린다 - 오래된 track 저장(shareN 없음·0)이 끊은 링크를 되살리지 않는다(2026-11-05 리뷰) */
   { const 앞답 = 답; 답 = (u, o) => (o && o.method === 'PATCH') ? new Response('[{"id":"x"}]', { status: 200 }) : new Response('[{"track":{"shareN":3,"off":true}}]', { status: 200 });
     res = 응답(); 불린 = [];
@@ -1002,7 +1002,7 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
   const sql = fs.readFileSync(new URL('../../beaverknock-app/supabase/migrations/0032_contract_track.sql', import.meta.url), 'utf8');
   ok(/add column if not exists track jsonb not null default '\{\}'::jsonb/.test(sql) && /add column if not exists settings jsonb not null default '\{\}'::jsonb/.test(sql)
      && /\(to_jsonb\(new\) - 'reported_at' - 'updated_at' - 'track'\) = \(to_jsonb\(old\) - 'reported_at' - 'updated_at' - 'track'\)/.test(sql)
-     && /raise exception '날인본은 고칠 수 없습니다/.test(sql), '0032 - track·settings 칸 · 날인본도 track 은 바꾸고 나머지는 여전히 막는다');
+     && /raise exception '날인본은 고칠 수 없습니다/.test(sql), '0032 - track·settings 칸 · 확정본도 track 은 바꾸고 나머지는 여전히 막는다');
   delete process.env.BK_URL; delete process.env.BK_SECRET_KEY;
 }
 
@@ -1091,7 +1091,7 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
   const e = M.exNewDoc(d, 'explain-home');
   ok(e.font === 'sans' && /class="ctdoc exdoc f-sans"/.test(M.exDocHTML(e)) && !('font' in M.exNewDoc(옛, 'explain-home')), '계약서에서 만든 확인·설명서는 그 계약서의 글꼴을 따른다');
   ok(/\.ctdoc\.f-sans\{font-family:var\(--font\)\}/.test(css) && /data-act="ct-font"/.test(js) && /case 'ct-font':/.test(js) && /\$\{ct글꼴칸\(doc, 잠김\)\}/.test(js),
-     '고딕은 사이트 글꼴(어느 기기에서 찍어도 같다) · 미리보기 위에서 고른다 · 날인본은 못 바꾼다');
+     '고딕은 사이트 글꼴(어느 기기에서 찍어도 같다) · 미리보기 위에서 고른다 · 확정본은 못 바꾼다');
 }
 
 /* ── 계약서 작성 화면 (2026-10-30 대표님 '완성도 있게 · 단추는 배경색 상자로 더 구분 · 필요하면 모션') ──
@@ -1258,7 +1258,7 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
   ok(화 && 서 && 화.날 === '2028-05-30' && 서.날 === 화.날 && 화.이름 === '임대차 만기 6개월 전', '임대차 만기 6개월 전 알림 - 화면·서버 같은 날');
   ok(C.달빼기('2027-08-31', 6) === '2027-02-28' && !M.ct일정목록({ ...자료, form: 'sale' }).some(e => e.k === 'expiry'), '말일은 그 달 말일로 · 매매에는 만기 알림이 없다');
   ok(C.오늘알림({ ...자료, status: 'draft' }, C.알림설정(), '2028-05-30').every(e => e.k !== 'expiry')
-     && C.오늘알림({ ...자료, status: 'sealed' }, C.알림설정(), '2028-05-30').some(e => e.k === 'expiry'), '만기 알림은 날인본만 보낸다');
+     && C.오늘알림({ ...자료, status: 'sealed' }, C.알림설정(), '2028-05-30').some(e => e.k === 'expiry'), '만기 알림은 확정본만 보낸다');
 
   /* 자주 쓰는 단지 */
   let dj = C.단지고침([], { op: 'put', name: '미사강변센트럴자이', road: '경기도 하남시 미사강변대로 220', v: { guard: '있음', feeItems: ['전기료', '수도료'], bad: { x: 1 }, 'ex.evil': 'x', memo: '900101-1234567' } }, 때);
@@ -1280,7 +1280,7 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
   ok(/data-act="ctk-state"/.test(js) && /r\.track && CT_진행\[r\.track\.state\]/.test(js), '일정·체크에서 진행 상태를 고르고 목록에 보인다');
 
   /* 확정 후 수정 · 수정됨 · 단기임대 · 개인정보 동의서 */
-  ok(/r\.prev_id \? ' · 확정 후 수정'/.test(js) && /data-act="ct-open-prev">확정 후 수정한 판 · 앞 날인본 보기/.test(js), '확정 후 수정한 판 표시와 앞 날인본으로 가는 단추(판 사슬 = 수정 이력)');
+  ok(/r\.prev_id \? ' · 확정 후 수정'/.test(js) && /data-act="ct-open-prev">확정 후 수정한 판 · 앞 확정본 보기/.test(js), '확정 후 수정한 판 표시와 앞 확정본으로 가는 단추(판 사슬 = 수정 이력)');
   ok(/CT\.doc\.edited = \{ \.\.\.\(CT\.doc\.edited \|\| \{\}\), \[path\]: 원 \}/.test(js) && /수정됨 · 자동으로 채운 값/.test(js), '자동으로 채운 칸을 고치면 수정됨과 원래 값을 남긴다');
   ok(/\['m6', '6개월'\], \['m3', '3개월'\]/.test(js) && /function ct기간끝/.test(js), '단기임대 - 6개월·3개월 종료일');
   ok(/function ctPrivacyDocHTML/.test(js) && /보유·이용 기간/.test(js) && /동의를 거부할 권리/.test(js), '개인정보 수집·이용 동의서 - 목적·항목·보유 기간·거부권');
@@ -1314,13 +1314,13 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
   ok(C.일정목록({ form: 'presale', cd: '2026-11-05', track: {} }).find(e => e.k === 'report').이름 === '실거래신고 기한', '분양권 신고 기한 알림은 실거래신고 기한');
   ok(js.includes("잔금칸(잔금지연, '잔금 지연?'") && js.includes("잔금칸(오늘잔금, '오늘 잔금 - 완료 확인'") && js.includes('오후3시 = 지금시.getUTCHours() >= 15') && js.includes("!['done', 'cancel', 'hold'].includes((r.track || {}).state)"),
      '대시보드 할 일 - 잔금일 15시부터 완료 확인 · 지나면 잔금 지연(완료·취소·보류면 사라짐)');
-  ok(js.includes("return 잔 < 오늘 && 잔 >= ct날더하기(오늘, -60) && 시 >= 9 ? 'late' : '';"), '잔금 지연은 잔금일이 60일 안에 지난 것만 - 예전 날인본이 쌓이지 않는다');
+  ok(js.includes("return 잔 < 오늘 && 잔 >= ct날더하기(오늘, -60) && 시 >= 9 ? 'late' : '';"), '잔금 지연은 잔금일이 60일 안에 지난 것만 - 예전 확정본이 쌓이지 않는다');
   ok(js.includes('const id = CT.id, 그때 = CT.track;') && js.includes('(CT.id === id ? CT.track : 그때) || {}'),
      '일정 저장 대기 중 다른 계약서로 넘어가도 앞 계약서에 빈 track 을 보내지 않는다');
   ok(js.includes('function exStateHTML(doc, s)') && js.includes('${esc(s.h)}${exStateHTML(doc, s)}') && js.includes('입력 필요 ${키.length - 채움}칸'), '확인·설명서 항목마다 입력 필요 칸 수 · 서류에서 채운 칸 수');
 }
 
-/* ── 보관함 · 휴지통 (2026-11-10 대표님 결정 1번 - 날인본은 휴지통까지만, 작성 중은 30일 뒤 지움, 영구 삭제는 대표만) ── */
+/* ── 보관함 · 휴지통 (2026-11-10 대표님 결정 1번 - 확정본은 휴지통까지만, 작성 중은 30일 뒤 지움, 영구 삭제는 대표만) ── */
 {
   const feed = fs.readFileSync(new URL('../api/feed.js', import.meta.url), 'utf8');
   const t = C.trackCheck({ arch: '2026-11-10', trash: '2026-11-10' });
@@ -1328,7 +1328,7 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
   ok(/case 'contract-bin':\s+await bin\(res, agent, b\)/.test(길.read ? '' : fs.readFileSync(new URL('../api/_contract.js', import.meta.url), 'utf8')), '서버 contract-bin - 보관함 · 휴지통으로 옮기고 되돌린다');
   ok(/'contract-del'[^\]]*\]\.includes\(w\)/.test(feed), '영구 삭제(contract-del)는 대표만 - 직원은 막는다');
   ok(js.includes("const ct보관칸 = r =>") && js.includes("data-act=\"ct-bin-tab\"") && js.includes("'ct-purge', id, '영구 삭제'") && js.includes("r.status === 'sealed' ? ''") && /r\.track && r\.track\.room \? `<span class="ct-rnote">손님 대화방이 있어 지우지 않습니다/.test(js) && js.includes(": 직원() ? `<span class=\"ct-rnote\">${ct휴지남은날(r)}일 뒤 지워짐"),
-     '목록 · 보관함 · 휴지통 칸 - 휴지통의 날인본 · 대화방이 있는 계약서는 영구 삭제 단추가 없고, 직원에게는 남은 날만 보인다');
+     '목록 · 보관함 · 휴지통 칸 - 휴지통의 확정본 · 대화방이 있는 계약서는 영구 삭제 단추가 없고, 직원에게는 남은 날만 보인다');
   { const 서 = fs.readFileSync(new URL('../api/_contract.js', import.meta.url), 'utf8');
     ok(/status=eq\.draft&track->room=is\.null`, \{\s*method: 'DELETE'/.test(서) && (서.match(/track->>trash=lt\.\$\{날더하기\(오늘, -30\)\}&track->room=is\.null/g) || []).length === 2,
        '손님 대화방이 열린 작성 중 계약서는 영구 삭제 · 휴지통 30일 자동 삭제에서 빠진다(대화 · 파일이 주인 없이 남지 않게)'); }
@@ -1354,7 +1354,7 @@ ok(js.includes("what:'listing-bld'") && js.includes('S.form.lbun = a.bun') && js
   const 서버 = fs.readFileSync(new URL('../api/_contract.js', import.meta.url), 'utf8');
   ok(서버.includes("entry:doc->>entry") && !서버.includes("src:doc->>src"), '목록에 직접 입력 표시(src)를 같이 준다');
   ok(js.includes("S.modal = { type:'ct-quick'") && js.includes("doc.entry = 'manual'") && js.includes("case 'ct-quick': ctQuickOpen();") && js.includes("case 'ctq-save': ctQuickSave();"), '계약현황 직접 추가 - 작성 중 계약서로 만든다');
-  ok(js.includes('data-act="ct-qedit"') && js.includes("if(m.sealed || 전.balanceDate) 넣('balanceDate'") && js.includes("넣('signDate', 날(f.sd))"), '표에서 고치기 - 날인본은 날짜만 일정으로, 계약체결일은 언제나 일정');
+  ok(js.includes('data-act="ct-qedit"') && js.includes("if(m.sealed || 전.balanceDate) 넣('balanceDate'") && js.includes("넣('signDate', 날(f.sd))"), '표에서 고치기 - 확정본은 날짜만 일정으로, 계약체결일은 언제나 일정');
   ok(js.includes("r.entry === 'manual' ? '<small class=\"ct-tag\">직접 입력</small>'"), '직접 입력한 줄은 표에 표시'); }
 
 /* ── 계약서 전체화면 보기 (2026-11-17 대표님) ── */
@@ -1474,9 +1474,9 @@ ok(js.includes('name0: 쪽[0].name, bytes0: 쪽[0].bytes') && js.includes('if(!C
 
 ok(js.includes("if(!n && 왼쪽칸) return ct대장오류();") && js.includes("에 지급하며${CT편집칸 ? ct중도단추(D) : ''}</td></tr>") && js.includes("case 'phr-list':") && js.includes('더 보기 +${남}</button>') && js.includes('async function 줄이기(file, 장수 = 1){') && css.includes('.ct-secst{min-height:28px}'), '작성 화면 다듬기 - 공적장부 안내 한 곳 · 중도금 단추 줄 안 · 내 특약으로 담기 · 더 보기 · 여러 장이면 더 줄임 (2026-11-19 UI 점검)');
 
-ok(js.includes("ctDocHTML({ ...j.doc, __sealedAt: j.sealed_at || '' })") && js.includes("if(!(+CT.doc.deal.mid > 0)) return toast('중도금(1차) 금액을 먼저 적어 주세요") && js.includes('function 같은지번(글, a){') && js.includes('function ct지울까(있음, 제목, 하기){') && js.includes("aria-label=\"작성 방식\"") && js.includes("return [소재, 상세, 부분].filter(Boolean).join(' ')"), '점검 - 날인본 도로명 줄 · 2차는 1차 뒤 · 같은 지번만 읽은 소재지 유지 · 빼기 전 확인 · 머리 단추는 고른 배치 · 부속 서류 부동산 표시 (2026-11-19 리뷰)');
+ok(js.includes("ctDocHTML({ ...j.doc, __sealedAt: j.sealed_at || '' })") && js.includes("if(!(+CT.doc.deal.mid > 0)) return toast('중도금(1차) 금액을 먼저 적어 주세요") && js.includes('function 같은지번(글, a){') && js.includes('function ct지울까(있음, 제목, 하기){') && js.includes("aria-label=\"작성 방식\"") && js.includes("return [소재, 상세, 부분].filter(Boolean).join(' ')"), '점검 - 확정본 도로명 줄 · 2차는 1차 뒤 · 같은 지번만 읽은 소재지 유지 · 빼기 전 확인 · 머리 단추는 고른 배치 · 부속 서류 부동산 표시 (2026-11-19 리뷰)');
 
-ok(css.includes('html body.mo table.ec tr{display:grid;grid-template-columns:64px minmax(0,1fr)') && css.includes('html body.mo .inp.ec-in{flex:1 1 90px;min-width:0;width:auto!important;height:44px') && css.includes('body.mo .scan-slot{flex-direction:column') && js.includes('const ct옛날인 = doc =>') && js.includes("+D.mid2 > 0 || (CT편집칸 && D.mid2On)"), '휴대폰 입력 표 · 서류 카드 · 옛 날인본만 도로명 줄 · 2차만 적은 중도금 인쇄 (2026-11-19 UI 점검 · 리뷰)');
+ok(css.includes('html body.mo table.ec tr{display:grid;grid-template-columns:64px minmax(0,1fr)') && css.includes('html body.mo .inp.ec-in{flex:1 1 90px;min-width:0;width:auto!important;height:44px') && css.includes('body.mo .scan-slot{flex-direction:column') && js.includes('const ct옛날인 = doc =>') && js.includes("+D.mid2 > 0 || (CT편집칸 && D.mid2On)"), '휴대폰 입력 표 · 서류 카드 · 옛 확정본만 도로명 줄 · 2차만 적은 중도금 인쇄 (2026-11-19 UI 점검 · 리뷰)');
 
 ok(!js.includes('나란히 보기</button>') && js.includes("[['info', '칸 입력'], ['form', F.explain ? '양식에 직접 입력' : '계약서에 직접 입력']]") && js.includes("ct배치바꿈('info'); toast('이 칸은 입력 칸에서 적습니다") && css.includes('.ctx-body.lay-extra{grid-template-columns:minmax(0,1fr)'), '작성 방식은 칸 입력 · 계약서에 직접 입력 두 가지 - 나란히 보기 없음 · 부속 서류는 위아래 (2026-11-19 파트너)');
 

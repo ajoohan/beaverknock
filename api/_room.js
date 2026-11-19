@@ -1,7 +1,7 @@
 /* 계약진행 대화방 (2026-11-06 · 파트너 기획 '확정하면 당사자에게 가입 초대 → 가입하면 계약진행 채팅방')
  *
  * ── 어떻게 ──
- *  ① 중개사가 날인본 계약서에서 당사자(매도인 · 매수인 · 임대인 · 임차인 …)마다 초대 링크를 만든다(14일).
+ *  ① 중개사가 확정본 계약서에서 당사자(매도인 · 매수인 · 임대인 · 임차인 …)마다 초대 링크를 만든다(14일).
  *     링크는 문자 · 카톡으로 보낸다(심사 통과한 알림톡 틀이 있으면 그것으로도 - SOLAPI_TPL_INVITE).
  *  ② 손님이 링크를 열고 로그인하면 그 자리(side)에 손님 계정이 묶인다 - 한 자리에 한 계정.
  *  ③ **방은 당사자마다 따로다** (2026-11-07 대표님 '나'). 매도인 방 · 매수인 방이 나뉘고, 중개사만 양쪽을 본다.
@@ -178,7 +178,7 @@ export async function roomAgent(req, res, agent, user, b) {
   const id = String(b.id || '');
   const 보조원 = !!(agent.staff && agent.staff.role === 'assistant');
   if (b.what === 'rooms') {
-    /* 방이 있는 계약서 - 초대했거나 누가 들어온 날인본. 계약서 한 장에 당사자 수만큼 방이 있다 */
+    /* 방이 있는 계약서 - 초대했거나 누가 들어온 확정본. 계약서 한 장에 당사자 수만큼 방이 있다 */
     const x = await db('bk_contract', `select=id,title,form,status,track,doc_parties:doc->parties,road:doc->property->>road&agent_id=eq.${agent.id}&track->room=not.is.null&order=updated_at.desc&limit=100`);
     if (!x.r.ok) return res.status(502).json({ error: '대화방 목록을 불러오지 못했습니다' });
     const 계약들 = x.rows.slice();
@@ -382,8 +382,8 @@ export async function roomGuest(req, res, user, b) {
       officePhone: 사.phone || '', steps: 일정(row), rows: m.rows.map(v => ({ ...내보낼말(v, user.id), name: v.side === 'agent' ? v.name : (v.name || 자리이름[v.side]) })) });
   }
   if (b.what === 'my-room-file-url') return 파일주소(res, id, side, b.msg);
-  /* 지난 계약 서류 다시 보기 (2026-11-13 파트너 기획 E4) - 이 계약의 당사자(초대로 들어온 분)에게 날인본을 보기 전용으로.
-     고쳐 쓴 판(prev_id)이 날인됐으면 가장 나중 날인본. 전화번호 · 생년월일은 초안 링크처럼 가린다. 작성 중이면 내용은 주지 않는다 */
+  /* 지난 계약 서류 다시 보기 (2026-11-13 파트너 기획 E4) - 이 계약의 당사자(초대로 들어온 분)에게 확정본을 보기 전용으로.
+     고쳐 쓴 판(prev_id)이 날인됐으면 가장 나중 확정본. 전화번호 · 생년월일은 초안 링크처럼 가린다. 작성 중이면 내용은 주지 않는다 */
   if (b.what === 'my-room-doc') {
     if (overLimit('roomdoc:' + user.id, 30, 600e3)) return res.status(429).json({ error: '잠시 뒤 다시 열어 주세요' });
     let 지금 = row, 몇 = 0;

@@ -3083,19 +3083,19 @@ table.ec td{line-height:2.2;color:var(--n800,#2a2a30)}
 .ec-tools{display:inline-flex;gap:12px;margin-left:8px;font-size:13px}
 .ct-secst{min-height:28px}
 /* 휴대폰 - 전자계약 표: 이름 | 칸 두 줄 맞춤, 칸은 손가락 크기(44px · 16px 글자) */
-body.mo table.ec tr{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:10px;row-gap:6px;align-items:center;padding:10px 0}
-body.mo table.ec th{grid-column:1/-1;padding:0 0 2px}
-body.mo table.ec td{display:flex;align-items:center;flex-wrap:wrap;gap:6px;min-width:0;padding:0;line-height:1.6}
-body.mo table.ec td.ec-l{grid-column:1;display:block;white-space:nowrap;padding:0}
-body.mo table.ec td:not(.ec-l){grid-column:2}
-body.mo table.ec th + td:not(.ec-l),body.mo table.ec td[colspan]:not(.ec-l),body.mo table.ec-pay td{grid-column:1/-1}
-body.mo table.ec td:empty{display:none}
-body.mo .inp.ec-in{flex:1 1 90px;min-width:0;width:auto!important;height:44px;min-height:44px;font-size:16px}
-body.mo table.ec-pay td{display:block;line-height:2.9}
-body.mo table.ec-pay .inp.ec-in{display:inline-block;flex:none;width:150px!important}
-body.mo table.ec-pay .ec-han{display:block;min-width:0;line-height:1.7}
-body.mo table.ec-pay .ec-l2{margin-left:0}
-body.mo table.ec-pay .ec-tools{display:flex;margin:2px 0 0;line-height:1.6}
+html body.mo table.ec tr{display:grid;grid-template-columns:64px minmax(0,1fr);column-gap:10px;row-gap:6px;align-items:center;padding:10px 0}
+html body.mo table.ec th{grid-column:1/-1;padding:0 0 2px}
+html body.mo table.ec td{display:flex;align-items:center;flex-wrap:wrap;gap:6px;min-width:0;padding:0;line-height:1.6}
+html body.mo table.ec td.ec-l{grid-column:1;display:block;white-space:nowrap;padding:0}
+html body.mo table.ec td:not(.ec-l){grid-column:2}
+html body.mo table.ec th + td:not(.ec-l),html body.mo table.ec td[colspan]:not(.ec-l),html body.mo table.ec-pay td{grid-column:1/-1}
+html body.mo table.ec td:empty{display:none}
+html body.mo .inp.ec-in{flex:1 1 90px;min-width:0;width:auto!important;height:44px;min-height:44px;font-size:16px}
+html body.mo table.ec-pay td{display:block;line-height:2.9}
+html body.mo table.ec-pay .inp.ec-in{display:inline-block;flex:none;width:150px!important}
+html body.mo table.ec-pay .ec-han{display:block;min-width:0;line-height:1.7}
+html body.mo table.ec-pay .ec-l2{margin-left:0}
+html body.mo table.ec-pay .ec-tools{display:flex;margin:2px 0 0;line-height:1.6}
 /* 휴대폰 - 공적장부 안내 줄: 글 아래에 단추를 나란히(단추가 겹치던 것) */
 body.mo .scan-mini,body.mo .scan-done{flex-direction:column;align-items:stretch;gap:8px}
 body.mo .scan-mini .eqb,body.mo .scan-done .eqb{display:flex;flex-wrap:wrap;gap:8px}
@@ -14036,6 +14036,7 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
+  { v:'26.11.19.14', 날:'2026-11-19', 줄:[ '휴대폰 계약서 입력 표 - 이름과 칸이 한 줄에 나란히 놓이게 바로잡음' ] },
   { v:'26.11.19.13', 날:'2026-11-19', 줄:[ '휴대폰 화면 다듬기 - 계약서 입력 표를 이름 · 칸 두 줄로 맞추고 칸을 손가락 크기로 · 공적장부 안내 단추 겹침 · 서류 올리기 카드 · 바닥글 링크 누름 높이',
     '계약서 점검 - 도로명 줄은 예전에 확정한 날인본에만 남김(새로 확정해도 나오지 않음) · 건물명이 붙은 지번도 같은 필지로 판정 · 부속 서류의 부동산 표시에 동 · 호 · 1차를 비우고 2차만 적은 중도금도 인쇄' ] },
   { v:'26.11.19.12', 날:'2026-11-19', 줄:[ '계약서 점검 - 날인본은 손님 대화방에서도 찍힌 그대로 · 2차 중도금은 1차 금액을 적은 뒤에 · 공적장부 뒤 다른 주소를 고르면 소재지도 바뀜 · 적어 둔 대리인 · 공동명의인 · 중개사무소는 빼기 전에 확인 · 영수증 등 부속 서류의 부동산 표시를 계약서 소재지와 같게 · 직접 입력 중도금 줄 맞춤' ] },

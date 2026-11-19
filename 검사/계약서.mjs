@@ -1476,7 +1476,7 @@ ok(js.includes("if(!n && 왼쪽칸) return ct대장오류();") && js.includes("�
 
 ok(js.includes("ctDocHTML({ ...j.doc, __sealedAt: j.sealed_at || '' })") && js.includes("if(!(+CT.doc.deal.mid > 0)) return toast('중도금(1차) 금액을 먼저 적어 주세요") && js.includes('function 같은지번(글, a){') && js.includes('function ct지울까(있음, 제목, 하기){') && js.includes("고른배치 === 'both' ? 'info' : 'both'") && js.includes("return [소재, 상세, 부분].filter(Boolean).join(' ')"), '점검 - 날인본 도로명 줄 · 2차는 1차 뒤 · 같은 지번만 읽은 소재지 유지 · 빼기 전 확인 · 머리 단추는 고른 배치 · 부속 서류 부동산 표시 (2026-11-19 리뷰)');
 
-ok(css.includes('body.mo table.ec tr{display:grid;grid-template-columns:auto minmax(0,1fr)') && css.includes('body.mo .inp.ec-in{flex:1 1 90px;min-width:0;width:auto!important;height:44px') && css.includes('body.mo .scan-slot{flex-direction:column') && js.includes('const ct옛날인 = doc =>') && js.includes("+D.mid2 > 0 || (CT편집칸 && D.mid2On)"), '휴대폰 입력 표 · 서류 카드 · 옛 날인본만 도로명 줄 · 2차만 적은 중도금 인쇄 (2026-11-19 UI 점검 · 리뷰)');
+ok(css.includes('html body.mo table.ec tr{display:grid;grid-template-columns:64px minmax(0,1fr)') && css.includes('html body.mo .inp.ec-in{flex:1 1 90px;min-width:0;width:auto!important;height:44px') && css.includes('body.mo .scan-slot{flex-direction:column') && js.includes('const ct옛날인 = doc =>') && js.includes("+D.mid2 > 0 || (CT편집칸 && D.mid2On)"), '휴대폰 입력 표 · 서류 카드 · 옛 날인본만 도로명 줄 · 2차만 적은 중도금 인쇄 (2026-11-19 UI 점검 · 리뷰)');
 
 console.log(`${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

@@ -3055,8 +3055,7 @@ body:not(.mo) .ctx-sub{flex:1 1 0;min-width:0;overflow:hidden;text-overflow:elli
 .ct-doctabs button.on{background:var(--white);color:var(--ind700,#3B3EA8);box-shadow:0 1px 2px rgba(22,23,29,.12)}
 .ct-doctabs button.more{color:var(--n500)}
 .ctx-side>.ct-doctabs{margin:0 0 10px}
-.ctx-vh:has(>.ct-doctabs){flex-wrap:wrap;row-gap:6px}
-.ctx-vh>.ct-doctabs{flex:0 0 100%;margin:0}
+.ctx-view>.ct-doctabs{align-self:flex-start;margin:0}
 .ct-f .inp,.ct-roadbox .inp{letter-spacing:-.01em}
 table.ec td{font-weight:500}
 table.ec td.ec-l{font-weight:700}
@@ -13983,7 +13982,7 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
-  { v:'26.11.19.4', 날:'2026-11-19', 줄:[ '계약서 작성 화면 점검 - 정보 입력 영역을 가운데로(넓은 화면에서 오른쪽이 비지 않게) · 입력 칸 높이 32px · 자간 통일 · 특약 칸 14px · 줄간격 1.8 · 서류 탭은 미리보기 위 한 줄' ] },
+  { v:'26.11.19.5', 날:'2026-11-19', 줄:[ '계약서 작성 화면 점검 - 나란히 보기에서 서류 탭을 미리보기 머리 줄 위로(인쇄 · 저장 단추가 가려지지 않게) · 정보 입력 영역을 가운데로(넓은 화면에서 오른쪽이 비지 않게) · 입력 칸 높이 32px · 자간 통일 · 특약 칸 14px · 줄간격 1.8 · 서류 탭은 미리보기 위 한 줄' ] },
   { v:'26.11.19.3', 날:'2026-11-19', 줄:[ '계약서 직접 입력 - 특약 줄의 회색 안내도 뺐습니다' ] },
   { v:'26.11.19.2', 날:'2026-11-19', 줄:[ '계약서 - 계약금 영수자도 서류 · 정보 입력 표에서 바로 적습니다 · 서류의 주소 칸(당사자 · 대리인 · 중개사무소)마다 ‘주소 검색’ · 서류와 표 안의 회색 예시글을 모두 뺐습니다' ] },
   { v:'26.11.19', 날:'2026-11-19', 줄:[ '계약서 작성(파트너 세부 요청) - 첫 화면은 계약서 종류 고르기가 맨 위 · 작성 화면 위 탭(입력/일정·체크/부속 서류/신고 도우미)을 없애고 서류 탭(계약서 · 확인·설명서 · 개인정보 동의서 · 영수증 · 잔금정산서 · 물품인계 …)으로',
@@ -18538,8 +18537,9 @@ function ctDeskShell(doc, side, 신고면){
         </div>
       </section>
       <section class="ctx-view${CT.full ? ' ctx-full' : ''}" aria-label="미리보기"${CT.full ? ' role="dialog" aria-modal="true"' : ''}>
+        ${ct문서탭(doc, 탭)}
         <div class="ctx-vh">
-          ${ct문서탭(doc, 탭)}<b>${CT.full ? '전체화면' : '미리보기'}</b><span class="ctx-vn">${!잠김 && CT.mode !== 'extra' && !F.explain ? '인쇄되는 모양 그대로 · 서류의 칸을 눌러 바로 적어도 됩니다' : '인쇄되는 모양 그대로 · 고치면 바로 바뀝니다'}</span>
+          <b>${CT.full ? '전체화면' : '미리보기'}</b><span class="ctx-vn">${!잠김 && CT.mode !== 'extra' && !F.explain ? '인쇄되는 모양 그대로 · 서류의 칸을 눌러 바로 적어도 됩니다' : '인쇄되는 모양 그대로 · 고치면 바로 바뀝니다'}</span>
           <span class="ctx-tools">
             ${ct글꼴칸(doc, 잠김)}
             <span class="eqb" style="gap:6px">${F.lease && CT.id ? `<button class="btn tool sm" data-act="ct-renew-this">갱신계약 쓰기</button>` : ''}

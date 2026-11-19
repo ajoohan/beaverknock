@@ -13978,6 +13978,7 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
+  { v:'26.11.19.3', 날:'2026-11-19', 줄:[ '계약서 직접 입력 - 특약 줄의 회색 안내도 뺐습니다' ] },
   { v:'26.11.19.2', 날:'2026-11-19', 줄:[ '계약서 - 계약금 영수자도 서류 · 정보 입력 표에서 바로 적습니다 · 서류의 주소 칸(당사자 · 대리인 · 중개사무소)마다 ‘주소 검색’ · 서류와 표 안의 회색 예시글을 모두 뺐습니다' ] },
   { v:'26.11.19', 날:'2026-11-19', 줄:[ '계약서 작성(파트너 세부 요청) - 첫 화면은 계약서 종류 고르기가 맨 위 · 작성 화면 위 탭(입력/일정·체크/부속 서류/신고 도우미)을 없애고 서류 탭(계약서 · 확인·설명서 · 개인정보 동의서 · 영수증 · 잔금정산서 · 물품인계 …)으로',
     '서류로 빠르게 채우기는 왼쪽 칸(공적장부 올리기)으로 · 오른쪽은 처음부터 정보 입력 · 제목 옆 ‘계약서에 직접 입력’ 단추 · 신고 도우미 뺌',
@@ -16166,7 +16167,7 @@ function ctDocHTML(doc){
 
     <h2>[특약사항]</h2>
     <div class="ct-specials">${CT편집칸
-      ? (() => { let n = 0; return (doc.specials || []).map((s, i) => `<p>${String(s || '').trim() ? `${++n}.` : '<span class="ct-sp-new">+</span>'} <span class="ct-ed" contenteditable="plaintext-only" spellcheck="false" data-cte="cts:${i}" data-ml="1" data-ph="특약을 적으세요" style="min-width:300px">${esc(s)}</span></p>`).join(''); })() + '<p class="line"></p>'.repeat(Math.max(1, 3 - (doc.specials || []).length))
+      ? (() => { let n = 0; return (doc.specials || []).map((s, i) => `<p>${String(s || '').trim() ? `${++n}.` : '<span class="ct-sp-new">+</span>'} <span class="ct-ed" contenteditable="plaintext-only" spellcheck="false" data-cte="cts:${i}" data-ml="1" data-ph="" style="min-width:300px">${esc(s)}</span></p>`).join(''); })() + '<p class="line"></p>'.repeat(Math.max(1, 3 - (doc.specials || []).length))
       : sp.map((s,i)=>`<p>${i+1}. ${esc(s).replace(/\n/g,'<br>')}</p>`).join('') + '<p class="line"></p>'.repeat(Math.max(2, 5 - sp.length))}${doc.acct ? `<p class="ct-acct">* ${esc(ct짧은이름(aKo))} 계좌 : ${빈칸(230)} (계약 시 기재)</p>` : ''}</div>
 
     <p class="ct-close">이 계약을 증명하기 위하여 계약 당사자가 이의 없음을 확인하고 각각 서명 또는 날인한 뒤, ${aKo}·${bKo}·개업공인중개사는 매 장마다 간인하여 각각 1통씩 보관한다.</p>

@@ -1488,5 +1488,8 @@ ok(!js.includes('나란히 보기</button>') && js.includes("[['info', '칸 입�
   ok(js.includes("const 줄 = o => [o.share ? `지분 ${o.share}` : '', `성명: ${o.name}`, `생년월일: ${o.birth || '     년    월    일'}`, `주소: ${o.addr || ''}`]") && js.includes("data-act=\"${p.t === 'one' ? 'ex1' : 'exm'}\"") && js.includes("['form', F.explain ? '양식에 직접 입력' : '계약서에 직접 입력']"), '등기부 소유자는 지분 / 성명 / 생년월일 / 주소 꼴 · 양식에 직접 입력');
 }
 
+/* ── 확정 후 수정 - 목록에는 가장 새 판만 · 몇 번째 판 (2026-11-19 파트너) ── */
+ok(js.includes("앞판임 = r => !ct보관칸(r) && 뒤판.has(r.id);") && js.includes("const 전체 = 모두.filter(r => !앞판임(r) && (ct보관칸(r) === 칸") && js.includes('{판수(r)}판'), '확정 후 수정 - 목록에는 가장 새 판만 · 몇 번째 판인지 표시(고친 판을 내리면 앞 판이 다시 보인다)');
+
 console.log(`${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

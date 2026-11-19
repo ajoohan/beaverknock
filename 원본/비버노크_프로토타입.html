@@ -14064,6 +14064,7 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
+  { v:'26.11.19.21', 날:'2026-11-19', 줄:[ '계약서 목록 - 확정 후 수정하면 가장 새 판만 보이고 ‘확정 후 수정 2판’처럼 몇 번째 판인지 붙습니다. 앞 날인본은 지워지지 않고 고친 판의 ‘앞 날인본 보기’로 엽니다' ] },
   { v:'26.11.19.20', 날:'2026-11-19', 줄:[ '확인·설명서 - 등기부를 읽으면 소유자 생년월일(등기부에 적힌 앞 여섯 자리)도 소유권 칸에 넣습니다 · 소유권 칸은 암호화해 저장' ] },
   { v:'26.11.19.19', 날:'2026-11-19', 줄:[ '확인·설명서 - 법정 서식 격자(토지 · 건축물 묶음, 등기부 기재사항 네 칸)로 다시 그렸습니다 · 작성 방식 두 가지(칸 입력 / 양식에 직접 입력) · 별지 작성(목적물 표 → 소유권에 관한 사항 → 소유권 외의 사항 → 기타사항)',
     '등기부를 읽으면 소유권 칸에 ‘지분 / 성명 / 생년월일 / 주소’ 꼴로 넣습니다(주소는 등기부에 적힌 그대로 · 생년월일은 직접 적습니다)' ] },
@@ -17969,7 +17970,9 @@ function ctRowsHTML(전체, rows, 갱신고르기){
   const 판 = r => `<span style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">${r.status === 'sealed'
     ? `<span class="badge b-ok">날인본 · ${esc(String(r.sealed_at||'').slice(0,10))}</span>`
     : `<span class="badge b-warn">작성 중</span>`}${신고(r)}${r.track && CT_진행[r.track.state] ? `<span class="badge ${r.track.state === 'done' ? 'b-ok' : 'b-mute'}">${CT_진행[r.track.state]}</span>` : ''}${r.track && r.track.hb ? '<span class="badge b-mute">한방 입력</span>' : ''}${r.track && r.track.ec ? '<span class="badge b-mute">전자계약</span>' : ''}${!(CT_FORMS[r.form] || {}).explain && (CT.list || []).some(x => x.ci === r.id) ? '<span class="badge b-mute">확인·설명서</span>' : ''}${r.track && r.track.piAt ? '<span class="badge b-mute">동의서</span>' : ''}${ct안읽은의견(r.track) ? `<span class="badge b-warn">의견 ${ct안읽은의견(r.track)}</span>` : ''}${r.track && r.track.permit ? `<span class="badge b-mute">토허 · ${ct허가단계(r.track) < CT_허가단계.length ? CT_허가단계[ct허가단계(r.track)][1] + ' 전' : '승인'}</span>` : ''}</span>`;
-  const 표시 = r => `${r.renew ? ' · 갱신계약' : r.prev_id ? ' · 확정 후 수정' : ''}`;
+  /* 몇 번째 판인지 - 앞 판을 따라 올라가며 센다(목록에 없는 판에서 멈춘다) */
+  const 판수 = r => { const 맵 = new Map((CT.list || []).map(x => [x.id, x])); let n = 1, x = r; while(x && x.prev_id && n < 30){ x = 맵.get(x.prev_id); n++; } return n; };
+  const 표시 = r => `${r.renew ? ' · 갱신계약' : r.prev_id ? ' · 확정 후 수정' + ` ${판수(r)}판` : ''}`;
   if(CT.need) return `<div class="card pad"><b>계약서 기능을 준비 중입니다.</b><p class="sub" style="margin:6px 0 0">곧 열립니다 - 잠시 뒤 다시 들어와 주세요.</p></div>`;
   /* 불러오는 동안은 글자 대신 표 모양 그대로 회색 줄 - 다 오면 그 자리에 그대로 채워진다 */
   if(CT.loading && !CT.list) return `<div class="card ct-table" style="overflow:hidden" role="status" aria-label="계약서를 불러오는 중입니다">
@@ -17999,8 +18002,9 @@ function ctListPageHTML(모두){
   const 현황 = !!CT.현황, 갱신탭 = 현황 && CT.bin === 'renew';
   const 칸 = ['arch', 'trash'].includes(CT.bin) ? CT.bin : '';
   const 같이 = !칸 && CT.qall && String(CT.q || '').trim();   /* '보관함도 찾기' (2026-11-17 파트너 D14) - 찾는 말이 있을 때만 보관함 계약서도 섞는다 */
-  const 전체 = 모두.filter(r => (ct보관칸(r) === 칸 || (같이 && ct보관칸(r) === 'arch')) && (!현황 || 칸 || (갱신탭 ? ct형태(r) === 'renew' : ct형태(r) === 'new')));
-  const 수 = k => k === 'renew' ? 모두.filter(r => !ct보관칸(r) && ct형태(r) === 'renew').length : 모두.filter(r => ct보관칸(r) === k && (!현황 || k || ct형태(r) === 'new')).length;
+  const 뒤판 = new Set(모두.filter(ct살아있음).map(r => r.prev_id).filter(Boolean)), 앞판임 = r => !ct보관칸(r) && 뒤판.has(r.id);
+  const 전체 = 모두.filter(r => !앞판임(r) && (ct보관칸(r) === 칸 || (같이 && ct보관칸(r) === 'arch')) && (!현황 || 칸 || (갱신탭 ? ct형태(r) === 'renew' : ct형태(r) === 'new')));
+  const 수 = k => k === 'renew' ? 모두.filter(r => !앞판임(r) && !ct보관칸(r) && ct형태(r) === 'renew').length : 모두.filter(r => !앞판임(r) && ct보관칸(r) === k && (!현황 || k || ct형태(r) === 'new')).length;
   const 칸줄 = 모두.length ? `<div class="ct-chips ct-bins" role="tablist" aria-label="계약서 보관 위치">${[['', '목록'], ...(현황 ? [['renew', '갱신']] : []), ['arch', '보관함'], ['trash', '휴지통']].map(([k, t]) =>
     `<button type="button" role="tab" class="chip${(갱신탭 ? 'renew' : 칸) === k ? ' on' : ''}" aria-selected="${(갱신탭 ? 'renew' : 칸) === k}" data-act="ct-bin-tab" data-v="${k}">${t} <span class="num">${수(k)}</span></button>`).join('')}</div>` : '';
   if(!CT.alert && 세션있음()) setTimeout(ctAlertLoad);
@@ -18310,7 +18314,7 @@ V['#/partner/contract'] = (id) => {
     </div>
     ${ct안읽은의견(CT.track) ? `<p class="ct-note noprint"><button type="button" class="tapx" data-act="ct-notes-open" style="font-weight:700;color:#B25E00">초안에 새 의견 ${ct안읽은의견(CT.track)}건 - 일정·체크에서 보기</button></p>` : ''}
     ${잠김 ? `<p class="ct-note noprint">날인본입니다 · ${esc(String(CT.row.sealed_at||'').slice(0,16).replace('T',' '))} 확정 · 지문 ${esc(String(CT.row.sha256||'').slice(0,12))}… 고칠 수 없습니다. 바꿔야 하면 ‘고쳐서 새 판 만들기’를 누르세요.</p>` : ''}
-    ${CT.row && CT.row.prev_id ? `<p class="ct-note noprint">확정 후 수정한 판입니다. <button type="button" class="tapx" data-act="ct-open-prev" style="font-weight:700;color:var(--ind700)">앞 날인본 보기</button></p>` : ''}`;
+    ${CT.row && CT.row.prev_id ? `<p class="ct-note noprint">확정 후 수정한 판입니다. 목록에는 이 판만 보입니다. <button type="button" class="tapx" data-act="ct-open-prev" style="font-weight:700;color:var(--ind700)">앞 날인본 보기</button></p>` : ''}`;
 
   if(CT.mode === 'scan' && !잠김) return `
 <div class="scr fade" style="background:var(--n50)">

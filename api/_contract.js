@@ -1183,6 +1183,9 @@ async function del(res, agent, b) {
   });
   if (!r.ok) return noTable(t) ? 준비중(res) : /지울 수 없습니다/.test(String(t || '')) ? res.status(409).json({ error: '확정본 지우기는 아직 준비 중입니다 - 조금 뒤에 다시 해 주세요' }) : res.status(502).json({ error: '지우지 못했습니다' });
   if (!rows.length) return res.status(409).json({ error: '지우지 못했습니다 - 목록을 새로 고친 뒤 다시 해 주세요' });
+  /* 줄이 지워진 뒤에 현장 사진 파일도 지운다(자동 삭제와 같게) - 파일 지우기가 실패해도 삭제는 끝난 것으로 본다 */
+  try { const 경로 = 현장사진값((행.track || {}).fpics).map(v => 현장경로(agent.id, id, v.i));
+    if (경로.length) { const { 파일버킷, 버킷지우기 } = await import('./_forms.js'); await 버킷지우기(파일버킷, 경로); } } catch { /* 넘어간다 */ }
   return res.status(200).json({ ok: true });
 }
 

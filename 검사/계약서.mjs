@@ -1410,7 +1410,7 @@ ok(js.includes("const CT_배치 = [['info', '정보 입력'") && js.includes("ca
   && css.includes('.ctx-body.lay-info .ctx-view{display:none}') && css.includes('.ctx-body.lay-form .ctx-side .ctx-scroll{display:none}') && js.includes('>서식에서 확인</button>'), '계약서 입력 방식 - 정보 입력 · 서식 입력 · 정보 + 서식을 고르고 오간다');
 
 /* ── 코드리뷰 · 화면 점검 (2026-11-17, 26.11.17.17) ── */
-ok(js.includes("CT.mode === 'scan' || F.explain) ? 'both' : 고른배치") && js.includes("Math.min(크게 ? 1.7 : 1,") && js.includes("if((CT.lay === 'form' && CT.mode !== 'edit') || CT.mode === 'scan') CT.mode = 'edit';"), '입력 방식 - 확인·설명서는 서식 입력으로 가지 않고, 서식 입력 · 전체화면은 서류를 키운다');
+ok(js.includes("CT.mode === 'scan' || F.explain)) || (고른배치 === 'info' && 탭 === 'x') ? 'both' : 고른배치") && js.includes("Math.min(크게 ? 1.7 : 1,") && js.includes("if((CT.lay === 'form' && CT.mode !== 'edit') || CT.mode === 'scan') CT.mode = 'edit';"), '입력 방식 - 확인·설명서는 서식 입력으로 가지 않고, 서식 입력 · 전체화면은 서류를 키운다');
 ok(js.includes('doc.deal.down = 0;') && js.includes("if(같은줄){ CS.rowBusy = '';") && js.includes('if(CT.id === id && CT.dirty) return toast(') && js.split("&& !n && CT.doc.deal) delete CT.doc.deal.mids;").length === 3, '체결문자 줄 중복 · 추정 계약금 없음 · 저장 전 고침 지키기 · 숨은 중도금 지우기');
 
 /* ── 3~5차 중도금 일정 · 영수증 (2026-11-17) ── */
@@ -1471,6 +1471,8 @@ ok(js.includes("|| a.jibun || full });") && js.includes("ctSet(doc, 'property.sh
 ok(js.includes("도로 = ctSealed() && P.road && 글 && 글 !== P.road") && js.includes('function ct중도단추(D){') && js.includes("${+D.mid || CT편집칸 ? `<tr><th class=\"w\">") && js.includes('function ct서류특약단추(doc){') && js.includes('function ct서류당사자단추(label, x, k){') && js.includes('data-act="ct-cobrk-add">+ 중개사무소 추가</button>\' : \'\'}'), '계약서에 직접 입력 - 도로명 줄 없음 · 중도금 · 특약 줄 · 공동명의인 · 대리인 · 중개사무소 추가');
 ok(js.includes("unit: [P.road, P.show, P.detail].filter(Boolean).join(' ')") && js.includes('data-act="ct-open" data-v="${esc(doc.contractId)}">계약서</button>') && !js.includes("넣기('ex.zone', s.zone)"), '대장 불러오기에 상세주소(동 · 호) · 확인·설명서에서 계약서로 · ③ 토지이용계획은 자동으로 채우지 않는다');
 ok(js.includes('name0: 쪽[0].name, bytes0: 쪽[0].bytes') && js.includes('if(!CT.id && !ct소재지있음(CT.doc.property)) return;') && js.includes("문서.property.road || 문서.property.jibun || 문서.property.show") && js.includes("const A = 왼('ctsall:x'); if(A) A.value = ct특약번호글(CT.doc.specials);") && js.includes("+m[1] === i + 1 || !/^\\d/.test(t.slice(m[0].length))"), '코드리뷰 - 사진 더하기 합계 · 직접 적은 소재지 제목/자동저장 · 서류에서 고친 특약 맞춤 · 날짜로 시작하는 특약');
+
+ok(js.includes("if(!n && 왼쪽칸) return ct대장오류();") && js.includes("에 지급하며${CT편집칸 ? ct중도단추(D) : ''}</td></tr>") && js.includes("case 'phr-list':") && js.includes('더 보기 +${남}</button>') && js.includes('async function 줄이기(file, 장수 = 1){') && css.includes('.ct-secst{min-height:28px}'), '작성 화면 다듬기 - 공적장부 안내 한 곳 · 중도금 단추 줄 안 · 내 특약으로 담기 · 더 보기 · 여러 장이면 더 줄임 (2026-11-19 UI 점검)');
 
 console.log(`${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

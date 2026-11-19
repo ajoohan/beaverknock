@@ -14064,6 +14064,8 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
+  { v:'26.11.19.23', 날:'2026-11-19', 줄:[ '계약서 당사자 - 주민등록번호 뒷자리를 적어 인쇄할 수 있습니다. 저장하지 않으며 저장 · 확정하면 지워지고, PDF 저장 · 메일에는 찍히지 않습니다',
+    '공제증서 - 서식 자료실에 앞면 · 뒷면을 한 번 올려 두고 ‘공제증서 출력’으로 따로 뽑습니다(계약서의 부속 서류 탭에도 단추)' ] },
   { v:'26.11.19.22', 날:'2026-11-19', 줄:[ '계약서 당사자 - 생년월일(주민등록번호 앞 여섯 자리)을 적을 수 있습니다. 계약서의 주민등록번호 칸 앞자리에 찍히고, 확인·설명서를 만들면 생년월일 칸에 옮겨집니다 · 뒷자리는 저장하지 않고 빈칸으로 인쇄됩니다' ] },
   { v:'26.11.19.21', 날:'2026-11-19', 줄:[ '계약서 목록 - 확정 후 수정하면 가장 새 판만 보이고 ‘확정 후 수정 2판’처럼 몇 번째 판인지 붙습니다. 앞 날인본은 지워지지 않고 고친 판의 ‘앞 날인본 보기’로 엽니다' ] },
   { v:'26.11.19.20', 날:'2026-11-19', 줄:[ '확인·설명서 - 등기부를 읽으면 소유자 생년월일(등기부에 적힌 앞 여섯 자리)도 소유권 칸에 넣습니다 · 소유권 칸은 암호화해 저장' ] },
@@ -16037,7 +16039,8 @@ async function ctSave(silent){
       title: (문서.property && (문서.property.road || 문서.property.jibun || 문서.property.show)) || '', cat: 문서.cat, sub: 문서.sub, dt: 대금.type, parties: 문서.parties,
       cd: 문서.contractDate, mid: 대금.mid, md: 대금.midDate, m2: 대금.mid2, md2: 대금.mid2Date, mx: 대금.mids, bd: 대금.balanceDate, ex: 문서.period && 문서.period.to, ...(CT.row && CT.row.track ? { track: CT.row.track } : {}) });
     if(새것 && (location.hash || '').startsWith('#/partner/contract/')) history.replaceState(null, '', '#/partner/contract/' + j.id), S.route = S.lastRoute = '#/partner/contract/' + j.id;
-    render(); if(!silent || CT.dirty) toast(CT.dirty ? '임시저장했습니다 - 그 뒤에 고친 것은 아직 저장 전입니다' : '임시저장했습니다');
+    const 뒷지움 = !silent && ct뒷자리지움();
+    render(); if(!silent || CT.dirty) toast(CT.dirty ? '임시저장했습니다 - 그 뒤에 고친 것은 아직 저장 전입니다' : 뒷지움 ? '임시저장했습니다 - 주민등록번호 뒷자리는 저장하지 않고 지웠습니다' : '임시저장했습니다');
     return !CT.dirty;
   }catch(e){ CT.saving = false; render(); toast('네트워크 문제로 저장하지 못했습니다'); return false; }
 }
@@ -16176,6 +16179,11 @@ function ct서류당사자단추(label, x, k){
   const 역할 = ct짧은이름(label).replace(/인$/, ''), co = x.co || [];
   return `<tr><td colspan="5" class="ct-doc-add">${co.length < 4 ? `<button type="button" class="chip" data-act="ct-co-add" data-v="${k}">+ ${esc(역할)} 공동명의인</button>` : ''}${x.proxy ? `<button type="button" class="tapx" data-act="ct-proxy" data-v="${k}">${esc(역할)} 대리인 빼기</button>` : `<button type="button" class="chip" data-act="ct-proxy" data-v="${k}">+ ${esc(역할)} 대리인</button>`}${co.map((c, i) => `<button type="button" class="tapx" data-act="ct-co-del" data-v="${k}|${i}">공동명의인 ${i + 2} 빼기</button>`).join('')}</td></tr>`;
 }
+/* 주민등록번호 뒷자리 - 이 화면에서 인쇄할 때만 쓴다. 경로(parties.seller · parties.seller.co.0) → 숫자 일곱 자리 */
+const ct뒷자리 = (doc, b) => doc && doc === CT.doc && CT.rrnDoc === doc && !CT.rrn끔 && CT.rrn ? (CT.rrn[b] || '') : '';
+const ct뒷자리적기 = (b, 글) => { if(CT.rrnDoc !== CT.doc){ CT.rrnDoc = CT.doc; CT.rrn = {}; } const d = String(글 == null ? '' : 글).replace(/[^0-9]/g, '').slice(0, 7); if(d) CT.rrn[b] = d; else delete CT.rrn[b]; return d; };
+const ct뒷자리지움 = () => { const 있음 = !!(CT.rrn && CT.rrnDoc === CT.doc && Object.keys(CT.rrn).length); CT.rrn = {}; CT.rrnDoc = null; return 있음; };
+const ct뒷자리빼고 = f => { CT.rrn끔 = true; try{ return f(); } finally { CT.rrn끔 = false; } };
 /* 적은 생년월일 → 주민등록번호 앞 여섯 자리. '1970-01-01' · '19700101' · '700101' · '70.1.1' 을 받는다. 날짜가 아니면 '' */
 const ct앞자리 = v => { const t = String(v == null ? '' : v).trim(); if(!t) return '';
   const 조각 = t.match(/^(\d{2}|\d{4})\D+(\d{1,2})\D+(\d{1,2})\D*$/), d = t.replace(/\D/g, '');
@@ -16206,7 +16214,9 @@ function ctDocHTML(doc){
      법인등록번호는 법인 당사자에만 칸을 둔다(2026-11-17 대표님) - 서버가 그 칸만 주민번호 검사에서 빼고 13자리인지 본다 */
   /* b = 그 사람 값의 경로(parties.seller · parties.seller.co.0) - 미리보기에서 바로 적을 때 쓴다 */
   /* 주민등록번호 칸 - 앞자리(생년월일)만 채우고 뒷자리는 늘 빈칸. 생년월일이 없는 예전 계약서는 통째로 빈칸 */
-  const 주민칸 = (x, b) => CT편집칸 ? `${ct칸(b + '.birth', x.birth, 64)} - ${빈칸(72)}` : ct앞자리(x.birth) ? `${esc(ct앞자리(x.birth))} - ${빈칸(72)}` : 빈칸(140);
+  const 주민칸 = (x, b) => { const 뒤 = ct뒷자리(doc, b);
+    return CT편집칸 ? `${ct칸(b + '.birth', x.birth, 64)} - <span class="ct-ed" contenteditable="plaintext-only" spellcheck="false" data-cte="ctrrn:${b}" data-ph="" style="min-width:72px">${esc(뒤)}</span>`
+      : ct앞자리(x.birth) || 뒤 ? `${ct앞자리(x.birth) ? esc(ct앞자리(x.birth)) : 빈칸(64)} - ${뒤 ? esc(뒤) : 빈칸(72)}` : 빈칸(140); };
   const 당사자1 = (label, x, b) => x.type === 'corp' ? `
     <tr><th rowspan="3" class="w">${label}</th><th>본점 소재지</th><td colspan="3">${ct칸(b + '.addr', x.addr, 260)}</td></tr>
     <tr><th>법인등록번호</th><td>${ct칸(b + '.corpNo', x.corpNo, 120)}</td><th>사업자등록번호</th><td>${ct칸(b + '.bizNo', x.bizNo, 120)}</td></tr>
@@ -16624,7 +16634,7 @@ async function cl저장(곳){
     if(!받는.length || 틀린 || 받는.length > 5){ CL.err = !받는.length ? '받는 메일 주소를 적어 주세요' : 틀린 ? `메일 주소를 확인해 주세요 - ${틀린}` : '한 번에 5명까지 보낼 수 있습니다';
       render(); setTimeout(() => { const i = document.getElementById('clTo'); if(i) i.focus(); }, 30); return; }
   }
-  const doc = CT.doc, html = ct보기HTML(doc), 이름 = cl파일이름(html, doc);
+  const doc = CT.doc, html = ct뒷자리빼고(() => ct보기HTML(doc)), 이름 = cl파일이름(html, doc);
   /* 로그인 창은 누른 이 자리에서(기다리기 전에) 연다 */
   let 열쇠P = null;
   try{ 열쇠P = 곳 === 'google' ? g열쇠() : 곳 === 'dropbox' ? d열쇠() : null; }catch(e){ 열쇠P = Promise.reject(e); }
@@ -16687,18 +16697,20 @@ function fuLoad(){
     if(ok){ FU.list = j.list || []; FU.need = j.need || ''; FU.err = ''; } else FU.err = j.error || '서식을 불러오지 못했습니다'; render();
   }).catch(() => { FU.loading = false; FU.loaded = true; FU.err = '네트워크 문제로 서식을 불러오지 못했습니다'; render(); });
 }
-async function fuUp(file){
+const FU_공제 = ['공제증서 앞면', '공제증서 뒷면'], fu공제 = n => FU.list.find(f => f.name === n);
+async function fuUp(file, label){
   if(!file || FU.busy) return;
+  if(label && !/[.](pdf|jpe?g|png)$/i.test(file.name)) return toast('공제증서는 PDF · JPG · PNG 로 올려 주세요 - 휴대폰으로 찍은 사진도 됩니다');
   if(!/\.(pdf|hwp|hwpx|docx?|xlsx?|jpe?g|png)$/i.test(file.name)) return toast('한글(hwp · hwpx) · 워드 · 엑셀 · PDF · JPG · PNG 파일만 올릴 수 있습니다');
   if(file.size > 3 * 1024 * 1024) return toast('파일이 3MB 를 넘습니다 - PDF 로 줄이거나 나눠 올려 주세요');
   FU.busy = true; render();
   try{
     const data = await 읽기(file);
-    const { ok, j } = await ctPost({ what:'form-up', name: file.name, data }).catch(() => ({ ok:false, j:{ error:'네트워크 문제로 올리지 못했습니다' } }));
+    const { ok, j } = await ctPost({ what:'form-up', name: file.name, data, ...(label ? { label } : {}) }).catch(() => ({ ok:false, j:{ error:'네트워크 문제로 올리지 못했습니다' } }));
     FU.busy = false;
     if(j && j.list) FU.list = j.list;
     if(j && j.need) FU.need = j.need;
-    render(); toast(ok ? `‘${file.name}’을 올렸습니다` : (j.error || '올리지 못했습니다'));
+    render(); toast(ok ? `‘${label || file.name}’을 올렸습니다` : (j.error || '올리지 못했습니다'));
   }catch(e){ FU.busy = false; render(); toast('파일을 열지 못했습니다'); }
 }
 async function fuGet(id){
@@ -16706,7 +16718,38 @@ async function fuGet(id){
   if(!ok || !j.url) return toast(j.error || '내려받지 못했습니다');
   const a = document.createElement('a'); a.href = j.url; a.rel = 'noopener'; document.body.appendChild(a); a.click(); a.remove();
 }
-if(typeof document !== 'undefined') document.addEventListener('change', e => { const el = e.target.closest && e.target.closest('[data-fu-file]'); if(el && el.files && el.files[0]){ fuUp(el.files[0]); el.value = ''; } });
+if(typeof document !== 'undefined') document.addEventListener('change', e => { const el = e.target.closest && e.target.closest('[data-fu-file]'); if(el && el.files && el.files[0]){ fuUp(el.files[0], el.dataset.fuLabel || ''); el.value = ''; } });
+/* 공제증서 출력 - 새 창을 먼저 열고(팝업 차단을 피한다) 5분짜리 주소로 채운다. 사진은 한 쪽에 한 장, PDF 하나면 그대로 연다 */
+async function fu공제출력(){
+  const w = window.open('', '_blank'); if(!w) return toast('팝업이 막혀 있습니다 - 이 사이트의 팝업을 허용해 주세요');
+  w.document.write('<p style="font:16px sans-serif;padding:24px">공제증서를 불러오는 중입니다…</p>');
+  if(!FU.loaded){ const r = await ctPost({ what:'forms' }).catch(() => null); if(r && r.ok){ FU.list = r.j.list || []; FU.need = r.j.need || ''; FU.loaded = true; } }
+  const 것 = FU_공제.map(fu공제).filter(Boolean);
+  if(!것.length){ w.close(); toast('올려 둔 공제증서가 없습니다 - 서식 자료실에서 앞면 · 뒷면을 올려 주세요'); return go('#/partner/contracts/forms'); }
+  const 주소 = [];
+  for(const f of 것){ const r = await ctPost({ what:'form-url', id: f.id }).catch(() => null); if(r && r.ok && r.j.url) 주소.push([f, String(r.j.url).replace(/&download=[^&]*/, '')]); }
+  if(!주소.length){ w.close(); return toast('공제증서를 열지 못했습니다 - 잠시 뒤 다시 눌러 주세요'); }
+  if(주소.length === 1 && 주소[0][0].ext === 'pdf'){ w.location.href = 주소[0][1]; return; }
+  w.document.open();
+  w.document.write('<!doctype html><meta charset="utf-8"><title>공제증서</title><sty' + 'le>@page{size:A4;margin:8mm}body{margin:0}img{display:block;width:100%;max-height:281mm;object-fit:contain;page-break-after:always}a{display:block;font:16px sans-serif;padding:16px}</sty' + 'le>'
+    + 주소.map(([f, u]) => f.ext === 'pdf' ? '<a href="' + esc(u) + '">' + esc(f.name) + ' (PDF) 열기</a>' : '<img src="' + esc(u) + '" alt="' + esc(f.name) + '">').join(''));
+  w.document.close();
+  const 그림 = [...w.document.images];
+  if(그림.length) Promise.all(그림.map(i => i.complete ? 1 : new Promise(r => { i.onload = i.onerror = r; }))).then(() => { try{ w.focus(); w.print(); }catch(_){ } });
+}
+function ct공제HTML(){
+  if(!세션있음()) return '';
+  if(!FU.loaded) setTimeout(fuLoad);
+  const 칸 = n => { const f = fu공제(n);
+    return `<li class="ctf-row"><span><b>${n}</b><small>${f ? `${esc(f.ext.toUpperCase())} · ${fu크기(f.size)} · ${esc(String(f.at).slice(0, 10))} 올림` : '아직 올리지 않았습니다'}</small></span>
+      <span class="eqb" style="gap:6px">${f ? `<button type="button" class="btn tool sm" data-act="fu-del" data-v="${esc(f.id)}">${FU.del === f.id ? '한 번 더 누르면 지웁니다' : '지우기'}</button>`
+        : FU.need ? '' : `<label class="btn tool sm${FU.busy ? ' off' : ''}">${FU.busy ? '올리는 중…' : '올리기'}<input type="file" class="sr" accept=".pdf,.jpg,.jpeg,.png" data-fu-file data-fu-label="${n}" ${FU.busy ? 'disabled' : ''} aria-label="${n} 파일 고르기"></label>`}</span></li>`; };
+  return `<div class="card pad ct-sec"><h2>공제증서 <span class="sub" style="font-weight:500;font-size:13.5px">앞 · 뒤를 한 번 올려 두면 계약 때마다 바로 출력합니다</span></h2>
+    ${FU.need ? '<p class="ct-note">파일 올리기는 준비 중입니다 - 곧 열립니다.</p>' : ''}
+    <ul class="ctf-ul">${FU_공제.map(칸).join('')}</ul>
+    <p class="sub" style="margin:0;font-size:12.5px;line-height:1.6">PDF 가 없으면 휴대폰으로 앞면 · 뒷면을 한 장씩 찍어 올리세요(한 파일 3MB). 앞 · 뒤가 한 PDF 에 있으면 앞면에만 올리면 됩니다. 공제 기간이 바뀌면 지우고 새 증서를 올려 주세요.</p>
+    <div><button type="button" class="btn pri sm" data-act="fu-bond-print" ${FU_공제.some(fu공제) ? '' : 'disabled'}>공제증서 출력</button></div></div>`;
+}
 const fu크기 = n => n >= 1048576 ? `${(n / 1048576).toFixed(1)}MB` : `${Math.max(1, Math.round(n / 1024))}KB`;
 function ct내서식HTML(){
   if(!세션있음()) return '';
@@ -16714,7 +16757,7 @@ function ct내서식HTML(){
   const 단추 = FU.need ? '' : `<label class="btn tool sm${FU.busy ? ' off' : ''}">${FU.busy ? '올리는 중…' : '+ 우리 사무소 서식 올리기'}<input type="file" class="sr" accept="${FU_받음}" data-fu-file ${FU.busy ? 'disabled' : ''} aria-label="우리 사무소 서식 파일 고르기"></label>`;
   return `<div class="card pad ct-sec"><h2>우리 사무소 서식 <span class="sub" style="font-weight:500;font-size:13.5px">한글 · 워드 · 엑셀 · PDF · 사진 · 한 파일 3MB · ${FU.list.length} / 30</span></h2>
     ${FU.need ? '<p class="ct-note">서식 올리기는 준비 중입니다 - 곧 열립니다.</p>' : FU.err ? `<p class="ct-note">${esc(FU.err)}</p>` : ''}
-    ${FU.list.length ? `<ul class="ctf-ul">${FU.list.map(f => `<li class="ctf-row"><span><b>${esc(f.name)}</b><small>${esc(f.ext.toUpperCase())} · ${fu크기(f.size)} · ${esc(String(f.at).slice(0, 10))} 올림</small></span>
+    ${FU.list.filter(f => !FU_공제.includes(f.name)).length ? `<ul class="ctf-ul">${FU.list.filter(f => !FU_공제.includes(f.name)).map(f => `<li class="ctf-row"><span><b>${esc(f.name)}</b><small>${esc(f.ext.toUpperCase())} · ${fu크기(f.size)} · ${esc(String(f.at).slice(0, 10))} 올림</small></span>
       <span class="eqb" style="gap:6px"><button type="button" class="btn tool sm" data-act="fu-get" data-v="${esc(f.id)}">내려받기</button>
         <button type="button" class="btn tool sm" data-act="fu-del" data-v="${esc(f.id)}">${FU.del === f.id ? '한 번 더 누르면 지웁니다' : '지우기'}</button></span></li>`).join('')}</ul>`
       : FU.loaded && !FU.need ? '<p class="sub" style="margin:0">사무소에서 쓰는 시설물 확인서 · 위임장 같은 서식을 올려 두면 어느 기기에서나 내려받습니다.</p>' : ''}
@@ -16735,6 +16778,7 @@ function ctFormsPageHTML(){
         <div class="card pad ct-sec"><h2>계약서</h2><ul class="ctf-ul">${계약.join('')}</ul></div>
         <div class="card pad ct-sec"><h2>중개대상물 확인·설명서</h2><ul class="ctf-ul">${확인.join('')}</ul></div>
         <div class="card pad ct-sec"><h2>기타 서식</h2><ul class="ctf-ul">${기타.join('')}</ul></div>
+        ${ct공제HTML()}
         ${ct내서식HTML()}
       </div>
       ${보기 ? `<aside class="ctf-view"><div class="ctf-vh"><b>미리보기</b><button type="button" class="tapx" data-act="ctf-close">닫기</button></div>
@@ -18260,6 +18304,8 @@ async function ctCoBrokerFind(i){
   ctDirty(); render();
   toast(`명부에서 채웠습니다 - ${j.office}${+j.state && +j.state !== 1 ? ' (영업 상태를 확인해 주세요)' : ''}`);
 }
+const ct뒷자리칸 = (b, w) => `<label class="ct-f w${w}"><span class="lab">주민번호 뒷자리 <span class="sub" style="font-weight:500">저장 안 함</span></span>
+    <input class="inp" type="text" inputmode="numeric" maxlength="7" data-in="ctrrn:${b}" value="${esc(ct뒷자리(CT.doc, b))}" autocomplete="off" aria-label="주민등록번호 뒷자리 - 저장하지 않습니다"></label>`;
 const ctIn = (path, label, opt = {}) => {
   const v = ctGet(CT.doc, path);
   const 잠김 = CT.row && CT.row.status === 'sealed';
@@ -18523,9 +18569,9 @@ function ctFormHTML(doc){
     const 본인 = 법인
       ? ctIn(`parties.${k}.name`, '법인명(상호)', {w:4}) + ctIn(`parties.${k}.rep`, '대표이사', {w:2}) + ctIn(`parties.${k}.bizNo`, '사업자등록번호', {w:3, ph:'000-00-00000'})
         + ctIn(`parties.${k}.phone`, '전화', {w:3, ph:'02-000-0000'}) + ctIn(`parties.${k}.corpNo`, '법인등록번호', {w:4, ph:'000000-0000000'}) + ctAddrIn(`parties.${k}.addr`, '본점 소재지', 12)
-      : ctIn(`parties.${k}.name`, `${짧} 성명`, {w: 4}) + ctIn(`parties.${k}.birth`, '생년월일', {w: co.length ? 3 : 4, ph:'예: 700101'}) + ctIn(`parties.${k}.phone`, `${짧} 전화`, {w: co.length ? 3 : 4, ph:'010-0000-0000'})
+      : ctIn(`parties.${k}.name`, `${짧} 성명`, {w: 3}) + ctIn(`parties.${k}.birth`, '생년월일', {w: co.length ? 2 : 3, ph:'예: 700101'}) + ct뒷자리칸(`parties.${k}`, co.length ? 2 : 3) + ctIn(`parties.${k}.phone`, `${짧} 전화`, {w: 3, ph:'010-0000-0000'})
         + (co.length ? ctIn(`parties.${k}.share`, '지분', {w:2, ph:'1/2'}) : '') + ctAddrIn(`parties.${k}.addr`, `${짧} 주소`, 12);
-    const 공동 = co.map((c, i) => ctIn(`parties.${k}.co.${i}.name`, `공동명의인 ${i + 2} 성명`, {w:4}) + ctIn(`parties.${k}.co.${i}.birth`, '생년월일', {w:3, ph:'예: 700101'}) + ctIn(`parties.${k}.co.${i}.phone`, '전화', {w:3, ph:'010-0000-0000'})
+    const 공동 = co.map((c, i) => ctIn(`parties.${k}.co.${i}.name`, `공동명의인 ${i + 2} 성명`, {w:3}) + ctIn(`parties.${k}.co.${i}.birth`, '생년월일', {w:2, ph:'예: 700101'}) + ct뒷자리칸(`parties.${k}.co.${i}`, 2) + ctIn(`parties.${k}.co.${i}.phone`, '전화', {w:3, ph:'010-0000-0000'})
       + ctIn(`parties.${k}.co.${i}.share`, '지분', {w:2, ph:'1/2'}) + ctAddrIn(`parties.${k}.co.${i}.addr`, '주소', 12)
       + (잠김 ? '' : `<div class="ct-co-tools w12"><button type="button" class="tapx" data-act="ct-co-del" data-v="${k}|${i}" style="font-size:13.5px;color:var(--danger)">공동명의인 ${i + 2} 빼기</button></div>`)).join('');
     const 더하기 = 잠김 ? '' : `<div class="w12 ct-addbtns">${co.length < 4 ? `<button type="button" class="btn tool sm" data-act="ct-co-add" data-v="${k}">+ ${esc(역할)} 공동명의인</button>` : ''}${x.proxy ? '' : `<button type="button" class="btn tool sm" data-act="ct-proxy" data-v="${k}">+ ${esc(역할)} 대리인</button>`}</div>`;
@@ -18565,7 +18611,7 @@ function ctFormHTML(doc){
       ${!매매 && !잠김 ? `<div class="ct-term"><span class="lab">종료일 바로 넣기</span>${[['2', '2년'], ['1', '1년'], ['m6', '6개월'], ['m3', '3개월']].map(([n, t]) => `<button type="button" class="chip" data-act="ct-term" data-v="${n}">${t}</button>`).join('')}
         <span class="lab">끝나는 날</span>${chipsHTML(['시작 전날', '시작과 같은 날'], ct끝표기() === 'same' ? '시작과 같은 날' : '시작 전날', 'ct-endstyle', false, false)}</div>` : ''}</div>
 
-    <div class="card pad ct-sec"><h2>당사자${ct구획(doc, ['parties'])} <span class="sub" style="font-weight:500;font-size:13.5px">생년월일(주민등록번호 앞 여섯 자리)까지 적습니다 · 뒷자리와 서명 칸은 비워서 인쇄됩니다</span></h2>
+    <div class="card pad ct-sec"><h2>당사자${ct구획(doc, ['parties'])} <span class="sub" style="font-weight:500;font-size:13.5px">주민등록번호 뒷자리는 인쇄할 때만 씁니다 - 저장하지 않고, 저장 · 확정하면 지워집니다</span></h2>
       <div class="ct-grid">${사람(aKey, aKo)}${사람(bKey, bKo)}</div></div>
 
     <div class="card pad ct-sec"><h2>개업공인중개사${ct구획(doc, ['broker'])} <span class="sub" style="font-weight:500;font-size:13.5px">가입 때 적은 값으로 채웠습니다</span></h2>
@@ -19349,7 +19395,7 @@ function ctExtraHTML(doc){
         <input class="inp" data-in="cte:item.${i}.s" value="${esc(o.s || '')}" placeholder="상태·메모 (비밀번호는 적지 마세요)" aria-label="${esc(o.n)} 상태"></div>`).join('')}</div>`;
   }
   return `${안내}<div class="card pad ct-sec"><h2>부속 서류 <span class="sub" style="font-weight:500;font-size:13.5px">계약서 값으로 채웁니다 · 날인본이 된 뒤에도 씁니다</span></h2>${탭줄}</div>${본}
-    <button type="button" class="btn pri sm" data-act="ct-print" style="align-self:flex-start">이 서류 인쇄</button>`;
+    <span class="eqb" style="gap:8px;align-self:flex-start"><button type="button" class="btn pri sm" data-act="ct-print">이 서류 인쇄</button><button type="button" class="btn tool sm" data-act="fu-bond-print" title="서식 자료실에 올려 둔 공제증서 앞 · 뒤를 출력합니다">공제증서 출력</button></span>`;
 }
 /* 다가오는 일정 - 목록 옆은 2주 안 8개, 일정·알림 화면은 60일 안 40개. 새 판·갱신으로 대체된 앞 계약서는 뺀다 */
 function ctUpcomingHTML(rows, 날수 = 14, 최대 = 8){
@@ -19411,6 +19457,7 @@ function ctPvInput(el){
     if(path === 'property.landRight'){ const P = CT.doc.property; P.landRightKind = P.landRatioDen = P.landRatioNum = ''; ct대지권나눔(P);
       for(const k of ['landRightKind', 'landRatioDen', 'landRatioNum']){ const X = 왼('ct:property.' + k); if(X) X.value = P[k] || ''; } }
   } else if(kind === 'ctc'){ const c = CT.doc.clauses[+path]; if(!c) return; c.text = 글; const L = 왼('ctc:' + path); if(L) L.value = 글; }
+  else if(kind === 'ctrrn'){ const d = ct뒷자리적기(path, 글); const L = 왼('ctrrn:' + path); if(L) L.value = d; if(글 !== d) el.textContent = d; return; }   /* 저장할 것이 아니다 - 고침 표시도 하지 않는다 */
   else if(kind === 'cts'){ if(!(+path in CT.doc.specials)) return; CT.doc.specials[+path] = 글; const L = 왼('cts:' + path); if(L) L.value = 글; const A = 왼('ctsall:x'); if(A) A.value = ct특약번호글(CT.doc.specials); }
   else return;
   ctDirty();
@@ -20550,6 +20597,8 @@ function ct잔금표시(){
 }
 const ct금액넘침 = D => { const 총 = ctTotal(D || {}); return 총 && (+D.down || 0) + ct중도합(D) > 총 ? '계약금 + 중도금이 전체 금액보다 큽니다' : ''; };
 function ctInput(el, k){
+  if(CT.doc && k.startsWith('ctrrn:')){ const b = k.slice(6), d = ct뒷자리적기(b, el.value); if(el.value !== d) el.value = d;
+    const P = document.querySelector(`#ctPv [data-cte="ctrrn:${b}"]`); if(P) P.textContent = d; else if(typeof ctPvRefresh === 'function') ctPvRefresh(); return true; }
   if(!CT.doc || (CT.row && CT.row.status === 'sealed')) return false;
   const at = k.indexOf(':'); if(at < 0) return false;
   const kind = k.slice(0, at), path = k.slice(at + 1);
@@ -22886,6 +22935,7 @@ function handle(a,v,el){
     case 'ctf-view': { const [k, key] = String(v).split('|'); CT.formsView = [k, key]; render(); return true; }
     case 'ctf-close': CT.formsView = null; render(); return true;
     case 'fu-get': fuGet(v); return true;
+    case 'fu-bond-print': fu공제출력(); return true;
     case 'fu-del': { if(FU.del !== v){ FU.del = v; render(); return true; }
       FU.del = null; FU.list = FU.list.filter(f => f.id !== v); render();
       ctPost({ what:'form-del', id: v }).then(({ ok, j }) => { if(j && j.list) FU.list = j.list; render(); toast(ok ? '서식을 지웠습니다' : (j.error || '지우지 못했습니다')); }); return true; }
@@ -23381,7 +23431,7 @@ function handle(a,v,el){
         const { ok, j } = await ctPost({ what:'contract-seal', id: CT.id }).catch(() => ({ ok:false, j:{} }));
         CT.saving = false;
         if(!ok){ render(); return toast(j.error || '확정본으로 저장하지 못했습니다'); }
-        CT.row = { ...CT.row, status:'sealed', sealed_at: j.sealed_at, sha256: j.sha256 };
+        CT.row = { ...CT.row, status:'sealed', sealed_at: j.sealed_at, sha256: j.sha256 }; ct뒷자리지움();
         CT.list = null; CT.mode = 'preview';
         if((CT.rev || 0) !== 판){ const id = CT.id; CT.id = null; ctOpen(id); toast('확정본으로 저장했습니다 - 확정하는 사이 적은 것은 들어가지 않아 날인본을 다시 불러왔습니다'); return; }
         CT.dirty = false; render(); toast('확정본으로 저장했습니다');

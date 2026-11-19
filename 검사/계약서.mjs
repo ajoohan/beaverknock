@@ -155,7 +155,7 @@ const 모듈 = new Function('S', 'esc', 'apiFetch', '세션있음', 'render', 't
   `${몸}\n${확몸}\n${신몸}\nreturn { rpItems, rp기한, rp대상, rpHTML, RP_직접, 한글금액, 금액글, ctNewDoc, ctDocHTML, ctBalance, CT_HOME_CLAUSES, CT_SPECIALS, CT_FORMS, exNewDoc, exDocHTML, EX_SPEC, EX_FORMS, exFormFor,
   CT, ctSave, ctLoadList, ctOpen, exSwitch, exKeys, exLost, ctTitle, ct신고, ct군, ctClauseSet, ctSpecialSet, CT_CATS, ctFieldRows,
   ct일정목록, ct알림설정, ct영업일째, ct영업일전, CT_공휴일, CT_특약묶음, ct특약묶음, ct묶음문구, ct문구이름,
-  ct기본특약, ct갱신특약, ct종료일, ct부가, CT_기본특약, CT_계약일조항, ct글날, ct이름외, ct지분, ct앞자리, ct생일글 };`);
+  ct기본특약, ct갱신특약, ct종료일, ct부가, CT_기본특약, CT_계약일조항, ct글날, ct이름외, ct지분, ct앞자리, ct생일글, ct뒷자리적기, ct뒷자리지움, ct뒷자리빼고 };`);
 const S = { route: '#/x', agent: { office: '비버공인중개사사무소', name: '한상혁', reg_no: '41450-2024-00001', addr: '하남시 미사대로 550', phone: '031-000-0000' } };
 const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
 
@@ -1494,6 +1494,17 @@ ok(js.includes("앞판임 = r => !ct보관칸(r) && 뒤판.has(r.id);") && js.in
 /* ── 계약서 당사자 생년월일 (2026-11-19 대표님) ── 앞 여섯 자리만 · 뒷자리는 늘 빈칸 */
 ok(M.ct앞자리('700101') === '700101' && M.ct앞자리('1970-01-01') === '700101' && M.ct앞자리('19700101') === '700101' && M.ct앞자리('70.1.1') === '700101' && M.ct앞자리('701301') === '' && M.ct앞자리('700101-1234567') === '' && M.ct앞자리('') === '', '생년월일 → 주민등록번호 앞 여섯 자리 (뒷자리가 붙으면 버린다)');
 ok(M.ct생일글('700101') === '70. 01. 01.' && js.includes("ctIn(`parties.${k}.birth`, '생년월일'") && js.includes("birth: ct생일글(x.birth) })") && js.includes("<tr><th>주민등록번호</th><td>${주민칸(x, b)}</td>"), '계약서 당사자 생년월일 칸 · 주민등록번호 칸 앞자리 · 확인·설명서로 옮김');
+
+/* ── 주민등록번호 뒷자리 (2026-11-19 대표님) ── 화면에서만 · 문서(서버로 가는 것)에는 없다 · 저장하면 지운다 */
+{ const 문서 = M.ctNewDoc('sale'); 문서.parties.seller.birth = '700101'; M.CT.doc = 문서;
+  M.ct뒷자리적기('parties.seller', '1-234567 890');
+  const 찍힘 = M.ctDocHTML(문서), 뺌 = M.ct뒷자리빼고(() => M.ctDocHTML(문서));
+  ok(찍힘.includes('700101 - 1234567') && !뺌.includes('1234567') && !JSON.stringify(문서).includes('1234567'), '뒷자리 - 인쇄에는 찍히고, 문서에는 없고, PDF · 메일용 그림에서는 빠진다');
+  ok(M.ct뒷자리지움() === true && !M.ctDocHTML(문서).includes('1234567') && M.ct뒷자리지움() === false, '뒷자리 - 저장하면 지운다');
+  ok(js.includes("const 뒷지움 = !silent && ct뒷자리지움();") && js.includes("sha256: j.sha256 }; ct뒷자리지움();") && js.includes("html = ct뒷자리빼고(() => ct보기HTML(doc))"), '뒷자리 - 임시저장 · 확정 때 지우고 PDF 저장에는 찍지 않는다');
+  M.CT.doc = null; }
+/* ── 공제증서 (2026-11-19) ── */
+ok(js.includes("const FU_공제 = ['공제증서 앞면', '공제증서 뒷면']") && js.includes('data-fu-label="${n}"') && js.includes("case 'fu-bond-print': fu공제출력(); return true;") && js.includes('${ct공제HTML()}'), '공제증서 - 앞 · 뒤 올리기와 출력 단추');
 
 console.log(`${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

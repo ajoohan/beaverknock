@@ -14064,6 +14064,7 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
+  { v:'26.11.19.24', 날:'2026-11-19', 줄:[ '주민번호 뒷자리 칸이 옆 칸보다 조금 내려가 있던 것' ] },
   { v:'26.11.19.23', 날:'2026-11-19', 줄:[ '계약서 당사자 - 주민등록번호 뒷자리를 적어 인쇄할 수 있습니다. 저장하지 않으며 저장 · 확정하면 지워지고, PDF 저장 · 메일에는 찍히지 않습니다',
     '공제증서 - 서식 자료실에 앞면 · 뒷면을 한 번 올려 두고 ‘공제증서 출력’으로 따로 뽑습니다(계약서의 부속 서류 탭에도 단추)' ] },
   { v:'26.11.19.22', 날:'2026-11-19', 줄:[ '계약서 당사자 - 생년월일(주민등록번호 앞 여섯 자리)을 적을 수 있습니다. 계약서의 주민등록번호 칸 앞자리에 찍히고, 확인·설명서를 만들면 생년월일 칸에 옮겨집니다 · 뒷자리는 저장하지 않고 빈칸으로 인쇄됩니다' ] },
@@ -18304,7 +18305,7 @@ async function ctCoBrokerFind(i){
   ctDirty(); render();
   toast(`명부에서 채웠습니다 - ${j.office}${+j.state && +j.state !== 1 ? ' (영업 상태를 확인해 주세요)' : ''}`);
 }
-const ct뒷자리칸 = (b, w) => `<label class="ct-f w${w}"><span class="lab">주민번호 뒷자리 <span class="sub" style="font-weight:500">저장 안 함</span></span>
+const ct뒷자리칸 = (b, w) => `<label class="ct-f w${w}"><span class="lab">주민번호 뒷자리 <span style="font-weight:500;font-size:inherit;line-height:inherit;color:var(--n500)">저장 안 함</span></span>
     <input class="inp" type="text" inputmode="numeric" maxlength="7" data-in="ctrrn:${b}" value="${esc(ct뒷자리(CT.doc, b))}" autocomplete="off" aria-label="주민등록번호 뒷자리 - 저장하지 않습니다"></label>`;
 const ctIn = (path, label, opt = {}) => {
   const v = ctGet(CT.doc, path);

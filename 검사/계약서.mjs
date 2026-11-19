@@ -417,9 +417,9 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
   const h = M.rpHTML(매);
   ok(/부동산거래계약신고서\(별지 제1호서식\)/.test(h) && /href="https:\/\/rtms\.molit\.go\.kr"/.test(h) && /data-act="rp-copy" data-v="510,000,000원"/.test(h),
      '도우미 화면: 서식 이름 · 부동산거래관리시스템 열기 · 칸마다 복사');
-  ok(/ct신고\(doc\) && CT\.mode !== 'report'/.test(js) && M.ct신고({ form: 'shop-lease' }) === false && M.ct신고({ form: 'lease', sub: '상가' }) === false
+  ok(js.includes('const 신고면 = false;') && M.ct신고({ form: 'shop-lease' }) === false && M.ct신고({ form: 'lease', sub: '상가' }) === false
      && M.ct신고({ form: 'lease', sub: '아파트' }) && M.ct신고({ form: 'sale', sub: '토지' }) && M.ct신고({ form: 'home-lease' }),
-     '신고 도우미는 매매·주택 임대차에만 - 상가 임대차는 신고 대상이 아니다(부동산 임대차는 주거 세부 종류만)');
+     '신고 대상 판정은 매매·주택 임대차만 · 도우미 화면 들어가는 길은 뺐다(2026-11-19 파트너)');
 }
 
 /* ── 신고 마침 · 신고 기한 알림 (2026-10-29) ── */
@@ -689,7 +689,7 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
   ok(/h==='#\/partner\/proposals' && S\.agent && !계약막힘\(\)\) ctLoadList\(\)/.test(js) && /if\(!CT\.list\) await ctLoadList\(true\);/.test(js),
      '제안 화면에서도 계약서 목록을 받고, 모르면 받아 본 뒤에 만든다');
   /* 2026-10-29 대표님: Lounge 계약서처럼 - 왼쪽 입력 판 | 오른쪽 책상 위 A4, 칸은 값 길이만큼, 빽빽하게 */
-  ok(/if\(!isMo\(\)\)\{\s*const 신고면[\s\S]{0,200}const 판 = CT\.mode === 'scan' && !잠김 \? ctScanHTML\(\) : CT\.mode === 'plan' && !F\.explain \? ctPlanHTML\(doc\) : CT\.mode === 'extra' && !F\.explain \? ctExtraHTML\(doc\) : 신고면 \? ctReportSide\(doc\) : \(잠김 \? '' : ctScanBanner\(\)\) \+ \(F\.explain \? exEditor\(doc\) \+[\s\S]{0,260}: ctFormHTML\(doc\)\);/.test(js)
+  ok(/if\(!isMo\(\)\)\{\s*const 신고면[\s\S]{0,200}const 판 = CT\.mode === 'scan' && !잠김 && ct배치\(\) !== 'info' \? ctScanHTML\(\) : CT\.mode === 'plan' && !F\.explain \? ctPlanHTML\(doc\) : CT\.mode === 'extra' && !F\.explain \? ctExtraHTML\(doc\) : 신고면 \? ctReportSide\(doc\) : \(잠김 \? '' : ctScanBanner\(\)\) \+ \(F\.explain \? exEditor\(doc\) \+[\s\S]{0,260}: ctFormHTML\(doc\)\);/.test(js)
      && /return ctDeskShell\(doc, 판, 신고면\);/.test(js) && /\$\{ctFormHTML\(doc\)\}/.test(js),
      'PC 는 입력 판 | 미리보기 한 화면(계약서·확인·설명서·신고 도우미 모두), 휴대폰은 같은 입력 구획을 카드로 쌓는다');
   /* 2026-11-05 - 부속 서류 탭에서는 고른 서류(영수증·정산서·인계 확인서)를, 그 밖에는 계약서를 그린다(ct보기HTML) */
@@ -1382,7 +1382,7 @@ ok(js.includes('<button type="button" class="ctx-fullbtn" data-act="ct-full"') &
 ok(js.includes('function ct기능칸(doc, 잠김, 탭){') && js.includes("${배치 === 'info' ? ct기능칸(doc, 잠김, 탭) : ''}") && js.includes("CT.lay = ['info', 'form', 'both'].includes(v) ? v : 'info';") && css.includes('.ctx-body.lay-info .ctx-toolcol{'), '정보 입력 - 왼쪽 기능 칸(전자계약 순서) · 새 계약서는 정보 입력으로 (2026-11-18 파트너 · 대표님)');
 
 /* ── 소재지 따로 고치기 · 공적장부 우선 · 매물등록 메뉴 (2026-11-17 대표님) ── */
-ok(js.includes("ct칸('property.show', 글 || P.road, 300)") && js.includes("ctIn('property.show', '계약서에 찍히는 소재지'") && js.includes('const ct소재지다름 = P =>') && js.includes("if(ctGet(doc, 'property.jibun') !== s.jibun){ ctSet(doc, 'property.jibun', s.jibun);"), '소재지 - 찍히는 글자는 따로 고치고 찾은 주소는 그대로 · 공적장부 지번이 먼저');
+ok(js.includes("ct칸('property.show', 글 || P.road || '', 300, 'text', { ph:'지번 주소' })") && js.includes("ctIn('property.show', '계약서에 찍히는 소재지'") && js.includes('const ct소재지다름 = P =>') && js.includes("if(ctGet(doc, 'property.jibun') !== s.jibun){ ctSet(doc, 'property.jibun', s.jibun);"), '소재지 - 찍히는 글자는 따로 고치고 찾은 주소는 그대로 · 공적장부 지번이 먼저');
 ok(js.includes("V['#/partner/listings/open'] = () => V['#/partner/listings']();") && js.includes("['#/partner/listings/open', '매물등록', 'list', 'lr']") && js.includes("!L.seed && !!등록상태(L)"), '매물등록 메뉴 - 노출 중 · 노출할 수 있는 매물만(매물장부는 그대로)');
 
 /* ── 화면 검수 (2026-11-17 PC · 휴대폰) ── */
@@ -1394,7 +1394,7 @@ ok(js.includes('class="lg-sw" role="tablist"') && js.includes("if(MG.f === 'done
   ok(C.확정필수('sale', 문서({ jibun: '망월동 1095' })) === null && /소재지/.test(C.확정필수('sale', 문서({})) || ''), '소재지 필수 - 도로명이 없어도 공적장부 지번이 있으면 채운 것');
   ok(js.includes("if(id && CT.id === id){ CT.id = null; CT.doc = null;") && js.includes('const 소재바뀜 = !m.id || 글(f.road, 200) !== 글(m.road0, 200);'), '표 고치기 - 편집 화면의 옛 사본을 버리고, 소재지는 손댔을 때만');
   ok(js.includes('if(!(+L.dep > 0) || 대조안함(L.deal)) return [];') && js.includes("L.status==='active' && +L.dep > 0"), '금액 없는 장부 물건은 손님과 대조하지 않는다');
-  ok(js.includes("...(P.show ? { show: P.show } : {})") && js.includes("p === 'property.road' ? (ctGet(doc, p) || ctGet(doc, 'property.jibun'))"), '확인·설명서가 찍히는 소재지를 물려받고, 화면 필수도 지번을 본다');
+  ok(js.includes("...(P.show ? { show: P.show } : {})") && js.includes("p === 'property.road' ? (ctGet(doc, p) || ctGet(doc, 'property.jibun') || ctGet(doc, 'property.show'))"), '확인·설명서가 찍히는 소재지를 물려받고, 화면 필수도 지번을 본다');
   const feed = fs.readFileSync(new URL('../api/feed.js', import.meta.url), 'utf8'), 확인 = fs.readFileSync(new URL('../api/agent-verify.js', import.meta.url), 'utf8');
   ok(feed.includes("overLimit('bld:ip:' + ipOf(req), 400, 864e5)) return res.status(429)") && 확인.includes('const keyOf = regKey;'), '매물 대장 조회 접속지 한도 · 등록번호 정규화 한 벌'); }
 
@@ -1456,6 +1456,12 @@ ok(js.includes('function ct문자적용(e){') && js.includes("data-act=\"ct-sms-
 { const v = C.부속값({ fee: 100000, names: { fee: '관리비 정산', rent: '', x: 'y' }, dirs: { fee: '+', rent: '-', bad: '+' } });
   ok(v && v.names && v.names.fee === '관리비 정산' && !('rent' in v.names) && v.dirs.fee === '+' && v.dirs.rent === '-' && !('bad' in v.dirs), '정산서 일할 두 줄의 이름 · 방향이 저장된다'); }
 ok(!C.일정목록({ form: 'sale', bd: '2026-12-01', track: { state: 'hold' } }, C.알림설정 ? C.알림설정({}) : undefined).some(e => e.k === 'settle'), '보류 계약에는 잔금 완료 확인을 넣지 않는다');
+
+/* ── 2026-11-19 파트너 계약서 세부 요청 ── */
+ok(js.includes('function ct문서탭(doc, 탭){') && js.includes('function ct스캔칸(){') && js.includes('계약서에 직접 입력</button>') && !js.includes('<div class="ctx-tabs" role="tablist">'), '작성 화면 - 서류 탭 · 왼쪽 공적장부 올리기 · 계약서에 직접 입력 단추 · 입력 판 위 탭 없음');
+ok(js.includes('function ct부동산표(doc){') && js.includes('function ct대금표(doc){') && js.includes('function ct기간표(doc){') && js.includes("'property.landRatioDen'") && js.includes('은 계약시에 지불하고 영수함.'), '정보 입력 - 전자계약 표 · 대지권 종류와 비율 분리');
+ok(js.includes('data-in="ctsall:x"') && js.includes("else if(kind === 'ctsall')") && !js.includes('data-v="">+ 빈 특약') && js.includes('>+ 중개사무소 추가</button>') && js.includes('대리인</button>'), '특약 한 칸 · 중개사무소 추가 · 대리인 단추');
+ok(js.includes("case 'ct-addr-pop':") && js.includes("if(S.modal.type==='ct-addr-pop')") && !js.includes('‘정보 + 서식’으로 바꿨습니다'), '계약서에 직접 입력 - 소재지 주소 검색 · 화면이 강제로 바뀌지 않음');
 
 console.log(`${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

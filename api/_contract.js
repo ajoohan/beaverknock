@@ -194,7 +194,7 @@ async function 중개사찾기(req, res, agent, b) {
    확인·설명서는 계약서가 아니라 보지 않는다 */
 export function 확정필수(form, doc) {
   /* 확인·설명서는 소재지만 본다 */
-  const 소재 = String((doc && doc.property && (doc.property.road || doc.property.jibun)) || '').trim();
+  const 소재 = String((doc && doc.property && (doc.property.road || doc.property.jibun || doc.property.show)) || '').trim();
   if (String(form || '').startsWith('explain')) return 소재 ? null : '필수 항목이 비어 있어 확정할 수 없습니다 - 소재지';
   if (법인번호들(doc).some(v => v && String(v).replace(/[^0-9]/g, '').length !== 13)) return '법인등록번호는 숫자 13자리로 적어 주세요';
   const d = (doc && doc.deal) || {}, 빈 = [];

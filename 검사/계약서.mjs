@@ -1361,7 +1361,7 @@ ok(js.includes("what:'listing-bld'") && js.includes('S.form.lbun = a.bun') && js
 ok(js.includes("case 'ct-full': CT.full = !CT.full;") && js.includes("CT.full ? ' ctx-full' : ''") && js.includes("e.key === 'Escape' && CT.full") && js.includes("알림창(false); CT.full = false;") && css.includes('html:has(.ctx-view.ctx-full){overflow:hidden}'), '계약서 서류 전체화면 - 같은 서류로 바로 고치기 · Esc · 화면 옮기면 닫힘');
 
 /* ── 소재지는 지번 (2026-11-17 파트너) ── */
-ok(js.includes('function ct소재지(P, 날인 = ctSealed()){') && js.split('${ct소재지(P, ctSealed() || !!doc.__sealed)}').length === 3 && js.includes('(도로명) ${esc(doc.property.road)}') && !js.includes('비워 두면 찾은 지번이 찍힙니다'), '계약서 · 확인·설명서 소재지는 지번 먼저, 도로명은 괄호 (설명 문구는 뺐다 · 2026-11-19)');
+ok(js.includes('function ct소재지(P, 날인 = false){') && js.split('${ct소재지(P, ct옛날인(doc))}').length === 3 && js.includes('(도로명) ${esc(doc.property.road)}') && !js.includes('비워 두면 찾은 지번이 찍힙니다'), '계약서 · 확인·설명서 소재지는 지번 먼저, 도로명은 괄호 (설명 문구는 뺐다 · 2026-11-19)');
 
 /* ── 공동중개 사무소 (2026-11-17 파트너) ── */
 { ok(C.등록키('41450-2019-00217') === C.등록키('41450-2019-217') && C.등록키(' 가3665-4 ') === '가36654', '공동중개 찾기 - 등록번호 정규화(앞 0 · 옛 번호)');
@@ -1474,7 +1474,9 @@ ok(js.includes('name0: 쪽[0].name, bytes0: 쪽[0].bytes') && js.includes('if(!C
 
 ok(js.includes("if(!n && 왼쪽칸) return ct대장오류();") && js.includes("에 지급하며${CT편집칸 ? ct중도단추(D) : ''}</td></tr>") && js.includes("case 'phr-list':") && js.includes('더 보기 +${남}</button>') && js.includes('async function 줄이기(file, 장수 = 1){') && css.includes('.ct-secst{min-height:28px}'), '작성 화면 다듬기 - 공적장부 안내 한 곳 · 중도금 단추 줄 안 · 내 특약으로 담기 · 더 보기 · 여러 장이면 더 줄임 (2026-11-19 UI 점검)');
 
-ok(js.includes('ctDocHTML({ ...j.doc, __sealed: true })') && js.includes("if(!(+CT.doc.deal.mid > 0)) return toast('중도금(1차) 금액을 먼저 적어 주세요") && js.includes('function 같은지번(글, 지번){') && js.includes('function ct지울까(있음, 제목, 하기){') && js.includes("고른배치 === 'both' ? 'info' : 'both'") && js.includes("[String(P.show || P.jibun || '').trim() || P.road, P.part || P.detail]"), '점검 - 날인본 도로명 줄 · 2차는 1차 뒤 · 같은 지번만 읽은 소재지 유지 · 빼기 전 확인 · 머리 단추는 고른 배치 · 부속 서류 부동산 표시 (2026-11-19 리뷰)');
+ok(js.includes("ctDocHTML({ ...j.doc, __sealedAt: j.sealed_at || '' })") && js.includes("if(!(+CT.doc.deal.mid > 0)) return toast('중도금(1차) 금액을 먼저 적어 주세요") && js.includes('function 같은지번(글, a){') && js.includes('function ct지울까(있음, 제목, 하기){') && js.includes("고른배치 === 'both' ? 'info' : 'both'") && js.includes("return [소재, 상세, 부분].filter(Boolean).join(' ')"), '점검 - 날인본 도로명 줄 · 2차는 1차 뒤 · 같은 지번만 읽은 소재지 유지 · 빼기 전 확인 · 머리 단추는 고른 배치 · 부속 서류 부동산 표시 (2026-11-19 리뷰)');
+
+ok(css.includes('body.mo table.ec tr{display:grid;grid-template-columns:auto minmax(0,1fr)') && css.includes('body.mo .inp.ec-in{flex:1 1 90px;min-width:0;width:auto!important;height:44px') && css.includes('body.mo .scan-slot{flex-direction:column') && js.includes('const ct옛날인 = doc =>') && js.includes("+D.mid2 > 0 || (CT편집칸 && D.mid2On)"), '휴대폰 입력 표 · 서류 카드 · 옛 날인본만 도로명 줄 · 2차만 적은 중도금 인쇄 (2026-11-19 UI 점검 · 리뷰)');
 
 console.log(`${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

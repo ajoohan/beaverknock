@@ -3082,6 +3082,30 @@ table.ec td{line-height:2.2;color:var(--n800,#2a2a30)}
 .ec-l2{margin-left:14px;font-weight:700;color:var(--n700)}
 .ec-tools{display:inline-flex;gap:12px;margin-left:8px;font-size:13px}
 .ct-secst{min-height:28px}
+/* 휴대폰 - 전자계약 표: 이름 | 칸 두 줄 맞춤, 칸은 손가락 크기(44px · 16px 글자) */
+body.mo table.ec tr{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:10px;row-gap:6px;align-items:center;padding:10px 0}
+body.mo table.ec th{grid-column:1/-1;padding:0 0 2px}
+body.mo table.ec td{display:flex;align-items:center;flex-wrap:wrap;gap:6px;min-width:0;padding:0;line-height:1.6}
+body.mo table.ec td.ec-l{grid-column:1;display:block;white-space:nowrap;padding:0}
+body.mo table.ec td:not(.ec-l){grid-column:2}
+body.mo table.ec th + td:not(.ec-l),body.mo table.ec td[colspan]:not(.ec-l),body.mo table.ec-pay td{grid-column:1/-1}
+body.mo table.ec td:empty{display:none}
+body.mo .inp.ec-in{flex:1 1 90px;min-width:0;width:auto!important;height:44px;min-height:44px;font-size:16px}
+body.mo table.ec-pay td{display:block;line-height:2.9}
+body.mo table.ec-pay .inp.ec-in{display:inline-block;flex:none;width:150px!important}
+body.mo table.ec-pay .ec-han{display:block;min-width:0;line-height:1.7}
+body.mo table.ec-pay .ec-l2{margin-left:0}
+body.mo table.ec-pay .ec-tools{display:flex;margin:2px 0 0;line-height:1.6}
+/* 휴대폰 - 공적장부 안내 줄: 글 아래에 단추를 나란히(단추가 겹치던 것) */
+body.mo .scan-mini,body.mo .scan-done{flex-direction:column;align-items:stretch;gap:8px}
+body.mo .scan-mini .eqb,body.mo .scan-done .eqb{display:flex;flex-wrap:wrap;gap:8px}
+body.mo .scan-mini .eqb .btn,body.mo .scan-done .eqb .btn{flex:1 1 130px;width:auto!important;min-width:0;white-space:nowrap}
+/* 휴대폰 - 서류 올리기 카드: 설명은 위, 단추는 아래 한 줄(설명이 세로로 쪼개지던 것) */
+body.mo .scan-slot{flex-direction:column;align-items:stretch;gap:10px}
+body.mo .scan-slot .ss-side{justify-content:flex-start;flex-wrap:wrap;gap:8px}
+/* 휴대폰 - 바닥글 링크 누름 높이 */
+.mf-row a{display:inline-flex;align-items:center;min-height:44px}
+.mfoot .biz a{display:inline-block;padding:8px 0}
 .ctx-side .ct-f .lab .ct-find{display:inline;min-height:0;padding:0;line-height:inherit;vertical-align:baseline}
 .ct-phr-save{display:flex;flex-direction:column;gap:6px;margin-top:8px}
 .cps-row{display:flex;align-items:center;gap:10px;font-size:13.5px;color:var(--n700)} .cps-row>span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -10435,8 +10459,13 @@ function addrFind(target){
 
 /* 고른 주소를 칸에 옮겨 적는다. 면적·사용승인일은 직접 적는다. */
 /* 읽은 소재지가 고른 지번과 같은 필지인가 - 동 이름 + 번지가 들어 있으면 같다고 본다 */
-function 같은지번(글, 지번){
-  const 끝 = String(지번 || '').trim().split(/\s+/).slice(-2).join(''); return !!끝 && String(글 || '').replace(/\s+/g, '').includes(끝);
+function 같은지번(글, a){
+  const 번지 = a && +a.bun ? String(+a.bun) + (+a.ji ? '-' + (+a.ji) : '') : ''; if(!번지) return false;
+  const 낱 = String(a.jibun || '').trim().split(/\s+/), i = 낱.findIndex(x => x.replace(/^산/, '') === 번지), 동 = i > 0 ? 낱[i - 1] : '';
+  if(!동) return false;
+  const 글자 = String(글 || '').replace(/\s+/g, '');
+  for(const 꼴 of [동 + 번지, 동 + '산' + 번지]){ const k = 글자.indexOf(꼴); if(k >= 0 && !/[\d-]/.test(글자[k + 꼴.length] || '')) return true; }
+  return false;
 }
 function addrPick(i){
   const a = (ADDR.rows||[])[i]; if(!a) return true;
@@ -10446,7 +10475,7 @@ function addrPick(i){
   if(ADDR.for === 'ct-addr' && CT.doc){
     /* 계약서 소재지 - 법정동코드·본번·부번·산까지 그대로 담는다. 나중에 보낼 때 바꿀 것이 없게 */
     Object.assign(CT.doc.property, { road: full, jibun: a.jibun || '', admCd: a.admCd || '', bun: a.bun || '',
-      ji: a.ji || '', mount: !!a.mount, zip: a.zip || '', bdNm: CT.doc.property.bdNm || a.bdNm || '', show: (CT.filled && CT.filled.has('property.show') && 같은지번(CT.doc.property.show, a.jibun) && String(CT.doc.property.show || '').trim()) || a.jibun || full });
+      ji: a.ji || '', mount: !!a.mount, zip: a.zip || '', bdNm: CT.doc.property.bdNm || a.bdNm || '', show: (CT.filled && CT.filled.has('property.show') && 같은지번(CT.doc.property.show, a) && String(CT.doc.property.show || '').trim()) || a.jibun || full });
     CT.dirty = true; CT.rev = (CT.rev || 0) + 1;
     if(S.modal && S.modal.type === 'ct-addr-pop') S.modal = null;
   }
@@ -14007,6 +14036,8 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
+  { v:'26.11.19.13', 날:'2026-11-19', 줄:[ '휴대폰 화면 다듬기 - 계약서 입력 표를 이름 · 칸 두 줄로 맞추고 칸을 손가락 크기로 · 공적장부 안내 단추 겹침 · 서류 올리기 카드 · 바닥글 링크 누름 높이',
+    '계약서 점검 - 도로명 줄은 예전에 확정한 날인본에만 남김(새로 확정해도 나오지 않음) · 건물명이 붙은 지번도 같은 필지로 판정 · 부속 서류의 부동산 표시에 동 · 호 · 1차를 비우고 2차만 적은 중도금도 인쇄' ] },
   { v:'26.11.19.12', 날:'2026-11-19', 줄:[ '계약서 점검 - 날인본은 손님 대화방에서도 찍힌 그대로 · 2차 중도금은 1차 금액을 적은 뒤에 · 공적장부 뒤 다른 주소를 고르면 소재지도 바뀜 · 적어 둔 대리인 · 공동명의인 · 중개사무소는 빼기 전에 확인 · 영수증 등 부속 서류의 부동산 표시를 계약서 소재지와 같게 · 직접 입력 중도금 줄 맞춤' ] },
   { v:'26.11.19.11', 날:'2026-11-19', 줄:[ '계약서 작성 화면 다듬기 - 공적장부 안내는 왼쪽 칸 하나로 · 부속 서류(영수증 등)는 서류 모습과 나란히 · 직접 입력의 중도금 단추를 중도금 줄 안으로 · 작은 단추 누름 영역 · ‘더 보기 +1’ · 주소 칸 줄 맞춤',
     '특약 - 적은 특약을 ‘내 특약’으로 담기(한 칸 특약 아래) · 공적장부 사진이 여러 장이면 더 줄여 보내 5장까지 올라가게' ] },
@@ -15667,7 +15698,9 @@ const ct소재지있음 = P => !!(P && (P.road || P.jibun || P.show));
 const ct소재지글 = P => [String((P && (P.show || P.jibun)) || '').trim(), String((P && P.detail) || '').trim()].filter(Boolean).join(' ');
 /* 찍히는 소재지가 찾은 주소(지번)와 다른가 - 띄어쓰기는 무시 */
 const ct소재지다름 = P => { const 맞 = v => String(v || '').replace(/\s+/g, ''); return !!(P && P.show && P.jibun && !맞(P.show).startsWith(맞(P.jibun)) && 맞(P.show) !== 맞(P.road)); };
-function ct소재지(P, 날인 = ctSealed()){
+/* 도로명 줄을 빼기 전(2026-11-19 14:40)에 확정한 날인본인가 - 그 계약서만 찍힌 그대로 둔다 */
+const ct옛날인 = doc => { const at = String((doc && doc.__sealedAt) || (ctSealed() && CT.row.sealed_at) || ''); return !!at && new Date(at).getTime() < Date.parse('2026-11-19T05:40:00Z'); };
+function ct소재지(P, 날인 = false){
   P = P || {};
   const 글 = ct소재지글(P), 도로 = 날인 && P.road && 글 && 글 !== P.road ? `<br><span class="sm">(도로명) ${esc(P.road)}</span>` : '';   /* 도로명 줄은 뺐다(2026-11-19 파트너) - 날인본만 찍힌 그대로 */
   const 찾기 = CT편집칸 ? ' <button type="button" class="ct-addr-btn" data-act="ct-addr-pop">주소 검색</button>' : '';
@@ -16158,13 +16191,13 @@ function ctDocHTML(doc){
     ${맞춤 ? `
     <h2>[${esc(F.fields[0].h)}]</h2>
     <table>
-      <tr><th class="w">소재지</th><td colspan="3">${ct소재지(P, ctSealed() || !!doc.__sealed)}</td></tr>
+      <tr><th class="w">소재지</th><td colspan="3">${ct소재지(P, ct옛날인(doc))}</td></tr>
       ${ctFieldRows(doc, F.fields[0].rows)}
     </table>
     ${F.fields.slice(1).map(g => `<h2>[${esc(g.h)}]</h2><table>${ctFieldRows(doc, g.rows)}</table>`).join('')}` : `
     <h2>[${매매?'부동산':doc.form==='sublease'?'전대물':상가?'임차상가건물':군==='home'?'임차주택':'임차물'}의 표시]</h2>
     <table>
-      <tr><th class="w">소재지</th><td colspan="5">${ct소재지(P, ctSealed() || !!doc.__sealed)}</td></tr>
+      <tr><th class="w">소재지</th><td colspan="5">${ct소재지(P, ct옛날인(doc))}</td></tr>
       <tr><th class="w">토지</th><th>지목</th><td>${ct칸('property.landCat', P.landCat, 70)}</td><th>면적</th><td colspan="2">${ct칸('property.landArea', P.landArea, 70, 'area')}</td></tr>
       ${매매 || (F.lease && ct집합(doc.sub)) ? `<tr><th class="w">대지권</th><td colspan="5">${ct칸('property.landRight', P.landRight, 200)}</td></tr>` : ''}
       <tr><th class="w">건물</th><th>구조·용도</th><td>${CT편집칸 ? `${ct칸('property.bldStruct', P.bldStruct, 60, 'text', { ph:'구조' })} · ${ct칸('property.bldUse', P.bldUse, 50, 'text', { ph:'용도' })}` : ct값([P.bldStruct,P.bldUse].filter(Boolean).join(' · '), 90)}</td><th>면적</th><td colspan="2">${ct칸('property.bldArea', P.bldArea, 70, 'area')}</td></tr>
@@ -16185,7 +16218,7 @@ function ctDocHTML(doc){
       <tr><th class="w">${esc(F.pay.price)}</th><td>${돈('deal.price', D.price, `금 ${빈칸(160)}원정(₩${빈칸(90)})`)}</td></tr>
       <tr><th class="w">계약금</th><td>${돈('deal.down', D.down, `금 ${빈칸(140)}원정`)} 은 계약할 때 지급하고 영수함. 영수자 ${ct칸('deal.downBy', D.downBy, 70)} (인)</td></tr>
       ${+D.mid || CT편집칸 ? `<tr><th class="w">${ct중도2(D) || (CT편집칸 && D.mid2On) ? '1차 중도금' : '중도금'}</th><td>${돈('deal.mid', D.mid, '')} 은 ${날('deal.midDate', D.midDate)}에 지급하며${CT편집칸 ? ct중도단추(D) : ''}</td></tr>` : ''}
-      ${ct중도2(D) || (CT편집칸 && D.mid2On) ? `<tr><th class="w">2차 중도금</th><td>${돈('deal.mid2', D.mid2, '')} 은 ${날('deal.mid2Date', D.mid2Date)}에 지급하며</td></tr>` : ''}${ct중도더(D).map((x, i) => `<tr><th class="w">${i + 3}차 중도금</th><td>${돈(`deal.mids.${i}.amt`, x.amt, '')} 은 ${날(`deal.mids.${i}.date`, x.date)}에 지급하며</td></tr>`).join('')}
+      ${ct중도2(D) || +D.mid2 > 0 || (CT편집칸 && D.mid2On) ? `<tr><th class="w">${+D.mid || CT편집칸 ? '2차 중도금' : '중도금'}</th><td>${돈('deal.mid2', D.mid2, '')} 은 ${날('deal.mid2Date', D.mid2Date)}에 지급하며</td></tr>` : ''}${ct중도더(D).map((x, i) => `<tr><th class="w">${i + 3}차 중도금</th><td>${돈(`deal.mids.${i}.amt`, x.amt, '')} 은 ${날(`deal.mids.${i}.date`, x.date)}에 지급하며</td></tr>`).join('')}
       <tr><th class="w">잔금</th><td>${잔금글()} 은 ${날('deal.balanceDate', D.balanceDate)}에 지급한다</td></tr>
     </table>
     <p class="ct-art"><b>제2조(${esc(F.art2t)})</b> ${F.art2(doc)}</p>`
@@ -16195,7 +16228,7 @@ function ctDocHTML(doc){
       <tr><th class="w">매매대금</th><td>${돈('deal.price', D.price, `금 ${빈칸(160)}원정(₩${빈칸(90)})`)}</td></tr>
       <tr><th class="w">계약금</th><td>${돈('deal.down', D.down, `금 ${빈칸(140)}원정`)} 은 계약할 때 지급하고 영수함. 영수자 ${ct칸('deal.downBy', D.downBy, 70)} (인)</td></tr>
       ${+D.mid || CT편집칸 ? `<tr><th class="w">${ct중도2(D) || (CT편집칸 && D.mid2On) ? '1차 중도금' : '중도금'}</th><td>${돈('deal.mid', D.mid, '')} 은 ${날('deal.midDate', D.midDate)}에 지급하며${CT편집칸 ? ct중도단추(D) : ''}</td></tr>` : ''}
-      ${ct중도2(D) || (CT편집칸 && D.mid2On) ? `<tr><th class="w">2차 중도금</th><td>${돈('deal.mid2', D.mid2, '')} 은 ${날('deal.mid2Date', D.mid2Date)}에 지급하며</td></tr>` : ''}${ct중도더(D).map((x, i) => `<tr><th class="w">${i + 3}차 중도금</th><td>${돈(`deal.mids.${i}.amt`, x.amt, '')} 은 ${날(`deal.mids.${i}.date`, x.date)}에 지급하며</td></tr>`).join('')}
+      ${ct중도2(D) || +D.mid2 > 0 || (CT편집칸 && D.mid2On) ? `<tr><th class="w">${+D.mid || CT편집칸 ? '2차 중도금' : '중도금'}</th><td>${돈('deal.mid2', D.mid2, '')} 은 ${날('deal.mid2Date', D.mid2Date)}에 지급하며</td></tr>` : ''}${ct중도더(D).map((x, i) => `<tr><th class="w">${i + 3}차 중도금</th><td>${돈(`deal.mids.${i}.amt`, x.amt, '')} 은 ${날(`deal.mids.${i}.date`, x.date)}에 지급하며</td></tr>`).join('')}
       <tr><th class="w">잔금</th><td>${잔금글()} 은 ${날('deal.balanceDate', D.balanceDate)}에 지급한다</td></tr>
     </table>
     <p class="ct-art"><b>제2조(소유권 이전 등)</b> 매도인은 매매대금의 잔금을 받음과 동시에 매수인에게 소유권이전등기에 필요한 모든 서류를 교부하고 등기 절차에 협력하며, 위 부동산을 ${CT편집칸 ? 날('period.handover', R.handover, D.balanceDate ? `${ct날짜(D.balanceDate)}(잔금일)` : '') : ct날짜(R.handover || D.balanceDate)}에 인도한다.</p>`
@@ -16205,7 +16238,7 @@ function ctDocHTML(doc){
       <tr><th class="w">보증금</th><td>${돈('deal.deposit', D.deposit, `금 ${빈칸(160)}원정(₩${빈칸(90)})`)}</td></tr>
       <tr><th class="w">계약금</th><td>${돈('deal.down', D.down, `금 ${빈칸(140)}원정`)} 은 계약할 때 지급하고 영수함. 영수자 ${ct칸('deal.downBy', D.downBy, 70)} (인)</td></tr>
       ${+D.mid || CT편집칸 ? `<tr><th class="w">${ct중도2(D) || (CT편집칸 && D.mid2On) ? '1차 중도금' : '중도금'}</th><td>${돈('deal.mid', D.mid, '')} 은 ${날('deal.midDate', D.midDate)}에 지급하며${CT편집칸 ? ct중도단추(D) : ''}</td></tr>` : ''}
-      ${ct중도2(D) || (CT편집칸 && D.mid2On) ? `<tr><th class="w">2차 중도금</th><td>${돈('deal.mid2', D.mid2, '')} 은 ${날('deal.mid2Date', D.mid2Date)}에 지급하며</td></tr>` : ''}${ct중도더(D).map((x, i) => `<tr><th class="w">${i + 3}차 중도금</th><td>${돈(`deal.mids.${i}.amt`, x.amt, '')} 은 ${날(`deal.mids.${i}.date`, x.date)}에 지급하며</td></tr>`).join('')}
+      ${ct중도2(D) || +D.mid2 > 0 || (CT편집칸 && D.mid2On) ? `<tr><th class="w">${+D.mid || CT편집칸 ? '2차 중도금' : '중도금'}</th><td>${돈('deal.mid2', D.mid2, '')} 은 ${날('deal.mid2Date', D.mid2Date)}에 지급하며</td></tr>` : ''}${ct중도더(D).map((x, i) => `<tr><th class="w">${i + 3}차 중도금</th><td>${돈(`deal.mids.${i}.amt`, x.amt, '')} 은 ${날(`deal.mids.${i}.date`, x.date)}에 지급하며</td></tr>`).join('')}
       <tr><th class="w">잔금</th><td>${잔금글()} 은 ${날('deal.balanceDate', D.balanceDate)}에 지급한다</td></tr>
       ${월세 ? `<tr><th class="w">차임(월세)</th><td>${돈('deal.rent', D.rent, `금 ${빈칸(140)}원정`)}${ct부가글(ct부가(doc))} 은 매월 ${CT편집칸 ? ct칸('deal.rentDay', String(D.rentDay || '').replace(/^매월\s*/, '').replace(/일$/, ''), 30) : D.rentDay?esc(String(D.rentDay).replace(/^매월\s*/, '').replace(/일$/, '')):빈칸(30)}일에 지급한다(${esc(D.rentWhen||'선불')}). 입금계좌: ${빈칸(200)}</td></tr>` : ''}
       ${연세 ? `<tr><th class="w">차임(연세)</th><td>${돈('deal.rent', D.rent, `금 ${빈칸(140)}원정`)}${ct부가글(ct부가(doc))} 은 ${CT편집칸 ? ct칸('deal.rentDay', D.rentDay, 90) : D.rentDay?esc(D.rentDay):빈칸(90)}에 1년분을 한꺼번에 지급한다(${esc(D.rentWhen||'선불')}). 입금계좌: ${빈칸(200)}</td></tr>` : ''}
@@ -16990,7 +17023,7 @@ function rm서류HTML(id){
       : !D.ok ? `<div class="card pad"><p class="sub" style="margin:0">${esc(j.error || '계약서를 열지 못했습니다')}</p></div>`
       : !j.sealed ? `<div class="card pad"><p class="sub" style="margin:0">아직 날인 전입니다. 계약서를 확정본으로 저장하면 여기에서 다시 볼 수 있습니다.</p></div>`
       : `<p class="sub" style="margin:0;font-size:13.5px">${esc(j.title || '')} · 날인본 확정 ${esc(ct한국날(j.sealed_at))} · 원본은 중개사무소에서 받으신 종이 계약서입니다.</p>
-        <div class="ct-sheet-wrap"><div class="ct-sheet">${ctDocHTML({ ...j.doc, __sealed: true })}</div></div>`}
+        <div class="ct-sheet-wrap"><div class="ct-sheet">${ctDocHTML({ ...j.doc, __sealedAt: j.sealed_at || '' })}</div></div>`}
   </div>
 </div>`;
 }
@@ -19078,7 +19111,9 @@ function ctReturnDocHTML(doc){
   </div>`;
 }
 const ct부속머리 = doc => `<div class="ctdoc${ct글꼴(doc) === 'sans' ? ' f-sans' : ''}">`;
-const ct부동산글 = doc => { const P = doc.property || {}; return [String(P.show || P.jibun || '').trim() || P.road, P.part || P.detail].filter(Boolean).join(' ') || P.bdNm || ''; };
+const ct부동산글 = doc => { const P = doc.property || {}; const 소재 = String(P.show || P.jibun || '').trim() || P.road || '', 붙 = 소재.replace(/\s+/g, ''), 부분 = String(P.part || '').trim(), 첫 = 부분.split(/\s+/)[0];
+  const 상세 = String(P.detail || '').trim().split(/\s+/).filter(x => x && x !== 첫 && !붙.includes(x)).join(' ');
+  return [소재, 상세, 부분].filter(Boolean).join(' ') || P.bdNm || ''; };
 /* 영수인·지급인 - 성명·주소·연락처·날인 */
 const ct영수칸 = (label, x) => `
     <tr><th rowspan="2" class="w">${label}</th><th>주소</th><td colspan="3">${ct값(x.addr, 260)}</td></tr>

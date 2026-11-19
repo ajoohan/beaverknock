@@ -1485,7 +1485,7 @@ ok(!js.includes('나란히 보기</button>') && js.includes("[['info', '칸 입�
   const h = M.exDocHTML(문서);
   ok(/<th class="ex-gp" rowspan="3">등기부<br>기재사항<\/th><th class="ex-c" colspan="2">소유권에 관한 사항<\/th><th class="ex-c" colspan="2">소유권 외의 권리사항<\/th>/.test(h) && /<th class="ex-gp" rowspan="\d+">토지<\/th><th class="ex-s">소재지<\/th>/.test(h) && /<th class="ex-gp" rowspan="\d+">건축물<\/th><th class="ex-s">전용면적\(㎡\)<\/th>/.test(h), '확인·설명서 - 법정 서식 격자(토지 · 건축물 묶음 · 등기부 기재사항 네 칸)');
   ok(/별지 참조/.test(h) && /<th class="ex-h" rowspan="2">목적물<\/th>/.test(h) && h.indexOf('소유권에 관한 사항</b>') < h.indexOf('소유권 외의 사항</b>') && h.indexOf('소유권 외의 사항</b>') < h.indexOf('기타사항</b>') && !/작성방법|작성요령/.test(h), '별지 - 목적물 표 → 소유권에 관한 사항 → 소유권 외의 사항 → 기타사항 · 작성요령 쪽 없음');
-  ok(js.includes("const 줄 = o => [o.share ? `지분 ${o.share}` : '', `성명: ${o.name}`, '생년월일:      년    월    일', `주소: ${o.addr || ''}`]") && js.includes("data-act=\"${p.t === 'one' ? 'ex1' : 'exm'}\"") && js.includes("['form', F.explain ? '양식에 직접 입력' : '계약서에 직접 입력']"), '등기부 소유자는 지분 / 성명 / 생년월일 / 주소 꼴 · 양식에 직접 입력');
+  ok(js.includes("const 줄 = o => [o.share ? `지분 ${o.share}` : '', `성명: ${o.name}`, `생년월일: ${o.birth || '     년    월    일'}`, `주소: ${o.addr || ''}`]") && js.includes("data-act=\"${p.t === 'one' ? 'ex1' : 'exm'}\"") && js.includes("['form', F.explain ? '양식에 직접 입력' : '계약서에 직접 입력']"), '등기부 소유자는 지분 / 성명 / 생년월일 / 주소 꼴 · 양식에 직접 입력');
 }
 
 console.log(`${ran - fail} 통과 / ${fail} 실패`);

@@ -117,6 +117,13 @@ export const 표칸 = {
   },
   bk_contract: o => {
     if (o.doc && typeof o.doc === 'object' && o.doc.parties) o.doc = { ...o.doc, parties: 깊이잠금(o.doc.parties) };
+    /* 확인·설명서의 등기부 소유권 칸 · 판독한 소유자 목록 - 소유자 이름 · 주소 · 생년월일 (2026-11-19) */
+    if (o.doc && typeof o.doc === 'object' && o.doc.ex && typeof o.doc.ex === 'object') {
+      const ex = { ...o.doc.ex }; for (const f of ['ownLand', 'ownBld']) if (typeof ex[f] === 'string' && ex[f]) ex[f] = 잠그기(ex[f]);
+      o.doc = { ...o.doc, ex };
+    }
+    if (o.doc && typeof o.doc === 'object' && o.doc.src && typeof o.doc.src === 'object' && Array.isArray(o.doc.src.owners))
+      o.doc = { ...o.doc, src: { ...o.doc.src, owners: 깊이잠금(o.doc.src.owners) } };
     if (o.track && typeof o.track === 'object' && Array.isArray(o.track.notes))
       o.track = { ...o.track, notes: o.track.notes.map(n => n && typeof n === 'object' ? { ...n, name: 잠그기(n.name), text: 잠그기(n.text) } : n) };
   },

@@ -3094,7 +3094,7 @@ table.ec td{line-height:2.2;color:var(--n800,#2a2a30)}
 .ec-tools{display:inline-flex;gap:12px;margin-left:8px;font-size:13px}
 .ct-secst{min-height:28px}
 /* 휴대폰 파트너 머리 - 이름이 화면 밖으로 밀려 잘리던 것 */
-body.mo .ptn-nav .umenu-btn .nm2{max-width:56px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+body.mo .ptn-nav .umenu-btn .nm2{max-width:48px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 @media (max-width:400px){ body.mo .ptn-nav > .badge, body.mo .ptn-nav .right > .badge{display:none} }
 /* 마이페이지 바로 가기 타일 - 값이 한두 글자만 보이던 것: 이름 아래 줄에 값 */
 .acc-tiles .acc-go{flex-wrap:wrap;row-gap:0;padding:8px 16px}
@@ -3103,7 +3103,7 @@ body.mo .ptn-nav .umenu-btn .nm2{max-width:56px;overflow:hidden;text-overflow:el
 /* 매물 저장 줄 - 휴대폰에서는 안내 위, 단추 아래 한 줄 */
 .ls-saverow{display:flex;justify-content:space-between;align-items:center;gap:12px}
 body.mo .ls-saverow{flex-direction:column;align-items:stretch}
-body.mo .ls-saverow .btn{width:100%}
+body.mo .ls-saverow .btn{width:100%;align-self:stretch;justify-content:center}
 .ct-acct-pv{margin:2px 0 0;padding:8px 12px;border:1px dashed var(--n300);border-radius:8px;background:var(--n50,#F7F7F9);font-size:13.5px;color:var(--n700)}
 .ct-my-new{display:flex;flex-direction:column;gap:6px;padding:10px;border:1px solid var(--hair);border-radius:10px;background:var(--n50,#F7F7F9)}
 /* 부속 서류 - 위에 적는 칸, 아래에 서류(나란히 보기 없음) */
@@ -14064,6 +14064,7 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
+  { v:'26.11.19.20', 날:'2026-11-19', 줄:[ '확인·설명서 - 등기부를 읽으면 소유자 생년월일(등기부에 적힌 앞 여섯 자리)도 소유권 칸에 넣습니다 · 소유권 칸은 암호화해 저장' ] },
   { v:'26.11.19.19', 날:'2026-11-19', 줄:[ '확인·설명서 - 법정 서식 격자(토지 · 건축물 묶음, 등기부 기재사항 네 칸)로 다시 그렸습니다 · 작성 방식 두 가지(칸 입력 / 양식에 직접 입력) · 별지 작성(목적물 표 → 소유권에 관한 사항 → 소유권 외의 사항 → 기타사항)',
     '등기부를 읽으면 소유권 칸에 ‘지분 / 성명 / 생년월일 / 주소’ 꼴로 넣습니다(주소는 등기부에 적힌 그대로 · 생년월일은 직접 적습니다)' ] },
   { v:'26.11.19.18', 날:'2026-11-19', 줄:[ '특약 - 기본으로 드리는 추가 특약(추가1 · 추가2 …)을 되살렸습니다. ‘내 것으로 가져오기’를 누르면 제목 · 내용을 고칠 수 있습니다 · 새로 만든 추가 특약 이름이 바뀌지 않게 · ‘기본특약 넣기’ 뒤 특약 칸으로 이동',
@@ -19563,7 +19564,7 @@ function ctApplyScan(doc, s, kinds, 빈칸만){
     if(F.explain) 넣기(`parties.${갑}.addr`, 소유[0].addr);
   }
   if(F.explain){
-    const 줄 = o => [o.share ? `지분 ${o.share}` : '', `성명: ${o.name}`, '생년월일:      년    월    일', `주소: ${o.addr || ''}`].filter(Boolean).join(' / ');
+    const 줄 = o => [o.share ? `지분 ${o.share}` : '', `성명: ${o.name}`, `생년월일: ${o.birth || '     년    월    일'}`, `주소: ${o.addr || ''}`].filter(Boolean).join(' / ');
     const 권리 = t => (s.rights || []).filter(r => r.target === t || r.target === '전체')
       .map(r => `[${r.section}] ${[r.kind, r.holder, r.amount, r.date && r.date + ' 접수'].filter(Boolean).join(' · ')}`).join('\n');
     if(소유.length){ 넣기('ex.ownLand', 소유.map(줄).join('\n')); 넣기('ex.ownBld', 소유.map(줄).join('\n')); }

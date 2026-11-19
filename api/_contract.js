@@ -1169,15 +1169,20 @@ async function del(res, agent, b) {
   if (!UUID.test(id)) return res.status(400).json({ error: '어느 계약서인지 알 수 없습니다' });
   if (agent.staff) return res.status(403).json({ error: '영구 삭제는 대표만 할 수 있습니다' });
   /* 손님 대화방이 열린 계약서는 지우지 않는다(2026-11-13 - 작성 중에도 초대하게 되면서). 대화 · 파일이 주인 없이 남지 않게 */
-  const { r, t, rows } = await db('bk_contract', `id=eq.${id}&agent_id=eq.${agent.id}&status=eq.draft&track->room=is.null`, {
+  /* 확정본 (2026-11-19 대표님 결정 '확정본은 중개사가 수동으로 삭제할 수 있음') - 저절로는 지우지 않고, 휴지통에 넣은 것만 대표가 지운다.
+     DB 잠금(0045)도 휴지통에 있는 확정본만 지우게 둔다 - 0045 를 넣기 전이면 DB 가 막고, 그때는 준비 중이라고 알린다 */
+  const 있나 = await db('bk_contract', `select=status,track&id=eq.${id}&agent_id=eq.${agent.id}&limit=1`);
+  if (!있나.r.ok) return noTable(있나.t) ? 준비중(res) : res.status(502).json({ error: '지우지 못했습니다' });
+  const 행 = (있나.rows || [])[0];
+  if (!행) return res.status(404).json({ error: '계약서를 찾지 못했습니다 - 이미 지워졌을 수 있습니다' });
+  if (행.track && 행.track.room) return res.status(409).json({ error: '손님 대화방이 있는 계약서는 지우지 않습니다 - 휴지통에 그대로 둡니다' });
+  const 확정 = 행.status === 'sealed';
+  if (확정 && !(행.track && 행.track.trash)) return res.status(409).json({ error: '확정본은 휴지통에 넣은 뒤에 지울 수 있습니다' });
+  const { r, t, rows } = await db('bk_contract', `id=eq.${id}&agent_id=eq.${agent.id}&status=eq.${확정 ? 'sealed&track->>trash=not.is.null' : 'draft'}&track->room=is.null`, {
     method: 'DELETE', headers: { Prefer: 'return=representation' },
   });
-  if (!r.ok) return noTable(t) ? 준비중(res) : res.status(502).json({ error: '지우지 못했습니다' });
-  if (!rows.length) {
-    const 있나 = await db('bk_contract', `select=status,track&id=eq.${id}&agent_id=eq.${agent.id}&limit=1`);
-    const 행 = (있나.rows || [])[0];
-    return res.status(409).json({ error: 행 && 행.status === 'draft' && 행.track && 행.track.room ? '손님 대화방이 있는 계약서는 지우지 않습니다 - 휴지통에 그대로 둡니다' : '확정본은 지울 수 없습니다' });
-  }
+  if (!r.ok) return noTable(t) ? 준비중(res) : /지울 수 없습니다/.test(String(t || '')) ? res.status(409).json({ error: '확정본 지우기는 아직 준비 중입니다 - 조금 뒤에 다시 해 주세요' }) : res.status(502).json({ error: '지우지 못했습니다' });
+  if (!rows.length) return res.status(409).json({ error: '지우지 못했습니다 - 목록을 새로 고친 뒤 다시 해 주세요' });
   return res.status(200).json({ ok: true });
 }
 

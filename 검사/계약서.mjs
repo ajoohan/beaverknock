@@ -113,7 +113,24 @@ const html = 길.html(), js = 길.js(), css = 길.css();
 
   답 = () => new Response('[]', { status: 200 });
   ({ res } = await 돌려({ what: 'contract-del', id: '33333333-3333-3333-3333-333333333333' }));
-  ok(불린[0].m === 'DELETE' && /status=eq\.draft/.test(불린[0].u) && res.code === 409, '지우기는 작성 중인 것만 - 확정본이면 409');
+  ok(불린.length === 1 && 불린[0].m === 'GET' && res.code === 404, '지우기 - 없는 계약서면 404(지우기 요청을 보내지 않는다)');
+  { const 지움 = 행 => (u, o) => new Response(JSON.stringify((o.method || 'GET') === 'DELETE' ? [{ id: 'x' }] : [행]), { status: 200 });
+    답 = 지움({ status: 'sealed', track: {} });
+    ({ res } = await 돌려({ what: 'contract-del', id: '33333333-3333-3333-3333-333333333333' }));
+    ok(res.code === 409 && !불린.some(x => x.m === 'DELETE'), '목록에 있는 확정본은 바로 지우지 않는다 - 휴지통에 넣은 뒤에만(409)');
+    답 = 지움({ status: 'sealed', track: { trash: '2026-11-19' } });
+    ({ res } = await 돌려({ what: 'contract-del', id: '33333333-3333-3333-3333-333333333333' }));
+    ok(res.code === 200 && 불린[1].m === 'DELETE' && 불린[1].u.includes('status=eq.sealed&track->>trash=not.is.null&track->room=is.null'), '휴지통의 확정본은 대표가 영구 삭제한다(2026-11-19 대표님 결정)');
+    답 = 지움({ status: 'sealed', track: { trash: '2026-11-19', room: { n: 1 } } });
+    ({ res } = await 돌려({ what: 'contract-del', id: '33333333-3333-3333-3333-333333333333' }));
+    ok(res.code === 409 && !불린.some(x => x.m === 'DELETE'), '손님 대화방이 있는 확정본은 지우지 않는다');
+    답 = 지움({ status: 'draft', track: {} });
+    ({ res } = await 돌려({ what: 'contract-del', id: '33333333-3333-3333-3333-333333333333' }));
+    ok(res.code === 200 && 불린[1].u.includes('status=eq.draft&track->room=is.null'), '작성 중 계약서는 그대로 지운다');
+    답 = (u, o) => (o.method || 'GET') === 'DELETE' ? new Response('{"message":"날인본은 지울 수 없습니다"}', { status: 400 }) : new Response(JSON.stringify([{ status: 'sealed', track: { trash: '2026-11-19' } }]), { status: 200 });
+    ({ res } = await 돌려({ what: 'contract-del', id: '33333333-3333-3333-3333-333333333333' }));
+    ok(res.code === 409, 'DB 잠금(0045)을 넣기 전이면 확정본 지우기는 준비 중(409)');
+    ok((await 돌려({ what: 'contract-del', id: '33333333-3333-3333-3333-333333333333' }, { ...agent, staff: true })).res.code === 403, '직원은 영구 삭제를 못 한다'); }
 
   답 = () => new Response(JSON.stringify([{ id: 'old', form: 'home-lease', title: 't', doc: db도c, proposal_id: null }]), { status: 200 });
   ({ res } = await 돌려({ what: 'contract-revise', id: '33333333-3333-3333-3333-333333333333' }));
@@ -1327,11 +1344,13 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
   ok(t && t.arch === '2026-11-10' && t.trash === '2026-11-10' && C.trackCheck({ trash: '어제' }) === null, 'track 에 보관함 · 휴지통 날짜(arch · trash)가 들어가고, 날짜 모양이 아니면 거절');
   ok(/case 'contract-bin':\s+await bin\(res, agent, b\)/.test(길.read ? '' : fs.readFileSync(new URL('../api/_contract.js', import.meta.url), 'utf8')), '서버 contract-bin - 보관함 · 휴지통으로 옮기고 되돌린다');
   ok(/'contract-del'[^\]]*\]\.includes\(w\)/.test(feed), '영구 삭제(contract-del)는 대표만 - 직원은 막는다');
-  ok(js.includes("const ct보관칸 = r =>") && js.includes("data-act=\"ct-bin-tab\"") && js.includes("'ct-purge', id, '영구 삭제'") && js.includes("r.status === 'sealed' ? ''") && /r\.track && r\.track\.room \? `<span class="ct-rnote">손님 대화방이 있어 지우지 않습니다/.test(js) && js.includes(": 직원() ? `<span class=\"ct-rnote\">${ct휴지남은날(r)}일 뒤 지워짐"),
-     '목록 · 보관함 · 휴지통 칸 - 휴지통의 확정본 · 대화방이 있는 계약서는 영구 삭제 단추가 없고, 직원에게는 남은 날만 보인다');
+  ok(js.includes("const ct보관칸 = r =>") && js.includes("data-act=\"ct-bin-tab\"") && js.includes("'ct-purge', id, '영구 삭제'") && js.includes("r.status === 'sealed' ? '영구 삭제는 대표만'") && /r\.track && r\.track\.room \? `<span class="ct-rnote">손님 대화방이 있어 지우지 않습니다/.test(js) && js.includes("ct휴지남은날(r) + '일 뒤 지워짐'") && js.includes('확정본지움 ?'),
+     '목록 · 보관함 · 휴지통 칸 - 대화방이 있는 계약서는 영구 삭제 단추가 없고, 직원에게는 남은 날(확정본은 대표만)만 보인다');
   { const 서 = fs.readFileSync(new URL('../api/_contract.js', import.meta.url), 'utf8');
-    ok(/status=eq\.draft&track->room=is\.null`, \{\s*method: 'DELETE'/.test(서) && (서.match(/track->>trash=lt\.\$\{날더하기\(오늘, -30\)\}&track->room=is\.null/g) || []).length === 2,
+    ok(/'draft'\}&track->room=is\.null`, \{\s*method: 'DELETE'/.test(서) && (서.match(/track->>trash=lt\.\$\{날더하기\(오늘, -30\)\}&track->room=is\.null/g) || []).length === 2,
        '손님 대화방이 열린 작성 중 계약서는 영구 삭제 · 휴지통 30일 자동 삭제에서 빠진다(대화 · 파일이 주인 없이 남지 않게)'); }
+  { const sql = fs.readFileSync(new URL('../../beaverknock-app/supabase/migrations/0045_contract_sealed_delete.sql', import.meta.url), 'utf8');
+    ok(/old\.status = 'sealed'\s+and coalesce\(old\.track->>'trash', ''\) = ''/.test(sql) && sql.includes("- 'reported_at' - 'updated_at' - 'track'"), 'DB 잠금 0045 - 확정본은 휴지통에 있을 때만 지워지고, 내용은 여전히 못 고친다'); }
   ok(js.includes("const 계약 = (CT.list || []).filter(ct살아있음);") && js.includes("sub === 'schedule' ? ctSchedulePageHTML(살아)"), '보관함 · 휴지통 계약서는 대시보드 · 일정에서 빠진다');
   ok(js.includes('data-act="ct-trash-cur"') && !js.includes('>이 계약서 지우기<'), '작성 화면의 지우기는 휴지통으로(바로 지우지 않는다)');
 }

@@ -1463,5 +1463,7 @@ ok(js.includes('function ct부동산표(doc){') && js.includes('function ct대�
 ok(js.includes('data-in="ctsall:x"') && js.includes("else if(kind === 'ctsall')") && !js.includes('data-v="">+ 빈 특약') && js.includes('>+ 중개사무소 추가</button>') && js.includes('대리인</button>'), '특약 한 칸 · 중개사무소 추가 · 대리인 단추');
 ok(js.includes("case 'ct-addr-pop':") && js.includes("if(S.modal.type==='ct-addr-pop')") && !js.includes('‘정보 + 서식’으로 바꿨습니다'), '계약서에 직접 입력 - 소재지 주소 검색 · 화면이 강제로 바뀌지 않음');
 
+ok(js.includes("영수자 ${ct칸('deal.downBy', D.downBy, 70)} (인)") && js.includes("ct입('deal.downBy'") && js.includes('data-act="ct-addr-pop" data-v="${esc(path)}">주소 검색</button>') && js.includes('data-ph="" style="min-width:${ww}px"') && !js.includes('없으면 비워 둡니다</span>'), '직접 입력 - 영수자 · 주소 칸 주소 검색 · 회색 예시글 없음 (2026-11-19 점검)');
+
 console.log(`${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

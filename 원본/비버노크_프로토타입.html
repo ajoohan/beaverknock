@@ -2558,6 +2558,17 @@ body.mo .rp-l{grid-column:1/-1}
 .exdoc .ex-opt{display:inline-block;margin-right:6px;white-space:nowrap}
 .exdoc .ex-note{display:block;font-size:8.5pt;color:#333;margin-top:2px}
 .exdoc .ex-area{display:block;min-height:3em}
+.exdoc table.ex-grid .ex-gp{width:76px;white-space:normal;text-align:center;vertical-align:middle;font-weight:600;background:#FAFAFA}
+.exdoc table.ex-grid .ex-s{width:104px;white-space:normal;text-align:center;font-weight:600}
+.exdoc table.ex-grid .ex-s2{width:52px;white-space:normal;text-align:center;font-weight:600}
+.exdoc table.ex-grid .ex-c{text-align:center;font-weight:600;background:#FAFAFA}
+.exdoc table.ex-grid .ex-rg{vertical-align:top;height:3.4em;white-space:pre-wrap;word-break:break-all}
+.exdoc table.ex-grid .ex-l{text-align:center}
+.exdoc .ex-tg{cursor:pointer;border-radius:4px;padding:0 2px}
+.exdoc .ex-tg:hover{background:#EEEBFF}
+.exdoc .ex-ax-pick{display:flex;align-items:center;gap:8px;margin:8px 0;font-size:9pt}
+.exdoc .ex-ax-pick .chip{font-size:12px}
+.exdoc table.ex-ax-obj{margin-bottom:10px}
 .exdoc .ex-sign{display:inline-block;margin:4px 14px 0 0;white-space:nowrap}
 .ex-row{display:flex;flex-direction:column;gap:8px;padding:10px 0;border-top:1px solid var(--n100)}
 .ex-row:first-of-type{border-top:none}
@@ -14053,6 +14064,8 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
+  { v:'26.11.19.19', 날:'2026-11-19', 줄:[ '확인·설명서 - 법정 서식 격자(토지 · 건축물 묶음, 등기부 기재사항 네 칸)로 다시 그렸습니다 · 작성 방식 두 가지(칸 입력 / 양식에 직접 입력) · 별지 작성(목적물 표 → 소유권에 관한 사항 → 소유권 외의 사항 → 기타사항)',
+    '등기부를 읽으면 소유권 칸에 ‘지분 / 성명 / 생년월일 / 주소’ 꼴로 넣습니다(주소는 등기부에 적힌 그대로 · 생년월일은 직접 적습니다)' ] },
   { v:'26.11.19.18', 날:'2026-11-19', 줄:[ '특약 - 기본으로 드리는 추가 특약(추가1 · 추가2 …)을 되살렸습니다. ‘내 것으로 가져오기’를 누르면 제목 · 내용을 고칠 수 있습니다 · 새로 만든 추가 특약 이름이 바뀌지 않게 · ‘기본특약 넣기’ 뒤 특약 칸으로 이동',
     '화면 점검 - 휴대폰 파트너 머리의 이름 잘림 · 마이페이지 바로 가기 값 잘림 · 휴대폰 매물 저장 줄과 계약현황 단추 줄바꿈 · 부속 서류에서 일정·체크로 가는 탭' ] },
   { v:'26.11.19.17', 날:'2026-11-19', 줄:[ '특약 - 추가특약사항에서 묶음 고르기(매매 · 임대차 · 갱신계약 · 기타)를 뺐습니다. 그 계약서에 맞는 것만 보이고 임대차 계약서에는 갱신계약 특약도 함께 · 왼쪽 ‘특약 넣기’는 ‘기본특약 넣기’로(빠진 기본 특약을 넣음) · 담기는 묶음을 묻지 않고 바로' ] },
@@ -16065,7 +16078,7 @@ function ct날짜읽기(s){
 /* 책상 미리보기 - 계약서 본문이면 바로 적는 칸을 켠다 */
 function ct책상HTML(doc){
   const F = CT_FORMS[doc.form] || {};
-  CT편집칸 = !ctSealed() && CT.mode !== 'extra' && !F.explain;
+  CT편집칸 = !ctSealed() && CT.mode !== 'extra';
   try{ return ct보기HTML(doc); } finally { CT편집칸 = false; }
 }
 
@@ -18608,7 +18621,7 @@ function ctDeskShell(doc, side, 신고면){
   const 신고있음 = ct신고(doc);
   const 이름 = ctTitle(doc);
   const 탭 = CT.mode === 'plan' && !F.explain ? 'p' : CT.mode === 'extra' && !F.explain ? 'x' : 신고면 ? 'r' : 'e';
-  const 고른배치 = ct배치(), 배치 = 고른배치 === 'form' && (탭 !== 'e' || CT.mode === 'scan' || F.explain) ? 'both' : 고른배치 === 'info' && 탭 === 'x' ? 'extra' : 고른배치;
+  const 고른배치 = ct배치(), 배치 = 고른배치 === 'form' && (탭 !== 'e' || CT.mode === 'scan') ? 'both' : 고른배치 === 'info' && 탭 === 'x' ? 'extra' : 고른배치;
   const 상태 = 잠김
     ? `<span class="ctx-st ok">날인본 · ${esc(String(CT.row.sealed_at||'').slice(0,16).replace('T',' '))} 확정 · 지문 ${esc(String(CT.row.sha256||'').slice(0,12))}…</span>`
     : CT.saving ? `<span class="ctx-st">임시저장 중…</span>`
@@ -18624,7 +18637,7 @@ function ctDeskShell(doc, side, 신고면){
     <div class="ctx-head">
       <a class="back" data-go="#/partner/contracts"><i class="ar-l" aria-hidden="true"></i>계약서 목록</a>
       <h1 class="ctx-h1">${esc(이름)}</h1>
-      ${F.explain ? '' : `<span class="ctx-lay" role="group" aria-label="작성 방식">${[['info', '칸 입력'], ['form', '계약서에 직접 입력']].map(([k, t]) => `<button type="button" class="${고른배치 === k ? 'on' : ''}" aria-pressed="${고른배치 === k}" data-act="ct-lay" data-v="${k}">${t}</button>`).join('')}</span>`}
+      ${`<span class="ctx-lay" role="group" aria-label="작성 방식">${[['info', '칸 입력'], ['form', F.explain ? '양식에 직접 입력' : '계약서에 직접 입력']].map(([k, t]) => `<button type="button" class="${고른배치 === k ? 'on' : ''}" aria-pressed="${고른배치 === k}" data-act="ct-lay" data-v="${k}">${t}</button>`).join('')}</span>`}
       <span class="badge ${잠김?'b-ok':'b-warn'}">${잠김?'날인본':'작성 중'}</span>${판줄}${ct안읽은의견(CT.track) ? `<button type="button" class="tapx ctx-rev" data-act="ct-notes-open" style="color:#B25E00;font-weight:700">초안에 새 의견 ${ct안읽은의견(CT.track)}건</button>` : ''}${!잠김 && !F.explain && CT.id ? `<button type="button" class="tapx ctx-rev" data-act="ct-share-cut">나간 초안 링크 끊기</button>` : ''}
       ${!잠김 && !F.explain ? `<span class="ctx-sub">비워 둔 칸은 밑줄 빈칸으로 인쇄됩니다 · 주민등록번호·계좌번호는 적지 않습니다</span>` : ''}
       <span class="ctx-badge">${agentBadge()}${S.user ? userMenu({ admin: true }) : ''}</span>
@@ -18638,7 +18651,7 @@ function ctDeskShell(doc, side, 신고면){
           ${상태}
           <div class="ctx-btns">${잠김
             ? `<button class="btn pri sm" data-act="ct-revise">고쳐서 새 판 만들기</button>`
-            : `${배치 === 'info' ? `<button class="btn ${!F.explain && !ct필수빠짐(doc).size ? 'pri' : 'sec'} sm" data-act="${F.explain ? 'ct-full' : 'ct-lay'}" data-v="form">서식에서 확인</button>` : 배치 === 'form' ? `<button class="btn sec sm" data-act="ct-lay" data-v="info">칸 입력으로</button>` : ''}<button class="btn tool sm" data-act="ct-save" ${CT.saving?'disabled':''}>${CT.saving?'저장 중…':'임시저장'}</button>
+            : `${배치 === 'info' ? `<button class="btn ${!F.explain && !ct필수빠짐(doc).size ? 'pri' : 'sec'} sm" data-act="ct-lay" data-v="form">서식에서 확인</button>` : 배치 === 'form' ? `<button class="btn sec sm" data-act="ct-lay" data-v="info">칸 입력으로</button>` : ''}<button class="btn tool sm" data-act="ct-save" ${CT.saving?'disabled':''}>${CT.saving?'저장 중…':'임시저장'}</button>
                ${권한('ct_seal') ? `<button class="btn pri sm" data-act="ct-seal" ${CT.saving?'disabled':''}>확정본으로 저장</button>` : '<span class="sub" style="font-size:13px">확정은 대표님 권한입니다</span>'}`}</div>
         </div>
       </section>
@@ -19550,7 +19563,7 @@ function ctApplyScan(doc, s, kinds, 빈칸만){
     if(F.explain) 넣기(`parties.${갑}.addr`, 소유[0].addr);
   }
   if(F.explain){
-    const 줄 = o => [o.name + (o.share ? ` (지분 ${o.share})` : ''), o.addr, o.cause].filter(Boolean).join(' · ');
+    const 줄 = o => [o.share ? `지분 ${o.share}` : '', `성명: ${o.name}`, '생년월일:      년    월    일', `주소: ${o.addr || ''}`].filter(Boolean).join(' / ');
     const 권리 = t => (s.rights || []).filter(r => r.target === t || r.target === '전체')
       .map(r => `[${r.section}] ${[r.kind, r.holder, r.amount, r.date && r.date + ' 접수'].filter(Boolean).join(' · ')}`).join('\n');
     if(소유.length){ 넣기('ex.ownLand', 소유.map(줄).join('\n')); 넣기('ex.ownBld', 소유.map(줄).join('\n')); }
@@ -19983,60 +19996,90 @@ function exNewDoc(from, form){
 const EX_별지칸 = ['ex.ownLand', 'ex.ownBld', 'ex.etcLand', 'ex.etcBld'];
 const exAnnexOn = doc => ctGet(doc, 'ex.annex') === '별지로';
 function exPart(doc, p){
-  const v = p.k ? ctGet(doc, p.k) : null;
+  const v = p.k ? ctGet(doc, p.k) : null, 적기 = CT편집칸;
   const 앞 = p.pre ? `${esc(p.pre)} ` : '', 뒤 = p.suf ? ` ${esc(p.suf)}` : '';
   const 덧 = (opt) => { const x = p.x && p.x[opt]; if(!x) return '';
-    const w = ctGet(doc, x[0]); return ` (${x[1] ? esc(x[1]) + ' ' : ''}${w ? esc(w) : 빈칸(90)})`; };
+    const w = ctGet(doc, x[0]); return ` (${x[1] ? esc(x[1]) + ' ' : ''}${적기 ? ct칸(x[0], w, 90) : w ? esc(w) : 빈칸(90)})`; };
   if(p.t === 'one' || p.t === 'many'){
     const 고름 = p.t === 'one' ? (o => v === o) : (o => (v || []).includes(o));
-    return 앞 + p.o.map(o => `<span class="ex-opt">[${고름(o) ? '√' : '&nbsp;&nbsp;'}]${esc(o)}${덧(o)}</span>`).join(' ') + 뒤;
+    return 앞 + p.o.map(o => `<span class="ex-opt${적기 ? ' ex-tg' : ''}"${적기 ? ` role="button" tabindex="0" data-act="${p.t === 'one' ? 'ex1' : 'exm'}" data-v="${esc(p.k + '|' + o)}" aria-pressed="${고름(o)}"` : ''}>[${고름(o) ? '√' : '&nbsp;&nbsp;'}]${esc(o)}${적기 ? '' : 덧(o)}</span>${적기 ? 덧(o) : ''}`).join(' ') + 뒤;
   }
-  if(p.t === 'text') return 앞 + (v ? esc(String(v)) : 빈칸(p.w || 100)) + 뒤;
-  if(p.t === 'money') return 앞 + (+v ? (+v).toLocaleString() : 빈칸(110)) + 뒤;
-  if(p.t === 'area') return v ? esc(String(v)).replace(/\n/g, '<br>') : `<span class="ex-area"></span>`;
+  if(p.t === 'text') return 앞 + (적기 ? ct칸(p.k, v, p.w || 100) : v ? esc(String(v)) : 빈칸(p.w || 100)) + 뒤;
+  if(p.t === 'money') return 앞 + (적기 ? `<span class="ct-ed" contenteditable="plaintext-only" spellcheck="false" data-cte="ct$:${p.k}" data-ph="" style="min-width:100px">${+v ? (+v).toLocaleString() : ''}</span>` : +v ? (+v).toLocaleString() : 빈칸(110)) + 뒤;
+  if(p.t === 'area') return 적기 ? ct칸(p.k, v, 300, 'long') : v ? esc(String(v)).replace(/\n/g, '<br>') : `<span class="ex-area"></span>`;
   if(p.t === 'note') return `<span class="ex-note">${esc(p.s)}</span>`;
   if(p.t === 'sign') return `<span class="ex-sign">${esc(p.s)} ${빈칸(90)} (서명 또는 날인)</span>`;
-  if(p.t === 'addr'){ const 글 = ct소재지글(doc.property); return 글 ? `${esc(글)}${doc.property.road && 글 !== doc.property.road ? ` <span class="sm">(도로명) ${esc(doc.property.road)}</span>` : ''}` : doc.property.road ? esc(doc.property.road) : 빈칸(300); }
+  if(p.t === 'addr'){ const P = doc.property || {};
+    if(적기) return ct칸('property.show', P.show || P.jibun || P.road || '', 240) + ' ' + ct칸('property.detail', P.detail || '', 90) + ' <button type="button" class="ct-addr-btn" data-act="ct-addr-pop">주소 검색</button>';
+    const 글 = ct소재지글(P); return 글 ? esc(글) : P.road ? esc(P.road) : 빈칸(300); }
   if(p.t === 'sum'){ const n = (+ctGet(doc,'ex.fee')||0) + (+ctGet(doc,'ex.cost')||0); return n ? `${n.toLocaleString()} 원` : `${빈칸(110)} 원`; }
   return '';
 }
 function exDocHTML(doc){
   const E = EX_FORMS[doc.form] || EX_FORMS['explain-home'];
-  const 고름 = (list, v) => list.map(o => `[${v === o ? '√' : '&nbsp;&nbsp;'}]${esc(o)}`).join(' ');
-  const 사람 = (label, x) => `
-    <tr><th rowspan="2" class="w">${label}</th><th>주소</th><td>${ct값(x.addr, 220)}</td><th>성명</th><td class="sign">${ct값(x.name, 80)} <span class="ct-seal">(서명 또는 날인)</span></td></tr>
-    <tr><th>생년월일</th><td>${ct값(x.birth, 100)}</td><th>전화번호</th><td>${ct값(x.phone, 100)}</td></tr>`;
-  const 중개 = B => `
-    <tr><th rowspan="3" class="w">개업<br>공인중개사</th><th>등록번호</th><td>${ct값(B.regNo, 120)}</td><th>성명(대표자)</th><td class="sign">${B.hand ? 빈칸(70) : ct값(B.rep, 70)} <span class="ct-seal">(서명 및 날인)</span></td></tr>
-    <tr><th>사무소 명칭</th><td>${ct값(B.office, 140)}</td><th>소속공인중개사</th><td class="sign">${B.hand ? 빈칸(70) : ct값(B.staff, 70)} <span class="ct-seal">(서명 및 날인)</span></td></tr>
-    <tr><th>사무소 소재지</th><td>${ct값(B.addr, 200)}</td><th>전화번호</th><td>${ct값(B.phone, 100)}</td></tr>`;
+  const 고름 = (list, v, k) => list.map(o => CT편집칸 && k ? `<span class="ex-opt ex-tg" role="button" tabindex="0" data-act="ex1" data-v="${esc(k + '|' + o)}" aria-pressed="${v === o}">[${v === o ? '√' : '&nbsp;&nbsp;'}]${esc(o)}</span>` : `[${v === o ? '√' : '&nbsp;&nbsp;'}]${esc(o)}`).join(' ');
+  const 사람 = (label, x, b) => `
+    <tr><th rowspan="2" class="w">${label}</th><th>주소</th><td>${ct칸(b + '.addr', x.addr, 220)}</td><th>성명</th><td class="sign">${ct칸(b + '.name', x.name, 80)} <span class="ct-seal">(서명 또는 날인)</span></td></tr>
+    <tr><th>생년월일</th><td>${ct칸(b + '.birth', x.birth, 100)}</td><th>전화번호</th><td>${ct칸(b + '.phone', x.phone, 100)}</td></tr>`;
+  const 중개 = (B, b) => `
+    <tr><th rowspan="3" class="w">개업<br>공인중개사</th><th>등록번호</th><td>${ct칸(b + '.regNo', B.regNo, 120)}</td><th>성명(대표자)</th><td class="sign">${B.hand ? 빈칸(70) : ct칸(b + '.rep', B.rep, 70)} <span class="ct-seal">(서명 및 날인)</span></td></tr>
+    <tr><th>사무소 명칭</th><td>${ct칸(b + '.office', B.office, 140)}</td><th>소속공인중개사</th><td class="sign">${B.hand ? 빈칸(70) : ct칸(b + '.staff', B.staff, 70)} <span class="ct-seal">(서명 및 날인)</span></td></tr>
+    <tr><th>사무소 소재지</th><td>${ct칸(b + '.addr', B.addr, 200)}</td><th>전화번호</th><td>${ct칸(b + '.phone', B.phone, 100)}</td></tr>`;
   /* 별지 (2026-11-12 파트너 기획 D2-8 '별지 단순형') - 등기부 기재사항이 길면 본문 칸에는 '별지 참조', 마지막 쪽에 세 칸 */
   const 별지 = exAnnexOn(doc), 줄글 = v => esc(String(v || '')).replace(/\n/g, '<br>');
+  /* 한 묶음(①②…)을 법정 서식 격자로: [항목] [묶음] [세부] [내용]. 이름이 '토지 · 소재지' 꼴로 이어지는 줄은 '토지' 묶음 아래 세부 칸으로 모은다.
+     등기부 기재사항은 서식대로 소유권 / 소유권 외 × 토지 / 건축물 네 칸 */
+  const 가름 = l => { const i = String(l || '').indexOf(' · '); return i < 0 ? [null, l] : [l.slice(0, i), l.slice(i + 3)]; };
+  const 칸글 = r => r.p.map(p => 별지 && EX_별지칸.includes(p.k) ? '별지 참조' : exPart(doc, p)).join(' ');
   let body = '';
   for(const s of E.spec){
     if(s.g){ body += `<h2 class="ex-g">${esc(s.g)}</h2>`; continue; }
-    body += `<table class="ex-t"><tr><th class="ex-h" rowspan="${s.rows.length}">${esc(s.h)}</th>${s.rows.map((r, i) =>
-      `${i ? '<tr>' : ''}${r.l ? `<th class="ex-l">${esc(r.l)}</th><td>` : '<td colspan="2">'}${r.p.map(p => 별지 && EX_별지칸.includes(p.k) ? '별지 참조' : exPart(doc, p)).join(' ')}</td></tr>`).join('')}</table>`;
+    const 등기 = s.rows.filter(r => r.p.some(p => EX_별지칸.includes(p.k))), 나머지 = s.rows.filter(r => !등기.includes(r));
+    const 등기칸 = k => { const r = 등기.find(r => r.p.some(p => p.k === k)); return r ? 칸글(r) : null; };
+    const 줄 = [], 넓 = 등기.length ? 4 : 1;      /* 내용 칸이 차지하는 열 수 */
+    if(등기.length){
+      const 건 = 등기칸('ex.ownBld') != null;
+      줄.push(`<th class="ex-gp" rowspan="${건 ? 3 : 2}">등기부<br>기재사항</th><th class="ex-c" colspan="2">소유권에 관한 사항</th><th class="ex-c" colspan="2">소유권 외의 권리사항</th>`);
+      줄.push(`<th class="ex-s2">토지</th><td class="ex-rg">${등기칸('ex.ownLand') || ''}</td><th class="ex-s2">토지</th><td class="ex-rg">${등기칸('ex.etcLand') || ''}</td>`);
+      if(건) 줄.push(`<th class="ex-s2">건축물</th><td class="ex-rg">${등기칸('ex.ownBld') || ''}</td><th class="ex-s2">건축물</th><td class="ex-rg">${등기칸('ex.etcBld') || ''}</td>`);
+    }
+    for(let i = 0; i < 나머지.length; ){
+      const r = 나머지[i], g = 가름(r.l)[0];
+      let j = i + 1; if(g != null) while(j < 나머지.length && 가름(나머지[j].l)[0] === g) j++;
+      if(g == null || j - i < 2){
+        줄.push(r.l ? `<th class="ex-l" colspan="${등기.length ? 1 : 2}">${esc(r.l)}</th><td colspan="${넓}">${칸글(r)}</td>` : `<td colspan="${넓 + (등기.length ? 1 : 2)}">${칸글(r)}</td>`);
+        i++; continue; }
+      for(let k = i; k < j; k++) 줄.push(`${k === i ? `<th class="ex-gp" rowspan="${j - i}">${esc(g)}</th>` : ''}<th class="ex-s">${esc(가름(나머지[k].l)[1])}</th><td${등기.length ? ' colspan="3"' : ''}>${칸글(나머지[k])}</td>`);
+      i = j;
+    }
+    if(!줄.length) continue;
+    body += `<table class="ex-t ex-grid"><tr><th class="ex-h" rowspan="${줄.length}">${esc(s.h)}</th>${줄[0]}</tr>${줄.slice(1).map(z => `<tr>${z}</tr>`).join('')}</table>`;
   }
   const 모음 = ks => ks.map(k => ctGet(doc, k)).filter(Boolean).join('\n');
+  /* 별지 (2026-11-19 파트너) - 맨 위에 목적물 표, 아래로 소유권에 관한 사항 · 소유권 외의 사항 · 기타사항을 한 칸씩 */
+  const 물 = doc.property || {}, 물글 = (v, 끝 = '') => v ? esc(String(v)) + 끝 : '';
   const 별지쪽 = !별지 ? '' : `<div class="ex-annex"><h1>별&nbsp;&nbsp;&nbsp;지</h1>
-      <p class="ex-ax-top">${esc(E.h1)} · 소재지: ${doc.property.road ? esc(doc.property.road) : 빈칸(260)}</p>
-      <div class="ex-ax"><b>소유권에 관한 사항</b><div>${줄글(모음(['ex.ownLand', 'ex.ownBld']))}</div></div>
-      <div class="ex-ax"><b>소유권 외의 권리사항</b><div>${줄글(모음(['ex.etcLand', 'ex.etcBld']))}</div></div>
-      <div class="ex-ax last"><b>기타사항</b><div>${줄글(ctGet(doc, 'ex.annexNote'))}</div></div></div>`;
+      <table class="ex-t ex-grid ex-ax-obj"><tr><th class="ex-h" rowspan="2">목적물</th><th class="ex-s">소재지</th><td colspan="3">${esc(ct소재지글(물) || 물.road || '')}</td></tr>
+        <tr><th class="ex-s">토지</th><td>${[물글(물.landCat), 물글(물.landArea, '㎡')].filter(Boolean).join(' · ')}</td><th class="ex-s">건축물</th><td>${[물글(물.bldStruct), 물글(물.bldUse), 물글(물.bldArea, '㎡')].filter(Boolean).join(' · ')}</td></tr></table>
+      <div class="ex-ax"><b>소유권에 관한 사항</b><div>${CT편집칸 ? ct칸('ex.ownLand', ctGet(doc, 'ex.ownLand'), 300, 'long') : 줄글(모음(['ex.ownLand', 'ex.ownBld']))}</div></div>
+      <div class="ex-ax"><b>소유권 외의 사항</b><div>${CT편집칸 ? ct칸('ex.etcLand', ctGet(doc, 'ex.etcLand'), 300, 'long') : 줄글(모음(['ex.etcLand', 'ex.etcBld']))}</div></div>
+      <div class="ex-ax last"><b>기타사항</b><div>${CT편집칸 ? ct칸('ex.annexNote', ctGet(doc, 'ex.annexNote'), 300, 'long') : 줄글(ctGet(doc, 'ex.annexNote'))}</div></div></div>`;
+  /* 양식에 직접 적을 때 - 별지 작성 고르기 */
+  const 별지단추 = !CT편집칸 ? '' : `<p class="ex-ax-pick"><span>등기부 기재사항</span><button type="button" class="chip${별지 ? '' : ' on'}" data-act="ex1" data-v="ex.annex|본문에 적기">본문에 적기</button><button type="button" class="chip${별지 ? ' on' : ''}" data-act="ex1" data-v="ex.annex|별지로">별지 작성</button></p>`;
   return `
   <div class="ctdoc exdoc${ct글꼴(doc) === 'sans' ? ' f-sans' : ''}">
     <p class="ex-law">■ 공인중개사법 시행규칙 ${esc(E.law)}</p>
     <h1>${esc(E.h1)}</h1>
-    <p class="ex-kind">${E.kinds.map(([이름, k, list]) => `( ${이름 === '용도' ? '' : esc(이름) + ': '}${고름(list, doc[k])} )`).join('<br>')}</p>
+    <p class="ex-kind">${E.kinds.map(([이름, k, list]) => `( ${이름 === '용도' ? '' : esc(이름) + ': '}${고름(list, doc[k], k)} )`).join('<br>')}</p>
+    ${별지단추}
     ${body}
     <p class="ct-close">${esc(EX_FOOT)}</p>
-    <p class="ct-date">${ct날짜(doc.date)}</p>
+    <p class="ct-date">${CT편집칸 ? ct칸('date', doc.date, 0, 'date') : ct날짜(doc.date)}</p>
     <table class="ct-sign">
-      ${사람('매도인<br>(임대인)', doc.parties.a || {})}
-      ${사람('매수인<br>(임차인)', doc.parties.b || {})}
-      ${중개(doc.broker || {})}
-      ${중개(doc.broker2 || {})}
+      ${사람('매도인<br>(임대인)', doc.parties.a || {}, 'parties.a')}
+      ${사람('매수인<br>(임차인)', doc.parties.b || {}, 'parties.b')}
+      ${중개(doc.broker || {}, 'broker')}
+      ${중개(doc.broker2 || {}, 'broker2')}
     </table>
     <p class="ct-foot">비버노크 작성 도구로 만든 확인·설명서입니다. 항목은 법정 서식과 같습니다 - 내용은 개업공인중개사가 확인한 사항으로 적어야 합니다.</p>
     ${별지쪽}
@@ -20312,9 +20355,9 @@ function exEditor(doc){
     if(rows) html += `<div class="card pad ct-sec"><h2>${esc(s.h)}${exStateHTML(doc, s)}</h2>${rows}</div>`;
   }
   html += 잠김 && !exAnnexOn(doc) ? '' : `
-    <div class="card pad ct-sec"><h2>별지 <span class="sub" style="font-weight:500;font-size:13.5px">등기부 기재사항이 길 때</span></h2>
+    <div class="card pad ct-sec"><h2>별지 작성 <span class="sub" style="font-weight:500;font-size:13.5px">등기부 기재사항이 길 때</span></h2>
       ${exChips('ex.annex', ['본문에 적기', '별지로'], ctGet(doc, 'ex.annex') || '본문에 적기', false)}
-      <p class="sub" style="margin:0">‘별지로’를 고르면 본문의 등기부 기재사항 칸에는 ‘별지 참조’가 찍히고, 마지막 쪽에 소유권 · 소유권 외의 권리 · 기타사항 세 칸이 붙습니다.</p>
+      <p class="sub" style="margin:0">‘별지로’를 고르면 본문의 등기부 기재사항 칸에는 ‘별지 참조’가 찍히고, 마지막 쪽 별지에 목적물 표 · 소유권에 관한 사항 · 소유권 외의 사항 · 기타사항이 한 칸씩 붙습니다.</p>
       ${exAnnexOn(doc) ? `<label class="ct-f wide w12"><span class="lab">기타사항 (별지 맨 아래 칸)</span><textarea class="inp" rows="3" data-in="ct:ex.annexNote" ${잠김 ? 'disabled' : ''}>${esc(ctGet(doc, 'ex.annexNote') || '')}</textarea></label>` : ''}</div>`;
   html += `
     <div class="card pad ct-sec"><h2>거래당사자 <span class="sub" style="font-weight:500;font-size:13.5px">서식대로 생년월일을 적습니다 - 주민등록번호가 아닙니다</span></h2>

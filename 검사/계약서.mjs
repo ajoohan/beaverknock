@@ -559,7 +559,7 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
 
 /* ── 양쪽에서 적기 · 필수 항목 · 임시저장 (2026-11-06 대표님) ── */
 {
-  ok(/id="ctPv">\$\{ct책상HTML\(doc\)\}/.test(js) && /box\.innerHTML = typeof html === 'string' \? html : ct보기HTML\(CT\.doc\);/.test(js) && /CT편집칸 = !ctSealed\(\) && CT\.mode !== 'extra' && !F\.explain;\s*try\{ return ct보기HTML\(doc\); \} finally \{ CT편집칸 = false; \}/.test(js),
+  ok(/id="ctPv">\$\{ct책상HTML\(doc\)\}/.test(js) && /box\.innerHTML = typeof html === 'string' \? html : ct보기HTML\(CT\.doc\);/.test(js) && /CT편집칸 = !ctSealed\(\) && CT\.mode !== 'extra';\s*try\{ return ct보기HTML\(doc\); \} finally \{ CT편집칸 = false; \}/.test(js),
      '바로 적는 칸은 PC 책상 미리보기에서만 - 인쇄 · 날인본 · 부속 서류는 종이 그대로');
   ok(/if\(pv\.contains\(document\.activeElement\)\)\{ CT\.pvStale = true; return; \}/.test(js),
      '오른쪽 서류에서 적는 중에는 미리보기를 다시 그리지 않는다(커서 지킴)');
@@ -1361,7 +1361,7 @@ ok(js.includes("what:'listing-bld'") && js.includes('S.form.lbun = a.bun') && js
 ok(js.includes("case 'ct-full': CT.full = !CT.full;") && js.includes("CT.full ? ' ctx-full' : ''") && js.includes("e.key === 'Escape' && CT.full") && js.includes("알림창(false); CT.full = false;") && css.includes('html:has(.ctx-view.ctx-full){overflow:hidden}'), '계약서 서류 전체화면 - 같은 서류로 바로 고치기 · Esc · 화면 옮기면 닫힘');
 
 /* ── 소재지는 지번 (2026-11-17 파트너) ── */
-ok(js.includes('function ct소재지(P, 날인 = false){') && js.split('${ct소재지(P, ct옛날인(doc))}').length === 3 && js.includes('(도로명) ${esc(doc.property.road)}') && !js.includes('비워 두면 찾은 지번이 찍힙니다'), '계약서 · 확인·설명서 소재지는 지번 먼저, 도로명은 괄호 (설명 문구는 뺐다 · 2026-11-19)');
+ok(js.includes('function ct소재지(P, 날인 = false){') && js.split('${ct소재지(P, ct옛날인(doc))}').length === 3 && js.includes('const 글 = ct소재지글(P); return 글 ? esc(글) : P.road ? esc(P.road) : 빈칸(300); }') && !js.includes('비워 두면 찾은 지번이 찍힙니다'), '계약서 · 확인·설명서 소재지는 지번 먼저, 도로명은 괄호 (설명 문구는 뺐다 · 2026-11-19)');
 
 /* ── 공동중개 사무소 (2026-11-17 파트너) ── */
 { ok(C.등록키('41450-2019-00217') === C.등록키('41450-2019-217') && C.등록키(' 가3665-4 ') === '가36654', '공동중개 찾기 - 등록번호 정규화(앞 0 · 옛 번호)');
@@ -1410,7 +1410,7 @@ ok(js.includes("const CT_배치 = [['info', '정보 입력'") && js.includes("ca
   && css.includes('.ctx-body.lay-info .ctx-view{display:none}') && css.includes('.ctx-body.lay-form .ctx-side .ctx-scroll{display:none}') && js.includes('>서식에서 확인</button>'), '계약서 입력 방식 - 정보 입력 · 서식 입력 · 정보 + 서식을 고르고 오간다');
 
 /* ── 코드리뷰 · 화면 점검 (2026-11-17, 26.11.17.17) ── */
-ok(js.includes("CT.mode === 'scan' || F.explain) ? 'both' : 고른배치 === 'info' && 탭 === 'x' ? 'extra' : 고른배치;") && js.includes("Math.min(크게 ? 1.7 : 1,") && js.includes("if((CT.lay === 'form' && CT.mode !== 'edit') || CT.mode === 'scan') CT.mode = 'edit';"), '입력 방식 - 확인·설명서는 서식 입력으로 가지 않고, 서식 입력 · 전체화면은 서류를 키운다');
+ok(js.includes("CT.mode === 'scan') ? 'both' : 고른배치 === 'info' && 탭 === 'x' ? 'extra' : 고른배치;") && js.includes("Math.min(크게 ? 1.7 : 1,") && js.includes("if((CT.lay === 'form' && CT.mode !== 'edit') || CT.mode === 'scan') CT.mode = 'edit';"), '입력 방식 - 확인·설명서는 서식 입력으로 가지 않고, 서식 입력 · 전체화면은 서류를 키운다');
 ok(js.includes('doc.deal.down = 0;') && js.includes("if(같은줄){ CS.rowBusy = '';") && js.includes('if(CT.id === id && CT.dirty) return toast(') && js.split("&& !n && CT.doc.deal) delete CT.doc.deal.mids;").length === 3, '체결문자 줄 중복 · 추정 계약금 없음 · 저장 전 고침 지키기 · 숨은 중도금 지우기');
 
 /* ── 3~5차 중도금 일정 · 영수증 (2026-11-17) ── */
@@ -1458,7 +1458,7 @@ ok(js.includes('function ct문자적용(e){') && js.includes("data-act=\"ct-sms-
 ok(!C.일정목록({ form: 'sale', bd: '2026-12-01', track: { state: 'hold' } }, C.알림설정 ? C.알림설정({}) : undefined).some(e => e.k === 'settle'), '보류 계약에는 잔금 완료 확인을 넣지 않는다');
 
 /* ── 2026-11-19 파트너 계약서 세부 요청 ── */
-ok(js.includes('function ct문서탭(doc, 탭){') && js.includes('function ct스캔칸(){') && js.includes("['form', '계약서에 직접 입력']") && !js.includes('<div class="ctx-tabs" role="tablist">'), '작성 화면 - 서류 탭 · 왼쪽 공적장부 올리기 · 계약서에 직접 입력 단추 · 입력 판 위 탭 없음');
+ok(js.includes('function ct문서탭(doc, 탭){') && js.includes('function ct스캔칸(){') && js.includes("['form', F.explain ? '양식에 직접 입력' : '계약서에 직접 입력']") && !js.includes('<div class="ctx-tabs" role="tablist">'), '작성 화면 - 서류 탭 · 왼쪽 공적장부 올리기 · 계약서에 직접 입력 단추 · 입력 판 위 탭 없음');
 ok(js.includes('function ct부동산표(doc){') && js.includes('function ct대금표(doc){') && js.includes('function ct기간표(doc){') && js.includes("'property.landRatioDen'") && js.includes('은 계약시에 지불하고 영수함.'), '정보 입력 - 전자계약 표 · 대지권 종류와 비율 분리');
 ok(js.includes('data-in="ctsall:x"') && js.includes("else if(kind === 'ctsall')") && !js.includes('data-v="">+ 빈 특약') && js.includes('>+ 중개사무소 추가</button>') && js.includes('대리인</button>'), '특약 한 칸 · 중개사무소 추가 · 대리인 단추');
 ok(js.includes("case 'ct-addr-pop':") && js.includes("if(S.modal.type==='ct-addr-pop')") && !js.includes('‘정보 + 서식’으로 바꿨습니다'), '계약서에 직접 입력 - 소재지 주소 검색 · 화면이 강제로 바뀌지 않음');
@@ -1478,7 +1478,15 @@ ok(js.includes("ctDocHTML({ ...j.doc, __sealedAt: j.sealed_at || '' })") && js.i
 
 ok(css.includes('html body.mo table.ec tr{display:grid;grid-template-columns:64px minmax(0,1fr)') && css.includes('html body.mo .inp.ec-in{flex:1 1 90px;min-width:0;width:auto!important;height:44px') && css.includes('body.mo .scan-slot{flex-direction:column') && js.includes('const ct옛날인 = doc =>') && js.includes("+D.mid2 > 0 || (CT편집칸 && D.mid2On)"), '휴대폰 입력 표 · 서류 카드 · 옛 날인본만 도로명 줄 · 2차만 적은 중도금 인쇄 (2026-11-19 UI 점검 · 리뷰)');
 
-ok(!js.includes('나란히 보기</button>') && js.includes("[['info', '칸 입력'], ['form', '계약서에 직접 입력']]") && js.includes("ct배치바꿈('info'); toast('이 칸은 입력 칸에서 적습니다") && css.includes('.ctx-body.lay-extra{grid-template-columns:minmax(0,1fr)'), '작성 방식은 칸 입력 · 계약서에 직접 입력 두 가지 - 나란히 보기 없음 · 부속 서류는 위아래 (2026-11-19 파트너)');
+ok(!js.includes('나란히 보기</button>') && js.includes("[['info', '칸 입력'], ['form', F.explain ? '양식에 직접 입력' : '계약서에 직접 입력']]") && js.includes("ct배치바꿈('info'); toast('이 칸은 입력 칸에서 적습니다") && css.includes('.ctx-body.lay-extra{grid-template-columns:minmax(0,1fr)'), '작성 방식은 칸 입력 · 계약서에 직접 입력 두 가지 - 나란히 보기 없음 · 부속 서류는 위아래 (2026-11-19 파트너)');
+
+/* ── 확인·설명서 법정 서식 격자 · 별지 · 양식에 직접 입력 (2026-11-19 파트너) ── */
+{ const 문서 = M.exNewDoc(null, 'explain-home'); 문서.ex.ownLand = '성명: 홍길동'; 문서.ex.annex = '별지로';
+  const h = M.exDocHTML(문서);
+  ok(/<th class="ex-gp" rowspan="3">등기부<br>기재사항<\/th><th class="ex-c" colspan="2">소유권에 관한 사항<\/th><th class="ex-c" colspan="2">소유권 외의 권리사항<\/th>/.test(h) && /<th class="ex-gp" rowspan="\d+">토지<\/th><th class="ex-s">소재지<\/th>/.test(h) && /<th class="ex-gp" rowspan="\d+">건축물<\/th><th class="ex-s">전용면적\(㎡\)<\/th>/.test(h), '확인·설명서 - 법정 서식 격자(토지 · 건축물 묶음 · 등기부 기재사항 네 칸)');
+  ok(/별지 참조/.test(h) && /<th class="ex-h" rowspan="2">목적물<\/th>/.test(h) && h.indexOf('소유권에 관한 사항</b>') < h.indexOf('소유권 외의 사항</b>') && h.indexOf('소유권 외의 사항</b>') < h.indexOf('기타사항</b>') && !/작성방법|작성요령/.test(h), '별지 - 목적물 표 → 소유권에 관한 사항 → 소유권 외의 사항 → 기타사항 · 작성요령 쪽 없음');
+  ok(js.includes("const 줄 = o => [o.share ? `지분 ${o.share}` : '', `성명: ${o.name}`, '생년월일:      년    월    일', `주소: ${o.addr || ''}`]") && js.includes("data-act=\"${p.t === 'one' ? 'ex1' : 'exm'}\"") && js.includes("['form', F.explain ? '양식에 직접 입력' : '계약서에 직접 입력']"), '등기부 소유자는 지분 / 성명 / 생년월일 / 주소 꼴 · 양식에 직접 입력');
+}
 
 console.log(`${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

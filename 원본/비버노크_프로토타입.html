@@ -14042,6 +14042,7 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
+  { v:'26.11.19.17', 날:'2026-11-19', 줄:[ '특약 - 추가특약사항에서 묶음 고르기(매매 · 임대차 · 갱신계약 · 기타)를 뺐습니다. 그 계약서에 맞는 것만 보이고 임대차 계약서에는 갱신계약 특약도 함께 · 왼쪽 ‘특약 넣기’는 ‘기본특약 넣기’로(빠진 기본 특약을 넣음) · 담기는 묶음을 묻지 않고 바로' ] },
   { v:'26.11.19.16', 날:'2026-11-19', 줄:[ '특약 - ‘내 특약’을 ‘추가특약사항’으로 · 미리 만든 모음(기본 특약과 겹침)을 빼고, 중개사가 제목 · 내용을 직접 만들고 고치는 추가1 · 추가2 … 를 칸 입력 · 계약서에 직접 입력에 똑같이 · 누르면 몇 번 줄에 들어갔는지 알림',
     '‘계좌 적을 줄 넣기’를 체크하면 인쇄되는 줄을 바로 보여 줍니다' ] },
   { v:'26.11.19.15', 날:'2026-11-19', 줄:[ '계약서 작성 - ‘나란히 보기’를 없앴습니다. 작성 방식은 ‘칸 입력’과 ‘계약서에 직접 입력’ 두 가지(제목 옆에서 고름) · 영수증 등 부속 서류는 위에 적는 칸, 아래에 서류' ] },
@@ -18472,7 +18473,7 @@ function ctFormHTML(doc){
   /* 특약마다 '내 특약으로' - 눌러 둔 특약 아래에 묶음 고르기가 열린다 */
   const 저장할 = CT.phrSave && CT.phrSave.doc === doc ? CT.phrSave.i : -1;
   const 특약 = `<textarea class="inp ct-sp-one" rows="${Math.min(16, Math.max(6, doc.specials.length + 2))}" data-in="ctsall:x" aria-label="특약사항" ${잠김 ? 'disabled' : ''}>${esc(ct특약번호글(doc.specials))}</textarea>
-    <p class="sub" style="margin:4px 0 0;font-size:12.5px">한 줄이 특약 한 항목입니다 - 번호는 저절로 매겨집니다. 아래 모음 · 내 특약을 누르면 끝에 한 줄씩 더해집니다.</p>${잠김 || !세션있음() || !doc.specials.some(t => String(t || '').trim()) ? '' : `<div class="ct-phr-save"><button type="button" class="tapx" data-act="phr-list" aria-expanded="${!!CT.phrList}" style="align-self:flex-start;font-size:13.5px;font-weight:700;color:var(--ind700)">${CT.phrList ? '담기 닫기' : '적은 특약을 추가특약사항으로 담기'}</button>${CT.phrList ? doc.specials.map((t, i) => String(t || '').trim() ? `<div class="cps-row"><span>${i + 1}. ${esc(String(t).replace(/\s+/g, ' ').slice(0, 70))}</span><button type="button" class="tapx" data-act="phr-pick" data-v="${i}" aria-expanded="${저장할 === i}" style="font-size:13.5px;font-weight:700;color:var(--ind700)">담기</button></div>${저장할 === i ? ctPhrPickHTML(doc) : ''}` : '').join('') : ''}</div>`}`;
+    <p class="sub" style="margin:4px 0 0;font-size:12.5px">한 줄이 특약 한 항목입니다 - 번호는 저절로 매겨집니다. 아래 추가특약사항의 단추를 누르면 한 줄씩 더해집니다.</p>${잠김 || !세션있음() || !doc.specials.some(t => String(t || '').trim()) ? '' : `<div class="ct-phr-save"><button type="button" class="tapx" data-act="phr-list" aria-expanded="${!!CT.phrList}" style="align-self:flex-start;font-size:13.5px;font-weight:700;color:var(--ind700)">${CT.phrList ? '담기 닫기' : '적은 특약을 추가특약사항으로 담기'}</button>${CT.phrList ? doc.specials.map((t, i) => String(t || '').trim() ? `<div class="cps-row"><span>${i + 1}. ${esc(String(t).replace(/\s+/g, ' ').slice(0, 70))}</span><button type="button" class="tapx" data-act="phr-put" data-v="${i}" style="font-size:13.5px;font-weight:700;color:var(--ind700)">담기</button></div>` : '').join('') : ''}</div>`}`;
   /* 당사자 - 개인/법인 고르기 · 공동명의자(지분) 더하기. 매도인·임대인은 등기부 소유자 그대로 적는다 */
   const 사람 = (k, ko) => {
     const x = (doc.parties || {})[k] || {}, 법인 = x.type === 'corp', co = x.co || [], 짧 = ct짧은이름(ko), 역할 = 짧.replace(/인$/, '');
@@ -18541,7 +18542,7 @@ function ctFormHTML(doc){
       ${특약}
       ${(doc.form === 'sale' || F.lease) ? `<label class="ct-chk"><input type="checkbox" data-act="ct-acct" ${doc.acct ? 'checked' : ''} ${잠김?'disabled':''}> 특약 마지막 줄에 ‘${esc(ct짧은이름(aKo))} 계좌’ 적을 줄 넣기</label>` : ''}
       ${doc.acct && (doc.form === 'sale' || F.lease) ? `<p class="ct-acct-pv" role="status">인쇄되는 줄 : * ${esc(ct짧은이름(aKo))} 계좌 : ______________________ (계약 시 기재)</p>` : ''}
-      ${잠김 ? '' : `<div class="ct-lib">${doc.renewOf ? `<button class="chip on" data-act="ct-renew-sp">갱신 특약을 지금 금액으로 다시 쓰기</button>` : ''}${ct기본특약(doc).length ? `<button class="chip" data-act="ct-base-sp">+ 기본 특약 다시 넣기</button>` : ''}</div>${ctPhrHTML(doc)}`}</div>
+      ${잠김 ? '' : `<div class="ct-lib">${doc.renewOf ? `<button class="chip on" data-act="ct-renew-sp">갱신 특약을 지금 금액으로 다시 쓰기</button>` : ''}</div>${ctPhrHTML(doc)}`}</div>
 
     ${잠김||!CT.id ? '' : `<button class="tapx" data-act="ct-trash-cur" style="align-self:flex-start;font-size:13.5px;color:var(--danger)">이 계약서 휴지통으로</button>`}`;
 }
@@ -18565,7 +18566,7 @@ function ct배치바꿈(v){
 function ct기능칸(doc, 잠김, 탭){
   const F = CT_FORMS[doc.form] || {}, 입력 = 탭 === 'e' && !잠김;
   return `<aside class="ctx-toolcol" aria-label="기능">
-    ${입력 ? `<h2>기능</h2>${ct문자적용단추()}${ct스캔칸()}${ct대장단추()}${F.explain ? '' : `<button class="btn tool sm" data-act="ct-go-sp">특약 넣기</button>`}<hr>` : ''}
+    ${입력 ? `<h2>기능</h2>${ct문자적용단추()}${ct스캔칸()}${ct대장단추()}${F.explain ? '' : `<button class="btn tool sm" data-act="ct-base-go">기본특약 넣기</button>`}<hr>` : ''}
     ${F.explain ? '' : `<h2>계약 뒤</h2>${탭 === 'p' ? `<button class="btn tool sm" data-act="ct-edit">계약서 입력으로</button>` : `<button class="btn tool sm" data-act="ct-plan">일정 · 체크</button>`}<hr>`}
     <h2>확인</h2><button class="btn sec sm" data-act="ct-full">미리보기 (인쇄 모양)</button>
   </aside>`;
@@ -18931,28 +18932,31 @@ function ctPhrPageHTML(){
         : 빈자리(`${CT_특약묶음[g]} 묶음에 저장한 특약이 없습니다`, '자주 쓰는 특약을 저장해 두면 계약서를 쓸 때 한 번에 넣을 수 있습니다.', '', 80)}` : ''}`;
 }
 /* 특약 모음 아래 '내 특약' - 묶음 탭 · 칩(누르면 특약에 넣는다) · 관리(문구 고치기·묶음 옮기기·지우기) */
+function ct추가목록(doc){
+  const P = CT.phr, g = ct특약묶음(doc), F = CT_FORMS[doc.form] || {};
+  const 묶음들 = [...new Set([g, ...(F.lease ? ['lease', 'renew'] : []), 'etc'])];
+  return 묶음들.flatMap(k => ct묶음문구((P && P.list) || [], k, doc.sub));
+}
 const ct추가이름 = (p, i) => String(p.name || '').trim() || `추가${i + 1}`;
 /* 추가 특약 단추 줄 - 칸 입력 · 계약서에 직접 입력이 같이 쓴다 */
 function ct추가단추(doc){
   const P = CT.phr; if(!세션있음() || !P || !P.loaded) return '';
-  const g = CT.phrTab && CT.phrTab.doc === doc ? CT.phrTab.g : ct특약묶음(doc);
-  return ct묶음문구(P.list || [], g, doc.sub).map((p, i) => `<button type="button" class="chip" data-act="phr-add" data-v="${esc(p.id)}" title="${esc(p.t)}">+ ${esc(ct추가이름(p, i))}</button>`).join('');
+  return ct추가목록(doc).map((p, i) => `<button type="button" class="chip" data-act="phr-add" data-v="${esc(p.id)}" title="${esc(p.t)}">+ ${esc(ct추가이름(p, i))}</button>`).join('');
 }
 function ctPhrHTML(doc){
   if(!세션있음()) return '';
   const P = CT.phr;
   if(!P){ setTimeout(ctPhrLoad); return `<div class="ct-my"><div class="ct-my-h"><b>추가특약사항</b></div><p class="sub ct-my-empty">불러오는 중입니다…</p></div>`; }
-  const g = CT.phrTab && CT.phrTab.doc === doc ? CT.phrTab.g : ct특약묶음(doc);
-  const 전부 = P.list || [], 묶음 = ct묶음문구(전부, g, doc.sub), 관리 = !!CT.phrManage && 전부.length > 0;
-  const 탭 = ct묶음탭(전부, g, 'phr-tab');
+  const g = ct특약묶음(doc);
+  const 묶음 = ct추가목록(doc), 전부 = 묶음, 관리 = !!CT.phrManage && 묶음.length > 0;
   const 칸 = ct문구칸;
   return `
       <div class="ct-my" role="region" aria-label="추가특약사항">
-        <div class="ct-my-h"><b>추가특약사항</b><div class="ct-chips" role="group" aria-label="묶음">${탭}</div>
+        <div class="ct-my-h"><b>추가특약사항</b>
           ${전부.length ? `<button type="button" class="tapx ct-my-mg" data-act="phr-manage" aria-pressed="${관리}">${관리 ? '관리 마침' : '관리'}</button>` : ''}</div>
         ${P.err ? `<p class="ct-note">${esc(P.err)} <button type="button" class="tapx" data-act="phr-reload" style="font-size:13.5px;font-weight:700;color:var(--ind700)">다시 불러오기</button></p>` : ''}
         ${P.need ? '<p class="ct-note">내 특약 저장은 준비 중입니다 - 곧 열립니다.</p>' : ''}
-        ${!묶음.length ? (P.err ? '' : `<p class="sub ct-my-empty">${CT_특약묶음[g]} 묶음에 만든 추가 특약이 없습니다. 아래 ‘+ 추가 특약 만들기’로 제목과 내용을 적어 두면 누를 때마다 위 특약사항에 들어갑니다.</p>`)
+        ${!묶음.length ? (P.err ? '' : `<p class="sub ct-my-empty">아직 만든 추가 특약이 없습니다. 아래 ‘+ 추가 특약 만들기’로 제목과 내용을 적어 두면 누를 때마다 위 특약사항에 들어갑니다.</p>`)
           : 관리 ? `<ul class="ct-my-list">${묶음.map(칸).join('')}</ul>`
           : `<div class="ct-lib">${묶음.map((p, i) => `<button type="button" class="chip" data-act="phr-add" data-v="${esc(p.id)}" title="${esc(p.t)}">+ ${esc(ct추가이름(p, i))}</button>`).join('')}</div>`}
         ${P.need || P.err ? '' : CT.addSp && CT.addSp.doc === doc ? `<div class="ct-my-new"><input class="inp" data-in="adsp:name" value="${esc(CT.addSp.name || '')}" maxlength="20" aria-label="추가 특약 제목" placeholder="제목 (비우면 추가${묶음.length + 1})">
@@ -22958,6 +22962,7 @@ function handle(a,v,el){
       CT.doc.specials = [...ct갱신특약(CT.doc), ...CT.doc.specials.filter(t => !CT_갱신표.test(String(t).trim()))];
       if(+CT.doc.renewOf.deposit){ CT.doc.deal.down = Math.min(+CT.doc.renewOf.deposit, +CT.doc.deal.deposit || +CT.doc.renewOf.deposit); CT.doc.renewOf.autoDown = CT.doc.deal.down; } ctDirty(); render(); toast('갱신 특약을 지금 금액으로 다시 썼습니다'); } return true;
     /* 빠진 기본 특약만 다시 넣는다 - 이미 있는 줄은 두 번 넣지 않는다 */
+    case 'ct-base-go': handle('ct-base-sp'); handle('ct-go-sp'); return true;
     case 'ct-base-sp': if(CT.doc && !ctSealed()){ const 있음 = new Set(CT.doc.specials.map(t => String(t).trim()));
       const 넣을 = ct기본특약(CT.doc).filter(t => !있음.has(t.trim()));
       if(!넣을.length) return toast('기본 특약이 이미 다 들어 있습니다'), true;
@@ -23004,6 +23009,10 @@ function handle(a,v,el){
       const t = String(A.t || '').trim(); if(!t) return toast('특약 내용을 적어 주세요'), true;
       const doc = CT.doc; if(!CT.phr || !CT.phr.loaded){ ctPhrLoad(); return toast('추가특약사항을 불러오는 중입니다 - 잠시 뒤 다시 눌러 주세요'), true; }
       ctPhrSend({ op:'add', g: v, t, name: String(A.name || '').trim(), tag: doc.sub || '' }).then(j => { if(j){ CT.addSp = null; CT.phrTab = { doc, g: v }; toast('추가 특약을 만들었습니다 - 누르면 특약사항에 들어갑니다'); } render(); });
+      return true; }
+    case 'phr-put': { const doc = CT.doc, t = doc ? String(doc.specials[+v] || '').trim() : ''; if(!t) return true;
+      if(!CT.phr || !CT.phr.loaded){ ctPhrLoad(); return toast('추가특약사항을 불러오는 중입니다 - 잠시 뒤 다시 눌러 주세요'), true; }
+      ctPhrSend({ op:'add', g: ct특약묶음(doc), t, tag: doc.sub || '' }).then(j => { if(j) toast('추가특약사항에 담았습니다 - 아래 ‘관리’에서 제목을 붙일 수 있습니다'); render(); });
       return true; }
     case 'phr-list': CT.phrList = !CT.phrList; if(!CT.phrList) CT.phrSave = null; render(); return true;
     case 'phr-pick':

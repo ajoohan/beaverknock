@@ -786,8 +786,8 @@ export function 특약문구고침(list, b) {
   if (op === 'add') {
     const t = 문구글(b.t), g = Object.hasOwn(특약묶음, b.g) ? b.g : 'etc', 틀림 = 글틀림(t);
     if (틀림) return { error: 틀림, code: 400 };
-    if (지금.some(p => p.g === g && p.t === t)) return { error: `이미 내 특약(${특약묶음[g]})에 있는 문구입니다`, code: 409 };
-    if (지금.length >= 특약문구최대) return { error: `내 특약은 ${특약문구최대}개까지 저장합니다 - 안 쓰는 문구를 지워 주세요`, code: 400 };
+    if (지금.some(p => p.g === g && p.t === t)) return { error: '이미 추가특약사항에 있는 문구입니다', code: 409 };
+    if (지금.length >= 특약문구최대) return { error: `추가 특약은 ${특약문구최대}개까지 저장합니다 - 안 쓰는 것을 지워 주세요`, code: 400 };
     const id = crypto.randomBytes(6).toString('hex');
     return { list: [...지금, { id, g, t, tag: 문구종류(b.tag), ...(문구종류(b.name) ? { name: 문구종류(b.name) } : {}) }], id };
   }

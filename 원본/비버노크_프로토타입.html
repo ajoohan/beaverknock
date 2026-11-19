@@ -3082,11 +3082,22 @@ table.ec td{line-height:2.2;color:var(--n800,#2a2a30)}
 .ec-l2{margin-left:14px;font-weight:700;color:var(--n700)}
 .ec-tools{display:inline-flex;gap:12px;margin-left:8px;font-size:13px}
 .ct-secst{min-height:28px}
+/* 휴대폰 파트너 머리 - 이름이 화면 밖으로 밀려 잘리던 것 */
+body.mo .ptn-nav .umenu-btn .nm2{max-width:56px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media (max-width:400px){ body.mo .ptn-nav > .badge, body.mo .ptn-nav .right > .badge{display:none} }
+/* 마이페이지 바로 가기 타일 - 값이 한두 글자만 보이던 것: 이름 아래 줄에 값 */
+.acc-tiles .acc-go{flex-wrap:wrap;row-gap:0;padding:8px 16px}
+.acc-tiles .acc-go > .acc-gn{flex:1 1 0;min-width:0}
+.acc-tiles .acc-go > .acc-gv{order:3;flex:1 0 100%;padding-left:28px;font-size:12.5px}
+/* 매물 저장 줄 - 휴대폰에서는 안내 위, 단추 아래 한 줄 */
+.ls-saverow{display:flex;justify-content:space-between;align-items:center;gap:12px}
+body.mo .ls-saverow{flex-direction:column;align-items:stretch}
+body.mo .ls-saverow .btn{width:100%}
 .ct-acct-pv{margin:2px 0 0;padding:8px 12px;border:1px dashed var(--n300);border-radius:8px;background:var(--n50,#F7F7F9);font-size:13.5px;color:var(--n700)}
 .ct-my-new{display:flex;flex-direction:column;gap:6px;padding:10px;border:1px solid var(--hair);border-radius:10px;background:var(--n50,#F7F7F9)}
 /* 부속 서류 - 위에 적는 칸, 아래에 서류(나란히 보기 없음) */
 .ctx-body.lay-extra{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr)}
-.ctx-body.lay-extra .ctx-side{max-height:40vh;min-height:0}
+.ctx-body.lay-extra .ctx-side{max-height:48vh;min-height:0}
 .ctx-body.lay-extra .ctx-view>.ct-doctabs{display:none}
 /* 휴대폰 - 전자계약 표: 이름 | 칸 두 줄 맞춤, 칸은 손가락 크기(44px · 16px 글자) */
 html body.mo table.ec tr{display:grid;grid-template-columns:64px minmax(0,1fr);column-gap:10px;row-gap:6px;align-items:center;padding:10px 0}
@@ -10794,7 +10805,7 @@ V["#/partner/listing/new"] = () => {
           표시됩니다 - 여기에 적어두시면 그 손님이 맞는 자리인지 한눈에 보입니다.</p>`:''}</div>
     </div>
 
-    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px">
+    <div class="ls-saverow">
       <span data-lhint style="font-size:13.5px;color:var(--n500)">${물건힌트(f, req)}</span>
       <button class="btn pri" data-act="save-listing" ${req&&!S.lsBusy?'':'disabled'}>${S.lsBusy?'저장하는 중…':S.editL?'고친 내용 저장':'장부에 저장'}</button>
     </div>
@@ -14042,6 +14053,8 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
+  { v:'26.11.19.18', 날:'2026-11-19', 줄:[ '특약 - 기본으로 드리는 추가 특약(추가1 · 추가2 …)을 되살렸습니다. ‘내 것으로 가져오기’를 누르면 제목 · 내용을 고칠 수 있습니다 · 새로 만든 추가 특약 이름이 바뀌지 않게 · ‘기본특약 넣기’ 뒤 특약 칸으로 이동',
+    '화면 점검 - 휴대폰 파트너 머리의 이름 잘림 · 마이페이지 바로 가기 값 잘림 · 휴대폰 매물 저장 줄과 계약현황 단추 줄바꿈 · 부속 서류에서 일정·체크로 가는 탭' ] },
   { v:'26.11.19.17', 날:'2026-11-19', 줄:[ '특약 - 추가특약사항에서 묶음 고르기(매매 · 임대차 · 갱신계약 · 기타)를 뺐습니다. 그 계약서에 맞는 것만 보이고 임대차 계약서에는 갱신계약 특약도 함께 · 왼쪽 ‘특약 넣기’는 ‘기본특약 넣기’로(빠진 기본 특약을 넣음) · 담기는 묶음을 묻지 않고 바로' ] },
   { v:'26.11.19.16', 날:'2026-11-19', 줄:[ '특약 - ‘내 특약’을 ‘추가특약사항’으로 · 미리 만든 모음(기본 특약과 겹침)을 빼고, 중개사가 제목 · 내용을 직접 만들고 고치는 추가1 · 추가2 … 를 칸 입력 · 계약서에 직접 입력에 똑같이 · 누르면 몇 번 줄에 들어갔는지 알림',
     '‘계좌 적을 줄 넣기’를 체크하면 인쇄되는 줄을 바로 보여 줍니다' ] },
@@ -17987,7 +18000,7 @@ function ctListPageHTML(모두){
     <div class="ct-lay one"><div class="ct-main">${칸줄}${칸말}${빈자리(칸 === 'trash' ? '휴지통이 비어 있습니다' : '보관함이 비어 있습니다', 칸 === 'trash' ? '목록에서 ‘휴지통’을 누르면 여기로 옵니다.' : '끝난 계약은 목록에서 ‘내리기’를 누르면 여기로 옵니다.', '', 80)}</div></div>`;
   return `
     ${ct머리('계약서 목록', 현황 ? '작성한 계약서 · 직접 추가한 계약 · 계약체결 문자로 가져온 계약을 한곳에서 봅니다. 계약일 · 중도금 · 잔금과 진행 상태를 표로 확인하세요.' : '양식을 골라 고치고, 기본 정보를 채워 바로 인쇄하세요. 주민등록번호·계좌·서명 칸은 비워서 인쇄되니 만나서 손으로 적으시면 됩니다.',
-      현황 && ct빠른쓰기() ? `<span class="eqb ct-headb"><button class="btn sec sm" data-act="ct-quick">직접 추가</button><button class="btn tool sm" data-go="#/partner/contracts/sms" title="보낸 문자 기록에서 ‘계약현황에 추가’ 또는 ‘이 내용으로 계약서’를 누릅니다">계약체결 문자에서 가져오기</button><button class="btn pri sm" data-go="#/partner/contracts/new" data-head="1">계약서 작성</button></span>` : `<button class="btn pri sm" data-go="#/partner/contracts/new">계약서 작성</button>`)}
+      현황 && ct빠른쓰기() ? `<span class="eqb ct-headb"><button class="btn sec sm" data-act="ct-quick">직접 추가</button><button class="btn tool sm" data-go="#/partner/contracts/sms" title="보낸 문자 기록에서 ‘계약현황에 추가’ 또는 ‘이 내용으로 계약서’를 누릅니다">${isMo() ? '문자에서 가져오기' : '계약체결 문자에서 가져오기'}</button><button class="btn pri sm" data-go="#/partner/contracts/new" data-head="1">계약서 작성</button></span>` : `<button class="btn pri sm" data-go="#/partner/contracts/new">계약서 작성</button>`)}
     <div class="ct-lay${일정 ? '' : ' one'}">
       <div class="ct-main">${칸줄}${자동칸}${칸말}${칸 ? '' : ct요약HTML(전체)}${전체.length ? ct찾기줄() : ''}
         ${전체.length && !isMo() ? `<div class="ct-chips ct-viewsw" role="group" aria-label="보는 방식">${[['', '목록'], ['table', '계약현황 표']].map(([k, t]) => `<button type="button" class="chip${(CT.view || '') === k ? ' on' : ''}" aria-pressed="${(CT.view || '') === k}" data-act="ct-view" data-v="${k}">${t}</button>`).join('')}</div>` : ''}
@@ -18587,7 +18600,7 @@ function ct문서탭(doc, 탭){
   const 줄 = [['e', '계약서'], ['ex', '확인·설명서'], ['pi', '개인정보 동의서'], ['rc', '영수증'], ['st', '잔금정산서'], ['hd', '물품인계'], ['pw', '위임장'], ...(F.lease ? [['rt', '보증금 반환']] : [])];
   const 지금 = 탭 === 'e' ? 'e' : 탭 === 'x' ? (CT.extraTab || 'rc') : '';
   const 보임 = CT.docMore || 줄.slice(6).some(([k]) => k === 지금) ? 줄 : 줄.slice(0, 6), 남 = 줄.length - 보임.length;
-  return `<nav class="ct-doctabs" role="tablist" aria-label="서류">${보임.map(([k, t]) => `<button type="button" role="tab" class="${지금 === k ? 'on' : ''}" aria-selected="${지금 === k}" data-act="${k === 'ex' ? 'ct-explain' : 'ct-doctab'}" data-v="${k}">${t}</button>`).join('')}${남 ? `<button type="button" class="more" data-act="ct-doctab" data-v="more" aria-label="서류 ${남}개 더 보기">더 보기 +${남}</button>` : ''}${ct배치() !== 'info' ? `<button type="button" class="${탭 === 'p' ? 'on' : ''}" data-act="${탭 === 'p' ? 'ct-edit' : 'ct-plan'}">일정·체크</button>` : ''}</nav>`;
+  return `<nav class="ct-doctabs" role="tablist" aria-label="서류">${보임.map(([k, t]) => `<button type="button" role="tab" class="${지금 === k ? 'on' : ''}" aria-selected="${지금 === k}" data-act="${k === 'ex' ? 'ct-explain' : 'ct-doctab'}" data-v="${k}">${t}</button>`).join('')}${남 ? `<button type="button" class="more" data-act="ct-doctab" data-v="more" aria-label="서류 ${남}개 더 보기">더 보기 +${남}</button>` : ''}${ct배치() !== 'info' || 탭 === 'x' ? `<button type="button" class="${탭 === 'p' ? 'on' : ''}" data-act="${탭 === 'p' ? 'ct-edit' : 'ct-plan'}">일정·체크</button>` : ''}</nav>`;
 }
 function ctDeskShell(doc, side, 신고면){
   const F = CT_FORMS[doc.form] || CT_FORMS['home-lease'];
@@ -18899,11 +18912,11 @@ function ctPhrPickHTML(doc){
 const ct묶음탭 = (전부, g, act) => Object.entries(CT_특약묶음).map(([k, t]) => { const n = 전부.filter(p => p.g === k).length;
   return `<button type="button" class="chip${k === g ? ' on' : ''}" data-act="${act}" data-v="${k}" aria-pressed="${k === g}">${t}${n ? `<span class="ct-my-n">${n}</span>` : ''}</button>`; }).join('');
 /* 관리 칸 하나 - 문구 고치기(잠깐 멈추면 저장) · 묶음 옮기기 · 지우기(두 번 눌러) */
-const ct문구칸 = (p, i) => `<li>
+const ct문구칸 = (p, i, 묶음숨김) => `<li>
       <input class="inp" data-in="phrname:${esc(p.id)}" value="${esc(p.name || '')}" maxlength="20" aria-label="추가 특약 제목" placeholder="제목 (비우면 추가${(i || 0) + 1})" style="margin-bottom:6px">
       <textarea class="inp" rows="${Math.min(6, 2 + Math.ceil(p.t.length / 60))}" data-in="phr:${esc(p.id)}" aria-label="내 특약 문구">${esc(p.t)}</textarea>
-      <div class="ct-my-row"><span class="lab">묶음</span>
-        <div class="ct-chips">${Object.entries(CT_특약묶음).map(([k, t]) => `<button type="button" class="chip${p.g === k ? ' on' : ''}" data-act="phr-g" data-v="${esc(p.id)}|${k}" aria-pressed="${p.g === k}">${t}</button>`).join('')}</div>
+      <div class="ct-my-row">${묶음숨김 === true ? '' : '<span class="lab">묶음</span>'}
+        ${묶음숨김 === true ? '' : `<div class="ct-chips">${Object.entries(CT_특약묶음).map(([k, t]) => `<button type="button" class="chip${p.g === k ? ' on' : ''}" data-act="phr-g" data-v="${esc(p.id)}|${k}" aria-pressed="${p.g === k}">${t}</button>`).join('')}</div>`}
         ${p.tag ? `<span class="ct-my-tag">${esc(p.tag)}</span>` : ''}
         <label class="ct-chk ct-my-base"><input type="checkbox" data-act="phr-base" data-v="${esc(p.id)}" ${p.base ? 'checked' : ''}> 새 계약서에 기본으로</label>
         <button type="button" class="tapx ct-my-del" data-act="phr-del" data-v="${esc(p.id)}">${CT.phrDel === p.id ? '한 번 더 누르면 지웁니다' : '지우기'}</button></div></li>`;
@@ -18937,10 +18950,14 @@ function ct추가목록(doc){
   const 묶음들 = [...new Set([g, ...(F.lease ? ['lease', 'renew'] : []), 'etc'])];
   return 묶음들.flatMap(k => ct묶음문구((P && P.list) || [], k, doc.sub));
 }
+/* 새 추가 특약의 이름 - 지금 쓰는 '추가N' 가운데 가장 큰 수 다음 */
+const ct새추가이름 = () => { const 수 = ((CT.phr && CT.phr.list) || []).map(p => +(String(p.name || '').match(/^추가(\d+)$/) || [])[1] || 0); return `추가${Math.max(0, ...수) + 1}`; };
 const ct추가이름 = (p, i) => String(p.name || '').trim() || `추가${i + 1}`;
 /* 추가 특약 단추 줄 - 칸 입력 · 계약서에 직접 입력이 같이 쓴다 */
+const ct기본추가 = doc => (ctSpecialSet(doc) || []).filter(x => x && x[1]);
 function ct추가단추(doc){
   const P = CT.phr; if(!세션있음() || !P || !P.loaded) return '';
+  if(!ct추가목록(doc).length) return ct기본추가(doc).map(([n, t], i) => `<button type="button" class="chip" data-act="ct-sp-add" data-v="${i}" title="${esc(n + ' - ' + t)}">+ 추가${i + 1}</button>`).join('');
   return ct추가목록(doc).map((p, i) => `<button type="button" class="chip" data-act="phr-add" data-v="${esc(p.id)}" title="${esc(p.t)}">+ ${esc(ct추가이름(p, i))}</button>`).join('');
 }
 function ctPhrHTML(doc){
@@ -18956,8 +18973,10 @@ function ctPhrHTML(doc){
           ${전부.length ? `<button type="button" class="tapx ct-my-mg" data-act="phr-manage" aria-pressed="${관리}">${관리 ? '관리 마침' : '관리'}</button>` : ''}</div>
         ${P.err ? `<p class="ct-note">${esc(P.err)} <button type="button" class="tapx" data-act="phr-reload" style="font-size:13.5px;font-weight:700;color:var(--ind700)">다시 불러오기</button></p>` : ''}
         ${P.need ? '<p class="ct-note">내 특약 저장은 준비 중입니다 - 곧 열립니다.</p>' : ''}
-        ${!묶음.length ? (P.err ? '' : `<p class="sub ct-my-empty">아직 만든 추가 특약이 없습니다. 아래 ‘+ 추가 특약 만들기’로 제목과 내용을 적어 두면 누를 때마다 위 특약사항에 들어갑니다.</p>`)
-          : 관리 ? `<ul class="ct-my-list">${묶음.map(칸).join('')}</ul>`
+        ${!묶음.length ? (P.err ? '' : ct기본추가(doc).length ? `<div class="ct-lib">${ct기본추가(doc).map(([n, t], i) => `<button type="button" class="chip" data-act="ct-sp-add" data-v="${i}" title="${esc(t)}">+ 추가${i + 1} <span class="ct-my-tag">${esc(n)}</span></button>`).join('')}</div>
+          <p class="sub" style="margin:0;font-size:12.5px">기본으로 드리는 추가 특약입니다. 제목 · 내용을 바꾸려면 <button type="button" class="tapx" data-act="adsp-import" ${CT.addImp ? 'disabled' : ''} style="font-size:13px;font-weight:700;color:var(--ind700)">${CT.addImp ? '가져오는 중…' : '내 것으로 가져오기'}</button>를 누른 뒤 ‘관리’에서 고치세요.</p>`
+          : `<p class="sub ct-my-empty">아직 만든 추가 특약이 없습니다. 아래 ‘+ 추가 특약 만들기’로 제목과 내용을 적어 두면 누를 때마다 위 특약사항에 들어갑니다.</p>`)
+          : 관리 ? `<ul class="ct-my-list">${묶음.map((p, i) => 칸(p, i, true)).join('')}</ul>`
           : `<div class="ct-lib">${묶음.map((p, i) => `<button type="button" class="chip" data-act="phr-add" data-v="${esc(p.id)}" title="${esc(p.t)}">+ ${esc(ct추가이름(p, i))}</button>`).join('')}</div>`}
         ${P.need || P.err ? '' : CT.addSp && CT.addSp.doc === doc ? `<div class="ct-my-new"><input class="inp" data-in="adsp:name" value="${esc(CT.addSp.name || '')}" maxlength="20" aria-label="추가 특약 제목" placeholder="제목 (비우면 추가${묶음.length + 1})">
           <textarea class="inp" rows="3" data-in="adsp:t" aria-label="추가 특약 내용" placeholder="특약 내용">${esc(CT.addSp.t || '')}</textarea>
@@ -22962,7 +22981,7 @@ function handle(a,v,el){
       CT.doc.specials = [...ct갱신특약(CT.doc), ...CT.doc.specials.filter(t => !CT_갱신표.test(String(t).trim()))];
       if(+CT.doc.renewOf.deposit){ CT.doc.deal.down = Math.min(+CT.doc.renewOf.deposit, +CT.doc.deal.deposit || +CT.doc.renewOf.deposit); CT.doc.renewOf.autoDown = CT.doc.deal.down; } ctDirty(); render(); toast('갱신 특약을 지금 금액으로 다시 썼습니다'); } return true;
     /* 빠진 기본 특약만 다시 넣는다 - 이미 있는 줄은 두 번 넣지 않는다 */
-    case 'ct-base-go': handle('ct-base-sp'); handle('ct-go-sp'); return true;
+    case 'ct-base-go': handle('ct-base-sp'); setTimeout(() => handle('ct-go-sp'), 120); return true;
     case 'ct-base-sp': if(CT.doc && !ctSealed()){ const 있음 = new Set(CT.doc.specials.map(t => String(t).trim()));
       const 넣을 = ct기본특약(CT.doc).filter(t => !있음.has(t.trim()));
       if(!넣을.length) return toast('기본 특약이 이미 다 들어 있습니다'), true;
@@ -23004,15 +23023,21 @@ function handle(a,v,el){
     case 'phr-add': {
       const p = CT.doc && !ctSealed() && CT.phr && (CT.phr.list || []).find(x => x.id === v);
       if(p){ const 줄 = ct특약넣기(CT.doc, p.t); ctDirty(); render(); toast(`특약사항 ${줄 + 1}번 줄에 넣었습니다`); } return true; }
+    case 'adsp-import': { const doc = CT.doc; if(!doc || CT.addImp || !CT.phr || !CT.phr.loaded) return true;
+      const 것 = ct기본추가(doc), g = ct특약묶음(doc); if(!것.length) return true;
+      CT.addImp = true; render();
+      (async () => { let n = 0; for(let i = 0; i < 것.length; i++){ const j = await ctPhrSend({ op:'add', g, t: 것[i][1], name: `추가${i + 1}`, tag: '' }); if(j) n++; }
+        CT.addImp = false; if(n) toast(`추가 특약 ${n}개를 가져왔습니다 - ‘관리’에서 제목 · 내용을 고치세요`); render(); })();
+      return true; }
     case 'adsp-open': CT.addSp = CT.addSp && CT.addSp.doc === CT.doc ? null : { doc: CT.doc, name:'', t:'' }; render(); if(CT.addSp) setTimeout(() => { const e = $('#app [data-in="adsp:name"]'); if(e) e.focus(); }, 30); return true;
     case 'adsp-save': { const A = CT.addSp; if(!A || A.doc !== CT.doc || !CT_특약묶음[v]) return true;
       const t = String(A.t || '').trim(); if(!t) return toast('특약 내용을 적어 주세요'), true;
       const doc = CT.doc; if(!CT.phr || !CT.phr.loaded){ ctPhrLoad(); return toast('추가특약사항을 불러오는 중입니다 - 잠시 뒤 다시 눌러 주세요'), true; }
-      ctPhrSend({ op:'add', g: v, t, name: String(A.name || '').trim(), tag: doc.sub || '' }).then(j => { if(j){ CT.addSp = null; CT.phrTab = { doc, g: v }; toast('추가 특약을 만들었습니다 - 누르면 특약사항에 들어갑니다'); } render(); });
+      ctPhrSend({ op:'add', g: v, t, name: String(A.name || '').trim() || ct새추가이름(), tag: doc.sub || '' }).then(j => { if(j){ CT.addSp = null; CT.phrTab = { doc, g: v }; toast('추가 특약을 만들었습니다 - 누르면 특약사항에 들어갑니다'); } render(); });
       return true; }
     case 'phr-put': { const doc = CT.doc, t = doc ? String(doc.specials[+v] || '').trim() : ''; if(!t) return true;
       if(!CT.phr || !CT.phr.loaded){ ctPhrLoad(); return toast('추가특약사항을 불러오는 중입니다 - 잠시 뒤 다시 눌러 주세요'), true; }
-      ctPhrSend({ op:'add', g: ct특약묶음(doc), t, tag: doc.sub || '' }).then(j => { if(j) toast('추가특약사항에 담았습니다 - 아래 ‘관리’에서 제목을 붙일 수 있습니다'); render(); });
+      ctPhrSend({ op:'add', g: ct특약묶음(doc), t, name: ct새추가이름(), tag: doc.sub || '' }).then(j => { if(j) toast('추가특약사항에 담았습니다 - 아래 ‘관리’에서 제목을 붙일 수 있습니다'); render(); });
       return true; }
     case 'phr-list': CT.phrList = !CT.phrList; if(!CT.phrList) CT.phrSave = null; render(); return true;
     case 'phr-pick':

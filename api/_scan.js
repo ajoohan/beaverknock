@@ -26,7 +26,8 @@ import { 주민번호있나 } from './_contract.js';
 
 export const SCAN_MODEL = 'claude-haiku-5-5';
 export const SCAN_EFFORT = 'low';
-export const SCAN_MAX_FILES = 4;          /* 등기부 · 건축물대장 표제부 · 전유부 · 토지이용계획 */
+export const SCAN_MAX_FILES = 4;          /* 서류 종류 - 등기부 · 건축물대장 표제부 · 전유부 · 토지이용계획 */
+export const SCAN_MAX_PAGES = 5;          /* 서류마다 사진 장수(2026-11-19 대표님 승인 - 사진은 여러 장, PDF 는 한 파일) */
 export const SCAN_MAX_BYTES = 3 * 1024 * 1024;          /* 원본 합계 */
 export const SCAN_MAX_PDF_PAGES = 20;
 const TIMEOUT_MS = 120_000;                            /* Vercel 함수 300초 안 - 몇 쪽짜리 등기부는 보통 20~40초 */
@@ -36,7 +37,7 @@ const 직접 = ' - 직접 적어 주세요';
 export const SCAN_MSG = {
   no_key: `서류 읽기를 준비 중입니다${직접}`,
   no_file: '올린 서류를 받지 못했습니다 - 다시 올려 주세요',
-  too_many: `서류는 한 번에 ${SCAN_MAX_FILES}개까지 올릴 수 있습니다`,
+  too_many: `서류는 ${SCAN_MAX_FILES}가지 - PDF 는 서류마다 한 파일, 사진은 서류마다 5장까지 올릴 수 있습니다`,
   too_big: '서류가 너무 큽니다 - 합계 3MB 이하로 올려 주세요(사진은 화면이 줄여 보냅니다)',
   bad_file: 'PDF·JPG·PNG·WEBP 서류만 읽을 수 있습니다',
   too_many_pages: `PDF 는 ${SCAN_MAX_PDF_PAGES}쪽까지만 읽습니다 - 필요한 쪽만 올려 주세요`,
@@ -126,8 +127,11 @@ function 쪽수(buf) {
 /** 화면이 보낸 [{kind:'reg'|'bld'|'land', data(base64)}] 를 확인해 API 에 보낼 블록으로(서류마다 꼬리표 + 서류). 틀리면 ScanError */
 export function scanBlocks(files) {
   if (!Array.isArray(files) || !files.length) throw new ScanError('no_file', 400);
-  if (files.length > SCAN_MAX_FILES) throw new ScanError('too_many', 400);
-  let 합계 = 0;
+  if (files.length > SCAN_MAX_FILES * SCAN_MAX_PAGES) throw new ScanError('too_many', 400);
+  const 종류 = new Map();
+  for (const f of files) { const k = String((f && f.kind) || ''); 종류.set(k, (종류.get(k) || 0) + 1); }
+  if (종류.size > SCAN_MAX_FILES || [...종류.values()].some(n => n > SCAN_MAX_PAGES)) throw new ScanError('too_many', 400);
+  let 합계 = 0; const 쪽 = new Map();
   return files.flatMap(f => {
     const data = String((f && f.data) || '').replace(/^data:[^,]*,/, '').replace(/\s+/g, '');
     if (!data || !/^[A-Za-z0-9+/]+=*$/.test(data)) throw new ScanError('bad_file', 400);
@@ -138,7 +142,10 @@ export function scanBlocks(files) {
     if (!t || !TYPES.includes(t)) throw new ScanError('bad_file', 400);
     /* 쪽수를 못 세는 PDF(압축된 목차)는 큰 것만 막는다 - 전에는 그냥 통과해 쪽수 상한을 비켜 갔다 (2026-11-03) */
     if (t === 'application/pdf') { const n = 쪽수(buf); if ((n && n > SCAN_MAX_PDF_PAGES) || (!n && buf.length > 1_500_000)) throw new ScanError('too_many_pages', 413); }
-    const 꼬리표 = SCAN_KINDS[f.kind] || '그 밖의 서류';
+    /* 같은 서류를 여러 장으로 올렸으면 PDF 는 받지 않는다(PDF 는 한 파일로) */
+    if (t === 'application/pdf' && 종류.get(String(f.kind || '')) > 1) throw new ScanError('too_many', 400);
+    const n = (쪽.get(f.kind) || 0) + 1; 쪽.set(f.kind, n);
+    const 꼬리표 = (SCAN_KINDS[f.kind] || '그 밖의 서류') + (종류.get(String(f.kind || '')) > 1 ? ` ${n}쪽` : '');
     return [{ type: 'text', text: `[${꼬리표}]` },
       t === 'application/pdf'
         ? { type: 'document', source: { type: 'base64', media_type: t, data } }

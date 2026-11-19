@@ -189,5 +189,11 @@ const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3
   ok(/Anthropic/.test(처리방침) && /서류 판독/.test(처리방침), '처리방침: 서류 판독(AI) 처리 위탁·국외 이전을 적었다');
 }
 
+/* ── 사진 여러 장 (2026-11-19 대표님 승인) ── */
+{ const 사진 = () => ({ kind: 'reg', data: PNG });
+  const 막힘 = (files, code) => { try { SC.scanBlocks(files); return false; } catch (e) { return e instanceof SC.ScanError && e.code === code; } };
+  let 됨 = true; try { SC.scanBlocks([사진(), 사진(), 사진()]); } catch (e) { 됨 = false; }
+  ok(됨 && 막힘([사진(), 사진(), 사진(), 사진(), 사진(), 사진()], 'too_many') && 막힘([사진(), { kind: 'reg', data: PDF(1) }], 'too_many'), '사진은 서류마다 5장까지 · 여러 장이면 PDF 는 섞지 않는다'); }
+
 console.log(`${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

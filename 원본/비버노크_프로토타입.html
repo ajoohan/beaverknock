@@ -13988,6 +13988,7 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
+  { v:'26.11.19.9', 날:'2026-11-19', 줄:[ '공적장부 - 사진은 서류마다 5장까지 여러 장 올릴 수 있습니다(‘사진 더하기’ · PDF 는 한 파일) · 건축물대장 불러오기 단추가 늘 보이고, 소재지를 아직 안 골랐으면 누를 때 알려 줍니다' ] },
   { v:'26.11.19.8', 날:'2026-11-19', 줄:[ '계약서 - 소재지: 주소를 찾아 고르면 아래 ‘소재지’ 칸에 그대로 들어가고 오른쪽 ‘상세주소’에 동 · 호수를 적습니다(소재지도 고칠 수 있음) · 공적장부를 올리면 검색보다 등기부 소재지가 먼저',
     '금액은 ‘금 오억원정 (₩500,000,000)’ 꼴 - 숫자를 적으면 한글이 저절로 · 중도금 옆 날짜 칸 늘 · ‘+ 2차 중도금’ · 부가가치세 설명 뺌',
     '‘인도일/계약일’ · ‘매도 공동명의인 · 매도 대리인 · 매수 공동명의인 · 매수 대리인’ · 특약 줄 앞에 번호' ] },
@@ -18480,7 +18481,7 @@ function ct배치바꿈(v){
 function ct기능칸(doc, 잠김, 탭){
   const F = CT_FORMS[doc.form] || {}, 입력 = 탭 === 'e' && !잠김;
   return `<aside class="ctx-toolcol" aria-label="기능">
-    ${입력 ? `<h2>기능</h2>${ct문자적용단추()}${ct스캔칸()}${ct대장가능() ? ct대장단추() : ''}${F.explain ? '' : `<button class="btn tool sm" data-act="ct-go-sp">특약 넣기</button>`}<hr>` : ''}
+    ${입력 ? `<h2>기능</h2>${ct문자적용단추()}${ct스캔칸()}${ct대장단추()}${F.explain ? '' : `<button class="btn tool sm" data-act="ct-go-sp">특약 넣기</button>`}<hr>` : ''}
     ${F.explain ? '' : `<h2>계약 뒤</h2>${탭 === 'p' ? `<button class="btn tool sm" data-act="ct-edit">계약서 입력으로</button>` : `<button class="btn tool sm" data-act="ct-plan">일정 · 체크</button>`}<hr>`}
     <h2>확인</h2><button class="btn sec sm" data-act="ct-full">미리보기 (인쇄 모양)</button>
   </aside>`;
@@ -18488,9 +18489,9 @@ function ct기능칸(doc, 잠김, 탭){
 /* 공적장부 올리기 - 왼쪽 칸에 작게(2026-11-19 파트너 '서류로 빠르게 채우기를 좌측 사이드로') */
 function ct스캔칸(){
   const sc = 스캔(), 있음 = SCAN_SLOTS.filter(([k]) => sc.files[k]).length;
-  return `<div class="ct-scan-mini"><b>공적장부 올리기</b><small>올리면 AI가 읽고 칸을 채웁니다 · 한 장만 올려도 됩니다</small>
+  return `<div class="ct-scan-mini"><b>공적장부 올리기</b><small>PDF 또는 사진(서류마다 5장까지) · 올리면 AI가 읽고 칸을 채웁니다</small>
     ${SCAN_SLOTS.map(([k, 이름]) => { const f = sc.files[k];
-      return `<div class="csm-row${f ? ' on' : ''}"><span title="${f ? esc(f.name) : ''}">${f ? '✓ ' : ''}${esc(이름)}</span>${f && !sc.busy ? `<button type="button" class="tapx" data-act="ct-scan-del" data-v="${k}" aria-label="${esc(이름)} 빼기">빼기</button>` : ''}<label class="tapx csm-up${sc.busy ? ' off' : ''}">${f ? '바꾸기' : '올리기'}<input type="file" class="sr" accept="application/pdf,image/jpeg,image/png,image/webp" data-scanfile="${k}" ${sc.busy ? 'disabled' : ''} aria-label="${esc(이름)} 올리기"></label></div>`; }).join('')}
+      return `<div class="csm-row${f ? ' on' : ''}"><span title="${f ? esc(f.name) : ''}">${f ? '✓ ' : ''}${esc(이름)}${f && f.n > 1 ? ` (${f.n}장)` : ''}</span>${f && !sc.busy ? `<button type="button" class="tapx" data-act="ct-scan-del" data-v="${k}" aria-label="${esc(이름)} 빼기">빼기</button>` : ''}${f && !f.pdf && (f.n || 1) < SCAN_PAGES && !sc.busy ? `<label class="tapx csm-up">+장<input type="file" class="sr" accept="image/jpeg,image/png,image/webp" multiple data-scanfile="${k}" data-scanadd="1" aria-label="${esc(이름)} 사진 더하기"></label>` : ''}<label class="tapx csm-up${sc.busy ? ' off' : ''}">${f ? '바꾸기' : '올리기'}<input type="file" class="sr" accept="application/pdf,image/jpeg,image/png,image/webp" multiple data-scanfile="${k}" ${sc.busy ? 'disabled' : ''} aria-label="${esc(이름)} 올리기"></label></div>`; }).join('')}
     ${sc.busy ? '<p class="csm-note" role="status">AI가 서류를 읽고 있습니다 · 20~40초</p>' : ''}${sc.err && !sc.busy ? `<p class="scan-err" role="alert">${esc(sc.err)}</p>` : ''}
     <button class="btn pri sm" data-act="ct-scan-go" ${!있음 || sc.busy ? 'disabled' : ''}>${sc.busy ? '읽는 중…' : 있음 ? `서류 ${있음}개로 칸 채우기` : '서류를 올리면 채웁니다'}</button></div>`;
 }
@@ -19295,7 +19296,8 @@ const SCAN_SLOTS = [
   ['bldx', '건축물대장 전유부',  '호실 · 전유 면적 · 용도',             '아파트·오피스텔 등', '세움터', '건축물대장 발급', 'https://www.eais.go.kr/moct/bci/aaa02/BCIAAA02L01'],
   ['land', '토지이용계획확인서', '용도지역 · 개별공시지가 · 규제',       '확인·설명서',        '토지이음', '토지이용계획 열람', 'https://www.eum.go.kr/web/ar/lu/luLandDet.jsp'],
 ];
-const SCAN_MAX = 3 * 1024 * 1024;                          /* 서버와 같은 합계 상한(원본) */
+const SCAN_MAX = 3 * 1024 * 1024;
+const SCAN_PAGES = 5;                                      /* 서류마다 사진 장수(서버 SCAN_MAX_PAGES 와 같게) */                          /* 서버와 같은 합계 상한(원본) */
 const 스캔 = () => (CT.scan = CT.scan || { files:{}, busy:false, err:'' });
 const 스캔크기 = () => Object.values(스캔().files).reduce((a, f) => a + (f ? f.bytes : 0), 0);
 const 크기글 = n => n >= 1048576 ? (n / 1048576).toFixed(1) + 'MB' : Math.max(1, Math.round(n / 1024)) + 'KB';
@@ -19326,7 +19328,8 @@ function ctScanHTML(){
         return `<li class="${끝 ? 'done' : 지금 ? 'now' : ''}"${지금 ? ' aria-current="step"' : ''}>
           <span class="sf-n" aria-hidden="true">${끝 ? 스캔그림('check', 13) : n}</span><b>${이름}${끝 ? '<span class="sr"> (마침)</span>' : ''}</b><small>${말}</small></li>`; }).join('')}</ol>
       <div class="scan-slots">${SCAN_SLOTS.map(([k, 이름, 채움, 언제, 곳, 메뉴, 주소]) => { const f = sc.files[k];
-        const 고르기 = `<input type="file" class="sr" accept="application/pdf,image/jpeg,image/png,image/webp" data-scanfile="${k}" ${sc.busy?'disabled':''} aria-label="${esc(이름)} ${f ? '바꾸기' : '올리기'}">`;
+        const 고르기 = `<input type="file" class="sr" accept="application/pdf,image/jpeg,image/png,image/webp" multiple data-scanfile="${k}" ${sc.busy?'disabled':''} aria-label="${esc(이름)} ${f ? '바꾸기' : '올리기'}">`;
+        const 더하기 = f && !f.pdf && (f.n || 1) < SCAN_PAGES && !sc.busy ? `<label class="tapx ss-re">사진 더하기<input type="file" class="sr" accept="image/jpeg,image/png,image/webp" multiple data-scanfile="${k}" data-scanadd="1" aria-label="${esc(이름)} 사진 더하기"></label>` : '';
         return `<div class="scan-slot${f ? ' on' : ''}" data-k="${k}">
           <div class="ss-main">
             <div class="ss-head">${f ? `<span class="ss-chk" aria-hidden="true">${스캔그림('check', 12)}</span>` : ''}<b>${esc(이름)}</b><span class="ss-tag">${esc(언제)}</span></div>
@@ -19335,13 +19338,13 @@ function ctScanHTML(){
             <a class="ss-go" href="${주소}" target="_blank" rel="noopener">${esc(곳)} › ${esc(메뉴)}${스캔그림('ext', 13)}<span class="sr"> (새 창)</span></a>`}
           </div>
           <div class="ss-side">${f
-            ? (sc.busy ? '' : `<label class="tapx ss-re">바꾸기${고르기}</label>
+            ? (sc.busy ? '' : `${더하기}<label class="tapx ss-re">바꾸기${고르기}</label>
               <button type="button" class="tapx ss-del" data-act="ct-scan-del" data-v="${k}" aria-label="${esc(이름)} 빼기">빼기</button>`)
             : `<label class="btn sec sm ss-up${sc.busy ? ' off' : ''}">${스캔그림('up')}올리기${고르기}</label>${typeof isMo === 'function' && isMo() && !sc.busy ? `<label class="btn sec sm ss-up">사진 찍기<input type="file" class="sr" accept="image/*" capture="environment" data-scanfile="${k}" aria-label="${esc(이름)} 사진 찍어 올리기"></label>` : ''}`}</div>
         </div>`; }).join('')}</div>
       ${sc.busy ? `<div class="scan-busy" role="status"><b>AI가 서류를 읽고 있습니다</b><span>보통 20~40초 걸립니다 · 이 화면을 닫지 마세요</span><span class="scan-bar" aria-hidden="true"><i></i></span></div>` : ''}
       ${sc.err && !sc.busy ? `<p class="scan-err" role="alert">${esc(sc.err)}</p>` : ''}
-      ${ct대장가능() ? `<div class="scan-mini"><span>건축물대장은 올리지 않아도 소재지로 바로 불러올 수 있습니다</span>${ct대장단추()}</div>${ct대장오류()}` : ''}
+      ${ctSealed() ? '' : `<div class="scan-mini"><span>건축물대장은 올리지 않아도 소재지로 바로 불러올 수 있습니다${ct대장가능() ? '' : ' - 주소 검색으로 소재지를 먼저 고르세요'}</span>${ct대장단추()}</div>${ct대장오류()}`}
       <div class="scan-act">
         <button class="btn pri scan-cta" data-act="ct-scan-go" ${!있음||sc.busy?'disabled':''}>${sc.busy ? '읽는 중…' : 있음 ? `서류 ${있음}개로 칸 채우기` : '서류를 올리면 채울 수 있습니다'}</button>
         <button type="button" class="tapx scan-skip" data-act="ct-scan-skip" ${sc.busy?'disabled':''}>${CT.filled && CT.filled.size ? '돌아가기' : '서류 없이 직접 쓰기'}</button>
@@ -19356,22 +19359,29 @@ async function 줄이기(file){
   const url = URL.createObjectURL(file);
   try{
     const img = await new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = no; i.src = url; });
-    const k = Math.min(1, 2000 / Math.max(img.naturalWidth, img.naturalHeight));
+    const k = Math.min(1, 1800 / Math.max(img.naturalWidth, img.naturalHeight));   /* 여러 장이 3MB 안에 들어가게 1800px */
     const c = document.createElement('canvas'); c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k);
     c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
     return c.toDataURL('image/jpeg', 0.85).split(',')[1] || '';
   } finally { URL.revokeObjectURL(url); }
 }
-async function ctScanPick(kind, file){
-  if(!file || !SCAN_SLOTS.some(([k]) => k === kind)) return;
-  const 사진 = /^image\/(jpeg|png|webp)$/.test(file.type), pdf = file.type === 'application/pdf';
-  if(!사진 && !pdf) return toast('PDF·JPG·PNG·WEBP 서류만 올릴 수 있습니다');
+async function ctScanPick(kind, files, 더하기){
+  files = Array.from(files && files.length != null ? files : [files]).filter(Boolean);
+  if(!files.length || !SCAN_SLOTS.some(([k]) => k === kind)) return;
+  const 있던 = 스캔().files[kind], 쪽 = 더하기 && 있던 && !있던.pdf ? [{ ...있던, extra: undefined }, ...(있던.extra || [])] : [];
   try{
-    const data = 사진 ? await 줄이기(file) : await 읽기(file);
-    const bytes = Math.floor(data.length * 3 / 4);
-    const 다른것 = 스캔크기() - (스캔().files[kind] ? 스캔().files[kind].bytes : 0);
-    if(다른것 + bytes > SCAN_MAX) return toast('서류 합계가 3MB 를 넘습니다 - 필요한 쪽만 PDF 로 올려 주세요');
-    스캔().files[kind] = { name: file.name, bytes, data };
+    for(const file of files){
+      const 사진 = /^image\/(jpeg|png|webp)$/.test(file.type), pdf = file.type === 'application/pdf';
+      if(!사진 && !pdf) return toast('PDF·JPG·PNG·WEBP 서류만 올릴 수 있습니다');
+      if(pdf && (files.length > 1 || 쪽.length)) return toast('PDF 는 서류마다 한 파일로 올려 주세요 - 사진은 여러 장 올릴 수 있습니다');
+      if(쪽.length >= SCAN_PAGES){ toast(`사진은 서류마다 ${SCAN_PAGES}장까지 올립니다`); break; }
+      const data = 사진 ? await 줄이기(file) : await 읽기(file);
+      쪽.push({ name: file.name, bytes: Math.floor(data.length * 3 / 4), data, pdf });
+    }
+    if(!쪽.length) return;
+    const 합 = 쪽.reduce((n, x) => n + x.bytes, 0), 다른것 = 스캔크기() - (있던 ? 있던.bytes : 0);
+    if(다른것 + 합 > SCAN_MAX) return toast('서류 합계가 3MB 를 넘습니다 - 장수를 줄이거나 PDF 로 올려 주세요');
+    스캔().files[kind] = { ...쪽[0], extra: 쪽.slice(1).map(({ name, bytes, data }) => ({ name, bytes, data })), name: 쪽.length > 1 ? `${쪽[0].name} 외 ${쪽.length - 1}장` : 쪽[0].name, bytes: 합, n: 쪽.length };
     스캔().err = '';
     render();
   }catch(e){ toast('서류를 열지 못했습니다 - 다른 파일로 올려 주세요'); }
@@ -19446,7 +19456,7 @@ async function ctScanGo(){
   if(!kinds.length) return toast('서류를 하나 이상 올려 주세요');
   sc.busy = true; sc.err = ''; render();
   const 문서 = CT.doc;
-  const { ok, j } = await ctPost({ what:'contract-scan', files: kinds.map(k => ({ kind: k, data: sc.files[k].data })) })
+  const { ok, j } = await ctPost({ what:'contract-scan', files: kinds.flatMap(k => [sc.files[k], ...(sc.files[k].extra || [])].map(x => ({ kind: k, data: x.data }))) })
     .catch(() => ({ ok:false, j:{ error:'네트워크 문제로 서류를 보내지 못했습니다 - 다시 해 주세요' } }));
   sc.busy = false;
   if(CT.doc !== 문서){ render(); return; }                  /* 그 사이 다른 문서를 열었다 */
@@ -19473,7 +19483,8 @@ const ct대장가능 = () => !!(CT.doc && CT.doc.property && CT.doc.property.adm
 const ct대장단추 = () => `<button class="btn tool sm" data-act="ct-bld-go" ${CT.bld && CT.bld.busy ? 'disabled' : ''}>${CT.bld && CT.bld.busy ? '불러오는 중…' : '주소로 건축물대장 · 토지 불러오기'}</button>`;
 const ct대장오류 = () => CT.bld && CT.bld.err && CT.bld.doc === CT.doc ? `<p class="scan-err" role="alert">${esc(CT.bld.err)}</p>` : '';
 async function ctBldGo(){
-  if(!ct대장가능() || (CT.bld && CT.bld.busy)) return;
+  if(CT.bld && CT.bld.busy) return;
+  if(!ct대장가능()) return toast(ctSealed() ? '날인본은 고칠 수 없습니다' : '주소 검색으로 소재지를 먼저 골라 주세요 - 법정동코드 · 지번이 있어야 건축물대장을 불러옵니다');
   const 문서 = CT.doc, P = 문서.property;
   CT.bld = { busy: true, err: '', doc: 문서 }; render();
   const { ok, j } = await ctPost({ what:'contract-bld', admCd: P.admCd, bun: P.bun, ji: P.ji, mount: !!P.mount, road: P.road, unit: P.road })
@@ -23649,7 +23660,7 @@ document.addEventListener('keydown', e=>{
 /* 모바일 조건 선택 셀렉트 */
 document.addEventListener('change', e=>{
   const s=e.target.closest('[data-act="pick-cond-sel"]'); if(s){ S.inboxCond=s.value; render(); }
-  const sf=e.target.closest('[data-scanfile]'); if(sf){ const fl = sf.files && sf.files[0]; sf.value = ''; ctScanPick(sf.dataset.scanfile, fl); }
+  const sf=e.target.closest('[data-scanfile]'); if(sf){ const fl = Array.from(sf.files || []); sf.value = ''; ctScanPick(sf.dataset.scanfile, fl, !!sf.dataset.scanadd || sf.hasAttribute('capture')); }
   const fpf=e.target.closest('[data-fpfile]'); if(fpf){ const fl = [...(fpf.files || [])]; fpf.value = ''; fpAdd(fl); }
   const cf=e.target.closest('[data-cffile]'); if(cf){ const fl = cf.files && cf.files[0]; cf.value = ''; cfUp(fl); }
   const lf=e.target.closest('[data-lsfile]'); if(lf){ const fl = lf.files && lf.files[0]; lf.value = ''; lsPick(lf.dataset.lsfile, fl); }

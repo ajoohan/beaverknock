@@ -11247,7 +11247,7 @@ function modalHTML(){
     return `<div class="modal" data-act="modal-bg"><div class="box" data-stop role="dialog" aria-modal="true" aria-labelledby="mdT" tabindex="-1">
       <h2 id="mdT" style="margin:0 0 6px;font-size:16px;font-weight:700;letter-spacing:-.03em${확정?'':';color:var(--danger)'}">${확정?'확정본으로 저장할까요?':'이 계약서를 영구 삭제할까요?'}</h2>
       <p style="margin:0 0 18px;font-size:14.5px;line-height:1.7;color:var(--n500)">${확정
-        ? '인쇄해서 <b style="color:var(--n900)">날인까지 받은 판</b>일 때 확정하세요. 확정하면 내용을 고칠 수 없습니다 - 바꿔야 하면 그 판을 두고 새 판을 만듭니다.'
+        ? '내용이 정해져 <b style="color:var(--n900)">더 고칠 것이 없을 때</b> 확정하세요. 확정본은 화면에서 잠가 두는 참고용이고, 날인본은 인쇄해 도장을 받은 종이 계약서입니다. 확정하면 내용을 고칠 수 없습니다 - 바꿔야 하면 ‘확정 후 수정’으로 새 판을 만듭니다.'
         : 확정본지움 ? '휴지통의 <b style="color:var(--n900)">확정본</b>을 지금 지웁니다. 지우면 되돌릴 수 없고, 이 계약서에 적어 둔 일정 · 신고 표시도 함께 사라집니다. 날인받은 종이 계약서는 따로 보관해 주세요.'
         : '휴지통의 작성 중 계약서를 지금 지웁니다. 지우면 되돌릴 수 없습니다.'}</p>
       ${확정 && CT.doc ? (() => { const 남음 = ct확정점검(CT.doc); return 남음.length ? `<div class="ct-check"><b>확정 전에 한 번 보세요</b><ul>${남음.map(t => `<li>${esc(t)}</li>`).join('')}</ul></div>` : ''; })() : ''}
@@ -13373,7 +13373,7 @@ const PHELP = [
   { g:'계약서', id:'ct-seal', ct:true, t:'초안 보내고 확정본으로 저장하기', steps:[
     ['초안 링크로 의견 받기', '확정 전에 초안 링크를 손님 · 공동중개 사무소에 보내면, 고칠 곳을 의견으로 남겨 줍니다(전화번호는 가려집니다).'],
     ['날인 받기', '인쇄해서 날인까지 받습니다.'],
-    ['확정본으로 저장', '‘확정본으로 저장’을 누르면 내용을 고칠 수 없습니다. 바꿔야 하면 그 판을 두고 새 판을 만듭니다.'] ] },
+    ['확정본으로 저장', '내용이 정해지면 ‘확정본으로 저장’으로 잠급니다. 누르면 내용을 고칠 수 없고, 바꿔야 하면 ‘확정 후 수정’으로 새 판을 만듭니다. 날인본은 인쇄해 도장을 받은 종이 계약서입니다.'] ] },
   { g:'계약 진행', id:'ct-plan', ct:true, t:'일정 · 알림 받기', steps:[
     ['날짜만 넣으면', '계약서에 계약일 · 중도금일 · 잔금일을 넣으면 신고 기한 · 법무사 예약 · 잔금 준비물 안내까지 일정이 생깁니다.'],
     ['아침 9시 알림', '매일 아침 9시에 카카오톡 · 메일로 알려 드립니다. 계약 › 일정·알림에서 받을 항목을 고릅니다.'],
@@ -13525,7 +13525,7 @@ const GD_말 = [
   ['연결', '손님이 제안을 보고 "연락하기"를 누른 것. 이때 처음으로 서로 연락처가 전달됩니다.'],
   ['매물장부 · 노출', '장부는 우리 사무소만 봅니다. 기준 10가지를 채우고 노출하면 맞는 손님 화면에 뜹니다.'],
   ['일치율', '손님 조건과 물건이 얼마나 맞는지 100점으로. 80점 이상만 손님에게 보입니다.'],
-  ['확정본', '도장까지 받은 계약서. 확정하면 내용을 고칠 수 없고, 바꿀 때는 새 판을 만듭니다. 지울 때는 휴지통에서 대표가 ‘영구 삭제’합니다.'],
+  ['확정본', '화면에서 내용을 확정해 잠근 계약서. 인쇄해 도장을 받은 종이 계약서(날인본)와는 다릅니다. 확정하면 내용을 고칠 수 없고, 바꿀 때는 새 판을 만듭니다. 지울 때는 휴지통에서 대표가 ‘영구 삭제’합니다.'],
 ];
 V['#/partner/guide'] = () => {
   const { L, 끝, 다 } = 가이드진행(), 율 = 다 ? Math.round(끝 / 다 * 100) : 0;
@@ -14066,6 +14066,7 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
+  { v:'26.11.19.28', 날:'2026-11-19', 줄:[ '확정 후 수정 - 고친 판을 확정하기 전까지는 앞 확정본이 목록에 그대로 보입니다 · 확정 안내 문구를 ‘확정본(화면에서 잠근 참고용)’과 ‘날인본(도장 받은 종이)’으로 나눠 적었습니다' ] },
   { v:'26.11.19.27', 날:'2026-11-19', 줄:[ '갱신계약을 만들면 원래 계약서가 목록에서 빠지던 것 · 확정본을 연 화면에도 ‘이 확정본 휴지통으로’(고친 뒤 필요 없어진 앞 확정본 정리용) · 계약서 화면을 떠나면 주민번호 뒷자리를 지웁니다 · 영구 삭제 때 현장 사진 파일도 함께 지웁니다' ] },
   { v:'26.11.19.26', 날:'2026-11-19', 줄:[ '휴지통의 확정본 - 대표가 ‘영구 삭제’로 직접 지울 수 있습니다. 저절로 지워지지는 않고, 손님 대화방이 있는 계약서는 지우지 않습니다' ] },
   { v:'26.11.19.25', 날:'2026-11-19', 줄:[ '낱말 - 화면에서 확정해 잠근 계약서를 ‘확정본’으로 부릅니다(날인본은 출력해 도장을 찍은 종이 계약서)' ] },
@@ -18061,7 +18062,7 @@ function ctListPageHTML(모두){
   const 현황 = !!CT.현황, 갱신탭 = 현황 && CT.bin === 'renew';
   const 칸 = ['arch', 'trash'].includes(CT.bin) ? CT.bin : '';
   const 같이 = !칸 && CT.qall && String(CT.q || '').trim();   /* '보관함도 찾기' (2026-11-17 파트너 D14) - 찾는 말이 있을 때만 보관함 계약서도 섞는다 */
-  const 뒤판 = new Set(모두.filter(r => ct살아있음(r) && !(r.renew && r.renew.id === r.prev_id)).map(r => r.prev_id).filter(Boolean)), 앞판임 = r => !ct보관칸(r) && 뒤판.has(r.id);
+  const 뒤판 = new Set(모두.filter(r => ct살아있음(r) && r.status === 'sealed' && !(r.renew && r.renew.id === r.prev_id)).map(r => r.prev_id).filter(Boolean)), 앞판임 = r => !ct보관칸(r) && 뒤판.has(r.id);
   const 전체 = 모두.filter(r => !앞판임(r) && (ct보관칸(r) === 칸 || (같이 && ct보관칸(r) === 'arch')) && (!현황 || 칸 || (갱신탭 ? ct형태(r) === 'renew' : ct형태(r) === 'new')));
   const 수 = k => k === 'renew' ? 모두.filter(r => !앞판임(r) && !ct보관칸(r) && ct형태(r) === 'renew').length : 모두.filter(r => !앞판임(r) && ct보관칸(r) === k && (!현황 || k || ct형태(r) === 'new')).length;
   const 칸줄 = 모두.length ? `<div class="ct-chips ct-bins" role="tablist" aria-label="계약서 보관 위치">${[['', '목록'], ...(현황 ? [['renew', '갱신']] : []), ['arch', '보관함'], ['trash', '휴지통']].map(([k, t]) =>
@@ -18375,7 +18376,7 @@ V['#/partner/contract'] = (id) => {
     </div>
     ${ct안읽은의견(CT.track) ? `<p class="ct-note noprint"><button type="button" class="tapx" data-act="ct-notes-open" style="font-weight:700;color:#B25E00">초안에 새 의견 ${ct안읽은의견(CT.track)}건 - 일정·체크에서 보기</button></p>` : ''}
     ${잠김 ? `<p class="ct-note noprint">확정본입니다 · ${esc(String(CT.row.sealed_at||'').slice(0,16).replace('T',' '))} 확정 · 지문 ${esc(String(CT.row.sha256||'').slice(0,12))}… 고칠 수 없습니다. 바꿔야 하면 ‘고쳐서 새 판 만들기’를 누르세요.</p>` : ''}
-    ${CT.row && CT.row.prev_id ? `<p class="ct-note noprint">확정 후 수정한 판입니다. 목록에는 이 판만 보입니다. <button type="button" class="tapx" data-act="ct-open-prev" style="font-weight:700;color:var(--ind700)">앞 확정본 보기</button></p>` : ''}`;
+    ${CT.row && CT.row.prev_id ? `<p class="ct-note noprint">확정 후 수정한 판입니다. ${CT.row.status === 'sealed' ? '목록에는 이 판만 보입니다.' : '이 판을 확정하면 목록에는 이 판만 보입니다.'} <button type="button" class="tapx" data-act="ct-open-prev" style="font-weight:700;color:var(--ind700)">앞 확정본 보기</button></p>` : ''}`;
 
   if(CT.mode === 'scan' && !잠김) return `
 <div class="scr fade" style="background:var(--n50)">

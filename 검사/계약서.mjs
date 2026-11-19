@@ -1351,7 +1351,7 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
        '손님 대화방이 열린 작성 중 계약서는 영구 삭제 · 휴지통 30일 자동 삭제에서 빠진다(대화 · 파일이 주인 없이 남지 않게)'); }
   { const sql = fs.readFileSync(new URL('../../beaverknock-app/supabase/migrations/0045_contract_sealed_delete.sql', import.meta.url), 'utf8');
     ok(/old\.status = 'sealed'\s+and coalesce\(old\.track->>'trash', ''\) = ''/.test(sql) && sql.includes("- 'reported_at' - 'updated_at' - 'track'") && /new\.prev_id is null and old\.prev_id is not null\s+and \(to_jsonb\(new\) - 'reported_at' - 'updated_at' - 'track' - 'prev_id'\)/.test(sql), 'DB 잠금 0045 - 확정본은 휴지통에 있을 때만 지워지고, 내용은 여전히 못 고친다(앞 판이 지워져 prev_id 가 비는 것만 통과)'); }
-  ok(js.includes("!(r.renew && r.renew.id === r.prev_id)"), '목록에서 숨기는 앞 판은 확정 후 수정으로 이어진 것만 - 갱신계약의 원래 계약서는 남는다');
+  ok(js.includes("ct살아있음(r) && r.status === 'sealed' && !(r.renew && r.renew.id === r.prev_id)"), '목록에서 숨기는 앞 판은 확정 후 수정으로 이어진 것만 - 갱신계약의 원래 계약서는 남는다');
   ok(js.includes("${잠김 ? '이 확정본 휴지통으로' : '이 계약서 휴지통으로'}") && js.includes(".map(r => r.prev_id === 그것 ? { ...r, prev_id: null } : r)"), '확정본을 연 화면에서도 휴지통으로 · 지운 판을 가리키던 앞 판 연결은 화면에서도 끊는다');
   ok(/contracts\\\/new\)\/\.test\(location\.hash \|\| ''\)\) ct뒷자리지움\(\)/.test(js), '계약서 화면을 떠나면 주민번호 뒷자리를 지운다');
   ok(/현장사진값\(\(행\.track \|\| \{\}\)\.fpics\)\.map\(v => 현장경로\(agent\.id, id, v\.i\)\)/.test(fs.readFileSync(new URL('../api/_contract.js', import.meta.url), 'utf8')), '영구 삭제 - 현장 사진 파일도 지운다');

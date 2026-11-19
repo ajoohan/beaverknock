@@ -140,8 +140,7 @@ const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3
   const 매 = M.ctNewDoc('sale'); M.ctApplyScan(매, s, 모두, false);
   ok(매.property.landRight === '소유권대지권 23456.7분의 45.6' && 매.parties.seller.name === '홍길동, 김철수' && !매.property.part, '매매: 대지권 · 매도인 · 임차할 부분 없음');
   const 확 = M.exNewDoc(null, 'explain-home'); M.ctApplyScan(확, s, 모두, false);
-  ok(확.ex.zone === '제2종일반주거지역' && 확.ex.landPrice === 5230000 && 확.ex.facility === '소로2류(접함)' && 확.ex.permitZone.includes('토지거래허가구역')
-     && 확.ex.restrict === '교육환경보호구역' && 확.ex.plan === '지구단위계획구역', '확인·설명서: 용도지역·개별공시지가·도시계획시설·허가구역·그 밖의 규제(토지이용계획확인서)');
+  ok(확.ex.landPrice === 5230000 && !확.ex.zone && !확.ex.facility && !확.ex.permitZone && !확.ex.restrict && !확.ex.plan, '확인·설명서: 개별공시지가는 채우고 ③ 토지이용계획 칸은 비워 둔다(2026-11-19 파트너)');
   ok(확.ex.builtYear === '2015-06-30' && 확.ex.violation === '적법' && 확.ex.seismic === '적용' && 확.ex.seismicLevel === 'VII-0.204g' && 확.ex.landShare === '45.6',
      '확인·설명서: 사용승인일·위반 여부·내진설계·대지지분(건축물대장·등기부)');
   ok(/홍길동 \(지분 2분의 1\) · 서울 강남구 테헤란로 1 · 2019년3월4일 매매/.test(확.ex.ownLand) && /\[을구\] 근저당권 · 국민은행 · 금360,000,000원 · 2020\.1\.2 접수/.test(확.ex.etcBld)
@@ -149,7 +148,7 @@ const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3
      '확인·설명서: 소유권·소유권 외 권리(갑구·을구) · 신탁 확인 · 공동담보 해당 없음 · 매도인(임대인)');
   ok(['등기사항증명서', '건축물대장', '토지이용계획확인서'].every(v => 확.ex.docs.includes(v)), '근거자료에 올린 세 서류를 고른다');
   const 땅 = M.exNewDoc(null, 'explain-land'); M.ctApplyScan(땅, s, 모두, false);
-  ok(!('builtYear' in 땅.ex) && !('seismic' in 땅.ex) && 땅.ex.zone === '제2종일반주거지역', '토지 서식에는 건물 칸을 넣지 않는다(그 서식에 있는 칸만)');
+  ok(!('builtYear' in 땅.ex) && !('seismic' in 땅.ex) && !땅.ex.zone, '토지 서식에는 건물 칸을 넣지 않는다(그 서식에 있는 칸만)');
   const 일부 = M.exNewDoc(null, 'explain-home'); M.ctApplyScan(일부, s, ['reg'], false);
   ok(!일부.ex.zone && !일부.ex.violation && 일부.ex.trust === '확인' && 일부.ex.docs.includes('등기사항증명서') && !일부.ex.docs.includes('건축물대장'),
      '올리지 않은 서류의 칸(위반 여부·용도지역)은 채우지 않는다');

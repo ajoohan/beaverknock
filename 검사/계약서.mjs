@@ -572,7 +572,7 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
      '필수 칸이 비면 확정 창을 열지 않고 빠진 칸을 보여 준다 (확정하기 직전에도 다시 본다)');
   ok(/\['deal\.down', '계약금'\]/.test(js) && /\['contractDate', '계약일'\]/.test(js) && /\['broker\.regNo', '중개사무소 등록번호'\]/.test(js) && /data-act="ct-req-go"/.test(js),
      '필수 항목 목록과 빠진 칸으로 가는 안내 단추');
-  ok(/'임시저장'/.test(js) && /function ct자동저장\(\)/.test(js) && /if\(!CT\.id && !\(CT\.doc\.property && CT\.doc\.property\.road\)\) return;/.test(js),
+  ok(/'임시저장'/.test(js) && /function ct자동저장\(\)/.test(js) && js.includes('if(!CT.id && !ct소재지있음(CT.doc.property)) return;'),
      '임시저장 단추 + 멈춘 뒤 자동 임시저장(새 계약서는 소재지를 넣은 뒤부터)');
 }
 
@@ -1382,7 +1382,7 @@ ok(js.includes('<button type="button" class="ctx-fullbtn" data-act="ct-full"') &
 ok(js.includes('function ct기능칸(doc, 잠김, 탭){') && js.includes("${배치 === 'info' ? ct기능칸(doc, 잠김, 탭) : ''}") && js.includes("CT.lay = ['info', 'form', 'both'].includes(v) ? v : 'info';") && css.includes('.ctx-body.lay-info .ctx-toolcol{'), '정보 입력 - 왼쪽 기능 칸(전자계약 순서) · 새 계약서는 정보 입력으로 (2026-11-18 파트너 · 대표님)');
 
 /* ── 소재지 따로 고치기 · 공적장부 우선 · 매물등록 메뉴 (2026-11-17 대표님) ── */
-ok(js.includes("ct칸('property.show', P.show || P.jibun || P.road || '', 240) + ' ' + ct칸('property.detail'") && js.includes("ctIn('property.show', '소재지', { w:8 })") && js.includes("ctIn('property.detail', '상세주소', { w:4 })") && js.includes('const ct소재지다름 = P =>') && js.includes("if(ctGet(doc, 'property.jibun') !== s.jibun){ ctSet(doc, 'property.jibun', s.jibun);"), '소재지 - 찍히는 글자는 따로 고치고 찾은 주소는 그대로 · 공적장부 지번이 먼저');
+ok(js.includes("ct칸('property.show', P.show || P.jibun || P.road || '', 240) + ' ' + ct칸('property.detail'") && js.includes("ctIn('property.show', '소재지 <span class=\"req\" aria-label=\"필수\">*</span>', { w:8 })") && js.includes("ctIn('property.detail', '상세주소', { w:4 })") && js.includes('const ct소재지다름 = P =>') && js.includes("if(ctGet(doc, 'property.jibun') !== s.jibun){ ctSet(doc, 'property.jibun', s.jibun);"), '소재지 - 찍히는 글자는 따로 고치고 찾은 주소는 그대로 · 공적장부 지번이 먼저');
 ok(js.includes("V['#/partner/listings/open'] = () => V['#/partner/listings']();") && js.includes("['#/partner/listings/open', '매물등록', 'list', 'lr']") && js.includes("!L.seed && !!등록상태(L)"), '매물등록 메뉴 - 노출 중 · 노출할 수 있는 매물만(매물장부는 그대로)');
 
 /* ── 화면 검수 (2026-11-17 PC · 휴대폰) ── */
@@ -1410,7 +1410,7 @@ ok(js.includes("const CT_배치 = [['info', '정보 입력'") && js.includes("ca
   && css.includes('.ctx-body.lay-info .ctx-view{display:none}') && css.includes('.ctx-body.lay-form .ctx-side .ctx-scroll{display:none}') && js.includes('>서식에서 확인</button>'), '계약서 입력 방식 - 정보 입력 · 서식 입력 · 정보 + 서식을 고르고 오간다');
 
 /* ── 코드리뷰 · 화면 점검 (2026-11-17, 26.11.17.17) ── */
-ok(js.includes("CT.mode === 'scan' || F.explain) ? 'both' : 고른배치") && js.includes("Math.min(크게 ? 1.7 : 1,") && js.includes("if(CT.lay === 'form' && CT.mode !== 'edit'"), '입력 방식 - 확인·설명서는 서식 입력으로 가지 않고, 서식 입력 · 전체화면은 서류를 키운다');
+ok(js.includes("CT.mode === 'scan' || F.explain) ? 'both' : 고른배치") && js.includes("Math.min(크게 ? 1.7 : 1,") && js.includes("if((CT.lay === 'form' && CT.mode !== 'edit') || CT.mode === 'scan') CT.mode = 'edit';"), '입력 방식 - 확인·설명서는 서식 입력으로 가지 않고, 서식 입력 · 전체화면은 서류를 키운다');
 ok(js.includes('doc.deal.down = 0;') && js.includes("if(같은줄){ CS.rowBusy = '';") && js.includes('if(CT.id === id && CT.dirty) return toast(') && js.split("&& !n && CT.doc.deal) delete CT.doc.deal.mids;").length === 3, '체결문자 줄 중복 · 추정 계약금 없음 · 저장 전 고침 지키기 · 숨은 중도금 지우기');
 
 /* ── 3~5차 중도금 일정 · 영수증 (2026-11-17) ── */
@@ -1447,7 +1447,7 @@ ok(js.includes('doc.deal.down = 0;') && js.includes("if(같은줄){ CS.rowBusy =
 ok(js.includes('function 등록상태(L){') && js.includes("상:'등록실패'") && js.includes("상:'임시저장'") && js.includes("상:'노출종료'") && js.includes("openedAt:x.opened_at||''") && css.includes('.lg-tiles.n5{'), '매물등록 현황 - 등록중·노출 / 임시저장 / 노출종료 / 등록실패');
 
 /* ── 실제 화면 확인에서 찾은 것 (2026-11-18) ── */
-ok(js.includes("if(CT.lay === 'form' && CT.mode !== 'edit') CT.mode = 'edit';") && js.includes('<span class="eqb ct-headb">') && !js.includes('<span class="eqb" style="display:flex;gap:8px"><button class="btn sec sm" data-act="ct-quick">') && css.includes('.ext-box .eqb{width:100%}'), '서류 채우기 단계에서도 서식 입력이 먹고 · 계약현황 머리 단추 세 개는 한 묶음 같은 폭');
+ok(js.includes("if((CT.lay === 'form' && CT.mode !== 'edit') || CT.mode === 'scan') CT.mode = 'edit';") && js.includes('<span class="eqb ct-headb">') && !js.includes('<span class="eqb" style="display:flex;gap:8px"><button class="btn sec sm" data-act="ct-quick">') && css.includes('.ext-box .eqb{width:100%}'), '서류 채우기 단계에서도 서식 입력이 먹고 · 계약현황 머리 단추 세 개는 한 묶음 같은 폭');
 
 /* ── 작성 중 계약서에 체결문자 적용 (2026-11-18 파트너) ── */
 ok(js.includes('function ct문자적용(e){') && js.includes("data-act=\"ct-sms-pick\"") && js.includes("case 'ct-sms-use':") && js.includes("if(!(+D.down > 0) && +N.down > 0)"), '작성 중인 계약서에 체결문자 적용 - 금액 · 날짜 · 계약금은 비어 있을 때만');
@@ -1465,7 +1465,12 @@ ok(js.includes("case 'ct-addr-pop':") && js.includes("if(S.modal.type==='ct-addr
 
 ok(js.includes("영수자 ${ct칸('deal.downBy', D.downBy, 70)} (인)") && js.includes("ct입('deal.downBy'") && js.includes('data-act="ct-addr-pop" data-v="${esc(path)}">주소 검색</button>') && js.includes('data-ph="" style="min-width:${ww}px"') && !js.includes('없으면 비워 둡니다</span>'), '직접 입력 - 영수자 · 주소 칸 주소 검색 · 회색 예시글 없음 (2026-11-19 점검)');
 
-ok(js.includes("show: a.jibun || full });") && js.includes("ctSet(doc, 'property.show', s.jibun)") && !js.includes('부가가치세 제외</span>') && js.includes("case 'ct-mid2-add':") && js.includes("매매?'인도일/계약일'") && js.includes('공동명의인</button>') && js.includes('const ct특약번호글 = sp =>'), '소재지 · 상세주소 · 등기부 우선 · 금액 꼴 · 2차 중도금 · 인도일/계약일 · 공동명의인 · 특약 번호 (2026-11-19 파트너)');
+ok(js.includes("|| a.jibun || full });") && js.includes("ctSet(doc, 'property.show', s.jibun)") && !js.includes('부가가치세 제외</span>') && js.includes("case 'ct-mid2-add':") && js.includes("매매?'인도일/계약일'") && js.includes('공동명의인</button>') && js.includes('const ct특약번호글 = sp =>'), '소재지 · 상세주소 · 등기부 우선 · 금액 꼴 · 2차 중도금 · 인도일/계약일 · 공동명의인 · 특약 번호 (2026-11-19 파트너)');
+
+/* ── 2026-11-19 파트너 '직접 입력에도 똑같이' · 코드리뷰 ── */
+ok(js.includes("도로 = ctSealed() && P.road && 글 && 글 !== P.road") && js.includes('function ct중도단추(D){') && js.includes("${+D.mid || CT편집칸 ? `<tr><th class=\"w\">") && js.includes('function ct서류특약단추(doc){') && js.includes('function ct서류당사자단추(label, x, k){') && js.includes('data-act="ct-cobrk-add">+ 중개사무소 추가</button>\' : \'\'}'), '계약서에 직접 입력 - 도로명 줄 없음 · 중도금 · 특약 줄 · 공동명의인 · 대리인 · 중개사무소 추가');
+ok(js.includes("unit: [P.road, P.show, P.detail].filter(Boolean).join(' ')") && js.includes('data-act="ct-open" data-v="${esc(doc.contractId)}">계약서</button>') && !js.includes("넣기('ex.zone', s.zone)"), '대장 불러오기에 상세주소(동 · 호) · 확인·설명서에서 계약서로 · ③ 토지이용계획은 자동으로 채우지 않는다');
+ok(js.includes('name0: 쪽[0].name, bytes0: 쪽[0].bytes') && js.includes('if(!CT.id && !ct소재지있음(CT.doc.property)) return;') && js.includes("문서.property.road || 문서.property.jibun || 문서.property.show") && js.includes("const A = 왼('ctsall:x'); if(A) A.value = ct특약번호글(CT.doc.specials);") && js.includes("+m[1] === i + 1 || !/^\\d/.test(t.slice(m[0].length))"), '코드리뷰 - 사진 더하기 합계 · 직접 적은 소재지 제목/자동저장 · 서류에서 고친 특약 맞춤 · 날짜로 시작하는 특약');
 
 console.log(`${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

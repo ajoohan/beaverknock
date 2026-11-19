@@ -206,7 +206,7 @@ export function 확정필수(form, doc) {
   return 빈.length ? `필수 항목이 비어 있어 확정할 수 없습니다 - ${빈.join(' · ')}` : null;
 }
 
-const titleOf = (b, doc) => String(b.title || (doc.property && (doc.property.road || doc.property.jibun)) || '').trim().slice(0, 80);
+const titleOf = (b, doc) => String(b.title || (doc.property && (doc.property.road || doc.property.jibun || doc.property.show)) || '').trim().slice(0, 80);
 
 async function db(path, q, init = {}) {
   const r = await fetch(sbUrl(path, q), { ...init, headers: { ...sbHeaders(), ...(init.headers || {}) } });

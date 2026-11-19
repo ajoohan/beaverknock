@@ -1361,7 +1361,7 @@ ok(js.includes("what:'listing-bld'") && js.includes('S.form.lbun = a.bun') && js
 ok(js.includes("case 'ct-full': CT.full = !CT.full;") && js.includes("CT.full ? ' ctx-full' : ''") && js.includes("e.key === 'Escape' && CT.full") && js.includes("알림창(false); CT.full = false;") && css.includes('html:has(.ctx-view.ctx-full){overflow:hidden}'), '계약서 서류 전체화면 - 같은 서류로 바로 고치기 · Esc · 화면 옮기면 닫힘');
 
 /* ── 소재지는 지번 (2026-11-17 파트너) ── */
-ok(js.includes('function ct소재지(P){') && js.split('${ct소재지(P)}').length === 3 && js.includes('(도로명) ${esc(doc.property.road)}') && js.includes('비워 두면 찾은 지번이 찍힙니다'), '계약서 · 확인·설명서 소재지는 지번 먼저, 도로명은 괄호');
+ok(js.includes('function ct소재지(P){') && js.split('${ct소재지(P)}').length === 3 && js.includes('(도로명) ${esc(doc.property.road)}') && !js.includes('비워 두면 찾은 지번이 찍힙니다'), '계약서 · 확인·설명서 소재지는 지번 먼저, 도로명은 괄호 (설명 문구는 뺐다 · 2026-11-19)');
 
 /* ── 공동중개 사무소 (2026-11-17 파트너) ── */
 { ok(C.등록키('41450-2019-00217') === C.등록키('41450-2019-217') && C.등록키(' 가3665-4 ') === '가36654', '공동중개 찾기 - 등록번호 정규화(앞 0 · 옛 번호)');
@@ -1382,7 +1382,7 @@ ok(js.includes('<button type="button" class="ctx-fullbtn" data-act="ct-full"') &
 ok(js.includes('function ct기능칸(doc, 잠김, 탭){') && js.includes("${배치 === 'info' ? ct기능칸(doc, 잠김, 탭) : ''}") && js.includes("CT.lay = ['info', 'form', 'both'].includes(v) ? v : 'info';") && css.includes('.ctx-body.lay-info .ctx-toolcol{'), '정보 입력 - 왼쪽 기능 칸(전자계약 순서) · 새 계약서는 정보 입력으로 (2026-11-18 파트너 · 대표님)');
 
 /* ── 소재지 따로 고치기 · 공적장부 우선 · 매물등록 메뉴 (2026-11-17 대표님) ── */
-ok(js.includes("ct칸('property.show', 글 || P.road || '', 300, 'text', { ph:'지번 주소' })") && js.includes("ctIn('property.show', '계약서에 찍히는 소재지'") && js.includes('const ct소재지다름 = P =>') && js.includes("if(ctGet(doc, 'property.jibun') !== s.jibun){ ctSet(doc, 'property.jibun', s.jibun);"), '소재지 - 찍히는 글자는 따로 고치고 찾은 주소는 그대로 · 공적장부 지번이 먼저');
+ok(js.includes("ct칸('property.show', P.show || P.jibun || P.road || '', 240) + ' ' + ct칸('property.detail'") && js.includes("ctIn('property.show', '소재지', { w:8 })") && js.includes("ctIn('property.detail', '상세주소', { w:4 })") && js.includes('const ct소재지다름 = P =>') && js.includes("if(ctGet(doc, 'property.jibun') !== s.jibun){ ctSet(doc, 'property.jibun', s.jibun);"), '소재지 - 찍히는 글자는 따로 고치고 찾은 주소는 그대로 · 공적장부 지번이 먼저');
 ok(js.includes("V['#/partner/listings/open'] = () => V['#/partner/listings']();") && js.includes("['#/partner/listings/open', '매물등록', 'list', 'lr']") && js.includes("!L.seed && !!등록상태(L)"), '매물등록 메뉴 - 노출 중 · 노출할 수 있는 매물만(매물장부는 그대로)');
 
 /* ── 화면 검수 (2026-11-17 PC · 휴대폰) ── */
@@ -1464,6 +1464,8 @@ ok(js.includes('data-in="ctsall:x"') && js.includes("else if(kind === 'ctsall')"
 ok(js.includes("case 'ct-addr-pop':") && js.includes("if(S.modal.type==='ct-addr-pop')") && !js.includes('‘정보 + 서식’으로 바꿨습니다'), '계약서에 직접 입력 - 소재지 주소 검색 · 화면이 강제로 바뀌지 않음');
 
 ok(js.includes("영수자 ${ct칸('deal.downBy', D.downBy, 70)} (인)") && js.includes("ct입('deal.downBy'") && js.includes('data-act="ct-addr-pop" data-v="${esc(path)}">주소 검색</button>') && js.includes('data-ph="" style="min-width:${ww}px"') && !js.includes('없으면 비워 둡니다</span>'), '직접 입력 - 영수자 · 주소 칸 주소 검색 · 회색 예시글 없음 (2026-11-19 점검)');
+
+ok(js.includes("show: a.jibun || full });") && js.includes("ctSet(doc, 'property.show', s.jibun)") && !js.includes('부가가치세 제외</span>') && js.includes("case 'ct-mid2-add':") && js.includes("매매?'인도일/계약일'") && js.includes('공동명의인</button>') && js.includes('const ct특약번호글 = sp =>'), '소재지 · 상세주소 · 등기부 우선 · 금액 꼴 · 2차 중도금 · 인도일/계약일 · 공동명의인 · 특약 번호 (2026-11-19 파트너)');
 
 console.log(`${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

@@ -3088,6 +3088,8 @@ table.ec td{line-height:2.2;color:var(--n800,#2a2a30)}
 .ctdoc .ct-doc-add{border:0!important;background:none!important;padding:6px 0 2px!important;text-align:left}
 .ctdoc .ct-doc-add .chip,.ctdoc .ct-doc-add .tapx{font-family:var(--font,inherit);font-size:12.5px;margin:0 6px 4px 0}
 .ctdoc .ct-doc-add .ec-tools{margin-left:0}
+.ctdoc td .ec-tools{display:inline;margin-left:12px}
+.ctdoc td .ec-tools .tapx{display:inline;min-height:0;padding:0;margin-right:12px;font-size:.82em;vertical-align:baseline}
 .ctdoc div.ct-doc-add{display:flex;flex-wrap:wrap;margin-top:6px}
 .ct-addbtns{display:flex;gap:8px;flex-wrap:wrap}
 .inp.ct-sp-one{width:100%;min-height:150px;font-size:14px;line-height:1.8;letter-spacing:-.01em;resize:vertical}
@@ -10432,6 +10434,10 @@ function addrFind(target){
 }
 
 /* 고른 주소를 칸에 옮겨 적는다. 면적·사용승인일은 직접 적는다. */
+/* 읽은 소재지가 고른 지번과 같은 필지인가 - 동 이름 + 번지가 들어 있으면 같다고 본다 */
+function 같은지번(글, 지번){
+  const 끝 = String(지번 || '').trim().split(/\s+/).slice(-2).join(''); return !!끝 && String(글 || '').replace(/\s+/g, '').includes(끝);
+}
 function addrPick(i){
   const a = (ADDR.rows||[])[i]; if(!a) return true;
   /* detail 이 ' (망월동)' 처럼 앞 공백을 달고 오는 일이 있다 - 그대로 이으면
@@ -10440,7 +10446,7 @@ function addrPick(i){
   if(ADDR.for === 'ct-addr' && CT.doc){
     /* 계약서 소재지 - 법정동코드·본번·부번·산까지 그대로 담는다. 나중에 보낼 때 바꿀 것이 없게 */
     Object.assign(CT.doc.property, { road: full, jibun: a.jibun || '', admCd: a.admCd || '', bun: a.bun || '',
-      ji: a.ji || '', mount: !!a.mount, zip: a.zip || '', bdNm: CT.doc.property.bdNm || a.bdNm || '', show: (CT.filled && CT.filled.has('property.show') && String(CT.doc.property.show || '').trim()) || a.jibun || full });
+      ji: a.ji || '', mount: !!a.mount, zip: a.zip || '', bdNm: CT.doc.property.bdNm || a.bdNm || '', show: (CT.filled && CT.filled.has('property.show') && 같은지번(CT.doc.property.show, a.jibun) && String(CT.doc.property.show || '').trim()) || a.jibun || full });
     CT.dirty = true; CT.rev = (CT.rev || 0) + 1;
     if(S.modal && S.modal.type === 'ct-addr-pop') S.modal = null;
   }
@@ -11078,6 +11084,11 @@ V["#/brand"] = () => {
    기본 창은 주소창 밑 모서리에 'beaverknock.co.kr의 메시지' 로 뜨고 모양을 바꿀 수 없다.
    사이트 모달 틀(초점 가두기 · Esc 닫기)을 그대로 쓰고 답은 Promise 로 돌려준다(예 = true).
    Esc · 바깥 누르기 · 아니오는 모두 false. 초점은 먼저 '아니오'(안전한 쪽)에 간다 */
+/* 적어 둔 값이 있을 때만 묻고 지운다 */
+function ct지울까(있음, 제목, 하기){
+  if(!있음) return 하기();
+  확인창(제목, '적어 둔 내용이 함께 지워집니다.', { 예:'빼기', 위험:true }).then(ok => { if(ok) 하기(); });
+}
 function 확인창(제목, 설명 = '', opt = {}){
   return new Promise(답 => {
     const 앞 = S.modal; if(앞 && 앞.답) 앞.답(false);
@@ -13996,6 +14007,7 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
+  { v:'26.11.19.12', 날:'2026-11-19', 줄:[ '계약서 점검 - 날인본은 손님 대화방에서도 찍힌 그대로 · 2차 중도금은 1차 금액을 적은 뒤에 · 공적장부 뒤 다른 주소를 고르면 소재지도 바뀜 · 적어 둔 대리인 · 공동명의인 · 중개사무소는 빼기 전에 확인 · 영수증 등 부속 서류의 부동산 표시를 계약서 소재지와 같게 · 직접 입력 중도금 줄 맞춤' ] },
   { v:'26.11.19.11', 날:'2026-11-19', 줄:[ '계약서 작성 화면 다듬기 - 공적장부 안내는 왼쪽 칸 하나로 · 부속 서류(영수증 등)는 서류 모습과 나란히 · 직접 입력의 중도금 단추를 중도금 줄 안으로 · 작은 단추 누름 영역 · ‘더 보기 +1’ · 주소 칸 줄 맞춤',
     '특약 - 적은 특약을 ‘내 특약’으로 담기(한 칸 특약 아래) · 공적장부 사진이 여러 장이면 더 줄여 보내 5장까지 올라가게' ] },
   { v:'26.11.19.10', 날:'2026-11-19', 줄:[ '계약서에 직접 입력 - 소재지의 (도로명) 줄을 뺐습니다 · 중도금 줄이 늘 보이고 ‘+ 2차 중도금’ · 특약 아래 ‘+ 특약 줄 추가’와 특약 모음 · 당사자 아래 ‘+ 공동명의인 · + 대리인’ · 맨 아래 ‘+ 중개사무소 추가’',
@@ -15655,9 +15667,9 @@ const ct소재지있음 = P => !!(P && (P.road || P.jibun || P.show));
 const ct소재지글 = P => [String((P && (P.show || P.jibun)) || '').trim(), String((P && P.detail) || '').trim()].filter(Boolean).join(' ');
 /* 찍히는 소재지가 찾은 주소(지번)와 다른가 - 띄어쓰기는 무시 */
 const ct소재지다름 = P => { const 맞 = v => String(v || '').replace(/\s+/g, ''); return !!(P && P.show && P.jibun && !맞(P.show).startsWith(맞(P.jibun)) && 맞(P.show) !== 맞(P.road)); };
-function ct소재지(P){
+function ct소재지(P, 날인 = ctSealed()){
   P = P || {};
-  const 글 = ct소재지글(P), 도로 = ctSealed() && P.road && 글 && 글 !== P.road ? `<br><span class="sm">(도로명) ${esc(P.road)}</span>` : '';   /* 도로명 줄은 뺐다(2026-11-19 파트너) - 날인본만 찍힌 그대로 */
+  const 글 = ct소재지글(P), 도로 = 날인 && P.road && 글 && 글 !== P.road ? `<br><span class="sm">(도로명) ${esc(P.road)}</span>` : '';   /* 도로명 줄은 뺐다(2026-11-19 파트너) - 날인본만 찍힌 그대로 */
   const 찾기 = CT편집칸 ? ' <button type="button" class="ct-addr-btn" data-act="ct-addr-pop">주소 검색</button>' : '';
   if(CT편집칸) return ct칸('property.show', P.show || P.jibun || P.road || '', 240) + ' ' + ct칸('property.detail', P.detail || '', 90) + 찾기 + 도로;
   return 글 ? esc(글) + 도로 : ct값(P.road, 300);
@@ -16146,13 +16158,13 @@ function ctDocHTML(doc){
     ${맞춤 ? `
     <h2>[${esc(F.fields[0].h)}]</h2>
     <table>
-      <tr><th class="w">소재지</th><td colspan="3">${ct소재지(P)}</td></tr>
+      <tr><th class="w">소재지</th><td colspan="3">${ct소재지(P, ctSealed() || !!doc.__sealed)}</td></tr>
       ${ctFieldRows(doc, F.fields[0].rows)}
     </table>
     ${F.fields.slice(1).map(g => `<h2>[${esc(g.h)}]</h2><table>${ctFieldRows(doc, g.rows)}</table>`).join('')}` : `
     <h2>[${매매?'부동산':doc.form==='sublease'?'전대물':상가?'임차상가건물':군==='home'?'임차주택':'임차물'}의 표시]</h2>
     <table>
-      <tr><th class="w">소재지</th><td colspan="5">${ct소재지(P)}</td></tr>
+      <tr><th class="w">소재지</th><td colspan="5">${ct소재지(P, ctSealed() || !!doc.__sealed)}</td></tr>
       <tr><th class="w">토지</th><th>지목</th><td>${ct칸('property.landCat', P.landCat, 70)}</td><th>면적</th><td colspan="2">${ct칸('property.landArea', P.landArea, 70, 'area')}</td></tr>
       ${매매 || (F.lease && ct집합(doc.sub)) ? `<tr><th class="w">대지권</th><td colspan="5">${ct칸('property.landRight', P.landRight, 200)}</td></tr>` : ''}
       <tr><th class="w">건물</th><th>구조·용도</th><td>${CT편집칸 ? `${ct칸('property.bldStruct', P.bldStruct, 60, 'text', { ph:'구조' })} · ${ct칸('property.bldUse', P.bldUse, 50, 'text', { ph:'용도' })}` : ct값([P.bldStruct,P.bldUse].filter(Boolean).join(' · '), 90)}</td><th>면적</th><td colspan="2">${ct칸('property.bldArea', P.bldArea, 70, 'area')}</td></tr>
@@ -16978,7 +16990,7 @@ function rm서류HTML(id){
       : !D.ok ? `<div class="card pad"><p class="sub" style="margin:0">${esc(j.error || '계약서를 열지 못했습니다')}</p></div>`
       : !j.sealed ? `<div class="card pad"><p class="sub" style="margin:0">아직 날인 전입니다. 계약서를 확정본으로 저장하면 여기에서 다시 볼 수 있습니다.</p></div>`
       : `<p class="sub" style="margin:0;font-size:13.5px">${esc(j.title || '')} · 날인본 확정 ${esc(ct한국날(j.sealed_at))} · 원본은 중개사무소에서 받으신 종이 계약서입니다.</p>
-        <div class="ct-sheet-wrap"><div class="ct-sheet">${ctDocHTML(j.doc)}</div></div>`}
+        <div class="ct-sheet-wrap"><div class="ct-sheet">${ctDocHTML({ ...j.doc, __sealed: true })}</div></div>`}
   </div>
 </div>`;
 }
@@ -18554,7 +18566,7 @@ function ctDeskShell(doc, side, 신고면){
     <div class="ctx-head">
       <a class="back" data-go="#/partner/contracts"><i class="ar-l" aria-hidden="true"></i>계약서 목록</a>
       <h1 class="ctx-h1">${esc(이름)}</h1>
-      <span class="ctx-lay2">${F.explain ? '' : 배치 === 'form' ? `<button type="button" class="btn sec sm" data-act="ct-lay" data-v="info">정보 입력으로</button>` : `<button type="button" class="btn ${배치 === 'both' ? 'sec' : 'pri'} sm" data-act="ct-lay" data-v="form">계약서에 직접 입력</button>`}<button type="button" class="chip${배치 === 'both' ? ' on' : ''}" data-act="ct-lay" data-v="${배치 === 'both' ? 'info' : 'both'}" aria-pressed="${배치 === 'both'}">나란히 보기</button></span>
+      <span class="ctx-lay2">${F.explain ? '' : 배치 === 'form' ? `<button type="button" class="btn sec sm" data-act="ct-lay" data-v="info">정보 입력으로</button>` : `<button type="button" class="btn ${고른배치 === 'both' ? 'sec' : 'pri'} sm" data-act="ct-lay" data-v="form">계약서에 직접 입력</button>`}<button type="button" class="chip${고른배치 === 'both' ? ' on' : ''}" data-act="ct-lay" data-v="${고른배치 === 'both' ? 'info' : 'both'}" aria-pressed="${고른배치 === 'both'}">나란히 보기</button></span>
       <span class="badge ${잠김?'b-ok':'b-warn'}">${잠김?'날인본':'작성 중'}</span>${판줄}${ct안읽은의견(CT.track) ? `<button type="button" class="tapx ctx-rev" data-act="ct-notes-open" style="color:#B25E00;font-weight:700">초안에 새 의견 ${ct안읽은의견(CT.track)}건</button>` : ''}${!잠김 && !F.explain && CT.id ? `<button type="button" class="tapx ctx-rev" data-act="ct-share-cut">나간 초안 링크 끊기</button>` : ''}
       ${!잠김 && !F.explain ? `<span class="ctx-sub">비워 둔 칸은 밑줄 빈칸으로 인쇄됩니다 · 주민등록번호·계좌번호는 적지 않습니다</span>` : ''}
       <span class="ctx-badge">${agentBadge()}${S.user ? userMenu({ admin: true }) : ''}</span>
@@ -19066,7 +19078,7 @@ function ctReturnDocHTML(doc){
   </div>`;
 }
 const ct부속머리 = doc => `<div class="ctdoc${ct글꼴(doc) === 'sans' ? ' f-sans' : ''}">`;
-const ct부동산글 = doc => { const P = doc.property || {}; return [P.road, P.part].filter(Boolean).join(' ') || P.bdNm || ''; };
+const ct부동산글 = doc => { const P = doc.property || {}; return [String(P.show || P.jibun || '').trim() || P.road, P.part || P.detail].filter(Boolean).join(' ') || P.bdNm || ''; };
 /* 영수인·지급인 - 성명·주소·연락처·날인 */
 const ct영수칸 = (label, x) => `
     <tr><th rowspan="2" class="w">${label}</th><th>주소</th><td colspan="3">${ct값(x.addr, 260)}</td></tr>
@@ -19325,7 +19337,7 @@ const SCAN_SLOTS = [
   ['reg',  '등기사항전부증명서', '소유자 · 권리관계 · 대지권',          '모든 계약',          '인터넷등기소', '부동산 열람·발급', 'https://www.iros.go.kr'],
   ['bld',  '건축물대장 표제부',  '구조 · 용도 · 사용승인일 · 위반 여부', '건물이 있으면',      '세움터', '건축물대장 발급', 'https://www.eais.go.kr/moct/bci/aaa02/BCIAAA02L01'],
   ['bldx', '건축물대장 전유부',  '호실 · 전유 면적 · 용도',             '아파트·오피스텔 등', '세움터', '건축물대장 발급', 'https://www.eais.go.kr/moct/bci/aaa02/BCIAAA02L01'],
-  ['land', '토지이용계획확인서', '용도지역 · 개별공시지가 · 규제',       '확인·설명서',        '토지이음', '토지이용계획 열람', 'https://www.eum.go.kr/web/ar/lu/luLandDet.jsp'],
+  ['land', '토지이용계획확인서', '개별공시지가 (용도지역 · 규제는 직접 적습니다)',       '확인·설명서',        '토지이음', '토지이용계획 열람', 'https://www.eum.go.kr/web/ar/lu/luLandDet.jsp'],
 ];
 const SCAN_MAX = 3 * 1024 * 1024;
 const SCAN_PAGES = 5;                                      /* 서류마다 사진 장수(서버 SCAN_MAX_PAGES 와 같게) */                          /* 서버와 같은 합계 상한(원본) */
@@ -20426,7 +20438,8 @@ function ctInput(el, k){
   }
   else if(kind === 'ctc'){ const c = CT.doc.clauses[+path]; if(c) c.text = el.value; }
   else if(kind === 'cts'){ CT.doc.specials[+path] = el.value; }
-  else if(kind === 'ctsall'){ CT.doc.specials = el.value.split('\n').map((t, i) => { const m = t.match(/^\s*(\d{1,2})\s*[.)]\s*/); return (m && (+m[1] === i + 1 || !/^\d/.test(t.slice(m[0].length))) ? t.slice(m[0].length) : t).trim(); }).filter(Boolean); }
+  else if(kind === 'ctsall'){ if(CT.phrList){ CT.phrList = false; CT.phrSave = null; const b = document.querySelector('#app .ct-phr-save [data-act="phr-list"]'); if(b){ while(b.nextSibling) b.nextSibling.remove(); b.textContent = '적은 특약을 ‘내 특약’으로 담기'; b.setAttribute('aria-expanded', 'false'); } }
+    CT.doc.specials = el.value.split('\n').map((t, i) => { const m = t.match(/^\s*(\d{1,2})\s*[.)]\s*/); return (m && (+m[1] === i + 1 || !/^\d/.test(t.slice(m[0].length))) ? t.slice(m[0].length) : t).trim(); }).filter(Boolean); }
   else return false;
   ctDirty(); return true;
 }
@@ -22861,17 +22874,18 @@ function handle(a,v,el){
     case 'ct-ptype': if(CT.doc && !ctSealed()){ const [k, t] = String(v).split('|'), P = CT.doc.parties || (CT.doc.parties = {}), x = P[k] || (P[k] = {});
       if(t === '법인') x.type = 'corp'; else { delete x.type; delete x.rep; delete x.bizNo; delete x.corpNo; } ctDirty(); render(); } return true;
     case 'ct-proxy': if(CT.doc && !ctSealed()){ const P = CT.doc.parties || (CT.doc.parties = {}), x = P[v] || (P[v] = {});
-      if(x.proxy) delete x.proxy; else x.proxy = { name:'', rel:'', phone:'', addr:'', docs:{} }; ctDirty(); render(); } return true;
+      if(x.proxy) ct지울까(['name', 'rel', 'phone', 'addr'].some(k => String(x.proxy[k] || '').trim()), '대리인을 뺄까요?', () => { delete x.proxy; ctDirty(); render(); });
+      else { x.proxy = { name:'', rel:'', phone:'', addr:'', docs:{} }; ctDirty(); render(); } } return true;
     case 'ct-proxy-doc': if(CT.doc && !ctSealed()){ const [k, d] = String(v).split('|'), x = (CT.doc.parties || {})[k];
       if(x && x.proxy){ const s = x.proxy.docs || (x.proxy.docs = {}); if(s[d]) delete s[d]; else s[d] = true; ctDirty(); render(); } } return true;
     case 'ct-co-add': if(CT.doc && !ctSealed()){ const P = CT.doc.parties || (CT.doc.parties = {}), x = P[v] || (P[v] = {});
       x.co = [...(x.co || []), { name:'', phone:'', addr:'', share:'' }].slice(0, 4); ctDirty(); render(); } return true;
     case 'ct-co-del': if(CT.doc && !ctSealed()){ const [k, i] = String(v).split('|'), x = (CT.doc.parties || {})[k];
-      if(x && x.co){ x.co.splice(+i, 1); if(!x.co.length){ delete x.co; delete x.share; } ctDirty(); render(); } } return true;
+      if(x && x.co && x.co[+i]) ct지울까(Object.values(x.co[+i]).some(t => String(t || '').trim()), `공동명의인 ${+i + 2}를 뺄까요?`, () => { x.co.splice(+i, 1); if(!x.co.length){ delete x.co; delete x.share; } ctDirty(); render(); }); } return true;
     case 'ct-mid-add': if(CT.doc && !ctSealed() && CT.doc.deal){ const D = CT.doc.deal; D.mids = [...(Array.isArray(D.mids) ? D.mids : []), { amt: 0, date: '' }].slice(0, CT_중도더최대); ctDirty(); render(); } return true;
     case 'ct-mid-del': if(CT.doc && !ctSealed() && CT.doc.deal && Array.isArray(CT.doc.deal.mids)){ CT.doc.deal.mids.pop(); if(!CT.doc.deal.mids.length) delete CT.doc.deal.mids; ctDirty(); render(); } return true;
     case 'ct-cobrk-add': if(CT.doc && !ctSealed()){ CT.doc.coBrokers = [...(CT.doc.coBrokers || []), { office:'', rep:'', regNo:'', addr:'', phone:'', staff:'' }].slice(0, CT_공동중개최대); ctDirty(); render(); } return true;
-    case 'ct-cobrk-del': if(CT.doc && !ctSealed() && CT.doc.coBrokers){ CT.doc.coBrokers.splice(+v, 1); if(!CT.doc.coBrokers.length) delete CT.doc.coBrokers; ctDirty(); render(); } return true;
+    case 'ct-cobrk-del': if(CT.doc && !ctSealed() && CT.doc.coBrokers && CT.doc.coBrokers[+v]){ const 문서 = CT.doc; ct지울까(Object.values(문서.coBrokers[+v]).some(t => String(t || '').trim()), '이 중개사무소를 뺄까요?', () => { if(CT.doc !== 문서 || !문서.coBrokers) return; 문서.coBrokers.splice(+v, 1); if(!문서.coBrokers.length) delete 문서.coBrokers; ctDirty(); render(); }); } return true;
     case 'ct-cobrk-find': ctCoBrokerFind(+v); return true;
     case 'ct-hand': if(CT.doc && !ctSealed()){ const B = CT.doc.broker || (CT.doc.broker = {}); if(B.hand) delete B.hand; else B.hand = true; ctDirty(); render(); } return true;
     case 'ct-acct': if(CT.doc && !ctSealed()){ if(CT.doc.acct) delete CT.doc.acct; else CT.doc.acct = true; ctDirty(); render(); } return true;
@@ -23162,7 +23176,7 @@ function handle(a,v,el){
     case 'ct-xcopy': { const c = ct트랙().xcode || ''; if(c && navigator.clipboard) navigator.clipboard.writeText(c).then(() => toast('공유 코드를 복사했습니다 - 상대 사무소에 알려 주세요'), () => toast('복사하지 못했습니다 - 코드를 직접 알려 주세요')); return true; }
     case 'ext-link': ctExtLink(); return true;
     case 'ext-ack': ctExtAck(v); return true;
-    case 'ct-mid2-add': if(CT.doc && !ctSealed()){ CT.doc.deal = CT.doc.deal || {}; CT.doc.deal.mid2On = true; ctDirty(); render(); } return true;
+    case 'ct-mid2-add': if(CT.doc && !ctSealed()){ CT.doc.deal = CT.doc.deal || {}; if(!(+CT.doc.deal.mid > 0)) return toast('중도금(1차) 금액을 먼저 적어 주세요 - 그다음에 2차를 더합니다'), true; CT.doc.deal.mid2On = true; ctDirty(); render(); } return true;
     case 'ct-mid2-del': if(CT.doc && !ctSealed() && CT.doc.deal){ delete CT.doc.deal.mid2On; CT.doc.deal.mid2 = 0; delete CT.doc.deal.mid2Date; ctDirty(); render(); } return true;
     case 'ct-doctab': if(v === 'more'){ CT.docMore = !CT.docMore; render(); return true; }
       if(v === 'e'){ CT.mode = 'edit'; render(); return true; }

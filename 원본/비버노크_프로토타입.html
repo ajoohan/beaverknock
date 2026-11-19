@@ -3066,6 +3066,9 @@ table.ec td.ec-l{font-weight:700}
 .csm-row.on>span{color:var(--ind700,#3B3EA8);font-weight:700} .csm-up{font-size:13px;font-weight:700;color:var(--ind700,#3B3EA8);cursor:pointer} .csm-up.off{opacity:.5;pointer-events:none}
 .csm-note{margin:0;font-size:12.5px;color:var(--n500)}
 .ec-wrap{overflow-x:auto}
+.ctx-side{container-type:inline-size}
+@container (max-width:720px){ table.ec, table.ec tbody, table.ec tr{display:block} table.ec tr{border-bottom:1px solid var(--n200);padding:6px 0} table.ec th{display:block;width:auto;border:0;padding:2px 4px;background:none;font-size:13px;color:var(--n600,#555)} table.ec td{display:inline-block;border:0;padding:3px 4px;white-space:normal;line-height:1.9} table.ec td.ec-l{background:none;width:auto;color:var(--n500);font-size:13px} table.ec td:empty{display:none} table.ec .ec-nw{white-space:normal}}
+body.mo table.ec,body.mo table.ec tbody,body.mo table.ec tr{display:block}body.mo table.ec tr{border-bottom:1px solid var(--n200);padding:6px 0}body.mo table.ec th{display:block;width:auto;border:0;padding:2px 4px;background:none;font-size:13px;color:var(--n600,#555)}body.mo table.ec td{display:inline-block;border:0;padding:3px 4px;white-space:normal;line-height:1.9}body.mo table.ec td.ec-l{background:none;width:auto;color:var(--n500);font-size:13px}body.mo table.ec td:empty{display:none}body.mo table.ec .ec-nw{white-space:normal}
 table.ec{width:100%;border-collapse:collapse;border-top:2px solid var(--n700,#3a3a40);font-size:14px}
 table.ec th,table.ec td{border-bottom:1px solid var(--n200);padding:7px 8px;vertical-align:middle;text-align:left}
 table.ec th{width:110px;background:var(--n50,#F4F4F6);font-weight:700;color:var(--n800,#2a2a30);white-space:nowrap}
@@ -13982,7 +13985,7 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
-  { v:'26.11.19.5', 날:'2026-11-19', 줄:[ '계약서 작성 화면 점검 - 나란히 보기에서 서류 탭을 미리보기 머리 줄 위로(인쇄 · 저장 단추가 가려지지 않게) · 정보 입력 영역을 가운데로(넓은 화면에서 오른쪽이 비지 않게) · 입력 칸 높이 32px · 자간 통일 · 특약 칸 14px · 줄간격 1.8 · 서류 탭은 미리보기 위 한 줄' ] },
+  { v:'26.11.19.6', 날:'2026-11-19', 줄:[ '계약서 작성 화면 점검 - 입력 판이 좁을 때(나란히 보기 · 휴대폰) 전자계약 표 칸이 줄을 바꿔 쌓이게 · 나란히 보기에서 서류 탭을 미리보기 머리 줄 위로(인쇄 · 저장 단추가 가려지지 않게) · 정보 입력 영역을 가운데로(넓은 화면에서 오른쪽이 비지 않게) · 입력 칸 높이 32px · 자간 통일 · 특약 칸 14px · 줄간격 1.8 · 서류 탭은 미리보기 위 한 줄' ] },
   { v:'26.11.19.3', 날:'2026-11-19', 줄:[ '계약서 직접 입력 - 특약 줄의 회색 안내도 뺐습니다' ] },
   { v:'26.11.19.2', 날:'2026-11-19', 줄:[ '계약서 - 계약금 영수자도 서류 · 정보 입력 표에서 바로 적습니다 · 서류의 주소 칸(당사자 · 대리인 · 중개사무소)마다 ‘주소 검색’ · 서류와 표 안의 회색 예시글을 모두 뺐습니다' ] },
   { v:'26.11.19', 날:'2026-11-19', 줄:[ '계약서 작성(파트너 세부 요청) - 첫 화면은 계약서 종류 고르기가 맨 위 · 작성 화면 위 탭(입력/일정·체크/부속 서류/신고 도우미)을 없애고 서류 탭(계약서 · 확인·설명서 · 개인정보 동의서 · 영수증 · 잔금정산서 · 물품인계 …)으로',

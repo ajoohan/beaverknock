@@ -14064,6 +14064,7 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
+  { v:'26.11.19.22', 날:'2026-11-19', 줄:[ '계약서 당사자 - 생년월일(주민등록번호 앞 여섯 자리)을 적을 수 있습니다. 계약서의 주민등록번호 칸 앞자리에 찍히고, 확인·설명서를 만들면 생년월일 칸에 옮겨집니다 · 뒷자리는 저장하지 않고 빈칸으로 인쇄됩니다' ] },
   { v:'26.11.19.21', 날:'2026-11-19', 줄:[ '계약서 목록 - 확정 후 수정하면 가장 새 판만 보이고 ‘확정 후 수정 2판’처럼 몇 번째 판인지 붙습니다. 앞 날인본은 지워지지 않고 고친 판의 ‘앞 날인본 보기’로 엽니다' ] },
   { v:'26.11.19.20', 날:'2026-11-19', 줄:[ '확인·설명서 - 등기부를 읽으면 소유자 생년월일(등기부에 적힌 앞 여섯 자리)도 소유권 칸에 넣습니다 · 소유권 칸은 암호화해 저장' ] },
   { v:'26.11.19.19', 날:'2026-11-19', 줄:[ '확인·설명서 - 법정 서식 격자(토지 · 건축물 묶음, 등기부 기재사항 네 칸)로 다시 그렸습니다 · 작성 방식 두 가지(칸 입력 / 양식에 직접 입력) · 별지 작성(목적물 표 → 소유권에 관한 사항 → 소유권 외의 사항 → 기타사항)',
@@ -16175,6 +16176,13 @@ function ct서류당사자단추(label, x, k){
   const 역할 = ct짧은이름(label).replace(/인$/, ''), co = x.co || [];
   return `<tr><td colspan="5" class="ct-doc-add">${co.length < 4 ? `<button type="button" class="chip" data-act="ct-co-add" data-v="${k}">+ ${esc(역할)} 공동명의인</button>` : ''}${x.proxy ? `<button type="button" class="tapx" data-act="ct-proxy" data-v="${k}">${esc(역할)} 대리인 빼기</button>` : `<button type="button" class="chip" data-act="ct-proxy" data-v="${k}">+ ${esc(역할)} 대리인</button>`}${co.map((c, i) => `<button type="button" class="tapx" data-act="ct-co-del" data-v="${k}|${i}">공동명의인 ${i + 2} 빼기</button>`).join('')}</td></tr>`;
 }
+/* 적은 생년월일 → 주민등록번호 앞 여섯 자리. '1970-01-01' · '19700101' · '700101' · '70.1.1' 을 받는다. 날짜가 아니면 '' */
+const ct앞자리 = v => { const t = String(v == null ? '' : v).trim(); if(!t) return '';
+  const 조각 = t.match(/^(\d{2}|\d{4})\D+(\d{1,2})\D+(\d{1,2})\D*$/), d = t.replace(/\D/g, '');
+  const 글 = 조각 ? 조각[1].slice(-2) + 조각[2].padStart(2, '0') + 조각[3].padStart(2, '0') : d.length === 8 ? d.slice(2) : d.length === 6 ? d : '';
+  const m = +글.slice(2, 4), 일 = +글.slice(4, 6); return 글 && m >= 1 && m <= 12 && 일 >= 1 && 일 <= 31 ? 글 : ''; };
+/* 확인·설명서 생년월일 칸에 옮길 글 - 여섯 자리면 '70. 01. 01.' , 아니면 적은 그대로 */
+const ct생일글 = v => { const g = ct앞자리(v); return g ? `${g.slice(0, 2)}. ${g.slice(2, 4)}. ${g.slice(4, 6)}.` : String(v == null ? '' : v).trim(); };
 function ctDocHTML(doc){
   const F = CT_FORMS[doc.form] || CT_FORMS['home-lease'];
   if(F.explain) return exDocHTML(doc);
@@ -16197,6 +16205,8 @@ function ctDocHTML(doc){
   /* 당사자 - 개인 · 법인, 공동명의자는 같은 칸을 이어 붙인다(파트너 리뷰 2026-11-05).
      법인등록번호는 법인 당사자에만 칸을 둔다(2026-11-17 대표님) - 서버가 그 칸만 주민번호 검사에서 빼고 13자리인지 본다 */
   /* b = 그 사람 값의 경로(parties.seller · parties.seller.co.0) - 미리보기에서 바로 적을 때 쓴다 */
+  /* 주민등록번호 칸 - 앞자리(생년월일)만 채우고 뒷자리는 늘 빈칸. 생년월일이 없는 예전 계약서는 통째로 빈칸 */
+  const 주민칸 = (x, b) => CT편집칸 ? `${ct칸(b + '.birth', x.birth, 64)} - ${빈칸(72)}` : ct앞자리(x.birth) ? `${esc(ct앞자리(x.birth))} - ${빈칸(72)}` : 빈칸(140);
   const 당사자1 = (label, x, b) => x.type === 'corp' ? `
     <tr><th rowspan="3" class="w">${label}</th><th>본점 소재지</th><td colspan="3">${ct칸(b + '.addr', x.addr, 260)}</td></tr>
     <tr><th>법인등록번호</th><td>${ct칸(b + '.corpNo', x.corpNo, 120)}</td><th>사업자등록번호</th><td>${ct칸(b + '.bizNo', x.bizNo, 120)}</td></tr>
@@ -16204,7 +16214,7 @@ function ctDocHTML(doc){
     <tr><th class="w">법인명</th><td colspan="4" class="sign">${ct칸(b + '.name', x.name, 140)} &nbsp; 대표이사 ${ct칸(b + '.rep', x.rep, 80)} <span class="ct-seal">(법인 인감 날인)</span></td></tr>`
     : `
     <tr><th rowspan="2" class="w">${label}</th><th>주소</th><td colspan="3">${ct칸(b + '.addr', x.addr, 260)}</td></tr>
-    <tr><th>주민등록번호</th><td>${빈칸(140)}</td><th>전화</th><td>${ct칸(b + '.phone', x.phone, 110)}</td></tr>
+    <tr><th>주민등록번호</th><td>${주민칸(x, b)}</td><th>전화</th><td>${ct칸(b + '.phone', x.phone, 110)}</td></tr>
     <tr><th class="w">성명</th><td colspan="4" class="sign">${ct칸(b + '.name', x.name, 120)}${CT편집칸 && (x.share || /\.co\.\d+$/.test(b) || (x.co || []).length) ? ` <span class="sm">(지분 ${ct칸(b + '.share', x.share, 40)})</span>` : x.share ? ` <span class="sm">(지분 ${esc(x.share)})</span>` : ''} <span class="ct-seal">(서명 또는 날인)</span></td></tr>`;
   /* 대리인 - 본인 칸 아래에 대리인 칸(위임장·인감증명서 첨부를 적는다) */
   const 대리 = (label, x, b) => !x.proxy ? '' : `
@@ -18513,10 +18523,10 @@ function ctFormHTML(doc){
     const 본인 = 법인
       ? ctIn(`parties.${k}.name`, '법인명(상호)', {w:4}) + ctIn(`parties.${k}.rep`, '대표이사', {w:2}) + ctIn(`parties.${k}.bizNo`, '사업자등록번호', {w:3, ph:'000-00-00000'})
         + ctIn(`parties.${k}.phone`, '전화', {w:3, ph:'02-000-0000'}) + ctIn(`parties.${k}.corpNo`, '법인등록번호', {w:4, ph:'000000-0000000'}) + ctAddrIn(`parties.${k}.addr`, '본점 소재지', 12)
-      : ctIn(`parties.${k}.name`, `${짧} 성명`, {w: co.length ? 4 : 3}) + ctIn(`parties.${k}.phone`, `${짧} 전화`, {w: co.length ? 5 : 3, ph:'010-0000-0000'})
-        + (co.length ? ctIn(`parties.${k}.share`, '지분', {w:3, ph:'1/2'}) : '') + ctAddrIn(`parties.${k}.addr`, `${짧} 주소`, co.length ? 12 : 6);
-    const 공동 = co.map((c, i) => ctIn(`parties.${k}.co.${i}.name`, `공동명의인 ${i + 2} 성명`, {w:4}) + ctIn(`parties.${k}.co.${i}.phone`, '전화', {w:5, ph:'010-0000-0000'})
-      + ctIn(`parties.${k}.co.${i}.share`, '지분', {w:3, ph:'1/2'}) + ctAddrIn(`parties.${k}.co.${i}.addr`, '주소', 12)
+      : ctIn(`parties.${k}.name`, `${짧} 성명`, {w: 4}) + ctIn(`parties.${k}.birth`, '생년월일', {w: co.length ? 3 : 4, ph:'예: 700101'}) + ctIn(`parties.${k}.phone`, `${짧} 전화`, {w: co.length ? 3 : 4, ph:'010-0000-0000'})
+        + (co.length ? ctIn(`parties.${k}.share`, '지분', {w:2, ph:'1/2'}) : '') + ctAddrIn(`parties.${k}.addr`, `${짧} 주소`, 12);
+    const 공동 = co.map((c, i) => ctIn(`parties.${k}.co.${i}.name`, `공동명의인 ${i + 2} 성명`, {w:4}) + ctIn(`parties.${k}.co.${i}.birth`, '생년월일', {w:3, ph:'예: 700101'}) + ctIn(`parties.${k}.co.${i}.phone`, '전화', {w:3, ph:'010-0000-0000'})
+      + ctIn(`parties.${k}.co.${i}.share`, '지분', {w:2, ph:'1/2'}) + ctAddrIn(`parties.${k}.co.${i}.addr`, '주소', 12)
       + (잠김 ? '' : `<div class="ct-co-tools w12"><button type="button" class="tapx" data-act="ct-co-del" data-v="${k}|${i}" style="font-size:13.5px;color:var(--danger)">공동명의인 ${i + 2} 빼기</button></div>`)).join('');
     const 더하기 = 잠김 ? '' : `<div class="w12 ct-addbtns">${co.length < 4 ? `<button type="button" class="btn tool sm" data-act="ct-co-add" data-v="${k}">+ ${esc(역할)} 공동명의인</button>` : ''}${x.proxy ? '' : `<button type="button" class="btn tool sm" data-act="ct-proxy" data-v="${k}">+ ${esc(역할)} 대리인</button>`}</div>`;
     /* 대리인 - 위임장 · 인감증명서 · 본인 통화 확인 세 가지를 체크한다(확정 전 점검이 본다) */
@@ -18555,7 +18565,7 @@ function ctFormHTML(doc){
       ${!매매 && !잠김 ? `<div class="ct-term"><span class="lab">종료일 바로 넣기</span>${[['2', '2년'], ['1', '1년'], ['m6', '6개월'], ['m3', '3개월']].map(([n, t]) => `<button type="button" class="chip" data-act="ct-term" data-v="${n}">${t}</button>`).join('')}
         <span class="lab">끝나는 날</span>${chipsHTML(['시작 전날', '시작과 같은 날'], ct끝표기() === 'same' ? '시작과 같은 날' : '시작 전날', 'ct-endstyle', false, false)}</div>` : ''}</div>
 
-    <div class="card pad ct-sec"><h2>당사자${ct구획(doc, ['parties'])} <span class="sub" style="font-weight:500;font-size:13.5px">주민등록번호 · 서명 칸은 비워서 인쇄됩니다</span></h2>
+    <div class="card pad ct-sec"><h2>당사자${ct구획(doc, ['parties'])} <span class="sub" style="font-weight:500;font-size:13.5px">생년월일(주민등록번호 앞 여섯 자리)까지 적습니다 · 뒷자리와 서명 칸은 비워서 인쇄됩니다</span></h2>
       <div class="ct-grid">${사람(aKey, aKo)}${사람(bKey, bKo)}</div></div>
 
     <div class="card pad ct-sec"><h2>개업공인중개사${ct구획(doc, ['broker'])} <span class="sub" style="font-weight:500;font-size:13.5px">가입 때 적은 값으로 채웠습니다</span></h2>
@@ -19978,7 +19988,7 @@ function exNewDoc(from, form){
   const F = CT_FORMS[c.form] || {};
   const 임대 = F.lease !== false && c.form !== 'sale';
   const pa = (c.parties || {})[(F.a||[])[0]] || {}, pb = (c.parties || {})[(F.b||[])[0]] || {};
-  const 사람 = x => ({ name: x.name || '', phone: x.phone || '', addr: x.addr || '', birth:'' });
+  const 사람 = x => ({ name: x.name || '', phone: x.phone || '', addr: x.addr || '', birth: ct생일글(x.birth) });
   const D = c.deal || {};
   /* 글꼴 - 계약서에서 만들면 그 계약서를 따르고, 새로 만들면 마지막에 고른 글꼴 */
   const 글꼴 = c.schema ? ct글꼴(c) : ct기본글꼴();

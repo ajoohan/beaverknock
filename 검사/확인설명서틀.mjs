@@ -19,7 +19,7 @@ const EX_FORMS = { 'explain-home': { spec: [{ rows: [{ p: [{ t:'many', k:'ex.doc
 ${js.slice(표시작, 표끝)}
 ${js.slice(보수시작, js.indexOf('\n}\n', 보수시작) + 3)}
 ${js.slice(틀시작, 틀끝)}
-return { EXH_DATA, exHwpDocHTML, exh값, exh적기, exh고르기, exh골랐나, ex보수값, exHwp쓸까 };`;
+return { EXH_DATA, exHwpDocHTML, exh값, exh적기, exh고르기, exh골랐나, ex보수값, ex보수채움, exHwp쓸까 };`;
 const M = new Function('esc', 'CT편집칸', 코드)(esc, false);
 const F = M.EXH_DATA.forms;
 
@@ -67,11 +67,14 @@ ok(승강 && M.exh골랐나({ ...문서, ex: { elev: '있음(불량)' } }, F['ex
   const 대표 = Object.entries(F['explain-home'].map).find(([k, v]) => v === 'broker.rep' && k.startsWith('p3'))[0];
   ok(M.exh값({ ...문서, broker: { rep: '한상혁', hand: true } }, F['explain-home'], 대표) === '' && M.exh값({ ...문서, broker: { rep: '한상혁' } }, F['explain-home'], 대표) === '한상혁', '성명 자필이면 서명란 이름을 비운다'); }
 /* 중개보수 */
-const 보 = M.ex보수값({ form: 'explain-home', deal: '매매ㆍ교환', ex: { price: 300000000, cost: 50000, taxType: '일반과세' } });
-ok(보.보수 === 1200000 && 보.부가 === 120000 && 보.계 === 1370000 && 보.자동, '주택 매매 3억 - 요율 0.4% 보수 120만 + 부가세 12만(일반과세) + 실비 5만 = 계');
+const 보문 = { form: 'explain-home', deal: '매매ㆍ교환', ex: { price: 300000000, cost: 50000, taxType: '일반과세' } };
+ok(M.ex보수채움(보문) && 보문.ex.fee === 1200000, '(나) 채택 - 적지 않은 중개보수 칸에 요율 상한을 채운다');
+const 보 = M.ex보수값(보문);
+ok(보.보수 === 1200000 && 보.부가 === 120000 && 보.계 === 1370000 && !보.다름, '주택 매매 3억 - 요율 0.4% 보수 120만 + 부가세 12만(일반과세) + 실비 5만 = 계');
 const 간 = M.ex보수값({ form: 'explain-home', deal: '매매ㆍ교환', ex: { price: 300000000, fee: 1000000, taxType: '간이과세' } });
-ok(간.보수 === 1000000 && 간.부가 === 40000 && 간.계 === 1040000 && !간.자동, '협의한 보수를 적으면 그 금액 · 간이과세 4%');
-ok(M.ex보수값({ form: 'explain-home', deal: '매매ㆍ교환', ex: { price: 300000000 } }).부가 === 0, '과세 유형을 고르지 않으면 부가세를 더하지 않는다');
+ok(간.보수 === 1000000 && 간.부가 === 40000 && 간.계 === 1040000 && 간.다름 && 간.상한 === 1200000, '협의한 보수를 적으면 그 금액 · 간이과세 4%');
+ok(M.ex보수값({ form: 'explain-home', deal: '매매ㆍ교환', ex: { price: 300000000, fee: 1200000 } }).부가 === 0, '과세 유형을 고르지 않으면 부가세를 더하지 않는다');
+{ const 지운 = { form: 'explain-home', deal: '매매ㆍ교환', ex: { price: 300000000, fee: 0 } }; ok(!M.ex보수채움(지운) && 지운.ex.fee === 0, '중개보수 칸을 지웠으면(0) 다시 채우지 않는다'); }
 
 /* 그리기 */
 const h = M.exHwpDocHTML(문서);

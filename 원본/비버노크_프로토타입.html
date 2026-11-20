@@ -14113,6 +14113,7 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
+  { v:'26.11.20.8', 날:'2026-11-20', 줄:[ '확인·설명서 중개보수 - 요율로 계산한 상한을 중개보수 칸에 채워 넣습니다(파트너 의견). 거래금액을 바꾸면 ‘요율로 상한 계산해 넣기’를 다시 누릅니다' ] },
   { v:'26.11.20.7', 날:'2026-11-20', 줄:[ '코드리뷰 반영 - 확인·설명서 빈자리 숫자가 단위 옆에 · 소재지 칸을 고쳐도 상세주소 유지 · 작성일 한 자리만 적으면 나머지는 오늘 날짜',
     '추가특약 - 주택 · 상가 임대차의 기본 항목이 섞이지 않게 종류마다 따로 들어갑니다 · 계좌 줄에 은행 이름을 적어도 계좌 줄로 알아봅니다' ] },
   { v:'26.11.20.6', 날:'2026-11-20', 줄:[ '확인·설명서 인쇄 - 화면용 쪽 머리줄이 인쇄돼 쪽마다 빈 장이 붙던 것(6쪽이 12장) · 종이 여백 0으로 원본 쪽 그대로 · 날짜 숫자가 년 · 월 · 일 옆에 · 건폐율 · 용적률 숫자가 % 옆에',
@@ -20143,7 +20144,7 @@ function exNewDoc(from, form){
   const D = c.deal || {};
   /* 글꼴 - 계약서에서 만들면 그 계약서를 따르고, 새로 만들면 마지막에 고른 글꼴 */
   const 글꼴 = c.schema ? ct글꼴(c) : ct기본글꼴();
-  return {
+  const d = {
     ...(글꼴 === 'sans' ? { font:'sans' } : {}),
     schema: CT_SCHEMA, form: EX_FORMS[form] ? form : exFormFor(from),
     property: { road: P.road||'', jibun: P.jibun||'', ...(P.show ? { show: P.show } : {}), ...(P.detail ? { detail: P.detail } : {}), admCd: P.admCd||'', bun: P.bun||'', ji: P.ji||'', mount: !!P.mount, zip: P.zip||'',
@@ -20156,6 +20157,8 @@ function exNewDoc(from, form){
     broker2: { office:'', rep:'', regNo:'', addr:'', phone:'', staff:'' },
     date: '', contractId: (from && from.__id) || null,
   };
+  if(typeof ex보수채움 === 'function') ex보수채움(d);   /* 요율 상한을 중개보수 칸에(파트너 (나)) */
+  return d;
 }
 
 /* ── 문서 ── */
@@ -20276,7 +20279,7 @@ function exEditPart(doc, p){
   if(p.t === 'money') return ctIn(p.k, (p.pre || '금액').replace(/:\s*$/,'') + '(원)', { money:true })
     + (p.k === 'ex.fee' && !ctSealed() ? (() => { const b = ex보수값(doc), 유형 = (doc.ex || {}).taxType || '';
       return `<div class="ex-fee-calc"><span class="lab">중개사무소</span>${['일반과세', '간이과세'].map(t => `<button type="button" class="chip${유형 === t ? ' on' : ''}" data-act="ex-taxtype" data-v="${t}" aria-pressed="${유형 === t}">${t}</button>`).join('')}<button type="button" class="btn tool sm" data-act="ex-fee-calc">요율로 상한 계산해 넣기</button></div>`
-        + `<p class="sub" style="margin:4px 0 0;font-size:12.5px">${b.자동 ? `비워 두면 요율로 계산한 ${comma(String(b.보수))}원이 들어갑니다 · ` : ''}${b.유형 ? `부가가치세 ${comma(String(b.부가))}원(${b.유형}) · ` : '과세 유형을 고르면 부가가치세를 더합니다 · '}계 ${comma(String(b.계))}원 = 보수 + 부가세 + 실비</p>`; })() : '');
+        + `<p class="sub" style="margin:4px 0 0;font-size:12.5px">${b.다름 ? `요율 상한은 ${comma(String(b.상한))}원 - 거래금액을 바꿨으면 ‘요율로 상한 계산해 넣기’를 다시 누르세요 · ` : ''}${b.유형 ? `부가가치세 ${comma(String(b.부가))}원(${b.유형}) · ` : '과세 유형을 고르면 부가가치세를 더합니다 · '}계 ${comma(String(b.계))}원 = 보수 + 부가세 + 실비</p>`; })() : '');
   if(p.t === 'area'){
     const 잠김 = CT.row && CT.row.status === 'sealed';
     return `<label class="ct-f wide w12"><span class="lab">내용</span><textarea class="inp${CT.filled && CT.filled.has(p.k) ? ' ai' : ''}" rows="3" data-in="ct:${p.k}" ${잠김?'disabled':''}>${esc(v || '')}</textarea></label>`;
@@ -20354,12 +20357,17 @@ const exHwp쓸까 = doc => !!(EXH_DATA && doc && EXH_DATA.forms[doc.form]);
 /* 중개보수 (2026-11-20 파트너) - 사무소가 일반과세인지 간이과세인지 고르면 요율로 계산한 보수에 부가가치세를 붙이고, 계 = 보수 + 부가세 + 실비.
    일반과세 10% · 간이과세 4%(부동산중개업 부가가치율 40% × 10%) - 대표님 확인 전(바뀌면 이 표만 고친다) */
 const EX_부가율 = { 일반과세: 0.10, 간이과세: 0.04 };
+/* 2026-11-20 파트너 (나) 채택 - 요율 상한을 중개보수 칸에 채운다. 한 번도 적지 않은 칸(값 없음)일 때만, 지운 칸(0)은 그대로 둔다 */
+function ex보수채움(doc){
+  const ex = doc && doc.ex; if(!ex || ex.fee != null || typeof ex보수 !== 'function') return false;
+  const 식 = ex보수(doc); if(!식.상한) return false; ex.fee = 식.상한; return true;
+}
 function ex보수값(doc){
-  const ex = doc.ex || {}, 식 = ex보수(doc), 보수 = +ex.fee || 식.상한 || 0, 실비 = +ex.cost || 0;
+  const ex = doc.ex || {}, 식 = ex보수(doc), 보수 = +ex.fee || 0, 실비 = +ex.cost || 0;
   const 유형 = EX_부가율[ex.taxType] != null ? ex.taxType : '', 부가 = 유형 ? Math.floor(보수 * EX_부가율[유형]) : 0;
   const 원 = n => comma(String(n)) + '원';
-  const 내역 = 보수 ? `${원(보수)}${!+ex.fee && 식.율 ? `(${+(식.율 * 100).toFixed(2)}%)` : ''}${유형 ? ` + 부가세 ${원(부가)}(${유형})` : ''}` : '';
-  return { 보수, 부가, 실비, 계: 보수 + 부가 + 실비, 유형, 자동: !+ex.fee && !!식.상한, 내역 };
+  const 내역 = 보수 ? `${원(보수)}${보수 === 식.상한 && 식.율 ? `(${+(식.율 * 100).toFixed(2)}%)` : ''}${유형 ? ` + 부가세 ${원(부가)}(${유형})` : ''}` : '';
+  return { 보수, 부가, 실비, 계: 보수 + 부가 + 실비, 유형, 상한: 식.상한 || 0, 다름: !!식.상한 && 보수 !== 식.상한, 내역 };
 }
 /* 한 자리의 지금 값(글) */
 function exh값(doc, F, k){
@@ -20371,7 +20379,6 @@ function exh값(doc, F, k){
   const 돈 = m[0] === '$', 경로 = 돈 ? m.slice(1) : m;
   if(/^broker2?\.(rep|staff)$/.test(경로) && ((doc[경로.split('.')[0]] || {}).hand || (doc.broker || {}).hand)) return '';   /* '성명은 자필' - 인쇄할 때 비워 둔다 */
   if(경로 === 'property.show'){ const P = doc.property || {}; return [String(P.show || P.jibun || P.road || '').trim(), String(P.detail || '').trim()].filter(Boolean).join(' '); }
-  if(경로 === 'ex.fee'){ const b = ex보수값(doc); return b.보수 ? comma(String(b.보수)) : ''; }
   if(경로 === 'ex.feeCalc' && !String(ex.feeCalc || '').trim()) return ex보수값(doc).내역;
   const v = ctGet(doc, 경로);
   if(돈) return +v ? comma(String(+v)) : '';
@@ -20826,7 +20833,9 @@ function rpHTML(doc){
 }
 
 /* 계약서 입력 - 글자마다 다시 그리지 않는다(칸이 교체돼 두 번째 글자가 안 들어간다). 값만 담고 표시만 바꾼다 */
-function ctDirty(){ CT.dirty = true; CT.rev = (CT.rev || 0) + 1; ctPvRefresh(); const b = $('#app [data-act="ct-save"]'); if(b && !CT.saving && !b.querySelector('.dirty-dot')) b.innerHTML = '<span class="dirty-dot" aria-hidden="true"></span>임시저장';
+function ctDirty(){ CT.dirty = true; CT.rev = (CT.rev || 0) + 1; ctPvRefresh();
+  if(CT.doc && (CT_FORMS[CT.doc.form] || {}).explain && typeof ex보수채움 === 'function' && ex보수채움(CT.doc)){ const L = document.querySelector('#app [data-in="ct$:ex.fee"]'); if(L) L.value = comma(String(CT.doc.ex.fee)); }   /* 요율 상한을 아직 적지 않은 중개보수 칸에(파트너 (나)) */
+  const b = $('#app [data-act="ct-save"]'); if(b && !CT.saving && !b.querySelector('.dirty-dot')) b.innerHTML = '<span class="dirty-dot" aria-hidden="true"></span>임시저장';
   const st = $('#app .ctx-st'); if(st && !CT.saving){ st.className = 'ctx-st warn'; st.textContent = '임시저장하지 않은 고침이 있습니다'; }
   ct필수갱신(); ct자동저장(); }
 /* 자동 임시저장 - 멈추고 20초 뒤. 칸에 적는 중이면(초점이 칸에 있으면) 화면을 다시 그리지 않게 미룬다.

@@ -614,7 +614,7 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
   ok(/CT\.mode = 앞\.mode; CT\.extraTab = 앞\.tab; CT\.extraRc = 앞\.rc; CT\.track = 앞\.track;/.test(js), '빈 부속 서류를 그린 뒤 지금 계약서의 탭 · 부속 값은 그대로 돌려놓는다');
   ok(/function ct입력값\(doc\)/.test(js) && /data-act="ct-hb-open"/.test(js) && /https:\/\/irts\.molit\.go\.kr/.test(js) && /case 'ctk-ec':/.test(js),
      '한방 · 전자계약 입력 도우미 - 입력 순서대로 칸마다 복사 · 전자계약 표시');
-  ok(/const EX_사무소칸 = \['ex\.trust', 'ex\.jointMortgage', 'ex\.smallRange', 'ex\.smallAmt'/.test(js) && /djSend\(\{ op:'put', name: EX_사무소이름, road: '', v: 값 \}\)/.test(js) && /DJ\.list\.filter\(d => d\.name !== EX_사무소이름\)/.test(js),
+  ok(/const EX_사무소칸 = \['ex\.taxType', 'ex\.trust', 'ex\.jointMortgage', 'ex\.smallRange', 'ex\.smallAmt'/.test(js) && /djSend\(\{ op:'put', name: EX_사무소이름, road: '', v: 값 \}\)/.test(js) && /DJ\.list\.filter\(d => d\.name !== EX_사무소이름\)/.test(js),
      '확인·설명서 사무소 기본값 - 단지 목록의 한 줄로 저장, 단지 목록에는 안 보인다 · 새 확인·설명서 빈칸에 저절로');
   ok(/const ex색안내 = /.test(js) && /CT\.filled2 && CT\.filled2\.has\(path\) \? ' dj' : ''/.test(js), '확인·설명서 칸 색 - 서류에서(남색) · 단지 · 기본값에서(보라)');
   ok(/const CT_허가단계 = \[\['permitPaid', '약정금 입금'\], \['permitAgreed', '약정'\], \['permitApplied', '허가 신청'\], \['permitOk', '허가 승인'\]\];/.test(js)

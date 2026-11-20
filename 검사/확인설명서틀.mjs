@@ -1,0 +1,81 @@
+/* 확인·설명서 hwp 원본 틀 (2026-11-20 파트너 '국가법령정보센터 hwp 양식과 완벽하게 동일하게')
+   - 틀(EXH_DATA)이 원본 hwp 의 쪽 수 · 표 높이와 같은지
+   - 적는 자리가 지금 쓰는 칸과 이어져 값이 그대로 보이고, 서식에서 고치면 그 칸에 들어가는지
+   - 중개보수 = 요율 계산 · 일반/간이과세 부가세 · 계 = 보수 + 부가세 + 실비 */
+import fs from 'fs';
+const 원본 = fs.readFileSync(new URL('../원본/비버노크_프로토타입.html', import.meta.url), 'utf8');
+const js = 원본.slice(원본.indexOf('<script>') + 8, 원본.lastIndexOf('</script>'));
+let 통과 = 0, 실패 = 0;
+const ok = (c, m) => { if(c){ 통과++; console.log('  OK  ' + m); } else { 실패++; console.log('  X   ' + m); } };
+
+const 틀시작 = js.indexOf('/* ══════════ 확인·설명서 hwp 원본 틀'), 틀끝 = js.indexOf('/* ── 사무소 기본값 (2026-11-06');
+const 보수시작 = js.indexOf('function ex보수(doc){'), 표시작 = js.indexOf('const EX_주택매매'), 표끝 = js.indexOf('\n', js.indexOf('const EX_주택임대')) + 1;
+ok(틀시작 > 0 && 틀끝 > 틀시작 && 보수시작 > 0 && 표시작 > 0, '원본 틀 코드 · 중개보수 계산이 있다');
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const 코드 = `const comma = d => String(d||'').replace(/\\B(?=(\\d{3})+(?!\\d))/g, ',');
+function ctGet(o, path){ return path.split('.').reduce((x,k)=> x==null ? x : x[k], o); }
+function ctSet(o, path, v){ const ks = path.split('.'); const last = ks.pop(); const t = ks.reduce((x,k)=> (x[k] = x[k] || {}), o); t[last] = v; }
+const EX_FORMS = { 'explain-home': { spec: [{ rows: [{ p: [{ t:'many', k:'ex.docs', o:['등기권리증'] }] }] }] } };
+${js.slice(표시작, 표끝)}
+${js.slice(보수시작, js.indexOf('\n}\n', 보수시작) + 3)}
+${js.slice(틀시작, 틀끝)}
+return { EXH_DATA, exHwpDocHTML, exh값, exh적기, exh고르기, exh골랐나, ex보수값, exHwp쓸까 };`;
+const M = new Function('esc', 'CT편집칸', 코드)(esc, false);
+const F = M.EXH_DATA.forms;
+
+/* 원본 hwp 와 같은 쪽 수 · 표 높이(1/100 mm, hwp5proc 로 잰 값) */
+const 쪽높이 = { 'explain-home': [26521, 26821, 25732, 22738, 26306, 22925], 'explain-biz': [27185, 26393, 25841, 24942], 'explain-land': [26611, 26616, 26626] };
+for(const [f, hs] of Object.entries(쪽높이)){
+  ok(F[f] && F[f].pages.length === hs.length && F[f].pages.every((T, i) => T.h === hs[i]), `${f} - 쪽 ${hs.length}장, 쪽마다 표 높이가 원본 hwp 와 같다`);
+  ok(F[f].page[0] === 21000 && F[f].page[1] === 29700, `${f} - A4(210 × 297mm)`);
+  ok(Object.keys(F[f].map).length > 70, `${f} - 적는 자리가 지금 칸과 이어져 있다(${Object.keys(F[f].map).length}곳)`);
+}
+ok(!M.exHwp쓸까({ form: 'explain-etc' }) && M.exHwp쓸까({ form: 'explain-home' }), '입목·재단 서식은 예전 그리기(원본 hwp 를 받지 않음)');
+
+/* 값이 서식 자리에 보인다 */
+const 이은키 = (f, 값) => Object.entries(F[f].map).find(([, v]) => JSON.stringify(v) === JSON.stringify(값))[0];
+const 문서 = { form: 'explain-home', deal: '매매ㆍ교환', house: '공동주택', date: '2026-11-20',
+  property: { show: '경기도 하남시 망월동 1-1', detail: '101동 1001호', landArea: '84.9' },
+  parties: { a: { name: '홍길동', addr: '서울', phone: '010-1', birth: '70. 01. 01.' }, b: { name: '김철수' } }, broker: { office: '비버공인중개사사무소', rep: '한상혁' },
+  ex: { price: 300000000, docs: ['등기권리증'], guard: '있음' } };
+const 소재 = 이은키('explain-home', 'property.show');
+ok(M.exh값(문서, F['explain-home'], 소재) === '경기도 하남시 망월동 1-1 101동 1001호', '소재지 칸에 주소 + 상세주소');
+ok(M.exh값(문서, F['explain-home'], 이은키('explain-home', '$ex.price')) === '300,000,000', '거래예정금액은 쉼표 금액으로');
+ok(M.exh값(문서, F['explain-home'], 이은키('explain-home', 'parties.a.name')) === '홍길동', '서명란 매도인 성명');
+ok(['2026', '11', '20'].join() === ['y', 'm', 'd'].map(x => M.exh값(문서, F['explain-home'], 이은키('explain-home', '=date.' + x))).join(), '작성일 년 · 월 · 일');
+ok(M.exh골랐나(문서, F['explain-home'], 이은키('explain-home', ['house', '공동주택'])) && !M.exh골랐나(문서, F['explain-home'], 이은키('explain-home', ['house', '단독주택'])), '맨 위 주택 유형 [ ] 에 고른 것만 표시');
+ok(M.exh골랐나(문서, F['explain-home'], 이은키('explain-home', ['ex.docs', '등기권리증'])), '여럿 고르는 칸(근거자료)도 표시');
+
+/* 서식에서 바로 고치면 그 칸에 */
+const d2 = JSON.parse(JSON.stringify(문서));
+M.exh적기(d2, F['explain-home'], 이은키('explain-home', '$ex.price'), '350,000,000');
+M.exh적기(d2, F['explain-home'], 이은키('explain-home', '=date.d'), '25');
+M.exh고르기(d2, F['explain-home'], 이은키('explain-home', ['house', '단독주택']));
+M.exh고르기(d2, F['explain-home'], 이은키('explain-home', ['ex.docs', '등기권리증']));
+M.exh적기(d2, F['explain-home'], 'p9r9c9', '직접 적은 글');
+ok(d2.ex.price === 350000000 && d2.date === '2026-11-25' && d2.house === '단독주택' && !d2.ex.docs.includes('등기권리증') && d2.ex.hf.p9r9c9 === '직접 적은 글',
+   '서식에서 적은 값 - 금액 · 날짜 · 하나 고르기 · 여럿 고르기는 그 칸에, 이어지지 않은 자리는 ex.hf 에');
+const 승강 = Object.entries(F['explain-home'].map).find(([, v]) => Array.isArray(v) && v[1] === '있음(양호)|있음(불량)');
+ok(승강 && M.exh골랐나({ ...문서, ex: { elev: '있음(불량)' } }, F['explain-home'], 승강[0]), '승강기 [있음] 은 양호 · 불량 어느 쪽이든 표시');
+
+/* 중개보수 */
+const 보 = M.ex보수값({ form: 'explain-home', deal: '매매ㆍ교환', ex: { price: 300000000, cost: 50000, taxType: '일반과세' } });
+ok(보.보수 === 1200000 && 보.부가 === 120000 && 보.계 === 1370000 && 보.자동, '주택 매매 3억 - 요율 0.4% 보수 120만 + 부가세 12만(일반과세) + 실비 5만 = 계');
+const 간 = M.ex보수값({ form: 'explain-home', deal: '매매ㆍ교환', ex: { price: 300000000, fee: 1000000, taxType: '간이과세' } });
+ok(간.보수 === 1000000 && 간.부가 === 40000 && 간.계 === 1040000 && !간.자동, '협의한 보수를 적으면 그 금액 · 간이과세 4%');
+ok(M.ex보수값({ form: 'explain-home', deal: '매매ㆍ교환', ex: { price: 300000000 } }).부가 === 0, '과세 유형을 고르지 않으면 부가세를 더하지 않는다');
+
+/* 그리기 */
+const h = M.exHwpDocHTML(문서);
+ok((h.match(/class="exh-pg"/g) || []).length === 6 && /이 쪽만 인쇄/.test(h) && /data-act="exh-pg"/.test(h), '주거용 6쪽 · 쪽 단추 · 쪽마다 이 쪽만 인쇄');
+ok(h.includes('>경기도 하남시 망월동 1-1 101동 1001호</div>') && h.includes('>홍길동</span>'), '그린 문서에 값이 들어 있다');
+ok(!/비버노크 작성 도구로 만든/.test(h), '‘비버노크 작성 도구로 만든…’ 문구가 없다');
+const 한쪽 = M.exHwpDocHTML(문서, { only: 3 });
+ok((한쪽.match(/class="exh-pg"/g) || []).length === 1 && !/exh-bar/.test(한쪽), '이 쪽만 인쇄 - 그 쪽 한 장만, 쪽 단추 없이');
+ok(!/contenteditable/.test(h), '보기 · 인쇄에는 적는 칸이 없다');
+const 편 = new Function('esc', 'CT편집칸', 코드)(esc, true).exHwpDocHTML(문서);
+ok(/contenteditable="plaintext-only"[^>]*data-cte="exh:/.test(편) && /data-act="exh-box"/.test(편), '양식에 직접 입력 - 빈칸은 바로 적고 [ ] 는 눌러 고른다');
+ok(!/영문|Enforcement Rules/.test(JSON.stringify(M.EXH_DATA)), '영문 쪽은 넣지 않았다');
+
+console.log(`${통과} 통과 / ${실패} 실패`);
+process.exit(실패 ? 1 : 0);

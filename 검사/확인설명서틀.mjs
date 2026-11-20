@@ -58,6 +58,14 @@ ok(d2.ex.price === 350000000 && d2.date === '2026-11-25' && d2.house === '단독
 const 승강 = Object.entries(F['explain-home'].map).find(([, v]) => Array.isArray(v) && v[1] === '있음(양호)|있음(불량)');
 ok(승강 && M.exh골랐나({ ...문서, ex: { elev: '있음(불량)' } }, F['explain-home'], 승강[0]), '승강기 [있음] 은 양호 · 불량 어느 쪽이든 표시');
 
+/* 코드리뷰(11-20) - 소재지 칸을 고쳐도 상세주소 유지 · 작성일 한 자리만 적으면 나머지는 오늘 · 자필이면 이름 비움 */
+{ const d3 = JSON.parse(JSON.stringify(문서)), 키 = 이은키('explain-home', 'property.show');
+  M.exh적기(d3, F['explain-home'], 키, '경기도 하남시 망월동 1-2 101동 1001호');
+  ok(d3.property.show === '경기도 하남시 망월동 1-2' && d3.property.detail === '101동 1001호', '소재지 칸을 고쳐도 끝의 상세주소는 따로 남는다');
+  const d4 = { form: 'explain-home', ex: {} }; M.exh적기(d4, F['explain-home'], 이은키('explain-home', '=date.y'), '2027');
+  const 오늘 = new Date(); ok(d4.date === `2027-${String(오늘.getMonth() + 1).padStart(2, '0')}-${String(오늘.getDate()).padStart(2, '0')}`, '작성일이 없을 때 연도만 적으면 월 · 일은 오늘(1월 1일이 아니다)');
+  const 대표 = Object.entries(F['explain-home'].map).find(([k, v]) => v === 'broker.rep' && k.startsWith('p3'))[0];
+  ok(M.exh값({ ...문서, broker: { rep: '한상혁', hand: true } }, F['explain-home'], 대표) === '' && M.exh값({ ...문서, broker: { rep: '한상혁' } }, F['explain-home'], 대표) === '한상혁', '성명 자필이면 서명란 이름을 비운다'); }
 /* 중개보수 */
 const 보 = M.ex보수값({ form: 'explain-home', deal: '매매ㆍ교환', ex: { price: 300000000, cost: 50000, taxType: '일반과세' } });
 ok(보.보수 === 1200000 && 보.부가 === 120000 && 보.계 === 1370000 && 보.자동, '주택 매매 3억 - 요율 0.4% 보수 120만 + 부가세 12만(일반과세) + 실비 5만 = 계');

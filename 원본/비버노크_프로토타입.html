@@ -14113,6 +14113,8 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
+  { v:'26.11.20.7', 날:'2026-11-20', 줄:[ '코드리뷰 반영 - 확인·설명서 빈자리 숫자가 단위 옆에 · 소재지 칸을 고쳐도 상세주소 유지 · 작성일 한 자리만 적으면 나머지는 오늘 날짜',
+    '추가특약 - 주택 · 상가 임대차의 기본 항목이 섞이지 않게 종류마다 따로 들어갑니다 · 계좌 줄에 은행 이름을 적어도 계좌 줄로 알아봅니다' ] },
   { v:'26.11.20.6', 날:'2026-11-20', 줄:[ '확인·설명서 인쇄 - 화면용 쪽 머리줄이 인쇄돼 쪽마다 빈 장이 붙던 것(6쪽이 12장) · 종이 여백 0으로 원본 쪽 그대로 · 날짜 숫자가 년 · 월 · 일 옆에 · 건폐율 · 용적률 숫자가 % 옆에',
     '확인·설명서 - ‘대표 · 소속공인중개사 성명은 자필’이면 서명란 이름을 비워 둡니다' ] },
   { v:'26.11.20.5', 날:'2026-11-20', 줄:[ '확인·설명서 - 제목 아래 빈 여백 줄이 적는 칸처럼 색칠돼 보이던 것' ] },
@@ -15532,7 +15534,7 @@ function ctClauseSet(doc){
 /* 계좌 적을 줄 (2026-11-20 파트너) - 체크하면 특약사항 맨 끝에 한 항목으로 들어가고(번호가 붙는다), 끄면 빠진다. 계좌번호는 저장하지 않으므로 밑줄 빈칸 */
 const ct계좌쓰는양식 = doc => !!doc && (doc.form === 'sale' || !!(CT_FORMS[doc.form] || {}).lease);
 const ct계좌줄 = doc => `${ct짧은이름(((CT_FORMS[doc.form] || {}).a || [])[1] || '매도인')} 계좌 : ______________________________ (계약 시 기재)`;
-const ct계좌줄인가 = s => /^\S{1,8} 계좌 : _{6,}/.test(String(s || '').trim());
+const ct계좌줄인가 = s => /^\S{1,8} 계좌 :/.test(String(s || '').trim());
 function ctSpecialSet(doc){
   const F = CT_FORMS[doc.form] || CT_FORMS['home-lease'];
   if(doc.form === 'lease'){ const g = ct군(doc); return g === 'home' ? CT_HOME_SPECIALS : g === 'shop' ? CT_SHOP_SPECIALS : CT_GEN_SPECIALS; }
@@ -19112,7 +19114,8 @@ function ctPhrPageHTML(){
 function ct추가목록(doc){
   const P = CT.phr, g = ct특약묶음(doc), F = CT_FORMS[doc.form] || {};
   const 묶음들 = [...new Set([g, ...(F.lease ? ['lease', 'renew'] : []), 'etc'])];
-  return 묶음들.flatMap(k => ct묶음문구((P && P.list) || [], k, doc.sub));
+  const 군 = '@' + ct군(doc);   /* 저절로 가져온 기본 항목은 tag '@home' · '@shop' · '@gen' - 다른 종류 계약서에는 보이지 않게 */
+  return 묶음들.flatMap(k => ct묶음문구((P && P.list) || [], k, doc.sub)).filter(p => !String(p.tag || '').startsWith('@') || p.tag === 군);
 }
 /* 새 추가 특약의 이름 - 지금 쓰는 '추가N' 가운데 가장 큰 수 다음 */
 const ct새추가이름 = () => { const 수 = ((CT.phr && CT.phr.list) || []).map(p => +(String(p.name || '').match(/^추가(\d+)$/) || [])[1] || 0); return `추가${Math.max(0, ...수) + 1}`; };
@@ -19123,7 +19126,7 @@ const ct기본추가 = doc => { const 기본 = ct기본특약(doc).length > 0; r
 /* 기본 제공 추가특약을 내 목록으로 - 처음 한 번 저절로(묶음마다). 지운 뒤 다시 들어오지 않게 이 기기에 표시해 둔다 */
 function ct추가자동(doc){
   const P = CT.phr; if(!doc || !P || !P.loaded || P.need || P.err || CT.addImp || ctSealed()) return;
-  const g = ct특약묶음(doc), 열쇠 = 'bk_adsp_' + g; CT.addImpTried = CT.addImpTried || {};
+  const g = ct특약묶음(doc) + '@' + ct군(doc), 열쇠 = `bk_adsp_${(S.agent && S.agent.id) || ''}_${g}`; CT.addImpTried = CT.addImpTried || {};
   if(CT.addImpTried[g] || ct추가목록(doc).length || !ct기본추가(doc).length) return;
   CT.addImpTried[g] = true; try{ if(localStorage.getItem(열쇠)) return; }catch(_){ }
   setTimeout(() => handle('adsp-import', '', null, 열쇠));
@@ -20366,7 +20369,7 @@ function exh값(doc, F, k){
   if(m === '=sum'){ const b = ex보수값(doc); return b.계 ? comma(String(b.계)) : ''; }
   if(m.startsWith('=date.')){ const d = String(doc.date || '').match(/^(\d{4})-(\d{1,2})-(\d{1,2})/); if(!d) return ''; return { y: d[1], m: String(+d[2]), d: String(+d[3]) }[m.slice(6)]; }
   const 돈 = m[0] === '$', 경로 = 돈 ? m.slice(1) : m;
-  if(/^broker2?.(rep|staff)$/.test(경로) && ((doc[경로.split('.')[0]] || {}).hand || (doc.broker || {}).hand)) return '';   /* '성명은 자필' - 인쇄할 때 비워 둔다 */
+  if(/^broker2?\.(rep|staff)$/.test(경로) && ((doc[경로.split('.')[0]] || {}).hand || (doc.broker || {}).hand)) return '';   /* '성명은 자필' - 인쇄할 때 비워 둔다 */
   if(경로 === 'property.show'){ const P = doc.property || {}; return [String(P.show || P.jibun || P.road || '').trim(), String(P.detail || '').trim()].filter(Boolean).join(' '); }
   if(경로 === 'ex.fee'){ const b = ex보수값(doc); return b.보수 ? comma(String(b.보수)) : ''; }
   if(경로 === 'ex.feeCalc' && !String(ex.feeCalc || '').trim()) return ex보수값(doc).내역;
@@ -20386,20 +20389,22 @@ function exh적기(doc, F, k, 글){
   if(m == null || Array.isArray(m)){ doc.ex.hf = doc.ex.hf || {}; if(글) doc.ex.hf[k] = 글; else delete doc.ex.hf[k]; return; }
   if(m === '=sum') return;
   if(m.startsWith('=date.')){
-    const d = String(doc.date || '').match(/^(\d{4})-(\d{1,2})-(\d{1,2})/) || [0, String(new Date().getFullYear()), '1', '1'];
+    const 오늘 = new Date(), d = String(doc.date || '').match(/^(\d{4})-(\d{1,2})-(\d{1,2})/) || [0, String(오늘.getFullYear()), String(오늘.getMonth() + 1), String(오늘.getDate())];
     const 새 = { y: d[1], m: d[2], d: d[3] }; 새[m.slice(6)] = 글.replace(/[^0-9]/g, '') || 새[m.slice(6)];
     if(+새.y > 1900 && +새.m >= 1 && +새.m <= 12 && +새.d >= 1 && +새.d <= 31) doc.date = `${새.y}-${String(+새.m).padStart(2, '0')}-${String(+새.d).padStart(2, '0')}`;
     return;
   }
   const 돈 = m[0] === '$', 경로 = 돈 ? m.slice(1) : m;
-  if(경로 === 'property.show'){ doc.property = doc.property || {}; doc.property.show = 글; delete doc.property.detail; return; }
+  if(경로 === 'property.show'){ doc.property = doc.property || {}; const 상 = String(doc.property.detail || '').trim();
+    if(상 && 글.trim().endsWith(' ' + 상)){ doc.property.show = 글.trim().slice(0, -상.length).trim(); return; }
+    doc.property.show = 글; delete doc.property.detail; return; }
   ctSet(doc, 경로, 돈 ? (+글.replace(/[^0-9]/g, '') || 0) : 글);
 }
 function exh고르기(doc, F, k){
   const m = F.map[k]; doc.ex = doc.ex || {};
   if(!Array.isArray(m)){ doc.ex.hb = doc.ex.hb || {}; if(doc.ex.hb[k]) delete doc.ex.hb[k]; else doc.ex.hb[k] = 1; return; }
   const [경로, 값] = m, 첫 = 값.split('|')[0], 켜짐 = exh골랐나(doc, F, k);
-  const 여럿 = (EX_FORMS[doc.form] || {}).spec && JSON.stringify(EX_FORMS[doc.form].spec).includes(`"t":"many","k":"${경로}"`);
+  const 여럿 = ((EX_FORMS[doc.form] || {}).spec || []).some(s => (s.rows || []).some(row => (row.p || []).some(p => p.k === 경로 && p.t === 'many')));
   if(여럿){ const L = [...(ctGet(doc, 경로) || [])]; const 들 = 값.split('|');
     ctSet(doc, 경로, 켜짐 ? L.filter(o => !들.includes(o)) : [...L, 첫]); return; }
   ctSet(doc, 경로, 켜짐 ? '' : 첫);
@@ -20428,7 +20433,7 @@ function exh표(doc, F, T, path, 적기){
         if(t === 0){ const k = `${키}b${nb++}`, on = exh골랐나(doc, F, k);
           return `<span ${모양.replace('class="', 'class="exh-bx ')}${적기 ? ` role="checkbox" aria-checked="${on}" tabindex="0" data-act="exh-box" data-v="${k}"` : ''}><span class="exh-bo">[&#8194;&#8194;]</span><b>${on ? '√' : ''}</b></span>`; }
         if(t < 0){ const k = `${키}s${ns++}`, v = exh값(doc, F, k), 칸 = ' '.repeat(-t), 계산 = /^=sum$/.test(F.map[k] || '');
-          const 뒤글 = segs[몇 + 1] && typeof segs[몇 + 1][1] === 'string' ? segs[몇 + 1][1] : '', 단위앞 = /^s?(년|월|일|원|만원|㎡|m|%|분|대|개|층|세대|명|호)/.test(뒤글);
+          const 뒤글 = segs[몇 + 1] && typeof segs[몇 + 1][1] === 'string' ? segs[몇 + 1][1] : '', 단위앞 = /^\s?(년|월|일|원|만원|㎡|m|%|분|대|개|층|세대|명|호)/.test(뒤글);
           return `<span class="exh-sw"><span ${모양.replace('class="', 'class="exh-sp ')}>${칸}</span><span class="exh-sv exh-f-g${단위앞 ? ' r' : ''}${적기 && !계산 ? ' ct-ed' : ''}"${적기 && !계산 ? ` contenteditable="plaintext-only" spellcheck="false" data-cte="exh:${k}"` : ''}>${esc(v)}</span></span>`; }
         return `<span ${모양}>${esc(t)}</span>`; }).join('');
       안글 += `<div class="exh-ln" style="left:${mm(pl + lx)};top:${mm(pt + 내림 + ly)};width:${mm(lw)};height:${mm(lh)};line-height:${mm(lh)};text-align:${맞춤};text-align-last:${끝}">${글}</div>`;
@@ -23393,7 +23398,7 @@ function handle(a,v,el){
     case 'adsp-import': { const doc = CT.doc, 자동열쇠 = arguments[3]; if(!doc || CT.addImp || !CT.phr || !CT.phr.loaded) return true;
       const 것 = ct기본추가(doc), g = ct특약묶음(doc); if(!것.length) return true;
       CT.addImp = true; render();
-      (async () => { let n = 0; for(let i = 0; i < 것.length; i++){ const j = await ctPhrSend({ op:'add', g, t: 것[i][1], name: `추가${i + 1}`, tag: '' }); if(j) n++; }
+      (async () => { let n = 0; for(let i = 0; i < 것.length; i++){ const j = await ctPhrSend({ op:'add', g, t: 것[i][1], name: `추가${i + 1}`, tag: 자동열쇠 ? '@' + ct군(doc) : '' }); if(j) n++; }
         CT.addImp = false; if(n && 자동열쇠){ try{ localStorage.setItem(자동열쇠, '1'); }catch(_){ } } if(n && !자동열쇠) toast(`추가 특약 ${n}개를 가져왔습니다 - 제목 · 내용을 바로 고칠 수 있습니다`); render(); })();
       return true; }
     case 'adsp-open': CT.addSp = CT.addSp && CT.addSp.doc === CT.doc ? null : { doc: CT.doc, name:'', t:'' }; render(); if(CT.addSp) setTimeout(() => { const e = $('#app [data-in="adsp:name"]'); if(e) e.focus(); }, 30); return true;

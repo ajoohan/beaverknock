@@ -2864,11 +2864,12 @@ button.rm-file:hover{border-color:var(--ind200);background:var(--ind50)}
 .exh-doc.edit .exh-bx:hover .exh-bo{background:rgba(85,64,214,.12)}
 .exh-sw{display:inline-grid;vertical-align:baseline}
 .exh-sw > *{grid-area:1/1}
-.exh-sv{font-size:9pt;text-align:center;white-space:pre;min-width:100%;color:#000}
+.exh-sv{font-size:9pt;text-align:center;text-align-last:center;white-space:pre;min-width:100%;color:#000}
+.exh-sv.r{text-align:right;text-align-last:right;padding-right:.25em}
 .exh-sw:has(.exh-sv:not(:empty)) .exh-sp{visibility:hidden}
 .exh-in{z-index:3;font-size:9pt;line-height:1.35;white-space:pre-wrap;overflow:hidden;display:flex;align-items:center;padding:0 .3mm;color:#000}
 .exh-in.ml{display:block;line-height:1.45}
-.exh-in.u{justify-content:flex-end;padding-right:1.6em}
+.exh-in.u{justify-content:flex-end;align-items:flex-end;padding-right:1.6em;padding-bottom:.6mm}
 .exh-doc.edit .exh-in,.exh-doc.edit .exh-sv{background:rgba(85,64,214,.05);cursor:text}
 .exh-doc.edit .exh-in:focus,.exh-doc.edit .exh-sv:focus{background:rgba(85,64,214,.12);outline:1px solid rgba(85,64,214,.6);outline-offset:0}
 .exh-doc.edit .exh-sv{min-width:2em}
@@ -2876,7 +2877,8 @@ button.rm-file:hover{border-color:var(--ind200);background:var(--ind50)}
 @media print{
   .exh-doc{zoom:1!important}
   .exh-pgw{margin:0;width:auto}
-  .exh-pg{box-shadow:none;margin:0}
+  .exh-pg{box-shadow:none;margin:0;height:296.6mm!important}
+  .exh-pgh,.exh-bar{display:none!important}
   .exh-doc .exh-in,.exh-doc .exh-sv{background:none!important;box-shadow:none!important}
 }
 .ct-sheet{background:#fff;width:794px;min-height:1123px;margin:0 auto;padding:56px 52px;box-shadow:var(--sh2)}
@@ -14111,6 +14113,8 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
+  { v:'26.11.20.6', 날:'2026-11-20', 줄:[ '확인·설명서 인쇄 - 화면용 쪽 머리줄이 인쇄돼 쪽마다 빈 장이 붙던 것(6쪽이 12장) · 종이 여백 0으로 원본 쪽 그대로 · 날짜 숫자가 년 · 월 · 일 옆에 · 건폐율 · 용적률 숫자가 % 옆에',
+    '확인·설명서 - ‘대표 · 소속공인중개사 성명은 자필’이면 서명란 이름을 비워 둡니다' ] },
   { v:'26.11.20.5', 날:'2026-11-20', 줄:[ '확인·설명서 - 제목 아래 빈 여백 줄이 적는 칸처럼 색칠돼 보이던 것' ] },
   { v:'26.11.20.4', 날:'2026-11-20', 줄:[ '확인·설명서 [Ⅳ] 입목 · 광업재단 · 공장재단도 국가법령정보센터 hwp 원본 모양으로(3쪽) - 쪽 넘기기 · 이 쪽만 인쇄 · 서식에 직접 입력 · 중개보수 과세 유형' ] },
   { v:'26.11.20.3', 날:'2026-11-20', 줄:[ '확인·설명서 - 고른 칸의 표시를 원본 서식처럼 괄호 가운데 √ 로' ] },
@@ -16466,8 +16470,8 @@ function ctPrint(html){
   box.innerHTML = typeof html === 'string' ? html : ct보기HTML(CT.doc);
   if(typeof html !== 'string' && !box.querySelector('.exh-doc')) ct쪽나눔(box, CT.doc);
   document.documentElement.classList.add('printing-ct');
-  if(box.querySelector('.exh-doc')) exh맞춤(box);
-  const 끝 = () => { document.documentElement.classList.remove('printing-ct'); window.removeEventListener('afterprint', 끝); };
+  if(box.querySelector('.exh-doc')){ box.querySelectorAll('.exh-doc .noprint').forEach(e => e.remove()); exh맞춤(box); let st = document.getElementById('exhPageCss'); if(!st){ st = document.createElement('style'); st.id = 'exhPageCss'; document.head.appendChild(st); } st.textContent = '@page{size:A4;margin:0}'; }
+  const 끝 = () => { document.documentElement.classList.remove('printing-ct'); window.removeEventListener('afterprint', 끝); const st = document.getElementById('exhPageCss'); if(st) st.remove(); };
   window.addEventListener('afterprint', 끝);
   setTimeout(() => window.print(), 30);
   return true;
@@ -20362,6 +20366,7 @@ function exh값(doc, F, k){
   if(m === '=sum'){ const b = ex보수값(doc); return b.계 ? comma(String(b.계)) : ''; }
   if(m.startsWith('=date.')){ const d = String(doc.date || '').match(/^(\d{4})-(\d{1,2})-(\d{1,2})/); if(!d) return ''; return { y: d[1], m: String(+d[2]), d: String(+d[3]) }[m.slice(6)]; }
   const 돈 = m[0] === '$', 경로 = 돈 ? m.slice(1) : m;
+  if(/^broker2?.(rep|staff)$/.test(경로) && ((doc[경로.split('.')[0]] || {}).hand || (doc.broker || {}).hand)) return '';   /* '성명은 자필' - 인쇄할 때 비워 둔다 */
   if(경로 === 'property.show'){ const P = doc.property || {}; return [String(P.show || P.jibun || P.road || '').trim(), String(P.detail || '').trim()].filter(Boolean).join(' '); }
   if(경로 === 'ex.fee'){ const b = ex보수값(doc); return b.보수 ? comma(String(b.보수)) : ''; }
   if(경로 === 'ex.feeCalc' && !String(ex.feeCalc || '').trim()) return ex보수값(doc).내역;
@@ -20419,11 +20424,12 @@ function exh표(doc, F, T, path, 적기){
     let 안글 = '', nb = 0, ns = 0;
     for(const [lx, ly, lw, lh, , al, last, segs] of lines){
       const 맞춤 = ['left', 'right', 'center', 'justify', 'justify'][al], 끝 = al === 4 || (al === 3 && !last) ? 'justify' : 맞춤 === 'justify' ? 'left' : 맞춤;
-      const 글 = segs.map(([si, t]) => { const st = F.styles[si] || { f: 'g', z: 9 }, 모양 = `class="exh-f-${st.f}" style="${글꼴(st)}"`;
+      const 글 = segs.map(([si, t], 몇) => { const st = F.styles[si] || { f: 'g', z: 9 }, 모양 = `class="exh-f-${st.f}" style="${글꼴(st)}"`;
         if(t === 0){ const k = `${키}b${nb++}`, on = exh골랐나(doc, F, k);
           return `<span ${모양.replace('class="', 'class="exh-bx ')}${적기 ? ` role="checkbox" aria-checked="${on}" tabindex="0" data-act="exh-box" data-v="${k}"` : ''}><span class="exh-bo">[&#8194;&#8194;]</span><b>${on ? '√' : ''}</b></span>`; }
         if(t < 0){ const k = `${키}s${ns++}`, v = exh값(doc, F, k), 칸 = ' '.repeat(-t), 계산 = /^=sum$/.test(F.map[k] || '');
-          return `<span class="exh-sw"><span ${모양.replace('class="', 'class="exh-sp ')}>${칸}</span><span class="exh-sv exh-f-g${적기 && !계산 ? ' ct-ed' : ''}"${적기 && !계산 ? ` contenteditable="plaintext-only" spellcheck="false" data-cte="exh:${k}"` : ''}>${esc(v)}</span></span>`; }
+          const 뒤글 = segs[몇 + 1] && typeof segs[몇 + 1][1] === 'string' ? segs[몇 + 1][1] : '', 단위앞 = /^s?(년|월|일|원|만원|㎡|m|%|분|대|개|층|세대|명|호)/.test(뒤글);
+          return `<span class="exh-sw"><span ${모양.replace('class="', 'class="exh-sp ')}>${칸}</span><span class="exh-sv exh-f-g${단위앞 ? ' r' : ''}${적기 && !계산 ? ' ct-ed' : ''}"${적기 && !계산 ? ` contenteditable="plaintext-only" spellcheck="false" data-cte="exh:${k}"` : ''}>${esc(v)}</span></span>`; }
         return `<span ${모양}>${esc(t)}</span>`; }).join('');
       안글 += `<div class="exh-ln" style="left:${mm(pl + lx)};top:${mm(pt + 내림 + ly)};width:${mm(lw)};height:${mm(lh)};line-height:${mm(lh)};text-align:${맞춤};text-align-last:${끝}">${글}</div>`;
     }
@@ -20432,7 +20438,7 @@ function exh표(doc, F, T, path, 적기){
     let 적는 = '';
     if(채울.has(키) || 아래칸){
       const v = exh값(doc, F, 칸키), 단위 = !아래칸 && lines.some(l => l[7].some(s => typeof s[1] === 'string' && EXH_단위.test(s[1].trim()))), 계산 = F.map[칸키] === '=sum';
-      const 위 = 아래칸 ? pt + 내림 + 글높이 + 50 : pt, 여러줄 = 안 > 1400 || 아래칸;
+      const 위 = 아래칸 ? pt + 내림 + 글높이 + 50 : pt, 여러줄 = (안 > 1400 || 아래칸) && !단위;
       적는 = `<div class="exh-in exh-f-g${여러줄 ? ' ml' : ''}${단위 ? ' u' : ''}${적기 && !계산 ? ' ct-ed' : ''}" style="left:${mm(pl)};top:${mm(위)};right:${mm(pr)};bottom:${mm(pb)}"${적기 && !계산 ? ` contenteditable="plaintext-only" spellcheck="false" data-cte="exh:${칸키}"` : ''}>${esc(v)}</div>`;
     }
     h += `<div class="exh-c" style="left:${mm(x)};top:${mm(y)};width:${mm(w)};height:${mm(hh)}${B[4] ? `;background:${B[4]}` : ''}">${안글}${적는}`

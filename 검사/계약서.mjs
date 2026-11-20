@@ -1182,6 +1182,10 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
   ok(/보증금을 금 오억원 그대로 두는 계약이며/.test(M.ct갱신특약(갱)[0]) && !/증액하는/.test(M.ct갱신특약(갱)[1]), '보증금이 같으면 증액 줄이 없다');
   const 합의만 = M.ctNewDoc('lease', null, { cat: 'realty', sub: '아파트' }); 합의만.kind = 'agree';
   const 합특 = M.ct기본특약(합의만);
+  { M.CT.phr = { list: [{ id: 'x1', g: 'lease', t: '주택 기본 항목', tag: '@home', base: true }, { id: 'x2', g: 'lease', t: '상가 기본 항목', tag: '@shop', base: true }] };
+    const 주 = M.ct기본특약(M.ctNewDoc('lease', null, { cat: 'realty', sub: '아파트' })), 상 = M.ct기본특약(M.ctNewDoc('lease', null, { cat: 'realty', sub: '상가' }));
+    ok(주.includes('주택 기본 항목') && !주.includes('상가 기본 항목') && 상.includes('상가 기본 항목') && !상.includes('주택 기본 항목'), '코드리뷰(11-20) - @home · @shop 기본 특약은 그 종류 계약서에만(거꾸로 들어가지 않는다)');
+    M.CT.phr = null; }
   ok(합특.length === 10 && !합특.some(t => /^본 계약은/.test(t)) && !합특.some(t => M.CT_계약일조항.test(t)), '지난 계약서 없이 합의 재계약만 고르면 임대차 기본 특약(계약일 줄 빼고)');
   ok(M.ct부가({ form: 'lease', sub: '상가', deal: {} }) === '해당 없음' && M.ctNewDoc('lease', null, { cat: 'realty', sub: '상가', deal: 'monthly' }).deal.vat === '별도',
      '예전 상가 임대차 문서는 부가세 문구를 새로 붙이지 않고, 새로 만들 때만 별도를 넣는다');

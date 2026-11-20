@@ -19,8 +19,14 @@ const EX_FORMS = { 'explain-home': { spec: [{ rows: [{ p: [{ t:'many', k:'ex.doc
 ${js.slice(표시작, 표끝)}
 ${js.slice(보수시작, js.indexOf('\n}\n', 보수시작) + 3)}
 ${js.slice(틀시작, 틀끝)}
+EXH_DATA = 틀JSON;
 return { EXH_DATA, exHwpDocHTML, exh값, exh적기, exh고르기, exh골랐나, ex보수값, ex보수채움, exHwp쓸까 };`;
-const M = new Function('esc', 'CT편집칸', 코드)(esc, false);
+const 틀JSON = JSON.parse(fs.readFileSync(new URL('../forms/ex-hwp.json', import.meta.url), 'utf8'));
+const M = new Function('esc', 'CT편집칸', '틀JSON', 코드)(esc, false, 틀JSON);
+/* 틀은 열 때 받는다(2026-11-21) - 첫 화면 코드에 틀 JSON 이 없고, 받는 길 · 기다림 · 인쇄 막음이 있다 */
+ok(!js.includes('"explain-home":{"page"') && js.includes("let EXH_DATA = null") && js.includes("fetch('/forms/ex-hwp.json?v=' + EXH_판"), '원본 틀은 첫 화면에 싣지 않고 열 때 받는다');
+ok(js.includes('EXH_판 = ' + JSON.stringify(틀JSON.v)) && Object.keys(틀JSON.forms).every(k => js.includes(JSON.stringify(k))), '받을 틀의 판 · 양식 목록이 forms/ex-hwp.json 과 같다');
+ok(js.includes('exh기다림(doc)) return') && js.includes("if(typeof html !== 'string' && !exh준비됐나(CT.doc)) return true;") && js.includes('if(!exh준비됐나(CT.doc)) return;'), '받는 동안은 불러오는 중 · 인쇄와 PDF 는 기다려 달라고 한다');
 const F = M.EXH_DATA.forms;
 
 /* 원본 hwp 와 같은 쪽 수 · 표 높이(1/100 mm, hwp5proc 로 잰 값) */
@@ -89,7 +95,7 @@ ok(!/비버노크 작성 도구로 만든/.test(h), '‘비버노크 작성 도�
 const 한쪽 = M.exHwpDocHTML(문서, { only: 3 });
 ok((한쪽.match(/class="exh-pg"/g) || []).length === 1 && !/exh-bar/.test(한쪽), '이 쪽만 인쇄 - 그 쪽 한 장만, 쪽 단추 없이');
 ok(!/contenteditable/.test(h), '보기 · 인쇄에는 적는 칸이 없다');
-const 편 = new Function('esc', 'CT편집칸', 코드)(esc, true).exHwpDocHTML(문서);
+const 편 = new Function('esc', 'CT편집칸', '틀JSON', 코드)(esc, true, 틀JSON).exHwpDocHTML(문서);
 ok(/contenteditable="plaintext-only"[^>]*data-cte="exh:/.test(편) && /data-act="exh-box"/.test(편), '양식에 직접 입력 - 빈칸은 바로 적고 [ ] 는 눌러 고른다');
 ok(!/영문|Enforcement Rules/.test(JSON.stringify(M.EXH_DATA)), '영문 쪽은 넣지 않았다');
 

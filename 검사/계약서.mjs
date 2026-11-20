@@ -1516,7 +1516,7 @@ ok(!js.includes('나란히 보기</button>') && js.includes("[['info', '칸 입�
 }
 
 /* ── 확정 후 수정 - 목록에는 가장 새 판만 · 몇 번째 판 (2026-11-19 파트너) ── */
-ok(js.includes("앞판임 = r => !ct보관칸(r) && 뒤판.has(r.id);") && js.includes("const 전체 = 모두.filter(r => !앞판임(r) && (ct보관칸(r) === 칸") && js.includes('{판수(r)}판'), '확정 후 수정 - 목록에는 가장 새 판만 · 몇 번째 판인지 표시(고친 판을 내리면 앞 판이 다시 보인다)');
+ok(js.includes("앞판임 = r => !ct보관칸(r) && 뒤판.has(r.id);") && js.includes("const 전체 = 모두.filter(r => (!현황 || !앞판임(r)) && (ct보관칸(r) === 칸") && js.includes('{판수(r)}판'), '확정 후 수정 - 계약현황은 가장 새 판만(계약서 목록엔 앞 확정본도, 11-21) · 몇 번째 판인지 표시');
 
 /* ── 계약서 당사자 생년월일 (2026-11-19 대표님) ── 앞 여섯 자리만 · 뒷자리는 늘 빈칸 */
 ok(M.ct앞자리('700101') === '700101' && M.ct앞자리('1970-01-01') === '700101' && M.ct앞자리('19700101') === '700101' && M.ct앞자리('70.1.1') === '700101' && M.ct앞자리('701301') === '' && M.ct앞자리('700101-1234567') === '' && M.ct앞자리('') === '', '생년월일 → 주민등록번호 앞 여섯 자리 (뒷자리가 붙으면 버린다)');
@@ -1544,6 +1544,10 @@ ok(js.includes("const FU_공제 = ['공제증서 앞면', '공제증서 뒷면']
   ok(js.includes("show: (같은지번(CT.doc.property.show, a) && String(CT.doc.property.show || '').trim()) || a.jibun || full });"), '같은 필지를 다시 검색해도 직접 고친 소재지는 지킨다');
   ok(js.includes('function ct소재지안내(P)') && js.includes('${ct소재지안내(P)}') && js.includes("case 'ct-show-reset':") && js.includes('검색 주소로 되돌리기'), '소재지 칸 아래 안내 · 검색 주소로 되돌리기 단추');
 }
+
+/* ── 앞 확정본은 목록에 남긴다 (2026-11-21 대표님) ── */
+ok(js.includes("const 전체 = 모두.filter(r => (!현황 || !앞판임(r)) && (ct보관칸(r) === 칸") && js.includes('ct요약HTML(새판)') && js.includes('ct현황표(ctFilter(새판)'), '계약서 목록엔 앞 확정본도 보이고 계약현황 · 요약 · 표는 새 판만');
+ok(js.includes('고친 판 있음') && js.includes('앞 확정본도 목록에 그대로 남아 있습니다'), '앞 확정본에 ‘고친 판 있음’ 표시 · 안내 문구');
 
 console.log(`${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

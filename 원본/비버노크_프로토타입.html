@@ -10540,8 +10540,9 @@ function 같은지번(글, a){
   const 번지 = a && +a.bun ? String(+a.bun) + (+a.ji ? '-' + (+a.ji) : '') : ''; if(!번지) return false;
   const 낱 = String(a.jibun || '').trim().split(/\s+/), i = 낱.findIndex(x => x.replace(/^산/, '') === 번지), 동 = i > 0 ? 낱[i - 1] : '';
   if(!동) return false;
-  const 글자 = String(글 || '').replace(/\s+/g, '');
-  for(const 꼴 of [동 + 번지, 동 + '산' + 번지]){ const k = 글자.indexOf(꼴); if(k >= 0 && !/[\d-]/.test(글자[k + 꼴.length] || '')) return true; }
+  /* 띄어쓰기는 하나로만 줄인다 - 다 지우면 '망월동 220 101동' 이 '220101' 로 붙어 다른 번지가 된다(2026-11-21) */
+  const 글자 = String(글 || '').replace(/\s+/g, ' ');
+  for(const 꼴 of [동 + 번지, 동 + ' ' + 번지, 동 + '산' + 번지, 동 + ' 산' + 번지, 동 + ' 산 ' + 번지]){ const k = 글자.indexOf(꼴); if(k >= 0 && !/[\d-]/.test(글자[k + 꼴.length] || '')) return true; }
   return false;
 }
 function addrPick(i){
@@ -10552,7 +10553,7 @@ function addrPick(i){
   if(ADDR.for === 'ct-addr' && CT.doc){
     /* 계약서 소재지 - 법정동코드·본번·부번·산까지 그대로 담는다. 나중에 보낼 때 바꿀 것이 없게 */
     Object.assign(CT.doc.property, { road: full, jibun: a.jibun || '', admCd: a.admCd || '', bun: a.bun || '',
-      ji: a.ji || '', mount: !!a.mount, zip: a.zip || '', bdNm: CT.doc.property.bdNm || a.bdNm || '', show: (CT.filled && CT.filled.has('property.show') && 같은지번(CT.doc.property.show, a) && String(CT.doc.property.show || '').trim()) || a.jibun || full });
+      ji: a.ji || '', mount: !!a.mount, zip: a.zip || '', bdNm: CT.doc.property.bdNm || a.bdNm || '', show: (같은지번(CT.doc.property.show, a) && String(CT.doc.property.show || '').trim()) || a.jibun || full });   /* 같은 필지면 직접 고친 소재지도 지킨다(2026-11-21 대표님 · 11-17 파트너) */
     CT.dirty = true; CT.rev = (CT.rev || 0) + 1;
     if(S.modal && S.modal.type === 'ct-addr-pop') S.modal = null;
   }
@@ -14115,6 +14116,7 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
+  { v:'26.11.21.1', 날:'2026-11-21', 줄:[ '계약서 소재지 - 검색한 주소는 그대로 두고 계약서에 찍히는 소재지만 고칩니다(동 · 호수 · 바뀐 행정구역 · 필지 여럿은 쉼표로). 같은 필지를 다시 검색해도 고친 소재지는 지키고, ‘검색 주소로 되돌리기’ 단추를 더했습니다' ] },
   { v:'26.11.20.10', 날:'2026-11-20', 줄:[ '휴대폰 - 확인·설명서 원본 틀의 쪽 넘기기 · 과세 유형 · ‘이 쪽만 인쇄’ 단추가 쪽과 함께 작게 줄어들던 것 · 계약현황 위 ‘문자에서 가져오기’ · 시작 가이드 끝 단추가 두 줄로 꺾이던 것' ] },
   { v:'26.11.20.9', 날:'2026-11-20', 줄:[ '확인·설명서 중개보수 - 거래금액을 한 자리씩 칠 때 중간 금액으로 계산한 보수(1원 등)가 남던 것. 자동으로 넣은 보수는 거래금액을 따라 바뀌고, 고쳐 쓴 금액은 그대로 둡니다',
     '추가특약 - 기본으로 켠 항목이 주택 · 상가에 거꾸로 들어가던 것 · 지운 기본 항목이 다시 들어오던 것 · 단추로 가져온 항목도 종류마다 따로 · 내 특약 화면에 ‘주택 · 상가’로 표시',
@@ -18408,6 +18410,12 @@ async function ctCoBrokerFind(i){
 }
 const ct뒷자리칸 = (b, w) => `<label class="ct-f w${w}"><span class="lab">주민번호 뒷자리 <span style="font-weight:500;font-size:inherit;line-height:inherit;color:var(--n500)">저장 안 함</span></span>
     <input class="inp" type="text" inputmode="numeric" maxlength="7" data-in="ctrrn:${b}" value="${esc(ct뒷자리(CT.doc, b))}" autocomplete="off" aria-label="주민등록번호 뒷자리 - 저장하지 않습니다"></label>`;
+/* 계약서에 찍히는 소재지(show)는 검색 주소(jibun · road)와 따로 둔다 - 동 · 호수 · 바뀐 행정구역 · 필지 여럿을 여기서만 고친다(2026-11-17 파트너 · 11-21 대표님) */
+function ct소재지안내(P){
+  const 검색 = String((P && (P.jibun || P.road)) || '').trim(), 지금 = String((P && P.show) || '').trim();
+  const 다름 = !!검색 && !!지금 && 지금 !== 검색;
+  return `<p class="sub ct-show-tip" style="margin:6px 0 0;font-size:12.5px;line-height:1.6">계약서에 찍히는 소재지입니다 - 검색한 주소는 그대로 두고 여기만 고칠 수 있습니다(동 · 호수 · 바뀐 행정구역 · 필지가 여럿이면 쉼표로 이어 적기)${다름 ? ` · 검색 주소: ${esc(검색)} <button type="button" class="btn tool sm" data-act="ct-show-reset" style="margin-left:6px">검색 주소로 되돌리기</button>` : ''}</p>`;
+}
 const ctIn = (path, label, opt = {}) => {
   const v = ctGet(CT.doc, path);
   const 잠김 = CT.row && CT.row.status === 'sealed';
@@ -18695,7 +18703,7 @@ function ctFormHTML(doc){
     <div class="card pad ct-sec"><h2>${esc(표시명)}${ct구획(doc, ['property'])}</h2>
       <div data-req="property.road" class="ct-roadbox${CT.req && !ct소재지있음(P) ? ' miss' : ''}" tabindex="-1"><span class="lab">주소 검색</span>
         ${잠김 ? `<p style="margin:4px 0 0">${esc(ct소재지글(P) || P.road || '')}</p>` : `${addrBox('ct-addr', '')}
-        <div class="ct-grid" style="margin-top:10px">${ctIn('property.show', '소재지 <span class="req" aria-label="필수">*</span>', { w:8 })}${ctIn('property.detail', '상세주소', { w:4 })}</div>`}</div>
+        <div class="ct-grid" style="margin-top:10px">${ctIn('property.show', '소재지 <span class="req" aria-label="필수">*</span>', { w:8 })}${ctIn('property.detail', '상세주소', { w:4 })}</div>${ct소재지안내(P)}`}</div>
       ${맞춤 ? `<div class="ct-grid">${ctFieldInputs(F.fields[0].rows)}</div></div>
     ${F.fields.slice(1).map(g => `<div class="card pad ct-sec"><h2>${esc(g.h)}</h2><div class="ct-grid">${ctFieldInputs(g.rows)}</div></div>`).join('')}` : `
       ${ct부동산표(doc)}</div>`}
@@ -23374,6 +23382,7 @@ function handle(a,v,el){
       if(i >= 0 && !/_{6,}/.test(L[i])){ toast(`특약사항 ${i + 1}번에 계좌를 적어 두셨습니다 - 빼려면 특약사항에서 그 줄을 직접 지워 주세요`); render(); return true; }
       if(i >= 0){ L.splice(i, 1); delete d.acct; } else { d.acct = true; L.push(ct계좌줄(d)); }
       ctDirty(); render(); toast(i >= 0 ? '특약사항에서 계좌 줄을 뺐습니다' : `특약사항 ${L.length}번(마지막 줄)에 계좌 적을 줄을 넣었습니다`); } return true;
+    case 'ct-show-reset': if(CT.doc && !ctSealed()){ const P = CT.doc.property || {}; P.show = P.jibun || P.road || ''; if(CT.doc.edited) delete CT.doc.edited['property.show']; ctDirty(); render(); toast('소재지를 검색 주소로 되돌렸습니다'); } return true;
     case 'ct-renew-sp': if(CT.doc && !ctSealed() && CT.doc.renewOf){
       CT.doc.specials = [...ct갱신특약(CT.doc), ...CT.doc.specials.filter(t => !CT_갱신표.test(String(t).trim()))];
       if(+CT.doc.renewOf.deposit){ CT.doc.deal.down = Math.min(+CT.doc.renewOf.deposit, +CT.doc.deal.deposit || +CT.doc.renewOf.deposit); CT.doc.renewOf.autoDown = CT.doc.deal.down; } ctDirty(); render(); toast('갱신 특약을 지금 금액으로 다시 썼습니다'); } return true;

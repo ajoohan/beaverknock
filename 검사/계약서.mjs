@@ -1533,5 +1533,17 @@ ok(M.ct생일글('700101') === '70. 01. 01.' && js.includes("ctIn(`parties.${k}.
 /* ── 공제증서 (2026-11-19) ── */
 ok(js.includes("const FU_공제 = ['공제증서 앞면', '공제증서 뒷면']") && js.includes('data-fu-label="${n}"') && js.includes("case 'fu-bond-print': fu공제출력(); return true;") && js.includes('${ct공제HTML()}'), '공제증서 - 앞 · 뒤 올리기와 출력 단추');
 
+/* ── 계약서 소재지 직접 고치기 (2026-11-21) ── */
+{
+  const 시작 = js.indexOf('function 같은지번('), 끝자리 = 시작 >= 0 ? js.indexOf('function addrPick(', 시작) : -1;   /* 다음 함수 앞까지 - 줄인 번들 · 원본 모두 */
+  const 몸 = 시작 >= 0 && 끝자리 > 시작 ? js.slice(시작, 끝자리) : '';
+  const 같은지번 = 몸 ? new Function(몸 + '; return 같은지번;')() : null;
+  const a = { bun: '220', ji: '', jibun: '경기도 하남시 망월동 220' };
+  ok(!!같은지번 && 같은지번('망월동 220, 221-3', a) && 같은지번('하남시 망월동 220 101동 1203호', a), '쉼표로 이은 필지 · 동호수를 적은 소재지도 같은 필지로 본다');
+  ok(!!같은지번 && !같은지번('망월동 2201', a) && !같은지번('풍산동 220', a), '번지가 이어지거나 동이 다르면 다른 필지');
+  ok(js.includes("show: (같은지번(CT.doc.property.show, a) && String(CT.doc.property.show || '').trim()) || a.jibun || full });"), '같은 필지를 다시 검색해도 직접 고친 소재지는 지킨다');
+  ok(js.includes('function ct소재지안내(P)') && js.includes('${ct소재지안내(P)}') && js.includes("case 'ct-show-reset':") && js.includes('검색 주소로 되돌리기'), '소재지 칸 아래 안내 · 검색 주소로 되돌리기 단추');
+}
+
 console.log(`${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

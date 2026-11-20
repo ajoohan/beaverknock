@@ -3455,7 +3455,9 @@ body.mo .ct-cobrk .tapx{min-height:44px;padding:0 6px}
 .ct-qbox .ct-grid > .w12{grid-column:1/-1}
 .ct-qbox .eqb{width:100%}
 .ext-box .eqb{width:100%}
-body.mo .ct-headb{width:100%}
+body.mo .ct-headb{width:100%;grid-auto-flow:row;grid-template-columns:repeat(2,minmax(0,1fr))}
+body.mo .ct-headb > .btn{white-space:nowrap}
+body.mo .ct-headb > .btn:last-child{grid-column:1 / -1}
 body.mo .modal .box.ct-qbox{padding:20px 16px calc(16px + env(safe-area-inset-bottom))}
 body.mo .ct-qbox .inp{min-height:44px;font-size:16px}
 .ct-pname{display:block;padding:0;font-weight:700;color:var(--ind);text-decoration:underline;text-underline-offset:2px}
@@ -13611,7 +13613,7 @@ V['#/partner/guide'] = () => {
       <dl class="gd-words">${GD_말.map(([t, s]) => `<div><dt>${t}</dt><dd>${s}</dd></div>`).join('')}</dl></section>
 
     <section class="gd-end"><div><b>그래도 막히면</b><p>화면마다 오른쪽 위 <b>?</b> 단추를 누르면 그 화면 설명이 바로 열립니다.</p></div>
-      <div class="eqb"><button type="button" class="btn sec sm" data-go="#/partner/help">도움말 모두 보기</button><button type="button" class="btn sec sm" data-act="tour-start">메뉴 말풍선 다시 보기</button></div></section>
+      <div class="eqb st"><button type="button" class="btn sec sm" data-go="#/partner/help">도움말 모두 보기</button><button type="button" class="btn sec sm" data-act="tour-start">메뉴 말풍선 다시 보기</button></div></section>
   </div>
   ${tabbar('', 'p')}
 </div>`;
@@ -14113,6 +14115,7 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
+  { v:'26.11.20.10', 날:'2026-11-20', 줄:[ '휴대폰 - 확인·설명서 원본 틀의 쪽 넘기기 · 과세 유형 · ‘이 쪽만 인쇄’ 단추가 쪽과 함께 작게 줄어들던 것 · 계약현황 위 ‘문자에서 가져오기’ · 시작 가이드 끝 단추가 두 줄로 꺾이던 것' ] },
   { v:'26.11.20.9', 날:'2026-11-20', 줄:[ '확인·설명서 중개보수 - 거래금액을 한 자리씩 칠 때 중간 금액으로 계산한 보수(1원 등)가 남던 것. 자동으로 넣은 보수는 거래금액을 따라 바뀌고, 고쳐 쓴 금액은 그대로 둡니다',
     '추가특약 - 기본으로 켠 항목이 주택 · 상가에 거꾸로 들어가던 것 · 지운 기본 항목이 다시 들어오던 것 · 단추로 가져온 항목도 종류마다 따로 · 내 특약 화면에 ‘주택 · 상가’로 표시',
     '계좌 줄 - 계좌를 적어 둔 줄은 체크를 꺼도 지우지 않습니다' ] },
@@ -20492,7 +20495,9 @@ function exh맞춤(root){
   for(const d of (root || document).querySelectorAll('.exh-doc')){
     if(!d.closest('#ctPrint')){
       const 폭 = d.parentElement ? d.parentElement.clientWidth : 0, 쪽 = d.querySelector('.exh-pg');
-      if(폭 && 쪽){ d.style.zoom = ''; const 원 = 쪽.offsetWidth; d.style.zoom = 폭 < 원 + 8 ? ((폭 - 8) / 원).toFixed(3) : ''; }
+      if(폭 && 쪽){ d.style.zoom = ''; const 원 = 쪽.offsetWidth, z = 폭 < 원 + 8 ? ((폭 - 8) / 원).toFixed(3) : ''; d.style.zoom = z;
+        /* 쪽만 줄이고 단추 줄은 원래 크기 - 줄인 배율을 되돌린다(휴대폰에서 1쪽 · 이 쪽만 인쇄 단추가 글자 5px 로 작아지던 것, 11-20) */
+        for(const 줄 of d.querySelectorAll('.exh-bar,.exh-pgh')) 줄.style.zoom = z ? (1 / z).toFixed(4) : ''; }
     }
     for(const el of d.querySelectorAll('.exh-ln')){
       el.style.transform = ''; const s = el.scrollWidth, c = el.clientWidth;

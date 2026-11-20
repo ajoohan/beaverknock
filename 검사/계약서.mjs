@@ -1141,19 +1141,19 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
 /* ── 파트너 중개사 리뷰 (2026-11-05, 01_기획/중개플랫폼_인수인계) ── 기본 특약 · 갱신 특약 · 종료일 · 부가세 · 자필 · 부속 서류 */
 {
   const 주택매매 = M.ctNewDoc('sale', null, { cat: 'realty', sub: '아파트' });
-  ok(주택매매.specials.length === 7 && /근저당권\(채권최고액 금 \(\s+\)원\)/.test(주택매매.specials[3]) && 주택매매.acct === true,
+  ok(주택매매.specials.length === 8 && /근저당권\(채권최고액 금 \(\s+\)원\)/.test(주택매매.specials[3]) && 주택매매.acct === true && /^매도인 계좌 : _+ \(계약 시 기재\)$/.test(주택매매.specials[7]),
      '주택 매매 새 계약서는 기본 특약 7개로 시작하고 마지막 줄 계좌 칸을 둔다');
   const 주택임대 = M.ctNewDoc('lease', null, { cat: 'realty', sub: '아파트', deal: 'monthly' });
-  ok(주택임대.specials.length === 11 && 주택임대.specials.some(t => M.CT_계약일조항.test(t)) && /제6조의2제2항/.test(주택임대.specials[10]),
-     '주택 임대차 새 계약서는 기본 특약 11개(작성일·체결일 줄, 임대차 신고 안내 포함)');
+  ok(주택임대.specials.length === 12 && 주택임대.specials.some(t => M.CT_계약일조항.test(t)) && /제6조의2제2항/.test(주택임대.specials[10]) && /^임대인 계좌 : _+/.test(주택임대.specials[11]),
+     '주택 임대차 새 계약서는 기본 특약 11개(작성일·체결일 줄, 임대차 신고 안내 포함) + 임대인 계좌 줄');
   ok(!주택임대.specials.some(t => /^\d+\./.test(t)), '기본 특약 문구에 번호를 박지 않는다 - 번호는 그릴 때 매긴다');
   const 상가임대 = M.ctNewDoc('shop-lease', null, { cat: 'shop' });
-  ok(상가임대.specials.length === 0, '상가 기본 특약은 아직 받지 않았다 - 빈 특약으로 시작한다');
+  ok(상가임대.specials.length === 1 && /^임대인 계좌 : _+/.test(상가임대.specials[0]), '상가 기본 특약은 아직 받지 않았다 - 계좌 줄 하나로 시작한다');
   ok(주택매매.broker.hand === true && !/한상혁 <span class="ct-seal">\(서명 및 날인\)/.test(M.ctDocHTML(주택매매)),
      '대표 성명은 자필이 기본 - 값은 두고 인쇄 때 비운다');
   주택매매.broker.hand = false;
   ok(/한상혁 <span class="ct-seal">\(서명 및 날인\)/.test(M.ctDocHTML(주택매매)), '자필을 끄면 이름이 인쇄된다');
-  ok(/class="ct-acct">\* 매도인 계좌 : /.test(M.ctDocHTML(주택매매)), '특약 마지막 줄에 매도인 계좌 칸');
+  ok(/<p>8\. 매도인 계좌 : _+ \(계약 시 기재\)<\/p>/.test(M.ctDocHTML(주택매매)) && !/class="ct-acct"/.test(M.ctDocHTML(주택매매)) && /class="ct-acct">\* 매도인 계좌 : /.test(M.ctDocHTML({ ...주택매매, specials: 주택매매.specials.slice(0, 7) })), '특약 마지막 줄에 매도인 계좌 칸 - 특약사항 한 항목(번호 붙음), 예전 계약서는 따로 한 줄');
 
   /* 부가세 - 주택 월세는 '해당 없음'(안 찍힘), 상가는 별도, 고르면 찍힌다 */
   주택임대.deal = { ...주택임대.deal, type: 'monthly', deposit: 10000000, rent: 500000, fee: 100000 };

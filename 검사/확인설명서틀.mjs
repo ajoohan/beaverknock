@@ -24,13 +24,13 @@ const M = new Function('esc', 'CT편집칸', 코드)(esc, false);
 const F = M.EXH_DATA.forms;
 
 /* 원본 hwp 와 같은 쪽 수 · 표 높이(1/100 mm, hwp5proc 로 잰 값) */
-const 쪽높이 = { 'explain-home': [26521, 26821, 25732, 22738, 26306, 22925], 'explain-biz': [27185, 26393, 25841, 24942], 'explain-land': [26611, 26616, 26626] };
+const 쪽높이 = { 'explain-home': [26521, 26821, 25732, 22738, 26306, 22925], 'explain-biz': [27185, 26393, 25841, 24942], 'explain-land': [26611, 26616, 26626], 'explain-etc': [26614, 26798, 26138] };
 for(const [f, hs] of Object.entries(쪽높이)){
   ok(F[f] && F[f].pages.length === hs.length && F[f].pages.every((T, i) => T.h === hs[i]), `${f} - 쪽 ${hs.length}장, 쪽마다 표 높이가 원본 hwp 와 같다`);
   ok(F[f].page[0] === 21000 && F[f].page[1] === 29700, `${f} - A4(210 × 297mm)`);
-  ok(Object.keys(F[f].map).length > 70, `${f} - 적는 자리가 지금 칸과 이어져 있다(${Object.keys(F[f].map).length}곳)`);
+  ok(Object.keys(F[f].map).length > 50, `${f} - 적는 자리가 지금 칸과 이어져 있다(${Object.keys(F[f].map).length}곳)`);
 }
-ok(!M.exHwp쓸까({ form: 'explain-etc' }) && M.exHwp쓸까({ form: 'explain-home' }), '입목·재단 서식은 예전 그리기(원본 hwp 를 받지 않음)');
+ok(M.exHwp쓸까({ form: 'explain-etc' }) && M.exHwp쓸까({ form: 'explain-home' }) && !M.exHwp쓸까({ form: 'home-lease' }), '확인·설명서 네 서식 모두 원본 틀(입목·재단은 11-20 파트너가 올린 원본)');
 
 /* 값이 서식 자리에 보인다 */
 const 이은키 = (f, 값) => Object.entries(F[f].map).find(([, v]) => JSON.stringify(v) === JSON.stringify(값))[0];

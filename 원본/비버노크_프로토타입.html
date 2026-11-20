@@ -2859,7 +2859,7 @@ button.rm-file:hover{border-color:var(--ind200);background:var(--ind50)}
 .exh-f-mm{font-family:"바탕체",BatangChe,"바탕",Batang,serif}
 .exh-bx{display:inline-grid;vertical-align:baseline}
 .exh-bx > *{grid-area:1/1}
-.exh-bx b{font-weight:700;text-align:center;font-size:.95em}
+.exh-bx b{justify-self:center;font-weight:700;font-size:1.05em;line-height:inherit}
 .exh-doc.edit .exh-bx{cursor:pointer;border-radius:2px}
 .exh-doc.edit .exh-bx:hover .exh-bo{background:rgba(85,64,214,.12)}
 .exh-sw{display:inline-grid;vertical-align:baseline}
@@ -14111,6 +14111,7 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
+  { v:'26.11.20.3', 날:'2026-11-20', 줄:[ '확인·설명서 - 고른 칸의 표시를 원본 서식처럼 괄호 가운데 √ 로' ] },
   { v:'26.11.20.2', 날:'2026-11-20', 줄:[ '확인·설명서 - 국가법령정보센터 hwp 원본(주거용 · 비주거용 · 토지)과 같은 모양으로 다시 그렸습니다. 칸 크기 · 선 · 글꼴 · 줄 나눔까지 원본 그대로이고 쪽마다 A4 한 장으로 나뉩니다',
     '확인·설명서 - 위의 쪽 단추로 쪽을 넘기고, 쪽마다 ‘이 쪽만 인쇄’로 그 쪽만 뽑습니다 · 서식의 빈칸 · [ ] 를 눌러 바로 적고 고릅니다(칸 입력 화면과 같은 값)',
     '중개보수 - 중개사무소 일반과세 · 간이과세를 고르면 요율로 계산한 보수에 부가가치세를 붙이고, 계 = 보수 + 부가세 + 실비로 들어갑니다 · ‘비버노크 작성 도구로 만든…’ 문구를 뺐습니다' ] },
@@ -20418,7 +20419,7 @@ function exh표(doc, F, T, path, 적기){
       const 맞춤 = ['left', 'right', 'center', 'justify', 'justify'][al], 끝 = al === 4 || (al === 3 && !last) ? 'justify' : 맞춤 === 'justify' ? 'left' : 맞춤;
       const 글 = segs.map(([si, t]) => { const st = F.styles[si] || { f: 'g', z: 9 }, 모양 = `class="exh-f-${st.f}" style="${글꼴(st)}"`;
         if(t === 0){ const k = `${키}b${nb++}`, on = exh골랐나(doc, F, k);
-          return `<span ${모양.replace('class="', 'class="exh-bx ')}${적기 ? ` role="checkbox" aria-checked="${on}" tabindex="0" data-act="exh-box" data-v="${k}"` : ''}><span class="exh-bo">[&#8194;&#8194;]</span><b>${on ? '✔' : ''}</b></span>`; }
+          return `<span ${모양.replace('class="', 'class="exh-bx ')}${적기 ? ` role="checkbox" aria-checked="${on}" tabindex="0" data-act="exh-box" data-v="${k}"` : ''}><span class="exh-bo">[&#8194;&#8194;]</span><b>${on ? '√' : ''}</b></span>`; }
         if(t < 0){ const k = `${키}s${ns++}`, v = exh값(doc, F, k), 칸 = ' '.repeat(-t), 계산 = /^=sum$/.test(F.map[k] || '');
           return `<span class="exh-sw"><span ${모양.replace('class="', 'class="exh-sp ')}>${칸}</span><span class="exh-sv exh-f-g${적기 && !계산 ? ' ct-ed' : ''}"${적기 && !계산 ? ` contenteditable="plaintext-only" spellcheck="false" data-cte="exh:${k}"` : ''}>${esc(v)}</span></span>`; }
         return `<span ${모양}>${esc(t)}</span>`; }).join('');

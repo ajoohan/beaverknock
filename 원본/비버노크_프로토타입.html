@@ -9592,7 +9592,7 @@ V['#/partner/verify'] = () => `
    계약은 확정본 저장 기준(확인·설명서와 고치기 전 판 제외) · 매물은 매물장부 · 매칭은 맞춤매물 '보고 싶어요' 로 생긴 제안 */
 function 성과더HTML(P, tile){
   const 이달 = ct오늘().slice(0, 7), 올해 = 이달.slice(0, 4);
-  const 계 = (CT.list || []).filter(ct살아있음), 앞판 = ct앞판모음(CT.list);
+  const 계 = (CT.list || []).filter(ct살아있음), 앞판 = ct앞판모음(CT.list, false);   /* 갱신계약은 다른 거래 - 원래 계약의 실적을 빼지 않는다(11-21 코드리뷰) */
   const 본계 = 계.filter(r => !앞판.has(r.id) && !(CT_FORMS[r.form] || {}).explain);
   const 확정 = 본계.filter(r => r.status === 'sealed'), 날 = r => ct한국날(r.sealed_at);
   const 물 = S.listings || [], 노출 = 물.filter(l => l.vis === 'open' && l.status === 'active').length;
@@ -14118,6 +14118,9 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
+  { v:'26.11.21.4', 날:'2026-11-21', 줄:[ '갱신계약에 ‘확정 후 수정한 판’ 안내와 원래 계약서를 휴지통으로 옮기라는 말이 뜨던 것 · ‘고친 새 판이 있습니다’ 단추가 갱신계약 · 휴지통 초안을 가리키던 것',
+    '대시보드 · 계약현황 - 확정본을 고치는 동안 같은 계약이 두 줄 · 두 건으로 잡히던 것(새 판을 확정하기 전에는 앞 확정본 한 줄) · 갱신한 계약의 원래 실적이 성과에서 빠지던 것',
+    '오른쪽 서류에서 소재지를 고쳐도 되돌리기 단추가 바로 보입니다 · 확인·설명서 원본 틀을 못 받았으면 열어 둔 채로도 30초 뒤 다시 받습니다' ] },
   { v:'26.11.21.3', 날:'2026-11-21', 줄:[ '일정 · 알림 - 확정본을 고치려고 새 판을 만들어 두기만 해도(또는 그 새 판을 휴지통에 넣어도) 앞 확정본의 잔금 · 중도금 알림 · 달력 · 대시보드 일정이 빠지던 것. 새 판을 확정할 때까지는 앞 확정본 일정으로 알립니다',
     '고친 판 화면 안내가 앞 확정본이 휴지통 · 보관함에 있을 때도 ‘목록에 남아 있다’고 하던 것 · 계약현황 표 보기에서 앞 확정본을 뺀 것을 알립니다',
     '확인·설명서 원본 틀을 한 번 못 받으면 새로고침 전까지 예전 모양이던 것 - 잠시 뒤 · 인쇄를 누를 때 다시 받습니다. 서식 자료실 빈 확인·설명서도 국가 원본 틀로',
@@ -15132,7 +15135,7 @@ const dz잔금물음 = rows => !rows.length ? '' : `<section class="dz-card dz-s
 /* 계약현황 (2026-11-13 파트너 기획 ① 대시보드 '계약현황 - 진행중 · 준비 · 보류, 상태 · 목적물 · 종류 · 다음 일정') -
    끝나지 않은 계약서를 다음 일정이 가까운 차례로 넷. 확인·설명서와 고치기 전 판은 뺀다. 줄을 누르면 그 계약서, 전체 보기는 계약현황 */
 function dz계약현황(계약){
-  const 오늘 = ct오늘(), 설정 = ct알림설정(CT.alert && CT.alert.cfg), 앞판 = ct앞판모음(CT.list || 계약);
+  const 오늘 = ct오늘(), 설정 = ct알림설정(CT.alert && CT.alert.cfg), 앞판 = ct일정뺄것(CT.list || 계약);   /* 앞 확정본과 새 판 초안이 두 줄로 잡히지 않게(11-21 코드리뷰) */
   const 대상 = 계약.filter(r => !앞판.has(r.id) && !(CT_FORMS[r.form] || {}).explain && !['done', 'cancel'].includes((r.track || {}).state));
   const 상태 = r => (r.track || {}).state || (r.status === 'sealed' ? 'doing' : 'ready');
   const 수 = k => 대상.filter(r => 상태(r) === k).length;
@@ -17950,11 +17953,13 @@ function ct갱신판인가(x){ const id = x && x.renew && typeof x.renew === 'ob
 /* 갱신도=false 면 갱신계약의 원래 계약서는 넣지 않는다(계약서 목록 - 갱신 전 계약도 따로 보인다) */
 function ct앞판모음(rows, 갱신도 = true){ return new Set((rows || []).filter(x => x && x.prev_id && x.status === 'sealed' && ct살아있음(x) && (갱신도 || !ct갱신판인가(x))).map(x => x.prev_id)); }
 /* 일정 · 알림 · 달력에서 뺄 계약서 - 위 앞 판, 그리고 앞 확정본이 살아 있는 고쳐 쓰는 중인 판(확정 전까지는 앞 확정본 일정으로 - 같은 일정이 두 번 잡히지 않게) */
-function ct일정뺄것(rows){
-  const L = rows || [], 앞 = ct앞판모음(L), 맵 = new Map(L.map(x => [x && x.id, x]));
+function ct일정뺄것(rows, 갱신도 = true){
+  const L = rows || [], 앞 = ct앞판모음(L, 갱신도), 맵 = new Map(L.map(x => [x && x.id, x]));
   for(const x of L){ if(x && x.prev_id && x.status !== 'sealed' && !ct갱신판인가(x)){ const p = 맵.get(x.prev_id); if(p && p.status === 'sealed' && ct살아있음(p) && !앞.has(p.id)) 앞.add(x.id); } }
   return 앞;
 }
+/* 확정 후 수정으로 만든 판인가 - 갱신계약도 prev_id 로 잇지만 고친 판이 아니다(11-21 코드리뷰: 갱신계약에 '확정 후 수정한 판 · 원래 계약서를 휴지통으로' 가 뜨던 것) */
+function ct고친판인가(row, doc){ return !!(row && row.prev_id) && !ct갱신판인가(row) && !(doc && doc.renewOf && doc.renewOf.id === row.prev_id); }
 /* 고친 판 화면의 안내 - 앞 확정본이 지금 어디 있는지대로(휴지통 · 보관함으로 옮긴 뒤에도 '목록에 남아 있다'고 하던 것, 11-21 코드리뷰) */
 function ct앞판안내(row){
   const 앞 = (CT.list || []).find(x => x.id === (row && row.prev_id)), 칸 = 앞 ? ct보관칸(앞) : '';
@@ -18193,10 +18198,12 @@ function ctListPageHTML(모두){
   const 칸 = ['arch', 'trash'].includes(CT.bin) ? CT.bin : '';
   const 같이 = !칸 && CT.qall && String(CT.q || '').trim();   /* '보관함도 찾기' (2026-11-17 파트너 D14) - 찾는 말이 있을 때만 보관함 계약서도 섞는다 */
   const 뒤판 = ct앞판모음(모두, false), 앞판임 = r => !ct보관칸(r) && 뒤판.has(r.id);
+  /* 계약현황 · 요약 · 표 · 일정은 한 계약을 한 줄로 - 새 판이 초안인 동안은 앞 확정본만, 확정되면 새 판만(11-21 코드리뷰: 두 건으로 세던 것) */
+  const 한줄뺌 = ct일정뺄것(모두, false), 한줄아님 = r => !ct보관칸(r) && 한줄뺌.has(r.id);
   /* 계약서 목록은 앞 확정본도 보인다(11-21 대표님). 계약현황 · 요약 숫자 · 일정은 같은 계약이 두 번 잡히지 않게 가장 새 판만 */
-  const 전체 = 모두.filter(r => (!현황 || !앞판임(r)) && (ct보관칸(r) === 칸 || (같이 && ct보관칸(r) === 'arch')) && (!현황 || 칸 || (갱신탭 ? ct형태(r) === 'renew' : ct형태(r) === 'new')));
-  const 수 = k => k === 'renew' ? 모두.filter(r => !앞판임(r) && !ct보관칸(r) && ct형태(r) === 'renew').length : 모두.filter(r => (!현황 || !앞판임(r)) && ct보관칸(r) === k && (!현황 || k || ct형태(r) === 'new')).length;
-  const 새판 = 전체.filter(r => !앞판임(r));
+  const 전체 = 모두.filter(r => (!현황 || !한줄아님(r)) && (ct보관칸(r) === 칸 || (같이 && ct보관칸(r) === 'arch')) && (!현황 || 칸 || (갱신탭 ? ct형태(r) === 'renew' : ct형태(r) === 'new')));
+  const 수 = k => k === 'renew' ? 모두.filter(r => !한줄아님(r) && !ct보관칸(r) && ct형태(r) === 'renew').length : 모두.filter(r => (!현황 || !한줄아님(r)) && ct보관칸(r) === k && (!현황 || k || ct형태(r) === 'new')).length;
+  const 새판 = 전체.filter(r => !한줄아님(r));
   const 칸줄 = 모두.length ? `<div class="ct-chips ct-bins" role="tablist" aria-label="계약서 보관 위치">${[['', '목록'], ...(현황 ? [['renew', '갱신']] : []), ['arch', '보관함'], ['trash', '휴지통']].map(([k, t]) =>
     `<button type="button" role="tab" class="chip${(갱신탭 ? 'renew' : 칸) === k ? ' on' : ''}" aria-selected="${(갱신탭 ? 'renew' : 칸) === k}" data-act="ct-bin-tab" data-v="${k}">${t} <span class="num">${수(k)}</span></button>`).join('')}</div>` : '';
   if(!CT.alert && 세션있음()) setTimeout(ctAlertLoad);
@@ -18214,7 +18221,7 @@ function ctListPageHTML(모두){
     <div class="ct-lay${일정 ? '' : ' one'}">
       <div class="ct-main">${칸줄}${자동칸}${칸말}${칸 ? '' : ct요약HTML(새판)}${전체.length ? ct찾기줄() : ''}
         ${전체.length && !isMo() ? `<div class="ct-chips ct-viewsw" role="group" aria-label="보는 방식">${[['', '목록'], ['table', '계약현황 표']].map(([k, t]) => `<button type="button" class="chip${(CT.view || '') === k ? ' on' : ''}" aria-pressed="${(CT.view || '') === k}" data-act="ct-view" data-v="${k}">${t}</button>`).join('')}</div>` : ''}
-        ${CT.view === 'table' && !isMo() && 전체.length ? (전체.length > 새판.length ? `<p class="sub ct-tbl-note" style="margin:0 0 8px;font-size:12.5px">고친 판이 있는 앞 확정본 ${전체.length - 새판.length}건은 표에서 빼고 가장 새 판만 보여 드립니다 - 목록 보기에서는 함께 보입니다</p>` : '') + ct현황표(ctFilter(새판).filter(r => !(CT_FORMS[r.form] || {}).explain), 현황 && !칸 && !갱신탭 ? ct외부줄들() : []) : ctRowsHTML(전체, ctFilter(전체), false)}
+        ${CT.view === 'table' && !isMo() && 전체.length ? (전체.length > 새판.length ? `<p class="sub ct-tbl-old" style="margin:0 0 8px;font-size:12.5px">확정 후 수정 중인 계약은 한 줄로 보여 드립니다(새 판을 확정하기 전에는 앞 확정본) - ${전체.length - 새판.length}건은 목록 보기에서 함께 보입니다</p>` : '') + ct현황표(ctFilter(새판).filter(r => !(CT_FORMS[r.form] || {}).explain), 현황 && !칸 && !갱신탭 ? ct외부줄들() : []) : ctRowsHTML(전체, ctFilter(전체), false)}
         ${칸 ? '' : ctExtHTML()}</div>
       ${일정 ? `<aside class="ct-aside">${일정}</aside>` : ''}
     </div>`;
@@ -18450,6 +18457,8 @@ function ct소재지안내(P){
   const 다름 = !!검색 && !!지금 && 지금 !== 검색;
   return `<p class="sub ct-show-tip" style="margin:6px 0 0;font-size:12.5px;line-height:1.6">계약서에 찍히는 소재지입니다 - 검색한 주소는 그대로 두고 여기만 고칠 수 있습니다(동 · 호수 · 바뀐 행정구역 · 필지가 여럿이면 쉼표로 이어 적기)${다름 ? ` · 검색 주소: ${esc(검색)} <button type="button" class="btn tool sm" data-act="ct-show-reset" style="margin-left:6px">검색 주소로 되돌리기</button>` : ''}</p>`;
 }
+/* 소재지를 고칠 때 안내 줄('검색 주소로 되돌리기')만 다시 그린다 - 왼쪽 칸 · 오른쪽 서류 둘 다 */
+function ct소재지안내다시(){ const 팁 = document.querySelector('#app .ct-show-tip'); if(팁 && CT.doc) 팁.outerHTML = ct소재지안내(CT.doc.property); }
 const ctIn = (path, label, opt = {}) => {
   const v = ctGet(CT.doc, path);
   const 잠김 = CT.row && CT.row.status === 'sealed';
@@ -18514,7 +18523,7 @@ V['#/partner/contract'] = (id) => {
     </div>
     ${ct안읽은의견(CT.track) ? `<p class="ct-note noprint"><button type="button" class="tapx" data-act="ct-notes-open" style="font-weight:700;color:#B25E00">초안에 새 의견 ${ct안읽은의견(CT.track)}건 - 일정·체크에서 보기</button></p>` : ''}
     ${잠김 ? `<p class="ct-note noprint">확정본입니다 · ${esc(String(CT.row.sealed_at||'').slice(0,16).replace('T',' '))} 확정 · 지문 ${esc(String(CT.row.sha256||'').slice(0,12))}… 고칠 수 없습니다. 바꿔야 하면 ‘고쳐서 새 판 만들기’를 누르세요.</p>` : ''}
-    ${CT.row && CT.row.prev_id ? `<p class="ct-note noprint">확정 후 수정한 판입니다. ${ct앞판안내(CT.row)} <button type="button" class="tapx" data-act="ct-open-prev" style="font-weight:700;color:var(--ind700)">앞 확정본 보기</button></p>` : ''}`;
+    ${ct고친판인가(CT.row, CT.doc) ? `<p class="ct-note noprint">확정 후 수정한 판입니다. ${ct앞판안내(CT.row)} <button type="button" class="tapx" data-act="ct-open-prev" style="font-weight:700;color:var(--ind700)">앞 확정본 보기</button></p>` : ''}`;
 
   if(CT.mode === 'scan' && !잠김) return `
 <div class="scr fade" style="background:var(--n50)">
@@ -18831,8 +18840,8 @@ function ctDeskShell(doc, side, 신고면){
     : CT.saving ? `<span class="ctx-st">임시저장 중…</span>`
     : CT.dirty || !CT.id ? `<span class="ctx-st warn">임시저장하지 않은 고침이 있습니다</span>` : `<span class="ctx-st">임시저장됨${CT.autoAt ? ` · 자동 ${esc(CT.autoAt)}` : ''}</span>`;
   /* 확정 후 수정 (파트너 리뷰) - 확정본은 그대로 두고 고친 판을 잇는다. 판끼리 오가는 단추가 곧 수정 이력이다 */
-  const 다음판 = 잠김 && (CT.list || []).find(r => r.prev_id === CT.id);
-  const 판줄 = CT.row && CT.row.prev_id ? `<button type="button" class="tapx ctx-rev" data-act="ct-open-prev">확정 후 수정한 판 · 앞 확정본 보기</button>`
+  const 다음판 = 잠김 && (CT.list || []).filter(r => r.prev_id === CT.id && ct살아있음(r) && !ct갱신판인가(r)).sort((a, b) => (b.status === 'sealed') - (a.status === 'sealed'))[0];
+  const 판줄 = ct고친판인가(CT.row, CT.doc) ? `<button type="button" class="tapx ctx-rev" data-act="ct-open-prev">확정 후 수정한 판 · 앞 확정본 보기</button>`
     : 다음판 ? `<button type="button" class="tapx ctx-rev" data-act="ct-open-id" data-v="${esc(다음판.id)}">이 확정본을 고친 새 판이 있습니다 · 열기</button>` : '';
   return `
 <div class="scr fade ctx-scr">
@@ -19609,6 +19618,7 @@ function ctPvInput(el){
     if(CT.filled && CT.filled.has(path)){ const 원 = ctGet(CT.doc, path); if(원 != null && 원 !== '' && !(CT.doc.edited && path in CT.doc.edited)) CT.doc.edited = { ...(CT.doc.edited || {}), [path]: 원 };
       CT.filled.delete(path); const L = 왼('ct:' + path); if(L) L.classList.remove('ai'); }
     ctSet(CT.doc, path, 글); const L = 왼('ct:' + path); if(L) L.value = 글;
+    if(path === 'property.show') ct소재지안내다시();   /* 오른쪽 서류에서 고쳐도 되돌리기 단추가 바로(11-21 코드리뷰) */
     if(path === 'property.landRight'){ const P = CT.doc.property; P.landRightKind = P.landRatioDen = P.landRatioNum = ''; ct대지권나눔(P);
       for(const k of ['landRightKind', 'landRatioDen', 'landRatioNum']){ const X = 왼('ct:property.' + k); if(X) X.value = P[k] || ''; } }
   } else if(kind === 'ctc'){ const c = CT.doc.clauses[+path]; if(!c) return; c.text = 글; const L = 왼('ctc:' + path); if(L) L.value = 글; }
@@ -20411,7 +20421,8 @@ function exh불러오기(){
   if(!EXH_부름) EXH_부름 = fetch('/forms/ex-hwp.json?v=' + EXH_판, { credentials: 'same-origin' })
     .then(r => r.ok ? r.json() : Promise.reject(new Error('틀 ' + r.status)))
     .then(j => { if(!j || !j.forms) throw new Error('틀 모양'); EXH_DATA = j; EXH_실패 = 0; return j; })
-    .catch(() => { EXH_실패 = Date.now(); if(typeof toast === 'function') toast('확인·설명서 원본 틀을 받지 못해 기본 모양으로 보여 드립니다 - 잠시 뒤 다시 받습니다'); return null; })
+    .catch(() => { EXH_실패 = Date.now(); { const t = setTimeout(() => { if(!EXH_DATA && typeof render === 'function') render(); }, EXH_쉼 + 100); if(t && t.unref) t.unref(); }   /* 열어 둔 채 가만히 있어도 30초 뒤 다시(11-21 코드리뷰) */
+      if(typeof toast === 'function') toast('확인·설명서 원본 틀을 받지 못해 기본 모양으로 보여 드립니다 - 잠시 뒤 다시 받습니다'); return null; })
     .finally(() => { EXH_부름 = null; if(typeof render === 'function') render(); });
   return EXH_부름 || Promise.resolve(EXH_DATA);
 }
@@ -20949,7 +20960,7 @@ function ctInput(el, k){
   if(CT.filled2 && CT.filled2.delete(path)) el.classList.remove('dj');
   CT.lastPath = kind === 'ct' || kind === 'ct$' ? path : null;
   if(kind === 'ct'){ ctSet(CT.doc, path, el.value); if(path === 'period.to') CT.termN = null;
-    if(path === 'property.show'){ const 팁 = document.querySelector('#app .ct-show-tip'); if(팁) 팁.outerHTML = ct소재지안내(CT.doc.property); }   /* 다시 그리기 전에도 되돌리기 단추가 바로(11-21 코드리뷰) */
+    if(path === 'property.show') ct소재지안내다시();   /* 다시 그리기 전에도 되돌리기 단추가 바로(11-21 코드리뷰) */
     if(/^property\.land(RightKind|RatioDen|RatioNum)$/.test(path)){ const P = CT.doc.property; P.landRight = ct대지권합(P); } }
   else if(kind === 'ct$'){
     const 전 = +ctGet(CT.doc, path) || 0;

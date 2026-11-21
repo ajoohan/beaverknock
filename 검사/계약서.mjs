@@ -1516,7 +1516,7 @@ ok(!js.includes('나란히 보기</button>') && js.includes("[['info', '칸 입�
 }
 
 /* ── 확정 후 수정 - 목록에는 가장 새 판만 · 몇 번째 판 (2026-11-19 파트너) ── */
-ok(js.includes("앞판임 = r => !ct보관칸(r) && 뒤판.has(r.id);") && js.includes("const 전체 = 모두.filter(r => (!현황 || !앞판임(r)) && (ct보관칸(r) === 칸") && js.includes('{판수(r)}판'), '확정 후 수정 - 계약현황은 가장 새 판만(계약서 목록엔 앞 확정본도, 11-21) · 몇 번째 판인지 표시');
+ok(js.includes("앞판임 = r => !ct보관칸(r) && 뒤판.has(r.id);") && js.includes("const 전체 = 모두.filter(r => (!현황 || !한줄아님(r)) && (ct보관칸(r) === 칸") && js.includes('{판수(r)}판'), '확정 후 수정 - 계약현황은 가장 새 판만(계약서 목록엔 앞 확정본도, 11-21) · 몇 번째 판인지 표시');
 
 /* ── 계약서 당사자 생년월일 (2026-11-19 대표님) ── 앞 여섯 자리만 · 뒷자리는 늘 빈칸 */
 ok(M.ct앞자리('700101') === '700101' && M.ct앞자리('1970-01-01') === '700101' && M.ct앞자리('19700101') === '700101' && M.ct앞자리('70.1.1') === '700101' && M.ct앞자리('701301') === '' && M.ct앞자리('700101-1234567') === '' && M.ct앞자리('') === '', '생년월일 → 주민등록번호 앞 여섯 자리 (뒷자리가 붙으면 버린다)');
@@ -1546,7 +1546,7 @@ ok(js.includes("const FU_공제 = ['공제증서 앞면', '공제증서 뒷면']
 }
 
 /* ── 앞 확정본은 목록에 남긴다 (2026-11-21 대표님) ── */
-ok(js.includes("const 전체 = 모두.filter(r => (!현황 || !앞판임(r)) && (ct보관칸(r) === 칸") && js.includes('ct요약HTML(새판)') && js.includes('ct현황표(ctFilter(새판)'), '계약서 목록엔 앞 확정본도 보이고 계약현황 · 요약 · 표는 새 판만');
+ok(js.includes("const 전체 = 모두.filter(r => (!현황 || !한줄아님(r)) && (ct보관칸(r) === 칸") && js.includes('ct요약HTML(새판)') && js.includes('ct현황표(ctFilter(새판)'), '계약서 목록엔 앞 확정본도 보이고 계약현황 · 요약 · 표는 새 판만');
 ok(js.includes('고친 판 있음') && js.includes('앞 확정본도 목록에 그대로 남아 있습니다'), '앞 확정본에 ‘고친 판 있음’ 표시 · 안내 문구');
 
 /* ── 앞 판 판정 - 화면과 서버가 같은 규칙 (2026-11-21 코드리뷰) ── 실제로 돌려 본다 */
@@ -1569,7 +1569,7 @@ ok(js.includes('고친 판 있음') && js.includes('앞 확정본도 목록에 �
   ok(줄(C.일정뺄것(행들.map(r => ({ ...r, renew: r.renew && r.renew.id })))) === 줄(M.ct일정뺄것(행들)), '서버 알림 · 달력 구독(일정뺄것)도 화면과 같은 규칙');
   ok(!/new Set\((계약|rows|x\.rows|계)\.map\((r|c) => (r|c)\.prev_id\)/.test(js + fs.readFileSync(new URL(길.api('_contract.js')), 'utf8')), '앞 판을 prev_id 만 보고 고르는 곳이 남아 있지 않다');
   ok(js.includes('function ct앞판안내(row)') && js.includes("칸 === 'trash' ? '앞 확정본은 휴지통에 있습니다.'") && js.includes('${ct앞판안내(CT.row)}'), '고친 판 안내는 앞 확정본이 지금 있는 곳대로');
-  ok(js.includes('ct-tbl-note') && js.includes("if(path === 'property.show'){ const 팁 = document.querySelector('#app .ct-show-tip'); if(팁) 팁.outerHTML = ct소재지안내(CT.doc.property); }"), '표 보기에서 앞 확정본을 뺀 것을 알린다 · 소재지를 고치면 되돌리기 단추가 바로');
+  ok(js.includes('ct-tbl-old') && (js.split("if(path === 'property.show') ct소재지안내다시();").length === 3), '표 보기에서 앞 확정본을 뺀 것을 알린다 · 소재지를 고치면 되돌리기 단추가 바로');
 }
 /* ── 짧게 적은 소재지는 정식 지번으로 (2026-11-21 코드리뷰) ── */
 {
@@ -1578,6 +1578,24 @@ ok(js.includes('고친 판 있음') && js.includes('앞 확정본도 목록에 �
   const a = { jibun: '경기도 하남시 망월동 220' };
   ok(!더('망월동 220', a) && !더('하남시 망월동 220', a) && 더('하남시 망월동 220 101동 1203호', a) && 더('망월동 220, 221', a),
      '검색한 지번에 없는 말(동 · 호수 · 다른 필지)이 있을 때만 직접 고친 소재지를 지킨다');
+}
+
+/* ── 화면마다 맞는 판정을 쓰나 (2026-11-21 코드리뷰 둘째) ── 실제로 돌려 본다 */
+{
+  const s = js.indexOf('function ct갱신판인가('), e = js.indexOf('function ct앞판안내(', s);
+  const 보관 = r => r && r.track && r.track.trash ? 'trash' : r && r.track && r.track.arch ? 'arch' : '';
+  const M = new Function('ct보관칸', 'ct살아있음', js.slice(s, e) + ';return { ct일정뺄것, ct고친판인가 };')(보관, r => !보관(r));
+  const 행들 = [{ id: 'A', status: 'sealed' }, { id: 'B', status: 'draft', prev_id: 'A' }, { id: 'K', status: 'sealed' }, { id: 'L', status: 'sealed', prev_id: 'K', renew: { id: 'K' } }];
+  ok([...M.ct일정뺄것(행들, false)].sort().join(',') === 'B' && [...M.ct일정뺄것(행들)].sort().join(',') === 'B,K', '계약현황은 갱신 전 계약을 남기고, 고치는 중인 계약은 한 줄(앞 확정본)로');
+  ok(M.ct고친판인가({ prev_id: 'A' }, {}) && !M.ct고친판인가({ prev_id: 'K', renew: { id: 'K' } }, {}) && !M.ct고친판인가({ prev_id: 'K' }, { renewOf: { id: 'K' } }) && !M.ct고친판인가({}, {}),
+     '갱신계약은 ‘확정 후 수정한 판’이 아니다(목록 줄 · 계약서 문서 둘 다 본다)');
+  ok(js.includes('ct고친판인가(CT.row, CT.doc) ? `<p class="ct-note noprint">확정 후 수정한 판입니다.') && js.includes('const 판줄 = ct고친판인가(CT.row, CT.doc) ?'), '고친 판 안내 · 판 줄은 고친 판에만');
+  ok(js.includes("(CT.list || []).filter(r => r.prev_id === CT.id && ct살아있음(r) && !ct갱신판인가(r))"), '‘고친 새 판이 있습니다’는 살아 있는 고친 판만(갱신계약 · 휴지통 제외)');
+  const 몸 = (a, b) => js.slice(js.indexOf(a), js.indexOf(b, js.indexOf(a)));
+  ok(/앞판 = ct일정뺄것\(CT\.list \|\| 계약\)/.test(몸('function dz달력(', 'function dz계약현황(')) && /앞판 = ct일정뺄것\(CT\.list \|\| 계약\)/.test(몸('function dz계약현황(', '\n}')) && /앞판 = ct일정뺄것\(/.test(몸('function ctUpcomingHTML(', '\n}')),
+     '대시보드 달력 · 계약현황 · 다가오는 일정은 일정 판정(같은 계약 한 줄)');
+  ok(/앞판 = ct앞판모음\(CT\.list, false\)/.test(몸('function 성과더HTML(', '\n}')) && js.includes('const 새판 = 전체.filter(r => !한줄아님(r));'), '성과는 갱신 전 계약을 빼지 않는다 · 계약현황 요약 · 표는 한 계약 한 줄');
+  ok(js.includes("const t = setTimeout(() => { if(!EXH_DATA && typeof render === 'function') render(); }, EXH_쉼 + 100); if(t && t.unref) t.unref();"), '틀을 못 받았으면 열어 둔 채로도 쉼이 끝나면 다시 받는다');
 }
 
 console.log(`${ran - fail} 통과 / ${fail} 실패`);

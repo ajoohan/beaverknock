@@ -483,7 +483,7 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
     { id: 'd', agent_id: 'A3', agent_user: 'u3', form: 'sale', title: '계약일 없음', status: 'sealed', reported_at: null },
     { id: 'e', agent_id: 'A1', agent_user: 'u1', form: 'lease', sub: '아파트', title: '잔금 사흘 전', status: 'draft', cd: 며칠전(40), bd: 며칠뒤(3) },
     { id: 'f', agent_id: 'A1', agent_user: 'u1', form: 'sale', title: '새 판으로 바뀐 앞 판', status: 'sealed', reported_at: null, cd: 며칠전(23) },
-    { id: 'g', agent_id: 'A1', agent_user: 'u1', form: 'sale', title: '작성 중인 새 판', status: 'draft', prev_id: 'f', cd: 며칠전(23) },
+    { id: 'g', agent_id: 'A1', agent_user: 'u1', form: 'sale', title: '확정한 새 판(신고 마침)', status: 'sealed', reported_at: '2026-10-01', prev_id: 'f', cd: 며칠전(23) },
     { id: 'h', agent_id: 'A4', agent_user: 'u4', form: 'sale', title: '신고 마침', status: 'sealed', reported_at: '2026-10-01', cd: 며칠전(30) },
   ];
   const 중개사들 = { A1: { id: 'A1', name: '한상혁', phone: '010-1234-5678', alert: null }, A2: { id: 'A2', name: '둘', phone: '' },
@@ -507,7 +507,7 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
      '확인·설명서를 뺀 1200일 안의 계약서를 읽는다(2년 임대차 만기 알림까지) - 일정 계산에 쓰는 날짜만 doc 에서 꺼낸다');
   ok(res.code === 200 && 메일 && 메일.length === 1 && 메일[0].to[0] === 'agent1@example.com' && /오늘 챙기실 계약 일정이 3건/.test(메일[0].subject)
      && 메일[0].html.includes('잠실 아파트') && 메일[0].html.includes('미사 802호') && 메일[0].html.includes('잔금 사흘 전')
-     && !메일[0].html.includes('알릴 날 아님') && !메일[0].html.includes('새 판으로 바뀐 앞 판') && !메일[0].html.includes('작성 중인 새 판'),
+     && !메일[0].html.includes('알릴 날 아님') && !메일[0].html.includes('새 판으로 바뀐 앞 판') && !메일[0].html.includes('확정한 새 판(신고 마침)'),
      '메일은 중개사별 하루 한 통 - 신고 기한(확정본·신고 전) · 잔금 3일 전(작성 중도) · 새 판으로 바뀐 앞 판은 뺀다');
   ok(메일[0].html.includes('잔금안내(이체한도·준비서류) 전입니다') && /알림 설정/.test(메일[0].text), '잔금 알림에 잔금안내 여부 · 메일에 알림 설정 안내');
   ok(불린.filter(x => /bk_agent/.test(x.u) && !/ext:settings->ext/.test(decodeURIComponent(x.u))).every(x => /select=id,name,phone,alert:settings->alert&/.test(decodeURIComponent(x.u))),
@@ -609,7 +609,7 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
 
 /* ── 서식 자료실 · 입력 도우미 · 사무소 기본값 · 토지거래허가 흐름 (2026-11-06 파트너 기획) ── */
 {
-  ok(/\['#\/partner\/contracts\/forms', '서식 자료실', 'doc', 'ctf'\]/.test(js) && /function ct빈서식HTML\(kind, key\)/.test(js) && /case 'ctf-print': \{ const \[k, key\] = String\(v\)\.split\('\|'\); return ctPrint\(ct빈서식HTML\(k, key\)\); \}/.test(js),
+  ok(/\['#\/partner\/contracts\/forms', '서식 자료실', 'doc', 'ctf'\]/.test(js) && /function ct빈서식HTML\(kind, key\)/.test(js) && /case 'ctf-print': \{ const \[k, key\] = String\(v\)\.split\('\|'\); if\(k === 'ex' && !exh준비됐나\(\{ form: key \}\)\) return true; return ctPrint\(ct빈서식HTML\(k, key\)\); \}/.test(js),
      '서식 자료실 - 계약서 · 확인·설명서 · 기타 서식 빈 양식을 인쇄 · PDF');
   ok(/CT\.mode = 앞\.mode; CT\.extraTab = 앞\.tab; CT\.extraRc = 앞\.rc; CT\.track = 앞\.track;/.test(js), '빈 부속 서류를 그린 뒤 지금 계약서의 탭 · 부속 값은 그대로 돌려놓는다');
   ok(/function ct입력값\(doc\)/.test(js) && /data-act="ct-hb-open"/.test(js) && /https:\/\/irts\.molit\.go\.kr/.test(js) && /case 'ctk-ec':/.test(js),
@@ -1355,7 +1355,7 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
        '손님 대화방이 열린 작성 중 계약서는 영구 삭제 · 휴지통 30일 자동 삭제에서 빠진다(대화 · 파일이 주인 없이 남지 않게)'); }
   { const sql = fs.readFileSync(new URL('../../beaverknock-app/supabase/migrations/0045_contract_sealed_delete.sql', import.meta.url), 'utf8');
     ok(/old\.status = 'sealed'\s+and coalesce\(old\.track->>'trash', ''\) = ''/.test(sql) && sql.includes("- 'reported_at' - 'updated_at' - 'track'") && /new\.prev_id is null and old\.prev_id is not null\s+and \(to_jsonb\(new\) - 'reported_at' - 'updated_at' - 'track' - 'prev_id'\)/.test(sql), 'DB 잠금 0045 - 확정본은 휴지통에 있을 때만 지워지고, 내용은 여전히 못 고친다(앞 판이 지워져 prev_id 가 비는 것만 통과)'); }
-  ok(js.includes("ct살아있음(r) && r.status === 'sealed' && !(r.renew && r.renew.id === r.prev_id)"), '목록에서 숨기는 앞 판은 확정 후 수정으로 이어진 것만 - 갱신계약의 원래 계약서는 남는다');
+  ok(js.includes("x.status === 'sealed' && ct살아있음(x) && (갱신도 || !ct갱신판인가(x))") && js.includes('const 뒤판 = ct앞판모음(모두, false)'), '목록에서 숨기는 앞 판은 확정 후 수정으로 이어진 것만 - 갱신계약의 원래 계약서는 남는다');
   ok(js.includes("${잠김 ? '이 확정본 휴지통으로' : '이 계약서 휴지통으로'}") && js.includes(".map(r => r.prev_id === 그것 ? { ...r, prev_id: null } : r)"), '확정본을 연 화면에서도 휴지통으로 · 지운 판을 가리키던 앞 판 연결은 화면에서도 끊는다');
   ok(/contracts\\\/new\)\/\.test\(location\.hash \|\| ''\)\) ct뒷자리지움\(\)/.test(js), '계약서 화면을 떠나면 주민번호 뒷자리를 지운다');
   ok(/현장사진값\(\(행\.track \|\| \{\}\)\.fpics\)\.map\(v => 현장경로\(agent\.id, id, v\.i\)\)/.test(fs.readFileSync(new URL('../api/_contract.js', import.meta.url), 'utf8')), '영구 삭제 - 현장 사진 파일도 지운다');
@@ -1541,13 +1541,44 @@ ok(js.includes("const FU_공제 = ['공제증서 앞면', '공제증서 뒷면']
   const a = { bun: '220', ji: '', jibun: '경기도 하남시 망월동 220' };
   ok(!!같은지번 && 같은지번('망월동 220, 221-3', a) && 같은지번('하남시 망월동 220 101동 1203호', a), '쉼표로 이은 필지 · 동호수를 적은 소재지도 같은 필지로 본다');
   ok(!!같은지번 && !같은지번('망월동 2201', a) && !같은지번('풍산동 220', a), '번지가 이어지거나 동이 다르면 다른 필지');
-  ok(js.includes("show: (같은지번(CT.doc.property.show, a) && String(CT.doc.property.show || '').trim()) || a.jibun || full });"), '같은 필지를 다시 검색해도 직접 고친 소재지는 지킨다');
+  ok(js.includes("show: (같은지번(CT.doc.property.show, a) && 소재지더적음(CT.doc.property.show, a) && String(CT.doc.property.show || '').trim()) || a.jibun || full });"), '같은 필지를 다시 검색해도 직접 고친 소재지는 지킨다');
   ok(js.includes('function ct소재지안내(P)') && js.includes('${ct소재지안내(P)}') && js.includes("case 'ct-show-reset':") && js.includes('검색 주소로 되돌리기'), '소재지 칸 아래 안내 · 검색 주소로 되돌리기 단추');
 }
 
 /* ── 앞 확정본은 목록에 남긴다 (2026-11-21 대표님) ── */
 ok(js.includes("const 전체 = 모두.filter(r => (!현황 || !앞판임(r)) && (ct보관칸(r) === 칸") && js.includes('ct요약HTML(새판)') && js.includes('ct현황표(ctFilter(새판)'), '계약서 목록엔 앞 확정본도 보이고 계약현황 · 요약 · 표는 새 판만');
 ok(js.includes('고친 판 있음') && js.includes('앞 확정본도 목록에 그대로 남아 있습니다'), '앞 확정본에 ‘고친 판 있음’ 표시 · 안내 문구');
+
+/* ── 앞 판 판정 - 화면과 서버가 같은 규칙 (2026-11-21 코드리뷰) ── 실제로 돌려 본다 */
+{
+  const s = js.indexOf('function ct갱신판인가('), e = js.indexOf('function ct앞판안내(', s);
+  const 보관 = r => r && r.track && r.track.trash ? 'trash' : r && r.track && r.track.arch ? 'arch' : '';
+  const M = new Function('ct보관칸', 'ct살아있음', js.slice(s, e) + ';return { ct앞판모음, ct일정뺄것 };')(보관, r => !보관(r));
+  const 행들 = [
+    { id: 'A', status: 'sealed' }, { id: 'B', status: 'draft', prev_id: 'A' },                                    // 고쳐 쓰는 중 - 앞 확정본 A 로 알리고 B 는 뺀다
+    { id: 'C', status: 'sealed' }, { id: 'D', status: 'sealed', prev_id: 'C' },                                   // 새 판 확정 - C 를 뺀다
+    { id: 'E', status: 'sealed' }, { id: 'F', status: 'sealed', prev_id: 'E', track: { trash: '2026-11-21' } },   // 새 판이 휴지통 - E 는 산다
+    { id: 'G', status: 'sealed', track: { trash: '2026-11-21' } }, { id: 'H', status: 'draft', prev_id: 'G' },    // 앞 확정본이 휴지통 - H 로 알린다
+    { id: 'I', status: 'sealed' }, { id: 'J', status: 'draft', prev_id: 'I', renew: { id: 'I' } },                // 갱신 초안 - 둘 다 산다
+    { id: 'K', status: 'sealed' }, { id: 'L', status: 'sealed', prev_id: 'K', renew: { id: 'K' } },               // 갱신 확정 - 일정에선 K 를 뺀다
+    { id: 'N', status: 'sealed' }, { id: 'O', status: 'sealed', prev_id: 'N', track: { arch: '2026-11-21' } },    // 새 판이 보관함 - N 은 산다
+  ];
+  const 줄 = set => [...set].sort().join(',');
+  ok(줄(M.ct일정뺄것(행들)) === 'B,C,K', '일정 · 알림 - 새 판이 확정돼야 앞 확정본을 뺀다 · 고쳐 쓰는 중엔 앞 확정본 일정으로(새 판 초안은 뺌) · 새 판이 휴지통 · 보관함이면 앞 확정본이 산다');
+  ok(줄(M.ct앞판모음(행들, false)) === 'C' && 줄(M.ct앞판모음(행들)) === 'C,K', '계약서 목록의 앞 확정본 표시는 확정된 고친 판의 앞 판만(갱신 전 계약 제외)');
+  ok(줄(C.일정뺄것(행들.map(r => ({ ...r, renew: r.renew && r.renew.id })))) === 줄(M.ct일정뺄것(행들)), '서버 알림 · 달력 구독(일정뺄것)도 화면과 같은 규칙');
+  ok(!/new Set\((계약|rows|x\.rows|계)\.map\((r|c) => (r|c)\.prev_id\)/.test(js + fs.readFileSync(new URL(길.api('_contract.js')), 'utf8')), '앞 판을 prev_id 만 보고 고르는 곳이 남아 있지 않다');
+  ok(js.includes('function ct앞판안내(row)') && js.includes("칸 === 'trash' ? '앞 확정본은 휴지통에 있습니다.'") && js.includes('${ct앞판안내(CT.row)}'), '고친 판 안내는 앞 확정본이 지금 있는 곳대로');
+  ok(js.includes('ct-tbl-note') && js.includes("if(path === 'property.show'){ const 팁 = document.querySelector('#app .ct-show-tip'); if(팁) 팁.outerHTML = ct소재지안내(CT.doc.property); }"), '표 보기에서 앞 확정본을 뺀 것을 알린다 · 소재지를 고치면 되돌리기 단추가 바로');
+}
+/* ── 짧게 적은 소재지는 정식 지번으로 (2026-11-21 코드리뷰) ── */
+{
+  const s = js.indexOf('function 소재지더적음('), e = js.indexOf('function addrPick(', s);
+  const 더 = new Function(js.slice(s, e) + ';return 소재지더적음;')();
+  const a = { jibun: '경기도 하남시 망월동 220' };
+  ok(!더('망월동 220', a) && !더('하남시 망월동 220', a) && 더('하남시 망월동 220 101동 1203호', a) && 더('망월동 220, 221', a),
+     '검색한 지번에 없는 말(동 · 호수 · 다른 필지)이 있을 때만 직접 고친 소재지를 지킨다');
+}
 
 console.log(`${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

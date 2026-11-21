@@ -99,5 +99,29 @@ const 편 = new Function('esc', 'CT편집칸', '틀JSON', 코드)(esc, true, 틀
 ok(/contenteditable="plaintext-only"[^>]*data-cte="exh:/.test(편) && /data-act="exh-box"/.test(편), '양식에 직접 입력 - 빈칸은 바로 적고 [ ] 는 눌러 고른다');
 ok(!/영문|Enforcement Rules/.test(JSON.stringify(M.EXH_DATA)), '영문 쪽은 넣지 않았다');
 
+/* ── 틀 받기 - 못 받으면 쉬었다가 다시 · 인쇄는 바로 한 번 더 (2026-11-21 코드리뷰) ── 실제로 돌려 본다 */
+{
+  let 부름 = 0, 됨 = false;
+  const 가짜 = () => { 부름++; return Promise.resolve(됨 ? { ok: true, json: async () => 틀JSON } : { ok: false, status: 503 }); };
+  const 코드2 = 코드.replace('EXH_DATA = 틀JSON;\n', '').replace('return { EXH_DATA,', 'return { 틀: () => EXH_DATA, exh기다림, exh준비됐나, 실패: v => { EXH_실패 = v; }, EXH_DATA,');
+  const X = new Function('esc', 'CT편집칸', '틀JSON', 'fetch', 'toast', 'render', 코드2)(esc, false, 틀JSON, 가짜, () => {}, () => {});
+  const 쉼 = () => new Promise(r => setTimeout(r, 5));
+  const 문 = { form: 'explain-home' };
+  ok(X.exh기다림(문) === true && 부름 === 1, '처음 열면 틀을 받기 시작한다');
+  await 쉼();
+  ok(X.exh기다림(문) === false && 부름 === 1 && !X.틀(), '못 받으면 잠시 쉬며 기본 모양으로 보인다(계속 다시 부르지 않는다)');
+  ok(X.exh준비됐나(문) === true && 부름 === 1, '못 받은 바로 뒤 인쇄를 누르면 기본 모양으로 그대로 낸다');
+  됨 = true; X.실패(Date.now() - 5000);
+  ok(X.exh준비됐나(문) === false && 부름 === 2, '조금 지나 인쇄를 누르면 쉬는 중이어도 바로 한 번 더 받는다');
+  await 쉼();
+  ok(!!X.틀() && X.exh기다림(문) === false && X.exh준비됐나(문) === true, '다시 받으면 원본 틀로 그리고 인쇄한다');
+  let 부름2 = 0; const Y = new Function('esc', 'CT편집칸', '틀JSON', 'fetch', 'toast', 'render', 코드2)(esc, false, 틀JSON, () => { 부름2++; return Promise.resolve({ ok: false, status: 503 }); }, () => {}, () => {});
+  Y.exh기다림(문); await 쉼(); Y.실패(Date.now() - 31000);
+  ok(Y.exh기다림(문) === true && 부름2 === 2, '30초가 지나면 화면을 그릴 때 다시 받는다(새로고침하지 않아도)');
+}
+ok(js.includes("if(exh기다림(d)) return exh기다림HTML; return exHwp쓸까(d) ? exHwpDocHTML(d, { bare: true }) : exDocHTML(d);") && js.includes("if(k === 'ex' && !exh준비됐나({ form: key })) return true;"),
+   '서식 자료실 빈 확인·설명서도 원본 틀로 - 받는 동안은 기다림 · 인쇄는 틀을 받은 뒤');
+{ const 빈 = M.exHwpDocHTML({ form: 'explain-home', ex: {} }, { bare: true }); ok(!빈.includes('exh-bar') && 빈.includes('exh-pg'), '빈 서식은 쪽 넘기기 · 과세 유형 줄 없이 쪽만'); }
+
 console.log(`${통과} 통과 / ${실패} 실패`);
 process.exit(실패 ? 1 : 0);

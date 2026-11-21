@@ -9592,7 +9592,7 @@ V['#/partner/verify'] = () => `
    계약은 확정본 저장 기준(확인·설명서와 고치기 전 판 제외) · 매물은 매물장부 · 매칭은 맞춤매물 '보고 싶어요' 로 생긴 제안 */
 function 성과더HTML(P, tile){
   const 이달 = ct오늘().slice(0, 7), 올해 = 이달.slice(0, 4);
-  const 계 = (CT.list || []).filter(ct살아있음), 앞판 = new Set(계.map(r => r.prev_id).filter(Boolean));
+  const 계 = (CT.list || []).filter(ct살아있음), 앞판 = ct앞판모음(CT.list);
   const 본계 = 계.filter(r => !앞판.has(r.id) && !(CT_FORMS[r.form] || {}).explain);
   const 확정 = 본계.filter(r => r.status === 'sealed'), 날 = r => ct한국날(r.sealed_at);
   const 물 = S.listings || [], 노출 = 물.filter(l => l.vis === 'open' && l.status === 'active').length;
@@ -10545,6 +10545,8 @@ function 같은지번(글, a){
   for(const 꼴 of [동 + 번지, 동 + ' ' + 번지, 동 + '산' + 번지, 동 + ' 산' + 번지, 동 + ' 산 ' + 번지]){ const k = 글자.indexOf(꼴); if(k >= 0 && !/[\d-]/.test(글자[k + 꼴.length] || '')) return true; }
   return false;
 }
+/* 직접 고친 소재지에 검색한 지번에 없는 말(동 · 호수 · 쉼표로 이은 필지 등)이 있나 - 없으면('망월동 220') 정식 지번으로 바꾼다(11-21 코드리뷰) */
+function 소재지더적음(글, a){ const 지번 = String((a && a.jibun) || '').split(/\s+/); return String(글 || '').trim().split(/[\s,]+/).some(t => t && !지번.includes(t)); }
 function addrPick(i){
   const a = (ADDR.rows||[])[i]; if(!a) return true;
   /* detail 이 ' (망월동)' 처럼 앞 공백을 달고 오는 일이 있다 - 그대로 이으면
@@ -10553,7 +10555,7 @@ function addrPick(i){
   if(ADDR.for === 'ct-addr' && CT.doc){
     /* 계약서 소재지 - 법정동코드·본번·부번·산까지 그대로 담는다. 나중에 보낼 때 바꿀 것이 없게 */
     Object.assign(CT.doc.property, { road: full, jibun: a.jibun || '', admCd: a.admCd || '', bun: a.bun || '',
-      ji: a.ji || '', mount: !!a.mount, zip: a.zip || '', bdNm: CT.doc.property.bdNm || a.bdNm || '', show: (같은지번(CT.doc.property.show, a) && String(CT.doc.property.show || '').trim()) || a.jibun || full });   /* 같은 필지면 직접 고친 소재지도 지킨다(2026-11-21 대표님 · 11-17 파트너) */
+      ji: a.ji || '', mount: !!a.mount, zip: a.zip || '', bdNm: CT.doc.property.bdNm || a.bdNm || '', show: (같은지번(CT.doc.property.show, a) && 소재지더적음(CT.doc.property.show, a) && String(CT.doc.property.show || '').trim()) || a.jibun || full });   /* 같은 필지면 직접 고친 소재지도 지킨다(2026-11-21 대표님 · 11-17 파트너) */
     CT.dirty = true; CT.rev = (CT.rev || 0) + 1;
     if(S.modal && S.modal.type === 'ct-addr-pop') S.modal = null;
   }
@@ -14116,6 +14118,10 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
+  { v:'26.11.21.3', 날:'2026-11-21', 줄:[ '일정 · 알림 - 확정본을 고치려고 새 판을 만들어 두기만 해도(또는 그 새 판을 휴지통에 넣어도) 앞 확정본의 잔금 · 중도금 알림 · 달력 · 대시보드 일정이 빠지던 것. 새 판을 확정할 때까지는 앞 확정본 일정으로 알립니다',
+    '고친 판 화면 안내가 앞 확정본이 휴지통 · 보관함에 있을 때도 ‘목록에 남아 있다’고 하던 것 · 계약현황 표 보기에서 앞 확정본을 뺀 것을 알립니다',
+    '확인·설명서 원본 틀을 한 번 못 받으면 새로고침 전까지 예전 모양이던 것 - 잠시 뒤 · 인쇄를 누를 때 다시 받습니다. 서식 자료실 빈 확인·설명서도 국가 원본 틀로',
+    '소재지 - 짧게 적어 둔 소재지(‘망월동 220’)는 주소를 검색하면 정식 지번으로 바뀌고, 고치는 즉시 ‘검색 주소로 되돌리기’가 보입니다' ] },
   { v:'26.11.21.2', 날:'2026-11-21', 줄:[ '계약서 목록 - 고친 판을 확정해도 앞 확정본이 목록에 그대로 남고 ‘고친 판 있음’으로 표시됩니다. 지우는 것은 중개사가 직접(자동 삭제 없음). 계약현황 · 요약 숫자 · 일정은 가장 새 판으로만 셉니다',
     '첫 화면이 가벼워졌습니다 - 확인·설명서 원본 틀(약 170KB)은 확인·설명서를 열 때만 받습니다' ] },
   { v:'26.11.21.1', 날:'2026-11-21', 줄:[ '계약서 소재지 - 검색한 주소는 그대로 두고 계약서에 찍히는 소재지만 고칩니다(동 · 호수 · 바뀐 행정구역 · 필지 여럿은 쉼표로). 같은 필지를 다시 검색해도 고친 소재지는 지키고, ‘검색 주소로 되돌리기’ 단추를 더했습니다' ] },
@@ -15067,7 +15073,7 @@ function ct잔금다시그림(때들){ clearTimeout(ct잔금T); if(!때들.lengt
 const CT_달력대금 = new Set(['contract', 'mid', 'balance', 'settle']);
 function dz달력(계약){
   const 오늘 = ct오늘(), 달 = /^\d{4}-\d{2}$/.test(CT.calM || '') ? CT.calM : 오늘.slice(0, 7), 고른 = CT.calD && CT.calD.startsWith(달) ? CT.calD : (오늘.startsWith(달) ? 오늘 : '');
-  const 설정 = ct알림설정(CT.alert && CT.alert.cfg), 앞판 = new Set(계약.map(r => r.prev_id).filter(Boolean));
+  const 설정 = ct알림설정(CT.alert && CT.alert.cfg), 앞판 = ct일정뺄것(CT.list || 계약);
   const 일정 = 계약.filter(r => !앞판.has(r.id) && !(CT_FORMS[r.form] || {}).explain && !(r.track && r.track.off))
     .flatMap(r => ct일정목록(r, 설정).filter(e => String(e.날).startsWith(달) && !(e.k === 'report' && (r.status !== 'sealed' || r.reported_at)) && !(e.k === 'prep' && r.status !== 'sealed')).map(e => ({ ...e, r })))
     .concat(ct외부일정들().filter(e => String(e.날).startsWith(달)));
@@ -15126,7 +15132,7 @@ const dz잔금물음 = rows => !rows.length ? '' : `<section class="dz-card dz-s
 /* 계약현황 (2026-11-13 파트너 기획 ① 대시보드 '계약현황 - 진행중 · 준비 · 보류, 상태 · 목적물 · 종류 · 다음 일정') -
    끝나지 않은 계약서를 다음 일정이 가까운 차례로 넷. 확인·설명서와 고치기 전 판은 뺀다. 줄을 누르면 그 계약서, 전체 보기는 계약현황 */
 function dz계약현황(계약){
-  const 오늘 = ct오늘(), 설정 = ct알림설정(CT.alert && CT.alert.cfg), 앞판 = new Set(계약.map(r => r.prev_id).filter(Boolean));
+  const 오늘 = ct오늘(), 설정 = ct알림설정(CT.alert && CT.alert.cfg), 앞판 = ct앞판모음(CT.list || 계약);
   const 대상 = 계약.filter(r => !앞판.has(r.id) && !(CT_FORMS[r.form] || {}).explain && !['done', 'cancel'].includes((r.track || {}).state));
   const 상태 = r => (r.track || {}).state || (r.status === 'sealed' ? 'doing' : 'ready');
   const 수 = k => 대상.filter(r => 상태(r) === k).length;
@@ -16277,7 +16283,7 @@ const ct앞자리 = v => { const t = String(v == null ? '' : v).trim(); if(!t) r
 const ct생일글 = v => { const g = ct앞자리(v); return g ? `${g.slice(0, 2)}. ${g.slice(2, 4)}. ${g.slice(4, 6)}.` : String(v == null ? '' : v).trim(); };
 function ctDocHTML(doc){
   const F = CT_FORMS[doc.form] || CT_FORMS['home-lease'];
-  if(F.explain){ if(typeof exh기다림 === 'function' && exh기다림(doc)) return '<div class="exh-wait" role="status" style="padding:56px 24px;text-align:center;color:var(--n500);font-size:14px">확인·설명서 원본 틀을 불러오는 중입니다…</div>';
+  if(F.explain){ if(typeof exh기다림 === 'function' && exh기다림(doc)) return exh기다림HTML;
     return typeof exHwp쓸까 === 'function' && exHwp쓸까(doc) ? exHwpDocHTML(doc) : exDocHTML(doc); }
   const 맞춤 = !!F.fields && !F.lease;                 /* 분양권·입주권·권리양도·권리금 - 소재지 아래가 양식마다 다르다 */
   const 이름 = ctTitle(doc), 새이름 = 이름 !== F.ko || !F.h1;
@@ -16787,7 +16793,8 @@ const CT_기타서식 = [['rc:down', '영수증 · 계약금', 'sale'], ['rc:bal
   ['pw', '위임장 (대리인 계약용)', 'sale'], ['rt', '보증금 반환 영수증', 'home-lease'], ['pi', '개인정보 수집·이용 동의서', 'sale']];
 function ct빈서식HTML(kind, key){
   const 사무소 = CT.formsOffice !== false;
-  if(kind === 'ex'){ const d = exNewDoc(null, key); if(!사무소 && d.broker) d.broker = {}; return exDocHTML(d); }
+  /* 빈 확인·설명서도 작성 화면과 같은 국가 원본 틀로(11-21 코드리뷰) - 틀을 받는 동안은 '불러오는 중', 못 받으면 예전 모양 */
+  if(kind === 'ex'){ const d = exNewDoc(null, key); if(!사무소 && d.broker) d.broker = {}; if(exh기다림(d)) return exh기다림HTML; return exHwp쓸까(d) ? exHwpDocHTML(d, { bare: true }) : exDocHTML(d); }
   const [탭, rc] = String(key).split(':'), form = kind === 'ct' ? key : (CT_기타서식.find(x => x[0] === key) || [])[2] || 'sale';
   const d = ctNewDoc(form);
   d.specials = []; d.acct = form === 'sale' || !!(CT_FORMS[form] || {}).lease;
@@ -17936,6 +17943,24 @@ if(typeof document !== 'undefined') document.addEventListener('change', e => { c
    작성 중 계약서는 휴지통 30일 뒤 서버가 지운다(아침 예약 실행). 보관함 · 휴지통 계약서는 일정 알림 · 요약에서 빠진다 */
 const ct보관칸 = r => (r && r.track && r.track.trash) ? 'trash' : (r && r.track && r.track.arch) ? 'arch' : '';
 const ct살아있음 = r => !ct보관칸(r);
+/* 앞 판 판정 - 한 곳에서만 (2026-11-21 코드리뷰: 목록 · 대시보드 · 달력 · 일정 · 성과 · 서버 알림이 저마다 규칙이 달랐다).
+   고친 판(또는 갱신계약)이 확정돼 보관함 · 휴지통이 아닌 곳에 있을 때만 앞 판으로 본다 - 뒤 판이 작성 중이거나 휴지통이면 앞 확정본이 그대로 산다.
+   서버 api/_contract.js 의 일정뺄것 과 같은 규칙(검사/계약서.mjs 가 둘을 같은 사례로 돌려 본다) */
+function ct갱신판인가(x){ const id = x && x.renew && typeof x.renew === 'object' ? x.renew.id : x && x.renew; return !!id && id === x.prev_id; }
+/* 갱신도=false 면 갱신계약의 원래 계약서는 넣지 않는다(계약서 목록 - 갱신 전 계약도 따로 보인다) */
+function ct앞판모음(rows, 갱신도 = true){ return new Set((rows || []).filter(x => x && x.prev_id && x.status === 'sealed' && ct살아있음(x) && (갱신도 || !ct갱신판인가(x))).map(x => x.prev_id)); }
+/* 일정 · 알림 · 달력에서 뺄 계약서 - 위 앞 판, 그리고 앞 확정본이 살아 있는 고쳐 쓰는 중인 판(확정 전까지는 앞 확정본 일정으로 - 같은 일정이 두 번 잡히지 않게) */
+function ct일정뺄것(rows){
+  const L = rows || [], 앞 = ct앞판모음(L), 맵 = new Map(L.map(x => [x && x.id, x]));
+  for(const x of L){ if(x && x.prev_id && x.status !== 'sealed' && !ct갱신판인가(x)){ const p = 맵.get(x.prev_id); if(p && p.status === 'sealed' && ct살아있음(p) && !앞.has(p.id)) 앞.add(x.id); } }
+  return 앞;
+}
+/* 고친 판 화면의 안내 - 앞 확정본이 지금 어디 있는지대로(휴지통 · 보관함으로 옮긴 뒤에도 '목록에 남아 있다'고 하던 것, 11-21 코드리뷰) */
+function ct앞판안내(row){
+  const 앞 = (CT.list || []).find(x => x.id === (row && row.prev_id)), 칸 = 앞 ? ct보관칸(앞) : '';
+  return !앞 ? '' : 칸 === 'trash' ? '앞 확정본은 휴지통에 있습니다.' : 칸 === 'arch' ? '앞 확정본은 보관함에 있습니다.'
+    : row.status === 'sealed' ? '앞 확정본도 목록에 그대로 남아 있습니다 - 필요 없으면 앞 확정본을 열어 휴지통으로 옮기세요.' : '앞 확정본은 지워지지 않고 목록에 그대로 남습니다.';
+}
 const ct휴지남은날 = r => { const d = r.track && r.track.trash; return d ? Math.max(0, 30 - ct날차(d, ct오늘())) : 30; };
 async function ctBin(id, 어디, 말 = true){
   const 행 = (CT.list || []).find(r => r.id === id), 전 = ct보관칸(행);
@@ -18128,7 +18153,7 @@ function ct행단추(r){
 /* 계약서 표 - PC 는 칸(소재지·종류·당사자·고친 날·상태), 휴대폰은 두 줄. 갱신고르기면 누르면 그 계약서로 갱신계약을 연다 */
 function ctRowsHTML(전체, rows, 갱신고르기){
   /* 고친 판을 확정한 앞 확정본 - 목록에 그대로 두고 표시만 단다(2026-11-21 대표님: 자동 삭제 없음, 지우는 것은 중개사가) */
-  const 고친판 = new Set((CT.list || []).filter(x => ct살아있음(x) && x.status === 'sealed' && !(x.renew && x.renew.id === x.prev_id)).map(x => x.prev_id).filter(Boolean));
+  const 고친판 = ct앞판모음(CT.list, false);
   /* 신고가 있는 계약(매매·주택 임대차)의 확정본은 신고 전/신고 마침도 함께 보인다 */
   const 신고 = r => r.status === 'sealed' && ct신고(r)
     ? (r.reported_at ? `<span class="badge b-ok">신고 마침</span>` : `<span class="badge b-warn">신고 전</span>`) : '';
@@ -18167,7 +18192,7 @@ function ctListPageHTML(모두){
   const 현황 = !!CT.현황, 갱신탭 = 현황 && CT.bin === 'renew';
   const 칸 = ['arch', 'trash'].includes(CT.bin) ? CT.bin : '';
   const 같이 = !칸 && CT.qall && String(CT.q || '').trim();   /* '보관함도 찾기' (2026-11-17 파트너 D14) - 찾는 말이 있을 때만 보관함 계약서도 섞는다 */
-  const 뒤판 = new Set(모두.filter(r => ct살아있음(r) && r.status === 'sealed' && !(r.renew && r.renew.id === r.prev_id)).map(r => r.prev_id).filter(Boolean)), 앞판임 = r => !ct보관칸(r) && 뒤판.has(r.id);
+  const 뒤판 = ct앞판모음(모두, false), 앞판임 = r => !ct보관칸(r) && 뒤판.has(r.id);
   /* 계약서 목록은 앞 확정본도 보인다(11-21 대표님). 계약현황 · 요약 숫자 · 일정은 같은 계약이 두 번 잡히지 않게 가장 새 판만 */
   const 전체 = 모두.filter(r => (!현황 || !앞판임(r)) && (ct보관칸(r) === 칸 || (같이 && ct보관칸(r) === 'arch')) && (!현황 || 칸 || (갱신탭 ? ct형태(r) === 'renew' : ct형태(r) === 'new')));
   const 수 = k => k === 'renew' ? 모두.filter(r => !앞판임(r) && !ct보관칸(r) && ct형태(r) === 'renew').length : 모두.filter(r => (!현황 || !앞판임(r)) && ct보관칸(r) === k && (!현황 || k || ct형태(r) === 'new')).length;
@@ -18189,7 +18214,7 @@ function ctListPageHTML(모두){
     <div class="ct-lay${일정 ? '' : ' one'}">
       <div class="ct-main">${칸줄}${자동칸}${칸말}${칸 ? '' : ct요약HTML(새판)}${전체.length ? ct찾기줄() : ''}
         ${전체.length && !isMo() ? `<div class="ct-chips ct-viewsw" role="group" aria-label="보는 방식">${[['', '목록'], ['table', '계약현황 표']].map(([k, t]) => `<button type="button" class="chip${(CT.view || '') === k ? ' on' : ''}" aria-pressed="${(CT.view || '') === k}" data-act="ct-view" data-v="${k}">${t}</button>`).join('')}</div>` : ''}
-        ${CT.view === 'table' && !isMo() && 전체.length ? ct현황표(ctFilter(새판).filter(r => !(CT_FORMS[r.form] || {}).explain), 현황 && !칸 && !갱신탭 ? ct외부줄들() : []) : ctRowsHTML(전체, ctFilter(전체), false)}
+        ${CT.view === 'table' && !isMo() && 전체.length ? (전체.length > 새판.length ? `<p class="sub ct-tbl-note" style="margin:0 0 8px;font-size:12.5px">고친 판이 있는 앞 확정본 ${전체.length - 새판.length}건은 표에서 빼고 가장 새 판만 보여 드립니다 - 목록 보기에서는 함께 보입니다</p>` : '') + ct현황표(ctFilter(새판).filter(r => !(CT_FORMS[r.form] || {}).explain), 현황 && !칸 && !갱신탭 ? ct외부줄들() : []) : ctRowsHTML(전체, ctFilter(전체), false)}
         ${칸 ? '' : ctExtHTML()}</div>
       ${일정 ? `<aside class="ct-aside">${일정}</aside>` : ''}
     </div>`;
@@ -18489,7 +18514,7 @@ V['#/partner/contract'] = (id) => {
     </div>
     ${ct안읽은의견(CT.track) ? `<p class="ct-note noprint"><button type="button" class="tapx" data-act="ct-notes-open" style="font-weight:700;color:#B25E00">초안에 새 의견 ${ct안읽은의견(CT.track)}건 - 일정·체크에서 보기</button></p>` : ''}
     ${잠김 ? `<p class="ct-note noprint">확정본입니다 · ${esc(String(CT.row.sealed_at||'').slice(0,16).replace('T',' '))} 확정 · 지문 ${esc(String(CT.row.sha256||'').slice(0,12))}… 고칠 수 없습니다. 바꿔야 하면 ‘고쳐서 새 판 만들기’를 누르세요.</p>` : ''}
-    ${CT.row && CT.row.prev_id ? `<p class="ct-note noprint">확정 후 수정한 판입니다. ${CT.row.status === 'sealed' ? '앞 확정본도 목록에 그대로 남아 있습니다 - 필요 없으면 앞 확정본을 열어 휴지통으로 옮기세요.' : '앞 확정본은 지워지지 않고 목록에 그대로 남습니다.'} <button type="button" class="tapx" data-act="ct-open-prev" style="font-weight:700;color:var(--ind700)">앞 확정본 보기</button></p>` : ''}`;
+    ${CT.row && CT.row.prev_id ? `<p class="ct-note noprint">확정 후 수정한 판입니다. ${ct앞판안내(CT.row)} <button type="button" class="tapx" data-act="ct-open-prev" style="font-weight:700;color:var(--ind700)">앞 확정본 보기</button></p>` : ''}`;
 
   if(CT.mode === 'scan' && !잠김) return `
 <div class="scr fade" style="background:var(--n50)">
@@ -19529,7 +19554,7 @@ function ctExtraHTML(doc){
 /* 다가오는 일정 - 목록 옆은 2주 안 8개, 일정·알림 화면은 60일 안 40개. 새 판·갱신으로 대체된 앞 계약서는 뺀다 */
 function ctUpcomingHTML(rows, 날수 = 14, 최대 = 8){
   const 오늘 = ct오늘(), 설정 = ct알림설정(CT.alert && CT.alert.cfg);
-  const 앞판 = new Set(rows.map(r => r.prev_id).filter(Boolean));
+  const 앞판 = ct일정뺄것(CT.list && CT.list.length ? CT.list : rows);
   const 일 = rows.filter(r => !앞판.has(r.id) && !(CT_FORMS[r.form] || {}).explain && !(r.track && r.track.off))
     .flatMap(r => ct일정목록(r, 설정).map(e => ({ ...e, r, n: ct날차(오늘, e.날) })))
     .filter(e => e.n >= 0 && e.n <= 날수 && !(e.k === 'report' && (e.r.status !== 'sealed' || e.r.reported_at)) && !(e.k === 'prep' && (e.r.status !== 'sealed' || e.마침)))
@@ -20376,22 +20401,26 @@ function ex보수(doc){
    틀을 다시 만들 때: python -X utf8 tools/확인설명서_틀.py → node tools/확인설명서_짝.mjs → forms/ex-hwp.json 을 새로 쓰고 아래 EXH_판(틀의 v)을 맞춘다 - 틀은 열 때 받는다(11-21).
    [Ⅳ] 입목·광업재단·공장재단은 2026-11-20 파트너가 올린 원본으로 더했다 */
 /* 틀(약 170KB)은 첫 화면에 싣지 않고 확인·설명서를 그릴 때 forms/ex-hwp.json 을 받는다(2026-11-21 대표님 - 첫 화면 가볍게).
-   받는 동안은 '불러오는 중', 못 받으면 예전 모양(exDocHTML)으로 보이고 새로고침 때 다시 받는다 */
-let EXH_DATA = null, EXH_부름 = null, EXH_실패 = false;
+   받는 동안은 '불러오는 중', 못 받으면 예전 모양(exDocHTML)으로 보이고 30초 뒤(또는 인쇄 · 저장을 누를 때) 다시 받는다 */
+let EXH_DATA = null, EXH_부름 = null, EXH_실패 = 0;   /* 실패 = 못 받은 때(ms) - 한 번 끊기면 새로고침 전까지 예전 모양이던 것(11-21 코드리뷰) */
+const EXH_쉼 = 30000, exh쉬나 = () => !!EXH_실패 && Date.now() - EXH_실패 < EXH_쉼;
+const exh기다림HTML = '<div class="exh-wait" role="status" style="padding:56px 24px;text-align:center;color:var(--n500);font-size:14px">확인·설명서 원본 틀을 불러오는 중입니다…</div>';
 const EXH_판 = "2026-11-20", EXH_양식 = new Set(["explain-home","explain-biz","explain-land","explain-etc"]);
 function exh불러오기(){
-  if(EXH_DATA || EXH_실패) return Promise.resolve(EXH_DATA);
+  if(EXH_DATA || exh쉬나()) return Promise.resolve(EXH_DATA);
   if(!EXH_부름) EXH_부름 = fetch('/forms/ex-hwp.json?v=' + EXH_판, { credentials: 'same-origin' })
     .then(r => r.ok ? r.json() : Promise.reject(new Error('틀 ' + r.status)))
-    .then(j => { if(!j || !j.forms) throw new Error('틀 모양'); EXH_DATA = j; return j; })
-    .catch(() => { EXH_실패 = true; if(typeof toast === 'function') toast('확인·설명서 원본 틀을 받지 못해 기본 모양으로 보여 드립니다 - 새로고침하면 다시 받습니다'); return null; })
+    .then(j => { if(!j || !j.forms) throw new Error('틀 모양'); EXH_DATA = j; EXH_실패 = 0; return j; })
+    .catch(() => { EXH_실패 = Date.now(); if(typeof toast === 'function') toast('확인·설명서 원본 틀을 받지 못해 기본 모양으로 보여 드립니다 - 잠시 뒤 다시 받습니다'); return null; })
     .finally(() => { EXH_부름 = null; if(typeof render === 'function') render(); });
   return EXH_부름 || Promise.resolve(EXH_DATA);
 }
 /* 원본 틀이 있는 확인·설명서인데 아직 틀을 받기 전인가 - 받기 시작만 걸어 둔다 */
-const exh기다림 = doc => !!(doc && !EXH_DATA && !EXH_실패 && EXH_양식.has(doc.form) && (exh불러오기(), true));
+const exh기다림 = doc => !!(doc && !EXH_DATA && !exh쉬나() && EXH_양식.has(doc.form) && (exh불러오기(), true));
 /* 인쇄 · PDF 처럼 바로 서류가 필요한 단추 - 틀을 받는 중이면 잠깐 기다려 달라고 한다 */
-const exh준비됐나 = doc => { if(!exh기다림(doc)) return true; if(typeof toast === 'function') toast('확인·설명서 원본 틀을 불러오는 중입니다 - 잠시 뒤 다시 눌러 주세요'); return false; };
+/* 쉬는 중이어도 인쇄 · 저장을 누르면 바로 한 번 더 받아 본다 - 못 받은 바로 뒤(3초 안) 다시 누르면 기본 모양으로 그대로 낸다 */
+const exh준비됐나 = doc => { if(doc && !EXH_DATA && EXH_실패 && Date.now() - EXH_실패 > 3000 && EXH_양식.has(doc.form)) EXH_실패 = 0;
+  if(!exh기다림(doc)) return true; if(typeof toast === 'function') toast('확인·설명서 원본 틀을 불러오는 중입니다 - 잠시 뒤 다시 눌러 주세요'); return false; };
 const EXH_mm = v => (v / 100).toFixed(2) + 'mm';
 const EXH_단위 = /^(%|㎡|원|만원|m|분|개|대|층|년|세대)$/;
 const exHwp쓸까 = doc => !!(EXH_DATA && doc && EXH_DATA.forms[doc.form]);
@@ -20516,7 +20545,7 @@ function exHwpDocHTML(doc, o = {}){
   if(typeof document !== 'undefined') setTimeout(exh맞춤, 0);
   const 유형 = (doc.ex || {}).taxType || '';
   return `<div class="exh-doc${적기 ? ' edit' : ''}" data-form="${esc(doc.form)}">
-    ${o.only != null ? '' : `<div class="exh-bar noprint" role="navigation" aria-label="쪽 넘기기">
+    ${o.only != null || o.bare ? '' : `<div class="exh-bar noprint" role="navigation" aria-label="쪽 넘기기">
       <span class="exh-pgs">${F.pages.map((_, i) => `<button type="button" class="chip" data-act="exh-pg" data-v="${i}">${i + 1}쪽</button>`).join('')}</span>
       <span class="exh-tax"><span class="lab">중개사무소</span>${['일반과세', '간이과세'].map(t => `<button type="button" class="chip${유형 === t ? ' on' : ''}" data-act="ex-taxtype" data-v="${t}" aria-pressed="${유형 === t}" ${typeof ctSealed === 'function' && ctSealed() ? 'disabled' : ''}>${t}</button>`).join('')}</span>
     </div>`}
@@ -20920,6 +20949,7 @@ function ctInput(el, k){
   if(CT.filled2 && CT.filled2.delete(path)) el.classList.remove('dj');
   CT.lastPath = kind === 'ct' || kind === 'ct$' ? path : null;
   if(kind === 'ct'){ ctSet(CT.doc, path, el.value); if(path === 'period.to') CT.termN = null;
+    if(path === 'property.show'){ const 팁 = document.querySelector('#app .ct-show-tip'); if(팁) 팁.outerHTML = ct소재지안내(CT.doc.property); }   /* 다시 그리기 전에도 되돌리기 단추가 바로(11-21 코드리뷰) */
     if(/^property\.land(RightKind|RatioDen|RatioNum)$/.test(path)){ const P = CT.doc.property; P.landRight = ct대지권합(P); } }
   else if(kind === 'ct$'){
     const 전 = +ctGet(CT.doc, path) || 0;
@@ -23252,7 +23282,7 @@ function handle(a,v,el){
     case 'fu-del': { if(FU.del !== v){ FU.del = v; render(); return true; }
       FU.del = null; FU.list = FU.list.filter(f => f.id !== v); render();
       ctPost({ what:'form-del', id: v }).then(({ ok, j }) => { if(j && j.list) FU.list = j.list; render(); toast(ok ? '서식을 지웠습니다' : (j.error || '지우지 못했습니다')); }); return true; }
-    case 'ctf-print': { const [k, key] = String(v).split('|'); return ctPrint(ct빈서식HTML(k, key)); }
+    case 'ctf-print': { const [k, key] = String(v).split('|'); if(k === 'ex' && !exh준비됐나({ form: key })) return true; return ctPrint(ct빈서식HTML(k, key)); }
     case 'ct-copy-part': { const a = ct복사할(); CT.copyParts = a.includes(v) ? a.filter(k => k !== v) : [...a, v]; render(); return true; }
     case 'ct-copy-this':
       if(CT.dirty || !CT.id) return toast('계약서를 먼저 임시저장해 주세요'), true;

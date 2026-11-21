@@ -854,6 +854,16 @@ export const 알림제목 = e => e.k === 'lawyer' ? '법무사 예약할 때입�
   : `${e.이름} ${e.남음 === 0 ? '당일' : e.남음 === 1 ? '전날' : `${e.남음}일 전`}`;
 
 /* 목록·한 장 읽기 - 일정 계산에 쓰는 날짜를 doc 에서 꺼내 같이 준다. track 칸이 아직 없으면(0032 전) 빼고 다시 읽는다 */
+/* 일정 · 알림에서 뺄 계약서 (2026-11-21 코드리뷰) - 화면 ct일정뺄것 과 같은 규칙(검사/계약서.mjs 가 같은 사례로 둘을 돌려 본다).
+   ① 고친 판 · 갱신계약이 확정돼 보관함 · 휴지통이 아닌 곳에 있으면 앞 판은 뺀다 - 같은 일정이 두 번 가지 않게.
+   ② 고쳐 쓰는 중인 판(작성 중)은 앞 확정본이 살아 있으면 뺀다 - 확정 전까지는 앞 확정본 일정으로 알린다(전에는 새 판 초안만 만들어도 앞 확정본 알림이 끊겼다) */
+const 살았나 = c => !(c && c.track && (c.track.arch || c.track.trash));
+const 갱신판인가 = c => { const id = c && c.renew && typeof c.renew === 'object' ? c.renew.id : c && c.renew; return !!id && id === c.prev_id; };
+export function 일정뺄것(rows) {
+  const L = rows || [], 앞 = new Set(L.filter(c => c && c.prev_id && c.status === 'sealed' && 살았나(c)).map(c => c.prev_id)), 맵 = new Map(L.map(c => [c && c.id, c]));
+  for (const c of L) if (c && c.prev_id && c.status !== 'sealed' && !갱신판인가(c)) { const p = 맵.get(c.prev_id); if (p && p.status === 'sealed' && 살았나(p) && !앞.has(p.id)) 앞.add(c.id); }
+  return 앞;
+}
 const 일정열 = ',cd:doc->>contractDate,mid:doc->deal->>mid,md:doc->deal->>midDate,m2:doc->deal->>mid2,md2:doc->deal->>mid2Date,mx:doc->deal->mids,bd:doc->deal->>balanceDate,ex:doc->period->>to';
 async function 읽기(q) {
   const x = await db('bk_contract', q.replace('{track}', ',track'));
@@ -940,7 +950,7 @@ export async function reportDueCron(req, res) {
   const 오늘 = 한국오늘();
   /* 확인·설명서를 뺀 계약서 - 1200일 안에 만든 것. 가장 멀리 가는 일정은 임대차 만기 6개월 전(2년 계약이면 작성 뒤 약 550일,
      4년이어도 약 1300일 전후 - 갱신하면 새 계약서가 생긴다). 전에는 400일이라 2년 임대차의 만기 알림이 나가지 않았다(2026-11-05 리뷰). 쪽으로 나눠 다 읽는다 */
-  const 열 = 'id,agent_id,agent_user,form,title,status,reported_at,prev_id,sub:doc->>sub' + 일정열;
+  const 열 = 'id,agent_id,agent_user,form,title,status,reported_at,prev_id,renew:doc->renewOf->>id,sub:doc->>sub' + 일정열;   /* renew - 갱신계약인지(일정뺄것) */
   const 쪽 = 1000, rows = [];
   let 트랙 = true;
   for (let 처음 = 0; ; 처음 += 쪽) {
@@ -951,8 +961,8 @@ export async function reportDueCron(req, res) {
     rows.push(...받은);
     if (받은.length < 쪽) break;
   }
-  /* 고쳐 새 판을 만들었거나 갱신계약으로 이어 간 앞 계약서는 뺀다 - 같은 일정이 두 번 가지 않게 */
-  const 앞판 = new Set(rows.map(c => c.prev_id).filter(Boolean));
+  /* 확정된 새 판 · 갱신계약으로 이어 간 앞 계약서, 앞 확정본이 살아 있는 작성 중 새 판은 뺀다 - 같은 일정이 두 번 가지 않게(일정뺄것) */
+  const 앞판 = 일정뺄것(rows);
   /* 보관함 · 휴지통에 넣은 계약서는 알리지 않는다(2026-11-10) */
   const 살아있음 = rows.filter(c => c.agent_id && !앞판.has(c.id) && !(c.track && (c.track.arch || c.track.trash)));
   /* 휴지통 30일이 지난 작성 중 계약서는 지운다 - 확정본은 휴지통에 남는다(지우지 않음) */
@@ -1227,9 +1237,9 @@ export async function icsFeed(req, res) {
   const 사 = a.r.ok ? a.rows[0] : null;
   if (!사 || (Number.isInteger(사.icsN) ? 사.icsN : 0) !== t.n) return 없음();
   const 설정 = 알림설정(사.alert), 오늘 = 한국오늘(), 부터 = 날더하기(오늘, -90);
-  const x = await 읽기(`select=id,form,title,status,reported_at,prev_id,sub:doc->>sub${일정열}{track}&agent_id=eq.${t.a}&form=not.like.explain*&created_at=gte.${날더하기(오늘, -1200)}&order=updated_at.desc&limit=1000`);
+  const x = await 읽기(`select=id,form,title,status,reported_at,prev_id,renew:doc->renewOf->>id,sub:doc->>sub${일정열}{track}&agent_id=eq.${t.a}&form=not.like.explain*&created_at=gte.${날더하기(오늘, -1200)}&order=updated_at.desc&limit=1000`);
   if (!x.r.ok) return res.status(502).json({ error: '일정을 읽지 못했습니다' });
-  const 앞판 = new Set(x.rows.map(c => c.prev_id).filter(Boolean));
+  const 앞판 = 일정뺄것(x.rows);
   const 일들 = [];
   for (const c of x.rows) {
     if (앞판.has(c.id) || (c.track && (c.track.arch || c.track.trash || c.track.off))) continue;

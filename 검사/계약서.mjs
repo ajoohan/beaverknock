@@ -774,8 +774,10 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
      && /@media \(max-width:1179px\)\{ \.nav \.items\{min-width:0;flex:1 1 auto;overflow-x:auto/.test(css),
      '좁은 데스크톱: 메뉴 글자는 안 접고, 1279px 이하는 칸을 줄이고 사무소 이름을 감추고, 1179px 이하는 메뉴 줄을 옆으로 민다');
   ok(/켜짐 = 줄 && 줄\.querySelector\('a\.on'\)[\s\S]{0,200}줄\.scrollLeft \+=/.test(js), '메뉴 줄이 밀려도 켜진 탭이 보이게 맞춘다');
-  ok(/body\.mo \.ct-bar > div\{display:grid !important;grid-template-columns:repeat\(3,1fr\)/.test(css) && /body\.mo \.ct-long\{display:none\}/.test(css),
-     '휴대폰 계약서 위 단추는 세 칸씩 · 긴 이름은 줄인다 (네 줄로 몰리지 않게)');
+  ok(/body\.mo \.ct-mb1,body\.mo \.ct-mb2\{display:flex;gap:8px\}/.test(css) && /body\.mo \.ct-long\{display:none\}/.test(css) && /body\.mo \.ct-more-p \.ct-long\{display:inline\}/.test(css)
+     && js.includes('<details class="ct-more"><summary class="btn sec sm">더보기</summary>') && /const 더 = \[[\s\S]{0,900}data-act="ct-plan"[\s\S]{0,900}data-act="ct-explain"/.test(js),
+     '휴대폰 계약서 위 단추는 늘 쓰는 것 한 줄 + 저장·확정 한 줄, 나머지는 더보기 (2026-11-22 - 네 줄로 쌓이지 않게)');
+  ok(/body\.mo \.ct-subnav\{flex-wrap:nowrap;overflow-x:auto/.test(css) && js.includes("for(const 줄 of app.querySelectorAll('.opsNav, .ct-subnav'))"), '휴대폰 계약서 메뉴는 한 줄로 밀어 보고 고른 칸이 보이게 맞춘다');
 }
 
 /* ── 계약서 종류 (2026-10-30 대표님 '계약서 종류 전체 목록') ── */

@@ -281,6 +281,7 @@ body.mo .footlinks{gap:10px 16px!important}
 .biz.mo{grid-template-columns:repeat(2,minmax(0,1fr));column-gap:12px;font-size:12px;line-height:1.65}
 .biz p{margin:0}
 .bz-col{display:flex;flex-direction:column;min-width:0}
+body.mo .bz-col a{padding-block:8px}   /* 글줄 안 링크라 자리는 그대로 · 누르는 자리만 넓힌다 (2026-11-22) */
 .bz-name{font-weight:700;color:var(--n700)}
 .bz-i{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:var(--n700)}
 .bz-i em{margin-right:6px;font-style:normal;color:var(--n500)}
@@ -2123,10 +2124,19 @@ p,li,dd,.sub,.lines,.opt{line-break:strict;overflow-wrap:break-word}
 
 /* ── 계약서 (2026-10-29) ── */
 .ct-bar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
-/* 휴대폰: 단추가 여섯까지 늘어 오른쪽으로 몰리면 네 줄이 됐다 - 세 칸씩 두 줄로 고르게, 긴 이름은 줄인다 */
-body.mo .ct-bar{flex-direction:column;align-items:stretch}
-body.mo .ct-bar > div{display:grid !important;grid-template-columns:repeat(3,1fr);gap:8px}
-body.mo .ct-bar > div .btn{width:100%;padding-left:4px;padding-right:4px;font-size:13.5px}
+/* 휴대폰: 늘 쓰는 단추 한 줄 + 저장 · 확정 한 줄, 나머지는 '더보기' 판 (2026-11-22 UI 점검 - 열 개가 네 줄로 쌓였다) */
+body.mo .ct-bar{flex-direction:column;align-items:stretch;position:relative}
+body.mo .ct-mbar{display:flex;flex-direction:column;gap:8px}
+body.mo .ct-mb1,body.mo .ct-mb2{display:flex;gap:8px}
+body.mo .ct-mb1 > *,body.mo .ct-mb2 > *{flex:1 1 0;min-width:0}
+body.mo .ct-mbar .btn{width:100%;padding-left:4px;padding-right:4px;font-size:13.5px}
+.ct-more > summary{list-style:none;cursor:pointer;user-select:none}
+.ct-more > summary::-webkit-details-marker{display:none}
+.ct-more > summary::after{content:'';width:6px;height:6px;margin:-3px 0 0 6px;border-right:1.6px solid currentColor;border-bottom:1.6px solid currentColor;transform:rotate(45deg);transition:transform .15s ease}
+.ct-more[open] > summary::after{transform:rotate(-135deg);margin-top:3px}
+.ct-more[open] > summary{background:var(--n100)}
+.ct-more-p{position:absolute;left:0;right:0;z-index:30;margin-top:8px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:12px;background:var(--white);border:1px solid var(--n200);border-radius:14px;box-shadow:0 12px 32px rgba(20,16,40,.14)}
+body.mo .ct-more-p .ct-long{display:inline}
 body.mo .ct-long{display:none}
 .ct-forms{display:flex;flex-wrap:wrap;gap:8px}
 .ct-pick{display:flex;flex-direction:column;gap:14px}
@@ -2134,6 +2144,12 @@ body.mo .ct-long{display:none}
 .ct-alert{display:flex;flex-direction:column;gap:12px}
 .ct-sws{display:flex;gap:4px 24px;flex-wrap:wrap}
 .ct-sw{min-height:40px;gap:10px;justify-content:flex-start}
+/* 대시보드 카드 스위치 - 이름 길이대로 들쭉날쭉했다. 두 칸(휴대폰은 한 칸) · 이름 왼쪽 · 스위치 오른쪽 (2026-11-22 UI 점검) */
+.st-sws{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 32px}
+.st-sws .ct-sw{justify-content:space-between;border-bottom:1px solid var(--n100)}
+body.mo .st-sws{grid-template-columns:1fr}
+/* 조건 접수 완료 - 그림 440 + 글 470 을 나란히 두면 1100px 아래(태블릿 · 좁은 노트북)에서 글 칸이 눌려 카드가 화면 끝에 붙었다. 위아래로 (2026-11-22 UI 점검) */
+@media (max-width:1099px){ body:not(.mo) .done-wrap{flex-direction:column;gap:28px !important;padding:24px 40px 40px !important} body:not(.mo) .done-wrap > :first-child{transform:scale(.82);margin:-36px 0} body:not(.mo) .done-wrap > :last-child{position:relative;z-index:1} }
 .ct-types{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:0 18px}
 .ct-types .pl-chk{border-top:1px solid var(--n100)}
 .ct-law{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:14.5px;color:var(--n700)}
@@ -2467,6 +2483,17 @@ body.mo .ctw-foot .btn{width:100%}
 .ct-find-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .ct-find-bar .inp{flex:1 1 240px;min-width:0}
 .ct-find-more{display:flex;flex-wrap:wrap;gap:8px;width:100%}
+/* 휴대폰 - 접는 거르기 · 펼치면 두 칸으로 이름 위 · 칸 아래 (2026-11-22 UI 점검: 들쭉날쭉 여덟 칸이 한 화면) */
+.ct-find-fold{width:100%} .ct-find-fold > summary{list-style:none;cursor:pointer;width:max-content} .ct-find-fold > summary::-webkit-details-marker{display:none}
+.ct-find-fold > summary::after{content:'';width:6px;height:6px;margin:-3px 0 0 8px;border-right:1.6px solid currentColor;border-bottom:1.6px solid currentColor;transform:rotate(45deg)}
+.ct-find-fold[open] > summary::after{transform:rotate(-135deg);margin-top:3px}
+.ct-find-fold[open] > .ct-find-more{margin-top:10px}
+body.mo .ct-find-more{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+body.mo .ct-find-more .ct-sel{flex-direction:column;align-items:stretch;gap:4px;min-width:0}
+body.mo .ct-find-more .ct-sel .inp{width:100%}
+body.mo .ct-find-more .ct-qall{grid-column:1/-1}
+body.mo .ct-find-more .ct-sel:has(> select + select){grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:10px}
+body.mo .ct-find-more .ct-sel:has(> select + select) > span{grid-column:1/-1}
 .hb-g{display:flex;flex-direction:column;gap:2px;padding-top:8px;border-top:1px solid var(--n100)}
 .ct-notes{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
 .ct-notes li{display:flex;flex-direction:column;gap:4px;padding:10px 12px;border:1px solid var(--n200);border-radius:10px;background:var(--white)}
@@ -2791,6 +2818,7 @@ button.rm-file:hover{border-color:var(--ind200);background:var(--ind50)}
 .dz-cal{padding:16px 16px 14px}
 .dz-cal-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
 .dz-cal-h b{font-size:15px}
+body.mo .dz-cal-n{width:40px;height:40px}   /* 휴대폰 손가락 자리 (2026-11-22 UI 점검) */
 .dz-cal-n{width:32px;height:32px;border-radius:9px;border:1px solid var(--n200);background:var(--white);font:inherit;font-size:17px;color:var(--n700);cursor:pointer}
 .dz-cal-n:hover{border-color:var(--ind200)}
 .dz-cal-g{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center}
@@ -3031,6 +3059,10 @@ body:not(.mo) .ctx-scr{height:100vh;height:100dvh;overflow:hidden}
 body:not(.mo) .ctx-head{flex-wrap:nowrap}
 body:not(.mo) .ctx-head > :is(.back,.badge,.ctx-badge){flex:none}
 body:not(.mo) .ctx-h1{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* #app h1 · button 의 text-wrap:balance 가 nowrap 을 덮어 1024px 에서 '주택임대차계 / 약서' · '나간 초안 링크 / 끊기' 로 꺾였다. 1023px 이하는 머리 줄을 접는다(768px 에서 화면 밖으로 밀렸다) (2026-11-22 UI 점검) */
+body:not(.mo) #app .ctx-head .ctx-h1{text-wrap:nowrap}
+body:not(.mo) #app .ctx-head .ctx-rev{text-wrap:nowrap;flex:none}
+@media (max-width:1023px){ body:not(.mo) .ctx-head{flex-wrap:wrap} }
 body:not(.mo) .ctx-sub{flex:1 1 0;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ctx-body{flex:1 1 auto;min-height:0;display:grid;grid-template-columns:minmax(378px,450px) minmax(0,1fr);gap:12px}
 .ctx-side,.ctx-view{min-height:0;display:flex;flex-direction:column;background:var(--white);border:1px solid var(--n200);border-radius:12px;box-shadow:var(--sh0);overflow:hidden}
@@ -3138,7 +3170,8 @@ table.ec td{line-height:2.2;color:var(--n800,#2a2a30)}
 .ec-tools{display:inline-flex;gap:12px;margin-left:8px;font-size:13px}
 .ct-secst{min-height:28px}
 /* 휴대폰 파트너 머리 - 이름이 화면 밖으로 밀려 잘리던 것 */
-body.mo .ptn-nav .umenu-btn .nm2{max-width:48px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+body.mo .ptn-nav .umenu-btn .nm2{max-width:64px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media (max-width:400px){ body.mo .ptn-nav .umenu-btn .car{display:none} }   /* 세 글자 이름이 '김하...' 로 잘렸다 - 꺾쇠 자리를 이름에 (2026-11-22) */
 @media (max-width:400px){ body.mo .ptn-nav > .badge, body.mo .ptn-nav .right > .badge{display:none} }
 /* 마이페이지 바로 가기 타일 - 값이 한두 글자만 보이던 것: 이름 아래 줄에 값 */
 .acc-tiles .acc-go{flex-wrap:wrap;row-gap:0;padding:8px 16px}
@@ -3173,7 +3206,7 @@ html body.mo table.ec-pay .ec-l2{margin-left:0}
 html body.mo table.ec-pay .ec-tools{display:flex;margin:2px 0 0;line-height:1.6}
 /* 휴대폰 - 공적장부 안내 줄: 글 아래에 단추를 나란히(단추가 겹치던 것) */
 body.mo .scan-mini,body.mo .scan-done{flex-direction:column;align-items:stretch;gap:8px}
-body.mo .scan-mini .eqb,body.mo .scan-done .eqb{display:flex;flex-wrap:wrap;gap:8px}
+body.mo .scan-mini .eqb,body.mo .scan-done .eqb{display:flex;flex-wrap:wrap;gap:8px;width:100%}   /* .eqb 의 max-content 가 남아 두 단추가 2/3 폭으로 세로로 쌓였다 (2026-11-22) */
 body.mo .scan-mini .eqb .btn,body.mo .scan-done .eqb .btn{flex:1 1 130px;width:auto!important;min-width:0;white-space:nowrap}
 /* 휴대폰 - 서류 올리기 카드: 설명은 위, 단추는 아래 한 줄(설명이 세로로 쪼개지던 것) */
 body.mo .scan-slot{flex-direction:column;align-items:stretch;gap:10px}
@@ -3680,6 +3713,10 @@ body.mo .adm-grid{grid-template-columns:minmax(0,1fr)}
 body.mo .ct-lay{display:flex;flex-direction:column;gap:16px}
 body.mo .ct-lay .ct-aside{order:-1}
 .ct-subnav{margin-bottom:-4px}
+/* 휴대폰 - 일곱 칸이 네 줄을 차지했다. 한 줄로 두고 옆으로 민다(고른 칸은 render 가 보이게 맞춘다) (2026-11-22 UI 점검) */
+body.mo .ct-subnav{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin-left:-24px;margin-right:-24px;padding:2px 24px;scroll-padding:0 24px}
+body.mo .ct-subnav::-webkit-scrollbar{display:none}
+body.mo .ct-subnav .chip{flex:none}
 /* 종류 칸이 1024px 에서 '부동산(아파트) 전…' 으로 잘렸다 - 종류에 폭을 더 주고, 상태는 가장 긴 표(확정본 · 날짜 156px)에 맞춘다 (2026-10-30) */
 body:not(.mo) .ct-table .ct-row,.ct-th{display:grid;grid-template-columns:minmax(0,1.9fr) minmax(0,1.8fr) minmax(0,1.1fr) 92px 160px;gap:12px;align-items:center;text-align:left}
 .ct-th{padding:10px 18px;background:var(--n50);border-bottom:1px solid var(--n100);font-size:13px;font-weight:700;color:var(--n500)}
@@ -8108,7 +8145,7 @@ V['#/contact'] = () => { const d=S.draft; if(d.전달됨) return 전달된연락
 V['#/done'] = () => `
 <div class="scr fade">
   <div class="nav pad"><a data-go="#/" style="flex:none">${logoLockup({h:25,tag:!isMo()})}</a><div class="right">${S.user ? userMenu() : `<a class="tapx" data-go="#/my" style="font-weight:600">내 조건 확인</a>`}</div></div>
-  <div style="flex:1;display:flex;${isMo()?'flex-direction:column;':''}align-items:center;justify-content:center;gap:${isMo()?24:80}px;padding:${isMo()?'10px 26px 26px':'0 76px'}">
+  <div class="done-wrap" style="flex:1;display:flex;${isMo()?'flex-direction:column;':''}align-items:center;justify-content:center;gap:${isMo()?24:80}px;padding:${isMo()?'10px 26px 26px':'0 76px'}">
     <div style="position:relative;display:flex;align-items:center;justify-content:center;flex:none">
       <div style="position:absolute;width:${isMo()?240:400}px;height:${isMo()?240:400}px;border-radius:var(--r-full);background:rgba(247,244,255,.92)"></div>
       <span style="position:absolute;left:2%;bottom:2%;z-index:2">${beaverly(isMo()?190:320)}</span>
@@ -10378,7 +10415,7 @@ V["#/partner/listings"] = () => {
     return `<div class="lg-row${L.status === 'done' ? ' done' : ''}">
       <div class="lg-c1"><span class="badge ${색}">${상}</span>${등상 && 등상.덧 ? `<small class="lg-why${등상.k === 'fail' ? ' fail' : ''}">${esc(등상.덧)}</small>` : ''}${ms.length ? `<small class="lg-m">맞는 손님 ${ms.length}명</small>` : ''}</div>
       <a class="lg-c2" data-go="#/partner/listing/${L.id}"><b>${esc(L.name)} ${demoTag(L, 'vertical-align:middle')}</b><span>${esc(specOf(L))}</span></a>
-      <div class="lg-c3"><b class="num">${priceOf(L)}</b>${L.priceLog.length ? `<small class="lg-chg">금액 변경 ${L.priceLog.length}회</small>` : ''}</div>
+      <div class="lg-c3"><b class="num">${priceOf(L)}</b>${(L.priceLog || []).length ? `<small class="lg-chg">금액 변경 ${(L.priceLog || []).length}회</small>` : ''}</div>
       <div class="lg-c4 lg-priv" data-l="의뢰인">${m.who || m.phone ? `<b>${esc(m.who || '')}</b><span class="num">${esc(m.phone || '')}</span>` : '<span class="lg-none">-</span>'}</div>
       <div class="lg-c5 lg-priv" data-l="특이사항">${m.note ? esc(m.note.length > 60 ? m.note.slice(0, 60) + '…' : m.note) : '<span class="lg-none">-</span>'}</div>
       <div class="lg-c6" data-l="노출 기준"><span class="badge ${g.빠짐.length ? 'b-warn' : 'b-ok'}">${g.찬}/${g.다}</span>${g.빠짐.length ? `<small>${esc(g.빠짐.slice(0, 2).join(' · '))}${g.빠짐.length > 2 ? ` 외 ${g.빠짐.length - 2}` : ''}</small>` : ''}</div>
@@ -10487,7 +10524,7 @@ function 물건관리HTML(L){
     <label class="lg-ck"><input type="checkbox" data-act="lg-hide" data-v="${L.id}" ${L.hideUnit ? 'checked' : ''} ${바쁨}><span><b>손님 화면에서 동 · 호 숨기기</b><small>끄면 노출할 때 동까지 보입니다 · 호는 연결 전에는 보이지 않습니다</small></span></label>
     <div class="lm-grid"><label class="ct-f wide"><span class="lab">한줄 특징 (40자)</span><input class="inp" data-in="lgp:${L.id}:one" maxlength="40" value="${esc(e.one != null ? e.one : L.oneLine)}" placeholder="예: 올수리 · 남향 로열층 · 역 도보 5분" autocomplete="off"></label>
       ${돈칸('dep', L.deal === '매매' ? '매매가' : '보증금', L.dep)}${L.deal === '매매' || L.deal === '전세' ? '' : 돈칸('rent', '월세', L.rent)}</div>
-    ${L.priceLog.length ? `<p class="sub" style="margin:0;font-size:13px;line-height:1.7">금액 변경 이력 · ${L.priceLog.slice(-3).map(x => `${날(x.at)} ${comma(String((x.dep || [])[0] || 0))}원 → ${comma(String((x.dep || [])[1] || 0))}원${(x.rent || [])[0] !== (x.rent || [])[1] ? ` / 월 ${comma(String((x.rent || [])[0] || 0))}원 → ${comma(String((x.rent || [])[1] || 0))}원` : ''}`).join(' · ')}</p>` : ''}` : `<p class="sub" style="margin:0">${L.status === 'done' ? '거래가 끝난 물건입니다.' : L.status === 'arch' ? '보관함에 있는 물건입니다.' : '휴지통에 있는 물건입니다 - 30일 뒤 지워집니다.'}${L.closedAt ? ` (${날(L.closedAt)})` : ''}</p>`}
+    ${(L.priceLog || []).length ? `<p class="sub" style="margin:0;font-size:13px;line-height:1.7">금액 변경 이력 · ${(L.priceLog || []).slice(-3).map(x => `${날(x.at)} ${comma(String((x.dep || [])[0] || 0))}원 → ${comma(String((x.dep || [])[1] || 0))}원${(x.rent || [])[0] !== (x.rent || [])[1] ? ` / 월 ${comma(String((x.rent || [])[0] || 0))}원 → ${comma(String((x.rent || [])[1] || 0))}원` : ''}`).join(' · ')}</p>` : ''}` : `<p class="sub" style="margin:0">${L.status === 'done' ? '거래가 끝난 물건입니다.' : L.status === 'arch' ? '보관함에 있는 물건입니다.' : '휴지통에 있는 물건입니다 - 30일 뒤 지워집니다.'}${L.closedAt ? ` (${날(L.closedAt)})` : ''}</p>`}
     <div class="lg-acts">${살아 ? `<button type="button" class="btn sec sm" data-act="lg-save" data-v="${L.id}" ${바쁨}>${MG.busy === L.id ? '저장하는 중…' : '저장'}</button>
       ${노출 ? (L.vis === 'open' ? `<button type="button" class="btn tool sm" data-act="lg-vis" data-v="${L.id}|private" ${바쁨}>노출 종료</button>` : `<button type="button" class="btn pri sm" data-act="lg-vis" data-v="${L.id}|open" ${바쁨}>노출하기</button>`) : ''}
       <button type="button" class="btn tool sm" data-act="lg-edit" data-v="${L.id}" ${바쁨}>고치기</button>
@@ -13959,7 +13996,7 @@ function dzNowHTML(){
 
 /* 증감 알약 - 색만으로 말하지 않는다(▲▼ 와 숫자를 함께) */
 const dzPill = (d, 단위 = '') => d > 0 ? `<span class="dz-pill up">▲ ${d}${단위}</span>`
-  : d < 0 ? `<span class="dz-pill dn">▼ ${-d}${단위}</span>` : `<span class="dz-pill">= 0${단위}</span>`;
+  : d < 0 ? `<span class="dz-pill dn">▼ ${-d}${단위}</span>` : '<span class="dz-pill">변동 없음</span>';
 
 /* 숫자 카드 - 아이콘 · 큰 숫자 · 이름 · (증감) */
 function dzKpi(o){
@@ -14118,6 +14155,11 @@ function 홈화면추가가능(){
   return !앱;
 }
 const BK_변경 = [
+  { v:'26.11.22.1', 날:'2026-11-22', 줄:[ '휴대폰 계약서 - 위 단추 열 개가 네 줄로 쌓이던 것을 미리보기 · 저장·보내기 · 더보기 한 줄과 임시저장 · 확정 한 줄로 정리했습니다(일정·체크 · 부속 서류 · 갱신 · 인쇄 · 초안 링크 · 확인·설명서는 더보기 안)',
+    '휴대폰 계약서 메뉴(계약현황 · 작성 · 목록 …) 일곱 칸이 네 줄을 차지하던 것을 한 줄로 - 옆으로 밀어 봅니다',
+    '휴대폰 계약서 목록 - 거르기 칸 여덟 개를 ‘거르기’ 단추로 접었습니다(고른 수가 단추에 보임) · 서류로 채우기 단추가 2/3 폭으로 쌓이던 것',
+    '좁은 PC(1024px) 계약서 편집 화면 - 제목이 ‘주택임대차계 / 약서’로 꺾이던 것 · 태블릿(768px)에서 머리 줄이 화면 밖으로 밀리던 것 · 조건 접수 완료 화면이 태블릿에서 오른쪽 끝에 붙던 것 · 로그아웃한 예시 화면의 매물장부가 열리지 않던 것',
+    '휴대폰 머리의 이름이 ‘김하...’처럼 잘리던 것 · 설정 > 대시보드 카드 스위치를 줄 맞춰 정리 · 대시보드 증감 ‘= 0’을 ‘변동 없음’으로 · 달력 넘김 단추를 손가락 크기로' ] },
   { v:'26.11.21.4', 날:'2026-11-21', 줄:[ '갱신계약에 ‘확정 후 수정한 판’ 안내와 원래 계약서를 휴지통으로 옮기라는 말이 뜨던 것 · ‘고친 새 판이 있습니다’ 단추가 갱신계약 · 휴지통 초안을 가리키던 것',
     '대시보드 · 계약현황 - 확정본을 고치는 동안 같은 계약이 두 줄 · 두 건으로 잡히던 것(새 판을 확정하기 전에는 앞 확정본 한 줄) · 갱신한 계약의 원래 실적이 성과에서 빠지던 것',
     '오른쪽 서류에서 소재지를 고쳐도 되돌리기 단추가 바로 보입니다 · 확인·설명서 원본 틀을 못 받았으면 열어 둔 채로도 30초 뒤 다시 받습니다' ] },
@@ -17914,7 +17956,7 @@ const ct머리 = (제목, 설명, 단추 = '') => `<div class="adm-h"><div><h1 c
 const ct찾기줄 = () => `<div class="ct-find-bar">
       <input class="inp" type="search" data-in="ctq" value="${esc(CT.q || '')}" placeholder="소재지 · 이름 · 연락처 · 종류 · 날짜로 찾기" aria-label="계약서 찾기" autocomplete="off">
       <div class="ct-chips">${[['', '전체'], ['draft', '작성 중'], ['sealed', '확정본'], ['unrep', '신고 전']].map(([k, t]) => `<button type="button" class="chip${(CT.qs || '') === k ? ' on' : ''}" data-act="ctq-st" data-v="${k}" aria-pressed="${(CT.qs || '') === k}">${t}</button>`).join('')}</div>
-      ${(location.hash || '').startsWith('#/partner/contracts/new') ? '' : `<div class="ct-find-more">
+      ${(location.hash || '').startsWith('#/partner/contracts/new') ? '' : `${isMo() ? `<details class="ct-find-fold" data-fold="ctq"${CT.qopen ? ' open' : ''}><summary class="btn tool sm">거르기${ct거르기수() ? ` · ${ct거르기수()}개 고름` : ''}</summary>` : ''}<div class="ct-find-more">
         <label class="ct-sel"><span>종류</span><select class="inp" data-act-ch="ctq-kind" aria-label="계약서 종류로 거르기">${[['', '전체'], ['sale', '매매'], ['lease', '임대차'], ['etc', '분양권 · 권리 등']].map(([k, t]) => `<option value="${k}"${(CT.qk || '') === k ? ' selected' : ''}>${t}</option>`).join('')}</select></label>
         ${(() => { const 양식 = [...new Set((CT.list || []).map(r => r.form).filter(Boolean))]; if(양식.length < 2) return '';
           return `<label class="ct-sel"><span>세부 종류</span><select class="inp" data-act-ch="ctq-form" aria-label="계약서 양식으로 거르기"><option value="">전체</option>${양식.map(f => `<option value="${esc(f)}"${CT.qf === f ? ' selected' : ''}>${esc(ctTitle({ form: f }).replace(/계약서$/, '') || f)}</option>`).join('')}</select></label>`; })()}
@@ -17922,7 +17964,11 @@ const ct찾기줄 = () => `<div class="ct-find-bar">
         <label class="ct-sel"><span>기간</span><select class="inp" data-act-ch="ctq-base" aria-label="기간 기준">${[['u', '고친 날'], ['c', '계약일'], ['b', '잔금일']].map(([k, t]) => `<option value="${k}"${(CT.qb || 'u') === k ? ' selected' : ''}>${t}</option>`).join('')}</select>
           <select class="inp" data-act-ch="ctq-per" aria-label="기간">${[['', '전체'], ['m', '이번 달'], ['3m', '최근 3개월'], ['y', '올해'], ['next', '앞으로 30일'], ...(CT.현황 || ['today', 'late'].includes(CT.qp) ? [['today', '오늘 잔금'], ['late', '잔금 지연']] : [])].map(([k, t]) => `<option value="${k}"${(CT.qp || '') === k ? ' selected' : ''}>${t}</option>`).join('')}</select></label>${ct담당고르기()}
         ${[['ctq-st2', '진행', CT.qst, [['', '전체'], ...Object.entries(CT_진행)]], ['ctq-dt', '거래', CT.qdt, [['', '전체'], ...Object.entries(CT_거래유형)]], ['ctq-kd', '형태', CT.qkd, [['', '전체'], ['new', '신규'], ['renew', '갱신']]], ['ctq-ord', '정렬', CT.qo, [['', '최근 고친 순'], ['c', '계약일 최신순'], ['b', '잔금일 가까운 순']]]].map(([k, t, 지금, 목록]) =>
-          `<label class="ct-sel"><span>${t}</span><select class="inp" data-act-ch="${k}" aria-label="${k === 'ctq-ord' ? '정렬' : t + '로 거르기'}">${목록.map(([v, n]) => `<option value="${v}"${(지금 || '') === v ? ' selected' : ''}>${n}</option>`).join('')}</select></label>`).join('')}</div>`}</div>`;
+          `<label class="ct-sel"><span>${t}</span><select class="inp" data-act-ch="${k}" aria-label="${k === 'ctq-ord' ? '정렬' : t + '로 거르기'}">${목록.map(([v, n]) => `<option value="${v}"${(지금 || '') === v ? ' selected' : ''}>${n}</option>`).join('')}</select></label>`).join('')}</div>${isMo() ? '</details>' : ''}`}</div>`;
+/* 휴대폰에서 접어 둔 거르기에 지금 몇 개를 골랐나 (2026-11-22 UI 점검) - 정렬 · 기간 기준은 거르기가 아니다 */
+const ct거르기수 = () => [CT.qk, CT.qf, CT.qall, CT.qp, CT.qst, CT.qdt, CT.qkd, CT.qw].filter(Boolean).length;
+/* 접은 거르기를 펼친 채로 - 칸 하나를 고를 때마다 다시 그려도 닫히지 않게 */
+if(typeof document !== 'undefined') document.addEventListener('toggle', e => { const d = e.target; if(d && d.dataset && d.dataset.fold === 'ctq') CT.qopen = d.open; }, true);
 /* 거래유형 · 형태 (2026-11-10 파트너 기획 '계약현황 검색 - 상태 · 종류 · 거래유형 · 형태') */
 const CT_거래유형 = { sale: '매매', jeonse: '전세', monthly: '월세', yearly: '연세', short: '단기임대' };
 const ct거래 = r => { const F = CT_FORMS[r.form] || {}; return !F.lease ? 'sale' : (r.dt in CT_거래유형 ? r.dt : 'jeonse'); };
@@ -18502,23 +18548,32 @@ V['#/partner/contract'] = (id) => {
       if(p) p.scrollTop = 자리[0]; if(d) d.scrollTop = 자리[1]; });
     return ctDeskShell(doc, 판, 신고면);
   }
+  /* 휴대폰 머리 단추 - 열 개가 세 칸씩 네 줄로 쌓여 서류가 화면 아래로 밀렸다(2026-11-22 UI 점검).
+     늘 쓰는 미리보기 · 저장·보내기 · 저장 · 확정만 두고, 나머지는 '더보기' 안에 둔다 */
+  const 더 = [
+    !F.explain && CT.mode !== 'plan' ? `<button class="btn sec sm" data-act="ct-plan">일정·체크</button>` : '',
+    !F.explain && CT.mode !== 'extra' ? `<button class="btn sec sm" data-act="ct-extra">부속 서류</button>` : '',
+    F.lease && CT.id ? `<button class="btn sec sm" data-act="ct-renew-this">갱신계약<span class="ct-long"> 쓰기</span></button>` : '',
+    `<button class="btn sec sm" data-act="ct-print">인쇄</button>`,
+    잠김 || F.explain ? '' : `<button class="btn sec sm" data-act="ct-share">초안 링크</button>`,
+    F.explain ? '' : `<button class="btn sec sm" data-act="ct-explain">확인·설명서<span class="ct-long"> 만들기</span></button>`
+  ].filter(Boolean);
   const bar = `
     <div class="ct-bar noprint">
       <a class="back" data-go="#/partner/contracts"><i class="ar-l" aria-hidden="true"></i>계약서 목록</a>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
-        ${CT.mode !== 'edit' ? `<button class="btn sec sm" data-act="ct-edit">${잠김?'내용 보기':'고치기'}</button>` : ''}
-        ${!미리 ? `<button class="btn sec sm" data-act="ct-preview">미리보기</button>` : ''}
-        ${''}
-        ${!F.explain && CT.mode !== 'plan' ? `<button class="btn sec sm" data-act="ct-plan">일정·체크</button>` : ''}
-        ${!F.explain && CT.mode !== 'extra' ? `<button class="btn sec sm" data-act="ct-extra">부속 서류</button>` : ''}
-        ${F.lease && CT.id ? `<button class="btn sec sm" data-act="ct-renew-this">갱신계약<span class="ct-long"> 쓰기</span></button>` : ''}
-        <button class="btn sec sm" data-act="ct-print">인쇄</button>
-        <button class="btn sec sm" data-act="ct-cloud">저장·보내기</button>
-        ${잠김 || F.explain ? '' : `<button class="btn sec sm" data-act="ct-share">초안 링크</button>`}
-        ${F.explain ? '' : `<button class="btn sec sm" data-act="ct-explain">확인·설명서<span class="ct-long"> 만들기</span></button>`}
+      <div class="ct-mbar">
+        <div class="ct-mb1">
+          ${CT.mode !== 'edit' ? `<button class="btn sec sm" data-act="ct-edit">${잠김?'내용 보기':'고치기'}</button>` : ''}
+          ${!미리 ? `<button class="btn sec sm" data-act="ct-preview">미리보기</button>` : ''}
+          <button class="btn sec sm" data-act="ct-cloud">저장·보내기</button>
+          <details class="ct-more"><summary class="btn sec sm">더보기</summary>
+            <div class="ct-more-p" role="group" aria-label="계약서 다른 기능">${더.join('')}</div></details>
+        </div>
+        <div class="ct-mb2">
         ${잠김 ? `<button class="btn sec sm" data-act="ct-revise">고쳐서 새 판 만들기</button>`
           : `<button class="btn sec sm" data-act="ct-save" ${CT.saving?'disabled':''}>${CT.saving?'저장 중…':CT.dirty||!CT.id?'<span class="dirty-dot" aria-hidden="true"></span>임시저장':'임시저장됨'}</button>
-             ${권한('ct_seal') ? `<button class="btn pri sm" data-act="ct-seal" ${CT.saving?'disabled':''}>확정본으로 저장</button>` : '<span class="sub" style="font-size:13px">확정은 대표님 권한입니다</span>'}`}
+          ${권한('ct_seal') ? `<button class="btn pri sm" data-act="ct-seal" ${CT.saving?'disabled':''}>확정본으로 저장</button>` : '<span class="sub" style="font-size:13px">확정은 대표님 권한입니다</span>'}`}
+        </div>
       </div>
     </div>
     ${ct안읽은의견(CT.track) ? `<p class="ct-note noprint"><button type="button" class="tapx" data-act="ct-notes-open" style="font-weight:700;color:#B25E00">초안에 새 의견 ${ct안읽은의견(CT.track)}건 - 일정·체크에서 보기</button></p>` : ''}
@@ -21217,9 +21272,11 @@ function render(){
   app.innerHTML = html + modalHTML();
   /* 메인 · 파트너 안내 상단 바 - 내린 만큼 바탕을 깐다 (2026-11-10). 스크롤 상자는 #app 하나라 듣는 것도 한 번 */
   document.body.classList.toggle('hm-scrolled', app.scrollTop > 8);
+  /* 휴대폰 계약서 '더보기' 판 - 바깥을 누르면 닫는다 (2026-11-22) */
+  if(!document._ctMore){ document._ctMore = true; document.addEventListener('click', e => { for(const d of document.querySelectorAll('details.ct-more[open]')) if(!d.contains(e.target) || e.target.closest('.ct-more-p button')) d.open = false; }); }
   if(!app._hmScroll){ app._hmScroll = true; app.addEventListener('scroll', () => document.body.classList.toggle('hm-scrolled', app.scrollTop > 8), { passive: true }); }
   /* 가로로 누운 운영 메뉴 - 고른 메뉴가 화면 밖(오른쪽)에 있으면 보이게 민다 (2026-11-10 디자인 · '신고' 를 골라도 메뉴 줄에 안 보였다) */
-  { const 줄 = app.querySelector('.opsNav'), 고른 = 줄 && 줄.querySelector('button.on');
+  for(const 줄 of app.querySelectorAll('.opsNav, .ct-subnav')){ const 고른 = 줄.querySelector('button.on');
     if(고른 && 줄.scrollWidth > 줄.clientWidth) { const a = 고른.getBoundingClientRect(), b = 줄.getBoundingClientRect();
       줄.scrollLeft = Math.max(0, a.left - b.left + 줄.scrollLeft - (b.width - a.width) / 2); } }
   /* 넓은 화면 어드민(왼쪽 메뉴가 선 화면)이면 표시 - 단추·칩을 어드민 크기·모양으로 (2026-10-30) */

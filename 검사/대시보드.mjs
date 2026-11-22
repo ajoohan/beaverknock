@@ -33,7 +33,7 @@ const M = new Function('esc', `${js.slice(시작, 끝)}\nreturn { dzLine, dzPill
 
 /* ── 카드 · 알약 · 할 일 ── */
 {
-  ok(M.dzPill(3) === '<span class="dz-pill up">▲ 3</span>' && M.dzPill(-2) === '<span class="dz-pill dn">▼ 2</span>' && M.dzPill(0) === '<span class="dz-pill">= 0</span>',
+  ok(M.dzPill(3) === '<span class="dz-pill up">▲ 3</span>' && M.dzPill(-2) === '<span class="dz-pill dn">▼ 2</span>' && M.dzPill(0) === '<span class="dz-pill">변동 없음</span>',
      '증감 알약은 색과 함께 ▲▼ 기호와 숫자로 말한다');
   const 카드 = M.dzKpi({ ico:'users', cap:'걸린 조건', v:1234, act:'ops-tab', v2:'demand' });
   ok(/^<button type="button" class="dz-card dz-kpi" data-act="ops-tab" data-v="demand" aria-label="걸린 조건 1234">/.test(카드) && /1,234/.test(카드), '누를 수 있는 카드는 단추 · 이름과 숫자를 말한다 · 천 단위 쉼표');

@@ -242,6 +242,7 @@ export async function contractRoute(req, res, agent, user, b) {
       case 'contract-fpic-del': await fieldPicDel(res, agent, b); break;
       case 'contract-share':   await share(res, agent, b); break;
       case 'contract-share-cut': await shareCut(res, agent, b); break;
+      case 'contract-guide':   await guide(res, agent, b); break;
       default: res.status(400).json({ error: '알 수 없는 요청입니다' });
     }
   } catch (e) {
@@ -355,7 +356,7 @@ export function 초안가림(doc) {
     delete p.birth; (p.co || []).forEach(가림); if (p.proxy) 가림(p.proxy); };
   Object.values(d.parties || {}).forEach(가림);
   if (Array.isArray(d.specials)) d.specials = d.specials.map(t => 글번호가림(t));
-  delete d.src; delete d.edited;
+  delete d.src; delete d.edited; delete d.safe;   /* 전세 안전 점검(2026-11-22)은 중개사만 */
   return d;
 }
 async function share(res, agent, b) {
@@ -370,6 +371,53 @@ async function share(res, agent, b) {
   const n = (trackCheck((got.rows[0] || {}).track || {}) || {}).shareN || 0;
   const tok = 초안표(id, n);
   return res.status(200).json({ ok: true, token: tok, until: +tok.split('.')[2] });
+}
+/* ── 계약 뒤 손님 안내 (2026-11-22) ── 확정본만. 표 = G1.번호.기한.링크번호.서명. 링크 번호는 초안 링크와 같은 track.shareN - 끊기도 contract-share-cut.
+   기한은 잔금일 60일 뒤(이미 지났으면 오늘부터 60일), 길어도 오늘부터 1년. 당사자 이름 · 연락처 · 금액은 내보내지 않는다 */
+const 안내열쇠 = () => crypto.createHash('sha256').update('bk-guide|' + String(process.env.BK_SECRET_KEY || ''), 'utf8').digest();
+const 안내서명 = (id, until, n) => crypto.createHmac('sha256', 안내열쇠()).update(`${id}.${until}.${n}`).digest('base64url');
+export function 안내표(id, n, until) { return `G1.${id}.${until}.${n}.${안내서명(id, until, n)}`; }
+export function 안내표읽기(tok, 지금 = Date.now()) {
+  const m = /^G1\.([0-9a-f-]{36})\.(\d{13})\.(\d{1,6})\.([A-Za-z0-9_-]{43})$/.exec(String(tok || ''));
+  if (!m || !UUID.test(m[1]) || +m[2] < 지금) return null;
+  return sameSecret(m[4], 안내서명(m[1], m[2], m[3])) ? { id: m[1], until: +m[2], n: +m[3] } : null;
+}
+export function 안내기한(bd, 지금 = Date.now()) {
+  const 잔 = Date.parse(String(bd || '') + 'T23:59:59+09:00');
+  return Math.min((isNaN(잔) ? 지금 : Math.max(잔, 지금)) + 60 * 864e5, 지금 + 365 * 864e5);
+}
+const 안내잔금 = (doc, t) => 날만((t || {}).balanceDate) || 날만(((doc || {}).deal || {}).balanceDate);
+export function 안내자료(row) {
+  const d = row.doc || {}, D = d.deal || {}, P = d.property || {}, B = d.broker || {}, t = trackCheck(row.track || {}) || {};
+  const mids = +D.mid > 0 ? [날만(t.midDate) || 날만(D.midDate), +D.mid2 > 0 ? 날만(D.mid2Date) : '', ...(+D.mid2 > 0 && Array.isArray(D.mids) ? D.mids.map(x => x && +x.amt > 0 ? 날만(x.date) : '') : [])].filter(Boolean).slice(0, 5) : [];
+  return { form: row.form, deal: ['jeonse', 'monthly', 'yearly'].includes(D.type) ? D.type : '',
+    addr: [P.show || P.road || '', P.detail || ''].map(v => String(v).trim()).filter(Boolean).join(' ').slice(0, 200),
+    cd: 날만(d.contractDate), bd: 안내잔금(d, t), mids, from: 날만((d.period || {}).from), to: 날만((d.period || {}).to),
+    office: { name: String(B.office || '').slice(0, 60), phone: String(B.phone || '').slice(0, 30) } };
+}
+async function guide(res, agent, b) {
+  const id = String(b.id || '');
+  if (!UUID.test(id)) return res.status(400).json({ error: '어느 계약서인지 알 수 없습니다' });
+  const got = await 읽기(`select=id,status,form,doc{track}&id=eq.${id}&agent_id=eq.${agent.id}&limit=1`);
+  if (!got.r.ok) return noTable(got.t) ? 준비중(res) : res.status(502).json({ error: '계약서를 불러오지 못했습니다' });
+  if (!got.rows.length) return res.status(404).json({ error: '내 계약서가 아니거나 지워진 계약서입니다' });
+  const row = got.rows[0];
+  if (String(row.form || '').startsWith('explain')) return res.status(409).json({ error: '확인·설명서는 안내 링크로 보내지 않습니다' });
+  if (row.status !== 'sealed') return res.status(409).json({ error: '확정본으로 저장한 뒤 보낼 수 있습니다' });
+  const n = (trackCheck(row.track || {}) || {}).shareN || 0, until = 안내기한(안내잔금(row.doc, row.track));
+  return res.status(200).json({ ok: true, token: 안내표(id, n, until), until });
+}
+/* 공개 읽기 - 로그인 없이 표만으로. IP 마다 10분에 60번 */
+export async function guideRead(req, res) {
+  if (overLimit('guide:' + ipOf(req), 60, 600e3)) return res.status(429).json({ error: '잠시 뒤 다시 열어 주세요' });
+  const t = 안내표읽기(req.query && req.query.guide);
+  if (!t) return res.status(404).json({ error: '링크가 맞지 않거나 기한이 지났습니다 - 중개사무소에 다시 받아 주세요' });
+  const got = await 읽기(`select=id,form,status,doc{track}&id=eq.${t.id}&limit=1`);
+  if (!got.r.ok || !got.rows.length) return res.status(404).json({ error: '계약서를 찾지 못했습니다 - 지워졌을 수 있습니다' });
+  const row = got.rows[0], tr = trackCheck(row.track || {}) || {};
+  if ((tr.shareN || 0) !== t.n || row.status !== 'sealed' || tr.trash || String(row.form || '').startsWith('explain'))
+    return res.status(404).json({ error: '중개사무소가 이 링크를 끊었습니다 - 새 링크를 받아 주세요' });
+  return res.status(200).json({ ok: true, until: t.until, ...안내자료(row) });
 }
 /* 나간 초안 링크 끊기 - 서버가 지금 링크 번호를 읽어 하나 올린다. 성공해야 화면이 '끊었습니다' 라고 한다 */
 async function shareCut(res, agent, b) {
@@ -508,9 +556,10 @@ export const 날짜글 = d => { const t = new Date(d + 'T00:00:00Z');
   return `${t.getUTCFullYear()}. ${t.getUTCMonth() + 1}. ${t.getUTCDate()}.(${'일월화수목금토'[t.getUTCDay()]})`; };
 
 export const 알림종류 = { permitDue: '토지거래허가 약정일', permitExpect: '토지거래허가 승인 예정일', contract: '계약일', mid: '중도금',
-  balance: '잔금', report: '실거래신고 기한', lawyer: '법무사 예약', expiry: '임대차 만기 6개월 전', settle: '잔금 완료 확인', prep: '잔금 준비물 안내' };
+  balance: '잔금', report: '실거래신고 기한', lawyer: '법무사 예약', expiry: '임대차 만기 6개월 전', settle: '잔금 완료 확인', prep: '잔금 준비물 안내',
+  rcpt: '현금영수증 발행 확인', ins: '공제 만료', edu: '연수교육 기한' };
 /* 며칠 전 아침에 알리는가 - 0 은 당일. 법무사 예약은 예약할 때가 시작되는 날(잔금 b영업일 전) 한 번 */
-export const 알림날 = { permitDue: [3, 0], permitExpect: [0], contract: [1, 0], mid: [3, 0], balance: [7, 3, 0], report: [7, 3, 1, 0], lawyer: [0], expiry: [0], settle: [0], prep: [0] };
+export const 알림날 = { permitDue: [3, 0], permitExpect: [0], contract: [1, 0], mid: [3, 0], balance: [7, 3, 0], report: [7, 3, 1, 0], lawyer: [0], expiry: [0], settle: [0], prep: [0], rcpt: [0], ins: [30, 7, 0], edu: [60, 30, 7, 0] };
 /* 임대차 만기 6개월 전 - 갱신 의사를 물을 때(파트너 리뷰 2026-11-05). 임대차·전대차만, 한 번 */
 export const 임대차양식 = ['home-lease', 'shop-lease', 'lease', 'sublease'];
 export function 달빼기(d, n) {
@@ -529,14 +578,25 @@ export function 알림설정(x) {
   if (a > b) [a, b] = [b, a];
   /* 잔금 완료 확인 끝 시각(2026-11-10 파트너 기획 '종료 시각은 사무소별') - 16~23시, 기본 19시. 그때까지 완료가 아니면 잔금 지연 */
   const 끝 = Math.round(+o.settleEnd);
+  /* 사무소 의무 (2026-11-22) - 공제(보증) 만료일 · 마지막 실무 · 연수교육 이수일. 날짜 모양만 받는다 */
+  const 날 = v => 날꼴.test(String(v || '')) ? String(v) : '', du = o.duty && typeof o.duty === 'object' ? o.duty : {};
   return { kakao: o.kakao !== false, mail: o.mail !== false,
     off: [...new Set((Array.isArray(o.off) ? o.off : []).filter(k => Object.hasOwn(알림종류, k)))], lawyer: [a, b], settleEnd: 끝 >= 16 && 끝 <= 23 ? 끝 : 19,
-    autoArch: o.autoArch === true };   /* 완료 · 취소 건 3개월 뒤 자동 보관함(2026-11-10 파트너 기획) */
+    autoArch: o.autoArch === true,   /* 완료 · 취소 건 3개월 뒤 자동 보관함(2026-11-10 파트너 기획) */
+    duty: { insTo: 날(du.insTo), eduAt: 날(du.eduAt) } };
+}
+/* 사무소 의무 일정 - 공제 만료일 · 연수교육 기한(마지막 이수일 + 2년). 화면 ct의무일정과 같은 규칙 */
+export function 의무일정(설정 = 알림설정()) {
+  const d = 설정.duty || {}, out = [];
+  if (d.insTo) out.push({ k: 'ins', 이름: 알림종류.ins, 날: d.insTo, 메모: '공제(보증)가 끝나면 중개를 할 수 없습니다 - 갱신하고 새 증서를 서식 자료실에 올려 주세요' });
+  if (d.eduAt) out.push({ k: 'edu', 이름: 알림종류.edu, 날: 달빼기(d.eduAt, -24), 메모: `마지막 교육 ${d.eduAt} - 2년마다 연수교육을 받아야 합니다. 받으면 이수일을 고쳐 주세요` });
+  return out;
 }
 /* 계약 하나의 일정·체크(track). 날짜 칸은 ISO 날짜만, 나머지는 켜짐/꺼짐만 받는다 - 다른 것은 버린다 */
 /* arch · trash (2026-11-10 대표님 결정 1번) - 보관함으로 내린 날 · 휴지통에 넣은 날. 확정본은 휴지통까지만, 작성 중은 휴지통 30일 뒤 지운다 */
 /* signDate (2026-11-17 파트너 D14 '계약체결일') - 일반 매매 · 임대차는 계약금 일부가 들어온 날(토지거래허가는 계약일과 같아 따로 적지 않는다) */
-const TRACK_DATES = ['permitDue', 'permitApplied', 'midDate', 'balanceDate', 'guideAt', 'permitPaid', 'permitAgreed', 'permitOk', 'piAt', 'arch', 'trash', 'signDate'];
+/* rcpt (2026-11-22 사무소 의무 달력) - 현금영수증을 발행한 날 */
+const TRACK_DATES = ['permitDue', 'permitApplied', 'midDate', 'balanceDate', 'guideAt', 'permitPaid', 'permitAgreed', 'permitOk', 'piAt', 'arch', 'trash', 'signDate', 'rcpt'];
 export const 진행상태 = { ready: '준비', doing: '진행중', done: '완료', hold: '보류', cancel: '취소' };
 export const 현장사진최대 = 20;
 export function 현장사진값(x) {
@@ -838,6 +898,9 @@ export function 일정목록(c, 설정 = 알림설정()) {
   }
   /* 잔금 다음 날 아침 - 진행 상태를 '완료'로 바꾸지 않았으면 묻는다(파트너 리뷰 '잔금 완료 확인'. 예약 실행이 하루 한 번이라 시간마다는 못 한다) */
   if (bd && t.state !== 'done' && t.state !== 'cancel' && t.state !== 'hold') out.push({ k: 'settle', 날: 날더하기(bd, 1), 메모: '잔금을 마쳤으면 진행 상태를 완료로 바꾸세요 - 안 끝났으면 잔금 지연입니다' });
+  /* 현금영수증 (2026-11-22) - 중개업은 현금영수증 의무 발행 업종. 잔금 다음 날 아침 발행했는지 묻는다. 확정본만 */
+  if (bd && c.status === 'sealed' && t.state !== 'cancel' && !/^explain/.test(String(c.form || ''))) out.push({ k: 'rcpt', 날: 날더하기(bd, 1), 마침: !!날만(t.rcpt),
+    메모: 날만(t.rcpt) ? `${날만(t.rcpt)} 발행` : '중개보수를 받았으면 현금영수증을 발행하세요 - 발행했으면 일정·체크에서 표시' });
   const ex = 날만(c.ex);
   if (ex && 임대차양식.includes(c.form)) out.push({ k: 'expiry', 날: 달빼기(ex, 6), 메모: `만기 ${ex} - 임대인·임차인의 갱신 의사를 확인하세요` });
   return out.map(e => ({ 이름: 알림종류[e.k], ...e })).sort((x, y) => (x.날 > y.날) - (x.날 < y.날));
@@ -846,7 +909,7 @@ export function 일정목록(c, 설정 = 알림설정()) {
 export function 오늘알림(c, 설정, 오늘) {
   if (c.track && c.track.off) return [];
   return 일정목록(c, 설정)
-    .filter(e => !설정.off.includes(e.k) && !(e.k === 'report' && (c.status !== 'sealed' || c.reported_at)) && !((e.k === 'expiry' || e.k === 'settle' || e.k === 'prep') && c.status !== 'sealed') && !(e.k === 'prep' && e.마침))
+    .filter(e => !설정.off.includes(e.k) && !(e.k === 'report' && (c.status !== 'sealed' || c.reported_at)) && !((e.k === 'expiry' || e.k === 'settle' || e.k === 'prep') && c.status !== 'sealed') && !(e.k === 'prep' && e.마침) && !(e.k === 'rcpt' && e.마침))
     .map(e => ({ ...e, 남음: 날차(오늘, e.날) }))
     .filter(e => (알림날[e.k] || []).includes(e.남음));
 }
@@ -1033,6 +1096,19 @@ export async function reportDueCron(req, res) {
       const 설정 = 알림설정(a.alert);
       const 오늘것 = 공유합치기(외부들(a.ext), 맵).stored.flatMap(e => 외부일정(e).filter(v => !설정.off.includes(v.k)).map(v => ({ ...v, 남음: 날차(오늘, v.날), title: `${e.title} (공동중개)` })))
         .filter(v => (알림날[v.k] || []).includes(v.남음));
+      if (!오늘것.length) continue;
+      if (!사람별.has(a.id)) 사람별.set(a.id, { a, 설정, uid: a.user_id, 목록: [] });
+      const p = 사람별.get(a.id); if (!p.uid) p.uid = a.user_id;
+      p.목록.push(...오늘것);
+    }
+  }
+  /* 사무소 의무 (2026-11-22) - 공제 만료 · 연수교육 기한. 계약서가 없어도 기한을 넣은 사무소는 받는다 */
+  {
+    const x = await db('bk_agent', `select=id,name,phone,user_id,alert:settings->alert&settings->alert->duty=not.is.null&limit=2000`).catch(() => null);
+    for (const a of (x && x.r.ok ? x.rows : [])) {
+      const 설정 = 알림설정(a.alert);
+      const 오늘것 = 의무일정(설정).filter(e => !설정.off.includes(e.k)).map(e => ({ ...e, 남음: 날차(오늘, e.날), title: '우리 사무소' }))
+        .filter(e => (알림날[e.k] || []).includes(e.남음));
       if (!오늘것.length) continue;
       if (!사람별.has(a.id)) 사람별.set(a.id, { a, 설정, uid: a.user_id, 목록: [] });
       const p = 사람별.get(a.id); if (!p.uid) p.uid = a.user_id;
@@ -1250,6 +1326,7 @@ export async function icsFeed(req, res) {
         설명: `${e.메모}\n${c.status === 'sealed' ? '확정본' : '작성 중'} 계약서 - https://beaverknock.co.kr/#/partner/contract/${c.id}` });
     }
   }
+  for (const e of 의무일정(설정)) if (e.날 >= 부터) 일들.push({ uid: `duty-${사.id}-${e.k}-${e.날}`, 날: e.날, 끝: '', 제목: `${e.이름} · 우리 사무소`, 설명: e.메모 });
   const { 외부들, 외부일정 } = await import('./_ext.js');
   for (const e of await 외부최신(사.ext)) for (const v of 외부일정(e)) if (v.날 >= 부터)
     일들.push({ uid: `x${e.id}-${v.k}-${v.날}`, 날: v.날, 끝: '', 제목: `${v.이름} · ${e.title} (공동중개)`, 설명: `${e.office ? e.office + ' 작성 · ' : ''}다른 사무소가 쓴 계약서` });

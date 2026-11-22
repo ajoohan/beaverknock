@@ -510,7 +510,7 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
      && !메일[0].html.includes('알릴 날 아님') && !메일[0].html.includes('새 판으로 바뀐 앞 판') && !메일[0].html.includes('확정한 새 판(신고 마침)'),
      '메일은 중개사별 하루 한 통 - 신고 기한(확정본·신고 전) · 잔금 3일 전(작성 중도) · 새 판으로 바뀐 앞 판은 뺀다');
   ok(메일[0].html.includes('잔금안내(이체한도·준비서류) 전입니다') && /알림 설정/.test(메일[0].text), '잔금 알림에 잔금안내 여부 · 메일에 알림 설정 안내');
-  ok(불린.filter(x => /bk_agent/.test(x.u) && !/ext:settings->ext/.test(decodeURIComponent(x.u))).every(x => /select=id,name,phone,alert:settings->alert&/.test(decodeURIComponent(x.u))),
+  ok(불린.filter(x => /bk_agent/.test(x.u) && !/ext:settings->ext|settings->alert->duty/.test(decodeURIComponent(x.u))).every(x => /select=id,name,phone,alert:settings->alert&/.test(decodeURIComponent(x.u))),
      '중개사는 알림 설정만 꺼내 읽는다 - settings 통째(내 특약 문구 최대 200개)를 날마다 끌어오지 않는다');
   ok(카톡.length === 3 && 카톡.every(m => m.to === '01012345678' && m.kakaoOptions.templateId === 'KA01TP-SCHEDULE')
      && 카톡.some(m => m.kakaoOptions.variables['#{일정}'] === '실거래신고 기한 7일 전' && m.kakaoOptions.variables['#{물건}'] === '잠실 아파트')
@@ -552,7 +552,7 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
   process.env.CRON_SECRET = 'cron-secret'; process.env.RESEND_API_KEY = 'test';
   res = 응답(); 불린 = [];
   await C.reportDueCron({ headers: { authorization: 'Bearer cron-secret', host: 'beaverknock.co.kr' } }, res);
-  ok(불린.filter(x => /bk_contract\?/.test(x.u) && x.m === 'GET' && !/track->>trash/.test(decodeURIComponent(x.u))).length === 2 && 불린.some(x => /bk_contract/.test(x.u) && x.m === 'GET' && /status=eq\.draft&track->>trash=lt\./.test(decodeURIComponent(x.u))) && res.body.대상 === 1005 && 불린.filter(x => /bk_agent/.test(x.u) && !/ext:settings->ext/.test(decodeURIComponent(x.u))).length === 11, '1000건이 차면 다음 쪽을 더 읽는다 · 중개사는 100명씩 묻는다 · 휴지통 30일 지난 작성 중 계약서는 지운다');
+  ok(불린.filter(x => /bk_contract\?/.test(x.u) && x.m === 'GET' && !/track->>trash/.test(decodeURIComponent(x.u))).length === 2 && 불린.some(x => /bk_contract/.test(x.u) && x.m === 'GET' && /status=eq\.draft&track->>trash=lt\./.test(decodeURIComponent(x.u))) && res.body.대상 === 1005 && 불린.filter(x => /bk_agent/.test(x.u) && !/ext:settings->ext|settings->alert->duty/.test(decodeURIComponent(x.u))).length === 11, '1000건이 차면 다음 쪽을 더 읽는다 · 중개사는 100명씩 묻는다 · 휴지통 30일 지난 작성 중 계약서는 지운다');
   ok(묶음.length === 11 && 묶음.slice(0, 10).every(n => n === 100) && 묶음[10] === 5 && res.body.보냄 === 1005, '100통씩 나눠 보내 1005통 모두 보낸다');
   delete process.env.CRON_SECRET; delete process.env.RESEND_API_KEY;
   for (const k of ['SOLAPI_API_KEY', 'SOLAPI_API_SECRET', 'SOLAPI_PFID', 'SOLAPI_FROM', 'SOLAPI_TPL_SCHEDULE']) delete process.env[k];
@@ -1007,7 +1007,7 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
 
   /* 알림 설정 저장 · 화면 */
   const feed = fs.readFileSync(new URL('../api/feed.js', import.meta.url), 'utf8');
-  ok(/if \(b\.what === 'alert-settings'\)\s+return readAlert\(res, chk\.agent\);/.test(feed) && /설정고침\(agent, \(\) => \(\{ patch: \{ alert \} \}\)\)/.test(feed) && /settings: \{ \.\.\.x\.settings, \.\.\.y\.patch, rev: rev \+ 1 \}/.test(feed)
+  ok(/if \(b\.what === 'alert-settings'\)\s+return readAlert\(res, chk\.agent\);/.test(feed) && /설정고침\(agent, \(\) => \(\{ patch: \{ alert(: 저장)? \} \}\)\)/.test(feed) && /settings: \{ \.\.\.x\.settings, \.\.\.y\.patch, rev: rev \+ 1 \}/.test(feed)
      && /need: '0032'/.test(feed) && /kakaoReady: !!process\.env\.SOLAPI_TPL_SCHEDULE/.test(feed),
      '알림 설정 - 내 파트너 행의 settings.alert 만 바꾼다(다른 설정은 그대로) · 0032 전이면 저장 막고 알린다 · 카카오 템플릿이 켜졌는지 알린다');
   ok(/function ctPlanHTML\(doc\)/.test(js) && /data-act="ct-plan">일정·체크/.test(js) && /case 'ctk-guide':/.test(js) && /case 'ctk-permit':/.test(js) && /case 'ctk-off':/.test(js)
@@ -1598,6 +1598,100 @@ ok(js.includes('고친 판 있음') && js.includes('앞 확정본도 목록에 �
      '대시보드 달력 · 계약현황 · 다가오는 일정은 일정 판정(같은 계약 한 줄)');
   ok(/앞판 = ct앞판모음\(CT\.list, false\)/.test(몸('function 성과더HTML(', '\n}')) && js.includes('const 새판 = 전체.filter(r => !한줄아님(r));'), '성과는 갱신 전 계약을 빼지 않는다 · 계약현황 요약 · 표는 한 계약 한 줄');
   ok(js.includes("const t = setTimeout(() => { if(!EXH_DATA && typeof render === 'function') render(); }, EXH_쉼 + 100); if(t && t.unref) t.unref();"), '틀을 못 받았으면 열어 둔 채로도 쉼이 끝나면 다시 받는다');
+}
+
+/* ── 사무소 의무 달력 · 손님 안내 링크 · 전세 안전 점검 (2026-11-22) ── */
+{
+  /* 알림 종류 - 화면과 서버가 같다 */
+  const 화면종류 = /const CT_알림종류 = \{([\s\S]*?)\};/.exec(js)[1], 화면날 = /const CT_알림날 = \{([^}]*)\};/.exec(js)[1];
+  ok(Object.keys(C.알림종류).every(k => new RegExp('\\b' + k + ':').test(화면종류)) && ['rcpt', 'ins', 'edu'].every(k => k in C.알림종류 && new RegExp('\\b' + k + ': \\[').test(화면날)),
+     '알림 종류에 현금영수증 · 공제 만료 · 연수교육 - 화면과 서버가 같은 이름');
+  const 설정 = C.알림설정({ duty: { insTo: '2026-12-20', eduAt: '2025-03-10', x: 'y' } });
+  ok(설정.duty.insTo === '2026-12-20' && 설정.duty.eduAt === '2025-03-10' && !('x' in 설정.duty) && C.알림설정({ duty: { insTo: '12월', eduAt: 3 } }).duty.insTo === '' && C.알림설정({}).duty.eduAt === '',
+     '사무소 의무 기한은 날짜 모양만 받는다');
+  const 의무 = C.의무일정(설정);
+  ok(의무.length === 2 && 의무.find(e => e.k === 'ins').날 === '2026-12-20' && 의무.find(e => e.k === 'edu').날 === '2027-03-10' && C.의무일정(C.알림설정({})).length === 0,
+     '공제 만료일 그대로 · 연수교육 기한은 마지막 이수일 + 2년 · 안 넣으면 일정 없음');
+  ok(C.알림날.ins.join() === '30,7,0' && C.알림날.edu.join() === '60,30,7,0', '공제는 30 · 7일 전과 당일, 연수교육은 60 · 30 · 7일 전과 당일');
+  /* 현금영수증 - 확정본의 잔금 다음 날, 발행했으면 마침 · 아침 알림에서 빠짐 */
+  const 계 = (o = {}) => ({ form: 'home-lease', status: 'sealed', cd: '2026-11-01', bd: '2026-11-30', track: {}, ...o });
+  const 영수 = c => C.일정목록(c).find(e => e.k === 'rcpt');
+  ok(영수(계()).날 === '2026-12-01' && !영수(계({ status: 'draft' })) && !영수(계({ track: { state: 'cancel' } })) && !영수(계({ form: 'explain-home' })) && 영수(계({ track: { rcpt: '2026-11-30' } })).마침,
+     '현금영수증 확인은 확정본의 잔금 다음 날 - 작성 중 · 취소 · 확인·설명서는 없음 · 발행일을 적으면 마침');
+  ok(C.오늘알림(계(), C.알림설정(), '2026-12-01').some(e => e.k === 'rcpt') && !C.오늘알림(계({ track: { rcpt: '2026-11-30' } }), C.알림설정(), '2026-12-01').some(e => e.k === 'rcpt'),
+     '발행 전이면 잔금 다음 날 아침에 알리고, 발행했으면 알리지 않는다');
+  ok(C.trackCheck({ rcpt: '2026-11-30' }).rcpt === '2026-11-30' && C.trackCheck({ rcpt: '어제' }) === null, '일정·체크에 현금영수증 발행일을 남긴다(날짜만)');
+  const 원본 = fs.readFileSync(new URL(길.api('_contract.js')), 'utf8'), 피드 = fs.readFileSync(new URL(길.api('feed.js')), 'utf8');
+  ok(/settings->alert->duty=not\.is\.null/.test(원본) && /의무일정\(설정\)\.filter\(e => !설정\.off\.includes\(e\.k\)\)/.test(원본) && /for \(const e of 의무일정\(설정\)\) if \(e\.날 >= 부터\)/.test(원본)
+     && /alert\.duty\.insTo \|\| alert\.duty\.eduAt \? alert : \{ \.\.\.alert, duty: undefined \}/.test(피드),
+     '아침 알림은 기한을 넣은 사무소만 읽는다(계약서가 없어도) · 달력 구독에도 · 비우면 저장에서 뺀다');
+  ok(js.includes('...(계약막힘() ? [] : ct의무할일(계약))') && js.includes('data-act-ch="cta-ins"') && js.includes('data-act-ch="cta-edu"') && js.includes("case 'ctk-rcpt':")
+     && js.includes('보존 기간(계약서 5년 · 확인·설명서 3년)') && js.includes("e.duty ? 'cta-goto' : 'ct-open'"),
+     '화면 - 대시보드 할 일 · 알림 설정의 기한 칸 · 현금영수증 체크 · 보존 기간 안내 · 달력에서 누르면 알림 설정');
+
+  /* 손님 안내 링크 */
+  const 지금 = Date.parse('2026-11-22T10:00:00+09:00'), id = '11111111-2222-4333-8444-555555555555';
+  const 표 = C.안내표(id, 3, 지금 + 864e5);
+  ok(JSON.stringify(C.안내표읽기(표, 지금)) === JSON.stringify({ id, until: 지금 + 864e5, n: 3 }) && C.안내표읽기(표, 지금 + 2 * 864e5) === null
+     && C.안내표읽기(표.replace(/.$/, c => c === 'A' ? 'B' : 'A'), 지금) === null && C.안내표읽기(C.초안표(id, 3, 지금), 지금) === null,
+     '안내 링크 표 - 서명 · 기한을 본다 · 초안 링크 표로는 열리지 않는다');
+  ok(C.안내기한('2026-12-31', 지금) === Date.parse('2026-12-31T23:59:59+09:00') + 60 * 864e5 && C.안내기한('2026-01-01', 지금) === 지금 + 60 * 864e5
+     && C.안내기한('2029-01-01', 지금) === 지금 + 365 * 864e5 && C.안내기한('', 지금) === 지금 + 60 * 864e5,
+     '안내 링크는 잔금일 60일 뒤까지(지났으면 오늘부터 60일 · 길어도 1년)');
+  const 자료 = C.안내자료({ form: 'home-lease', track: { balanceDate: '2026-12-05', shareN: 3 }, doc: { contractDate: '2026-11-01',
+    deal: { type: 'jeonse', deposit: 300000000, down: 30000000, mid: 100000000, midDate: '2026-11-15', balanceDate: '2026-11-30' }, period: { from: '2026-12-05', to: '2028-12-04' },
+    property: { show: '경기도 하남시 망월동 1100', detail: '101동 1203호' }, parties: { lessor: { name: '홍길동', phone: '010-1234-5678' }, lessee: { name: '김철수' } },
+    broker: { office: '비버공인중개사사무소', phone: '031-000-0000', regNo: '41450-2020-00001' }, specials: ['임대인 계좌 국민 123-45-678901'] } });
+  const 글 = JSON.stringify(자료);
+  ok(자료.bd === '2026-12-05' && 자료.mids.join() === '2026-11-15' && 자료.addr === '경기도 하남시 망월동 1100 101동 1203호' && 자료.office.name === '비버공인중개사사무소' && 자료.deal === 'jeonse'
+     && !/홍길동|김철수|010-1234|300000000|123-45|41450/.test(글),
+     '안내 자료 - 바뀐 잔금일 · 중도금일 · 소재지 · 사무소만, 당사자 이름 · 연락처 · 금액 · 특약은 나가지 않는다');
+  ok(/case 'contract-guide':\s+await guide\(res, agent, b\)/.test(원본) && /row\.status !== 'sealed'\) return res\.status\(409\)/.test(원본)
+     && /\(tr\.shareN \|\| 0\) !== t\.n \|\| row\.status !== 'sealed' \|\| tr\.trash/.test(원본) && /req\.query\.guide\) \{[\s\S]{0,200}return guideRead\(req, res\)/.test(피드)
+     && /overLimit\('guide:' \+ ipOf\(req\), 60, 600e3\)/.test(원본),
+     '안내 링크는 확정본만 만든다 · 끊었거나(링크 번호) 휴지통이면 열리지 않는다 · 로그인 없이 IP 당 10분 60번');
+  ok(js.includes("else if(h.startsWith('#/guide/')) html = V['#/guide'](parts[2]);") && js.includes("${잠김 && CT.id ? ct안내카드(doc) : ''}") && js.includes("ctPost({ what:'contract-share-cut', id }).then")
+     && js.includes("fetch('/api/feed?guide=' + encodeURIComponent(tok))"),
+     '화면 - 확정본 일정·체크에 안내 링크 카드 · 끊기는 링크 번호 올리기 · #/guide/ 공개 화면');
+  /* 손님 안내 화면의 할 일 - 실제로 돌려 본다 */
+  {
+    const s = js.indexOf('const cg말일 ='), e = js.indexOf("V['#/guide'] =", s);
+    const 날더하기 = (d, n) => new Date(Date.parse(d + 'T00:00:00Z') + n * 864e5).toISOString().slice(0, 10);
+    const G = new Function('CT_FORMS', 'ct날더하기', 'ct달빼기', 'ct날짜글', js.slice(s, e) + ';return { cg할일, cg자리들, cg말일 };')(
+      { 'home-lease': { lease: true }, 'shop-lease': { lease: true }, sale: {}, sublease: { lease: true } }, 날더하기, C.달빼기, d => d);
+    const R = { form: 'home-lease', cd: '2026-11-01', bd: '2026-12-05', mids: ['2026-11-15'], from: '2026-12-05', to: '2028-12-04' };
+    const 임차 = G.cg할일(R, '임차인'), 매도 = G.cg할일({ form: 'sale', bd: '2026-12-05', mids: [] }, '매도인'), 매수 = G.cg할일({ form: 'sale', bd: '2026-12-05', mids: [] }, '매수인');
+    ok(G.cg자리들('home-lease').join() === '임차인,임대인' && G.cg자리들('sale').join() === '매수인,매도인' && G.cg자리들('sublease').join() === '전차인,전대인',
+       '내 자리 고르기 - 임대차는 임차인 · 임대인, 매매는 매수인 · 매도인, 전대차는 전차인 · 전대인');
+    ok(임차[0].날 === '2026-11-15' && 임차.some(x => x.t === '전입신고 · 확정일자' && x.날 === '2026-12-05') && 임차.some(x => x.t === '임대차 신고 기한' && x.날 === '2026-12-01')
+       && 임차.some(x => x.t === '갱신 여부 정하기' && x.날 === '2028-06-04'),
+       '임차인 - 중도금 · 잔금일 전입신고 · 확정일자 · 계약일 30일 신고 기한 · 만기 6개월 전 갱신 (날짜순)');
+    ok(매도.some(x => x.t === '양도소득세 예정신고 기한' && x.날 === '2027-02-28') && 매수.some(x => x.t === '취득세 · 등기 신청 기한' && x.날 === '2027-02-03') && 매수.some(x => x.t === '전입신고(직접 살 때)' && x.날 === '2026-12-19'),
+       '매도인 양도세는 잔금 달 말일부터 2개월 · 매수인 취득세 · 등기는 잔금일부터 60일 · 전입은 14일');
+  }
+
+  /* 전세 안전 점검 */
+  const 가림 = C.초안가림({ safe: { price: 1, rights: [] }, parties: {}, specials: [] });
+  ok(!('safe' in 가림), '초안 링크 · 대화방 계약서 보기에는 전세 안전 점검 칸이 나가지 않는다');
+  {
+    const s = js.indexOf('const CT_선순위 ='), e = js.indexOf('function ct안전다시(', s);
+    const won = n => String(Math.round(+n || 0)), esc = v => String(v ?? '');
+    const A = new Function('won', 'esc', js.slice(s, e) + ';return { ct안전값, ct안전요약 };')(won, esc);
+    const 문 = (safe, deposit = 300000000) => ({ deal: { deposit }, safe });
+    const v1 = A.ct안전값(문({ price: 500000000, rights: [{ k: '근저당권설정', a: 120000000 }, { k: '가압류', a: 50000000 }, { k: '전세권설정', a: 10000000 }] }));
+    ok(v1.읽은합 === 130000000 && v1.비율 === 86 && v1.단계 === 'hi' && v1.압류.length === 1 && !v1.신탁,
+       '비율 = (근저당 · 전세권 등 선순위 + 보증금) ÷ 시세 - 가압류는 합에 넣지 않고 따로 경고');
+    const v2 = A.ct안전값(문({ price: 500000000, prior: 50000000, rights: [{ k: '근저당권설정', a: 120000000 }] }));
+    ok(v2.선순위 === 50000000 && v2.비율 === 70 && v2.단계 === 'mid' && A.ct안전값(문({ price: 0 })).비율 === null && A.ct안전값(문({ price: 9e8 }, 0)).비율 === null
+       && A.ct안전값(문({ price: 1e9, trust: true })).신탁 && A.ct안전값(문({ price: 1e9 })).단계 === 'lo',
+       '선순위를 직접 넣으면 그 값 · 시세나 보증금이 없으면 계산 안 함 · 신탁 표시');
+    const 요약 = A.ct안전요약(v1);
+    ok(요약.includes('86%') && 요약.includes('가압류 기록이 있습니다') && 요약.includes('안전을 보장하지 않습니다') && !/안전합니다/.test(js.slice(s, e)),
+       '요약은 신호만 - 안전하다고 단정하지 않는다');
+  }
+  ok(js.includes("${F.lease && !맞춤 && doc.form !== 'premium' ? ct안전HTML(doc) : ''}") && js.includes("if(!F.explain && F.lease && 있음('reg')){") && js.includes("(r.holder ? '개인' : '')")
+     && js.includes("if(path.startsWith('safe.') || path === 'deal.deposit') ct안전다시();"),
+     '임대차 입력 화면에 점검 칸 · 등기부를 읽으면 권리를 남긴다(개인 권리자는 이름 대신 개인) · 금액을 고치면 바로 다시 계산');
 }
 
 console.log(`${ran - fail} 통과 / ${fail} 실패`);

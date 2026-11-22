@@ -10,7 +10,7 @@
 import crypto from 'node:crypto';
 import { userFrom, sbHeaders, sbUrl, overLimit, ipOf } from './_auth.js';
 import { dbWhy } from './_dberr.js';
-import { 공유찾기, contractRoute, listingScan, reportDueCron, draftRead, draftNote, icsFeed, 달력표, 알림설정, 특약문구들, 특약문구고침, 문자틀들, 문자기록들, 문자고침, 단지들, 단지고침 } from './_contract.js';
+import { 공유찾기, contractRoute, listingScan, reportDueCron, draftRead, draftNote, guideRead, icsFeed, 달력표, 알림설정, 특약문구들, 특약문구고침, 문자틀들, 문자기록들, 문자고침, 단지들, 단지고침 } from './_contract.js';
 import { 날씨 } from './_weather.js';
 import { 서식들, 서식확인, 서식올리기, 서식주소, 서식지우기, 서식최대, 파일버킷, 버킷올리기, 버킷주소, 버킷지우기 } from './_forms.js';
 import { 외부들, 외부하나, 외부최대, 외부경로, 공유코드꼴, 공유합치기 } from './_ext.js';
@@ -242,7 +242,8 @@ async function saveEndStyle(res, agent, b) {
 }
 async function saveAlert(res, agent, b) {
   const alert = 알림설정(b.alert);
-  const z = await 설정고침(agent, () => ({ patch: { alert } }));
+  const 저장 = alert.duty.insTo || alert.duty.eduAt ? alert : { ...alert, duty: undefined };
+  const z = await 설정고침(agent, () => ({ patch: { alert: 저장 } }));
   if (!z.y) return 설정실패(res, z, '알림 설정');
   return res.status(200).json({ ok: true, alert });
 }
@@ -570,6 +571,11 @@ export default async function handler(req, res) {
   if (req.method === 'GET' && req.query && req.query.draft) {
     if (!process.env.BK_URL || !process.env.BK_SECRET_KEY) return res.status(503).json({ error: '서버에 환경변수가 설정되지 않았습니다' });
     return draftRead(req, res);
+  }
+  /* 계약 뒤 손님 안내(로그인 없이 서명된 표로 · 2026-11-22) - api/_contract.js guideRead */
+  if (req.method === 'GET' && req.query && req.query.guide) {
+    if (!process.env.BK_URL || !process.env.BK_SECRET_KEY) return res.status(503).json({ error: '서버에 환경변수가 설정되지 않았습니다' });
+    return guideRead(req, res);
   }
   /* 대화방 초대 미리 보기(로그인 전에도 링크만으로) - api/_room.js invitePeek */
   if (req.method === 'GET' && req.query && req.query.invite) {

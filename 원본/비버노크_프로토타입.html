@@ -3635,7 +3635,7 @@ body:not(.mo) .dz-scr > :not(.dz-side), body:not(.mo) .scr:has(> .psb) > :not(.p
 /* 로고 옆 영문 라벨 (대표님 'PARTNERS 라고 영문으로 라벨처럼') - 흰 테두리 꼬리표, 남색 위 흰 글자 6:1 */
 /* 왼쪽 메뉴 로고 (2026-11-23 대표님) - 로고를 조금 키워(20 → 24px) 가운데에 - 메뉴 폭 188px 에 PARTNERS 까지 한 줄로, ADMIN · PARTNERS 꼬리표는 노란 면 · 진한 남색 글씨 */
 .dz-logo.dz-logo-c{justify-content:center;gap:6px;padding-left:0;padding-right:0}
-.dz-tag.en.dz-tag-y{background:#FFD166;color:#24164F;border-color:#FFD166;font-size:11px;letter-spacing:.02em;padding:2px 5px}
+.dz-tag.en.dz-tag-y{background:#FFD166;color:#24164F;border-color:#FFD166;font-size:12px;letter-spacing:0;padding:2px 5px}
 .dz-tag.en{padding:2px 6px;border:1px solid rgba(255,255,255,.55);border-radius:6px;background:rgba(255,255,255,.08);font-size:12px;font-weight:700;letter-spacing:.04em;line-height:1.3}
 .dz-menu > a, .dz-menu > button, .dz-foot > a{display:flex;align-items:center;gap:10px;width:100%;min-height:42px;padding:9px 10px;
   border:none;border-radius:8px;background:transparent;color:rgba(255,255,255,.9);font:inherit;font-size:14.5px;font-weight:600;
@@ -14311,6 +14311,7 @@ if(typeof addEventListener === 'function'){
   addEventListener('unhandledrejection', e => { const r = e && e.reason; bk오류보내기('처리되지 않은 오류: ' + ((r && r.message) || r), (r && r.stack && (/(https?:\/\/[^\s)]+?):\d+:\d+/.exec(r.stack) || [])[1]) || location.origin, 0, 0, r && r.stack); });
 }
 const BK_변경 = [
+  { v:'26.11.23.10', 날:'2026-11-23', 줄:[ '왼쪽 메뉴 꼬리표 글자를 12px 로(가장 작은 글자 기준) - 한 줄 배치는 그대로' ] },
   { v:'26.11.23.9', 날:'2026-11-23', 줄:[ '왼쪽 메뉴 로고 - 운영 · 파트너 모두 로고를 조금 키워 가운데에 두고, ADMIN · PARTNERS 꼬리표를 같은 노란색으로 맞췄습니다' ] },
   { v:'26.11.23.8', 날:'2026-11-23', 줄:[ '운영 화면 왼쪽 메뉴 - 로고 배치는 원래대로 되돌리고 ADMIN 꼬리표만 노란색으로 남겼습니다' ] },
   { v:'26.11.23.7', 날:'2026-11-23', 줄:[ '운영 화면 왼쪽 메뉴 로고 - 비버노크를 가운데로 키우고, ADMIN 을 로고 오른쪽 아래에 노란 라벨로 붙였습니다' ] },

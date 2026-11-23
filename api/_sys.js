@@ -160,7 +160,7 @@ export function 나누기(rows, 최대 = 파일최대) {
   return 묶음;
 }
 export async function 임시백업(fetchFn = fetch, 지금 = Date.now()) {
-  const 날 = 한국날(지금), 목록 = { 날, at: new Date(지금).toISOString(), 표: {}, 파일: [], 빠짐: [] };
+  const 날 = 한국날(지금), 목록 = { 날, at: new Date(지금).toISOString(), 표: {}, 파일: [], 빠짐: [], 없음: [] };
   for (const [표이름, 키] of 백업표) {
     const 모두 = [];
     try {
@@ -173,7 +173,8 @@ export async function 임시백업(fetchFn = fetch, 지금 = Date.now()) {
       const 묶음 = 나누기(모두);
       for (const [i, 행들] of 묶음.entries()) { const path = `backup/${날}/${표이름}-${i + 1}.json`; await 올리기(path, JSON.stringify(행들), fetchFn); 목록.파일.push(path); }
       목록.표[표이름] = 모두.length;
-    } catch (e) { 목록.빠짐.push(`${표이름}: ${String(e && e.message || e).slice(0, 80)}`); }
+    } catch (e) { const 말 = String(e && e.message || e).slice(0, 80);   /* 아직 만들지 않은 표(SQL 전)는 빠짐이 아니라 없음으로 */
+      if (말 === '표 없음') 목록.없음.push(표이름); else 목록.빠짐.push(`${표이름}: ${말}`); }
   }
   await 올리기(`backup/${날}/manifest.json`, JSON.stringify(목록), fetchFn).catch(e => 목록.빠짐.push('목록: ' + e.message));
   /* 7일 지난 날짜 폴더를 지운다 */
@@ -187,7 +188,7 @@ export async function 임시백업(fetchFn = fetch, 지금 = Date.now()) {
   } catch { /* 넘어간다 */ }
   const 행수 = Object.values(목록.표).reduce((s, n) => s + n, 0);
   await 기록('backup', { level: 목록.빠짐.length ? 'warn' : 'info', msg: `임시 백업 ${날} - 표 ${Object.keys(목록.표).length}개 · ${행수}줄 · 파일 ${목록.파일.length}개${목록.빠짐.length ? ` · 빠짐 ${목록.빠짐.length}` : ''}${지움 ? ` · 오래된 ${지움}일치 지움` : ''}`,
-    detail: { 표: 목록.표, 빠짐: 목록.빠짐 } }, fetchFn);
+    detail: { 표: 목록.표, 빠짐: 목록.빠짐, 없음: 목록.없음 } }, fetchFn);
   return { ...목록, 지움 };
 }
 async function 폴더파일(prefix, fetchFn = fetch) {
@@ -208,7 +209,7 @@ export async function 백업목록(fetchFn = fetch) {
   for (const d of 날들.slice(0, 10)) {
     const r = await fetchFn(저장소(`object/authenticated/bk-files/backup/${d}/manifest.json`), { headers: 저장열쇠() }).catch(() => null);
     const j = r && r.ok ? await r.json().catch(() => null) : null;
-    if (j) { out.push({ 날: d, 표: j.표 || {}, 파일: j.파일 || [], 빠짐: j.빠짐 || [] }); continue; }
+    if (j) { out.push({ 날: d, 표: j.표 || {}, 파일: j.파일 || [], 빠짐: (j.빠짐 || []).filter(x => !/: 표 없음$/.test(x)), 없음: [...(j.없음 || []), ...(j.빠짐 || []).filter(x => /: 표 없음$/.test(x)).map(x => x.split(':')[0])] }); continue; }
     /* 목록 파일이 없으면(11-23 첫 백업 - 한글 파일 이름 '목록.json' 을 저장소가 받지 않았다) 폴더 안 파일로 보여 준다 */
     const 파일 = (await 폴더파일(`backup/${d}/`, fetchFn)).filter(n => /^[a-z_]+-\d+\.json$/.test(n)).map(n => `backup/${d}/${n}`);
     out.push({ 날: d, 표: {}, 파일, 빠짐: [`목록 파일이 없어 줄 수는 모릅니다 - 표 파일 ${파일.length}개`] });

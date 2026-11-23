@@ -93,6 +93,9 @@
     },
     "api/feed.js": {
       "maxDuration": 60
+    },
+    "api/demands.js": {
+      "maxDuration": 60
     }
   },
   "regions": [

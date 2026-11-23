@@ -1007,7 +1007,7 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
 
   /* 알림 설정 저장 · 화면 */
   const feed = fs.readFileSync(new URL('../api/feed.js', import.meta.url), 'utf8');
-  ok(/if \(b\.what === 'alert-settings'\)\s+return readAlert\(res, chk\.agent\);/.test(feed) && /설정고침\(agent, \(\) => \(\{ patch: \{ alert(: 저장)? \} \}\)\)/.test(feed) && /settings: \{ \.\.\.x\.settings, \.\.\.y\.patch, rev: rev \+ 1 \}/.test(feed)
+  ok(/if \(b\.what === 'alert-settings'\)\s+return readAlert\(res, chk\.agent\);/.test(feed) && /설정고침\(agent, s => \(\{ patch: \{ alert: agent\.staff \? \{ \.\.\.저장, duty: \(s\.alert \|\| \{\}\)\.duty \} : 저장 \} \}\)\)/.test(feed) && /settings: \{ \.\.\.x\.settings, \.\.\.y\.patch, rev: rev \+ 1 \}/.test(feed)
      && /need: '0032'/.test(feed) && /kakaoReady: !!process\.env\.SOLAPI_TPL_SCHEDULE/.test(feed),
      '알림 설정 - 내 파트너 행의 settings.alert 만 바꾼다(다른 설정은 그대로) · 0032 전이면 저장 막고 알린다 · 카카오 템플릿이 켜졌는지 알린다');
   ok(/function ctPlanHTML\(doc\)/.test(js) && /data-act="ct-plan">일정·체크/.test(js) && /case 'ctk-guide':/.test(js) && /case 'ctk-permit':/.test(js) && /case 'ctk-off':/.test(js)
@@ -1650,12 +1650,12 @@ ok(js.includes('고친 판 있음') && js.includes('앞 확정본도 목록에 �
      && /\(tr\.shareN \|\| 0\) !== t\.n \|\| row\.status !== 'sealed' \|\| tr\.trash/.test(원본) && /req\.query\.guide\) \{[\s\S]{0,200}return guideRead\(req, res\)/.test(피드)
      && /overLimit\('guide:' \+ ipOf\(req\), 60, 600e3\)/.test(원본),
      '안내 링크는 확정본만 만든다 · 끊었거나(링크 번호) 휴지통이면 열리지 않는다 · 로그인 없이 IP 당 10분 60번');
-  ok(js.includes("else if(h.startsWith('#/guide/')) html = V['#/guide'](parts[2]);") && js.includes("${잠김 && CT.id ? ct안내카드(doc) : ''}") && js.includes("ctPost({ what:'contract-share-cut', id }).then")
+  ok(js.includes("else if(h.startsWith('#/guide/')) html = V['#/cguide'](parts[2]);") && js.includes("${잠김 && CT.id ? ct안내카드(doc) : ''}") && js.includes("ctPost({ what:'contract-share-cut', id }).then")
      && js.includes("fetch('/api/feed?guide=' + encodeURIComponent(tok))"),
      '화면 - 확정본 일정·체크에 안내 링크 카드 · 끊기는 링크 번호 올리기 · #/guide/ 공개 화면');
   /* 손님 안내 화면의 할 일 - 실제로 돌려 본다 */
   {
-    const s = js.indexOf('const cg말일 ='), e = js.indexOf("V['#/guide'] =", s);
+    const s = js.indexOf('const cg말일 ='), e = js.indexOf("V['#/cguide'] =", s);
     const 날더하기 = (d, n) => new Date(Date.parse(d + 'T00:00:00Z') + n * 864e5).toISOString().slice(0, 10);
     const G = new Function('CT_FORMS', 'ct날더하기', 'ct달빼기', 'ct날짜글', js.slice(s, e) + ';return { cg할일, cg자리들, cg말일 };')(
       { 'home-lease': { lease: true }, 'shop-lease': { lease: true }, sale: {}, sublease: { lease: true } }, 날더하기, C.달빼기, d => d);
@@ -1692,6 +1692,14 @@ ok(js.includes('고친 판 있음') && js.includes('앞 확정본도 목록에 �
   ok(js.includes("${F.lease && !맞춤 && doc.form !== 'premium' ? ct안전HTML(doc) : ''}") && js.includes("if(!F.explain && F.lease && 있음('reg')){") && js.includes("(r.holder ? '개인' : '')")
      && js.includes("if(path.startsWith('safe.') || path === 'deal.deposit') ct안전다시();"),
      '임대차 입력 화면에 점검 칸 · 등기부를 읽으면 권리를 남긴다(개인 권리자는 이름 대신 개인) · 금액을 고치면 바로 다시 계산');
+}
+
+/* ── 2026-11-23 전수점검에서 찾은 것 - 조각 검사가 못 잡던 '정의 안 된 이름' ── */
+{
+  const 계획 = js.slice(js.indexOf('function ctPlanHTML(doc){'), js.indexOf('function ctTrackSet(patch){'));
+  ok(계획.length > 1000 && !/[^w가-힣.]F.explain/.test(계획) && 계획.includes('!(CT_FORMS[doc.form] || {}).explain ? ct공유카드()'), '일정·체크는 F 없이 그린다(11-17 부터 저장된 계약서의 일정·체크가 멈췄다)');
+  const 가입 = js.indexOf('V["#/partner/join"] = () => {'), 가입끝 = js.indexOf('</div>`;};', 가입);
+  ok(가입 > 0 && js.indexOf('function sendVerify(){') > 가입끝 && js.indexOf("V['#/partner/verify'] = () =>") > 가입끝, '자격 확인 화면 · sendVerify 는 가입 화면 함수 밖에 있다(안에 있으면 확인 요청 단추가 멈춘다)');
 }
 
 console.log(`${ran - fail} 통과 / ${fail} 실패`);

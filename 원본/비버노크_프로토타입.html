@@ -9441,6 +9441,72 @@ V["#/partner/join"] = () => {
       지금 적어주신 내용은 그때 대조합니다.</p>`;
   }
 
+
+  if(step===3){
+    const instant = role==='agent';
+    body = `<div style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;padding-top:${isMo()?10:24}px">
+      ${beaverly(isMo()?150:190)}
+      ${/* 끝난 게 아니면 초록 체크를 달지 않는다 - 실패·다른 계정에 걸림은 주의 표시(2026-10-30) */
+        f.jSent==='fail' || (f.jSent==='already' && f.jWhy!=='account')
+        ? `<span style="width:44px;height:44px;border-radius:var(--r-full);background:var(--warnbg);border:1.5px solid var(--warnline);display:flex;align-items:center;justify-content:center;margin-top:8px">
+        <svg viewBox="0 0 24 24" style="width:20px" fill="none" aria-hidden="true"><path d="M12 7.5 v6" stroke="#A85708" stroke-width="2.6" stroke-linecap="round"/><circle cx="12" cy="17" r="1.5" fill="#A85708"/></svg></span>`
+        : f.jSent==='sending' ? ''
+        : `<span style="width:44px;height:44px;border-radius:var(--r-full);background:var(--okbg);border:1.5px solid var(--okline);display:flex;align-items:center;justify-content:center;margin-top:8px">
+        <svg viewBox="0 0 24 24" style="width:20px" fill="none" aria-hidden="true"><path d="M4.5 12.5l5 5 10-11" stroke="#1B7A46" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>`}
+      <h1 class="t" style="font-size:${isMo()?21:25}px;margin-top:8px">${
+        f.jSent==='fail' ? '신청이 저장되지 않았습니다'
+        : f.jSent==='sending' ? '신청을 접수하는 중입니다'
+        : f.jSent==='already' ? (f.jWhy==='account' ? '이 계정으로 이미 신청하셨습니다' : '같은 번호로 신청한 다른 계정이 있습니다')
+        : f.jLinked ? '앞서 하신 신청을 이 계정에 이었습니다'
+        : '가입이 끝났습니다'}</h1>
+      <p style="margin:0;font-size:14.5px;line-height:1.75;color:var(--n700)">${
+        f.jSent==='fail' ? '잠시 뒤 다시 시도해 주세요.<br class="mbr">  계속 안 되면 support@plustonic.com 으로 알려주시면 직접 등록해 드립니다.'
+        : f.jSent==='sending' ? '잠시만 기다려 주세요.'
+        : f.jSent==='already' ? (f.jWhy==='account'
+            ? '한 계정에 하나만 신청하실 수 있습니다. 앞서 넣으신 신청이 그대로 살아 있고,<br class="mbr">  방금 적어주신 내용으로 바뀌지는 않았습니다. 고치실 것이 있으면 support@plustonic.com 으로 알려주세요.'
+            : '카카오·네이버·구글·이메일 중 <b style="color:var(--n900)">처음 신청하실 때 쓰신 방법</b>으로 다시 들어오시면 바로 이어집니다.<br class="mbr">  기억나지 않으시면 support@plustonic.com 으로 알려 주세요. 확인 뒤 이 계정으로 옮겨 드립니다.')
+        : f.jLinked ? '같은 이름·번호로 넣으셨던 신청을 본인확인으로 확인해 지금 로그인한 계정으로 옮겼습니다.<br class="mbr">  앞으로는 이 계정으로 들어오시면 됩니다.'
+        : '<b style="color:var(--n900)">바로 시작하실 수 있습니다.</b><br class="mbr">  활동 지역과 유형을 정해두시면 맞는 손님 조건만 골라 보내드립니다.'}</p>
+      ${f.jSent==='fail'?`<button class="btn sec md" data-act="j-retry" style="margin-top:14px">다시 보내기</button>`:''}
+      ${/* 다른 계정에 걸린 신청이면 이 계정은 파트너가 아니다 - 파트너 화면 단추를 주면 가입으로 되돌아온다(2026-10-30) */
+        f.jSent==='already' && f.jWhy!=='account' ? `
+      <div class="eqb st" style="margin-top:16px">
+        <button class="btn pri md ${isMo()?'blk':''}" data-act="logout" data-v="login">다른 방법으로 로그인</button>
+        <a class="btn sec md ${isMo()?'blk':''}" href="mailto:support@plustonic.com?subject=%ED%8C%8C%ED%8A%B8%EB%84%88%20%EA%B3%84%EC%A0%95%20%EC%98%AE%EA%B8%B0%EA%B8%B0">메일로 문의</a></div>`
+      : f.jSent==='fail' || f.jSent==='sending' ? '' : `
+      <div class="eqb st" style="margin-top:16px">
+        <a class="btn pri md ${isMo()?'blk':''}" data-go="#/partner/settings">활동 조건 설정하기</a>
+        <a class="btn sec md ${isMo()?'blk':''}" data-go="#/partner/demands">대기 중인 손님 먼저 보기</a></div>`}
+    </div>`;
+  }
+  /* 세 번째 걸음의 이름은 역할마다 다르다.
+     하는 일은 역할마다 다르지만(등록번호 대조 · 서류 확인 · 물건 관계 확인)
+     사람에게는 모두 '인증' 한 말로 부른다 - 화면마다 다른 말을 쓰면 같은 절차인지
+     헷갈린다. 역할 이름을 그대로 붙이면 '소유자 (집·상가 주인) 인증' 처럼 길어지고,
+     시행사는 JOIN_ROLES 에 없어 이름이 비어버린다 - 걸음 이름을 따로 둔다. */
+  /* 자격 확인(옛 세 번째 걸음)은 #/partner/verify 로 떼어냈다 -
+     둘러보기도 전에 등록번호부터 내놓으라고 하면 호흡이 너무 길다. */
+  const steps = ['역할 선택','본인인증','완료'];
+  return `
+<div class="scr fade" style="background:var(--warm)">
+  ${bar}
+  <div class="nav pad" style="${isMo()?'':'height:64px'}">
+    ${step===3 && f.jSent && f.jSent!=='fail' ? `<a class="back" data-go="#/"><i class="ar-l" aria-hidden="true"></i>홈으로</a>`
+      : step>1 ? `<button class="back" data-act="j-back"><i class="ar-l" aria-hidden="true"></i>뒤로</button>` : `<a class="back" data-go="#/partner"><i class="ar-l" aria-hidden="true"></i>소개로</a>`}
+    <span style="margin:0 auto">${logoLockup({h:25,partner:true})}</span>
+    <span class="num" style="font-size:13.5px;color:var(--n500)">${step} / ${steps.length}</span>
+  </div>
+  <div style="flex:1;display:flex;justify-content:center;padding:${isMo()?'20px 24px 30px':'32px 40px 40px'}">
+    <div style="width:100%;max-width:${step===1 && !isMo() ? '880px' : '560px'};display:flex;flex-direction:column;gap:14px">
+      ${isMo()?'':`<div style="display:flex;gap:8px;margin-bottom:6px">${steps.map((t,i)=>`
+        <span style="flex:1;padding:10px 0;text-align:center;font-size:13px;font-weight:${i+1===step?800:600};border-radius:var(--r-full);
+          background:${i+1===step?'var(--ind)':i+1<step?'var(--okbg)':'var(--n100)'};color:${i+1===step?'#fff':i+1<step?'var(--ok)':'var(--n500)'}">${t}</span>`).join('')}</div>`}
+      ${body}
+    </div>
+  </div>
+</div>`;};
+
+/* 자격 확인 화면 - 가입 화면 함수(V["#/partner/join"]) 가운데에 끼어 있어, 가입 화면을 한 번 그려야 생기고 sendVerify 는 밖에서 부를 수 없었다. 밖으로 옮김(2026-11-23 전수점검) */
 /* 이미 있는 신청에 자격을 채운다. 가입과 달리 새 행을 만들지 않는다 -
    계정당 하나뿐이라 새로 넣으면 '이미 신청하셨습니다' 로 튕긴다. */
 function sendVerify(){
@@ -9610,70 +9676,6 @@ V['#/partner/verify'] = () => `
     </div>
   </div>
 </div>`;
-
-  if(step===3){
-    const instant = role==='agent';
-    body = `<div style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;padding-top:${isMo()?10:24}px">
-      ${beaverly(isMo()?150:190)}
-      ${/* 끝난 게 아니면 초록 체크를 달지 않는다 - 실패·다른 계정에 걸림은 주의 표시(2026-10-30) */
-        f.jSent==='fail' || (f.jSent==='already' && f.jWhy!=='account')
-        ? `<span style="width:44px;height:44px;border-radius:var(--r-full);background:var(--warnbg);border:1.5px solid var(--warnline);display:flex;align-items:center;justify-content:center;margin-top:8px">
-        <svg viewBox="0 0 24 24" style="width:20px" fill="none" aria-hidden="true"><path d="M12 7.5 v6" stroke="#A85708" stroke-width="2.6" stroke-linecap="round"/><circle cx="12" cy="17" r="1.5" fill="#A85708"/></svg></span>`
-        : f.jSent==='sending' ? ''
-        : `<span style="width:44px;height:44px;border-radius:var(--r-full);background:var(--okbg);border:1.5px solid var(--okline);display:flex;align-items:center;justify-content:center;margin-top:8px">
-        <svg viewBox="0 0 24 24" style="width:20px" fill="none" aria-hidden="true"><path d="M4.5 12.5l5 5 10-11" stroke="#1B7A46" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>`}
-      <h1 class="t" style="font-size:${isMo()?21:25}px;margin-top:8px">${
-        f.jSent==='fail' ? '신청이 저장되지 않았습니다'
-        : f.jSent==='sending' ? '신청을 접수하는 중입니다'
-        : f.jSent==='already' ? (f.jWhy==='account' ? '이 계정으로 이미 신청하셨습니다' : '같은 번호로 신청한 다른 계정이 있습니다')
-        : f.jLinked ? '앞서 하신 신청을 이 계정에 이었습니다'
-        : '가입이 끝났습니다'}</h1>
-      <p style="margin:0;font-size:14.5px;line-height:1.75;color:var(--n700)">${
-        f.jSent==='fail' ? '잠시 뒤 다시 시도해 주세요.<br class="mbr">  계속 안 되면 support@plustonic.com 으로 알려주시면 직접 등록해 드립니다.'
-        : f.jSent==='sending' ? '잠시만 기다려 주세요.'
-        : f.jSent==='already' ? (f.jWhy==='account'
-            ? '한 계정에 하나만 신청하실 수 있습니다. 앞서 넣으신 신청이 그대로 살아 있고,<br class="mbr">  방금 적어주신 내용으로 바뀌지는 않았습니다. 고치실 것이 있으면 support@plustonic.com 으로 알려주세요.'
-            : '카카오·네이버·구글·이메일 중 <b style="color:var(--n900)">처음 신청하실 때 쓰신 방법</b>으로 다시 들어오시면 바로 이어집니다.<br class="mbr">  기억나지 않으시면 support@plustonic.com 으로 알려 주세요. 확인 뒤 이 계정으로 옮겨 드립니다.')
-        : f.jLinked ? '같은 이름·번호로 넣으셨던 신청을 본인확인으로 확인해 지금 로그인한 계정으로 옮겼습니다.<br class="mbr">  앞으로는 이 계정으로 들어오시면 됩니다.'
-        : '<b style="color:var(--n900)">바로 시작하실 수 있습니다.</b><br class="mbr">  활동 지역과 유형을 정해두시면 맞는 손님 조건만 골라 보내드립니다.'}</p>
-      ${f.jSent==='fail'?`<button class="btn sec md" data-act="j-retry" style="margin-top:14px">다시 보내기</button>`:''}
-      ${/* 다른 계정에 걸린 신청이면 이 계정은 파트너가 아니다 - 파트너 화면 단추를 주면 가입으로 되돌아온다(2026-10-30) */
-        f.jSent==='already' && f.jWhy!=='account' ? `
-      <div class="eqb st" style="margin-top:16px">
-        <button class="btn pri md ${isMo()?'blk':''}" data-act="logout" data-v="login">다른 방법으로 로그인</button>
-        <a class="btn sec md ${isMo()?'blk':''}" href="mailto:support@plustonic.com?subject=%ED%8C%8C%ED%8A%B8%EB%84%88%20%EA%B3%84%EC%A0%95%20%EC%98%AE%EA%B8%B0%EA%B8%B0">메일로 문의</a></div>`
-      : f.jSent==='fail' || f.jSent==='sending' ? '' : `
-      <div class="eqb st" style="margin-top:16px">
-        <a class="btn pri md ${isMo()?'blk':''}" data-go="#/partner/settings">활동 조건 설정하기</a>
-        <a class="btn sec md ${isMo()?'blk':''}" data-go="#/partner/demands">대기 중인 손님 먼저 보기</a></div>`}
-    </div>`;
-  }
-  /* 세 번째 걸음의 이름은 역할마다 다르다.
-     하는 일은 역할마다 다르지만(등록번호 대조 · 서류 확인 · 물건 관계 확인)
-     사람에게는 모두 '인증' 한 말로 부른다 - 화면마다 다른 말을 쓰면 같은 절차인지
-     헷갈린다. 역할 이름을 그대로 붙이면 '소유자 (집·상가 주인) 인증' 처럼 길어지고,
-     시행사는 JOIN_ROLES 에 없어 이름이 비어버린다 - 걸음 이름을 따로 둔다. */
-  /* 자격 확인(옛 세 번째 걸음)은 #/partner/verify 로 떼어냈다 -
-     둘러보기도 전에 등록번호부터 내놓으라고 하면 호흡이 너무 길다. */
-  const steps = ['역할 선택','본인인증','완료'];
-  return `
-<div class="scr fade" style="background:var(--warm)">
-  ${bar}
-  <div class="nav pad" style="${isMo()?'':'height:64px'}">
-    ${step===3 && f.jSent && f.jSent!=='fail' ? `<a class="back" data-go="#/"><i class="ar-l" aria-hidden="true"></i>홈으로</a>`
-      : step>1 ? `<button class="back" data-act="j-back"><i class="ar-l" aria-hidden="true"></i>뒤로</button>` : `<a class="back" data-go="#/partner"><i class="ar-l" aria-hidden="true"></i>소개로</a>`}
-    <span style="margin:0 auto">${logoLockup({h:25,partner:true})}</span>
-    <span class="num" style="font-size:13.5px;color:var(--n500)">${step} / ${steps.length}</span>
-  </div>
-  <div style="flex:1;display:flex;justify-content:center;padding:${isMo()?'20px 24px 30px':'32px 40px 40px'}">
-    <div style="width:100%;max-width:${step===1 && !isMo() ? '880px' : '560px'};display:flex;flex-direction:column;gap:14px">
-      ${isMo()?'':`<div style="display:flex;gap:8px;margin-bottom:6px">${steps.map((t,i)=>`
-        <span style="flex:1;padding:10px 0;text-align:center;font-size:13px;font-weight:${i+1===step?800:600};border-radius:var(--r-full);
-          background:${i+1===step?'var(--ind)':i+1<step?'var(--okbg)':'var(--n100)'};color:${i+1===step?'#fff':i+1<step?'var(--ok)':'var(--n500)'}">${t}</span>`).join('')}</div>`}
-      ${body}
-    </div>
-  </div>
-</div>`;};
 
 /* 성과 - 계약 · 매물 · 매칭 (2026-11-13 파트너 기획 B4 '성과 지표(계약 · 매물 · 매칭)').
    계약은 확정본 저장 기준(확인·설명서와 고치기 전 판 제외) · 매물은 매물장부 · 매칭은 맞춤매물 '보고 싶어요' 로 생긴 제안 */
@@ -14311,6 +14313,8 @@ if(typeof addEventListener === 'function'){
   addEventListener('unhandledrejection', e => { const r = e && e.reason; bk오류보내기('처리되지 않은 오류: ' + ((r && r.message) || r), (r && r.stack && (/(https?:\/\/[^\s)]+?):\d+:\d+/.exec(r.stack) || [])[1]) || location.origin, 0, 0, r && r.stack); });
 }
 const BK_변경 = [
+  { v:'26.11.23.11', 날:'2026-11-23', 줄:[ '전수점검 · 코드리뷰 반영 - 저장된 계약서의 일정·체크가 멈추던 것(11-17 부터) · 자격 확인 단추가 멈출 수 있던 것 · 이용 안내 화면이 손님 안내 링크 화면으로 덮이던 것을 고쳤습니다',
+    '임시 백업 · 확정본 보관본은 개인정보를 잠긴 그대로 보관하고, 백업 내려받기는 명단의 운영자만 · 보관본은 스크립트를 막은 틀 안에서 엽니다 · 오류 기록의 번호 가림 · 하루 오류 기록 상한 · 다시 보내기 두 번 나감 방지' ] },
   { v:'26.11.23.10', 날:'2026-11-23', 줄:[ '왼쪽 메뉴 꼬리표 글자를 12px 로(가장 작은 글자 기준) - 한 줄 배치는 그대로' ] },
   { v:'26.11.23.9', 날:'2026-11-23', 줄:[ '왼쪽 메뉴 로고 - 운영 · 파트너 모두 로고를 조금 키워 가운데에 두고, ADMIN · PARTNERS 꼬리표를 같은 노란색으로 맞췄습니다' ] },
   { v:'26.11.23.8', 날:'2026-11-23', 줄:[ '운영 화면 왼쪽 메뉴 - 로고 배치는 원래대로 되돌리고 ADMIN 꼬리표만 노란색으로 남겼습니다' ] },
@@ -17217,7 +17221,8 @@ function cg할일(R, 자리){
   }
   return out.filter(e => e.날).sort((a, b) => (a.날 > b.날) - (a.날 < b.날));
 }
-V['#/guide'] = tok => {
+/* V['#/guide'] 는 '이용 안내'(docShell) - 이 화면은 #/guide/<표> 갈래만 부른다(2026-11-23 코드리뷰: 같은 이름으로 덮어써 이용 안내가 '링크가 맞지 않습니다' 로 보였다) */
+V['#/cguide'] = tok => {
   if(CG.tok !== tok){ CG.tok = tok; CG.row = null; CG.err = ''; CG.side = '';
     fetch('/api/feed?guide=' + encodeURIComponent(tok)).then(r => r.json().then(j => ({ ok: r.ok, j }))).then(({ ok, j }) => {
       if(ok && j.ok) CG.row = j; else CG.err = j.error || '안내를 열지 못했습니다'; render();
@@ -19263,7 +19268,7 @@ async function ctRegCheck(){
 }
 
 /* ── 목록의 계약서 하나 track 고치기 (2026-11-23 보수 장부 · 만기 재계약) ── 그 계약서를 열지 않고 받은 날 · 발행일 · 물은 날을 적는다 */
-let ctFeeT = 0;
+const ctFeeT = new Map();   /* 행마다 따로 - 하나를 같이 쓰면 다른 행을 바로 적을 때 앞 행 저장이 취소됐다(2026-11-23 코드리뷰) */
 async function ctRowTrack(id, patch, 조용히){
   const r = (CT.list || []).find(x => x.id === id); if(!r) return;
   const t = { ...(r.track || {}), ...patch };
@@ -19552,7 +19557,7 @@ function ctPlanHTML(doc){
     ${잠김 && CT.id ? ct등기다시HTML(doc) : ''}
     ${잠김 && CT.id ? ct안내카드(doc) : ''}
     ${잠김 && CT.id ? ct보관카드() : ''}
-    ${CT.id && !CT.need32 && !F.explain ? ct공유카드() : ''}
+    ${CT.id && !CT.need32 && !(CT_FORMS[doc.form] || {}).explain ? ct공유카드() : ''}
     <div class="card pad ct-sec"><h2>알림</h2>
       ${체크('ctk-off', !t.off, '이 계약의 일정을 알려 주세요', '끄면 이 계약은 카카오톡·메일 알림을 보내지 않습니다', '')}
       <p class="sub" style="margin:0;font-size:13.5px">받는 곳 ${[설정.kakao && '카카오톡', 설정.mail && '메일'].filter(Boolean).join('·') || '없음'} · 법무사 예약은 잔금 ${설정.lawyer[0]}~${설정.lawyer[1]}영업일 전
@@ -21750,7 +21755,7 @@ function render(){
   else if(h==='#/partner/contracts' || h.startsWith('#/partner/contracts/')) html = V['#/partner/contracts'](parts[3]);
   else if(h.startsWith('#/partner/contract/')) html = V['#/partner/contract'](parts[3]);
   else if(h.startsWith('#/draft/')) html = V['#/draft'](parts[2]);
-  else if(h.startsWith('#/guide/')) html = V['#/guide'](parts[2]);
+  else if(h.startsWith('#/guide/')) html = V['#/cguide'](parts[2]);
   else if(h.startsWith('#/invite/')) html = V['#/invite'](parts[2]);
   else if(h.startsWith('#/room/')) html = V['#/room'](parts[2], parts[3]);
   else if(h === '#/help' || h.startsWith('#/help/')) html = V['#/help'](parts[2]);
@@ -22778,7 +22783,7 @@ document.addEventListener('input', e=>{
   if(k === 'cs-text'){ if(CS.edit) CS.edit.text = el.value; return; }
   if(k === 'dz-memo'){ memoTyped(el.value.slice(0, 2000)); return; }
   /* 중개보수 장부 - 직접 적는 보수(확인·설명서가 없을 때). 멈추면 저장, 다시 그리지 않는다 */
-  if(k.startsWith('ctfee:')){ const id = k.slice(6), n = +String(money(el)).replace(/[^0-9]/g, '') || 0; clearTimeout(ctFeeT); ctFeeT = setTimeout(() => ctRowTrack(id, { fee: n }, true), 700); return; }
+  if(k.startsWith('ctfee:')){ const id = k.slice(6), n = +String(money(el)).replace(/[^0-9]/g, '') || 0; clearTimeout(ctFeeT.get(id)); ctFeeT.set(id, setTimeout(() => { ctFeeT.delete(id); ctRowTrack(id, { fee: n }, true); }, 700)); return; }
   /* 부속 서류 - 정산서 금액 · 추가 항목 · 인계 품목 */
   if(k.startsWith('cte:')){ ct부속입력(el, k.slice(4)); return; }
   /* 알림 설정 - 법무사 예약 시점(1~20영업일) */
@@ -24282,7 +24287,8 @@ function handle(a,v,el){
       ctPost({ what:'contract-keep-get', id: CT.id }).then(({ ok, j }) => {
         if(!ok || !j.html){ if(w) w.close(); return toast(j.error || '보관본을 열지 못했습니다'); }
         if(!w) return toast('새 창이 막혔습니다 - 팝업을 허용해 주세요');
-        w.document.open(); w.document.write(j.html); w.document.close();
+        /* 저장된 HTML 은 스크립트를 하나도 돌리지 않는 보안 규칙(CSP)을 맨 앞에 두고 연다(2026-11-23 코드리뷰 - 직원이 넣은 스크립트가 대표 세션으로 돌 수 있었다). 서버도 저장할 때 script · on 속성을 걷어 낸다 */
+        w.document.open(); w.document.write('<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; style-src \'unsafe-inline\'; img-src data:; form-action \'none\'">' + j.html); w.document.close();
       }).catch(() => { if(w) w.close(); toast('네트워크 문제로 열지 못했습니다'); }); } return true;
     case 'sy-load': SY.rows = null; SY.usage = null; SY.backups = null; syFetch(); return true;
     case 'sy-backup-now': SY.busy = 'backup'; render();

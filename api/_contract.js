@@ -261,7 +261,7 @@ export async function contractRoute(req, res, agent, user, b) {
       default: res.status(400).json({ error: '알 수 없는 요청입니다' });
     }
   } catch (e) {
-    await (await import('./_sys.js')).기록('server-error', { level: 'error', msg: `계약서 ${String(b && b.what || '').slice(0, 30)} - ${String(e && e.message || e).slice(0, 160)}`, detail: { what: String(b && b.what || '').slice(0, 30), stack: String(e && e.stack || '').split('\n').slice(0, 4).join(' | ').slice(0, 400) } }).catch(() => {});
+    await (await import('./_sys.js')).기록('server-error', { level: 'error', msg: `계약서 ${String(b && b.what || '').slice(0, 30)} - ${String(e && e.message || e).slice(0, 160)}`, detail: { what: String(b && b.what || '').slice(0, 30), stack: (await import('./_sys.js')).글가림(String(e && e.stack || '').split('\n').slice(0, 4).join(' | ')).slice(0, 400) } }).catch(() => {});
     res.status(502).json({ error: 'DB에 닿지 못했습니다' });
   }
   return true;
@@ -429,7 +429,9 @@ const 보관경로 = (사무소, 계약) => `keep/${사무소}/${계약}.json`;
 const 보관저장소 = p => `${process.env.BK_URL}/storage/v1/${p}`;
 const 보관열쇠 = () => ({ apikey: process.env.BK_SECRET_KEY, Authorization: 'Bearer ' + process.env.BK_SECRET_KEY });
 async function keep(res, agent, b) {
-  const id = String(b.id || ''), html = String(b.html || '');
+  const id = String(b.id || '');
+  /* 스크립트 · on 속성 · javascript: 주소는 걷어 낸다 - 인쇄 모양만 남긴다(2026-11-23 코드리뷰). 보는 쪽도 CSP 로 막는다 */
+  const html = String(b.html || '').replace(/<script[\s\S]*?<\/script\s*>/gi, '').replace(/<\/?script[^>]*>/gi, '').replace(/\son[a-z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '').replace(/(href|src|action)\s*=\s*(["']?)\s*javascript:/gi, '$1=$2#');
   if (!UUID.test(id)) return res.status(400).json({ error: '어느 계약서인지 알 수 없습니다' });
   if (!html || Buffer.byteLength(html, 'utf8') > 2.5 * 1024 * 1024) return res.status(400).json({ error: '보관할 내용이 비었거나 너무 큽니다' });
   const got = await 읽기(`select=id,status,form,title,sealed_at,sha256,doc{track}&id=eq.${id}&agent_id=eq.${agent.id}&limit=1`);
@@ -438,7 +440,10 @@ async function keep(res, agent, b) {
   if (!row) return res.status(404).json({ error: '내 계약서가 아니거나 지워진 계약서입니다' });
   if (row.status !== 'sealed') return res.status(409).json({ error: '확정본만 보관합니다' });
   if ((trackCheck(row.track || {}) || {}).keep) return res.status(200).json({ ok: true, already: true });
-  const 몸 = JSON.stringify({ v: 1, id, form: row.form, title: row.title || '', sealed_at: row.sealed_at, sha256: row.sha256 || '', at: new Date().toISOString(), doc: row.doc, html });
+  const 속 = JSON.stringify({ v: 1, id, form: row.form, title: row.title || '', sealed_at: row.sealed_at, sha256: row.sha256 || '', at: new Date().toISOString(), doc: row.doc, html });
+  /* 당사자 · 소유자가 든 내용이라 통째로 잠근다(2026-11-23 코드리뷰). 열쇠가 없으면(개발) 그대로 */
+  const { 잠그기: 잠금, 암호켜짐: 켜짐 } = await import('./_crypto.js');
+  const 몸 = 켜짐() ? JSON.stringify({ v: 2, id, enc: 잠금(속) }) : 속;
   const r = await fetch(보관저장소(`object/bk-files/${보관경로(agent.id, id)}`), { method: 'POST', headers: { ...보관열쇠(), 'Content-Type': 'application/json', 'x-upsert': 'false' }, body: 몸 }).catch(() => null);
   if (!r) return res.status(502).json({ error: '보관하지 못했습니다' });
   if (!r.ok) { const t = await r.text().catch(() => ''); if (!/already exists|Duplicate|409/i.test(t)) return res.status(/mime|not supported|bucket/i.test(t) ? 409 : 502).json(/mime|not supported|bucket/i.test(t) ? { error: '보관 저장소를 준비 중입니다', need: '0046' } : { error: '보관하지 못했습니다' }); }
@@ -451,7 +456,8 @@ async function keepGet(res, agent, b) {
   if (!UUID.test(id)) return res.status(400).json({ error: '어느 계약서인지 알 수 없습니다' });
   const r = await fetch(보관저장소(`object/authenticated/bk-files/${보관경로(agent.id, id)}`), { headers: 보관열쇠() }).catch(() => null);
   if (!r || !r.ok) return res.status(404).json({ error: '보관본이 없습니다' });
-  const j = await r.json().catch(() => null);
+  let j = await r.json().catch(() => null);
+  if (j && j.enc) { try { const { 풀기: 풂 } = await import('./_crypto.js'); j = JSON.parse(풂(j.enc)); } catch { j = null; } }
   if (!j || j.id !== id) return res.status(404).json({ error: '보관본을 읽지 못했습니다' });
   return res.status(200).json({ ok: true, title: j.title, sealed_at: j.sealed_at, sha256: j.sha256, at: j.at, html: j.html });
 }
@@ -1174,7 +1180,7 @@ export async function reportDueCron(req, res) {
   }
   /* 사무소 의무 (2026-11-22) - 공제 만료 · 연수교육 기한. 계약서가 없어도 기한을 넣은 사무소는 받는다 */
   {
-    const x = await db('bk_agent', `select=id,name,phone,user_id,alert:settings->alert&settings->alert->duty=not.is.null&limit=2000`).catch(() => null);
+    const x = await db('bk_agent', `select=id,name,phone,user_id,alert:settings->alert&settings->alert->duty=not.is.null&role=eq.agent&status=eq.approved&limit=2000`).catch(() => null);
     for (const a of (x && x.r.ok ? x.rows : [])) {
       const 설정 = 알림설정(a.alert);
       const 오늘것 = 의무일정(설정).filter(e => !설정.off.includes(e.k)).map(e => ({ ...e, 남음: 날차(오늘, e.날), title: '우리 사무소' }))

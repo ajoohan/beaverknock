@@ -243,7 +243,7 @@ async function saveEndStyle(res, agent, b) {
 async function saveAlert(res, agent, b) {
   const alert = 알림설정(b.alert);
   const 저장 = alert.duty.insTo || alert.duty.eduAt ? alert : { ...alert, duty: undefined };
-  const z = await 설정고침(agent, () => ({ patch: { alert: 저장 } }));
+  const z = await 설정고침(agent, s => ({ patch: { alert: agent.staff ? { ...저장, duty: (s.alert || {}).duty } : 저장 } }));   /* 직원은 사무소 의무 기한을 바꾸지 못한다(2026-11-23 코드리뷰) */
   if (!z.y) return 설정실패(res, z, '알림 설정');
   return res.status(200).json({ ok: true, alert });
 }
@@ -594,9 +594,13 @@ export default async function handler(req, res) {
     if (overLimit('cerr:' + String((req.headers && (req.headers['x-forwarded-for'] || '')) || '').split(',')[0].trim(), 30, 600e3)) return res.status(204).end();
     let e = req.body; if (typeof e === 'string') { try { e = JSON.parse(e); } catch { e = {}; } }
     e = e && typeof e === 'object' ? e : {};
-    const 글 = (v, n) => String(v ?? '').replace(/[\u0000-\u001f]/g, ' ').slice(0, n);
-    await (await import('./_sys.js')).기록('client-error', { level: 'error', msg: 글(e.msg, 200),
-      detail: { src: 글(String(e.src || '').replace(/^https?:\/\/[^/]+/, ''), 120), line: +e.line || 0, col: +e.col || 0, route: 글(String(e.route || '').replace(/\/(G1|D2|[A-Za-z0-9_-]{20,})\..*$/, '/…'), 60), v: 글(e.v, 20), ua: 글(req.headers && req.headers['user-agent'], 160), stack: 글(e.stack, 500) } });
+    const S = await import('./_sys.js');
+    if (await S.오늘오류많음()) return res.status(204).end();
+    /* 글 칸은 모두 번호 · 메일을 가린다. 주소는 # 뒤(링크 표)를 자른다(2026-11-23 코드리뷰) */
+    const 글 = (v, n) => S.글가림(String(v ?? '').replace(/[\u0000-\u001f]/g, ' ')).slice(0, n);
+    const 표뺌 = v => String(v || '').replace(/[?#].*$/, '');
+    await S.기록('client-error', { level: 'error', msg: 글(e.msg, 200),
+      detail: { src: 글(표뺌(e.src).replace(/^https?:\/\/[^/]+/, ''), 120), line: +e.line || 0, col: +e.col || 0, route: 글(String(e.route || '').replace(/\/(G1|D2|R\d|[A-Za-z0-9_-]{20,})\..*$/, '/…'), 60), v: 글(e.v, 20), ua: 글(req.headers && req.headers['user-agent'], 160), stack: 글(String(e.stack || '').replace(/https?:\/\/[^\s)]*#[^\s)]*/g, m => 표뺌(m)), 500) } });
     return res.status(204).end();
   }
   /* 확정 전 초안 보기(로그인 없이 서명된 표로) - api/_contract.js draftRead */

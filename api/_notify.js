@@ -150,11 +150,11 @@ export async function notifyMany(req, list) {
     if (r.ok) return { ok: true, sent: mails.length };
     const t = await r.text().catch(() => '');
     console.error('[notify] 묶음 발송 실패', r.status, t.slice(0, 200));
-    await 발송실패('mail', { 건: mails.length, reason: `${r.status} ${t.slice(0, 120)}`, 다시: { mails } });
+    for (let i = 0; i < mails.length; i += 10) await Promise.all(mails.slice(i, i + 10).map(m => 발송실패('mail', { reason: `묶음 ${r.status} ${t.slice(0, 100)}`, 다시: { mails: [m] } }).catch(() => {})));
     return { skipped: `batch failed ${r.status}`, sent: 0 };
   } catch (e) {
     console.error('[notify] 묶음 발송 오류', e && e.message);
-    await 발송실패('mail', { 건: mails.length, reason: (e && e.message) || 'error', 다시: { mails } }).catch(() => {});
+    for (let i = 0; i < mails.length; i += 10) await Promise.all(mails.slice(i, i + 10).map(m => 발송실패('mail', { reason: `묶음 ${(e && e.message) || 'error'}`, 다시: { mails: [m] } }).catch(() => {})));
     return { skipped: 'error', sent: 0 };
   }
 }

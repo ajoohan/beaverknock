@@ -50,6 +50,7 @@ ok(최근.rows[0].retry === true && !('enc' in 최근.rows[0].detail) && 최근.
   globalThis.fetch = async (u, o = {}) => { u = String(u); 불린.push({ u, m: o.method || 'GET', b: o.body });
     if (/bk_sys_event\?select=id,kind/.test(u)) return 응답([{ id: '11111111-2222-4333-8444-555555555555', kind: 'send', detail: { enc: 행2.detail.enc }, done: false }]);
     if (/solapi/.test(u)) { 보낸.push(JSON.parse(o.body)); return 응답({}); }
+    if (o.method === 'PATCH' && /done=is.false/.test(u)) return 응답([{ id: 'x' }]);
     return 응답('', 204); };
   const r = await S.다시보내기('11111111-2222-4333-8444-555555555555');
   ok(r.ok && 보낸.length === 1 && 보낸[0].message.to === '01011112222' && 보낸[0].message.kakaoOptions.templateId === 'TPL1' && 불린.some(x => x.m === 'PATCH' && /done/.test(x.b || '')) && 불린.some(x => x.m === 'POST' && /"retry"/.test(x.b || '')),
@@ -103,9 +104,9 @@ const 버셀 = JSON.parse(fs.readFileSync(new URL('../vercel.json', import.meta.
 ok(버셀.crons.some(c => c.path === '/api/feed?cron=health' && c.schedule === '50 23 * * *') && /req\.query\.cron === 'health'[\s\S]{0,300}sameSecret\(req\.headers\.authorization/.test(피드),
    '아침 점검은 매일 08:50(한국) 예약 실행 · CRON_SECRET 으로만');
 ok(/req\.query\.err\)[\s\S]{0,300}overLimit\('cerr:'/.test(피드) && /기록\('client-error'/.test(피드), '화면 오류는 IP 마다 10분 30번까지 받는다');
-ok(/if \(!다시\) await 발송실패\('kakao'/.test(카카오) && /발송실패\('mail', \{ 건: mails\.length/.test(알림) && /export async function 다시메일/.test(알림), '알림톡 · 메일 발송이 거절되면 기록한다(다시 보낼 때는 또 기록하지 않음)');
+ok(/if \(!다시\) await 발송실패\('kakao'/.test(카카오) && /mails\.slice\(i, i \+ 10\)\.map\(m => 발송실패\('mail', \{ reason: `묶음/.test(알림) && /export async function 다시메일/.test(알림), '알림톡 · 메일 발송이 거절되면 기록한다(다시 보낼 때는 또 기록하지 않음)');
 ok(/기록\('cron'/.test(계약) && /기록\('server-error'/.test(계약), '아침 일정 알림이 돌았다는 기록 · 계약서 서버 오류 기록');
-ok(/payload\.what === 'sys-retry'[\s\S]{0,200}if \(부\) return res\.status\(403\)/.test(운영) && /logOps\(req, opsUser, \{ action: 'sys-retry'/.test(운영), '다시 보내기는 운영자만(부운영자 막음) · 운영 기록에 남긴다');
+ok(/payload\.what === 'sys-retry'[\s\S]{0,200}if \(부 \|\| !gate\.member\) return res\.status\(403\)/.test(운영) && /logOps\(req, opsUser, \{ action: 'sys-retry'/.test(운영), '다시 보내기는 운영자만(부운영자 막음) · 운영 기록에 남긴다');
 
 /* ── 확정본 보관본 · 링크 열람 ── */
 const C = await import(길.api('_contract.js'));
@@ -166,9 +167,41 @@ ok(js.includes("ct열람글('g', '손님이 안내 링크를')") && js.includes(
   const 운영2 = 읽기('demands.js'), 피드2 = 읽기('feed.js');
   ok(버셀2.crons.some(c => c.path === '/api/feed?cron=backup' && c.schedule === '0 18 * * *') && 버셀2.functions['api/feed.js'].maxDuration === 60 && /req\.query\.cron === 'backup'[\s\S]{0,300}sameSecret/.test(피드2),
      '임시 백업은 매일 새벽 3시(한국) 예약 실행 · CRON_SECRET 으로만 · 60초까지');
-  ok(/payload\.what === 'sys-backup-url' \|\| payload\.what === 'sys-backup-now'\) \{\s+if \(부\) return res\.status\(403\)/.test(운영2) && /action: 'sys-backup-get', reveal: true/.test(운영2),
+  ok(/payload\.what === 'sys-backup-url' \|\| payload\.what === 'sys-backup-now'\) \{\s+if \(부 \|\| !gate\.member\) return res\.status\(403\)/.test(운영2) && /action: 'sys-backup-get', reveal: true/.test(운영2),
      '백업 내려받기 · 지금 백업은 운영자만(부운영자 막음) · 내려받으면 운영 기록에 남긴다');
   ok(js.includes("{v:'backup', t:'백업'}") && js.includes('function sy백업HTML()') && js.includes("case 'sy-backup-get':"), '운영 화면 시스템 › 백업 - 날짜마다 표 · 줄 수 · 내려받기 · 지금 백업');
+}
+
+/* ── 2026-11-23 코드리뷰 반영 ── */
+{
+  /* 화면 이름(V 키)이 겹치지 않는다 - 손님 안내가 이용 안내(#/guide)를 덮어썼다 */
+  const 키들 = [...js.matchAll(/^V\[(['"])(#\/[^'"]*)\1\]\s*=/gm)].map(m => m[2]);
+  const 겹침 = 키들.filter((k, i) => 키들.indexOf(k) !== i);
+  ok(키들.length > 30 && !겹침.length && 키들.includes('#/guide') && 키들.includes('#/cguide'), `화면 이름이 겹치지 않는다(이용 안내 #/guide · 손님 안내 #/cguide)${겹침.length ? ' - 겹침: ' + 겹침.join(', ') : ''}`);
+  /* 백업은 잠긴 그대로 · 30일 지난 기록 정리 */
+  const 시 = 읽기('_sys.js');
+  ok(/'x-bk-raw': '1'/.test(시) && /at=lt\.\$\{new Date\(지금 - 30 \* 864e5\)/.test(시), '임시 백업은 DB 에 잠긴 그대로(x-bk-raw) 담는다 · 30일 지난 시스템 기록은 지운다');
+  ok(/done=is\.false/.test(시) && /if \(!잡힘\.length\) return \{ error: '이미 다시 보냈거나/.test(시) && /await 되돌림\(\)/.test(시), '다시 보내기는 먼저 잡고(done) 보낸다 - 두 번 나가지 않고, 실패하면 되돌린다');
+  /* 화면 오류 - 하루 상한 · 글 칸 가림 */
+  globalThis.fetch = async () => 응답([{ id: 'x' }]);
+  const 많음 = await S.오늘오류많음();
+  globalThis.fetch = async () => 응답([]);
+  const 적음 = await S.오늘오류많음();
+  globalThis.fetch = 원래fetch;
+  const 피드3 = 읽기('feed.js');
+  ok(많음 === true && 적음 === false && /if \(await S\.오늘오류많음\(\)\) return res\.status\(204\)\.end\(\);/.test(피드3) && /const 글 = \(v, n\) => S\.글가림\(/.test(피드3) && /표뺌\(e\.src\)/.test(피드3),
+     '화면 오류는 하루 2000건까지 · 모든 글 칸의 번호 · 메일을 가리고 주소의 # 뒤(링크 표)는 자른다');
+  ok(/agent\.staff \? \{ \.\.\.저장, duty: \(s\.alert \|\| \{\}\)\.duty \} : 저장/.test(피드3), '직원이 알림 설정을 저장해도 사무소 의무 기한은 대표 값 그대로');
+  /* 보관본 - 통째로 잠금 · 스크립트를 막은 틀 */
+  const 계3 = 읽기('_contract.js');
+  ok(/const 몸 = 켜짐\(\) \? JSON\.stringify\(\{ v: 2, id, enc: 잠금\(속\) \}\) : 속;/.test(계3) && /if \(j && j\.enc\)/.test(계3) && /role=eq\.agent&status=eq\.approved/.test(계3),
+     '확정본 보관본은 통째로 잠가 둔다 · 사무소 의무 알림은 승인된 공인중개사 사무소만');
+  ok(js.includes(`w.document.write('<meta http-equiv="Content-Security-Policy" content="default-src \\'none\\'; style-src \\'unsafe-inline\\'; img-src data:; form-action \\'none\\'">' + j.html);`) && !js.includes('w.document.write(j.html)')
+     && /\.replace\(\/<script\[\\s\\S\]\*\?<\\\/script\\s\*>\/gi, ''\)/.test(계3) && /\\son\[a-z\]\+/.test(계3), '보관본은 스크립트를 하나도 돌리지 않는 CSP 를 맨 앞에 두고 연다 · 서버는 저장할 때 script · on 속성 · javascript: 를 걷어 낸다');
+  ok(js.includes('const ctFeeT = new Map();') && js.includes('clearTimeout(ctFeeT.get(id))'), '보수 장부 - 행마다 따로 저장(다른 행을 바로 적어도 앞 행이 사라지지 않음)');
+  const 운영3 = 읽기('demands.js'), 버셀3 = JSON.parse(fs.readFileSync(new URL('../vercel.json', import.meta.url), 'utf8'));
+  ok((운영3.match(/if \(부 \|\| !gate\.member\) return res\.status\(403\)/g) || []).length === 2 && 버셀3.functions['api/demands.js'].maxDuration === 60,
+     '백업 내려받기 · 지금 백업 · 다시 보내기는 명단 운영자만(임시 개방 손님 · 부운영자 막음) · 지금 백업은 60초까지');
 }
 
 console.log(`${ran - fail} 통과 / ${fail} 실패`);

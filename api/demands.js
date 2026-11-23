@@ -77,7 +77,7 @@ export default async function handler(req, res) {
     /* 임시 백업 (2026-11-23) - 목록은 부운영자도, 내려받기 · 지금 백업은 운영자만(손님 연락처가 잠긴 채 들어 있다) */
     if (payload.what === 'sys-backup') return res.status(200).json({ ok: true, rows: await S.백업목록() });
     if (payload.what === 'sys-backup-url' || payload.what === 'sys-backup-now') {
-      if (부) return res.status(403).json({ error: '백업 내려받기 · 지금 백업은 운영자만 할 수 있습니다' });
+      if (부 || !gate.member) return res.status(403).json({ error: '백업 내려받기 · 지금 백업은 명단에 있는 운영자만 할 수 있습니다' });
       if (payload.what === 'sys-backup-now') { const r = await S.임시백업(); await logOps(req, opsUser, { action: 'sys-backup', count: r.파일.length, detail: r.빠짐.length ? `빠짐 ${r.빠짐.length}` : '' }); return res.status(200).json({ ok: true, 날: r.날, 표: r.표, 빠짐: r.빠짐 }); }
       const u = await S.백업주소(payload.path);
       if (u.url) await logOps(req, opsUser, { action: 'sys-backup-get', reveal: true, detail: String(payload.path).slice(0, 80) });
@@ -86,7 +86,7 @@ export default async function handler(req, res) {
     if (payload.what === 'sys-usage') { const u = await S.사용현황(); return res.status(u.error ? 502 : 200).json(u.error ? u : { ok: true, ...u }); }
     if (payload.what === 'sys-check') { const r = await S.점검(String(process.env.ALERT_SITE || 'https://beaverknock.co.kr').replace(/\/+$/, '')); return res.status(200).json({ ok: true, ...r }); }
     if (payload.what === 'sys-retry') {
-      if (부) return res.status(403).json({ error: '다시 보내기는 운영자만 할 수 있습니다' });
+      if (부 || !gate.member) return res.status(403).json({ error: '다시 보내기는 명단에 있는 운영자만 할 수 있습니다' });
       const r = await S.다시보내기(payload.id);
       await logOps(req, opsUser, { action: 'sys-retry', detail: r.ok ? '다시 보냄' : String(r.error || '').slice(0, 100) });
       return res.status(r.ok ? 200 : 400).json(r.ok ? { ok: true } : r);

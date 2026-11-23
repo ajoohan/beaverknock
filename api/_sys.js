@@ -30,7 +30,8 @@ export async function 기록(kind, { level = 'info', msg = '', detail = null } =
 
 /* 발송 실패 - 채널(kakao · mail) · 템플릿 · 이유. 다시 보낼 내용(받는 곳 포함)은 잠가서만 */
 export async function 발송실패(channel, { template = '', reason = '', 다시 = null, 건 = 1 } = {}) {
-  const enc = 다시 && 암호켜짐() ? (s => s.length < 60000 ? 잠그기(s) : '')(JSON.stringify({ channel, ...다시 })) : '';
+  let enc = '';
+  try { enc = 다시 && 암호켜짐() ? (s => s.length < 60000 ? 잠그기(s) : '')(JSON.stringify({ channel, ...다시 })) : ''; } catch { enc = ''; }
   return 기록('send', { level: 'warn', msg: `${channel === 'kakao' ? '알림톡' : '메일'} 발송 실패${건 > 1 ? ` ${건}통` : ''} - ${reason}`,
     detail: { channel, template: String(template || '').slice(0, 60), reason: 글가림(reason).slice(0, 160), 건, ...(enc ? { enc } : {}) } });
 }
@@ -42,6 +43,12 @@ async function 읽기(q, fetchFn = fetch) {
   return { rows: await r.json() };
 }
 
+/* 오늘(한국) 화면 오류 기록이 상한(2000)을 넘었나 - 넘으면 더 받지 않는다(2026-11-23 코드리뷰) */
+export async function 오늘오류많음(상한 = 2000, fetchFn = fetch) {
+  try { const 자정 = new Date(Date.parse(한국날() + 'T00:00:00+09:00')).toISOString();
+    const r = await 시간제한(fetchFn(sbUrl(표, `select=id&kind=eq.client-error&at=gte.${자정}&limit=1&offset=${상한 - 1}`), { headers: sbHeaders() }), 1500);
+    if (!r || !r.ok) return false; return (await r.json()).length > 0; } catch { return false; }
+}
 /* 운영 화면 - 최근 기록. kind 로 거른다. 잠긴 내용은 내보내지 않는다(다시 보낼 수 있는지만) */
 export async function 최근(kind = '', days = 7) {
   const 부터 = new Date(Date.now() - Math.min(Math.max(+days || 7, 1), 90) * 864e5).toISOString();
@@ -59,12 +66,16 @@ export async function 다시보내기(id) {
   if (!row || row.kind !== 'send' || !row.detail || !row.detail.enc) return { error: '다시 보낼 내용이 남아 있지 않습니다' };
   if (row.done) return { error: '이미 다시 보냈습니다' };
   let p; try { p = JSON.parse(풀기(row.detail.enc)); } catch { return { error: '내용을 풀지 못했습니다 - 열쇠(BK_DATA_KEY)가 바뀌었을 수 있습니다' }; }
+  /* 먼저 done 으로 잡는다 - 두 운영자가 같이 눌러도 한 번만 나간다(2026-11-23 코드리뷰) */
+  const 잡기 = await fetch(sbUrl(표, `id=eq.${id}&done=is.false`), { method: 'PATCH', headers: { ...sbHeaders(), Prefer: 'return=representation' }, body: JSON.stringify({ done: true }) }).catch(() => null);
+  const 잡힘 = 잡기 && 잡기.ok ? await 잡기.json().catch(() => []) : [];
+  if (!잡힘.length) return { error: '이미 다시 보냈거나 다른 분이 보내는 중입니다' };
+  const 되돌림 = () => fetch(sbUrl(표, `id=eq.${id}`), { method: 'PATCH', headers: { ...sbHeaders(), Prefer: 'return=minimal' }, body: JSON.stringify({ done: false }) }).catch(() => null);
   let 결과;
   if (p.channel === 'kakao') 결과 = await (await import('./_kakao.js')).alimtalk({ to: p.to, template: p.template, vars: p.vars, 다시: true });
   else if (p.channel === 'mail') 결과 = await (await import('./_notify.js')).다시메일(p.mails || []);
-  else return { error: '알 수 없는 채널입니다' };
-  if (!결과 || !결과.ok) return { error: `다시 보내지 못했습니다 - ${(결과 && (결과.skipped || 결과.error)) || '알 수 없음'}` };
-  await 시간제한(fetch(sbUrl(표, `id=eq.${id}`), { method: 'PATCH', headers: { ...sbHeaders(), Prefer: 'return=minimal' }, body: JSON.stringify({ done: true }) }), 1500).catch(() => null);
+  else { await 되돌림(); return { error: '알 수 없는 채널입니다' }; }
+  if (!결과 || !결과.ok) { await 되돌림(); return { error: `다시 보내지 못했습니다 - ${(결과 && (결과.skipped || 결과.error)) || '알 수 없음'}` }; }
   await 기록('retry', { msg: `${p.channel === 'kakao' ? '알림톡' : '메일'} 다시 보냄`, detail: { of: id } });
   return { ok: true };
 }
@@ -165,7 +176,8 @@ export async function 임시백업(fetchFn = fetch, 지금 = Date.now()) {
     const 모두 = [];
     try {
       for (let 처음 = 0; 처음 < 200000; 처음 += 백업쪽) {
-        const r = await fetchFn(sbUrl(표이름, `select=*&order=${키}&limit=${백업쪽}&offset=${처음}`), { headers: sbHeaders() });
+        /* x-bk-raw - 개인정보 칸을 풀지 않고 DB 에 잠긴 그대로 받는다(2026-11-23 코드리뷰: 길목이 풀어 평문이 백업에 담겼다) */
+        const r = await fetchFn(sbUrl(표이름, `select=*&order=${키}&limit=${백업쪽}&offset=${처음}`), { headers: { ...sbHeaders(), 'x-bk-raw': '1' } });
         if (!r.ok) { const t = await r.text().catch(() => ''); throw new Error(없는표(t) ? '표 없음' : `읽기 ${r.status}`); }
         const 쪽 = await r.json(); 모두.push(...쪽);
         if (쪽.length < 백업쪽) break;
@@ -186,6 +198,8 @@ export async function 임시백업(fetchFn = fetch, 지금 = Date.now()) {
       if (파일.length) { const r = await fetchFn(저장소('object/bk-files'), { method: 'DELETE', headers: { ...저장열쇠(), 'Content-Type': 'application/json' }, body: JSON.stringify({ prefixes: 파일.map(f => `backup/${d}/${f}`) }) }); if (r.ok) 지움++; }
     }
   } catch { /* 넘어간다 */ }
+  /* 시스템 기록은 30일만 둔다 - 로그인 없는 오류 접수로 표가 끝없이 커지지 않게(2026-11-23 코드리뷰) */
+  try { await fetchFn(sbUrl(표, `at=lt.${new Date(지금 - 30 * 864e5).toISOString()}`), { method: 'DELETE', headers: { ...sbHeaders(), Prefer: 'return=minimal' } }); } catch { /* 넘어간다 */ }
   const 행수 = Object.values(목록.표).reduce((s, n) => s + n, 0);
   await 기록('backup', { level: 목록.빠짐.length ? 'warn' : 'info', msg: `임시 백업 ${날} - 표 ${Object.keys(목록.표).length}개 · ${행수}줄 · 파일 ${목록.파일.length}개${목록.빠짐.length ? ` · 빠짐 ${목록.빠짐.length}` : ''}${지움 ? ` · 오래된 ${지움}일치 지움` : ''}`,
     detail: { 표: 목록.표, 빠짐: 목록.빠짐, 없음: 목록.없음 } }, fetchFn);

@@ -112,6 +112,18 @@ function 법인번호빼기(doc) {
   return { ...doc, parties };
 }
 
+/* 실거래가 (2026-11-23) - api/_rt.js. 포털 키는 사이트 전체가 같이 쓴다 - 한 계정 하루 100번 · 한 곳(IP) 200번 */
+async function rt(req, res, agent, b) {
+  if (overLimit('rt:a:' + agent.id, 100, 864e5) || overLimit('rt:ip:' + ipOf(req), 200, 864e5))
+    return res.status(429).json({ ok: false, error: '오늘 실거래가 조회를 많이 하셨습니다 - 내일 다시 해 주세요' });
+  const { 실거래가, 실거래오류 } = await import('./_rt.js');
+  try {
+    const o = await 실거래가(b);
+    return res.status(200).json(o.error ? { ok: false, ...o } : { ok: true, ...o });
+  } catch (e) {
+    return res.status(200).json({ ok: false, error: e instanceof 실거래오류 ? e.message : '실거래가를 불러오지 못했습니다', ...(e && e.cause === 'need' ? { need: 'apply' } : {}) });
+  }
+}
 /* 주소로 건축물대장 (2026-11-06) - api/_bld.js */
 async function 대장(req, res, agent, b) {
   /* 공공데이터 키는 사이트 전체가 같이 쓴다 - 한 계정 하루 200번 · 한 곳(IP) 400번 */
@@ -244,6 +256,7 @@ export async function contractRoute(req, res, agent, user, b) {
       case 'contract-share-cut': await shareCut(res, agent, b); break;
       case 'contract-guide':   await guide(res, agent, b); break;
       case 'contract-keep':    await keep(res, agent, b); break;
+      case 'contract-rt':      await rt(req, res, agent, b); break;
       case 'contract-keep-get': await keepGet(res, agent, b); break;
       default: res.status(400).json({ error: '알 수 없는 요청입니다' });
     }
@@ -602,9 +615,9 @@ export const 날짜글 = d => { const t = new Date(d + 'T00:00:00Z');
 
 export const 알림종류 = { permitDue: '토지거래허가 약정일', permitExpect: '토지거래허가 승인 예정일', contract: '계약일', mid: '중도금',
   balance: '잔금', report: '실거래신고 기한', lawyer: '법무사 예약', expiry: '임대차 만기 6개월 전', settle: '잔금 완료 확인', prep: '잔금 준비물 안내',
-  rcpt: '현금영수증 발행 확인', ins: '공제 만료', edu: '연수교육 기한' };
+  rcpt: '현금영수증 발행 확인', ins: '공제 만료', edu: '연수교육 기한', regchk: '잔금 전 등기 확인' };
 /* 며칠 전 아침에 알리는가 - 0 은 당일. 법무사 예약은 예약할 때가 시작되는 날(잔금 b영업일 전) 한 번 */
-export const 알림날 = { permitDue: [3, 0], permitExpect: [0], contract: [1, 0], mid: [3, 0], balance: [7, 3, 0], report: [7, 3, 1, 0], lawyer: [0], expiry: [0], settle: [0], prep: [0], rcpt: [0], ins: [30, 7, 0], edu: [60, 30, 7, 0] };
+export const 알림날 = { permitDue: [3, 0], permitExpect: [0], contract: [1, 0], mid: [3, 0], balance: [7, 3, 0], report: [7, 3, 1, 0], lawyer: [0], expiry: [0], settle: [0], prep: [0], rcpt: [0], ins: [30, 7, 0], edu: [60, 30, 7, 0], regchk: [0] };
 /* 임대차 만기 6개월 전 - 갱신 의사를 물을 때(파트너 리뷰 2026-11-05). 임대차·전대차만, 한 번 */
 export const 임대차양식 = ['home-lease', 'shop-lease', 'lease', 'sublease'];
 export function 달빼기(d, n) {
@@ -640,8 +653,8 @@ export function 의무일정(설정 = 알림설정()) {
 /* 계약 하나의 일정·체크(track). 날짜 칸은 ISO 날짜만, 나머지는 켜짐/꺼짐만 받는다 - 다른 것은 버린다 */
 /* arch · trash (2026-11-10 대표님 결정 1번) - 보관함으로 내린 날 · 휴지통에 넣은 날. 확정본은 휴지통까지만, 작성 중은 휴지통 30일 뒤 지운다 */
 /* signDate (2026-11-17 파트너 D14 '계약체결일') - 일반 매매 · 임대차는 계약금 일부가 들어온 날(토지거래허가는 계약일과 같아 따로 적지 않는다) */
-/* rcpt (2026-11-22 사무소 의무 달력) - 현금영수증을 발행한 날 */
-const TRACK_DATES = ['permitDue', 'permitApplied', 'midDate', 'balanceDate', 'guideAt', 'permitPaid', 'permitAgreed', 'permitOk', 'piAt', 'arch', 'trash', 'signDate', 'rcpt'];
+/* rcpt (2026-11-22 사무소 의무 달력) - 현금영수증을 발행한 날. regAt (2026-11-23) - 잔금 전 등기를 다시 본 날 · feeAt - 중개보수 받은 날 · askAt - 갱신 의사를 물은 날 */
+const TRACK_DATES = ['permitDue', 'permitApplied', 'midDate', 'balanceDate', 'guideAt', 'permitPaid', 'permitAgreed', 'permitOk', 'piAt', 'arch', 'trash', 'signDate', 'rcpt', 'regAt', 'feeAt', 'askAt'];
 export const 진행상태 = { ready: '준비', doing: '진행중', done: '완료', hold: '보류', cancel: '취소' };
 export const 현장사진최대 = 20;
 export function 현장사진값(x) {
@@ -674,6 +687,9 @@ export function trackCheck(t) {
   if (typeof t.xcode === 'string' && XCODE.test(t.xcode)) out.xcode = t.xcode;
   /* 전자계약으로 진행(파트너 기획 [137] - 금리 우대 대상 관리용 표시) */
   if (t.ec === true) out.ec = true;
+  /* 중개보수 (2026-11-23 보수 장부) - 확인·설명서에 없을 때 직접 적은 금액(원) · 잔금 전 등기 다시 본 결과 한 줄 */
+  if (Number.isFinite(+t.fee) && +t.fee > 0 && +t.fee < 1e11) out.fee = Math.round(+t.fee);
+  if (typeof t.regNote === 'string' && t.regNote.trim() && !주민번호있나(t.regNote)) out.regNote = t.regNote.replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, 300);
   /* 링크 열람 (2026-11-22) - 초안 링크(d) · 손님 안내 링크(g)를 마지막으로 연 때와 횟수. 서버만 쓴다(화면 저장은 이 칸을 못 바꾼다) */
   if (t.seen && typeof t.seen === 'object') { const s = {};
     for (const k of ['d', 'g']) { if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(String(t.seen[k] || ''))) s[k] = t.seen[k]; const n = t.seen[k + 'n']; if (Number.isInteger(n) && n > 0 && n < 1e6) s[k + 'n'] = n; }
@@ -949,6 +965,9 @@ export function 일정목록(c, 설정 = 알림설정()) {
   }
   /* 잔금 다음 날 아침 - 진행 상태를 '완료'로 바꾸지 않았으면 묻는다(파트너 리뷰 '잔금 완료 확인'. 예약 실행이 하루 한 번이라 시간마다는 못 한다) */
   if (bd && t.state !== 'done' && t.state !== 'cancel' && t.state !== 'hold') out.push({ k: 'settle', 날: 날더하기(bd, 1), 메모: '잔금을 마쳤으면 진행 상태를 완료로 바꾸세요 - 안 끝났으면 잔금 지연입니다' });
+  /* 잔금 전 등기 확인 (2026-11-23) - 잔금 3일 전 아침. 계약 뒤 근저당 · 가압류 · 소유자가 바뀌지 않았는지 다시 떼어 본다. 확정본만 */
+  if (bd && c.status === 'sealed' && t.state !== 'cancel' && t.state !== 'done' && !/^explain/.test(String(c.form || ''))) out.push({ k: 'regchk', 날: 날더하기(bd, -3), 마침: !!날만(t.regAt),
+    메모: 날만(t.regAt) ? `${날만(t.regAt)} 다시 봄` : '등기부를 다시 떼어 계약 때와 달라진 권리가 없는지 확인하세요 - 일정·체크에서 올리면 비교해 드립니다' });
   /* 현금영수증 (2026-11-22) - 중개업은 현금영수증 의무 발행 업종. 잔금 다음 날 아침 발행했는지 묻는다. 확정본만 */
   if (bd && c.status === 'sealed' && t.state !== 'cancel' && !/^explain/.test(String(c.form || ''))) out.push({ k: 'rcpt', 날: 날더하기(bd, 1), 마침: !!날만(t.rcpt),
     메모: 날만(t.rcpt) ? `${날만(t.rcpt)} 발행` : '중개보수를 받았으면 현금영수증을 발행하세요 - 발행했으면 일정·체크에서 표시' });
@@ -960,7 +979,7 @@ export function 일정목록(c, 설정 = 알림설정()) {
 export function 오늘알림(c, 설정, 오늘) {
   if (c.track && c.track.off) return [];
   return 일정목록(c, 설정)
-    .filter(e => !설정.off.includes(e.k) && !(e.k === 'report' && (c.status !== 'sealed' || c.reported_at)) && !((e.k === 'expiry' || e.k === 'settle' || e.k === 'prep') && c.status !== 'sealed') && !(e.k === 'prep' && e.마침) && !(e.k === 'rcpt' && e.마침))
+    .filter(e => !설정.off.includes(e.k) && !(e.k === 'report' && (c.status !== 'sealed' || c.reported_at)) && !((e.k === 'expiry' || e.k === 'settle' || e.k === 'prep') && c.status !== 'sealed') && !(e.k === 'prep' && e.마침) && !(e.k === 'rcpt' && e.마침) && !(e.k === 'regchk' && e.마침))
     .map(e => ({ ...e, 남음: 날차(오늘, e.날) }))
     .filter(e => (알림날[e.k] || []).includes(e.남음));
 }

@@ -232,15 +232,15 @@ const M = new Function('esc', `${js.slice(시작, 끝)}\nreturn { dzLine, dzPill
      '번호 걸음 제목(활동 설정 · 매물 등록)은 계약서 작성 화면과 같은 번호 배지');
 
   /* 왼쪽 메뉴 (2026-10-30 '항목 구분을 더 명확히 · 로고 옆 PARTNERS 라벨 · 묶음 간격 · 버전 글자 작게') */
-  ok(js.includes('<a data-go="#/partner/home" class="dz-logo">${logoLockup({h:20, mode:\'dark\'})}<span class="dz-tag en">PARTNERS</span></a>')
-     && css.includes('.dz-tag.en{padding:2px 6px;border:1px solid rgba(255,255,255,.55)') && /\.dz-logo\{[^}]*flex-wrap:wrap/.test(css),
-     '로고 옆은 영문 꼬리표 PARTNERS - 좁은 메뉴에서는 로고 아래로 내려가 잘리지 않는다');
+  ok(js.includes('<a data-go="#/partner/home" class="dz-logo dz-logo-c">${logoLockup({h:24, mode:\'dark\', noEn:true})}<span class="dz-tag en dz-tag-y">PARTNERS</span></a>')
+     && css.includes('.dz-tag.en{padding:2px 6px;border:1px solid rgba(255,255,255,.55)') && /\.dz-logo\{[^}]*flex-wrap:wrap/.test(css) && /\.dz-logo\.dz-logo-c\{justify-content:center/.test(css),
+     '로고 옆은 영문 꼬리표 PARTNERS(노란색) · 로고는 24px 로 가운데(2026-11-23 대표님) - 좁은 메뉴에서는 로고 아래로 내려가 잘리지 않는다');
   ok(css.includes('.dz-menu > .grp:not(:first-child){margin-top:12px;padding-top:16px;border-top:1px solid rgba(255,255,255,.16)}')
      && css.includes('body:not(.mo) .dz-menu > .grp:not(:first-child){margin-top:8px;padding-top:12px}'),
      '묶음(영업 · 계약 · 내 사무소)마다 위를 띄우고 얇은 줄 - 낮은 창에서는 조금 좁게');
   ok(css.includes('.dz-vb > span{font-size:12.5px;') && css.includes('.dz-vb small{font-size:12px;'), '아래 버전 칸 글자는 한 단계 작게(12.5 · 12px)');
-  ok(js.includes('<a data-act="ops-tab" data-v="home" class="dz-logo" aria-label="비버노크 운영 대시보드">${logoLockup({h:20, mode:\'dark\'})}<span class="dz-tag en dz-tag-ops">ADMIN</span></a>')
-     && !js.includes('<span class="dz-tag">운영</span>') && /\.dz-tag\.en\.dz-tag-ops\{background:#FFD166;color:#24164F/.test(css) && !/dz-stamp/.test(css),
+  ok(js.includes('<a data-act="ops-tab" data-v="home" class="dz-logo dz-logo-c" aria-label="비버노크 운영 대시보드">${logoLockup({h:24, mode:\'dark\', noEn:true})}<span class="dz-tag en dz-tag-y">ADMIN</span></a>')
+     && !js.includes('<span class="dz-tag">운영</span>') && /\.dz-tag\.en\.dz-tag-y\{background:#FFD166;color:#24164F/.test(css) && !/dz-stamp/.test(css),
      '운영자 메뉴도 같은 모양 - 로고 옆 영문 꼬리표 ADMIN(노란색 · 2026-11-23 대표님) · 로고를 누르면 운영 대시보드(손님 사이트는 아래 사이트 가기)');
   ok(js.includes('<div class="nav solid pad ptn-nav">') && js.includes('${logoLockup({h:22,partner:true})}')
      && js.includes("document.body.classList.toggle('ptn', isMo() && !!app.querySelector('.ptn-nav, .tabbar.pt, .opsPad'));"),

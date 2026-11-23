@@ -6,14 +6,14 @@
    2) 큰 스크립트를 /app/bk.<지문>.js 로 떼어 낸다. 파일 이름에 내용 지문이 들어가 1년 캐시(immutable)를 걸 수 있고,
       바깥 스크립트라 크롬이 해석 결과(코드 캐시)를 저장해 두 번째 방문부터는 해석을 건너뛴다.
       자리는 원래 인라인 스크립트가 있던 곳(body 끝) 그대로 - 실행 순서가 바뀌지 않는다.
-   3) CSS 는 첫 화면을 막지 않게 그대로 인라인으로 두되 줄인다.
-   4) 원본 사본을 저장소 원본/ 에 남긴다 - 원본은 저장소 밖이라, 이것이 주석까지 든 화면 코드의 이력(백업)이다. 웹에는 안 올라간다(.vercelignore).
-   5) 오류 위치를 원본 줄로 되짚을 지도(소스맵)는 저장소 밖 ../빌드지도/ 에 둔다 - 웹에 두면 내부 주석이 그대로 드러난다.
+   3) CSS 는 첫 화면을 막지 않게 그대로 인라인으로 두되 줄인다.
+   4) 원본 사본을 저장소 원본/ 에 남긴다 - 원본은 저장소 밖이라, 이것이 주석까지 든 화면 코드의 이력(백업)이다. 웹에는 안 올라간다(.vercelignore).
+   5) 오류 위치를 원본 줄로 되짚을 지도(소스맵)는 저장소 밖 ../빌드지도/ 에 둔다 - 웹에 두면 내부 주석이 그대로 드러난다.
    리뷰 11-12: 예전 지문 파일은 '지금 운영 중인 것'(커밋된 HEAD 의 index.html 이 부르는 것)을 지킨다 - 배포 전에 빌드를 여러 번 돌려도 안 지운다. */
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import * as esbuild from 'esbuild';
 
@@ -39,6 +39,9 @@ export async function 빌드(html) {
   const 이름 = `app/bk.${지문}.js`;
   파일[이름] = r.code;
   끝 = 끝.replace(본[0], () => `<script src="/${이름}"></script>`);
+  /* 화면 코드 미리 받기 (2026-11-23 첫 화면 속도) - 스크립트는 본문 맨 끝이라 HTML(압축 68KB)을 다 받은 뒤에야 받기 시작했다.
+     머리 맨 앞(글자 설정 바로 뒤 - 머리 안 CSS 290KB 보다 먼저)에 preload 를 두면 HTML 을 받는 동안 함께 받는다(휴대폰 느린 망에서 첫 화면이 그만큼 빨라진다) */
+  if (!끝.includes(`rel="preload" href="/${이름}"`)) 끝 = 끝.replace('<meta charset="utf-8">', m => `${m}\n<link rel="preload" href="/${이름}" as="script">`);
   return { html: 끝, 파일, 이름, 지도: r.map };
 }
 

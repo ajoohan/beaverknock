@@ -175,7 +175,7 @@ export async function 임시백업(fetchFn = fetch, 지금 = Date.now()) {
       목록.표[표이름] = 모두.length;
     } catch (e) { 목록.빠짐.push(`${표이름}: ${String(e && e.message || e).slice(0, 80)}`); }
   }
-  await 올리기(`backup/${날}/목록.json`, JSON.stringify(목록), fetchFn).catch(e => 목록.빠짐.push('목록: ' + e.message));
+  await 올리기(`backup/${날}/manifest.json`, JSON.stringify(목록), fetchFn).catch(e => 목록.빠짐.push('목록: ' + e.message));
   /* 7일 지난 날짜 폴더를 지운다 */
   let 지움 = 0;
   try {
@@ -206,15 +206,18 @@ export async function 백업날들(fetchFn = fetch) {
 export async function 백업목록(fetchFn = fetch) {
   const 날들 = await 백업날들(fetchFn), out = [];
   for (const d of 날들.slice(0, 10)) {
-    const r = await fetchFn(저장소(`object/authenticated/bk-files/backup/${d}/목록.json`), { headers: 저장열쇠() }).catch(() => null);
+    const r = await fetchFn(저장소(`object/authenticated/bk-files/backup/${d}/manifest.json`), { headers: 저장열쇠() }).catch(() => null);
     const j = r && r.ok ? await r.json().catch(() => null) : null;
-    out.push({ 날: d, 표: (j && j.표) || {}, 파일: (j && j.파일) || [], 빠짐: (j && j.빠짐) || ['목록 파일을 못 읽었습니다'] });
+    if (j) { out.push({ 날: d, 표: j.표 || {}, 파일: j.파일 || [], 빠짐: j.빠짐 || [] }); continue; }
+    /* 목록 파일이 없으면(11-23 첫 백업 - 한글 파일 이름 '목록.json' 을 저장소가 받지 않았다) 폴더 안 파일로 보여 준다 */
+    const 파일 = (await 폴더파일(`backup/${d}/`, fetchFn)).filter(n => /^[a-z_]+-\d+\.json$/.test(n)).map(n => `backup/${d}/${n}`);
+    out.push({ 날: d, 표: {}, 파일, 빠짐: [`목록 파일이 없어 줄 수는 모릅니다 - 표 파일 ${파일.length}개`] });
   }
   return out;
 }
 /* 내려받기 주소 (5분) - backup/ 아래 json 만 */
 export async function 백업주소(path, fetchFn = fetch) {
-  if (!/^backup\/\d{4}-\d{2}-\d{2}\/[a-z_]+-\d+\.json$|^backup\/\d{4}-\d{2}-\d{2}\/목록\.json$/.test(String(path || ''))) return { error: '내려받을 수 없는 파일입니다' };
+  if (!/^backup\/\d{4}-\d{2}-\d{2}\/[a-z_]+-\d+\.json$|^backup\/\d{4}-\d{2}-\d{2}\/manifest\.json$/.test(String(path || ''))) return { error: '내려받을 수 없는 파일입니다' };
   const r = await fetchFn(저장소(`object/sign/bk-files/${encodeURI(path)}`), { method: 'POST', headers: { ...저장열쇠(), 'Content-Type': 'application/json' }, body: JSON.stringify({ expiresIn: 300 }) });
   const j = await r.json().catch(() => ({})), s = j.signedURL || j.signedUrl;
   if (!r.ok || !s) return { error: '내려받을 주소를 만들지 못했습니다' };

@@ -153,7 +153,7 @@ ok(js.includes("ct열람글('g', '손님이 안내 링크를')") && js.includes(
     if (/object\/bk-files\//.test(u)) { 올림.push([u.split('object/bk-files/')[1], o.headers['x-upsert'], o.headers['Content-Type']]); return 응답({}); }
     return 응답('', 404); };
   const r = await S.임시백업(가짜, 지금);
-  ok(r.날 === '2026-11-24' && r.표.bk_contract === 1001 && r.표.bk_agent === 1 && r.빠짐.some(x => /bk_idv_use/.test(x)) && 올림.some(([p]) => p === 'backup/2026-11-24/bk_contract-1.json') && 올림.some(([p]) => p === 'backup/2026-11-24/목록.json')
+  ok(r.날 === '2026-11-24' && r.표.bk_contract === 1001 && r.표.bk_agent === 1 && r.빠짐.some(x => /bk_idv_use/.test(x)) && 올림.some(([p]) => p === 'backup/2026-11-24/bk_contract-1.json') && 올림.some(([p]) => p === 'backup/2026-11-24/manifest.json') && 올림.every(([p]) => /^[!-~]+$/.test(p))
      && 올림.every(([, up, ct]) => up === 'true' && ct === 'application/json'),
      '임시 백업 - 표마다 1000줄씩 끝까지 읽어 backup/날짜/ 에 json 으로(같은 날 다시 돌리면 덮음) · 못 읽은 표는 빠짐에 · 목록 파일');
   ok(지움.length === 2 && 지움.every(p => p.startsWith('backup/2026-11-10/')) && !지움.some(p => /2026-11-17|2026-11-24/.test(p)), '7일 지난 날짜(11-10)만 지운다 - 11-17 · 11-24 는 둔다');

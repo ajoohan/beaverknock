@@ -12366,7 +12366,7 @@ function sy백업HTML(){
     return `<div class="card pad" style="display:flex;flex-direction:column;gap:8px"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><b class="num" style="font-size:15px">${esc(b.날)}</b>
       <span class="sub" style="font-size:13px">표 ${Object.keys(b.표).length}개 · ${줄수}줄 · 파일 ${b.파일.length}개</span>${b.빠짐.length ? `<span class="badge b-warn">빠짐 ${b.빠짐.length}</span>` : '<span class="badge b-ok">정상</span>'}</div>
       ${b.빠짐.length ? `<p class="sub" style="margin:0;font-size:12.5px;color:var(--warn)">${b.빠짐.map(esc).join(' / ')}</p>` : ''}
-      <div style="display:flex;gap:6px;flex-wrap:wrap">${[...b.파일, `backup/${b.날}/목록.json`].map(p => `<button class="btn tool sm" data-act="sy-backup-get" data-v="${esc(p)}" title="5분짜리 주소로 내려받습니다">${esc(p.split('/').pop().replace(/\.json$/, ''))}${(m => m && b.표[m[1]] != null ? ` (${b.표[m[1]]})` : '')(/^([a-z_]+)-1\.json$/.exec(p.split('/').pop()))}</button>`).join('')}</div></div>`; }).join('');
+      <div style="display:flex;gap:6px;flex-wrap:wrap">${[...b.파일, ...(Object.keys(b.표).length ? [`backup/${b.날}/manifest.json`] : [])].map(p => `<button class="btn tool sm" data-act="sy-backup-get" data-v="${esc(p)}" title="5분짜리 주소로 내려받습니다">${esc(p.split('/').pop().replace(/\.json$/, ''))}${(m => m && b.표[m[1]] != null ? ` (${b.표[m[1]]})` : '')(/^([a-z_]+)-1\.json$/.exec(p.split('/').pop()))}</button>`).join('')}</div></div>`; }).join('');
 }
 function logPanel(){
   const rows = LG.rows;
@@ -14292,6 +14292,7 @@ if(typeof addEventListener === 'function'){
   addEventListener('unhandledrejection', e => { const r = e && e.reason; bk오류보내기('처리되지 않은 오류: ' + ((r && r.message) || r), (r && r.stack && (/(https?:\/\/[^\s)]+?):\d+:\d+/.exec(r.stack) || [])[1]) || location.origin, 0, 0, r && r.stack); });
 }
 const BK_변경 = [
+  { v:'26.11.23.5', 날:'2026-11-23', 줄:[ '깜빡임 - 대시보드처럼 자료가 차례로 들어오며 여러 번 다시 그리는 화면에서 그래프 선 그리기 · 카드 떠오르기 효과가 매번 처음부터 다시 재생돼 깜빡이던 것을 고쳤습니다(화면이 바뀔 때만 재생)', '임시 백업 - 목록 파일 이름을 영문으로(한글 이름을 저장소가 받지 않아 ‘목록 파일을 못 읽었습니다’로 보였습니다)' ] },
   { v:'26.11.23.4', 날:'2026-11-23', 줄:[ '임시 백업 - 무료 플랜은 자동 백업이 없어, 매일 새벽 3시 주요 표 10개를 비공개 저장소에 7일치 둡니다. 운영 화면 › 시스템 › 백업에서 날짜마다 확인하고 PC 로 내려받으며, 아침 점검이 백업이 돌았는지 봅니다' ] },
   { v:'26.11.23.3', 날:'2026-11-23', 줄:[ '첫 화면 속도 - 화면 코드를 페이지를 받는 동안 함께 받기 시작합니다(전에는 페이지를 다 받은 뒤에 받았습니다). 휴대폰 느린 망에서 첫 화면이 빨라집니다' ] },
   { v:'26.11.23.2', 날:'2026-11-23', 줄:[ '실거래가 - 전세 안전 점검에서 ‘이 지번 실거래가 보기’를 누르면 국토교통부 실거래가에서 같은 지번 최근 매매(아파트 · 연립 · 다세대 · 오피스텔)를 불러오고, 고른 값을 시세 칸에 넣습니다(공공데이터포털 활용신청 뒤 열림)',
@@ -21538,6 +21539,8 @@ addEventListener('beforeunload', e => {
 
 /* 사이트 제목 - 어드민을 떠나면 이것으로 돌아간다 */
 var 기본제목 = document.title;
+/* 같은 화면을 다시 그릴 때 곧바로 끝낼 등장 효과 이름 (render 참고) */
+const BK_등장효과 = new Set(['draw', 'fade', 'rise', 'settle', 'riseIn', 'dzRise', 'dzDraw', 'rlIn', 'ckDraw', 'ctwIn', 'ctwRise']);
 function render(){
   if(IME && 적는중() && S.lastRoute === (location.hash || '#/')){ 밀린전체 = true; return; }
   파트너현황._c = null;
@@ -21803,6 +21806,13 @@ function render(){
      한 번 사라졌다 나타난다. 첫 진입에서 세션 확인·설정 조회로 렌더가 두세 번
      겹치면 그게 '깜빡임' 으로 보인다. 화면이 바뀔 때만 재생한다. */
   if(same){ const scr = app.querySelector('.scr.fade'); if(scr) scr.classList.remove('fade'); }
+  /* 같은 화면을 다시 그리면 등장 효과(그래프 선 그리기 · 카드 떠오르기 · 숫자 칸)를 곧바로 끝낸다 (2026-11-23 대표님 '가끔 로딩할 때 화면이 깜빡거린다').
+     대시보드는 처음 열 때 세션 · 제안 · 매물 · 계약서 · 알림 설정이 차례로 와서 네다섯 번 다시 그리는데, 그때마다 dzRise · dzDraw · 스파크선이
+     처음부터 다시 재생돼 깜빡였다. 화면이 바뀔 때만 재생한다. 계속 도는 로딩 표시 · 창 열기 · 흔들기(고칠 칸) 같은 것은 건드리지 않는다 */
+  if(same && typeof app.getAnimations === 'function'){
+    try{ for(const a of app.getAnimations({ subtree: true }))
+      if(BK_등장효과.has(a.animationName) && !(a.effect && a.effect.target && a.effect.target.closest && a.effect.target.closest('.modal'))) a.finish(); }catch(_){}
+  }
   /* #app 에 scroll-behavior:smooth 가 걸려 있어, 그냥 넣으면 위치를 되돌리는 과정이
      '스르륵' 애니메이션으로 보인다. 이 한 번만 즉시 이동으로 바꾼다. */
   const sb = app.style.scrollBehavior;

@@ -239,9 +239,9 @@ const M = new Function('esc', `${js.slice(시작, 끝)}\nreturn { dzLine, dzPill
      && css.includes('body:not(.mo) .dz-menu > .grp:not(:first-child){margin-top:8px;padding-top:12px}'),
      '묶음(영업 · 계약 · 내 사무소)마다 위를 띄우고 얇은 줄 - 낮은 창에서는 조금 좁게');
   ok(css.includes('.dz-vb > span{font-size:12.5px;') && css.includes('.dz-vb small{font-size:12px;'), '아래 버전 칸 글자는 한 단계 작게(12.5 · 12px)');
-  ok(js.includes('<a data-act="ops-tab" data-v="home" class="dz-logo dz-logo-ops" aria-label="비버노크 운영 대시보드"><span class="dz-lw">${logoLockup({h:24, mode:\'dark\'})}<span class="dz-stamp en" aria-hidden="true">ADMIN</span></span></a>')
-     && !js.includes('<span class="dz-tag">운영</span>') && /\.dz-logo\.dz-logo-ops\{justify-content:center/.test(css) && /\.dz-stamp\{position:absolute;right:-26px;bottom:-19px;[^}]*background:#FFD166;color:#24164F/.test(css),
-     '운영자 메뉴 로고 - 비버노크는 가운데, ADMIN 은 로고 오른쪽 아래 노란 라벨(2026-11-23 대표님) · 로고를 누르면 운영 대시보드(손님 사이트는 아래 사이트 가기)');
+  ok(js.includes('<a data-act="ops-tab" data-v="home" class="dz-logo" aria-label="비버노크 운영 대시보드">${logoLockup({h:20, mode:\'dark\'})}<span class="dz-tag en dz-tag-ops">ADMIN</span></a>')
+     && !js.includes('<span class="dz-tag">운영</span>') && /\.dz-tag\.en\.dz-tag-ops\{background:#FFD166;color:#24164F/.test(css) && !/dz-stamp/.test(css),
+     '운영자 메뉴도 같은 모양 - 로고 옆 영문 꼬리표 ADMIN(노란색 · 2026-11-23 대표님) · 로고를 누르면 운영 대시보드(손님 사이트는 아래 사이트 가기)');
   ok(js.includes('<div class="nav solid pad ptn-nav">') && js.includes('${logoLockup({h:22,partner:true})}')
      && js.includes("document.body.classList.toggle('ptn', isMo() && !!app.querySelector('.ptn-nav, .tabbar.pt, .opsPad'));"),
      '휴대폰 중개사 머리 줄도 로고 옆 PARTNERS(로고 22px - 360px 폭에도 한 줄) · 휴대폰 중개사·운영 화면에도 어드민 칩·움직임(body.ptn)');

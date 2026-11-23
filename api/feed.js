@@ -8,7 +8,7 @@
  */
 
 import crypto from 'node:crypto';
-import { userFrom, sbHeaders, sbUrl, overLimit, ipOf } from './_auth.js';
+import { userFrom, sbHeaders, sbUrl, overLimit, ipOf, sameSecret } from './_auth.js';
 import { dbWhy } from './_dberr.js';
 import { 공유찾기, contractRoute, listingScan, reportDueCron, draftRead, draftNote, guideRead, icsFeed, 달력표, 알림설정, 특약문구들, 특약문구고침, 문자틀들, 문자기록들, 문자고침, 단지들, 단지고침 } from './_contract.js';
 import { 날씨 } from './_weather.js';
@@ -566,6 +566,31 @@ export default async function handler(req, res) {
   if (req.method === 'GET' && req.query && req.query.cron === 'report-due') {
     if (!process.env.BK_URL || !process.env.BK_SECRET_KEY) return res.status(503).json({ error: '서버에 환경변수가 설정되지 않았습니다' });
     return reportDueCron(req, res);
+  }
+  /* 아침 자동 점검 (2026-11-22) - Vercel 예약 실행. CRON_SECRET 으로만. 결과는 시스템 기록 · 운영 메일 */
+  if (req.method === 'GET' && req.query && req.query.cron === 'health') {
+    const secret = process.env.CRON_SECRET;
+    if (!secret || !sameSecret(req.headers.authorization, `Bearer ${secret}`)) return res.status(401).json({ error: '예약 실행만 부를 수 있습니다' });
+    const S = await import('./_sys.js');
+    const 사이트 = String(process.env.ALERT_SITE || 'https://beaverknock.co.kr').replace(/\/+$/, '');
+    const r = await S.점검(사이트);
+    await S.기록('health', { level: r.급함 ? 'error' : 'info', msg: r.급함 ? `점검 이상 ${r.결과.filter(x => x.급).map(x => x.이름).join(' · ')}` : '점검 정상', detail: { 결과: r.결과, 셈: r.셈, 많은오류: r.많은오류 } });
+    const { notify } = await import('./_notify.js');
+    await notify(req, { subject: r.급함 ? `아침 점검 - 확인할 것이 있습니다 (${r.날})` : `아침 점검 정상 (${r.날})`,
+      rows: [...r.결과.map(x => [`${x.ok ? '정상' : x.급 ? '⚠ 이상' : '참고'} · ${x.이름}`, x.말]), ...r.많은오류.map((m, i) => [i ? '' : '어제 많이 난 오류', m])],
+      link: '/#/ops/live', cta: '운영 화면 시스템 탭 열기', note: '매일 아침 8시 50분에 서버가 스스로 점검해 보냅니다. 어제 오류 · 발송 실패는 운영 화면 › 시스템에서 자세히 보고, 실패한 알림은 그곳에서 다시 보낼 수 있습니다.' });
+    return res.status(200).json({ ok: true, 급함: r.급함 });
+  }
+  /* 화면 오류 받기 (2026-11-22) - 로그인 없이도(손님 화면 오류도). IP 마다 10분에 30번 · 글 길이 제한 · 전화번호 · 메일은 가림 */
+  if (req.method === 'POST' && req.query && req.query.err) {
+    if (!process.env.BK_URL || !process.env.BK_SECRET_KEY) return res.status(204).end();
+    if (overLimit('cerr:' + String((req.headers && (req.headers['x-forwarded-for'] || '')) || '').split(',')[0].trim(), 30, 600e3)) return res.status(204).end();
+    let e = req.body; if (typeof e === 'string') { try { e = JSON.parse(e); } catch { e = {}; } }
+    e = e && typeof e === 'object' ? e : {};
+    const 글 = (v, n) => String(v ?? '').replace(/[\u0000-\u001f]/g, ' ').slice(0, n);
+    await (await import('./_sys.js')).기록('client-error', { level: 'error', msg: 글(e.msg, 200),
+      detail: { src: 글(String(e.src || '').replace(/^https?:\/\/[^/]+/, ''), 120), line: +e.line || 0, col: +e.col || 0, route: 글(String(e.route || '').replace(/\/(G1|D2|[A-Za-z0-9_-]{20,})\..*$/, '/…'), 60), v: 글(e.v, 20), ua: 글(req.headers && req.headers['user-agent'], 160), stack: 글(e.stack, 500) } });
+    return res.status(204).end();
   }
   /* 확정 전 초안 보기(로그인 없이 서명된 표로) - api/_contract.js draftRead */
   if (req.method === 'GET' && req.query && req.query.draft) {

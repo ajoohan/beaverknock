@@ -12278,6 +12278,59 @@ function reportPanel(){
     </div>`}`;
 }
 
+/* ── 시스템 (2026-11-22) ── 서버 api/_sys.js (api/demands.js what:'sys'). SQL 0046 전이면 기록이 쌓이지 않는다고 알린다 */
+const SY_ONLY = [ {v:'', t:'전체'}, {v:'error', t:'오류'}, {v:'send', t:'발송 실패'}, {v:'health', t:'아침 점검'}, {v:'usage', t:'사용 현황'} ];
+const SY_KIND = { 'client-error':['b-warn','화면 오류'], 'server-error':['b-warn','서버 오류'], send:['b-warn','발송 실패'], health:['b-ind','아침 점검'], cron:['b-mute','아침 알림'], retry:['b-ok','다시 보냄'] };
+const SY = { only:'', rows:null, usage:null, check:null, loading:false, err:'', need:'', busy:'' };
+function syPost(body){ return apiFetch('/api/demands', { method:'POST', body: JSON.stringify({ ...body, pass: OPS.pass }) }).then(r => r.json().catch(() => ({})).then(j => ({ ok: r.ok, j }))); }
+function syFetch(){
+  if(SY.loading || !OPS.ok) return;
+  SY.loading = true; SY.err = ''; render();
+  const 끝 = () => { SY.loading = false; render(); };
+  if(SY.only === 'usage') return syPost({ what:'sys-usage' }).then(({ ok, j }) => { if(ok) SY.usage = j; else SY.err = j.error || '불러오지 못했습니다'; 끝(); }).catch(() => { SY.err = '네트워크 문제로 불러오지 못했습니다'; 끝(); });
+  syPost({ what:'sys', kind: ['send', 'health'].includes(SY.only) ? SY.only : undefined, days: 14 }).then(({ ok, j }) => {
+    if(ok){ SY.rows = SY.only === 'error' ? (j.rows || []).filter(r => /error/.test(r.kind)) : (j.rows || []); SY.need = j.need || ''; } else SY.err = j.error || '불러오지 못했습니다'; 끝(); })
+    .catch(() => { SY.err = '네트워크 문제로 불러오지 못했습니다'; 끝(); });
+}
+function sy때(t){ const d = new Date(t); return isNaN(d) ? '-' : `${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; }
+function sy자세히(r){
+  const d = r.detail || {};
+  if(/error/.test(r.kind)) return [d.route, d.src && `${d.src}${d.line ? ':' + d.line : ''}`, d.what, d.v && 'v' + d.v].filter(Boolean).join(' · ');
+  if(r.kind === 'send') return [d.template && '템플릿 ' + d.template, d.reason].filter(Boolean).join(' · ');
+  if(r.kind === 'health') return (d.결과 || []).filter(x => !x.ok).map(x => `${x.이름}: ${x.말}`).join(' · ') || '모두 정상';
+  return '';
+}
+function sy점검표(c){
+  return `<div class="card pad" style="display:flex;flex-direction:column;gap:6px"><b style="font-size:15px">지금 점검 ${c.급함 ? '- 확인할 것이 있습니다' : '- 정상'}</b>
+    <table style="width:100%;border-collapse:collapse;font-size:13.5px">${(c.결과 || []).map(x => `<tr style="border-top:1px solid var(--n100)"><td style="padding:7px 10px 7px 0;white-space:nowrap;font-weight:700;color:${x.ok ? 'var(--n700)' : x.급 ? 'var(--danger)' : 'var(--warn)'}">${x.ok ? '정상' : x.급 ? '이상' : '참고'}</td><td style="padding:7px 10px 7px 0;white-space:nowrap">${esc(x.이름)}</td><td style="padding:7px 0;color:var(--n500)">${esc(x.말)}</td></tr>`).join('')}</table>
+    ${(c.많은오류 || []).length ? `<p class="sub" style="margin:4px 0 0;font-size:13px">어제 많이 난 오류 - ${c.많은오류.map(esc).join(' / ')}</p>` : ''}</div>`;
+}
+function sysPanel(){
+  const chip = o => `<button class="chip ${(SY.only || '') === o.v ? 'on' : ''}" data-act="ops-sub" data-v="sys|${o.v}" style="padding:8px 14px;font-size:13.5px">${o.t}</button>`;
+  const 줄 = `<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px"><div class="chips" style="gap:6px">${SY_ONLY.map(chip).join('')}</div>
+    <span style="margin-left:auto;display:flex;gap:8px"><button class="btn sec sm" data-act="sy-check" ${SY.busy === 'check' ? 'disabled' : ''}>${SY.busy === 'check' ? '점검 중…' : '지금 점검'}</button><button class="btn sec sm" data-act="sy-load">새로고침</button></span></div>`;
+  const 점검 = SY.check ? sy점검표(SY.check) : '';
+  if(SY.loading && !SY.rows && !SY.usage) return 줄 + 점검 + `<div class="card pad" style="display:flex;justify-content:center;padding:30px 0">${bkLoader(28)}</div>`;
+  if(SY.err) return 줄 + 점검 + `<div class="card pad"><p style="margin:0;font-size:14.5px;color:var(--danger);font-weight:700">${esc(SY.err)}</p></div>`;
+  if(SY.only === 'usage'){
+    const U = SY.usage; if(!U) return 줄 + 점검;
+    const 칸 = 'padding:9px 12px', 머리 = `${칸};font-weight:800`;
+    return 줄 + 점검 + `<p class="sub" style="margin:0 0 10px;font-size:13.5px">사무소 ${U.요약.사무소}곳 · 이번 주 활동 ${U.요약.이번주활동}곳 · 승인됐는데 한 달 동안 움직임 없음 ${U.요약.한달쉼}곳${U.빠짐 && U.빠짐.length ? ` · 못 읽은 것: ${U.빠짐.join(', ')}` : ''}</p>
+      <div class="card pad" style="padding:0;overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13.5px;min-width:720px">
+      <thead><tr style="text-align:left;color:var(--n500)"><th style="${머리}">사무소</th><th style="${머리}">가입</th><th style="${머리}">마지막 움직임</th><th style="${머리}">계약서 7일 · 30일</th><th style="${머리}">확정 30일</th><th style="${머리}">제안 7일 · 30일</th><th style="${머리}">새 매물 30일</th></tr></thead>
+      <tbody>${U.rows.map(r => `<tr style="border-top:1px solid var(--n100)${r.status === 'approved' && !r.마지막 ? ';background:var(--warnbg)' : ''}"><td style="${칸}">${esc(r.office || '(이름 없음)')}${r.status !== 'approved' ? ` <span class="badge b-mute">${esc(({ pending:'심사 중', rejected:'반려', suspended:'정지', revoked:'취소' })[r.status] || r.status || '')}</span>` : ''}</td>
+        <td class="num" style="${칸}">${esc(r.since)}</td><td class="num" style="${칸}">${esc(r.마지막 || '-')}</td><td class="num" style="${칸}">${r.계7} · ${r.계30}</td><td class="num" style="${칸}">${r.확30}</td><td class="num" style="${칸}">${r.제7} · ${r.제30}</td><td class="num" style="${칸}">${r.매30}</td></tr>`).join('')}</tbody></table></div>`;
+  }
+  const rows = SY.rows; if(!rows) return 줄 + 점검;
+  return 줄 + 점검 + (SY.need ? `<p style="margin:0 0 12px;background:var(--warnbg);padding:12px 16px;font-size:13.5px;color:var(--n700)">시스템 기록 표가 아직 없습니다 - SQL 0046 을 넣으면 오류 · 발송 실패 · 점검 결과가 여기에 쌓입니다.</p>` : '')
+    + (!rows.length ? 빈자리('최근 14일 기록이 없습니다', '', '', 80, true) : `<div class="card pad" style="padding:0;overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13.5px;min-width:620px">
+      <thead><tr style="text-align:left;color:var(--n500)"><th style="padding:10px 12px;font-weight:800">시각</th><th style="padding:10px 12px;font-weight:800">종류</th><th style="padding:10px 12px;font-weight:800">내용</th><th style="padding:10px 12px;font-weight:800"></th></tr></thead>
+      <tbody>${rows.map(r => { const [b, t] = SY_KIND[r.kind] || ['b-mute', r.kind], 잘됨 = r.kind === 'health' && r.level === 'info';
+        return `<tr style="border-top:1px solid var(--n100)"><td class="num" style="padding:10px 12px;white-space:nowrap;vertical-align:top">${sy때(r.at)}</td>
+          <td style="padding:10px 12px;vertical-align:top"><span class="badge ${잘됨 ? 'b-ok' : b}">${t}</span></td>
+          <td style="padding:10px 12px;vertical-align:top"><b style="font-weight:700">${esc(r.msg || '')}</b>${sy자세히(r) ? `<div style="margin-top:3px;font-size:12.5px;color:var(--n500);word-break:break-all">${esc(sy자세히(r))}</div>` : ''}</td>
+          <td style="padding:10px 12px;vertical-align:top;white-space:nowrap">${r.retry ? `<button class="btn sec sm" data-act="sy-retry" data-v="${esc(r.id)}" ${SY.busy === r.id ? 'disabled' : ''}>다시 보내기</button>` : r.done ? '<span class="sub" style="font-size:12.5px">다시 보냄</span>' : ''}</td></tr>`; }).join('')}</tbody></table></div>`);
+}
 function logPanel(){
   const rows = LG.rows;
   if(LG.loading && !rows) return `<div class="card pad" style="display:flex;justify-content:center;padding:30px 0">${bkLoader(28)}</div>`;
@@ -12549,14 +12602,16 @@ const OPS_MENU = [
   { g:'기록' },
   { k:'log',     t:'열람 기록', n:()=>LG.rows && LG.rows.length,
     subs:LG_ONLY },
+  { k:'sys',     t:'시스템',    n:()=>SY.rows && SY.rows.filter(r => /error|send/.test(r.kind) && r.level !== 'info').length,
+    subs:SY_ONLY },
   { k:'setting', t:'설정' },
 ];
 /* 지금 어느 하위 항목에 있는지는 각 화면이 이미 들고 있다 - 두 벌로 두지 않는다 */
 const opsSubNow = k => k==='member' ? (OPS.msub||'agent')
   : k==='demand' ? (OPS.only||'') : k==='listing' ? (LS2.only||'')
-  : k==='report' ? (RP.only||'')  : k==='log' ? (LG.only||'') : '';
+  : k==='report' ? (RP.only||'')  : k==='log' ? (LG.only||'') : k==='sys' ? (SY.only||'') : '';
 const OPS_TITLE = { home:'대시보드', stats:'지표', member:'회원관리', demand:'조건관리',
-  listing:'매물관리', report:'신고', log:'열람 기록', setting:'설정' };
+  listing:'매물관리', report:'신고', log:'열람 기록', sys:'시스템', setting:'설정' };
 
 /* ── 대시보드 ──
    운영자가 하루에 처음 보는 화면이다. 여기서 "오늘 손댈 게 있나" 가
@@ -12715,7 +12770,7 @@ function dashProg(){
 const LOG_KO = { demands:'조건 조회', agents:'가입 신청 조회', listings:'매물 조회', users:'손님 계정 조회',
   reports:'신고 조회', 'report-mark':'신고 처리', 'agent-status':'가입 상태 변경',
   'agent-delete':'가입 삭제', 'agent-del-preview':'삭제 전 확인',
-  stats:'지표 조회', 'mark-sent':'전달 표시', 'kakao-unlink':'카카오 연결 해제', 'idv-reject':'본인확인 거절',
+  stats:'지표 조회', 'mark-sent':'전달 표시', 'sys-retry':'알림 다시 보냄', 'kakao-unlink':'카카오 연결 해제', 'idv-reject':'본인확인 거절',
   'demand-edit':'손님 조건 수정' };
 
 /* 웹훅은 사람이 부른 것이 아니다. '운영자' 로 적으면 누가 지웠는지를 잘못 말한다.
@@ -12897,6 +12952,7 @@ function opsPanel(){
     case 'listing': return listingPanel();
     case 'report':  return reportPanel();
     case 'log':     return logPanel();
+    case 'sys':     return sysPanel();
     case 'setting': return opsSettingPanel();
     case 'demand':  return demandPanel();
     default:        return opsHomePanel();
@@ -14181,7 +14237,27 @@ function 홈화면추가가능(){
   const 앱 = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
   return !앱;
 }
+/* 화면 오류 보내기 (2026-11-22) - 운영 화면 › 시스템에서 본다(서버 feed.js ?err=1). 한 번 연 화면에서 같은 오류는 한 번, 최대 5건.
+   다른 사이트 스크립트(확장 프로그램) · 'Script error.' · ResizeObserver 경고는 보내지 않는다 */
+const bk오류보내기 = (() => { const 본 = new Set(); let n = 0;
+  return (msg, src, line, col, stack) => { try{
+    msg = String(msg || ''); src = String(src || '');
+    if(!msg || /^Script error\.?$/.test(msg) || /ResizeObserver loop/.test(msg) || (src && !src.startsWith(location.origin))) return;
+    const k = msg + '|' + src + '|' + line; if(본.has(k) || n >= 5) return; 본.add(k); n++;
+    const body = JSON.stringify({ msg: msg.slice(0, 200), src: src.slice(0, 200), line: +line || 0, col: +col || 0, stack: String(stack || '').slice(0, 500),
+      route: location.hash.slice(0, 60), v: (typeof BK_변경 !== 'undefined' && BK_변경[0] && BK_변경[0].v) || '' });
+    if(navigator.sendBeacon) navigator.sendBeacon('/api/feed?err=1', new Blob([body], { type: 'application/json' }));
+    else fetch('/api/feed?err=1', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body, keepalive: true }).catch(() => {});
+  }catch(_){} }; })();
+if(typeof addEventListener === 'function'){
+  addEventListener('error', e => { if(e && e.target && e.target !== window) return; bk오류보내기(e.message, e.filename, e.lineno, e.colno, e.error && e.error.stack); });
+  addEventListener('unhandledrejection', e => { const r = e && e.reason; bk오류보내기('처리되지 않은 오류: ' + ((r && r.message) || r), (r && r.stack && (/(https?:\/\/[^\s)]+?):\d+:\d+/.exec(r.stack) || [])[1]) || location.origin, 0, 0, r && r.stack); });
+}
 const BK_변경 = [
+  { v:'26.11.23.1', 날:'2026-11-23', 줄:[ '운영 화면 › 시스템 - 화면 · 서버 오류, 알림톡 · 메일 발송 실패, 아침 점검 결과, 사무소별 사용 현황(최근 7 · 30일 계약서 · 제안 · 매물)을 봅니다. 실패한 알림은 그 자리에서 다시 보냅니다',
+    '아침 자동 점검 - 매일 아침 8시 50분 서버가 DB · 파일 저장소 · 사이트 · 환경변수 · 어제 오류와 발송 실패 · 어제 아침 알림이 돌았는지 보고 운영 메일로 알립니다',
+    '확정본 보관본 - 확정하면 그날의 내용과 인쇄 모양을 한 부 따로 보관하고, 일정·체크에서 ‘보관본 보기’로 엽니다(영구 삭제하면 함께 지워짐)',
+    '링크 열람 - 초안 링크 · 손님 안내 링크를 손님이 마지막으로 연 때와 횟수를 일정·체크에 보여 드립니다' ] },
   { v:'26.11.22.2', 날:'2026-11-22', 줄:[ '사무소 의무 달력 - 일정·알림 화면의 알림 설정에 공제(보증) 만료일 · 마지막 실무 · 연수교육 이수일을 넣으면 공제 만료 30 · 7일 전과 당일, 연수교육 기한(이수일 + 2년) 60 · 30 · 7일 전과 당일 아침에 알려 드립니다(대시보드 할 일 · 달력 · 달력 구독에도 나옵니다). 보존 기간(계약서 5년 · 확인·설명서 3년)이 지난 확정본 수도 알려 드립니다',
     '현금영수증 발행 확인 - 확정본의 잔금 다음 날 아침 발행했는지 묻고, 일정·체크의 ‘현금영수증을 발행했습니다’를 누르면 멈춥니다. 대시보드 할 일에도 나옵니다',
     '손님께 계약 뒤 할 일 - 확정본의 일정·체크에서 ‘안내 링크 복사’. 손님은 로그인 없이 잔금일과 전입신고 · 확정일자 · 보증금 반환보증 · 임대차 신고(임차인), 소유권이전등기 · 취득세 · 양도소득세(매수인 · 매도인) 같은 할 일을 날짜와 함께 봅니다. 이름 · 연락처 · 금액은 나가지 않고, 잔금일 60일 뒤까지 열립니다',
@@ -18530,7 +18606,28 @@ function ct안내카드(doc){
   const 임대 = !!(CT_FORMS[doc.form] || {}).lease;
   return `<div class="card pad ct-sec"><h2>손님께 계약 뒤 할 일 <span class="sub" style="font-weight:500;font-size:13.5px">로그인 없이 여는 안내 링크</span></h2>
     <p class="sub" style="margin:0;line-height:1.7">잔금일과 ${임대 ? '전입신고 · 확정일자 · 보증금 반환보증 · 임대차 신고' : '소유권이전등기 · 취득세 · 양도소득세 · 전입신고'} 같은 할 일을 날짜와 함께 한 장으로 보여 줍니다. 당사자 이름 · 연락처 · 금액은 나가지 않고 사무소 이름과 전화만 보입니다. 잔금일 60일 뒤까지 열립니다.</p>
-    <span class="eqb" style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn sec sm" data-act="ct-guide">안내 링크 복사</button><button type="button" class="btn tool sm" data-act="ct-guide-cut">나간 안내 링크 끊기</button></span></div>`;
+    <span class="eqb" style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn sec sm" data-act="ct-guide">안내 링크 복사</button><button type="button" class="btn tool sm" data-act="ct-guide-cut">나간 안내 링크 끊기</button></span>
+    ${ct열람글('g', '손님이 안내 링크를')}</div>`;
+}
+/* 링크 열람 (2026-11-22) - 서버가 track.seen 에 남긴 마지막으로 연 때 · 횟수 */
+function ct열람글(k, 앞말){ const s = ct트랙().seen || {}; return s[k] ? `<p class="sub" style="margin:0;font-size:13px">${앞말} 마지막으로 연 때 <b class="num">${esc(s[k].replace('T', ' '))}</b>${s[k + 'n'] ? ` · ${s[k + 'n']}번(한 시간 안 다시 연 것은 한 번)` : ''}</p>` : ''; }
+function ct초안열람줄(){ const 글 = ct열람글('d', '받은 분이 초안 링크를'); return 글 ? `<div class="card pad ct-sec" style="gap:4px"><h2>초안 링크 열람</h2>${글}</div>` : ''; }
+/* 확정본 보관본 (2026-11-22) - 서버 api/_contract.js keep · keepGet */
+function ct보관카드(){
+  const t = ct트랙();
+  return `<div class="card pad ct-sec"><h2>확정본 보관본 <span class="sub" style="font-weight:500;font-size:13.5px">확정한 날의 모양 그대로 한 부</span></h2>
+    <p class="sub" style="margin:0;line-height:1.7">${t.keep ? `${esc(ct날짜글(t.keep))}에 보관했습니다. 나중에 화면이 바뀌어도 확정한 날의 내용과 인쇄 모양 그대로 다시 봅니다. 이 계약서를 영구 삭제하면 보관본도 함께 지워집니다.`
+      : '아직 보관본이 없습니다. 확정하면 저절로 만들어지고, 예전에 확정한 계약서는 아래 단추로 지금 화면 모양으로 만들어 둡니다.'}</p>
+    <span class="eqb" style="display:flex;gap:8px;flex-wrap:wrap">${t.keep ? '<button type="button" class="btn sec sm" data-act="ct-keep-view">보관본 보기</button>' : '<button type="button" class="btn sec sm" data-act="ct-keep">보관본 만들기</button>'}</span></div>`;
+}
+async function ct보관(id, doc, 조용히){
+  if(!id || !doc) return false;
+  const css = [...document.querySelectorAll('style')].map(s => s.textContent).join('\n');
+  const html = `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc((CT_FORMS[doc.form] || {}).ko || '계약서')} 보관본</title><${"style"}>${css}</${"style"}></head><body style="background:#fff;padding:24px"><div class="ct-sheet">${ctDocHTML(doc)}</div></body></html>`;
+  const { ok, j } = await ctPost({ what:'contract-keep', id, html }).catch(() => ({ ok:false, j:{} }));
+  if(ok && j.track && CT.id === id){ CT.track = j.track; CT.row = { ...(CT.row || {}), track: j.track }; if(CT.mode === 'plan') render(); }
+  if(!조용히 || (!ok && j.need !== '0046')) toast(ok ? (j.already ? '이미 보관본이 있습니다' : '보관본을 저장했습니다') : j.need === '0046' ? '보관 저장소를 준비 중입니다 - 곧 열립니다' : (j.error || '보관본을 저장하지 못했습니다'));
+  return ok;
 }
 function ct공유카드(){
   const 코드 = ct트랙().xcode || '', 못 = 직원() && !권한('ct_edit');
@@ -19214,7 +19311,7 @@ function ctPlanHTML(doc){
       ${체크('ctk-ec', !!t.ec, '전자계약으로 진행합니다', '국토교통부 전자계약시스템(irts.molit.go.kr)에 입력하는 건 - 목록에 표시됩니다', '')}</div>
     ${ct입력도우미HTML(doc)}
     ${ct방HTML(doc)}
-    ${ct의견HTML()}
+    ${!잠김 && CT.id ? ct초안열람줄() : ''}${ct의견HTML()}
     <div class="card pad ct-sec"><h2>체크사항</h2>
       ${체크('ctk-pi', !!t.piAt, '개인정보 수집·이용 동의서를 받았습니다', '부속 서류 탭에서 인쇄해 양쪽 서명을 받습니다 - 받은 날이 적힙니다', t.piAt)}
       ${체크('ctk-guide', !!t.guideAt, '잔금안내를 했습니다', '이체한도 증액 · 준비서류(신분증·도장·인감증명서 등)를 미리 알렸는지', t.guideAt)}
@@ -19239,6 +19336,7 @@ function ctPlanHTML(doc){
       ${t.permit ? '' : `<div class="ct-grid">${ctTrackIn('signDate', '계약체결일 (계약금 일부가 들어온 날)')}</div>
       <p class="sub" style="margin:0;font-size:13px">계약현황의 ‘계약체결일’ 칸에 나옵니다. 매물 노출 종료도 이날을 기준으로 해 주세요.</p>`}</div>
     ${잠김 && CT.id ? ct안내카드(doc) : ''}
+    ${잠김 && CT.id ? ct보관카드() : ''}
     ${CT.id && !CT.need32 && !F.explain ? ct공유카드() : ''}
     <div class="card pad ct-sec"><h2>알림</h2>
       ${체크('ctk-off', !t.off, '이 계약의 일정을 알려 주세요', '끄면 이 계약은 카카오톡·메일 알림을 보내지 않습니다', '')}
@@ -22781,6 +22879,7 @@ function handle(a,v,el){
       if(OPS.ok){
         if(v==='member'){ if((OPS.msub||'agent')==='user'){ if(!US.rows) usFetch(); } else if(!AG.rows) agFetch(); }
         if(v==='log'     && !LG.rows) lgFetch();
+        if(v==='sys'     && !SY.rows && !SY.usage) syFetch();
         if(v==='report'  && !RP.rows) rpFetch();
         if(v==='listing' && !LS2.rows) lsFetch();
       }
@@ -22815,6 +22914,7 @@ function handle(a,v,el){
       else if(k==='listing'){ LS2.only = val; LS2.rows = null; lsFetch(); }
       else if(k==='report'){ RP.only = val; RP.rows = null; rpFetch(); }
       else if(k==='log'){ LG.only = val; LG.rows = null; lgFetch(); }
+      else if(k==='sys'){ SY.only = val; SY.rows = null; SY.usage = null; SY.err = ''; syFetch(); }
       render(); return true; }
     case 'ls2-load': LS2.rows=null; lsFetch(); return true;
     case 'ls2-only': LS2.only = v; LS2.rows=null; lsFetch(); return true;
@@ -23947,6 +24047,21 @@ function handle(a,v,el){
       }).catch(() => toast('네트워크 문제로 고치지 못했습니다'));
       return true; }
     case 'cg-side': CG.side = v; render(); return true;
+    case 'ct-keep': if(CT.id && CT.doc && CT.row && CT.row.status === 'sealed') ct보관(CT.id, CT.doc, false); return true;
+    case 'ct-keep-view': if(CT.id){ const w = window.open('', '_blank');
+      ctPost({ what:'contract-keep-get', id: CT.id }).then(({ ok, j }) => {
+        if(!ok || !j.html){ if(w) w.close(); return toast(j.error || '보관본을 열지 못했습니다'); }
+        if(!w) return toast('새 창이 막혔습니다 - 팝업을 허용해 주세요');
+        w.document.open(); w.document.write(j.html); w.document.close();
+      }).catch(() => { if(w) w.close(); toast('네트워크 문제로 열지 못했습니다'); }); } return true;
+    case 'sy-load': SY.rows = null; SY.usage = null; syFetch(); return true;
+    case 'sy-check': SY.busy = 'check'; render();
+      syPost({ what:'sys-check' }).then(({ ok, j }) => { SY.busy = ''; if(ok) SY.check = j; else toast(j.error || '점검하지 못했습니다'); render(); }).catch(() => { SY.busy = ''; toast('네트워크 문제로 점검하지 못했습니다'); render(); });
+      return true;
+    case 'sy-retry': SY.busy = v; render();
+      syPost({ what:'sys-retry', id: v }).then(({ ok, j }) => { SY.busy = ''; toast(ok ? '다시 보냈습니다' : (j.error || '다시 보내지 못했습니다'));
+        if(ok){ const r = (SY.rows || []).find(x => x.id === v); if(r){ r.retry = false; r.done = true; } } render(); }).catch(() => { SY.busy = ''; toast('네트워크 문제로 보내지 못했습니다'); render(); });
+      return true;
     case 'ct-note-read': ctNoteOp('read-all'); return true;
     case 'ct-note-del': if(CT.noteDel !== v){ CT.noteDel = v; render(); return true; } CT.noteDel = null; ctNoteOp('del', v); return true;
     case 'ct-notes-open': CT.mode = 'plan'; render(); setTimeout(() => { const n = document.getElementById('ctNotes'); if(n) n.scrollIntoView({ block:'start', behavior:'smooth' }); }, 60); return true;
@@ -24075,6 +24190,7 @@ function handle(a,v,el){
         CT.list = null; CT.mode = 'preview';
         if((CT.rev || 0) !== 판){ const id = CT.id; CT.id = null; ctOpen(id); toast('확정본으로 저장했습니다 - 확정하는 사이 적은 것은 들어가지 않아 확정본을 다시 불러왔습니다'); return; }
         CT.dirty = false; render(); toast('확정본으로 저장했습니다');
+        ct보관(CT.id, CT.doc, true);   /* 확정본 보관본(2026-11-22) - 실패해도 확정은 끝났다. 일정·체크에서 다시 만든다 */
       })();
       return true;
     }

@@ -19,6 +19,7 @@
  *   SOLAPI_FROM           솔라피에 등록한 발신번호 (예 07041050678)
  */
 import crypto from 'node:crypto';
+import { 발송실패 } from './_sys.js';
 
 const withTimeout = (p, ms) =>
   Promise.race([p, new Promise(r => setTimeout(() => r({ skipped: 'timeout' }), ms))]);
@@ -40,7 +41,7 @@ export function 솔라피머리(key, secret, now = new Date(), salt = crypto.ran
 }
 
 /* 알림톡 한 통. 템플릿의 #{변수} 를 vars 로 채운다. 어떤 경우에도 던지지 않는다. */
-export async function alimtalk({ to, template, vars }) {
+export async function alimtalk({ to, template, vars, 다시 = false }) {
   try {
     const key = process.env.SOLAPI_API_KEY, secret = process.env.SOLAPI_API_SECRET;
     const pfId = process.env.SOLAPI_PFID, templateId = template;
@@ -73,8 +74,11 @@ export async function alimtalk({ to, template, vars }) {
     /* 솔라피가 거절한 이유를 남긴다 - 템플릿 불일치인지 채널 미연동인지 갈린다.
        오류 본문이 받는 번호를 되비치기도 해서, 숫자 열은 가려서 남긴다(2026-10-17 리뷰) */
     console.error('[alimtalk]', r.status, 가리기(t).slice(0, 160));
+    /* 시스템 기록 (2026-11-22) - 운영 화면에서 보고 다시 보낸다 */
+    if (!다시) await 발송실패('kakao', { template: templateId, reason: `${r.status} ${가리기(t).slice(0, 120)}`, 다시: { to, template, vars } });
     return { skipped: `send failed ${r.status}` };
   } catch (e) {
+    if (!다시) await 발송실패('kakao', { template, reason: (e && e.message) || 'error', 다시: { to, template, vars } }).catch(() => {});
     return { skipped: 'error', detail: e && e.message };
   }
 }

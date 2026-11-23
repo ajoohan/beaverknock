@@ -1,0 +1,132 @@
+/* ── 시스템 기록 · 아침 자동 점검 · 사용 현황 (2026-11-22) ──
+ * 표 bk_sys_event (SQL 0046). 화면 · 서버 오류, 알림톡 · 메일 발송 실패, 아침 일정 알림 결과, 아침 점검 결과를 남긴다.
+ * 운영 화면 '시스템' 탭이 읽고(api/demands.js what:'sys'), 매일 아침 점검(feed.js ?cron=health)이 어제 것을 모아 메일로 보낸다.
+ *
+ * 원칙
+ *  ① 기록 때문에 본 일이 실패하면 안 된다 - 어떤 경우에도 던지지 않는다. 표가 없으면(0046 전) 조용히 넘어간다.
+ *  ② 그래도 기다렸다 보낸다 - 서버리스는 응답과 함께 프로세스를 접는다.
+ *  ③ 받는 번호 · 메일 같은 개인정보는 평문으로 남기지 않는다. 다시 보내기에 필요한 내용은 BK_DATA_KEY 로 잠가서만 둔다(열쇠가 없으면 남기지 않는다).
+ */
+import { sbHeaders, sbUrl } from './_auth.js';
+import { 잠그기, 풀기, 암호켜짐 } from './_crypto.js';
+
+const 표 = 'bk_sys_event';
+const 시간제한 = (p, ms) => Promise.race([p, new Promise(r => setTimeout(() => r(null), ms))]);
+const 없는표 = t => /bk_sys_event|does not exist|PGRST205|42P01/i.test(String(t || ''));
+/* 글 속의 전화번호 · 메일 주소는 가린다 */
+export const 글가림 = s => String(s ?? '').replace(/[\w.+-]+@[\w-]+\.[\w.-]+/g, '***@***').replace(/\d[\d -]{7,}\d/g, '***');
+
+export async function 기록(kind, { level = 'info', msg = '', detail = null } = {}) {
+  try {
+    if (!process.env.BK_URL || !process.env.BK_SECRET_KEY) return { skipped: 'no env' };
+    const row = { kind: String(kind).slice(0, 20), level: String(level).slice(0, 10), msg: 글가림(msg).slice(0, 300), detail: detail || null };
+    const r = await 시간제한(fetch(sbUrl(표), { method: 'POST', headers: { ...sbHeaders(), Prefer: 'return=minimal' }, body: JSON.stringify(row) }), 1500);
+    if (!r) return { skipped: 'timeout' };
+    if (r.ok) return { ok: true };
+    const t = await r.text().catch(() => '');
+    return 없는표(t) ? { need: '0046' } : { skipped: 'db ' + r.status };
+  } catch { return { skipped: 'error' }; }
+}
+
+/* 발송 실패 - 채널(kakao · mail) · 템플릿 · 이유. 다시 보낼 내용(받는 곳 포함)은 잠가서만 */
+export async function 발송실패(channel, { template = '', reason = '', 다시 = null, 건 = 1 } = {}) {
+  const enc = 다시 && 암호켜짐() ? (s => s.length < 60000 ? 잠그기(s) : '')(JSON.stringify({ channel, ...다시 })) : '';
+  return 기록('send', { level: 'warn', msg: `${channel === 'kakao' ? '알림톡' : '메일'} 발송 실패${건 > 1 ? ` ${건}통` : ''} - ${reason}`,
+    detail: { channel, template: String(template || '').slice(0, 60), reason: 글가림(reason).slice(0, 160), 건, ...(enc ? { enc } : {}) } });
+}
+
+async function 읽기(q, fetchFn = fetch) {
+  const r = await 시간제한(fetchFn(sbUrl(표, q), { headers: sbHeaders() }), 4000);
+  if (!r) return { error: '시간 초과' };
+  if (!r.ok) { const t = await r.text().catch(() => ''); return 없는표(t) ? { need: '0046' } : { error: 'db ' + r.status }; }
+  return { rows: await r.json() };
+}
+
+/* 운영 화면 - 최근 기록. kind 로 거른다. 잠긴 내용은 내보내지 않는다(다시 보낼 수 있는지만) */
+export async function 최근(kind = '', days = 7) {
+  const 부터 = new Date(Date.now() - Math.min(Math.max(+days || 7, 1), 90) * 864e5).toISOString();
+  const x = await 읽기(`select=id,at,kind,level,msg,detail,done&at=gte.${부터}${kind ? `&kind=eq.${encodeURIComponent(kind)}` : ''}&order=at.desc&limit=300`);
+  if (!x.rows) return x;
+  return { rows: x.rows.map(r => { const d = r.detail && typeof r.detail === 'object' ? { ...r.detail } : null; const 다시됨 = !!(d && d.enc); if (d) delete d.enc; return { ...r, detail: d, retry: 다시됨 && !r.done }; }) };
+}
+
+/* 다시 보내기 - 운영자만(부운영자 막음은 부르는 쪽). 잠긴 내용을 풀어 같은 채널로 한 번 더 */
+export async function 다시보내기(id) {
+  if (!/^[0-9a-f-]{36}$/i.test(String(id || ''))) return { error: '어느 기록인지 알 수 없습니다' };
+  const x = await 읽기(`select=id,kind,detail,done&id=eq.${id}&limit=1`);
+  if (!x.rows) return x;
+  const row = x.rows[0];
+  if (!row || row.kind !== 'send' || !row.detail || !row.detail.enc) return { error: '다시 보낼 내용이 남아 있지 않습니다' };
+  if (row.done) return { error: '이미 다시 보냈습니다' };
+  let p; try { p = JSON.parse(풀기(row.detail.enc)); } catch { return { error: '내용을 풀지 못했습니다 - 열쇠(BK_DATA_KEY)가 바뀌었을 수 있습니다' }; }
+  let 결과;
+  if (p.channel === 'kakao') 결과 = await (await import('./_kakao.js')).alimtalk({ to: p.to, template: p.template, vars: p.vars, 다시: true });
+  else if (p.channel === 'mail') 결과 = await (await import('./_notify.js')).다시메일(p.mails || []);
+  else return { error: '알 수 없는 채널입니다' };
+  if (!결과 || !결과.ok) return { error: `다시 보내지 못했습니다 - ${(결과 && (결과.skipped || 결과.error)) || '알 수 없음'}` };
+  await 시간제한(fetch(sbUrl(표, `id=eq.${id}`), { method: 'PATCH', headers: { ...sbHeaders(), Prefer: 'return=minimal' }, body: JSON.stringify({ done: true }) }), 1500).catch(() => null);
+  await 기록('retry', { msg: `${p.channel === 'kakao' ? '알림톡' : '메일'} 다시 보냄`, detail: { of: id } });
+  return { ok: true };
+}
+
+/* ── 아침 자동 점검 ── 매일 08:50(한국). DB · 저장소 · 사이트 · 환경변수 · 어제 오류와 발송 실패 · 어제 아침 알림이 돌았는지 */
+const 필수환경 = [['BK_URL', 'DB 주소'], ['BK_SECRET_KEY', 'DB 열쇠'], ['RESEND_API_KEY', '메일 발송'], ['CRON_SECRET', '예약 실행'], ['BK_DATA_KEY', '개인정보 암호화'], ['ANTHROPIC_API_KEY', '서류 읽기']];
+const 선택환경 = [['SOLAPI_API_KEY', '알림톡'], ['SOLAPI_TPL_SCHEDULE', '계약 일정 알림톡'], ['SOLAPI_TPL_PROPOSAL', '제안 알림톡'], ['SOLAPI_TPL_INVITE', '대화방 초대 알림톡'],
+  ['SOLAPI_TPL_ROOM', '대화방 새 말 알림톡'], ['SOLAPI_TPL_PRICE', '가격 변동 알림톡'], ['PORTONE_CHANNEL_KEY_DANAL', '다날 본인확인'], ['DATA_GO_KEY', '공공데이터(건축물대장 · 실거래가)'],
+  ['GOOGLE_MAPS_KEY', '구글 지도'], ['GOOGLE_DRIVE_CLIENT_ID', 'Google 드라이브 저장'], ['DROPBOX_APP_KEY', 'Dropbox 저장']];
+export async function 점검(사이트, fetchFn = fetch) {
+  const 결과 = [], 더 = (이름, ok, 말 = '', 급 = true) => 결과.push({ 이름, ok: !!ok, 말, 급: !ok && 급 });
+  const 재기 = async (이름, fn, 급 = true) => { const t0 = Date.now(); try { const v = await 시간제한(fn(), 6000); if (v === null) return 더(이름, false, '6초 안에 답이 없습니다', 급);
+    더(이름, v.ok, `${v.말 || (v.ok ? '정상' : '이상')} · ${Date.now() - t0}ms`, 급); } catch (e) { 더(이름, false, String(e && e.message || e).slice(0, 80), 급); } };
+  await 재기('DB', async () => { const r = await fetchFn(sbUrl('bk_agent', 'select=id&limit=1'), { headers: sbHeaders() }); return { ok: r.ok, 말: r.ok ? '읽기 정상' : `응답 ${r.status}` }; });
+  await 재기('파일 저장소', async () => { const r = await fetchFn(`${process.env.BK_URL}/storage/v1/bucket`, { headers: sbHeaders() });
+    const j = r.ok ? await r.json().catch(() => []) : []; const 있음 = new Set((Array.isArray(j) ? j : []).map(b => b.id || b.name));
+    const 빠짐 = ['bk-files', 'bk-forms'].filter(b => !있음.has(b)); return { ok: r.ok && !빠짐.length, 말: !r.ok ? `응답 ${r.status}` : 빠짐.length ? `버킷 없음: ${빠짐.join(', ')}` : '버킷 정상' }; });
+  if (사이트) {
+    await 재기('사이트 첫 화면', async () => { const r = await fetchFn(사이트 + '/', { headers: { 'cache-control': 'no-cache' } }); const t = r.ok ? await r.text() : '';
+      const js = /\/app\/bk\.[0-9a-f]{10}\.js/.exec(t); if (!js) return { ok: false, 말: r.ok ? '화면 코드 주소를 못 찾았습니다' : `응답 ${r.status}` };
+      const j = await fetchFn(사이트 + js[0], { method: 'HEAD' }); return { ok: j.ok, 말: j.ok ? '화면 · 코드 정상' : `화면 코드 응답 ${j.status}` }; });
+    await 재기('버전 정보', async () => { const r = await fetchFn(사이트 + '/version.json?t=' + Date.now()); const j = r.ok ? await r.json().catch(() => ({})) : {}; return { ok: !!j.v, 말: j.v ? `버전 ${j.v}` : `응답 ${r.status}` }; }, false);
+  }
+  for (const [k, 이름] of 필수환경) 더(`환경변수 ${이름}`, !!process.env[k], process.env[k] ? '있음' : `${k} 없음`);
+  const 빠진선택 = 선택환경.filter(([k]) => !process.env[k]).map(([, 이름]) => 이름);
+  더('선택 기능', true, 빠진선택.length ? `아직 꺼짐: ${빠진선택.join(' · ')}` : '모두 켜짐', false);
+  /* 어제(한국 시간) 기록 */
+  const 어제 = new Date(Date.now() + 9 * 3600e3 - 864e5).toISOString().slice(0, 10), 부터 = new Date(Date.parse(어제 + 'T00:00:00+09:00')).toISOString(), 까지 = new Date(Date.parse(어제 + 'T00:00:00+09:00') + 864e5).toISOString();
+  const x = await 읽기(`select=kind,level,msg,at&at=gte.${부터}&at=lt.${까지}&limit=2000`, fetchFn);
+  const 셈 = { 화면오류: 0, 서버오류: 0, 발송실패: 0 }, 오류말 = new Map(); let 아침알림 = null;
+  if (x.rows) for (const r of x.rows) {
+    if (r.kind === 'client-error') 셈.화면오류++; else if (r.kind === 'server-error') 셈.서버오류++; else if (r.kind === 'send' && r.level !== 'info') 셈.발송실패++;
+    if (r.kind === 'cron') 아침알림 = r;
+    if (/error/.test(r.kind)) 오류말.set(r.msg, (오류말.get(r.msg) || 0) + 1);
+  }
+  if (x.need) 더('시스템 기록 표', false, 'SQL 0046 을 아직 넣지 않았습니다 - 오류 · 발송 실패를 모을 수 없습니다');
+  else {
+    더('어제 오류', 셈.화면오류 + 셈.서버오류 < 20, `화면 ${셈.화면오류}건 · 서버 ${셈.서버오류}건`, 셈.서버오류 > 0);
+    더('어제 발송 실패', !셈.발송실패, `${셈.발송실패}건`);
+    더('어제 아침 일정 알림', !!아침알림, 아침알림 ? 아침알림.msg : '돌았다는 기록이 없습니다 - Vercel 예약 실행을 확인해 주세요');
+  }
+  const 많은오류 = [...오류말.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5).map(([m, n]) => `${n}건 · ${m}`);
+  return { 날: 어제, 결과, 셈, 많은오류, 급함: 결과.some(r => r.급) };
+}
+
+/* ── 사용 현황 (운영 화면) ── 사무소마다 최근 7 · 30일 계약서 · 제안 · 매물. 마지막으로 움직인 날 */
+export async function 사용현황() {
+  const 받기 = async (t, q) => { const r = await 시간제한(fetch(sbUrl(t, q), { headers: sbHeaders() }), 6000); if (!r || !r.ok) return null; return r.json(); };
+  const 달전 = new Date(Date.now() - 30 * 864e5).toISOString(), 주전 = Date.now() - 7 * 864e5;
+  const [사, 계, 제, 매] = await Promise.all([
+    받기('bk_agent', 'select=id,office,status,role,created_at&role=eq.agent&limit=2000'),
+    받기('bk_contract', `select=agent_id,updated_at,status&updated_at=gte.${달전}&limit=10000`),
+    받기('bk_proposal', `select=agent_id,created_at&created_at=gte.${달전}&limit=10000`),
+    받기('bk_listing', `select=agent_id,created_at&created_at=gte.${달전}&limit=10000`),
+  ]);
+  if (!사) return { error: '사무소 목록을 읽지 못했습니다' };
+  const 칸 = new Map(사.map(a => [a.id, { id: a.id, office: a.office || '', status: a.status, since: String(a.created_at || '').slice(0, 10), 계7: 0, 계30: 0, 확30: 0, 제7: 0, 제30: 0, 매30: 0, 마지막: '' }]));
+  const 쌓기 = (rows, 때칸, f) => (rows || []).forEach(r => { const c = 칸.get(r.agent_id); if (!c) return; const t = Date.parse(r[때칸]); f(c, t >= 주전, r); const d = String(r[때칸] || '').slice(0, 10); if (d > c.마지막) c.마지막 = d; });
+  쌓기(계, 'updated_at', (c, 주, r) => { c.계30++; if (주) c.계7++; if (r.status === 'sealed') c.확30++; });
+  쌓기(제, 'created_at', (c, 주) => { c.제30++; if (주) c.제7++; });
+  쌓기(매, 'created_at', c => { c.매30++; });
+  const rows = [...칸.values()].sort((a, b) => (b.마지막 > a.마지막) - (b.마지막 < a.마지막));
+  const 활성 = rows.filter(r => r.계7 + r.제7 > 0).length, 쉼 = rows.filter(r => r.status === 'approved' && !r.마지막).length;
+  return { rows, 요약: { 사무소: rows.length, 이번주활동: 활성, 한달쉼: 쉼 }, 빠짐: [!계 && '계약서', !제 && '제안', !매 && '매물'].filter(Boolean) };
+}

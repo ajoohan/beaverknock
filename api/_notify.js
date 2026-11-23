@@ -67,6 +67,7 @@ const esc = s => String(s ?? '').replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&
 const withTimeout = (p, ms) =>
   Promise.race([p, new Promise(r => setTimeout(() => r({ skipped: 'timeout' }), ms))]);
 
+import { 발송실패 } from './_sys.js';
 export async function notify(req, opts) {
   /* 알림은 어떤 경우에도 던지지 않는다. 이미 저장된 접수가 500 으로 보이면 안 된다. */
   try { return await send(req, opts); } catch (e) { return { skipped: 'error', detail: e && e.message }; }
@@ -105,16 +106,18 @@ async function send(req, opts) {
   const key = process.env.RESEND_API_KEY;
   if (!key) return { skipped: 'no key' };
 
+  const 한통 = build(req, opts);
   try {
     const r = await withTimeout(fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { Authorization: 'Bearer ' + key, 'Content-Type': 'application/json' },
-      body: JSON.stringify(build(req, opts)),
+      body: JSON.stringify(한통),
     }), 2500);
     if (r && r.skipped) return r;
     if (r.ok) return { ok: true };
     /* Resend 가 거절한 이유를 그대로 살린다 - 도메인 미인증인지 키가 틀렸는지 갈린다 */
     const t = await r.text().catch(() => '');
+    await 발송실패('mail', { reason: `${r.status} ${t.slice(0, 120)}`, 다시: { mails: [한통] } });
     return { skipped: `send failed ${r.status}`, detail: t.slice(0, 160) };
   } catch (e) {
     return { skipped: 'error' };
@@ -147,11 +150,26 @@ export async function notifyMany(req, list) {
     if (r.ok) return { ok: true, sent: mails.length };
     const t = await r.text().catch(() => '');
     console.error('[notify] 묶음 발송 실패', r.status, t.slice(0, 200));
+    await 발송실패('mail', { 건: mails.length, reason: `${r.status} ${t.slice(0, 120)}`, 다시: { mails } });
     return { skipped: `batch failed ${r.status}`, sent: 0 };
   } catch (e) {
     console.error('[notify] 묶음 발송 오류', e && e.message);
+    await 발송실패('mail', { 건: mails.length, reason: (e && e.message) || 'error', 다시: { mails } }).catch(() => {});
     return { skipped: 'error', sent: 0 };
   }
+}
+/* 운영 화면 '다시 보내기' (2026-11-22) - 기록에 잠가 둔 메일을 그대로 다시 보낸다 */
+export async function 다시메일(mails) {
+  const key = process.env.RESEND_API_KEY;
+  if (!key) return { skipped: 'no key' };
+  if (!Array.isArray(mails) || !mails.length) return { skipped: 'empty' };
+  try {
+    const r = await withTimeout(fetch('https://api.resend.com/emails/batch', {
+      method: 'POST', headers: { Authorization: 'Bearer ' + key, 'Content-Type': 'application/json' }, body: JSON.stringify(mails.slice(0, 100)),
+    }), 6000);
+    if (r && r.skipped) return r;
+    return r.ok ? { ok: true } : { skipped: `send failed ${r.status}` };
+  } catch (e) { return { skipped: 'error' }; }
 }
 
 export { mask };
@@ -175,6 +193,7 @@ export async function mailWithFile(req, { to, subject, rows, note, replyTo, file
     if (r.ok) return { ok: true };
     const t = await r.text().catch(() => '');
     console.error('[notify] 계약서 메일 실패', r.status, t.slice(0, 200));
+    await 발송실패('mail', { reason: `계약서 메일 ${r.status} ${t.slice(0, 100)}` });   /* 첨부가 커서 다시 보낼 내용은 남기지 않는다 - 중개사가 화면에서 다시 보낸다 */
     return { error: '메일을 보내지 못했습니다' + (r.status === 422 ? ' - 받는 메일 주소를 확인해 주세요' : '') };
   } catch (e) {
     return { error: '메일을 보내지 못했습니다' };

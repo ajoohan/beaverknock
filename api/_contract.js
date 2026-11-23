@@ -243,9 +243,12 @@ export async function contractRoute(req, res, agent, user, b) {
       case 'contract-share':   await share(res, agent, b); break;
       case 'contract-share-cut': await shareCut(res, agent, b); break;
       case 'contract-guide':   await guide(res, agent, b); break;
+      case 'contract-keep':    await keep(res, agent, b); break;
+      case 'contract-keep-get': await keepGet(res, agent, b); break;
       default: res.status(400).json({ error: '알 수 없는 요청입니다' });
     }
   } catch (e) {
+    await (await import('./_sys.js')).기록('server-error', { level: 'error', msg: `계약서 ${String(b && b.what || '').slice(0, 30)} - ${String(e && e.message || e).slice(0, 160)}`, detail: { what: String(b && b.what || '').slice(0, 30), stack: String(e && e.stack || '').split('\n').slice(0, 4).join(' | ').slice(0, 400) } }).catch(() => {});
     res.status(502).json({ error: 'DB에 닿지 못했습니다' });
   }
   return true;
@@ -407,6 +410,38 @@ async function guide(res, agent, b) {
   const n = (trackCheck(row.track || {}) || {}).shareN || 0, until = 안내기한(안내잔금(row.doc, row.track));
   return res.status(200).json({ ok: true, token: 안내표(id, n, until), until });
 }
+/* ── 확정본 보관본 (2026-11-22) ── 확정하면 화면이 그 모습(인쇄 모양 HTML)을 보내고, 서버가 DB 의 확정 내용 · 지문과 함께 bk-files 의 keep/사무소/계약서.json 에 한 부 둔다.
+   한 번만 쓴다(덮지 않는다). 중개사가 영구 삭제하면 함께 지운다(del). SQL 0046 전이면 저장소가 json 을 받지 않아 need 를 알린다 */
+const 보관경로 = (사무소, 계약) => `keep/${사무소}/${계약}.json`;
+const 보관저장소 = p => `${process.env.BK_URL}/storage/v1/${p}`;
+const 보관열쇠 = () => ({ apikey: process.env.BK_SECRET_KEY, Authorization: 'Bearer ' + process.env.BK_SECRET_KEY });
+async function keep(res, agent, b) {
+  const id = String(b.id || ''), html = String(b.html || '');
+  if (!UUID.test(id)) return res.status(400).json({ error: '어느 계약서인지 알 수 없습니다' });
+  if (!html || Buffer.byteLength(html, 'utf8') > 2.5 * 1024 * 1024) return res.status(400).json({ error: '보관할 내용이 비었거나 너무 큽니다' });
+  const got = await 읽기(`select=id,status,form,title,sealed_at,sha256,doc{track}&id=eq.${id}&agent_id=eq.${agent.id}&limit=1`);
+  if (!got.r.ok) return res.status(502).json({ error: '계약서를 불러오지 못했습니다' });
+  const row = got.rows[0];
+  if (!row) return res.status(404).json({ error: '내 계약서가 아니거나 지워진 계약서입니다' });
+  if (row.status !== 'sealed') return res.status(409).json({ error: '확정본만 보관합니다' });
+  if ((trackCheck(row.track || {}) || {}).keep) return res.status(200).json({ ok: true, already: true });
+  const 몸 = JSON.stringify({ v: 1, id, form: row.form, title: row.title || '', sealed_at: row.sealed_at, sha256: row.sha256 || '', at: new Date().toISOString(), doc: row.doc, html });
+  const r = await fetch(보관저장소(`object/bk-files/${보관경로(agent.id, id)}`), { method: 'POST', headers: { ...보관열쇠(), 'Content-Type': 'application/json', 'x-upsert': 'false' }, body: 몸 }).catch(() => null);
+  if (!r) return res.status(502).json({ error: '보관하지 못했습니다' });
+  if (!r.ok) { const t = await r.text().catch(() => ''); if (!/already exists|Duplicate|409/i.test(t)) return res.status(/mime|not supported|bucket/i.test(t) ? 409 : 502).json(/mime|not supported|bucket/i.test(t) ? { error: '보관 저장소를 준비 중입니다', need: '0046' } : { error: '보관하지 못했습니다' }); }
+  const 오늘 = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
+  const z = await 링크번호지켜쓰기(id, agent, (n, 지금) => ({ ...지금, keep: 오늘 }));
+  return res.status(200).json({ ok: true, keep: 오늘, ...(z.track ? { track: z.track } : {}) });
+}
+async function keepGet(res, agent, b) {
+  const id = String(b.id || '');
+  if (!UUID.test(id)) return res.status(400).json({ error: '어느 계약서인지 알 수 없습니다' });
+  const r = await fetch(보관저장소(`object/authenticated/bk-files/${보관경로(agent.id, id)}`), { headers: 보관열쇠() }).catch(() => null);
+  if (!r || !r.ok) return res.status(404).json({ error: '보관본이 없습니다' });
+  const j = await r.json().catch(() => null);
+  if (!j || j.id !== id) return res.status(404).json({ error: '보관본을 읽지 못했습니다' });
+  return res.status(200).json({ ok: true, title: j.title, sealed_at: j.sealed_at, sha256: j.sha256, at: j.at, html: j.html });
+}
 /* 공개 읽기 - 로그인 없이 표만으로. IP 마다 10분에 60번 */
 export async function guideRead(req, res) {
   if (overLimit('guide:' + ipOf(req), 60, 600e3)) return res.status(429).json({ error: '잠시 뒤 다시 열어 주세요' });
@@ -417,7 +452,16 @@ export async function guideRead(req, res) {
   const row = got.rows[0], tr = trackCheck(row.track || {}) || {};
   if ((tr.shareN || 0) !== t.n || row.status !== 'sealed' || tr.trash || String(row.form || '').startsWith('explain'))
     return res.status(404).json({ error: '중개사무소가 이 링크를 끊었습니다 - 새 링크를 받아 주세요' });
+  await 열람남김(t, 'g', row.track);
   return res.status(200).json({ ok: true, until: t.until, ...안내자료(row) });
+}
+/* 링크 열람 남기기 (2026-11-22) - 마지막으로 연 때(한국 시각, 분까지) · 횟수. 한 시간 안에 다시 연 것은 쓰지 않는다(새로고침마다 쓰지 않게). 실패해도 보기는 그대로 */
+async function 열람남김(t, k, track) {
+  try {
+    const 지금시 = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 16), 전 = ((trackCheck(track || {}) || {}).seen || {})[k];
+    if (전 && Date.parse(지금시 + ':00Z') - Date.parse(전 + ':00Z') < 3600e3) return;
+    await 링크번호지켜쓰기(t.id, null, (n, 지금) => n !== t.n ? { 거절: '끊긴 링크', code: 404 } : { ...지금, seen: { ...(지금.seen || {}), [k]: 지금시, [k + 'n']: ((지금.seen || {})[k + 'n'] || 0) + 1 } });
+  } catch { /* 넘어간다 */ }
 }
 /* 나간 초안 링크 끊기 - 서버가 지금 링크 번호를 읽어 하나 올린다. 성공해야 화면이 '끊었습니다' 라고 한다 */
 async function shareCut(res, agent, b) {
@@ -437,6 +481,7 @@ export async function draftRead(req, res) {
   const row = got.rows[0];
   const 지금번호 = (trackCheck(row.track || {}) || {}).shareN || 0;
   if (지금번호 !== t.n || String(row.form || '').startsWith('explain')) return res.status(404).json({ error: '중개사무소가 이 링크를 끊었습니다 - 새 링크를 받아 주세요' });
+  await 열람남김(t, 'd', row.track);
   /* 확정됐으면 내용은 내보내지 않는다 - 최종본은 중개사무소가 인쇄해서 준다 */
   if (row.status === 'sealed') return res.status(200).json({ ok: true, until: t.until, form: row.form, status: 'sealed' });
   return res.status(200).json({ ok: true, until: t.until, form: row.form, status: row.status, updated_at: row.updated_at, doc: 초안가림(row.doc) });
@@ -629,6 +674,12 @@ export function trackCheck(t) {
   if (typeof t.xcode === 'string' && XCODE.test(t.xcode)) out.xcode = t.xcode;
   /* 전자계약으로 진행(파트너 기획 [137] - 금리 우대 대상 관리용 표시) */
   if (t.ec === true) out.ec = true;
+  /* 링크 열람 (2026-11-22) - 초안 링크(d) · 손님 안내 링크(g)를 마지막으로 연 때와 횟수. 서버만 쓴다(화면 저장은 이 칸을 못 바꾼다) */
+  if (t.seen && typeof t.seen === 'object') { const s = {};
+    for (const k of ['d', 'g']) { if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(String(t.seen[k] || ''))) s[k] = t.seen[k]; const n = t.seen[k + 'n']; if (Number.isInteger(n) && n > 0 && n < 1e6) s[k + 'n'] = n; }
+    if (Object.keys(s).length) out.seen = s; }
+  /* 확정본 보관본을 둔 날 (2026-11-22) - 서버만 쓴다 */
+  if (/^\d{4}-\d{2}-\d{2}$/.test(String(t.keep || ''))) out.keep = t.keep;
   const x = 부속값(t.extra);
   if (x) out.extra = x;
   /* 판 번호 - track 을 쓸 때마다 하나 올린다. 읽은 판 그대로일 때만 쓴다(중개사 저장 · 초안 의견이 서로 지우지 않게) */
@@ -967,9 +1018,9 @@ async function track(res, agent, b) {
      끊은 링크가 다시 열리면 안 된다(2026-11-05 리뷰). 받은 값은 버리고 지금 값을 지킨다 */
   delete t.shareN;
   /* 초안 의견은 화면이 보낸 것으로 덮지 않는다 - 서버에 지금 있는 것을 그대로 둔다(읽음 · 지우기는 contract-note) */
-  delete t.notes; delete t.tv; delete t.room; delete t.fpics; delete t.xcode;
+  delete t.notes; delete t.tv; delete t.room; delete t.fpics; delete t.xcode; delete t.seen; delete t.keep;
   /* 읽은 링크 번호가 그대로일 때만 쓴다 - 그 사이 끊기가 번호를 올렸으면 다시 읽는다(2026-11-05 재검토) */
-  const z = await 링크번호지켜쓰기(id, agent, (n, 지금) => ({ ...t, ...(지금.notes ? { notes: 지금.notes } : {}), ...(지금.room ? { room: 지금.room } : {}), ...(지금.fpics ? { fpics: 지금.fpics } : {}), ...(지금.xcode ? { xcode: 지금.xcode } : {}),
+  const z = await 링크번호지켜쓰기(id, agent, (n, 지금) => ({ ...t, ...(지금.notes ? { notes: 지금.notes } : {}), ...(지금.room ? { room: 지금.room } : {}), ...(지금.fpics ? { fpics: 지금.fpics } : {}), ...(지금.xcode ? { xcode: 지금.xcode } : {}), ...(지금.seen ? { seen: 지금.seen } : {}), ...(지금.keep ? { keep: 지금.keep } : {}),
     ...(b.guideOff !== true && 지금.guideAt && !t.guideAt ? { guideAt: 지금.guideAt } : {}) }));   /* 잔금안내 체크를 끈 것은 guideOff 로 온다 */
   if (z.res) return z.res(res, '일정을 저장하지 못했습니다');
   return res.status(200).json({ ok: true, track: z.track });
@@ -1142,6 +1193,9 @@ export async function reportDueCron(req, res) {
   /* notifyMany 는 한 번에 100통까지다(Resend 묶음 상한) - 100통씩 나눠 보낸다 */
   let 보냄 = 0;
   for (let i = 0; i < 메일.length; i += 100) 보냄 += (await notifyMany(req, 메일.slice(i, i + 100))).sent || 0;
+  /* 시스템 기록 (2026-11-22) - 아침 점검이 '어제 아침 알림이 돌았나' 를 본다 */
+  await (await import('./_sys.js')).기록('cron', { msg: `계약 ${살아있음.length}건 · 알림 ${사람.reduce((s, p) => s + p.목록.length, 0)}건 · 메일 ${보냄}/${메일.length}통 · 알림톡 ${카톡보냄}/${카톡.length}통`,
+    detail: { 메일: [보냄, 메일.length], 카톡: [카톡보냄, 카톡.length] } });
   return res.status(200).json({ ok: true, 대상: 살아있음.length, 알림: 사람.reduce((s, p) => s + p.목록.length, 0), 보냄, 카톡: 카톡보냄, 파일지움, 제안만료: 제안만료.만료 || 0, ...(제안만료.need ? { need: 제안만료.need } : {}) });
 }
 
@@ -1272,6 +1326,8 @@ async function del(res, agent, b) {
   /* 줄이 지워진 뒤에 현장 사진 파일도 지운다(자동 삭제와 같게) - 파일 지우기가 실패해도 삭제는 끝난 것으로 본다 */
   try { const 경로 = 현장사진값((행.track || {}).fpics).map(v => 현장경로(agent.id, id, v.i));
     if (경로.length) { const { 파일버킷, 버킷지우기 } = await import('./_forms.js'); await 버킷지우기(파일버킷, 경로); } } catch { /* 넘어간다 */ }
+  /* 확정본 보관본도 함께 지운다(2026-11-22) - 중개사가 지운 계약서를 서비스가 따로 쥐고 있지 않게 */
+  if (확정) try { const { 파일버킷, 버킷지우기 } = await import('./_forms.js'); await 버킷지우기(파일버킷, [보관경로(agent.id, id)]); } catch { /* 넘어간다 */ }
   return res.status(200).json({ ok: true });
 }
 

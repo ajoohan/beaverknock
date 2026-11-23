@@ -71,6 +71,20 @@ export default async function handler(req, res) {
     await logOps(req, opsUser, { action: 'ops-link', detail: '기한 ' + new Date(t.until).toISOString().slice(0, 10) });
     return res.status(200).json({ ok: true, ...t });
   }
+  /* 시스템 (2026-11-22) - 오류 · 발송 실패 · 아침 점검 · 사용 현황. 다시 보내기는 운영자만(부운영자 막음) */
+  if (payload.what === 'sys' || payload.what === 'sys-retry' || payload.what === 'sys-usage' || payload.what === 'sys-check') {
+    const S = await import('./_sys.js');
+    if (payload.what === 'sys-usage') { const u = await S.사용현황(); return res.status(u.error ? 502 : 200).json(u.error ? u : { ok: true, ...u }); }
+    if (payload.what === 'sys-check') { const r = await S.점검(String(process.env.ALERT_SITE || 'https://beaverknock.co.kr').replace(/\/+$/, '')); return res.status(200).json({ ok: true, ...r }); }
+    if (payload.what === 'sys-retry') {
+      if (부) return res.status(403).json({ error: '다시 보내기는 운영자만 할 수 있습니다' });
+      const r = await S.다시보내기(payload.id);
+      await logOps(req, opsUser, { action: 'sys-retry', detail: r.ok ? '다시 보냄' : String(r.error || '').slice(0, 100) });
+      return res.status(r.ok ? 200 : 400).json(r.ok ? { ok: true } : r);
+    }
+    const x = await S.최근(['client-error', 'server-error', 'send', 'health', 'cron', 'retry'].includes(payload.kind) ? payload.kind : '', payload.days);
+    return res.status(x.error ? 502 : 200).json(x.error ? x : { ok: true, rows: x.rows || [], need: x.need || '' });
+  }
   if (payload.what === 'log')         return readLog(req, res, payload, opsUser);
   if (payload.what === 'reports')     return readReports(req, res, payload, opsUser);
   if (payload.what === 'report-mark') return markReport(req, res, payload, opsUser);

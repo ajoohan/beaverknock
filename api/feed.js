@@ -581,6 +581,13 @@ export default async function handler(req, res) {
       link: '/#/ops/live', cta: '운영 화면 시스템 탭 열기', note: '매일 아침 8시 50분에 서버가 스스로 점검해 보냅니다. 어제 오류 · 발송 실패는 운영 화면 › 시스템에서 자세히 보고, 실패한 알림은 그곳에서 다시 보낼 수 있습니다.' });
     return res.status(200).json({ ok: true, 급함: r.급함 });
   }
+  /* 임시 백업 (2026-11-23) - 매일 새벽 3시(한국). CRON_SECRET 으로만. api/_sys.js 임시백업 */
+  if (req.method === 'GET' && req.query && req.query.cron === 'backup') {
+    const secret = process.env.CRON_SECRET;
+    if (!secret || !sameSecret(req.headers.authorization, `Bearer ${secret}`)) return res.status(401).json({ error: '예약 실행만 부를 수 있습니다' });
+    const r = await (await import('./_sys.js')).임시백업();
+    return res.status(200).json({ ok: !r.빠짐.length, 날: r.날, 표: r.표, 빠짐: r.빠짐, 지움: r.지움 });
+  }
   /* 화면 오류 받기 (2026-11-22) - 로그인 없이도(손님 화면 오류도). IP 마다 10분에 30번 · 글 길이 제한 · 전화번호 · 메일은 가림 */
   if (req.method === 'POST' && req.query && req.query.err) {
     if (!process.env.BK_URL || !process.env.BK_SECRET_KEY) return res.status(204).end();

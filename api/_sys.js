@@ -14,13 +14,13 @@ const 표 = 'bk_sys_event';
 const 시간제한 = (p, ms) => Promise.race([p, new Promise(r => setTimeout(() => r(null), ms))]);
 const 없는표 = t => /bk_sys_event|does not exist|PGRST205|42P01/i.test(String(t || ''));
 /* 글 속의 전화번호 · 메일 주소는 가린다 */
-export const 글가림 = s => String(s ?? '').replace(/[\w.+-]+@[\w-]+\.[\w.-]+/g, '***@***').replace(/\d[\d -]{7,}\d/g, '***');
+export const 글가림 = s => String(s ?? '').replace(/[\w.+-]+@[\w-]+\.[\w.-]+/g, '***@***').replace(/\d[\d -]{7,}\d/g, m => /^\d{4}-\d{2}-\d{2}$/.test(m) ? m : '***');   /* 날짜(2026-11-24)는 두고 번호만 */
 
-export async function 기록(kind, { level = 'info', msg = '', detail = null } = {}) {
+export async function 기록(kind, { level = 'info', msg = '', detail = null } = {}, fetchFn = fetch) {
   try {
     if (!process.env.BK_URL || !process.env.BK_SECRET_KEY) return { skipped: 'no env' };
     const row = { kind: String(kind).slice(0, 20), level: String(level).slice(0, 10), msg: 글가림(msg).slice(0, 300), detail: detail || null };
-    const r = await 시간제한(fetch(sbUrl(표), { method: 'POST', headers: { ...sbHeaders(), Prefer: 'return=minimal' }, body: JSON.stringify(row) }), 1500);
+    const r = await 시간제한(fetchFn(sbUrl(표), { method: 'POST', headers: { ...sbHeaders(), Prefer: 'return=minimal' }, body: JSON.stringify(row) }), 1500);
     if (!r) return { skipped: 'timeout' };
     if (r.ok) return { ok: true };
     const t = await r.text().catch(() => '');
@@ -105,6 +105,10 @@ export async function 점검(사이트, fetchFn = fetch) {
     더('어제 오류', 셈.화면오류 + 셈.서버오류 < 20, `화면 ${셈.화면오류}건 · 서버 ${셈.서버오류}건`, 셈.서버오류 > 0);
     더('어제 발송 실패', !셈.발송실패, `${셈.발송실패}건`);
     더('어제 아침 일정 알림', !!아침알림, 아침알림 ? 아침알림.msg : '돌았다는 기록이 없습니다 - Vercel 예약 실행을 확인해 주세요');
+    /* 임시 백업(2026-11-23) - 새벽 3시. 26시간 안에 돌았는가 */
+    const 백 = await 읽기(`select=kind,level,msg,at&kind=eq.backup&at=gte.${new Date(Date.now() - 26 * 3600e3).toISOString()}&order=at.desc&limit=5`, fetchFn);
+    const 최근백업 = ((백 && 백.rows) || []).find(r => r.kind === 'backup');
+    더('임시 백업', !!최근백업 && 최근백업.level === 'info', 최근백업 ? 최근백업.msg : '최근 26시간 안에 돈 기록이 없습니다 - 운영 화면 › 시스템 › 백업에서 지금 백업을 눌러 보세요');
   }
   const 많은오류 = [...오류말.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5).map(([m, n]) => `${n}건 · ${m}`);
   return { 날: 어제, 결과, 셈, 많은오류, 급함: 결과.some(r => r.급) };
@@ -129,4 +133,90 @@ export async function 사용현황() {
   const rows = [...칸.values()].sort((a, b) => (b.마지막 > a.마지막) - (b.마지막 < a.마지막));
   const 활성 = rows.filter(r => r.계7 + r.제7 > 0).length, 쉼 = rows.filter(r => r.status === 'approved' && !r.마지막).length;
   return { rows, 요약: { 사무소: rows.length, 이번주활동: 활성, 한달쉼: 쉼 }, 빠짐: [!계 && '계약서', !제 && '제안', !매 && '매물'].filter(Boolean) };
+}
+
+/* ── 임시 백업 (2026-11-23 대표님 '임시 백업 만들어줘') ──
+ * 무료 플랜은 Supabase 자동 백업이 없다(11-23 화면으로 확인). Pro 로 올리기 전까지 매일 새벽 3시(한국) 주요 표를 JSON 으로 뽑아
+ * 비공개 저장소 bk-files 의 backup/날짜/ 아래 7일치를 둔다. 개인정보 칸은 DB 에 잠긴 그대로(BK_DATA_KEY) 담긴다.
+ * 같은 프로젝트 안이라 프로젝트를 통째로 잃으면 함께 잃는다 - 운영 화면 › 시스템 › 백업에서 PC 로 내려받아 따로 둔다.
+ * 로그인 계정(auth.users)은 REST 로 못 읽어 빠진다 - Pro 백업이 맡는다. */
+export const 백업표 = [['bk_agent', 'id'], ['bk_consent', 'user_id'], ['bk_contract', 'id'], ['bk_contract_msg', 'id'], ['bk_demand', 'id'], ['bk_idv_use', 'vid'],
+  ['bk_listing', 'id'], ['bk_proposal', 'id'], ['bk_ops_log', 'id'], ['bk_purge_log', 'id']];
+const 백업보관일 = 7, 백업쪽 = 1000, 파일최대 = 2.5 * 1024 * 1024;
+const 저장소 = p => `${process.env.BK_URL}/storage/v1/${p}`;
+const 저장열쇠 = () => ({ apikey: process.env.BK_SECRET_KEY, Authorization: 'Bearer ' + process.env.BK_SECRET_KEY });
+export const 한국날 = (t = Date.now()) => new Date(t + 9 * 3600e3).toISOString().slice(0, 10);
+async function 올리기(path, 글, fetchFn) {
+  const r = await fetchFn(저장소(`object/bk-files/${path}`), { method: 'POST', headers: { ...저장열쇠(), 'Content-Type': 'application/json', 'x-upsert': 'true' }, body: 글 });
+  if (r.ok) return true;
+  const t = await r.text().catch(() => ''); throw new Error(`저장 ${r.status} ${t.slice(0, 80)}`);
+}
+/* 행들을 2.5MB 안쪽 파일로 나눈다 */
+export function 나누기(rows, 최대 = 파일최대) {
+  const 묶음 = []; let 지금 = [], 크기 = 2;
+  for (const r of rows) { const n = Buffer.byteLength(JSON.stringify(r), 'utf8') + 1;
+    if (지금.length && 크기 + n > 최대) { 묶음.push(지금); 지금 = []; 크기 = 2; } 지금.push(r); 크기 += n; }
+  if (지금.length || !묶음.length) 묶음.push(지금);
+  return 묶음;
+}
+export async function 임시백업(fetchFn = fetch, 지금 = Date.now()) {
+  const 날 = 한국날(지금), 목록 = { 날, at: new Date(지금).toISOString(), 표: {}, 파일: [], 빠짐: [] };
+  for (const [표이름, 키] of 백업표) {
+    const 모두 = [];
+    try {
+      for (let 처음 = 0; 처음 < 200000; 처음 += 백업쪽) {
+        const r = await fetchFn(sbUrl(표이름, `select=*&order=${키}&limit=${백업쪽}&offset=${처음}`), { headers: sbHeaders() });
+        if (!r.ok) { const t = await r.text().catch(() => ''); throw new Error(없는표(t) ? '표 없음' : `읽기 ${r.status}`); }
+        const 쪽 = await r.json(); 모두.push(...쪽);
+        if (쪽.length < 백업쪽) break;
+      }
+      const 묶음 = 나누기(모두);
+      for (const [i, 행들] of 묶음.entries()) { const path = `backup/${날}/${표이름}-${i + 1}.json`; await 올리기(path, JSON.stringify(행들), fetchFn); 목록.파일.push(path); }
+      목록.표[표이름] = 모두.length;
+    } catch (e) { 목록.빠짐.push(`${표이름}: ${String(e && e.message || e).slice(0, 80)}`); }
+  }
+  await 올리기(`backup/${날}/목록.json`, JSON.stringify(목록), fetchFn).catch(e => 목록.빠짐.push('목록: ' + e.message));
+  /* 7일 지난 날짜 폴더를 지운다 */
+  let 지움 = 0;
+  try {
+    const 날들 = await 백업날들(fetchFn), 기준 = 한국날(지금 - 백업보관일 * 864e5);
+    for (const d of 날들.filter(d => d < 기준)) {
+      const 파일 = await 폴더파일(`backup/${d}/`, fetchFn);
+      if (파일.length) { const r = await fetchFn(저장소('object/bk-files'), { method: 'DELETE', headers: { ...저장열쇠(), 'Content-Type': 'application/json' }, body: JSON.stringify({ prefixes: 파일.map(f => `backup/${d}/${f}`) }) }); if (r.ok) 지움++; }
+    }
+  } catch { /* 넘어간다 */ }
+  const 행수 = Object.values(목록.표).reduce((s, n) => s + n, 0);
+  await 기록('backup', { level: 목록.빠짐.length ? 'warn' : 'info', msg: `임시 백업 ${날} - 표 ${Object.keys(목록.표).length}개 · ${행수}줄 · 파일 ${목록.파일.length}개${목록.빠짐.length ? ` · 빠짐 ${목록.빠짐.length}` : ''}${지움 ? ` · 오래된 ${지움}일치 지움` : ''}`,
+    detail: { 표: 목록.표, 빠짐: 목록.빠짐 } }, fetchFn);
+  return { ...목록, 지움 };
+}
+async function 폴더파일(prefix, fetchFn = fetch) {
+  const r = await fetchFn(저장소('object/list/bk-files'), { method: 'POST', headers: { ...저장열쇠(), 'Content-Type': 'application/json' }, body: JSON.stringify({ prefix, limit: 1000, sortBy: { column: 'name', order: 'asc' } }) });
+  if (!r.ok) return [];
+  const j = await r.json().catch(() => []);
+  return (Array.isArray(j) ? j : []).filter(x => x && x.name && x.id).map(x => x.name);
+}
+export async function 백업날들(fetchFn = fetch) {
+  const r = await fetchFn(저장소('object/list/bk-files'), { method: 'POST', headers: { ...저장열쇠(), 'Content-Type': 'application/json' }, body: JSON.stringify({ prefix: 'backup/', limit: 100, sortBy: { column: 'name', order: 'desc' } }) });
+  if (!r.ok) return [];
+  const j = await r.json().catch(() => []);
+  return (Array.isArray(j) ? j : []).map(x => x && x.name).filter(n => /^\d{4}-\d{2}-\d{2}$/.test(n || '')).sort().reverse();
+}
+/* 운영 화면 - 날짜마다 목록(표 · 줄 수 · 빠진 것) */
+export async function 백업목록(fetchFn = fetch) {
+  const 날들 = await 백업날들(fetchFn), out = [];
+  for (const d of 날들.slice(0, 10)) {
+    const r = await fetchFn(저장소(`object/authenticated/bk-files/backup/${d}/목록.json`), { headers: 저장열쇠() }).catch(() => null);
+    const j = r && r.ok ? await r.json().catch(() => null) : null;
+    out.push({ 날: d, 표: (j && j.표) || {}, 파일: (j && j.파일) || [], 빠짐: (j && j.빠짐) || ['목록 파일을 못 읽었습니다'] });
+  }
+  return out;
+}
+/* 내려받기 주소 (5분) - backup/ 아래 json 만 */
+export async function 백업주소(path, fetchFn = fetch) {
+  if (!/^backup\/\d{4}-\d{2}-\d{2}\/[a-z_]+-\d+\.json$|^backup\/\d{4}-\d{2}-\d{2}\/목록\.json$/.test(String(path || ''))) return { error: '내려받을 수 없는 파일입니다' };
+  const r = await fetchFn(저장소(`object/sign/bk-files/${encodeURI(path)}`), { method: 'POST', headers: { ...저장열쇠(), 'Content-Type': 'application/json' }, body: JSON.stringify({ expiresIn: 300 }) });
+  const j = await r.json().catch(() => ({})), s = j.signedURL || j.signedUrl;
+  if (!r.ok || !s) return { error: '내려받을 주소를 만들지 못했습니다' };
+  return { url: `${저장소(String(s).replace(/^\/+/, ''))}&download=${encodeURIComponent(path.replace(/\//g, '_'))}` };
 }

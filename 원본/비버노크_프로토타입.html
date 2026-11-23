@@ -12299,14 +12299,15 @@ function reportPanel(){
 }
 
 /* ── 시스템 (2026-11-22) ── 서버 api/_sys.js (api/demands.js what:'sys'). SQL 0046 전이면 기록이 쌓이지 않는다고 알린다 */
-const SY_ONLY = [ {v:'', t:'전체'}, {v:'error', t:'오류'}, {v:'send', t:'발송 실패'}, {v:'health', t:'아침 점검'}, {v:'usage', t:'사용 현황'} ];
-const SY_KIND = { 'client-error':['b-warn','화면 오류'], 'server-error':['b-warn','서버 오류'], send:['b-warn','발송 실패'], health:['b-ind','아침 점검'], cron:['b-mute','아침 알림'], retry:['b-ok','다시 보냄'] };
-const SY = { only:'', rows:null, usage:null, check:null, loading:false, err:'', need:'', busy:'' };
+const SY_ONLY = [ {v:'', t:'전체'}, {v:'error', t:'오류'}, {v:'send', t:'발송 실패'}, {v:'health', t:'아침 점검'}, {v:'usage', t:'사용 현황'}, {v:'backup', t:'백업'} ];
+const SY_KIND = { backup:['b-ind','임시 백업'], 'client-error':['b-warn','화면 오류'], 'server-error':['b-warn','서버 오류'], send:['b-warn','발송 실패'], health:['b-ind','아침 점검'], cron:['b-mute','아침 알림'], retry:['b-ok','다시 보냄'] };
+const SY = { only:'', rows:null, usage:null, backups:null, check:null, loading:false, err:'', need:'', busy:'' };
 function syPost(body){ return apiFetch('/api/demands', { method:'POST', body: JSON.stringify({ ...body, pass: OPS.pass }) }).then(r => r.json().catch(() => ({})).then(j => ({ ok: r.ok, j }))); }
 function syFetch(){
   if(SY.loading || !OPS.ok) return;
   SY.loading = true; SY.err = ''; render();
   const 끝 = () => { SY.loading = false; render(); };
+  if(SY.only === 'backup') return syPost({ what:'sys-backup' }).then(({ ok, j }) => { if(ok) SY.backups = j.rows || []; else SY.err = j.error || '불러오지 못했습니다'; 끝(); }).catch(() => { SY.err = '네트워크 문제로 불러오지 못했습니다'; 끝(); });
   if(SY.only === 'usage') return syPost({ what:'sys-usage' }).then(({ ok, j }) => { if(ok) SY.usage = j; else SY.err = j.error || '불러오지 못했습니다'; 끝(); }).catch(() => { SY.err = '네트워크 문제로 불러오지 못했습니다'; 끝(); });
   syPost({ what:'sys', kind: ['send', 'health'].includes(SY.only) ? SY.only : undefined, days: 14 }).then(({ ok, j }) => {
     if(ok){ SY.rows = SY.only === 'error' ? (j.rows || []).filter(r => /error/.test(r.kind)) : (j.rows || []); SY.need = j.need || ''; } else SY.err = j.error || '불러오지 못했습니다'; 끝(); })
@@ -12330,6 +12331,7 @@ function sysPanel(){
   const 줄 = `<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px"><div class="chips" style="gap:6px">${SY_ONLY.map(chip).join('')}</div>
     <span style="margin-left:auto;display:flex;gap:8px"><button class="btn sec sm" data-act="sy-check" ${SY.busy === 'check' ? 'disabled' : ''}>${SY.busy === 'check' ? '점검 중…' : '지금 점검'}</button><button class="btn sec sm" data-act="sy-load">새로고침</button></span></div>`;
   const 점검 = SY.check ? sy점검표(SY.check) : '';
+  if(SY.only === 'backup' && !SY.loading) return 줄 + 점검 + sy백업HTML();
   if(SY.loading && !SY.rows && !SY.usage) return 줄 + 점검 + `<div class="card pad" style="display:flex;justify-content:center;padding:30px 0">${bkLoader(28)}</div>`;
   if(SY.err) return 줄 + 점검 + `<div class="card pad"><p style="margin:0;font-size:14.5px;color:var(--danger);font-weight:700">${esc(SY.err)}</p></div>`;
   if(SY.only === 'usage'){
@@ -12350,6 +12352,21 @@ function sysPanel(){
           <td style="padding:10px 12px;vertical-align:top"><span class="badge ${잘됨 ? 'b-ok' : b}">${t}</span></td>
           <td style="padding:10px 12px;vertical-align:top"><b style="font-weight:700">${esc(r.msg || '')}</b>${sy자세히(r) ? `<div style="margin-top:3px;font-size:12.5px;color:var(--n500);word-break:break-all">${esc(sy자세히(r))}</div>` : ''}</td>
           <td style="padding:10px 12px;vertical-align:top;white-space:nowrap">${r.retry ? `<button class="btn sec sm" data-act="sy-retry" data-v="${esc(r.id)}" ${SY.busy === r.id ? 'disabled' : ''}>다시 보내기</button>` : r.done ? '<span class="sub" style="font-size:12.5px">다시 보냄</span>' : ''}</td></tr>`; }).join('')}</tbody></table></div>`);
+}
+/* 임시 백업 (2026-11-23) - 매일 새벽 3시 주요 표를 저장소에 7일치. PC 로 내려받아 따로 둔다(같은 프로젝트를 통째로 잃는 때를 위해) */
+function sy백업HTML(){
+  if(SY.err) return `<div class="card pad"><p style="margin:0;color:var(--danger);font-weight:700">${esc(SY.err)}</p></div>`;
+  const rows = SY.backups;
+  const 안내 = `<div class="card pad" style="display:flex;flex-direction:column;gap:8px"><b style="font-size:15px">임시 백업 - Pro 플랜으로 올리기 전까지</b>
+    <p class="sub" style="margin:0;line-height:1.7">무료 플랜은 Supabase 자동 백업이 없습니다. 매일 새벽 3시에 주요 표 10개(사무소 · 계약서 · 대화 · 조건 · 제안 · 매물 · 동의 · 본인확인 · 운영 기록)를 비공개 저장소에 7일치 둡니다. 개인정보 칸은 잠긴 그대로 담깁니다. 같은 프로젝트 안이라 가끔 PC 로 내려받아 따로 보관해 주세요. 로그인 계정 목록은 들어가지 않습니다.</p>
+    <span class="eqb" style="display:flex;gap:8px"><button class="btn pri sm" data-act="sy-backup-now" ${SY.busy === 'backup' ? 'disabled' : ''}>${SY.busy === 'backup' ? '백업 중…' : '지금 백업'}</button></span></div>`;
+  if(!rows) return 안내 + `<div class="card pad" style="display:flex;justify-content:center;padding:30px 0">${bkLoader(28)}</div>`;
+  if(!rows.length) return 안내 + 빈자리('아직 백업이 없습니다', '오늘 새벽 3시에 처음 돕니다 - 지금 백업을 눌러도 됩니다', '', 80, true);
+  return 안내 + rows.map(b => { const 줄수 = Object.values(b.표).reduce((s, n) => s + n, 0);
+    return `<div class="card pad" style="display:flex;flex-direction:column;gap:8px"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><b class="num" style="font-size:15px">${esc(b.날)}</b>
+      <span class="sub" style="font-size:13px">표 ${Object.keys(b.표).length}개 · ${줄수}줄 · 파일 ${b.파일.length}개</span>${b.빠짐.length ? `<span class="badge b-warn">빠짐 ${b.빠짐.length}</span>` : '<span class="badge b-ok">정상</span>'}</div>
+      ${b.빠짐.length ? `<p class="sub" style="margin:0;font-size:12.5px;color:var(--warn)">${b.빠짐.map(esc).join(' / ')}</p>` : ''}
+      <div style="display:flex;gap:6px;flex-wrap:wrap">${[...b.파일, `backup/${b.날}/목록.json`].map(p => `<button class="btn tool sm" data-act="sy-backup-get" data-v="${esc(p)}" title="5분짜리 주소로 내려받습니다">${esc(p.split('/').pop().replace(/\.json$/, ''))}${(m => m && b.표[m[1]] != null ? ` (${b.표[m[1]]})` : '')(/^([a-z_]+)-1\.json$/.exec(p.split('/').pop()))}</button>`).join('')}</div></div>`; }).join('');
 }
 function logPanel(){
   const rows = LG.rows;
@@ -12790,7 +12807,7 @@ function dashProg(){
 const LOG_KO = { demands:'조건 조회', agents:'가입 신청 조회', listings:'매물 조회', users:'손님 계정 조회',
   reports:'신고 조회', 'report-mark':'신고 처리', 'agent-status':'가입 상태 변경',
   'agent-delete':'가입 삭제', 'agent-del-preview':'삭제 전 확인',
-  stats:'지표 조회', 'mark-sent':'전달 표시', 'sys-retry':'알림 다시 보냄', 'kakao-unlink':'카카오 연결 해제', 'idv-reject':'본인확인 거절',
+  stats:'지표 조회', 'mark-sent':'전달 표시', 'sys-retry':'알림 다시 보냄', 'sys-backup':'임시 백업', 'sys-backup-get':'백업 내려받음', 'kakao-unlink':'카카오 연결 해제', 'idv-reject':'본인확인 거절',
   'demand-edit':'손님 조건 수정' };
 
 /* 웹훅은 사람이 부른 것이 아니다. '운영자' 로 적으면 누가 지웠는지를 잘못 말한다.
@@ -14275,6 +14292,7 @@ if(typeof addEventListener === 'function'){
   addEventListener('unhandledrejection', e => { const r = e && e.reason; bk오류보내기('처리되지 않은 오류: ' + ((r && r.message) || r), (r && r.stack && (/(https?:\/\/[^\s)]+?):\d+:\d+/.exec(r.stack) || [])[1]) || location.origin, 0, 0, r && r.stack); });
 }
 const BK_변경 = [
+  { v:'26.11.23.4', 날:'2026-11-23', 줄:[ '임시 백업 - 무료 플랜은 자동 백업이 없어, 매일 새벽 3시 주요 표 10개를 비공개 저장소에 7일치 둡니다. 운영 화면 › 시스템 › 백업에서 날짜마다 확인하고 PC 로 내려받으며, 아침 점검이 백업이 돌았는지 봅니다' ] },
   { v:'26.11.23.3', 날:'2026-11-23', 줄:[ '첫 화면 속도 - 화면 코드를 페이지를 받는 동안 함께 받기 시작합니다(전에는 페이지를 다 받은 뒤에 받았습니다). 휴대폰 느린 망에서 첫 화면이 빨라집니다' ] },
   { v:'26.11.23.2', 날:'2026-11-23', 줄:[ '실거래가 - 전세 안전 점검에서 ‘이 지번 실거래가 보기’를 누르면 국토교통부 실거래가에서 같은 지번 최근 매매(아파트 · 연립 · 다세대 · 오피스텔)를 불러오고, 고른 값을 시세 칸에 넣습니다(공공데이터포털 활용신청 뒤 열림)',
     '잔금 전 등기 다시 보기 - 확정본의 잔금 3일 전 아침에 알려 드리고, 일정·체크에서 새로 뗀 등기부를 올리면 계약 때와 견줘 새로 생긴 권리 · 말소된 권리 · 소유자가 바뀌었는지 보여 드립니다',
@@ -23088,7 +23106,7 @@ function handle(a,v,el){
       else if(k==='listing'){ LS2.only = val; LS2.rows = null; lsFetch(); }
       else if(k==='report'){ RP.only = val; RP.rows = null; rpFetch(); }
       else if(k==='log'){ LG.only = val; LG.rows = null; lgFetch(); }
-      else if(k==='sys'){ SY.only = val; SY.rows = null; SY.usage = null; SY.err = ''; syFetch(); }
+      else if(k==='sys'){ SY.only = val; SY.rows = null; SY.usage = null; SY.backups = null; SY.err = ''; syFetch(); }
       render(); return true; }
     case 'ls2-load': LS2.rows=null; lsFetch(); return true;
     case 'ls2-only': LS2.only = v; LS2.rows=null; lsFetch(); return true;
@@ -24232,7 +24250,13 @@ function handle(a,v,el){
         if(!w) return toast('새 창이 막혔습니다 - 팝업을 허용해 주세요');
         w.document.open(); w.document.write(j.html); w.document.close();
       }).catch(() => { if(w) w.close(); toast('네트워크 문제로 열지 못했습니다'); }); } return true;
-    case 'sy-load': SY.rows = null; SY.usage = null; syFetch(); return true;
+    case 'sy-load': SY.rows = null; SY.usage = null; SY.backups = null; syFetch(); return true;
+    case 'sy-backup-now': SY.busy = 'backup'; render();
+      syPost({ what:'sys-backup-now' }).then(({ ok, j }) => { SY.busy = ''; toast(ok ? (j.빠짐 && j.빠짐.length ? `백업했습니다 - 빠진 것 ${j.빠짐.length}개(목록에서 확인)` : '백업했습니다') : (j.error || '백업하지 못했습니다')); SY.backups = null; syFetch(); })
+        .catch(() => { SY.busy = ''; toast('네트워크 문제로 백업하지 못했습니다'); render(); });
+      return true;
+    case 'sy-backup-get': syPost({ what:'sys-backup-url', path: v }).then(({ ok, j }) => { if(!ok || !j.url) return toast(j.error || '내려받지 못했습니다'); location.href = j.url; })
+      .catch(() => toast('네트워크 문제로 내려받지 못했습니다')); return true;
     case 'sy-check': SY.busy = 'check'; render();
       syPost({ what:'sys-check' }).then(({ ok, j }) => { SY.busy = ''; if(ok) SY.check = j; else toast(j.error || '점검하지 못했습니다'); render(); }).catch(() => { SY.busy = ''; toast('네트워크 문제로 점검하지 못했습니다'); render(); });
       return true;

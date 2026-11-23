@@ -8,6 +8,10 @@
     {
       "path": "/api/feed?cron=health",
       "schedule": "50 23 * * *"
+    },
+    {
+      "path": "/api/feed?cron=backup",
+      "schedule": "0 18 * * *"
     }
   ],
   "redirects": [
@@ -86,6 +90,9 @@
       "regions": [
         "icn1"
       ]
+    },
+    "api/feed.js": {
+      "maxDuration": 60
     }
   },
   "regions": [

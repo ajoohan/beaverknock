@@ -67,7 +67,7 @@ ok(최근.rows[0].retry === true && !('enc' in 최근.rows[0].detail) && 최근.
     if (/example\.site\/$/.test(u)) return 응답('<script src="/app/bk.0123456789.js"></script>');
     if (/app\/bk\.0123456789\.js/.test(u)) return 응답('');
     if (/version\.json/.test(u)) return 응답({ v: '26.11.23.1' });
-    if (/bk_sys_event/.test(u)) return 응답([{ kind: 'client-error', level: 'error', msg: 'a is not defined' }, { kind: 'client-error', level: 'error', msg: 'a is not defined' }, { kind: 'cron', level: 'info', msg: '계약 3건' }]);
+    if (/bk_sys_event/.test(u)) return 응답([{ kind: 'client-error', level: 'error', msg: 'a is not defined' }, { kind: 'client-error', level: 'error', msg: 'a is not defined' }, { kind: 'cron', level: 'info', msg: '계약 3건' }, { kind: 'backup', level: 'info', msg: '임시 백업 정상' }]);
     return 응답('', 404); };
   const r = await S.점검('https://example.site', 가짜);
   const 이름 = n => r.결과.find(x => x.이름 === n);
@@ -135,6 +135,41 @@ ok(js.includes("{ k:'sys',     t:'시스템'") && js.includes("case 'sys':     r
 ok(js.includes('ct보관(CT.id, CT.doc, true);') && js.includes("${잠김 && CT.id ? ct보관카드() : ''}") && js.includes("what:'contract-keep-get'") && !/<style>\$\{css\}/.test(js),
    '확정하면 보관본을 만들고 일정·체크에서 본다(빌드가 CSS 로 오해할 <style> 글자는 쓰지 않는다)');
 ok(js.includes("ct열람글('g', '손님이 안내 링크를')") && js.includes('ct초안열람줄()'), '일정·체크에 링크를 마지막으로 연 때');
+
+/* ── 임시 백업 (2026-11-23) ── */
+{
+  const 큰 = Array.from({ length: 30 }, (_, i) => ({ id: i, t: 'x'.repeat(100) }));
+  const 묶 = S.나누기(큰, 1000);
+  ok(묶.length > 1 && 묶.flat().length === 30 && 묶.every(b => JSON.stringify(b).length <= 1100) && S.나누기([], 1000).length === 1, '백업 파일은 크기 안쪽으로 나눈다(빈 표도 파일 하나)');
+  const 올림 = [], 지움 = []; let 기록됨 = null;
+  const 지금 = Date.parse('2026-11-24T03:00:00+09:00');
+  const 가짜 = async (u, o = {}) => { u = decodeURIComponent(String(u));
+    if (/\/rest\/v1\/bk_contract\?/.test(u)) { const 처음 = +(/offset=(\d+)/.exec(u) || [0, 0])[1]; return 응답(처음 === 0 ? Array.from({ length: 1000 }, (_, i) => ({ id: i })) : [{ id: 1000 }]); }
+    if (/\/rest\/v1\/bk_idv_use\?/.test(u)) return 응답('relation "public.bk_idv_use" does not exist', 404);
+    if (/\/rest\/v1\/bk_sys_event/.test(u)) { 기록됨 = JSON.parse(o.body); return 응답('', 201); }
+    if (/\/rest\/v1\//.test(u)) return 응답([{ id: 'a' }]);
+    if (/object\/list\/bk-files/.test(u)) { const b = JSON.parse(o.body); return 응답(b.prefix === 'backup/' ? [{ name: '2026-11-24' }, { name: '2026-11-17' }, { name: '2026-11-10' }] : [{ name: 'bk_agent-1.json', id: 'x' }, { name: '목록.json', id: 'y' }]); }
+    if (/object\/bk-files$/.test(u) && o.method === 'DELETE') { 지움.push(...JSON.parse(o.body).prefixes); return 응답([]); }
+    if (/object\/bk-files\//.test(u)) { 올림.push([u.split('object/bk-files/')[1], o.headers['x-upsert'], o.headers['Content-Type']]); return 응답({}); }
+    return 응답('', 404); };
+  const r = await S.임시백업(가짜, 지금);
+  ok(r.날 === '2026-11-24' && r.표.bk_contract === 1001 && r.표.bk_agent === 1 && r.빠짐.some(x => /bk_idv_use/.test(x)) && 올림.some(([p]) => p === 'backup/2026-11-24/bk_contract-1.json') && 올림.some(([p]) => p === 'backup/2026-11-24/목록.json')
+     && 올림.every(([, up, ct]) => up === 'true' && ct === 'application/json'),
+     '임시 백업 - 표마다 1000줄씩 끝까지 읽어 backup/날짜/ 에 json 으로(같은 날 다시 돌리면 덮음) · 못 읽은 표는 빠짐에 · 목록 파일');
+  ok(지움.length === 2 && 지움.every(p => p.startsWith('backup/2026-11-10/')) && !지움.some(p => /2026-11-17|2026-11-24/.test(p)), '7일 지난 날짜(11-10)만 지운다 - 11-17 · 11-24 는 둔다');
+  ok(기록됨 && 기록됨.kind === 'backup' && 기록됨.level === 'warn' && /임시 백업 2026-11-24/.test(기록됨.msg), '백업 결과를 시스템 기록에 남긴다(빠진 표가 있으면 warn)');
+  ok((await S.백업주소('backup/2026-11-24/bk_contract-1.json', async () => 응답({ signedURL: '/object/sign/x?token=t' }))).url && (await S.백업주소('room/abc/1.jpg')).error && (await S.백업주소('backup/../x.json')).error,
+     '내려받기 주소는 backup/날짜/ 아래 json 만');
+}
+{
+  const 버셀2 = JSON.parse(fs.readFileSync(new URL('../vercel.json', import.meta.url), 'utf8'));
+  const 운영2 = 읽기('demands.js'), 피드2 = 읽기('feed.js');
+  ok(버셀2.crons.some(c => c.path === '/api/feed?cron=backup' && c.schedule === '0 18 * * *') && 버셀2.functions['api/feed.js'].maxDuration === 60 && /req\.query\.cron === 'backup'[\s\S]{0,300}sameSecret/.test(피드2),
+     '임시 백업은 매일 새벽 3시(한국) 예약 실행 · CRON_SECRET 으로만 · 60초까지');
+  ok(/payload\.what === 'sys-backup-url' \|\| payload\.what === 'sys-backup-now'\) \{\s+if \(부\) return res\.status\(403\)/.test(운영2) && /action: 'sys-backup-get', reveal: true/.test(운영2),
+     '백업 내려받기 · 지금 백업은 운영자만(부운영자 막음) · 내려받으면 운영 기록에 남긴다');
+  ok(js.includes("{v:'backup', t:'백업'}") && js.includes('function sy백업HTML()') && js.includes("case 'sy-backup-get':"), '운영 화면 시스템 › 백업 - 날짜마다 표 · 줄 수 · 내려받기 · 지금 백업');
+}
 
 console.log(`${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

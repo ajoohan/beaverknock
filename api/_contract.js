@@ -972,7 +972,7 @@ export function 일정목록(c, 설정 = 알림설정()) {
   if (cd && 신고대상(c.form, { sub: c.sub, use: c.use })) out.push({ k: 'report', 이름: 매매신고(c.form) ? '실거래신고 기한' : '임대차 신고 기한',
     날: 날더하기(cd, 30), 마침: !!c.reported_at, 메모: c.reported_at ? '신고 마침' : '부동산거래관리시스템에서 신고하세요' });
   /* 잔금 10일 전 - 매도인 · 매수인께 준비물 안내(2026-11-10 파트너 기획). 매매만, 잔금안내를 마쳤으면 마침 */
-  if (bd && ['sale', 'presale', 'union'].includes(c.form)) out.push({ k: 'prep', 날: 날더하기(bd, -10), 마침: !!날만(t.guideAt),
+  if (bd && c.form === 'sale' && c.use !== 'etc') out.push({ k: 'prep',   /* 일반 부동산 매매만 - 분양권 · 입주권은 뺌(11-24 파트너) */ 날: 날더하기(bd, -10), 마침: !!날만(t.guideAt),
     메모: 날만(t.guideAt) ? '잔금안내 마침' : '매도인 · 매수인께 잔금 준비물을 안내하세요 - 대화방이나 문자로' });
   if (bd && ['sale', 'union'].includes(c.form)) {
     const [a, b] = 설정.lawyer;

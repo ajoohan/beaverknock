@@ -1467,6 +1467,11 @@ body.mo .hp-nav .right{gap:8px}
 body.mo .hp-pair .hm-card{display:flex;flex-direction:column;min-height:0;padding:22px 20px}
 body.mo .hp-pair-h{font-size:19px}
 .hp-pair .hm-card{min-height:0}
+.ctpi-box{max-width:460px;width:100%}
+.ctpi-view{max-height:min(50vh,560px);overflow:auto;border:1px solid var(--hair);border-radius:14px;background:var(--n50,#F7F7F9);display:grid;place-items:center;min-height:120px}
+.ctpi-view img{display:block;width:100%;height:auto}
+.ctpi-acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.ctpi-acts .btn{flex:1 1 auto;white-space:nowrap}
 .hm-sub2{margin:-6px 0 0;font-size:clamp(16px,1.3vw,18px);font-weight:700;letter-spacing:-.02em;color:var(--ind)}
 .hm-partner-band{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-top:28px;padding:18px 22px;border:1px solid var(--hair);border-radius:16px;background:var(--n50,#F7F7F9);text-align:left}
 .hm-partner-band b{display:block;font-size:15.5px;color:var(--n900);margin-bottom:4px}
@@ -11421,6 +11426,13 @@ function modalHTML(){
   }
   if(S.modal.type==='ct-ext') return ctExt창HTML();
   if(S.modal.type==='ct-cloud') return 보관창HTML();
+  if(S.modal.type==='ct-prep-img'){ const m = S.modal, 막 = m.url ? '' : ' disabled';
+    return `<div class="modal" data-act="modal-bg"><div class="box ctpi-box" data-stop role="dialog" aria-modal="true" aria-labelledby="mdT" tabindex="-1">
+      <h2 id="mdT" style="margin:0 0 6px;font-size:16px;font-weight:700;letter-spacing:-.03em">잔금 준비서류 이미지</h2>
+      <p class="sub" style="margin:0 0 12px;font-size:14px;line-height:1.7">매도인 · 매수인 준비서류를 한 장에 담았습니다. 카카오톡 · 문자로 바로 보내세요.</p>
+      <div class="ctpi-view">${m.url ? `<img src="${m.url}" alt="잔금 준비서류 안내 이미지 - 목적물, 잔금일, 매도인 · 매수인 준비서류, 사무소">` : bkLoader(28)}</div>
+      <div class="eqb ctpi-acts">${m.share ? `<button type="button" class="btn pri" data-act="ctpi-share"${막}>바로 보내기</button>` : ''}<button type="button" class="btn ${m.share ? 'sec' : 'pri'}" data-act="ctpi-save"${막}>이미지 저장</button>${m.copy ? `<button type="button" class="btn sec" data-act="ctpi-copy"${막}>복사</button>` : ''}<button type="button" class="btn sec" data-act="modal-close">닫기</button></div>
+      <p class="sub" style="margin:10px 0 0;font-size:12.5px;line-height:1.6">보낸 뒤 체크사항의 ‘잔금안내를 했습니다’를 눌러 두면 잔금 준비물 알림이 멈춥니다.</p></div></div>`; }
   if(S.modal.type==='ct-share'){
     return `<div class="modal" data-act="modal-bg"><div class="box" data-stop role="dialog" aria-modal="true" aria-labelledby="mdT" tabindex="-1">
       <h2 id="mdT" style="margin:0 0 6px;font-size:16px;font-weight:700;letter-spacing:-.03em">${esc(S.modal.title || '초안 링크')}</h2>
@@ -14359,6 +14371,7 @@ if(typeof addEventListener === 'function'){
   addEventListener('unhandledrejection', e => { const r = e && e.reason; bk오류보내기('처리되지 않은 오류: ' + ((r && r.message) || r), (r && r.stack && (/(https?:\/\/[^\s)]+?):\d+:\d+/.exec(r.stack) || [])[1]) || location.origin, 0, 0, r && r.stack); });
 }
 const BK_변경 = [
+  { v:'26.11.24.13', 날:'2026-11-24', 줄:[ '잔금 준비서류 이미지 (파트너) - 계약서 일정·체크와 매매 대화방에서 매도인 · 매수인 준비서류를 한 장에 담은 이미지를 만들어 바로 보내기(휴대폰) · 저장 · 복사', '잔금 준비물 안내 · 알림은 일반 부동산 매매만 - 분양권 · 조합원입주권 · 입목재단은 뺐습니다' ] },
   { v:'26.11.24.12', 날:'2026-11-24', 줄:[ '홍보 문구 (파트너) - 파트너 안내 주제목 셋: ‘반복되는 계약업무, 이제는 편리하게 하세요’(등기부 · 대장만 올리면 자동 입력) · ‘계약현황 · 매물장부 · 매칭현황을 한눈에’(대시보드 작게) · ‘자동매칭 · 자동홍보’(매물등록만 하면 찾는 손님과 연결)', '손님 메인 첫 문구 아래 ‘내 계약 진행과정, 비버노크에서 바로 확인하세요’' ] },
   { v:'26.11.24.11', 날:'2026-11-24', 줄:[ '전수점검 · 코드리뷰 반영 - 입목 · 광업재단 · 공장재단 매매의 신고 기한이 아침 카카오톡 · 메일 알림에는 아직 가던 것', '손님 메인 문구 - 계약 대화방은 중개사무소가 초대할 때 열린다는 뜻으로' ] },
   { v:'26.11.24.10', 날:'2026-11-24', 줄:[ '메인 · 파트너 안내 홍보 문구를 지금 기능에 맞게 - 계약서는 국토교통부 전자계약 · 법무부 표준계약서 · 민간임대 · 다물건 · 확인·설명서 국가 원본과 별지(새로 만들기에서 뺀 권리양도 문구는 지움), 알림에 잔금 전 등기 다시 보기 · 현금영수증 · 공제 · 연수교육, 손님 메인에 계약 대화방 · 계약 뒤 할 일 안내' ] },
@@ -15312,7 +15325,7 @@ function 파트너현황계산(){
   const 육십일전 = new Date(지금시.getTime() - 60 * 864e5).toISOString().slice(0, 10);
   const 잔금지연 = 계약.filter(r => ct잔금판정(r) === 'late'); void 육십일전;
   /* 잔금 10일 안 - 매매 확정본인데 잔금안내(준비물)를 아직 안 했다 (2026-11-10 파트너 기획) */
-  const 준비물전 = 계약.filter(r => 끝안남(r) && ct매매신고(r.form) && 잔금날(r) && !(r.track || {}).guideAt && (n => n >= 0 && n <= 10)(ct날차(오늘글, 잔금날(r))));
+  const 준비물전 = 계약.filter(r => 끝안남(r) && r.form === 'sale' && r.use !== 'etc' && 잔금날(r) && !(r.track || {}).guideAt && (n => n >= 0 && n <= 10)(ct날차(오늘글, 잔금날(r))));
   const 잔금칸 = (rows, t, s) => !rows.length ? null : rows.length === 1
     ? { t, s: `${rows[0].title || '소재지 미입력'} · ${s}`, n: 1, ico: 'clock', act: 'ct-open', v: rows[0].id }
     : { t, s, n: rows.length, ico: 'clock', go: '#/partner/contracts' };
@@ -16645,7 +16658,7 @@ function ct일정목록(c, 설정 = ct알림설정()){
   if(cd && ct신고({ form: c.form, sub: c.sub, use: c.use })) out.push({ k: 'report', 이름: ct매매신고(c.form) ? '실거래신고 기한' : '임대차 신고 기한',
     날: ct날더하기(cd, 30), 마침: !!c.reported_at, 메모: c.reported_at ? '신고 마침' : '부동산거래관리시스템에서 신고하세요' });
   /* 잔금 10일 전 - 매도인 · 매수인께 준비물 안내(2026-11-10 파트너 기획). 매매만, 잔금안내를 마쳤으면 마침 */
-  if(bd && ['sale', 'presale', 'union'].includes(c.form)) out.push({ k: 'prep', 날: ct날더하기(bd, -10), 마침: !!ct날만(t.guideAt),
+  if(bd && c.form === 'sale' && c.use !== 'etc') out.push({ k: 'prep',   /* 일반 부동산 매매만 - 분양권 · 입주권은 뺌(11-24 파트너) */ 날: ct날더하기(bd, -10), 마침: !!ct날만(t.guideAt),
     메모: ct날만(t.guideAt) ? '잔금안내 마침' : '매도인 · 매수인께 잔금 준비물을 안내하세요 - 대화방이나 문자로' });
   if(bd && ['sale', 'union'].includes(c.form)){
     const [a, b] = 설정.lawyer;
@@ -17873,13 +17886,60 @@ async function 파일열기(요청, 바로){
 /* 보낼 말 위 도구 - 사진 · 파일, (중개사 · 매매의 매도인 · 매수인 방) 잔금 준비물 안내 */
 function rm도구HTML(손님, side, M){
   const 파일 = `<label class="btn tool sm rm-att${RM.fileBusy ? ' off' : ''}">${RM_클립}${RM.fileBusy ? '보내는 중…' : '사진 · 파일'}<input type="file" class="sr" accept="${FU_받음}" data-rm-file ${RM.fileBusy ? 'disabled' : ''} aria-label="보낼 사진 · 파일 고르기"></label>`;
-  const 준비 = !손님 && M && ['seller', 'buyer'].includes(side) && ct매매신고(M.form)
-    ? `<button type="button" class="btn tool sm" data-act="rm-prep" title="${RM_자리[side]} 준비물 안내 글을 채웁니다 - 고쳐서 보내세요">잔금 준비물 안내${M.guided ? ' (안내 마침)' : ''}</button>` : '';
+  const 준비 = !손님 && M && ['seller', 'buyer'].includes(side) && M.form === 'sale'
+    ? `<button type="button" class="btn tool sm" data-act="rm-prep" title="${RM_자리[side]} 준비물 안내 글을 채웁니다 - 고쳐서 보내세요">잔금 준비물 안내${M.guided ? ' (안내 마침)' : ''}</button>`
+      + `<button type="button" class="btn tool sm" data-act="rm-prep-img" title="매도인 · 매수인 준비서류를 한 장에 담은 이미지를 만들어 보낼 파일로 올립니다">준비서류 이미지</button>` : '';
   return 파일 + 준비;
 }
 /* 잔금 준비물 - 손님께 문자 틀(잔금 준비물 안내)과 같은 목록을 그 방의 당사자 몫만 */
 const RM_준비물 = { seller: ['등기권리증', '신분증', '매도용 인감증명서(매수인 인적사항 기재, 본인 발급)', '인감도장', '주민등록초본(상세)'],
   buyer: ['신분증', '도장', '주민등록등본', '가족관계증명서(상세)', '매매계약서', '잔금 이체 한도(미리 은행에서 늘려 두세요)'] };
+/* 잔금 준비서류 이미지 (2026-11-24 파트너 '링크보다 이미지로 바로 보내기 · 한 장에 매도인 · 매수인만 나눠') - 1080 폭 PNG.
+   o = { 목적물, 잔금일(YYYY-MM-DD), office, phone } → { blob, url } */
+async function ct잔금그림(o){
+  try{ if(document.fonts && document.fonts.ready) await document.fonts.ready; }catch(_){}
+  const W = 1080, P = 72, 안쪽 = W - P * 2, cv = document.createElement('canvas'), x = cv.getContext('2d');
+  const 글꼴 = (굵기, 크기) => `${굵기} ${크기}px Pretendard, "Pretendard Variable", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif`;
+  const 나눔 = (t, 폭, f) => { x.font = f; const out = []; let 줄 = '';
+    for(const 말 of String(t || '').split(/(\s+)/)){ const 후 = 줄 + 말;
+      if(x.measureText(후).width <= 폭){ 줄 = 후; continue; }
+      if(줄.trim()) out.push(줄.trim()); 줄 = '';
+      for(const ch of 말.trimStart()){ if(x.measureText(줄 + ch).width > 폭 && 줄){ out.push(줄); 줄 = ch; } else 줄 += ch; } }
+    if(줄.trim()) out.push(줄.trim()); return out; };
+  const 머리높이 = 190, 줄간 = 54, f항목 = 글꼴(500, 36), f정보 = 글꼴(600, 34);
+  const 정보 = [['목적물', o.목적물 || '계약서 참고'], ['잔금일', o.잔금일 ? ct날짜글(o.잔금일) : '계약서 참고']].map(([k, v]) => [k, 나눔(v, 안쪽 - 150, f정보)]);
+  const 쪽줄 = [['매도인 잔금 준비서류', RM_준비물.seller], ['매수인 잔금 준비서류', RM_준비물.buyer]].map(([제목, 목록]) => [제목, 목록.map(t => 나눔(t, 안쪽 - 120, f항목))]);
+  const 칸높이 = 목록 => 60 + 28 + 목록.reduce((n, l) => n + l.length * 줄간 + 10, 0);
+  let H = 머리높이 + 56 + 정보.reduce((n, [, l]) => n + l.length * 50 + 14, 0) + 40;
+  쪽줄.forEach(([, 목록]) => { H += 40 + 칸높이(목록) + 30; });
+  H += 160;
+  cv.width = W; cv.height = H;
+  const 색 = n => (getComputedStyle(document.documentElement).getPropertyValue(n) || '').trim();
+  const 남 = 색('--ind') || '#6A46E0', 진남 = 색('--ind900') || '#221962', 연남 = 색('--ind200') || '#D9CDF8';
+  x.fillStyle = '#FFFFFF'; x.fillRect(0, 0, W, H);
+  x.fillStyle = 진남; x.fillRect(0, 0, W, 머리높이);
+  x.fillStyle = '#FFFFFF'; x.font = 글꼴(800, 62); x.fillText('잔금 준비서류 안내', P, 118);
+  x.fillStyle = 연남; x.font = 글꼴(600, 28); x.fillText('잔금일에 아래 서류를 꼭 챙겨 주세요', P, 162);
+  let y = 머리높이 + 56;
+  for(const [k, 줄들] of 정보){ x.fillStyle = '#6B6B76'; x.font = 글꼴(700, 30); x.fillText(k, P, y + 36);
+    x.fillStyle = '#1C1C22'; x.font = f정보; 줄들.forEach((l, i) => x.fillText(l, P + 150, y + 36 + i * 50)); y += 줄들.length * 50 + 14; }
+  y += 40;
+  for(const [제목, 목록] of 쪽줄){
+    y += 40; const h = 칸높이(목록);
+    x.fillStyle = '#F3EFFD'; x.beginPath(); if(x.roundRect) x.roundRect(P - 24, y - 4, 안쪽 + 48, h + 20, 28); else x.rect(P - 24, y - 4, 안쪽 + 48, h + 20); x.fill();
+    x.fillStyle = 남; x.font = 글꼴(800, 40); x.fillText(제목, P + 8, y + 52); y += 60 + 28;
+    for(const 줄들 of 목록){ x.fillStyle = 남; x.beginPath(); x.arc(P + 22, y + 24, 7, 0, Math.PI * 2); x.fill();
+      x.fillStyle = '#1C1C22'; x.font = f항목; 줄들.forEach((l, i) => x.fillText(l, P + 50, y + 36 + i * 줄간)); y += 줄들.length * 줄간 + 10; }
+    y += 30; }
+  y += 50; x.fillStyle = '#E6E6EC'; x.fillRect(P, y, 안쪽, 2); y += 62;
+  x.fillStyle = '#1C1C22'; x.font = 글꼴(800, 34); x.fillText(String(o.office || '중개사무소').slice(0, 30), P, y);
+  if(o.phone){ x.font = 글꼴(600, 34); x.fillStyle = 남; x.textAlign = 'right'; x.fillText(String(o.phone).slice(0, 20), W - P, y); x.textAlign = 'left'; }
+  const blob = await new Promise((ok, 안됨) => cv.toBlob(b => b ? ok(b) : 안됨(new Error('이미지')), 'image/png'));
+  return { blob, url: cv.toDataURL('image/png') };
+}
+const ct잔금그림자료 = doc => { const B = doc.broker || {}, a = S.agent || {}, t = CT.track || {};
+  return { 목적물: ct부동산글(doc), 잔금일: t.balanceDate || (doc.deal || {}).balanceDate || '', office: B.office || a.office || '', phone: B.phone || a.phone || '' }; };
+let CT잔금그림 = null;
 function rm준비물글(side, M){
   const 잔금 = ((M.steps || []).find(s => s.이름 === '잔금') || {}).날 || '';
   return `[잔금 준비물 안내]\n*목적물: ${M.title || ''}\n*잔금일: ${잔금 ? String(잔금).replace(/-/g, '.') : '계약서 참고'}\n\n■ ${RM_자리[side]} 준비물\n${(RM_준비물[side] || []).map(x => '- ' + x).join('\n')}\n\n잔금일에 위 서류를 꼭 챙겨 주세요. 궁금한 점은 이 대화방에 남겨 주세요.${S.agent && S.agent.office ? '\n\n' + S.agent.office : ''}`;
@@ -20056,9 +20116,9 @@ function ctPlanHTML(doc){
       : `<p class="sub" style="margin:0">계약서에 계약일·중도금일·잔금일을 넣으면 여기에 일정이 생깁니다.</p>`}
     </div>
     <div class="card pad ct-sec"><h2>손님께 문자 <span class="sub" style="font-weight:500;font-size:13.5px">이 계약서 값으로 채운 문자를 엽니다 · 중개사님 휴대폰으로 보냅니다</span></h2>
-      <div class="cs-acts eqb st">${[['guide-schedule', '계약 일정 안내'], ...(ct매매신고(doc.form) ? [['balance-guide', '잔금 준비물 안내']] : []),
+      <div class="cs-acts eqb st">${[['guide-schedule', '계약 일정 안내'], ...(doc.form === 'sale' && doc.use !== 'etc' ? [['balance-guide', '잔금 준비물 안내']] : []),
         ...((CT_FORMS[doc.form] || {}).lease ? [['renew-ask', '갱신 의사 확인']] : [])].map(([id, t]) =>
-        `<button type="button" class="btn tool sm" data-act="cs-from-ct" data-v="${id}">${t}</button>`).join('')}</div></div>
+        `<button type="button" class="btn tool sm" data-act="cs-from-ct" data-v="${id}">${t}</button>`).join('')}${doc.form === 'sale' && doc.use !== 'etc' ? '<button type="button" class="btn tool sm" data-act="ctpi-open">잔금 준비서류 이미지</button>' : ''}</div></div>
     <div class="card pad ct-sec"><h2>진행 상태 <span class="sub" style="font-weight:500;font-size:13.5px">계약 목록에 보입니다 · 완료로 바꾸면 잔금 완료 확인 알림이 멈춥니다</span></h2>
       <div class="ct-chips" role="radiogroup" aria-label="진행 상태">${Object.entries(CT_진행).map(([k, 글]) =>
         `<button type="button" class="chip${t.state === k ? ' on' : ''}" role="radio" aria-checked="${t.state === k}" data-act="ctk-state" data-v="${k}" ${못씀 ? 'disabled' : ''}>${글}</button>`).join('')}</div>
@@ -24944,6 +25004,22 @@ function handle(a,v,el){
     case 'ct-go-sp': { const el = document.getElementById('ctSecSp'); if(el) el.scrollIntoView({ behavior:'smooth', block:'start' }); else { CT.mode = 'edit'; render(); setTimeout(() => { const e2 = document.getElementById('ctSecSp'); if(e2) e2.scrollIntoView({ block:'start' }); }, 60); } return true; }
     case 'ct-full': CT.full = !CT.full; render(); setTimeout(() => { const b = $('#app [data-act="ct-full"]'); if(b) b.focus({ preventScroll: true }); }); return true;
     case 'ct-cloud': 보관창(); return true;
+    /* 잔금 준비서류 이미지 (2026-11-24 파트너) */
+    case 'ctpi-open': { const d = CT.doc; if(!d) return true;
+      let 공유 = false; try{ 공유 = !!(navigator.canShare && navigator.canShare({ files: [new File([''], 'a.png', { type: 'image/png' })] })); }catch(_){}
+      S.modal = { type: 'ct-prep-img', url: '', share: 공유, copy: !!(navigator.clipboard && navigator.clipboard.write && typeof ClipboardItem === 'function') }; render();
+      ct잔금그림(ct잔금그림자료(d)).then(({ blob, url }) => { CT잔금그림 = blob; if(S.modal && S.modal.type === 'ct-prep-img'){ S.modal.url = url; render(); } })
+        .catch(() => { if(S.modal && S.modal.type === 'ct-prep-img') S.modal = null; render(); toast('이미지를 만들지 못했습니다 - 다시 눌러 주세요'); });
+      return true; }
+    case 'ctpi-share': if(CT잔금그림) navigator.share({ files: [new File([CT잔금그림], '잔금준비서류.png', { type: 'image/png' })], title: '잔금 준비서류 안내' }).catch(() => {}); return true;
+    case 'ctpi-save': if(S.modal && S.modal.url){ const a = document.createElement('a'); a.href = S.modal.url; a.download = '잔금준비서류.png'; document.body.appendChild(a); a.click(); a.remove(); toast('이미지를 저장했습니다'); } return true;
+    case 'ctpi-copy': if(CT잔금그림) navigator.clipboard.write([new ClipboardItem({ 'image/png': CT잔금그림 })])
+      .then(() => toast('복사했습니다 - 카카오톡 대화창에 붙여넣으세요'), () => toast('복사하지 못했습니다 - 이미지 저장을 써 주세요')); return true;
+    case 'rm-prep-img': { const C = RM.cur, M = C && C.meta; if(!M || RM.fileBusy) return true;
+      const 잔 = ((M.steps || []).find(e => e.이름 === '잔금') || {}).날 || '', a = S.agent || {};
+      ct잔금그림({ 목적물: M.title || '', 잔금일: 잔, office: a.office || M.office || '', phone: a.phone || '' })
+        .then(({ blob }) => rmFilePick(new File([blob], '잔금준비서류.png', { type: 'image/png' }))).catch(() => toast('이미지를 만들지 못했습니다 - 다시 눌러 주세요'));
+      return true; }
     case 'cl-save': cl저장(v); return true;
     case 'cl-cancel': if(CL.취소) CL.취소(); return true;
     case 'cl-mail-x': { const i = document.getElementById('clTo'), m = document.getElementById('clMsg'); CL.메일값 = { to: i ? i.value : '', msg: m ? m.value : '' }; CL.메일 = false; CL.err = ''; render(); return true; }

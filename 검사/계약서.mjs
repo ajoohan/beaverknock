@@ -1435,6 +1435,13 @@ return ct부동산글;`)((d, k) => ({ property: k === 0 ? (d.property || {}) : (
   const 분줄 = M.rpItems(분);
   ok(M.ct신고(분) && M.ct신고({ form: 'union' }) && C.신고대상('presale') && C.신고대상('union'), '분양권·입주권 전매도 신고 대상(화면·서버)');
   ok(!C.신고대상('sale', { use: 'etc' }) && C.신고대상('sale', { use: 'land' }) && !C.일정목록({ form: 'sale', use: 'etc', cd: '2026-12-01', bd: '2027-01-10' }).some(e => e.k === 'report'), '서버 - 입목 · 광업재단 · 공장재단 매매는 신고 알림 끔');
+  { const 일 = { cd: '2026-12-01', bd: '2027-01-10' }, 있나 = (f, o) => f({ ...일, ...o }).some(e => e.k === 'prep');
+    ok(있나(M.ct일정목록, { form: 'sale' }) && !있나(M.ct일정목록, { form: 'presale' }) && !있나(M.ct일정목록, { form: 'union' }) && !있나(M.ct일정목록, { form: 'sale', use: 'etc' })
+       && 있나(C.일정목록, { form: 'sale' }) && !있나(C.일정목록, { form: 'presale' }) && !있나(C.일정목록, { form: 'union' }),
+      '잔금 준비물 안내 일정 · 알림은 일반 부동산 매매만 - 분양권 · 입주권 · 입목재단은 뺀다(화면 · 서버, 11-24 파트너)'); }
+  ok(js.includes('data-act="ctpi-open">잔금 준비서류 이미지</button>') && js.includes("data-act=\"rm-prep-img\"") && /async function ct잔금그림\(o\)/.test(js)
+     && /\['매도인 잔금 준비서류', RM_준비물\.seller\], \['매수인 잔금 준비서류', RM_준비물\.buyer\]/.test(js) && js.includes("navigator.share({ files: [new File([CT잔금그림], '잔금준비서류.png'"),
+    '잔금 준비서류 이미지 - 일정·체크 · 대화방 단추, 한 장에 매도인 · 매수인, 바로 보내기(공유) · 저장');
   ok((fs.readFileSync(new URL(길.api('_contract.js')), 'utf8').match(/sub:doc->>sub,use:doc->>use/g) || []).length === 2, '서버 - 아침 알림 · 달력 구독 조회에 용도(use)를 같이 읽는다(입목 · 재단 신고 알림 끔)');
   ok(분줄.some(([s, l, v]) => s === '④ 거래대상 종류' && v === '분양권 · 전매') && 분줄.some(([s, l, v]) => l === '분양가격' && /600,000,000/.test(v)) && 분줄.some(([, l, v]) => /프리미엄/.test(l) && /100,000,000/.test(v)),
      '분양권 신고 도우미 - 거래대상 분양권·전매 · 분양가격 · 추가 지불액(프리미엄)');

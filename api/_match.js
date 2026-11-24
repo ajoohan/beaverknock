@@ -112,6 +112,26 @@ export async function matched(res, user) {
     return res.status(200).json({ ok: true, groups, at: new Date().toISOString() });
   } catch (e) { return res.status(502).json({ error: 'DB에 닿지 못했습니다' }); }
 }
+/* 직접 매물찾기 (2026-11-24 파트너 · 대표님) - 조건 없이 노출 중인 물건 전체(가입한 손님만). 공개 칸 · 대략 위치만, 최근 공개순 300개 */
+const 종류들 = ['home', 'shop', 'office', 'storage'];
+export async function browse(res, user, b) {
+  if (overLimit('browse:' + user.id, 60, 600e3)) return res.status(429).json({ error: '잠시 뒤 다시 열어 주세요' });
+  try {
+    const kinds = 종류들.includes(b.kind) ? [b.kind] : 종류들;
+    const x = await 노출물건(kinds, []);
+    if (!x) return res.status(502).json({ error: '매물을 불러오지 못했습니다' });
+    if (x.need) return res.status(200).json({ ok: true, rows: [], need: x.need });
+    const 사무소 = {}, ids = [...new Set(x.rows.map(L => L.agent_id))];
+    if (ids.length) {
+      const ar = await fetch(sbUrl('bk_agent', `select=id,office,status&id=in.(${ids.join(',')})`), { headers: sbHeaders() });
+      if (ar.ok) for (const a of await ar.json()) if (a.status === 'approved') 사무소[a.id] = a;
+    }
+    const rows = x.rows.filter(L => 사무소[L.agent_id]).slice(0, 300).map(L => 공개(L, 사무소[L.agent_id]));
+    const 길 = [...new Set(rows.map(r => r.pic0).filter(Boolean))], 주소 = await 사진주소(길).catch(() => []);
+    for (const r of rows) { r.pic = r.pic0 ? 주소[길.indexOf(r.pic0)] || '' : ''; delete r.pic0; }
+    return res.status(200).json({ ok: true, rows });
+  } catch (e) { return res.status(502).json({ error: 'DB에 닿지 못했습니다' }); }
+}
 /* 노출 중인 물건 하나의 사진 모두 (로그인한 손님) */
 export async function matchPics(res, b) {
   const id = String(b.listing_id || '');
@@ -211,7 +231,9 @@ export async function matchWant(req, res, user, b) {
     const L = lr.ok ? (await lr.json())[0] : null;
     if (!L) return res.status(404).json({ error: '지금은 볼 수 없는 매물입니다 - 노출이 끝났을 수 있습니다' });
     const s = 일치율(d, L);
-    if (!s || s.점 < 일치기준) return res.status(400).json({ error: '조건과 맞지 않는 매물입니다' });
+    /* 직접 매물찾기(direct)에서 고른 것은 손님이 먼저 고른 매물 - 점수 기준은 보지 않고 거래 방식 · 종류만 맞으면 (2026-11-24) */
+    if (!s) return res.status(400).json({ error: b.direct ? '걸어 두신 조건과 거래 방식 · 종류가 다른 매물입니다 - 이 매물에 맞는 조건을 먼저 걸어 주세요' : '조건과 맞지 않는 매물입니다' });
+    if (!b.direct && s.점 < 일치기준) return res.status(400).json({ error: '조건과 맞지 않는 매물입니다' });
     const ar = await fetch(sbUrl('bk_agent', `select=status&id=eq.${L.agent_id}&limit=1`), { headers: sbHeaders() });
     const 사 = ar.ok ? (await ar.json())[0] : null;
     if (!사 || 사.status !== 'approved') return res.status(404).json({ error: '지금은 볼 수 없는 매물입니다' });
@@ -226,7 +248,7 @@ export async function matchWant(req, res, user, b) {
       area_sup: L.area_sup, area: L.area, rooms: L.rooms != null ? String(L.rooms) : null, baths: L.kind === 'home' && L.baths != null ? String(L.baths) : '',
       dir: L.dir, dir_base: L.dir_base, floor_no: L.kind === 'home' ? null : L.floor_no, band: L.band, bdong: L.hide_unit === false ? L.bdong : null, htype: L.htype,
       duplex: L.duplex === true, move_in: L.move_in, approved: L.approved, photos: L.photos || 0,
-      status: 'sent', msg: `맞춤매물에서 손님이 ‘보고 싶어요’를 눌렀습니다 (일치율 ${s.점}점)` };
+      status: 'sent', msg: b.direct ? `직접 매물찾기에서 손님이 ‘보고 싶어요’를 눌렀습니다 (조건 일치율 ${s.점}점)` : `맞춤매물에서 손님이 ‘보고 싶어요’를 눌렀습니다 (일치율 ${s.점}점)` };
     const 알리기 = () => emailOf(L.agent_user).then(to => to && notify(req, { to, subject: `‘${L.name}’을 보고 싶다는 손님이 있습니다`,
       rows: [['물건', L.name], ['가격', `보증금 ${won(L.dep)}${L.rent ? ` / 월 ${won(L.rent)}` : ''}`], ['일치율', `${s.점}점`]],
       link: '/#/partner/proposals', cta: '내 제안에서 보기', note: '손님이 연결을 누르면 이름과 연락처가 전달됩니다.' })).catch(() => {});

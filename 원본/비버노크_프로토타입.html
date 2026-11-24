@@ -1490,6 +1490,8 @@ body.mo .hm-h1.hm-h1s{font-size:26px;gap:.5em}
 .hm-3i b{display:block;font-size:15px;color:var(--n900);letter-spacing:-.02em}
 .hm-3i small{display:block;margin-top:2px;font-size:12.5px;line-height:1.5;color:var(--n600,#555)}
 body.mo .hm-3{grid-template-columns:1fr;text-align:left}
+.mp-tabs,.mp-kinds{margin:0}
+.gm-go3{max-width:none;margin-top:12px}
 .hm-sub2{margin:-6px 0 0;font-size:clamp(16px,1.3vw,18px);font-weight:700;letter-spacing:-.02em;color:var(--ind)}
 .hm-partner-band{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-top:28px;padding:18px 22px;border:1px solid var(--hair);border-radius:16px;background:var(--n50,#F7F7F9);text-align:left}
 .hm-partner-band b{display:block;font-size:15.5px;color:var(--n900);margin-bottom:4px}
@@ -6167,8 +6169,8 @@ const hm두머리 = () => `<h1 class="t hm-h1 hm-h1s"><span class="hm-h1l">찾�
 const hm손님메뉴 = () => `<nav class="hm-3" aria-label="손님 메뉴">${[
     ['bell', '1:1 제안 받기', '조건을 걸어두면 중개사가 먼저 제안', '#/kind'],
     ['target', '매물매칭', '중개사가 등록한 매물 중 내 조건에 맞는 것', '#/matched'],
-    ['search', '직접 매물찾기', '지도에서 매물 찾기', '#/map']].map(([g, t, d, h]) =>
-    `<a class="hm-3i" data-go="${h}"><span class="hm-3g">${hm그림(g, 20)}</span><span><b>${t}</b><small>${d}</small></span></a>`).join('')}</nav>`;
+    ['search', '직접 매물찾기', '지도에서 매물 찾기', 'map-all']].map(([g, t, d, h]) =>
+    `<a class="hm-3i" ${h === 'map-all' ? 'data-act="mp-all"' : `data-go="${h}"`}><span class="hm-3g">${hm그림(g, 20)}</span><span><b>${t}</b><small>${d}</small></span></a>`).join('')}</nav>`;
 const hm떠있는 = (제목, 말, 그림, 자리) => `<div class="hm-float lg ${자리}" aria-hidden="true"><span class="hm-fi">${hm그림(그림, 18)}</span><span><b>${제목}</b><small>${말}</small></span></div>`;
 const hm목록 = 줄들 => `<ul class="hm-list">${줄들.map(t => `<li>${hm그림('check', 18)}<span>${t}</span></li>`).join('')}</ul>`;
 function hm장점(){
@@ -8609,9 +8611,9 @@ function mtLoad(force){
       if(r.ok && j.ok){ MT.groups = j.groups || []; MT.need = j.need || ''; } render(); }))
     .catch(() => { MT.loading = false; MT.loaded = true; render(); });
 }
-async function mtWant(did, lid){
+async function mtWant(did, lid, 직접 = false){
   if(MT.busy) return; MT.busy = lid; render();
-  const r = await apiFetch('/api/my', { method:'POST', body: JSON.stringify({ what:'match-want', demand_id: did, listing_id: lid }) }).catch(() => null);
+  const r = await apiFetch('/api/my', { method:'POST', body: JSON.stringify({ what:'match-want', demand_id: did, listing_id: lid, ...(직접 ? { direct: true } : {}) }) }).catch(() => null);
   const j = r ? await r.json().catch(() => ({})) : {};
   MT.busy = '';
   if(!r || !r.ok || !j.id){ render(); return toast(j.error || '요청을 남기지 못했습니다 - 잠시 뒤 다시 눌러 주세요'); }
@@ -10382,6 +10384,19 @@ V['#/partner/map'] = () => {
   ${tabbar('lm','p')}
 </div>`;
 };
+/* 직접 매물찾기 (2026-11-24 파트너 · 대표님) - 조건 없이 노출 중인 매물 전체를 지도에서. 가입한 손님만(서버 browse), 위치는 대략 · 공개 칸만 */
+const MP = { mode: '', kind: '', rows: null, loading: false, err: '', at: 0 };
+const MP_종류 = { '': '전체', home: '주거', shop: '상가', office: '오피스', storage: '창고' };
+function mpLoad(){
+  if(MP.loading || !세션있음()) return; MP.loading = true; MP.err = '';
+  apiFetch('/api/my', { method: 'POST', body: JSON.stringify({ what: 'browse', kind: MP.kind }) }).then(r => r.json().then(j => ({ ok: r.ok, j })))
+    .then(({ ok, j }) => { MP.loading = false; MP.at = Date.now(); if(ok && j.ok) MP.rows = j.rows || []; else { MP.rows = MP.rows || []; MP.err = j.error || '매물을 불러오지 못했습니다'; } if(S.route === '#/map') render(); })
+    .catch(() => { MP.loading = false; MP.err = '네트워크 문제로 매물을 불러오지 못했습니다'; if(S.route === '#/map') render(); });
+}
+const mp모드 = () => MP.mode || ((S.conds || []).some(c => !c.seed) ? 'match' : 'all');
+const mp보고싶어 = r => `<button type="button" class="btn pri sm" data-act="mp-want" data-v="${esc(r.id)}|${esc(r.kind || '')}|${esc(r.deal || '')}">이 집 보고 싶어요</button>`;
+지도표시.browse = () => ({ circles: [], points: (MP.rows || []).filter(r => r.lat && r.lng).map(r => ({ id: r.id, lat: r.lat, lng: r.lng, t: r.name, on: true,
+  html: `<div class="gm-iw"><b>${esc(r.name || '매물')}</b><span>${esc([r.dong, r.deal].filter(Boolean).join(' · '))}</span><span>${esc(지도값(r))}</span><span>${esc(r.office || '')}</span><span class="gm-iwn">대략적인 위치입니다</span>${mp보고싶어(r)}</div>` })) });
 /* 손님 매물지도 - 맞춤매물(80점 이상)의 대략 위치. 같은 물건이 여러 조건에 걸리면 한 번만 */
 지도표시.cust = () => { const 본 = new Set(), points = [];
   for(const g of MT.groups || []) for(const r of g.rows || []) if(r.lat && r.lng && !본.has(r.id)){ 본.add(r.id);
@@ -10391,13 +10406,27 @@ V['#/map'] = () => {
   if(!GM.st) setTimeout(구글지도);
   const 줄 = []; const 본 = new Set();
   for(const g of MT.groups || []) for(const r of g.rows || []) if(!본.has(r.id)){ 본.add(r.id); 줄.push(r); }
+  const 모드 = mp모드(), 전체 = 모드 === 'all';
+  if(전체 && S.user && MP.rows == null && !MP.loading) setTimeout(mpLoad);
+  const 둘 = MP.rows || [];
   return `
 <div class="scr fade" style="background:var(--n50)">
   ${navUser('map')}
   <div class="pad" style="flex:1;padding-top:${isMo()?16:28}px;padding-bottom:24px;width:100%;max-width:1200px;margin:0 auto;display:flex;flex-direction:column;gap:12px">
     <div><h1 class="t" style="font-size:${isMo()?21:25}px;margin-top:8px">매물지도</h1>
-      <p class="sub" style="font-size:14.5px">걸어 두신 조건에 80점 이상 맞는 매물입니다 · 위치는 대략(100m 안팎)으로 보입니다.</p></div>
-    ${!S.user ? `<div class="card pad"><p class="sub" style="margin:0 0 10px">조건을 걸어 두면 맞는 매물이 지도에 모입니다.</p><button type="button" class="btn pri sm" data-go="#/login">로그인</button></div>` : `
+      <p class="sub" style="font-size:14.5px">${전체 ? '중개사가 손님에게 공개한 매물을 조건 없이 둘러봅니다' : '걸어 두신 조건에 80점 이상 맞는 매물입니다'} · 위치는 대략(100m 안팎)으로 보입니다.</p></div>
+    <div class="ct-chips mp-tabs" role="tablist" aria-label="매물지도 보기">${[['match', '내 조건에 맞는 매물'], ['all', '직접 매물찾기']].map(([k, t]) =>
+      `<button type="button" class="chip${모드 === k ? ' on' : ''}" role="tab" aria-selected="${모드 === k}" data-act="mp-mode" data-v="${k}">${t}</button>`).join('')}</div>
+    ${전체 && S.user ? `<div class="ct-chips mp-kinds" aria-label="매물 종류">${Object.entries(MP_종류).map(([k, t]) => `<button type="button" class="chip${MP.kind === k ? ' on' : ''}" data-act="mp-kind" data-v="${k}" aria-pressed="${MP.kind === k}">${t}</button>`).join('')}</div>` : ''}
+    ${!S.user ? `<div class="card pad"><p class="sub" style="margin:0 0 10px">${전체 ? '가입한 손님은 중개사가 공개한 매물을 지도에서 둘러볼 수 있습니다.' : '조건을 걸어 두면 맞는 매물이 지도에 모입니다.'}</p><button type="button" class="btn pri sm" data-go="#/login">로그인</button></div>` : 전체 ? `
+    <div class="gm-lay">
+      <div class="gm-box card" data-gmap="browse">${GM.st === 'ok' ? '' : `<p class="gm-msg">${지도글()}</p>`}</div>
+      <aside class="card gm-side"><b class="gm-sh">공개 매물 ${MP.rows == null ? '…' : 둘.length + '건'}</b>
+        ${MP.err ? `<p class="sub" style="margin:0">${esc(MP.err)}</p>` : ''}
+        ${둘.length ? `<ul class="gm-list">${둘.map(r => `<li><button type="button" class="gm-it" ${r.lat ? `data-act="gm-go" data-v="${esc(r.id)}"` : ''}><i class="gm-dot on${r.lat ? '' : ' off'}" aria-hidden="true"></i>
+          <span><b>${esc(r.name || '매물')}</b><small>${esc([r.dong, 지도값(r), r.office, r.lat ? '' : '위치 준비 중'].filter(Boolean).join(' · '))}</small></span></button></li>`).join('')}</ul>`
+          : `<p class="sub" style="margin:0">${MP.rows == null ? '불러오는 중입니다…' : '아직 공개된 매물이 없습니다.'}</p>`}</aside>
+    </div>` : `
     <div class="gm-lay">
       <div class="gm-box card" data-gmap="cust">${GM.st === 'ok' ? '' : `<p class="gm-msg">${지도글()}</p>`}</div>
       <aside class="card gm-side"><b class="gm-sh">맞춤매물 ${MT.loaded ? 줄.length + '건' : '…'}</b>
@@ -14397,6 +14426,7 @@ if(typeof addEventListener === 'function'){
   addEventListener('unhandledrejection', e => { const r = e && e.reason; bk오류보내기('처리되지 않은 오류: ' + ((r && r.message) || r), (r && r.stack && (/(https?:\/\/[^\s)]+?):\d+:\d+/.exec(r.stack) || [])[1]) || location.origin, 0, 0, r && r.stack); });
 }
 const BK_변경 = [
+  { v:'26.11.24.17', 날:'2026-11-24', 줄:[ '직접 매물찾기 (파트너 · 대표님) - 매물지도에 ‘직접 매물찾기’: 조건 없이 중개사가 공개한 매물 전체를 종류별로 지도에서(가입한 손님만, 위치는 대략) · ‘이 집 보고 싶어요’로 바로 요청(같은 종류 조건이 있으면)', '가입한 손님 누구나 마이페이지 ‘내 계약’ 칸 - 계약이 아직 없으면 안내와 1:1 제안 · 매물매칭 · 직접 매물찾기 바로 가기' ] },
   { v:'26.11.24.16', 날:'2026-11-24', 줄:[ '손님 계약서 보기 (파트너) - 확정본이 되면 저절로 보이던 것을, 중개사가 일정·체크의 ‘손님 화면에 계약서 공개’를 켰을 때만 보이게. 확정 전에 켜면 확정 전 계약서로, 확정하면 확정본으로 바뀝니다' ] },
   { v:'26.11.24.15', 날:'2026-11-24', 줄:[ '손님 메인 (파트너) - ‘찾아다니지 마세요. 조건을 걸어두면 문을 두드립니다.’와 ‘내 계약 진행과정, 비버노크에서 바로 확인하세요.’를 같은 크기로 나란히, 첫 화면에 손님 메뉴 셋(1:1 제안 받기 · 매물매칭 · 직접 매물찾기)' ] },
   { v:'26.11.24.14', 날:'2026-11-24', 줄:[ '사이트 안 대화를 껐습니다 (대표님 · 파트너) - 손님 상담은 사무소 카카오톡 채널로: 알림 설정에 ‘손님 상담 카카오톡 채널’ 주소를 넣으면 손님의 계약 진행 화면 · 계약 뒤 할 일 안내에 ‘카카오톡 채널로 상담’ 단추', '대화방은 ‘계약 진행 화면’으로 - 초대 · 일정 · 계약서 보기는 그대로, 지난 대화는 읽기만 · 메뉴 이름 ‘계약 손님’' ] },
@@ -18215,7 +18245,11 @@ function gm달력(rows){
 function rm내방HTML(){
   if(!세션있음()) return '';
   if(RM.mine == null){ setTimeout(rmMineLoad); return ''; }
-  if(!RM.mine.length) return '';
+  /* 가입한 손님 누구나 (2026-11-24 대표님 '가입한 손님도 대시보드 보게') - 계약이 아직 없으면 안내와 바로 가기 */
+  if(!RM.mine.length) return `<section class="card acc-row"><div class="acc-l"><h2>내 계약</h2><p>진행 단계와 일정 · 계약서</p></div><div class="acc-r gm-wrap">
+    <p class="sub" style="margin:0;line-height:1.7">아직 진행 중인 계약이 없습니다. 계약하면 중개사무소가 보내는 초대 링크로 이 칸에서 계약 일정과 계약서를 확인합니다.</p>
+    <div class="hm-3 gm-go3">${[['bell', '1:1 제안', '내 조건 · 받은 제안', '#/my'], ['target', '매물매칭', '내 조건에 맞는 매물', '#/matched'], ['search', '직접 매물찾기', '지도에서 둘러보기', 'map-all']].map(([g, t, d, h]) =>
+      `<a class="hm-3i" ${h === 'map-all' ? 'data-act="mp-all"' : `data-go="${h}"`}><span class="hm-3g">${hm그림(g, 20)}</span><span><b>${t}</b><small>${d}</small></span></a>`).join('')}</div></div></section>`;
   const 진행 = RM.mine.filter(r => !gm끝남(r)), 지난 = RM.mine.filter(gm끝남), 오늘 = gm오늘();
   const 카드 = r => { const 다음 = (r.steps || []).find(s => !s.됨 && s.날 >= 오늘), n = 다음 ? Math.round((Date.parse(다음.날) - Date.parse(오늘)) / 864e5) : null;
     return `<div class="gm-card"><div class="gm-h"><b>${esc(r.title)}</b><span>${esc(`${r.office} · 나는 ${r.role || ''}`)}</span></div>${gm막대(r)}
@@ -25270,6 +25304,14 @@ function handle(a,v,el){
     case 'mt-cond': MT.cond = v; render(); return true;
     case 'mt-open': MT.open[v] = !MT.open[v]; render(); return true;
     case 'mt-want': { const [did, lid] = String(v).split('|'); mtWant(did, lid); return true; }
+    /* 직접 매물찾기 (2026-11-24) */
+    case 'mp-all': MP.mode = 'all'; go('#/map'); return true;
+    case 'mp-mode': MP.mode = v === 'all' ? 'all' : 'match'; render(); return true;
+    case 'mp-kind': if(MP.kind !== v){ MP.kind = MP_종류[v] != null ? v : ''; MP.rows = null; render(); } return true;
+    case 'mp-want': { const [lid, kind, deal] = String(v).split('|'), 조건들 = (S.conds || []).filter(c => !c.seed && c.kind === kind);
+      const 맞는 = 조건들.find(c => !deal || !c.deal || String(c.deal) === deal) || 조건들[0];
+      if(!맞는){ toast(`이 매물을 보려면 ${MP_종류[kind] || ''} 조건을 먼저 걸어 주세요 - 30초면 됩니다`); go('#/kind'); return true; }
+      mtWant(맞는.id, lid, true); return true; }
     case 'lp-first': case 'lp-del': { const [id, pth] = String(v).split('|'); lpSet(id, pth, a === 'lp-first' ? 'first' : 'del'); return true; }
     case 'lg-tab': MG.tab = ['list', 'arch', 'trash'].includes(v) ? v : 'list'; render(); return true;
     case 'lg-f': MG.tab = 'list'; MG.f = MG.f === v ? '' : (v || ''); render(); return true;

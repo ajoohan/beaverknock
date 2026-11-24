@@ -9,7 +9,7 @@ let ran = 0, fail = 0;
 const ok = (c, m) => { ran++; console.log((c ? '  OK  ' : '  X   ') + m); if (!c) fail++; };
 
 const { 노출기준 } = await import('../api/feed.js');
-const { 일치율, 일치기준, matched, matchWant } = await import('../api/_match.js');
+const { 일치율, 일치기준, matched, matchWant, browse } = await import('../api/_match.js');
 
 /* ── 노출 기준 열 가지 ── */
 const 물건 = { id: 'aaaaaaaa-0000-4000-8000-000000000001', agent_id: 'ag1', agent_user: 'u-agent', kind: 'home', name: '미사 ○○아파트', dong: '망월동', deal: '월세',
@@ -35,7 +35,7 @@ ok(!노출기준({ ...물건, kind: 'shop', dir: '', band: '', floor_no: '1' }).
 ok(노출기준({ ...물건, kind: 'shop', band: '중층', floor_no: '' }).빠짐.includes('층'), '상가는 정확한 층이 있어야 한다');
 
 /* ── 일치율 ── */
-const 조건 = { id: 'dddddddd-0000-4000-8000-000000000001', user_id: 'u-1', kind: 'home', deal: '월세', dongs: ['망월동', '풍산동'], dep: 50000000, rent: 1700000,
+let 조건 = { id: 'dddddddd-0000-4000-8000-000000000001', user_id: 'u-1', kind: 'home', deal: '월세', dongs: ['망월동', '풍산동'], dep: 50000000, rent: 1700000,
   fee_included: true, rooms: '3룸', area_bands: ['66~99㎡'], open_when: '3개월 이내', status: 'active' };
 ok(일치기준 === 80, '80점 이상만 보인다');
 ok(일치율(조건, 물건).점 === 100, '다 맞으면 100점');
@@ -84,6 +84,17 @@ globalThis.fetch = async (url, opt = {}) => {
 { 있던 = [{ id: 'old-1', status: 'sent' }]; 넣은 = null; const { o, res } = 답(); await matchWant({ headers: {} }, res, { id: 'u-1' }, { demand_id: 조건.id, listing_id: 물건.id });
   ok(o.code === 200 && o.body.again && o.body.id === 'old-1' && !넣은, '두 번 누르면 새로 만들지 않고 있던 것으로 잇는다'); }
 
+/* 직접 매물찾기 (2026-11-24) - 조건 없이 노출 물건 전체, 승인된 사무소 것만, 호수 · 장부 칸은 안 감 */
+{ const { o, res } = 답(); await browse(res, { id: 'u-7' }, {});
+  const 글 = JSON.stringify(o.body || {});
+  ok(o.code === 200 && (o.body.rows || []).length === 2 && !글.includes('1203') && !글.includes('agent_user') && (o.body.rows || []).every(r => r.office === '미사중앙공인중개사사무소'),
+    '직접 매물찾기 - 조건 없이 공개 매물 전체(동이 달라도) · 승인 안 된 사무소 것 · 호수 · 장부 칸은 빠진다'); }
+{ 있던 = []; 넣은 = null; const 낮은 = { ...조건, dep: 1 };
+  const 원조건 = 조건; 조건 = 낮은;
+  const a1 = 답(); await matchWant({ headers: {} }, a1.res, { id: 'u-1' }, { demand_id: 낮은.id, listing_id: 물건.id });
+  const a2 = 답(); await matchWant({ headers: {} }, a2.res, { id: 'u-1' }, { demand_id: 낮은.id, listing_id: 물건.id, direct: true });
+  조건 = 원조건;
+  ok(a1.o.code === 400 && a2.o.code === 201 && /직접 매물찾기/.test((넣은 || {}).msg || ''), '직접 매물찾기에서 고른 매물은 점수가 낮아도 보고 싶어요가 된다(맞춤매물에서는 80점 기준)'); }
 /* ── 사진 (0040) ── */
 /* 매물 신고 (2026-11-14 약관 제11조) - 공개 중인 매물만 · 까닭은 정한 것 중에서 · 같은 분은 한 번만 · 사무소에는 누가 했는지 안 간다 */
 { const { matchReport } = await import('../api/_match.js');

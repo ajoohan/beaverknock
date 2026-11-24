@@ -2349,6 +2349,16 @@ body.mo .ctw-st{padding:12px}
 .ctw-cat.on .ctw-ico{background:var(--ind);color:#fff;box-shadow:none}
 .ctw-cat.on b{color:var(--ind700);font-weight:700}
 .ctw-sep{display:block;height:1px;margin:8px 4px;background:var(--n200)}
+.ctdoc .ct-page{break-before:page;margin-top:32px;padding-top:24px;border-top:2px dashed var(--n200)}
+@media print{.ctdoc .ct-page{border-top:none;margin-top:0;padding-top:0}}
+.ct-mi{padding:12px 0;border-top:1px solid var(--n100)}
+.ct-mi:first-of-type{border-top:none}
+.ct-mi-h{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.ct-mi-h .sub{font-size:13px;color:var(--n500)}
+.ct-mi-h .tapx{margin-left:auto;color:var(--danger)}
+.ct-mi-sum{margin:12px 0 0;font-size:14px;font-weight:600;color:var(--n700)}
+.ctpv .ctpv-note{margin:10px 0;padding:8px 10px;border:1px solid #999;font-size:.92em;line-height:1.6}
+.ctpv .ctpv-note p{margin:4px 0}
 .ctw-gl{display:block;margin:10px 6px 2px;font-size:12px;font-weight:700;color:var(--n500);letter-spacing:-.01em}
 .ctw-gl:first-child{margin-top:0}
 .ctw-r{display:flex;flex-direction:column;min-width:0}
@@ -14318,6 +14328,7 @@ if(typeof addEventListener === 'function'){
   addEventListener('unhandledrejection', e => { const r = e && e.reason; bk오류보내기('처리되지 않은 오류: ' + ((r && r.message) || r), (r && r.stack && (/(https?:\/\/[^\s)]+?):\d+:\d+/.exec(r.stack) || [])[1]) || location.origin, 0, 0, r && r.stack); });
 }
 const BK_변경 = [
+  { v:'26.11.24.4', 날:'2026-11-24', 줄:[ '주택임대차 · 상가건물 임대차 표준계약서 조항을 법무부 원문 그대로(주택 제1~13조 · 상가 제1~12조) - 보증금 있는 월세 · 전세 · 월세 표시, 임대인 · 임차인 이름 머리말', '표준임대차계약서(민간임대) 새로 - 민간임대주택법 별지 제24호서식 그대로(임대사업자 등록번호 · 주택 유형 · 면적 · 민간임대 종류 · 보증 가입 · 제1~17조 · 개인정보 제3자 제공 동의서), 임대차 신고 · 만기 알림은 주택임대차와 같이', '다물건 매매 새로 - 표지(총액 · 서명) + 물건마다 상세 쪽((다물건) 제목 · 물건번호 / 전체 개수 · 계약일자), 물건별 금액을 적으면 총액이 맞춰지고 실거래 신고에 총액을 씁니다', '전자계약 매매에 융자금 · 임대보증금 승계 줄 - 잔금에서 뺍니다' ] },
   { v:'26.11.24.3', 날:'2026-11-24', 줄:[ '분양권 · 조합원입주권 매매계약서를 전자계약 양식으로 - 분양 목적물(TYPE · 대지권 비율) · 분양대금 및 납부내역(확장비 · 선택품목 · 납부한 금액) · 총 매매대금 저절로 셈 · 정산지급금 · 승계 융자금, 입주권은 종전 토지 · 분담금 내역과 승계 분담금(잔금에서 뺌) · 조항 제2~12조', '예전에 만든 분양권 · 입주권 계약서는 그때 양식 그대로 열립니다' ] },
   { v:'26.11.24.2', 날:'2026-11-24', 줄:[ '계약서 종류를 국토교통부 전자계약 분류로 - 부동산계약서(매매 · 임대 × 주거용 · 비주거용 · 토지 · 입목·광업재단·공장재단) · 표준계약서 · 그 밖의 계약서(분양권 · 조합원입주권 · 전대차)', '부동산 매매 · 임대 · 전대차는 전자계약 조항 그대로(매매 제1~9조 · 임대 제1~9조, 비주거 임대 · 전대는 3기) · 세부 종류(아파트 등)는 고르지 않아도 됩니다', '권리양도양수 · 상가권리금계약서 · 연세는 새로 만들기에서 뺐습니다 - 예전에 만든 계약서는 그대로 열립니다' ] },
   { v:'26.11.24.1', 날:'2026-11-24', 줄:[ '표정별 비버리 그림 - 가입이 끝난 화면 · 조건 입력 안내에는 손 흔드는 비버, 계약서 · 계약현황이 비어 있을 때는 안경 쓰고 서류를 보는 비버' ] },
@@ -15638,19 +15649,99 @@ const ct전자전대조항 = 비주거 => [
   전_설명,
 ];
 /* 전자계약 부동산의 표시 - 주거 · 비주거는 토지(지목 · 면적) + 대지권(매매) + 건물, 토지 · 입목재단은 토지만. 임대 · 전대는 임대할 부분(입목재단 임대는 없음) */
-function ct전자표시HTML(doc){
+function ct전자표시HTML(doc, 앞 = 'property'){
   const F = CT_FORMS[doc.form] || {}, P = doc.property || {}, u = doc.use, 건물 = u === 'home' || u === 'biz', 매매 = !F.lease;
   const 부분 = F.lease && !(u === 'etc' && doc.form === 'lease') ? (doc.form === 'sublease' ? '전대할부분' : '임대할부분') : '';
   return `
     <h2>1. 부동산의 표시</h2>
     <table>
-      <tr><th class="w">소재지</th><td colspan="5">${ct소재지(P, ct옛날인(doc))}</td></tr>
-      <tr><th class="w">토지</th><th>지목</th><td>${ct칸('property.landCat', P.landCat, 70)}</td><th>면적</th><td colspan="2">${ct칸('property.landArea', P.landArea, 70, 'area')}</td></tr>
-      ${매매 && 건물 ? `<tr><th class="w">대지권</th><td colspan="5">${ct칸('property.landRight', P.landRight, 200)}</td></tr>` : ''}
-      ${건물 ? `<tr><th class="w">건물</th><th>구조·용도</th><td>${CT편집칸 ? `${ct칸('property.bldStruct', P.bldStruct, 60, 'text', { ph:'구조' })} · ${ct칸('property.bldUse', P.bldUse, 50, 'text', { ph:'용도' })}` : ct값([P.bldStruct, P.bldUse].filter(Boolean).join(' · '), 90)}</td><th>면적</th><td colspan="2">${ct칸('property.bldArea', P.bldArea, 70, 'area')}</td></tr>` : ''}
-      ${부분 ? `<tr><th class="w">${부분}</th><td colspan="3">${ct칸('property.part', P.part, 160)}</td><th>면적</th><td>${ct칸('property.partArea', P.partArea, 60, 'area')}</td></tr>` : ''}
+      <tr><th class="w">소재지</th><td colspan="5">${앞 === 'property' ? ct소재지(P, ct옛날인(doc)) : (esc(String(P.show || '').trim()) || 빈칸(300))}</td></tr>
+      <tr><th class="w">토지</th><th>지목</th><td>${ct칸(앞 + '.landCat', P.landCat, 70)}</td><th>면적</th><td colspan="2">${ct칸(앞 + '.landArea', P.landArea, 70, 'area')}</td></tr>
+      ${매매 && 건물 ? `<tr><th class="w">대지권</th><td colspan="5">${ct칸(앞 + '.landRight', P.landRight, 200)}</td></tr>` : ''}
+      ${건물 ? `<tr><th class="w">건물</th><th>구조·용도</th><td>${CT편집칸 ? `${ct칸(앞 + '.bldStruct', P.bldStruct, 60, 'text', { ph:'구조' })} · ${ct칸(앞 + '.bldUse', P.bldUse, 50, 'text', { ph:'용도' })}` : ct값([P.bldStruct, P.bldUse].filter(Boolean).join(' · '), 90)}</td><th>면적</th><td colspan="2">${ct칸(앞 + '.bldArea', P.bldArea, 70, 'area')}</td></tr>` : ''}
+      ${부분 ? `<tr><th class="w">${부분}</th><td colspan="3">${ct칸(앞 + '.part', P.part, 160)}</td><th>면적</th><td>${ct칸(앞 + '.partArea', P.partArea, 60, 'area')}</td></tr>` : ''}
     </table>`;
 }
+/* ── 다물건 매매 (2026-11-24 파트너) ── 1쪽 표지(총액 · 서명) + 물건마다 그 유형의 매매 양식 한 쪽.
+   상세 쪽은 제목 앞 '(다물건)', 맨 위 '물건번호 n / 전체 물건 개수 N', 인적사항 · 서명란 없이 '계약일자'로 끝난다. 서명은 표지에서만 */
+const CT_다물건최대 = 20;
+const ct다물건새것 = (용도 = 'home') => ({ use: 용도, property: { show:'', landCat:'', landArea:'', landRight:'', bldStruct:'', bldUse:'', bldArea:'' }, price: 0, down: 0, mid: 0 });
+const ct물건 = (doc, i) => { const it = (doc.items || [])[i] || {}; return { ...it, use: CT_USES[it.use] ? it.use : 'home', property: i === 0 ? (doc.property || {}) : (it.property || {}) }; };
+/* 총액을 doc.deal 에 맞춘다 - 계약현황 · 일정 · 거래신고가 이 값으로 돈다. 물건 1 의 용도가 문서의 용도 */
+function ct다물건합(doc){
+  if(!doc || !doc.multi) return;
+  const it = doc.items || [], D = doc.deal || (doc.deal = {}), 합 = k => it.reduce((n, x) => n + (+(x && x[k]) || 0), 0);
+  D.price = 합('price'); D.down = 합('down'); D.mid = 합('mid'); delete D.mid2; delete D.mids;
+  if(it[0] && CT_USES[it[0].use]){ doc.use = it[0].use; doc.sub = CT_USE_SUB[doc.use] || doc.sub; }
+}
+function ct다물건HTML(doc){
+  const D = doc.deal || {}, R = doc.period || {}, N = (doc.items || []).length;
+  const 날 = (p, v) => ct칸(p, v, 0, 'date');
+  const 금 = n => 금액글(n) || `금 ${빈칸(140)}원정`;
+  const on = (doc.clauses || []).filter(c => c.on), 번호 = {}; on.forEach((c, i) => 번호[c.id] = i + 3);
+  const 글 = t => esc(t).replace(/\{\{조:([a-z]+)\}\}/g, (_, id) => 번호[id] ? `제${번호[id]}조` : '이 계약의 해당 조항').replace(/\n/g, '<br>');
+  const sp = (doc.specials || []).filter(x => String(x || '').trim());
+  /* 서명란은 보통 매매계약서와 같다 - 그 표만 가져온다 */
+  const 보통 = ctDocHTML({ ...doc, multi: 0 }), a = 보통.indexOf('<table class="ct-sign">'), 서명 = a < 0 ? '' : 보통.slice(a, 보통.indexOf('</table>', a) + 8);
+  const 맺음 = '본 계약을 증명하기 위하여 계약 당사자가 이의 없음을 확인하고 각각 서명·날인 후 매도인, 매수인 및 개업공인중개사는 매장마다 간인하여야 하며, 각각 1통씩 보관한다. 다만, 거래계약서를 공인전자문서센터(전자문서및전자거래기본법 근거)에 보관한 경우에는 보존이 행하여진 것으로 본다.';
+  const 상세 = (i) => { const it = ct물건(doc, i), 앞 = i === 0 ? 'property' : `items.${i}.property`, 잔 = Math.max(0, (+it.price || 0) - (+it.down || 0) - (+it.mid || 0));
+    return `
+    <section class="ct-page">
+      <h1 class="nm">(다물건) 부동산(${esc(CT_USES[it.use])}) 매매 계약서</h1>
+      <p class="lead">매도인과 매수인 쌍방은 아래 표시 부동산에 관하여 다음 계약 내용과 같이 매매계약을 체결한다.</p>
+      <table><tr><th class="w">물건번호</th><td>${i + 1}</td><th class="w">전체 물건 개수</th><td>${N}</td></tr></table>
+      ${ct전자표시HTML({ form: 'sale', use: it.use, property: it.property }, 앞)}
+      <h2>2. 계약내용</h2>
+      <p class="ct-art"><b>제1조(목적)</b> 위 부동산의 매매에 대하여 매도인과 매수인은 합의에 의하여 매매대금을 아래와 같이 지불하기로 한다.</p>
+      <table>
+        <tr><th class="w">매매대금</th><td>${금액글(it.price) || `금 ${빈칸(160)}원정(₩${빈칸(90)})`}</td></tr>
+        <tr><th class="w">계약금</th><td>${금(it.down)} 은 계약할 때 지급하고 영수함. 영수자 ${빈칸(70)} (인)</td></tr>
+        <tr><th class="w">융자금</th><td>금 ${빈칸(120)}원정(${빈칸(60)})을 승계키로 한다. 임대보증금 총 ${빈칸(120)}원정을 승계키로 한다.</td></tr>
+        <tr><th class="w">중도금</th><td>${금(it.mid)} 은 ${ct날짜(D.midDate) || 빈칸(110)}에 지급하며</td></tr>
+        <tr><th class="w">잔금</th><td>${금(잔)} 은 ${ct날짜(D.balanceDate) || 빈칸(110)}에 지급한다</td></tr>
+      </table>
+      <p class="ct-art"><b>제2조(소유권 이전 등)</b> 매도인은 매매대금의 잔금 수령과 동시에 매수인에게 소유권이전등기에 필요한 모든 서류를 교부하고 등기절차에 협력하며, 위 부동산의 인도일은 ${ct날짜(R.handover || D.balanceDate) || 빈칸(110)}로 한다.</p>
+      ${on.map(c => `<p class="ct-art"><b>제${번호[c.id]}조(${esc(c.title)})</b> ${글(c.text)}</p>`).join('')}
+      <h2>[특약사항]</h2>
+      <div class="ct-specials">${sp.map((x, k) => `<p>${k + 1}. ${esc(x).replace(/\n/g, '<br>')}</p>`).join('')}${'<p class="line"></p>'.repeat(Math.max(2, 4 - sp.length))}</div>
+      <p class="ct-close">${맺음}</p>
+      <p class="ct-date">계약일자 : ${ct날짜(doc.contractDate) || 빈칸(110)}</p>
+    </section>`; };
+  return `
+  <div class="ctdoc${ct글꼴(doc) === 'sans' ? ' f-sans' : ''}">
+    <h1 class="nm">다물건 매매 계약서</h1>
+    <h2>■ 다물건 부동산의 표시</h2>
+    <table><tr><th class="w">소재지</th><td>${ct소재지(doc.property || {}, ct옛날인(doc))} &nbsp; (외 ${Math.max(0, N - 1)} 물건)</td></tr></table>
+    <p class="sm">※ 본 다물건 계약의 물건별 상세 계약 사항은 계약서 뒷면의 계약 상세 정보를 참고한다.</p>
+    <h2>■ 다물건 거래대금 (실거래신고 금액에 관한 사항)</h2>
+    <p class="ct-art">※ 위 부동산의 매매에 대하여 매도인과 매수인은 합의에 의하여 물건별 각 합계금액을 다음과 같이 지불한다.</p>
+    <table>
+      <tr><th class="w">총 매매대금</th><td colspan="3">${금액글(D.price) || `금 ${빈칸(160)}원정(₩${빈칸(90)})`}</td></tr>
+      <tr><th class="w">총 계약금</th><td>${금(D.down)}</td><th>계약일자</th><td>${날('contractDate', doc.contractDate)}</td></tr>
+      <tr><th class="w">총 중도금</th><td>${금(D.mid)}</td><th>중도금 최종일자</th><td>${날('deal.midDate', D.midDate)}</td></tr>
+      <tr><th class="w">총 잔금</th><td>${금(ctBalance(D))}</td><th>잔금 지급일자</th><td>${날('deal.balanceDate', D.balanceDate)}</td></tr>
+    </table>
+    <p class="sm">위의 각 거래금액은 본 다물건 계약의 매매대금, 계약금, 중도금, 잔금 각 금액별 총 합계금액이며, 실거래 신고 시 동일하게 적용된다.<br>계약일자, 중도금일자, 잔금일자는 각 물건별로 동일한 날짜가 부여된다.</p>
+    <p class="ct-close">${맺음}</p>
+    <p class="ct-date">${날('contractDate', doc.contractDate)}</p>
+    ${서명}
+    ${Array.from({ length: N }, (_, i) => 상세(i)).join('')}
+  </div>`;
+}
+/* 정보 입력 - 물건별 칸 (물건 1 의 소재지 · 토지 · 건물은 위 '부동산의 표시' 칸) */
+function ct다물건칸(doc){
+  const 잠김 = ctSealed(), it = doc.items || [], N = it.length, D = doc.deal || {};
+  const 고르기 = (p, v) => `<label class="ct-f w4"><span class="lab">용도</span><select class="inp" data-in="ct:${p}" ${잠김 ? 'disabled' : ''}>${Object.entries(CT_USES).map(([k, t]) => `<option value="${k}"${v === k ? ' selected' : ''}>${esc(t)}</option>`).join('')}</select></label>`;
+  const 한 = (x, i) => { const 앞 = `items.${i}`, u = CT_USES[x.use] ? x.use : 'home', 건물 = u === 'home' || u === 'biz';
+    return `<div class="ct-mi"><div class="ct-mi-h"><b>물건 ${i + 1}</b>${i === 0 ? '<span class="sub">소재지 · 토지 · 건물은 위 부동산의 표시 칸</span>' : ''}${!잠김 && N > 2 && i > 0 ? `<button type="button" class="tapx" data-act="ct-item-del" data-v="${i}">빼기</button>` : ''}</div>
+      <div class="ct-grid">${고르기(`${앞}.use`, u)}${i > 0 ? `${ctIn(`${앞}.property.show`, '소재지', { w: 8, ph: '예: 서울특별시 ○○구 ○○동 123-4' })}${ctIn(`${앞}.property.landCat`, '지목', { w: 3 })}${ctIn(`${앞}.property.landArea`, '토지 면적(㎡)', { w: 3 })}${건물 ? `${ctIn(`${앞}.property.landRight`, '대지권', { w: 6 })}${ctIn(`${앞}.property.bldStruct`, '건물 구조', { w: 3 })}${ctIn(`${앞}.property.bldUse`, '건물 용도', { w: 3 })}${ctIn(`${앞}.property.bldArea`, '건물 면적(㎡)', { w: 3 })}` : ''}` : ''}
+        ${ctIn(`${앞}.price`, '매매대금(원)', { w: 4, money: true })}${ctIn(`${앞}.down`, '계약금(원)', { w: 4, money: true })}${ctIn(`${앞}.mid`, '중도금(원)', { w: 4, money: true })}</div></div>`; };
+  return `<div class="card pad ct-sec"><h2>물건별 내용 <span class="sub" style="font-weight:500;font-size:13.5px">전체 ${N}개 · 계약일 · 중도금일 · 잔금일은 모든 물건이 같습니다</span></h2>
+    ${it.map(한).join('')}
+    ${!잠김 && N < CT_다물건최대 ? `<button type="button" class="btn sec md" data-act="ct-item-add">+ 물건 더하기</button>` : ''}
+    <p class="ct-mi-sum" data-ctmt>${ct다물건합글(D)}</p></div>`;
+}
+const ct다물건합글 = D => `총 매매대금 ${comma(String(+D.price || 0))}원 · 총 계약금 ${comma(String(+D.down || 0))}원 · 총 중도금 ${comma(String(+D.mid || 0))}원 · 총 잔금 ${comma(String(ctBalance(D)))}원`;
 const CT_SALE_CLAUSES = [
   { id:'burden', title:'제한물권 등의 소멸',
     text:'매도인은 위 부동산에 설정된 저당권·지상권·임차권 등 소유권의 행사를 제한하는 사유가 있거나 제세공과금 등 미납금이 있으면, 잔금 지급일까지 그 권리의 하자와 부담을 모두 없애 완전한 소유권을 매수인에게 이전한다. 다만 승계하기로 합의한 권리와 금액은 그러하지 아니하다.' },
@@ -15832,8 +15923,10 @@ const CT_SUB_SHOP = ['상가','상가주택','상가건물','건물','사무실'
 const CT_CATS = [
   { k:'realty',   grp:'부동산계약서', ko:'부동산 매매 · 임대', hint:'주거용 · 비주거용 · 토지 · 입목·재단', uses:['home','biz','land','etc'],
     subs:[...CT_SUB_HOME, ...CT_SUB_SHOP], deals:['매매','전세','월세'] },
+  { k:'multi',    grp:'부동산계약서', ko:'다물건 매매', hint:'물건 여러 개를 한 계약으로', form:'sale', multi:true, foot:'국토교통부 부동산거래 전자계약(다물건 매매) 양식을 따라' },
   { k:'std',      grp:'표준계약서', ko:'주택임대차 표준계약서',  hint:'법무부 주택임대차표준계약서', form:'home-lease' },
   { k:'shop',     grp:'표준계약서', ko:'상가건물 임대차 표준계약서', hint:'법무부 상가건물 임대차표준계약서', form:'shop-lease' },
+  { k:'private',  grp:'표준계약서', ko:'표준임대차계약서(민간임대)', hint:'민간임대주택법 별지 제24호서식', form:'home-lease', priv:true },
   { k:'presale',  grp:'그 밖의 계약서', ko:'분양권 매매',       hint:'분양권 전매', subs:['아파트','','오피스텔','주상복합','상가'], form:'presale', name: s => s ? `분양권(${s})` : '분양권' },
   { k:'union',    grp:'그 밖의 계약서', ko:'조합원입주권 매매', hint:'재개발·재건축 입주권', form:'union' },
   { k:'sublease', grp:'그 밖의 계약서', ko:'전대차',            hint:'주거용 · 비주거용 전대차', uses:['home','biz'], form:'sublease', deals:['전세','월세'] },
@@ -15854,7 +15947,7 @@ function ct군(doc){
 /* 양식마다 조항·특약 모음. 부동산 임대차·전대차는 세부 종류에 따라 고른다 */
 function ctClauseSet(doc){
   const F = CT_FORMS[doc.form] || CT_FORMS['home-lease'];
-  if(doc.ec === 1 && CT_E_FORMS[doc.form]) return CT_E_FORMS[doc.form].clauses;
+  if(doc.ec === 1 && CT_E_FORMS[doc.form]) return ct양식(doc).clauses;
   if(ct전자(doc)) return doc.form === 'sale' ? CT_E_SALE : doc.form === 'sublease' ? ct전자전대조항(doc.use === 'biz') : ct전자임대조항(doc.use === 'biz');
   if(doc.form === 'lease'){ const g = ct군(doc); return g === 'home' ? CT_HOME_CLAUSES : g === 'shop' ? CT_SHOP_CLAUSES : CT_GEN_CLAUSES; }
   return F.clauses;
@@ -16004,8 +16097,9 @@ const ct매매신고 = f => f === 'sale' || f === 'presale' || f === 'union';
 const ct신고 = d => !!d && (ct매매신고(d.form) || d.form === 'home-lease' || (d.form === 'lease' && ct주거(d.sub)));
 /* 문서 이름 - '부동산(아파트) 전세계약서'. 세부 종류가 없는 예전 문서는 양식 이름 그대로 */
 function ctTitle(doc){
-  const F = CT_FORMS[doc.form] || CT_FORMS['home-lease'];
+  const F = ct양식(doc) || CT_FORMS['home-lease'];
   if(F.explain) return (EX_FORMS[doc.form] || EX_FORMS['explain-home']).h1;
+  if(doc.multi) return '다물건 매매 계약서';
   const 괄 = String(doc.sub || '').trim() ? `(${String(doc.sub).trim()})` : '';
   const 거래 = (doc.deal && doc.deal.type) || doc.dt;
   if(CT_USES[doc.use] && ct전자(doc)) return `부동산(${CT_USES[doc.use]}) ${doc.form === 'sale' ? '매매' : doc.form === 'sublease' ? '전대차' : '임대차'} 계약서`;
@@ -16130,8 +16224,175 @@ const CT_E_FORMS = {
     art2: d => `① 매도인은 잔금 수령과 동시에 매수인에게 조합원 지위의 승계 및 소유권이전등기에 필요한 서류 일체를 교부하고, 조합원 명의변경 및 등기절차에 협력하여야 한다.<br>② 매도인은 위 부동산을 ${ct날짜(d.period && d.period.handover || d.deal.balanceDate)} 매수인에게 인도한다.`,
     foot:'국토교통부 부동산거래 전자계약(조합원입주권 매매) 양식을 따라' },
 };
-/* 이 계약서가 쓰는 양식 - 전자계약으로 만든 새 계약서면 CT_E_FORMS */
-const ct양식 = doc => (doc && doc.ec === 1 && CT_E_FORMS[doc.form]) || CT_FORMS[doc && doc.form];
+/* 법무부 표준계약서 원문 (2026-11-24 파트너가 올린 hwpx) - 제1조 · 제2조는 표와 칸, 여기는 제3조부터 */
+CT_E_FORMS['home-lease'] = { ...CT_FORMS['home-lease'], ko:'주택임대차표준계약서', h1:'주 택 임 대 차 표 준 계 약 서', std:true,
+  clauses: [
+    { id:'repair', title:'입주 전 수리',
+      text:'임대인과 임차인은 임차주택의 수리가 필요한 시설물 및 비용부담에 관하여 다음과 같이 합의한다.\n수리 필요 시설: □ 없음 □ 있음(수리할 내용: (          ))\n수리 완료 시기: □ 잔금지급 기일인 (          )까지 □ 기타 (          )\n약정한 수리 완료 시기까지 미 수리한 경우: □ 수리비를 임차인이 임대인에게 지급하여야 할 보증금 또는 차임에서 공제 □ 기타 (          )' },
+    { id:'manage', title:'임차주택의 사용·관리·수선',
+      text:'① 임차인은 임대인의 동의 없이 임차주택의 구조변경 및 전대나 임차권 양도를 할 수 없으며, 임대차 목적인 주거 이외의 용도로 사용할 수 없다.\n② 임대인은 계약 존속 중 임차주택을 사용·수익에 필요한 상태로 유지하여야 하고, 임차인은 임대인이 임차주택의 보존에 필요한 행위를 하는 때 이를 거절하지 못한다.\n③ 임대인과 임차인은 계약 존속 중에 발생하는 임차주택의 수리 및 비용부담에 관하여 다음과 같이 합의한다. 다만, 합의되지 아니한 기타 수선비용에 관한 부담은 민법, 판례 기타 관습에 따른다.\n임대인부담: (          ) (예컨대, 난방, 상·하수도, 전기시설 등 임차주택의 주요설비에 대한 노후·불량으로 인한 수선은 민법 제623조, 판례상 임대인이 부담하는 것으로 해석됨)\n임차인부담: (          ) (예컨대, 임차인의 고의·과실에 기한 파손, 전구 등 통상의 간단한 수선, 소모품 교체 비용은 민법 제623조, 판례상 임차인이 부담하는 것으로 해석됨)\n④ 임차인이 임대인의 부담에 속하는 수선비용을 지출한 때에는 임대인에게 그 상환을 청구할 수 있다.' },
+    { id:'cancel', title:'계약의 해제',
+      text:'임차인이 임대인에게 중도금(중도금이 없을 때는 잔금)을 지급하기 전까지, 임대인은 계약금의 배액을 상환하고, 임차인은 계약금을 포기하고 이 계약을 해제할 수 있다.' },
+    { id:'breach', title:'채무불이행과 손해배상',
+      text:'당사자 일방이 채무를 이행하지 아니하는 때에는 상대방은 상당한 기간을 정하여 그 이행을 최고하고 계약을 해제할 수 있으며, 그로 인한 손해배상을 청구할 수 있다. 다만, 채무자가 미리 이행하지 아니할 의사를 표시한 경우의 계약해제는 최고를 요하지 아니한다.' },
+    { id:'stop', title:'계약의 해지',
+      text:'① 임차인은 본인의 과실 없이 임차주택의 일부가 멸실 기타 사유로 인하여 임대차의 목적대로 사용할 수 없는 경우에는 계약을 해지할 수 있다.\n② 임대인은 임차인이 2기의 차임액에 달하도록 연체하거나, {{조:manage}} 제1항을 위반한 경우 계약을 해지할 수 있다.' },
+    { id:'renew', title:'갱신요구와 거절',
+      text:'① 임차인은 임대차기간이 끝나기 6개월 전부터 2개월 전까지의 기간에 계약갱신을 요구할 수 있다. 다만, 임대인은 자신 또는 그 직계존속·직계비속의 실거주 등 주택임대차보호법 제6조의3 제1항 각 호의 사유가 있는 경우에 한하여 계약갱신의 요구를 거절할 수 있다.\n② 임대인이 주택임대차보호법 제6조의3 제1항 제8호에 따른 실거주를 사유로 갱신을 거절하였음에도 불구하고 갱신요구가 거절되지 아니하였더라면 갱신되었을 기간이 만료되기 전에 정당한 사유 없이 제3자에게 주택을 임대한 경우, 임대인은 갱신거절로 인하여 임차인이 입은 손해를 배상하여야 한다.\n③ 제2항에 따른 손해배상액은 주택임대차보호법 제6조의3 제6항에 의한다.' },
+    { id:'end', title:'계약의 종료',
+      text:'임대차계약이 종료된 경우에 임차인은 임차주택을 원래의 상태로 복구하여 임대인에게 반환하고, 이와 동시에 임대인은 보증금을 임차인에게 반환하여야 한다. 다만, 시설물의 노후화나 통상 생길 수 있는 파손 등은 임차인의 원상복구의무에 포함되지 아니한다.' },
+    { id:'settle', title:'비용의 정산',
+      text:'① 임차인은 계약종료 시 공과금과 관리비를 정산하여야 한다.\n② 임차인은 이미 납부한 관리비 중 장기수선충당금을 임대인(소유자인 경우)에게 반환 청구할 수 있다. 다만, 관리사무소 등 관리주체가 장기수선충당금을 정산하는 경우에는 그 관리주체에게 청구할 수 있다.' },
+    { id:'dispute', title:'분쟁의 해결',
+      text:'임대인과 임차인은 본 임대차계약과 관련한 분쟁이 발생하는 경우, 당사자 간의 협의 또는 주택임대차분쟁조정위원회의 조정을 통해 호혜적으로 해결하기 위해 노력한다.' },
+    { id:'fee', title:'중개보수 등',
+      text:'중개보수는 거래 가액의 (     )%인 (          )원(□ 부가가치세 포함 □ 불포함)으로 임대인과 임차인이 각각 부담한다. 다만, 개업공인중개사의 고의 또는 과실로 인하여 중개의뢰인간의 거래행위가 무효·취소 또는 해제된 경우에는 그러하지 아니하다.' },
+    { id:'explain', title:'중개대상물확인·설명서 교부',
+      text:'개업공인중개사는 중개대상물 확인·설명서를 작성하고 업무보증관계증서(공제증서등) 사본을 첨부하여 (          ) 임대인과 임차인에게 각각 교부한다.' }],
+  foot:'법무부 주택임대차표준계약서(국토교통부 전자계약) 원문을 따라' };
+CT_E_FORMS['shop-lease'] = { ...CT_FORMS['shop-lease'], ko:'상가건물 임대차 표준계약서', h1:'상 가 건 물 임 대 차 표 준 계 약 서', std:true,
+  clauses: [
+    { id:'purpose', title:'임차목적', text:'임차인은 임차 상가건물을 (          )(업종)을 위한 용도로 사용한다.' },
+    { id:'manage', title:'사용·관리·수선',
+      text:'① 임차인은 임대인의 동의 없이 임차 상가건물의 구조·용도 변경 및 전대나 임차권 양도를 할 수 없다.\n② 임대인은 계약 존속 중 임차 상가건물을 사용·수익에 필요한 상태로 유지하여야 하고, 임차인은 임대인이 임차 상가건물의 보존에 필요한 행위를 하는 때 이를 거절하지 못한다.\n③ 임차인이 임대인의 부담에 속하는 수선비용을 지출한 때에는 임대인에게 그 상환을 청구할 수 있다.' },
+    { id:'cancel', title:'계약의 해제',
+      text:'임차인이 임대인에게 중도금(중도금이 없을 때는 잔금)을 지급하기 전까지, 임대인은 계약금의 배액을 상환하고, 임차인은 계약금을 포기하고 계약을 해제할 수 있다.' },
+    { id:'breach', title:'채무불이행과 손해배상',
+      text:'당사자 일방이 채무를 이행하지 아니하는 때에는 상대방은 상당한 기간을 정하여 그 이행을 최고하고 계약을 해제할 수 있으며, 그로 인한 손해배상을 청구할 수 있다. 다만, 채무자가 미리 이행하지 아니할 의사를 표시한 경우의 계약해제는 최고를 요하지 아니한다.' },
+    { id:'stop', title:'계약의 해지',
+      text:'① 임차인은 본인의 과실 없이 임차 상가건물의 일부가 멸실 기타 사유로 인하여 임대차의 목적대로 사용, 수익할 수 없는 때에는 임차인은 그 부분의 비율에 의한 차임의 감액을 청구할 수 있다. 이 경우에 그 잔존부분만으로 임차의 목적을 달성할 수 없는 때에는 임차인은 계약을 해지할 수 있다.\n② 임대인은 임차인이 3기의 차임액에 달하도록 차임을 연체하거나, {{조:manage}} 제1항을 위반한 경우 계약을 해지할 수 있다.' },
+    { id:'end', title:'계약의 종료와 권리금회수기회 보호',
+      text:'① 계약이 종료된 경우에 임차인은 임차 상가건물을 원상회복하여 임대인에게 반환하고, 이와 동시에 임대인은 보증금을 임차인에게 반환하여야 한다.\n② 임대인은 임대차기간이 끝나기 6개월 전부터 임대차 종료 시까지 「상가건물임대차보호법」 제10조의4제1항 각 호의 어느 하나에 해당하는 행위를 함으로써 권리금 계약에 따라 임차인이 주선한 신규임차인이 되려는 자로부터 권리금을 지급받는 것을 방해하여서는 아니 된다. 다만, 「상가건물임대차보호법」 제10조제1항 각 호의 어느 하나에 해당하는 사유가 있는 경우에는 그러하지 아니하다.\n③ 임대인이 제2항을 위반하여 임차인에게 손해를 발생하게 한 때에는 그 손해를 배상할 책임이 있다. 이 경우 그 손해배상액은 신규임차인이 임차인에게 지급하기로 한 권리금과 임대차 종료 당시의 권리금 중 낮은 금액을 넘지 못한다.\n④ 임차인은 임대인에게 신규임차인이 되려는 자의 보증금 및 차임을 지급할 자력 또는 그 밖에 임차인으로서의 의무를 이행할 의사 및 능력에 관하여 자신이 알고 있는 정보를 제공하여야 한다.' },
+    { id:'rebuild', title:'재건축 등 계획과 갱신거절',
+      text:'임대인이 계약 체결 당시 공사시기 및 소요기간 등을 포함한 철거 또는 재건축 계획을 임차인에게 구체적으로 고지하고 그 계획에 따르는 경우, 임대인은 임차인이 상가건물임대차보호법 제10조 제1항 제7호에 따라 계약갱신을 요구하더라도 계약갱신의 요구를 거절할 수 있다.' },
+    { id:'settle', title:'비용의 정산',
+      text:'① 임차인은 계약이 종료된 경우 공과금과 관리비를 정산하여야 한다.\n② 임차인이 장기수선충당금을 납부한 경우, 임차인은 이미 납부한 장기수선충당금을 소유자에게 반환 청구할 수 있다. 다만, 임차 상가건물에 관한 장기수선충당금을 정산하는 주체가 소유자가 아닌 경우에는 그 자에게 청구할 수 있다.' },
+    { id:'fee', title:'중개보수 등',
+      text:'중개보수는 거래 가액의 (     )% 인 (          )원(부가세 □ 불포함 □ 포함)으로 임대인과 임차인이 각각 부담한다. 다만, 개업공인중개사의 고의 또는 과실로 인하여 중개의뢰인간의 거래행위가 무효·취소 또는 해제된 경우에는 그러하지 아니하다.' },
+    { id:'explain', title:'중개대상물 확인·설명서 교부',
+      text:'개업공인중개사는 중개대상물 확인·설명서를 작성하고 업무보증관계증서(공제증서 등) 사본을 첨부하여 임대인과 임차인에게 각각 교부한다.' }],
+  foot:'법무부 상가건물 임대차표준계약서(국토교통부 전자계약) 원문을 따라' };
+/* 표준임대차계약서(민간임대) - 민간임대주택에 관한 특별법 시행규칙 [별지 제24호서식] <개정 2025. 10. 31.> (2026-11-24 파트너가 올린 hwpx)
+   doc.form 은 'home-lease', doc.priv = 1. 법정 서식이라 그리기는 ctPrivDocHTML 이 따로 맡는다. 칸은 doc.priv_* 가 아니라 doc.pv.* 에 둔다 */
+const CT_PV_KIND = ['공공지원 10년','공공지원 8년','장기일반 10년','장기일반 8년','단기 6년','단기 4년','그 밖의 유형'];
+const CT_PV_WHY = ['가입대상 금액이 0원 이하(법 제49조제3항)','임대보증금이 우선변제금 이하(법 제49조제7항제1호)','공공주택사업자와 임대차계약 체결(법 제49조제7항제2호)','임차인이 전세보증금반환보증에 가입(법 제49조제7항제3호)'];
+const CT_E_PRIVATE = { ...CT_FORMS['home-lease'], ko:'표준임대차계약서', h1:'표준임대차계약서', priv:true, a:['lessor','임대사업자'], b:['lessee','임차인'],
+  fields:[
+    { h:'임대사업자 · 민간임대주택', rows:[['pv.regNo','임대사업자 등록번호',{w:4}],['pv.htype','주택 유형',{w:4, type:'one', o:['아파트','연립주택','다세대주택','다가구주택','그 밖의 주택']}],
+      ['pv.kind','민간임대주택의 종류',{w:4, type:'one', o:CT_PV_KIND}],['pv.kindEtc','그 밖의 유형이면 적기',{w:4, ph:'예: 단기민간임대주택(5년)'}],['pv.build','건설 · 매입',{w:4, type:'one', o:['건설','매입']}],
+      ['pv.startAt','임대의무기간 개시일',{type:'date'}],['pv.over100','100세대 이상 단지',{w:4, type:'one', o:['아니오','예']}],
+      ['pv.areaOwn','주거전용면적(㎡)',{w:3, type:'area'}],['pv.areaCommon','주거공용면적(㎡)',{w:3, type:'area'}],['pv.areaEtc','그 밖의 공용면적(㎡)',{w:3, type:'area', ph:'지하주차장 포함'}],
+      ['pv.facility','부대시설 · 복리시설의 종류',{w:12}]] },
+    { h:'권리관계 · 임대보증금 보증', rows:[['pv.lien','선순위 담보권 등',{w:4, type:'one', o:['없음','있음']}],['pv.lienKind','권리관계의 종류',{w:4}],['pv.lienAmt','설정금액(원)',{type:'money'}],['pv.lienDate','설정일자',{type:'date'}],
+      ['pv.tax','국세 · 지방세 체납',{w:4, type:'one', o:['없음','있음']}],['pv.guar','임대보증금 보증 가입',{w:4, type:'one', o:['가입','일부가입','미가입(법정사유)']}],['pv.guarAmt','보증대상 금액(원)',{type:'money'}],
+      ['pv.guarWhy','미가입 사유',{w:12, type:'one', o:CT_PV_WHY}]] },
+    { h:'계약조건', rows:[['pv.inFrom','입주일(부터)',{type:'date'}],['pv.inTo','입주일(까지)',{type:'date'}],['pv.lateRate','연체이율(연 %)',{w:3}],['pv.bank','보증금 받을 은행',{w:4}],['pv.holder','예금주',{w:4}]] }],
+  clauses: [
+    { id:'calc', title:'월임대료의 계산', text:'① 임대기간이 월의 첫날부터 시작되지 않거나 월의 말일에 끝나지 않는 경우에는 그 임대기간이 시작되거나 끝나는 월의 임대료는 일할로 산정한다.\n② 입주 월의 월임대료는 입주일(제2조에 따른 입주일을 정한 경우 입주일)부터 계산한다. 다만, 입주지정기간이 지나 입주하는 경우에는 입주지정기간이 끝난 날부터 계산한다.' },
+    { id:'mgmt', title:'관리비와 사용료', text:'① 임차인이 임대주택에 대한 관리비와 사용료를 임대사업자 또는 임대사업자가 지정한 관리주체에게 납부해야 하는 경우에는 특약으로 정하는 기한까지 내야하며, 이를 내지 않을 경우에는 임대사업자는 임차인으로 하여금 연체된 금액에 대해 제1조제4항에 따른 연체요율을 적용하여 계산한 연체료를 더하여 내게 할 수 있다.\n② 임대사업자는 관리비와 사용료를 부과·징수할 때에는 관리비와 사용료의 부과 명세서를 첨부하여 임차인에게 이를 낼 것을 통지해야 한다. 이 경우 임대사업자는 일반관리비, 청소비, 경비비, 소독비, 승강기 유지비, 난방비, 급탕비, 수선유지비, 지능형 홈네트워크 설비 유지비 외의 어떠한 명목으로도 관리비를 부과·징수할 수 없다.' },
+    { id:'change', title:'임대 조건 등의 변경', text:'임대사업자와 임차인은 다음 각 호의 어느 하나에 해당할 경우에는 임대보증금, 임대료, 관리비, 사용료 등 모든 납부금액을 조정할 수 있다. 다만, 임대료의 조정은 법 및 「주택임대차보호법」을 위반해서는 안 되고, 법 제44조에 따라 임대료 증액청구는 임대료의 5퍼센트의 범위에서 주거비 물가지수, 인근 지역의 임대료 변동률, 임대주택 세대수 등을 고려하여 「민간임대주택에 관한 특별법 시행령」 제34조의2에 따라 정하는 증액비율을 초과하여 청구할 수 없으며, 임대차계약 또는 임대료 증액이 있은 후 1년 이내에는 그 임대료를 증액하지 못한다.\n1. 물가, 그 밖의 경제적 여건의 변동이 있을 때\n2. 임대사업자가 임대하는 주택 상호간 또는 인근 유사지역의 민간임대주택 간에 임대조건의 균형상 조정할 필요가 있을 때\n3. 민간임대주택과 부대시설 및 부지의 가격에 현저한 변동이 있을 때\n100세대 이상 민간임대주택단지는 임대료 증액 시 직전 임대료의 5퍼센트의 범위에서 다음의 기준을 적용 받음(「민간임대주택에 관한 특별법 시행령」 제34조의2제1호)\n1. 「통계법」에 따라 국가데이터처장이 고시하는 지출목적별 소비자물가지수 항목 중 해당 임대주택이 소재한 특별시, 광역시, 특별자치시, 도 또는 특별자치도의 주택임차료, 주거시설 유지·보수 및 기타 주거관련 서비스 지수를 가중 평균한 값의 변동률. 다만, 임대료의 5퍼센트 범위에서 시·군·자치구의 조례로 해당 시·군·자치구에서 적용하는 비율을 정하고 있는 경우에는 그에 따름\n2. 구체적인 산정방법은 임대등록시스템(렌트홈, www.renthome.go.kr) "100세대 이상 민간임대주택단지 임대료 증액기준" 참조' },
+    { id:'ban', title:'임차인의 금지행위', text:'임차인은 다음 각 호의 어느 하나에 해당하는 행위를 해서는 안 된다.\n1. 임대사업자의 동의 없이 무단으로 임차권을 양도하거나 민간임대주택을 타인에게 전대하는 행위\n2. 민간임대주택 및 그 부대시설을 개축·증축 또는 변경하거나 본래의 용도가 아닌 용도로 사용하는 행위\n3. 민간임대주택 및 그 부대시설을 파손 또는 멸실하는 행위\n4. 민간임대주택 및 그 부대시설의 유지·관리를 위하여 임대사업자와 임차인이 합의한 사항을 위반하는 행위' },
+    { id:'duty', title:'임차인의 의무', text:'임차인은 위 주택을 선량한 관리자로서 유지·관리해야 한다.' },
+    { id:'scope', title:'민간임대주택 관리의 범위', text:'위 주택의 공용부분과 그 부대시설 및 복리시설은 임대사업자 또는 임대사업자가 지정한 주택관리업자가 관리하고, 주택과 그 내부시설은 임차인이 관리한다.' },
+    { id:'repair', title:'민간임대주택의 수선·유지 및 보수의 한계', text:'① 위 주택의 보수와 수선은 임대사업자의 부담으로 하되, 위 주택의 전용부분과 그 내부시설물을 임차인이 파손하거나 멸실한 부분 또는 소모성 자재(「공동주택관리법 시행규칙」 별표 1의 장기수선계획의 수립기준상 수선주기가 6년 이내인 자재를 말한다)의 보수주기에서의 보수 또는 수선은 임차인의 부담으로 한다.\n② 제1항에 따른 소모성 자재와 소모성 자재 외의 소모성 자재의 종류와 그 종류별 보수주기는 특약으로 따로 정할 수 있다. 다만, 벽지·장판·전등기구 및 콘센트의 보수주기는 다음 각 호에 따른다.\n1. 벽지 및 장판: 10년(변색·훼손·오염 등이 심한 경우에는 6년으로 하며, 적치물의 제거에 임차인이 협조한 경우만 해당한다)\n2. 전등기구 및 콘센트: 10년. 다만, 훼손 등을 이유로 안전상의 위험이 우려되는 경우에는 조기 교체해야 한다.\n③ 제1항에 따라 임차인이 파손하거나 멸실한 부분에 대한 원상복구 대상의 선정 및 그에 대한 수선비의 산출은 다음 각 호에 따른다.\n1. 임대사업자는 임차인 입주 시 상호 입회하에 시설물의 상태를 확인\n2. 퇴거 시에는 제1호의 결과를 기초로 시설물 상태의 변경사항을 상호 입회하에 점검 및 확인\n3. 임차인 부담비용은 상호 합의하에 산출하되, 수선비는 실제 소요되는 실비를 기준으로 시설물의 경과연수에 따른 감가상각률을 계산하여 산출' },
+    { id:'cancel', title:'임대차계약의 해제·해지 및 손해배상', text:'① 임차인이 다음 각 호의 어느 하나에 해당하는 행위를 한 경우를 제외하고는 임대사업자는 이 계약을 해제 또는 해지하거나 임대차계약의 갱신을 거절할 수 없다.\n1. 거짓이나 그 밖의 부정한 방법으로 민간임대주택을 임대받은 경우\n2. 임대사업자의 귀책사유 없이 「민간임대주택에 관한 특별법 시행령」 제34조제1항 각 호의 시점으로부터 3개월 이내에 입주하지 않은 경우.\n3. 월임대료를 3개월 이상 연속하여 연체한 경우\n4. 민간임대주택 및 그 부대시설을 임대사업자의 동의를 받지 않고 개축·증축 또는 변경하거나 본래의 용도가 아닌 용도로 사용한 경우\n5. 민간임대주택 및 그 부대시설을 고의로 파손 또는 멸실한 경우\n6. 공공지원민간임대주택의 임차인이 다음 각 목의 어느 하나에 해당하게 된 경우\n가. 임차인의 자산 또는 소득이 「민간임대주택에 관한 특별법 시행규칙」 제14조의3 및 제14조의7에 따른 요건을 초과하는 경우\n나. 임대차계약 기간 중 주택을 소유하게 된 경우. 다만, 다음의 어느 하나에 해당하는 경우는 제외한다.\n1) 상속·판결 또는 혼인 등 그 밖의 부득이한 사유로 주택을 소유하게 된 경우로서 임대차계약이 해제·해지되거나 재계약이 거절될 수 있다는 내용을 통보받은 날부터 6개월 이내에 해당 주택을 처분하는 경우\n2) 혼인 등의 사유로 주택을 소유하게 된 세대구성원이 소유권을 취득한 날부터 14일 이내에 전출신고를 하여 세대가 분리된 경우\n3) 공공지원민간임대주택의 입주자를 선정하고 남은 공공지원민간임대주택에 대하여 선착순의 방법으로 입주자로 선정된 경우\n7. 법 제42조의2에 따라 임차인이 공공지원민간임대주택 또는 공공임대주택에 중복하여 입주한 것으로 확인된 경우\n8. 그 밖에 이 표준임대차계약서상의 의무를 위반한 경우\n② 임차인은 다음 각 호의 어느 하나에 해당하는 경우에 이 계약을 해제 또는 해지할 수 있다.\n1. 특별자치도지사·특별자치시장·시장·군수·구청장이 민간임대주택에 거주하기 곤란할 정도의 중대한 하자가 있다고 인정하는 경우\n2. 임대사업자가 임차인의 의사에 반하여 민간임대주택의 부대시설·복리시설을 파손시킨 경우\n3. 임대사업자의 귀책사유로 입주지정기간이 끝난 날부터 3개월 이내에 입주할 수 없는 경우\n4. 임대사업자가 이 표준임대차계약서상의 의무를 위반한 경우\n5. 법 제49조에 따라 임대보증금에 대한 보증에 가입해야 하는 임대사업자가 임대보증금에 대한 보증에 가입하지 않은 경우\n③ 임대인 또는 임차인은 제1항 또는 제2항에 따라 임대차계약을 해제 또는 해지한 경우에는 그 상대방에게 「민법」 등 관계 법령에 따라 그 해제 또는 해지로 인해 입은 손해의 배상을 청구할 수 있다.' },
+    { id:'refund', title:'임대보증금의 반환', text:'① 임차인이 임대사업자에게 예치한 임대보증금은 이 계약이 끝나거나 해제 또는 해지되어 임차인이 임대사업자에게 주택을 명도(明渡)함과 동시에 반환한다.\n② 제1항에 따라 반환할 경우 임대사업자는 주택 및 내부 일체에 대한 점검을 실시한 후 임차인이 임대사업자에게 내야 할 임대료, 관리비 등 모든 납부금액과 제9조제1항에 따른 임차인의 수선유지 불이행에 따른 보수비 및 특약으로 정한 위약금, 불법거주에 따른 배상금, 손해금 등 임차인의 채무를 임대보증금에서 우선 공제하고 그 잔액을 반환한다.\n③ 임차인은 위 주택을 임대사업자에게 명도할 때까지 사용한 전기·수도·가스 등의 사용료(납부시효가 끝나지 않은 것을 말한다) 지급 영수증을 임대사업자에게 제시 또는 예치해야 한다.' },
+    { id:'guar', title:'임대보증금 보증', text:'① 임대사업자가 법 제49조에 따라 임대보증금 보증에 가입을 한 경우, 「민간임대주택에 관한 특별법 시행령」 제40조에 따라 보증수수료의 75퍼센트는 임대사업자가 부담하고, 25퍼센트는 임차인이 부담한다. 부담 금액의 징수 방법·절차·기한에 관한 사항은 특약으로 정할 수 있다.' },
+    { id:'sell', title:'민간임대주택의 양도', text:'① 임대사업자가 임대의무기간 경과 후 위 주택을 임차인에게 양도할 경우 위 주택의 양도 등에 관한 사항은 특약으로 정한 바에 따른다.\n② 임대사업자가 법 제43조제2항에 따라 위 주택을 다른 임대사업자에게 양도하는 경우에는 양수도계약서에서 양도받는 자는 양도하는 자의 임대사업자로서의 지위를 포괄적으로 승계한다는 뜻을 분명하게 밝혀야 한다.' },
+    { id:'explainduty', title:'임대사업자의 설명의무', text:'① 임대사업자는 법 제48조에 따라 임대차계약을 체결하거나 월임대료를 임대보증금으로 전환하는 등 계약내용을 변경하는 경우에는 다음 각 호의 사항을 임차인이 이해할 수 있도록 설명하고, 등기사항증명서 등 설명의 근거자료를 제시해야 한다.\n1. 임대보증금 보증가입에 관한 사항(법 제49조에 따른 임대보증금 보증가입 의무대상 주택에 한정한다)\n가. 해당 민간임대주택의 임대보증금 보증대상액 및 보증기간에 관한 사항\n나. 임대보증금 보증 가입에 드는 보증수수료(이하 "보증수수료"라 한다) 산정방법 및 금액, 임대보증금과 임차인의 보증수수료 분담비율, 임차인이 부담해야 할 보증수수료의 납부방법에 관한 사항\n다. 보증기간 중 임대차계약이 해지·해제되거나 임대보증금의 증감이 있는 경우에 보증수수료의 환급 또는 추가 납부에 관한 사항\n라. 임대차 계약기간 중 보증기간이 만료되는 경우에 재가입에 관한 사항\n마. 보증약관의 내용 중 국토교통부장관이 정하여 고시하는 중요사항에 관한 내용(보증이행 조건 등)\n2. 민간임대주택의 선순위 담보권 등 권리관계에 관한 사항\n가. 민간임대주택에 설정된 제한물권, 압류·가압류·가처분 등에 관한 사항\n나. 임대사업자의 국세·지방세 체납에 관한 사항\n3. 임대의무기간 중 남아 있는 기간\n4. 법 제44조제2항에 따른 임대료 증액 제한에 관한 사항\n5. 법 제45조에 따른 임대차계약의 해제·해지 등에 관한 사항\n6. 단독주택, 다중주택 및 다가구주택에 해당하는 민간임대주택에 둘 이상의 임대차계약이 존재하는 경우 「주택임대차보호법」 제3조의6제2항에 따라 작성된 확정일자부에 기재된 주택의 차임 및 보증금 등의 정보\n② 임차인은 임대사업자로부터 제1항의 사항에 대한 설명을 듣고 이해했음을 아래와 같이 확인한다.\n본인은 임대보증금 보증가입, 민간임대주택의 권리관계 등에 관한 주요 내용에 대한 설명을 듣고 이해했음.\n임차인 성명: (                    ) (서명 또는 날인)' },
+    { id:'court', title:'소송', text:'이 계약에 관한 소송의 관할 법원은 임대사업자와 임차인이 합의하여 결정하는 관할법원으로 하며, 임대사업자와 임차인 간에 합의가 이루어지지 않은 경우에는 위 주택 소재지를 관할하는 법원으로 한다.' },
+    { id:'explain', title:'중개대상물의 확인·설명', text:'개업공인중개사가 임대차계약서를 작성하는 경우에는 중개대상물확인·설명서를 작성하고, 업무보증 관계증서(공제증서 등) 사본을 첨부하여 임대차계약을 체결할 때 임대사업자와 임차인에게 교부한다.' },
+    { id:'special', title:'특약', text:'임대사업자와 임차인은 제1조부터 제15조까지에서 규정한 사항 외에 필요한 사항에 대해서는 따로 특약으로 정할 수 있다. 다만, 특약의 내용은 「약관의 규제에 관한 법률」을 위반해서는 안 된다.' }],
+  foot:'민간임대주택에 관한 특별법 시행규칙 [별지 제24호서식] 표준임대차계약서를 따라' };
+/* 법정 서식 그대로 그린다 - 1. 계약 당사자 2. 공인중개사 ◈ 안내 3. 민간임대주택의 표시 4. 계약조건(제1~17조) 특약 ◈ 월세 소득공제 5. 개인정보 제3자 제공 동의서 */
+function ctPrivDocHTML(doc){
+  const P = doc.property || {}, D = doc.deal || {}, R = doc.period || {}, B = doc.broker || {}, V = doc.pv || {}, 당 = doc.parties || {};
+  const 임 = 당.lessor || {}, 차 = 당.lessee || {};
+  const 체 = (값, 글) => `${esc(글)}[<span class="ct-box">${값 === 글 ? '✔' : ''}</span>]`;
+  const 체2 = (on, 글) => `<span class="ct-box">${on ? '✔' : ''}</span> ${esc(글)}`;
+  const 날 = (p, v) => ct칸(p, v, 0, 'date');
+  const 돈 = (p, v) => CT편집칸 ? ct칸(p, v, 0, 'money') : (금액글(v) || `금 ${빈칸(140)}원정`);
+  const 면 = k => ct칸('pv.' + k, V[k], 60, 'area');
+  const 합 = ['areaOwn', 'areaCommon', 'areaEtc'].reduce((n, k) => n + (parseFloat(V[k]) || 0), 0);
+  const 주민 = x => ct앞자리(x.birth) ? `${esc(ct앞자리(x.birth))} - ${빈칸(72)}` : 빈칸(140);
+  const 종류 = V.kind || '', 종 = k => 종류.startsWith(k);
+  const on = (doc.clauses || []).filter(c => c.on), 번호 = {}; on.forEach((c, i) => 번호[c.id] = i + 3);
+  const 글 = t => esc(t).replace(/\{\{조:([a-z]+)\}\}/g, (_, id) => 번호[id] ? `제${번호[id]}조` : '이 계약의 해당 조항').replace(/\n/g, '<br>');
+  const sp = (doc.specials || []).filter(x => String(x || '').trim());
+  return `
+  <div class="ctdoc ctpv${ct글꼴(doc) === 'sans' ? ' f-sans' : ''}">
+    <p class="sm">■ 민간임대주택에 관한 특별법 시행규칙 [별지 제24호서식] &lt;개정 2025. 10. 31.&gt;</p>
+    <h1>표준임대차계약서</h1>
+    <p class="lead">임대사업자와 임차인은 아래의 같이 임대차계약을 체결하고 이를 증명하기 위해 계약서 2통을 작성하여 임대사업자와 임차인이 각각 서명 또는 날인한 후 각각 1통씩 보관한다.<br><small>※ 개업공인중개사가 임대차계약서를 작성하는 경우에는 계약서 3통을 작성하여 임대사업자, 임차인, 개업공인중개사가 각각 서명 또는 날인한 후 각각 1통씩 보관한다.</small></p>
+    <p class="ct-date">계약일 : ${날('contractDate', doc.contractDate)}</p>
+    <h2>1. 계약 당사자</h2>
+    <table>
+      <tr><th class="w" rowspan="4">임대사업자</th><th>성명(법인명)</th><td colspan="3" class="sign">${ct칸('parties.lessor.name', 임.name, 120)} <span class="ct-seal">(서명 또는 인)</span></td></tr>
+      <tr><th>주소<br><small>(대표 사무소 소재지)</small></th><td colspan="3">${ct칸('parties.lessor.addr', 임.addr, 260)}</td></tr>
+      <tr><th>주민등록번호<br><small>(사업자등록번호)</small></th><td>${주민(임)}</td><th>전화번호</th><td>${ct칸('parties.lessor.phone', 임.phone, 110)}</td></tr>
+      <tr><th>임대사업자 등록번호</th><td colspan="3">${ct칸('pv.regNo', V.regNo, 160)}</td></tr>
+      <tr><th class="w" rowspan="3">임차인</th><th>성명(법인명)</th><td colspan="3" class="sign">${ct칸('parties.lessee.name', 차.name, 120)} <span class="ct-seal">(서명 또는 인)</span></td></tr>
+      <tr><th>주소</th><td colspan="3">${ct칸('parties.lessee.addr', 차.addr, 260)}</td></tr>
+      <tr><th>주민등록번호</th><td>${주민(차)}</td><th>전화번호</th><td>${ct칸('parties.lessee.phone', 차.phone, 110)}</td></tr>
+    </table>
+    <h2>2. 공인중개사 <small>(개업공인중개사가 계약서를 작성하는 경우 해당)</small></h2>
+    <table>
+      <tr><th class="w">사무소 명칭</th><td>${ct칸('broker.office', B.office, 140)}</td><th>대표자 성명</th><td class="sign">${B.hand ? 빈칸(70) : ct칸('broker.rep', B.rep, 70)} <span class="ct-seal">(서명 및 인)</span></td></tr>
+      <tr><th class="w">사무소 소재지</th><td colspan="3">${ct칸('broker.addr', B.addr, 260)}</td></tr>
+      <tr><th class="w">등록번호</th><td>${ct칸('broker.regNo', B.regNo, 120)}</td><th>전화번호</th><td>${ct칸('broker.phone', B.phone, 100)}</td></tr>
+      <tr><th class="w">소속공인중개사</th><td colspan="3" class="sign">${B.hand ? 빈칸(120) : ct칸('broker.staff', B.staff, 120)} <span class="ct-seal">(서명 및 인)</span></td></tr>
+    </table>
+    <div class="ctpv-note"><p><b>◈ 해당 주택은 「민간임대주택에 관한 특별법」(이하 "법"이라 한다)에 따라 임대사업자가 시장·군수·구청장에게 등록한 민간임대주택으로서 다음과 같은 사항이 적용됩니다.</b></p>
+      <p>ㅇ 임대의무기간 중 민간임대주택 양도 제한(법 제43조)<br>- 임대사업자는 「민간임대주택에 관한 특별법 시행령」 제34조제1항에 따른 시점부터 법 제2조제4호 또는 제5호에 따른 기간 동안 해당 민간임대주택을 계속 임대해야 하며, 그 기간 동안에는 양도가 제한됩니다.</p>
+      <p>ㅇ 임대료 증액 제한(법 제44조)<br>- 임대사업자는 해당 민간임대주택에 대한 임대료의 증액을 청구하는 경우 임대료의 5퍼센트의 범위에서 주거비 물가지수, 인근 지역의 임대료 변동률, 임대주택 세대수 등을 고려하여 「민간임대주택에 관한 특별법 시행령」 제34조의2에 따른 증액비율을 초과하여 청구할 수 없습니다. 또한, 임대차계약 또는 임대료 증액이 있은 후 1년 이내에는 그 임대료를 증액할 수 없습니다.</p>
+      <p>ㅇ 임대차계약의 해제·해지 등 제한(법 제45조)<br>- 임대사업자는 임차인이 의무를 위반하거나 임대차를 계속하기 어려운 경우 등의 사유가 발생한 때를 제외하고는 임대사업자로 등록되어 있는 기간 동안 임대차계약을 해제 또는 해지하거나 재계약을 거절할 수 없습니다.<br>- 임차인은 시장·군수·구청장이 임대주택에 거주하기 곤란한 정도의 중대한 하자가 있다고 인정하는 경우 등에 해당하면 임대의무기간 동안에도 임대차계약을 해제·해지할 수 있습니다.</p></div>
+    <h2>3. 민간임대주택의 표시</h2>
+    <table>
+      <tr><th class="w">주택 소재지</th><td colspan="5">${ct소재지(P, ct옛날인(doc))}</td></tr>
+      <tr><th class="w">주택 유형</th><td colspan="5">${['아파트', '연립주택', '다세대주택', '다가구주택', '그 밖의 주택'].map(t => 체(V.htype, t)).join(' &nbsp; ')}</td></tr>
+      <tr><th class="w" rowspan="2">민간임대주택<br>면적(㎡)</th><th>주거전용면적</th><th>주거공용면적</th><th colspan="2">그 밖의 공용면적<br><small>(지하주차장 면적을 포함한다)</small></th><th>합계</th></tr>
+      <tr><td>${면('areaOwn')}</td><td>${면('areaCommon')}</td><td colspan="2">${면('areaEtc')}</td><td>${합 ? esc(String(Math.round(합 * 100) / 100)) + ' ㎡' : 빈칸(60)}</td></tr>
+      <tr><th class="w">민간임대주택의 종류</th><td colspan="4">공공지원[${종('공공지원') ? '✔' : '　'}] (${체2(종류 === '공공지원 10년', '10년')}, ${체2(종류 === '공공지원 8년', '8년')}) &nbsp; 장기일반[${종('장기일반') ? '✔' : '　'}] (${체2(종류 === '장기일반 10년', '10년')}, ${체2(종류 === '장기일반 8년', '8년')})<br>단기[${종('단기') ? '✔' : '　'}] (${체2(종류 === '단기 6년', '6년')}, ${체2(종류 === '단기 4년', '4년')}) &nbsp; 그 밖의 유형[${종류 === '그 밖의 유형' ? esc(V.kindEtc || '　') : '　'}]</td><td>건설[${V.build === '건설' ? '✔' : '　'}]<br>매입[${V.build === '매입' ? '✔' : '　'}]</td></tr>
+      <tr><th class="w">임대의무기간 개시일</th><td colspan="2">${날('pv.startAt', V.startAt)}</td><th colspan="2">100세대 이상 민간임대주택단지 해당 여부</th><td>예 [${V.over100 === '예' ? '✔' : '　'}] 아니오 [${V.over100 === '아니오' ? '✔' : '　'}]</td></tr>
+      <tr><th class="w">부대시설 · 복리시설의 종류</th><td colspan="5">${ct칸('pv.facility', V.facility, 260)}</td></tr>
+      <tr><th class="w">선순위 담보권 등 권리관계 설정 여부</th><td colspan="5">${체(V.lien, '없음')} &nbsp; ${체(V.lien, '있음')} - 선순위 담보권 등 권리관계의 종류: ${ct칸('pv.lienKind', V.lienKind, 120)} · 설정금액: ${돈('pv.lienAmt', V.lienAmt)} · 설정일자: ${날('pv.lienDate', V.lienDate)}</td></tr>
+      <tr><th class="w">국세 · 지방세 체납사실</th><td colspan="5">${체(V.tax, '없음')} &nbsp; ${체(V.tax, '있음')}</td></tr>
+      <tr><th class="w">임대보증금 보증 가입 여부</th><td colspan="5">${체(V.guar, '가입')} &nbsp; ${체(V.guar, '일부가입')} - 보증대상 금액: ${돈('pv.guarAmt', V.guarAmt)}<br>${체(V.guar, '미가입(법정사유)')} - 법에서 정한 미가입사유:<br>${CT_PV_WHY.map(t => 체2(V.guar === '미가입(법정사유)' && V.guarWhy === t, t)).join('<br>')}</td></tr>
+    </table>
+    <p class="sm">* 임대보증금에 대한 보증가입은 임대사업자의 법정의무이며, 법에서 정한 미가입사유 외에 임대사업자가 임대보증금에 대한 보증에 가입하지 않은 경우 임차인은 계약을 해제 또는 해지할 수 있고 임차인은 그 해제 또는 해지로 인해 입은 손해의 배상을 청구할 수 있음<br>* 주택 면적 산정방법은 「주택법 시행규칙」 제2조,「주택공급에 관한 규칙」 제21조제5항에 따른다.<br>* 민간임대주택의 종류 중 그 밖의 유형에는 단기민간임대주택(3·4·5년), 준공공임대주택(8·10년), 기업형임대주택 중 하나를 적는다.<br>* 선순위 담보권 등 권리관계는 제한물권, 압류·가압류·가처분 등에 관한 사항을 말한다.<br>* 임대보증금 보증가입대상 금액은 법 제49조에 따른다.<br>* 보증가입대상의 미가입 사유에는 선순위 담보권 설정금액과 임대보증금을 합한 금액이 주택가격의 100분의 60보다 적은 경우(법 제49조제3항), 가입 면제 대상(법 제49조제7항) 및 가입 거절 등의 사유를 적는다.</p>
+    <h2>4. 계약조건</h2>
+    <p class="ct-art"><b>제1조(임대보증금, 월임대료 및 임대차 계약기간)</b> ① 임대사업자는 위 주택의 임대보증금, 월임대료(이하 "임대료"라 한다) 및 임대차 계약기간을 아래와 같이 정하여 임차인에게 임대한다.</p>
+    <table>
+      <tr><th class="w">구분</th><th>임대보증금</th><th>월임대료</th><th>임대차 계약기간</th></tr>
+      <tr><th class="w">금액</th><td>${돈('deal.deposit', D.deposit)}</td><td>${돈('deal.rent', D.rent)}</td><td>${날('period.handover', R.handover)} ~ ${날('period.to', R.to)}</td></tr>
+    </table>
+    <p class="ct-art">② 임차인은 제1항의 임대보증금에 대하여 아래와 같이 임대사업자에게 지급하기로 한다.</p>
+    <table>
+      <tr><th class="w">계약금</th><td>${돈('deal.down', D.down)} 은 계약 시에 지급</td></tr>
+      <tr><th class="w">중도금</th><td>${돈('deal.mid', D.mid)} 은 ${날('deal.midDate', D.midDate)}에 지급</td></tr>
+      <tr><th class="w">잔금</th><td>${금액글(ctBalance(D)) || `금 ${빈칸(140)}원정`} 은 ${날('deal.balanceDate', D.balanceDate)}에 지급</td></tr>
+      <tr><th class="w">계좌번호</th><td>${빈칸(160)} ${ct칸('pv.bank', V.bank, 80)} 은행 &nbsp; 예금주 : ${ct칸('pv.holder', V.holder, 90)}</td></tr>
+    </table>
+    <p class="ct-art">③ 임차인은 제1항과 제2항에 따른 임대보증금을 이자 없이 임대사업자에게 예치한다.<br>④ 임차인은 제2항의 지급기한까지 임대보증금을 내지 않는 경우에는 연체이율(연 ${ct칸('pv.lateRate', V.lateRate, 40)}%)을 적용하여 계산한 연체료를 더하여 내야 한다. 이 경우 연체이율은 한국은행에서 발표하는 예금은행 주택담보대출의 가중평균금리에 「은행법」에 따른 은행으로서 가계자금 대출시장의 점유율이 최상위인 금융기관의 연체가산율을 합산한 이율을 고려하여 결정한다.<br>⑤ 임차인은 당월 분의 월임대료를 매달 말일까지 내야하며, 이를 내지 않을 경우에는 연체된 금액에 제4항에 따른 연체요율을 적용하여 계산한 연체료를 더하여 내야 한다.</p>
+    <p class="ct-art"><b>제2조(민간임대주택의 입주일)</b> 위 주택의 입주일은 ${날('pv.inFrom', V.inFrom)}부터 ${날('pv.inTo', V.inTo)}까지로 한다.</p>
+    ${on.map(c => `<p class="ct-art"><b>제${번호[c.id]}조(${esc(c.title)})</b> ${글(c.text)}</p>`).join('')}
+    <h2>[특약사항]</h2>
+    <div class="ct-specials">${sp.map((x, i) => `<p>${i + 1}. ${esc(x).replace(/\n/g, '<br>')}</p>`).join('')}${'<p class="line"></p>'.repeat(Math.max(2, 5 - sp.length))}</div>
+    <div class="ctpv-note"><p><b>◈ 주택월세 소득공제 안내</b><br>근로소득이 있는 거주자(일용근로자는 제외한다)는 「소득세법」 및 「조세특례제한법」에 따라 주택월세에 대한 소득공제를 받을 수 있으며, 자세한 사항은 국세청 콜센터(국번 없이 126)로 문의하시기 바랍니다.</p></div>
+    <h2>5. 개인정보의 제3자 제공 동의서</h2>
+    <p class="ct-art">임대사업자는 「개인정보 보호법」 제17조에 따라 등록임대주택에 관한 정보제공에 필요한 개인정보를 아래와 같이 임차인의 동의를 받아 제공합니다. 이 경우 개인정보를 제공받은 자가 해당 개인정보를 이용하여 임차인에게 연락할 수 있음을 알려드립니다.</p>
+    <table>
+      <tr><th class="w">제공받는 자</th><td>국토교통부장관, 시장·군수·구청장, 주택도시보증공사, 그 밖에 법 제49조에 따른 임대보증금에 대한 보증을 취급하는 보증회사</td></tr>
+      <tr><th class="w">제공 목적</th><td>등록임대주택에 관한 정보(보증 정보 포함) 제공을 위한 우편물 발송, 문자 발송 등 지원 관련</td></tr>
+      <tr><th class="w">개인정보 항목</th><td>성명, 주소, 전화번호</td></tr>
+      <tr><th class="w">보유 및 이용 기간</th><td>임대차계약 종료일까지</td></tr>
+    </table>
+    <p class="ct-art">본인의 개인정보의 제3자 제공에 동의합니다. &nbsp; 임차인 성명: ${빈칸(120)} (서명 또는 날인)</p>
+    <p class="sm">※ 임차인은 개인정보 제공에 대한 동의를 거부할 수 있으며, 이 경우 임대사업자의 의무사항 준수 여부(임대보증금에 대한 보증가입 정보 포함), 임차인의 권리, 등록임대주택에 관한 정보 등의 제공이 제한되어 불이익을 받을 수 있습니다.</p>
+  </div>`;
+}
+/* 이 계약서가 쓰는 양식 - 전자계약으로 만든 새 계약서면 CT_E_FORMS (민간임대는 CT_E_PRIVATE) */
+const ct양식 = doc => (doc && doc.ec === 1 && doc.priv && doc.form === 'home-lease' && CT_E_PRIVATE) || (doc && doc.ec === 1 && CT_E_FORMS[doc.form]) || CT_FORMS[doc && doc.form];
 /* 예전 이름 - 주택 특약 모음 */
 const CT_SPECIALS = CT_HOME_SPECIALS;
 
@@ -16144,13 +16405,15 @@ function ct기본글꼴(){ try{ return localStorage.getItem('bk.ctFont') === 'se
 
 /* 새 계약서 한 장. 중개사무소 칸은 가입 때 받은 값으로 채운다 */
 function ctNewDoc(form, from, opt = {}){
-  const F = (opt.ec && CT_E_FORMS[form]) || CT_FORMS[form] || CT_FORMS['home-lease'];
+  const F = (opt.ec && opt.priv && form === 'home-lease' && CT_E_PRIVATE) || (opt.ec && CT_E_FORMS[form]) || CT_FORMS[form] || CT_FORMS['home-lease'];
   if(F.explain) return exNewDoc(from, form);
   const 종류 = { cat: opt.cat || (CT_CATS.find(c => c.form === form) || {}).k || (form === 'sale' || form === 'lease' ? 'realty' : ''), sub: String(opt.sub || '').trim() };
   if(CT_USES[opt.use] && ['sale', 'lease', 'sublease'].includes(form)){ 종류.use = opt.use; if(!종류.sub) 종류.sub = CT_USE_SUB[opt.use]; }
   const 판 = ctNewDoc0(form, from, F);
   Object.assign(판, 종류);
   if(F === CT_E_FORMS[form]) 판.ec = 1;
+  if(F === CT_E_PRIVATE){ 판.ec = 1; 판.priv = 1; if(!판.pv) 판.pv = {}; }
+  if(opt.multi && form === 'sale' && 판.use){ 판.multi = 1; 판.items = [{ use: 판.use, price: 0, down: 0, mid: 0 }, ct다물건새것(판.use)]; }
   if(ct기본글꼴() === 'sans') 판.font = 'sans';
   if(F.lease && opt.deal) 판.deal.type = opt.deal;
   판.clauses = ctClauseSet(판).map(c => ({ id:c.id, title:c.title, text:c.text, on:true }));
@@ -16223,7 +16486,7 @@ const ct중도2 = d => +(d && d.mid) ? (+d.mid2 || 0) : 0;
 const CT_중도더최대 = 3;
 const ct중도더 = d => ct중도2(d) && Array.isArray(d.mids) ? d.mids.slice(0, CT_중도더최대) : [];
 const ct중도합 = d => (+(d && d.mid) || 0) + ct중도2(d) + ct중도더(d).reduce((a, x) => a + (+(x && x.amt) || 0), 0);
-const ctBalance = d => Math.max(0, ctTotal(d) - (+d.down||0) - ct중도합(d) - (+d.keepLoan||0) - (+d.keepExtra||0));
+const ctBalance = d => Math.max(0, ctTotal(d) - (+d.down||0) - ct중도합(d) - (+d.keepLoan||0) - (+d.keepExtra||0) - (+d.keepDep||0));
 
 /* ── 계약 일정·알림 (2026-10-30 대표님 '카카오 알림설정') ──
    서버(api/_contract.js)와 같은 규칙 한 벌 - 공휴일·영업일·일정 목록. 검사(계약서.mjs)가 둘의 답을 맞춰 본다.
@@ -16351,7 +16614,7 @@ function ctMake(catK, sub, deal, use){
   if(c.uses && !c.uses.includes(use)) use = c.uses[0];
   CT.pick = null; CT.prevId = null;
   CT.id = null; CT.row = null; CT.track = {}; CT.fromProposal = null;
-  CT.doc = ctNewDoc(form, null, { cat: c.k, sub, use: c.uses ? use : '', ec: CT_E_FORMS[form] ? 1 : 0, deal: { 전세:'jeonse', 월세:'monthly', 연세:'yearly' }[deal] }); CT.termN = null;
+  CT.doc = ctNewDoc(form, null, { cat: c.k, sub, use: c.uses ? use : c.multi ? 'home' : '', multi: c.multi ? 1 : 0, ec: CT_E_FORMS[form] ? 1 : 0, priv: c.priv ? 1 : 0, deal: { 전세:'jeonse', 월세:'monthly', 연세:'yearly' }[deal] }); CT.termN = null;
   if(!(CT.phr && CT.phr.loaded)){ CT.baseAuto = { doc: CT.doc, list: CT.doc.specials.slice() }; ctPhrLoad(); }
   CT.filled = new Set(); CT.scan = null; CT.scanWarn = [];
   /* 시작 방법 (2026-11-12) - 등록 물건의 건물명 · 금액을 옮긴다. 주소는 물건에 없어 계약서에서 찾는다 */
@@ -16375,9 +16638,10 @@ async function ctCopy(id, 고른 = ct복사할()){
   const { ok, j } = await ctPost({ what:'contract', id }).catch(() => ({ ok:false, j:{} }));
   if(!ok || !j.row) return toast(j.error || '계약서를 불러오지 못했습니다');
   const 원 = JSON.parse(JSON.stringify(j.row.doc || {})), F = ct양식(원) || {};
+  if(원.multi) return toast('다물건 계약서는 복사하지 않습니다 - 새로 만들어 주세요');
   if(F.explain) return toast('확인·설명서는 계약서에서 만들어 주세요');
   if(!고른.length) return toast('가져올 내용을 하나 이상 고르세요');
-  const d = ctNewDoc(원.form, null, { cat: 원.cat, sub: 원.sub, use: 원.use, ec: 원.ec, deal: 원.deal && 원.deal.type });
+  const d = ctNewDoc(원.form, null, { cat: 원.cat, sub: 원.sub, use: 원.use, ec: 원.ec, priv: 원.priv, deal: 원.deal && 원.deal.type });
   if(원.title) d.title = 원.title;
   if(원.font) d.font = 원.font;
   if(고른.includes('property')){ d.property = { ...d.property, ...(원.property || {}) };
@@ -16682,10 +16946,13 @@ const ct앞자리 = v => { const t = String(v == null ? '' : v).trim(); if(!t) r
 const ct생일글 = v => { const g = ct앞자리(v); return g ? `${g.slice(0, 2)}. ${g.slice(2, 4)}. ${g.slice(4, 6)}.` : String(v == null ? '' : v).trim(); };
 function ctDocHTML(doc){
   const F = ct양식(doc) || CT_FORMS['home-lease'];
+  if(F.priv) return ctPrivDocHTML(doc);
+  if(doc.multi && doc.form === 'sale') return ct다물건HTML(doc);
   if(F.explain){ if(typeof exh기다림 === 'function' && exh기다림(doc)) return exh기다림HTML;
     return typeof exHwp쓸까 === 'function' && exHwp쓸까(doc) ? exHwpDocHTML(doc) : exDocHTML(doc); }
   const 맞춤 = !!F.fields && !F.lease;                 /* 분양권·입주권·권리양도·권리금 - 소재지 아래가 양식마다 다르다 */
-  const 전자 = ct전자(doc);                            /* 국토교통부 전자계약 양식 (2026-11-24) */
+  const 표준 = !!(doc.ec === 1 && F.std);               /* 법무부 표준계약서 원문 (2026-11-24) - 짜임은 그대로 */
+  const 전자 = ct전자(doc) && !표준;                   /* 국토교통부 전자계약 양식 (2026-11-24) */
   const 이름 = ctTitle(doc), 새이름 = 이름 !== F.ko || !F.h1;
   const P = doc.property || {}, D = doc.deal || {}, R = doc.period || {}, B = doc.broker || {};
   const on = (doc.clauses || []).filter(c => c.on);
@@ -16735,7 +17002,8 @@ function ctDocHTML(doc){
   return `
   <div class="ctdoc${ct글꼴(doc) === 'sans' ? ' f-sans' : ''}">
     ${새이름 ? `<h1 class="nm">${esc(이름)}</h1>` : `<h1>${F.h1}</h1>`}
-    <p class="lead">${전자 ? `${aKo}과 ${bKo} 쌍방은 아래 표시 ${맞춤 ? F.obj : '부동산'}에 관하여 다음 계약 내용과 같이 ${동사}계약을 체결한다.` : `${aKo}과 ${bKo}은 아래 표시 ${F.obj}에 관하여 다음과 같이 ${동사}계약을 맺는다.`}</p>
+    ${표준 ? `<p class="kind"><span class="ct-box">${D.type === 'monthly' && +D.deposit > 0 ? '✔' : ''}</span> 보증금 있는 월세 &nbsp; <span class="ct-box">${D.type === 'jeonse' ? '✔' : ''}</span> 전세 &nbsp; <span class="ct-box">${D.type === 'monthly' && !(+D.deposit > 0) ? '✔' : ''}</span> 월세</p>` : ''}
+    <p class="lead">${표준 ? `임대인(${esc(((doc.parties || {})[F.a[0]] || {}).name || '') || 빈칸(80)})과 임차인(${esc(((doc.parties || {})[F.b[0]] || {}).name || '') || 빈칸(80)})은 아래와 같이 임대차 계약을 체결한다` : 전자 ? `${aKo}과 ${bKo} 쌍방은 아래 표시 ${맞춤 ? F.obj : '부동산'}에 관하여 다음 계약 내용과 같이 ${동사}계약을 체결한다.` : `${aKo}과 ${bKo}은 아래 표시 ${F.obj}에 관하여 다음과 같이 ${동사}계약을 맺는다.`}</p>
     ${전자 && F.lease ? `<p class="kind">전세 <span class="ct-box">${D.type === 'jeonse' ? '✔' : ''}</span> &nbsp; 월세 <span class="ct-box">${D.type === 'monthly' || D.type === 'yearly' ? '✔' : ''}</span></p>` : ''}
     ${F.lease && !F.noKind && !(전자 && (doc.kind || 'new') === 'new') ? `<p class="kind">${체크('new')} 신규 계약 &nbsp; ${체크('agree')} 합의에 의한 재계약${갱신법 ? ` &nbsp; ${체크('right')} ${갱신법} 계약갱신요구권 행사에 의한 갱신계약` : ''}</p>` : ''}
 
@@ -16781,16 +17049,18 @@ function ctDocHTML(doc){
     <table>
       <tr><th class="w">매매대금</th><td>${돈('deal.price', D.price, `금 ${빈칸(160)}원정(₩${빈칸(90)})`)}</td></tr>
       <tr><th class="w">계약금</th><td>${돈('deal.down', D.down, `금 ${빈칸(140)}원정`)} 은 계약할 때 지급하고 영수함. 영수자 ${ct칸('deal.downBy', D.downBy, 70)} (인)</td></tr>
+      ${전자 && 매매 && !맞춤 ? `<tr><th class="w">융자금</th><td>${돈('deal.keepLoan', D.keepLoan, `금 ${빈칸(120)}원정`)}(${ct칸('deal.loanBank', D.loanBank, 60)})을 승계키로 한다. 임대보증금 총 ${돈('deal.keepDep', D.keepDep, `금 ${빈칸(120)}원정`)}을 승계키로 한다.</td></tr>` : ''}
       ${+D.mid || CT편집칸 ? `<tr><th class="w">${ct중도2(D) || (CT편집칸 && D.mid2On) ? '1차 중도금' : '중도금'}</th><td>${돈('deal.mid', D.mid, '')} 은 ${날('deal.midDate', D.midDate)}에 지급하며${CT편집칸 ? ct중도단추(D) : ''}</td></tr>` : ''}
       ${ct중도2(D) || +D.mid2 > 0 || (CT편집칸 && D.mid2On) ? `<tr><th class="w">${+D.mid || CT편집칸 ? '2차 중도금' : '중도금'}</th><td>${돈('deal.mid2', D.mid2, '')} 은 ${날('deal.mid2Date', D.mid2Date)}에 지급하며</td></tr>` : ''}${ct중도더(D).map((x, i) => `<tr><th class="w">${i + 3}차 중도금</th><td>${돈(`deal.mids.${i}.amt`, x.amt, '')} 은 ${날(`deal.mids.${i}.date`, x.date)}에 지급하며</td></tr>`).join('')}
       <tr><th class="w">잔금</th><td>${잔금글()} 은 ${날('deal.balanceDate', D.balanceDate)}에 지급한다</td></tr>
     </table>
     <p class="ct-art"><b>제2조(소유권 이전 등)</b> ${전자 ? `매도인은 매매대금의 잔금 수령과 동시에 매수인에게 소유권이전등기에 필요한 모든 서류를 교부하고 등기절차에 협력하며, 위 부동산의 인도일은 ${CT편집칸 ? 날('period.handover', R.handover, D.balanceDate ? `${ct날짜(D.balanceDate)}(잔금일)` : '') : ct날짜(R.handover || D.balanceDate)}로 한다.` : `매도인은 매매대금의 잔금을 받음과 동시에 매수인에게 소유권이전등기에 필요한 모든 서류를 교부하고 등기 절차에 협력하며, 위 부동산을 ${CT편집칸 ? 날('period.handover', R.handover, D.balanceDate ? `${ct날짜(D.balanceDate)}(잔금일)` : '') : ct날짜(R.handover || D.balanceDate)}에 인도한다.`}</p>`
     : `
-    <p class="ct-art">${전자 ? `<b>제1조(목적)</b> 위 부동산의 ${동사}에 대하여 ${aKo}과 ${bKo}은 합의에 의하여 ${동사}대금을 아래와 같이 지불하기로 한다.` : `<b>제1조(보증금과 차임)</b> 위 ${F.obj}의 ${동사}에 관하여 ${aKo}과 ${bKo}은 합의에 따라 보증금${월세||연세?'과 차임':''}을 아래와 같이 지급하기로 한다.`}</p>
+    <p class="ct-art">${표준 ? `<b>제1조(보증금과 차임 및 관리비)</b> 위 ${상가 ? '상가건물' : '부동산'}의 임대차에 관하여 임대인과 임차인은 합의에 의하여 보증금과 차임 및 관리비를 아래와 같이 ${상가 ? '지급' : '지불'}하기로 한다.` : 전자 ? `<b>제1조(목적)</b> 위 부동산의 ${동사}에 대하여 ${aKo}과 ${bKo}은 합의에 의하여 ${동사}대금을 아래와 같이 지불하기로 한다.` : `<b>제1조(보증금과 차임)</b> 위 ${F.obj}의 ${동사}에 관하여 ${aKo}과 ${bKo}은 합의에 따라 보증금${월세||연세?'과 차임':''}을 아래와 같이 지급하기로 한다.`}</p>
     <table>
       <tr><th class="w">보증금</th><td>${돈('deal.deposit', D.deposit, `금 ${빈칸(160)}원정(₩${빈칸(90)})`)}</td></tr>
       <tr><th class="w">계약금</th><td>${돈('deal.down', D.down, `금 ${빈칸(140)}원정`)} 은 계약할 때 지급하고 영수함. 영수자 ${ct칸('deal.downBy', D.downBy, 70)} (인)</td></tr>
+      ${전자 && 매매 && !맞춤 ? `<tr><th class="w">융자금</th><td>${돈('deal.keepLoan', D.keepLoan, `금 ${빈칸(120)}원정`)}(${ct칸('deal.loanBank', D.loanBank, 60)})을 승계키로 한다. 임대보증금 총 ${돈('deal.keepDep', D.keepDep, `금 ${빈칸(120)}원정`)}을 승계키로 한다.</td></tr>` : ''}
       ${+D.mid || CT편집칸 ? `<tr><th class="w">${ct중도2(D) || (CT편집칸 && D.mid2On) ? '1차 중도금' : '중도금'}</th><td>${돈('deal.mid', D.mid, '')} 은 ${날('deal.midDate', D.midDate)}에 지급하며${CT편집칸 ? ct중도단추(D) : ''}</td></tr>` : ''}
       ${ct중도2(D) || +D.mid2 > 0 || (CT편집칸 && D.mid2On) ? `<tr><th class="w">${+D.mid || CT편집칸 ? '2차 중도금' : '중도금'}</th><td>${돈('deal.mid2', D.mid2, '')} 은 ${날('deal.mid2Date', D.mid2Date)}에 지급하며</td></tr>` : ''}${ct중도더(D).map((x, i) => `<tr><th class="w">${i + 3}차 중도금</th><td>${돈(`deal.mids.${i}.amt`, x.amt, '')} 은 ${날(`deal.mids.${i}.date`, x.date)}에 지급하며</td></tr>`).join('')}
       <tr><th class="w">잔금</th><td>${잔금글()} 은 ${날('deal.balanceDate', D.balanceDate)}에 지급한다</td></tr>
@@ -16799,6 +17069,7 @@ function ctDocHTML(doc){
       ${+D.fee ? `<tr><th class="w">관리비</th><td>${돈('deal.fee', D.fee, '')} (정액, 매월${D.feeVat === '별도' || D.feeVat === '포함' ? `, 부가가치세 ${D.feeVat}` : ''})</td></tr>` : ''}
     </table>
     ${전자 ? `<p class="ct-art"><b>제2조(존속기간)</b> ${aKo}은 위 부동산을 ${동사} 목적대로 사용·수익할 수 있는 상태로 ${날('period.handover', R.handover)}까지 ${받는이}에게 인도하며, ${동사}기간은 인도일로부터 ${날('period.to', R.to)}까지로 한다.</p>`
+      : 표준 ? `<p class="ct-art"><b>제2조(임대차기간)</b> 임대인은 ${상가 ? '임차 상가건물' : '임차주택'}을 임대차 목적대로 사용·수익할 수 있는 상태로 ${날('period.handover', R.handover)}까지 임차인에게 인도하고, 임대차기간은 인도일로부터 ${날('period.to', R.to)}까지로 한다.</p>`
       : `<p class="ct-art"><b>제2조(${동사}기간)</b> ${aKo}은 ${doc.form === 'sublease' ? '전대물' : '임차' + F.obj}을 ${동사} 목적대로 사용·수익할 수 있는 상태로 ${날('period.handover', R.handover)}까지 ${받는이}에게 인도하고, ${동사}기간은 인도일부터 ${날('period.to', R.to)}까지로 한다.</p>`}`}
     ${on.map(c => `<p class="ct-art"><b>제${번호[c.id]}조(${esc(c.title)})</b> ${조항글(c)}</p>`).join('')}
 
@@ -16807,7 +17078,7 @@ function ctDocHTML(doc){
       ? (() => { let n = 0; return (doc.specials || []).map((s, i) => `<p>${String(s || '').trim() ? `${++n}.` : '<span class="ct-sp-new">+</span>'} <span class="ct-ed" contenteditable="plaintext-only" spellcheck="false" data-cte="cts:${i}" data-ml="1" data-ph="" style="min-width:300px">${esc(s)}</span></p>`).join(''); })() + '<p class="line"></p>'.repeat(Math.max(1, 3 - (doc.specials || []).length))
       : sp.map((s,i)=>`<p>${i+1}. ${esc(s).replace(/\n/g,'<br>')}</p>`).join('') + '<p class="line"></p>'.repeat(Math.max(2, 5 - sp.length))}${doc.acct && !(doc.specials || []).some(ct계좌줄인가) ? `<p class="ct-acct">* ${esc(ct짧은이름(aKo))} 계좌 : ${빈칸(230)} (계약 시 기재)</p>` : ''}</div>${CT편집칸 ? ct서류특약단추(doc) : ''}
 
-    <p class="ct-close">${전자 ? `본 계약을 증명하기 위하여 계약 당사자가 이의 없음을 확인하고 각각 서명·날인 후 ${aKo}, ${bKo} 및 개업공인중개사는 매장마다 간인하여야 하며, 각각 1통씩 보관한다. 다만, 거래계약서를 공인전자문서센터(전자문서및전자거래기본법 근거)에 보관한 경우에는 보존이 행하여진 것으로 본다.` : `이 계약을 증명하기 위하여 계약 당사자가 이의 없음을 확인하고 각각 서명 또는 날인한 뒤, ${aKo}·${bKo}·개업공인중개사는 매 장마다 간인하여 각각 1통씩 보관한다.`}</p>
+    <p class="ct-close">${표준 ? '본 계약을 증명하기 위하여 계약 당사자가 이의 없음을 확인하고 각각 서명·날인 후 임대인, 임차인, 개업공인중개사는 매 장마다 간인하여, 각각 1통씩 보관한다.' : 전자 ? `본 계약을 증명하기 위하여 계약 당사자가 이의 없음을 확인하고 각각 서명·날인 후 ${aKo}, ${bKo} 및 개업공인중개사는 매장마다 간인하여야 하며, 각각 1통씩 보관한다. 다만, 거래계약서를 공인전자문서센터(전자문서및전자거래기본법 근거)에 보관한 경우에는 보존이 행하여진 것으로 본다.` : `이 계약을 증명하기 위하여 계약 당사자가 이의 없음을 확인하고 각각 서명 또는 날인한 뒤, ${aKo}·${bKo}·개업공인중개사는 매 장마다 간인하여 각각 1통씩 보관한다.`}</p>
     <p class="ct-date">${날('contractDate', doc.contractDate, '계약일')}</p>
 
     <table class="ct-sign">
@@ -17851,7 +18122,7 @@ function ct만들것(p){
   if(c.uses && p.sub === '__custom' && !세부) return { ok:false, why:'세부 종류를 적어 주세요' };
   if(c.deals && !p.deal) return { ok:false, why:'거래유형을 고르세요' };
   const form = c.form || (p.deal === '매매' ? 'sale' : 'lease');
-  return { ok:true, title: ctTitle({ form, cat: c.k, sub: 세부 || '', use: p.use, deal: { type: { 전세:'jeonse', 월세:'monthly', 연세:'yearly' }[p.deal] } }) };
+  return { ok:true, title: ctTitle({ form, cat: c.k, multi: c.multi, sub: 세부 || '', use: p.use, deal: { type: { 전세:'jeonse', 월세:'monthly', 연세:'yearly' }[p.deal] } }) };
 }
 /* 고르는 단추는 공용 .chip 이 아니라 .ctw-c - 옅은 면 상자 · 고르면 꽉 찬 남색과 점(하나만 고르는 칩의 표).
    움직임 표시(CT.wizFx)는 누른 직후 첫 그림에서만 쓰고 지운다 - 글자를 칠 때마다 다시 그려도 되풀이되지 않는다.
@@ -17901,7 +18172,7 @@ function ctWizHTML(전체){
           ${직접 ? `<input class="inp" data-in="ctp-custom" value="${esc(p.custom || '')}" placeholder="예: 펜션" style="max-width:320px" aria-label="세부 종류 직접입력">` : ''}</div>`, 고른세부, 'sub');
     }
     if(c.deals) 오른쪽 += 단계('거래유형', `<div class="ctw-seg" role="group" aria-label="거래유형">${c.deals.map(d => `<button type="button" class="${p.deal === d ? 'on' : ''}${톡(`ctp-deal:${d}`)}" data-act="ctp-deal" data-v="${d}" aria-pressed="${p.deal === d}">${d}</button>`).join('')}</div>`, p.deal || '', 'deal');
-    if(!c.subs && !c.deals && !c.uses) 오른쪽 = `<div class="ctw-one"><i class="ctw-ico">${ctw그림(c.k, 22)}</i><div><b>${esc(c.ko)}</b><p>고를 것 없이 바로 만듭니다. ${esc(ct양식근거((CT_E_FORMS[c.form] || CT_FORMS[c.form] || {}).foot))}</p></div></div>`;
+    if(!c.subs && !c.deals && !c.uses) 오른쪽 = `<div class="ctw-one"><i class="ctw-ico">${ctw그림(c.k, 22)}</i><div><b>${esc(c.ko)}</b><p>고를 것 없이 바로 만듭니다. ${esc(ct양식근거(c.foot || ((c.priv && CT_E_PRIVATE) || CT_E_FORMS[c.form] || CT_FORMS[c.form] || {}).foot))}</p></div></div>`;
   }
   const 것 = ct만들것(p), 켜짐 = 것.ok && !CT.wizOk; CT.wizOk = 것.ok;
   /* 시작 방법 (2026-11-12 파트너 기획 D2-3) - 어떤 방법으로 시작해도 모든 칸은 직접 고칠 수 있다 */
@@ -19143,7 +19414,9 @@ function ctAddrIn(path, label, w = 6){
 /* 양식마다 다른 칸 - fields 의 한 묶음을 입력 칸으로 */
 function ctFieldInputs(rows){
   const 잠김 = CT.row && CT.row.status === 'sealed';
-  return rows.map(([p, l, o = {}]) => o.type === 'long'
+  return rows.map(([p, l, o = {}]) => o.type === 'one'
+    ? `<label class="ct-f w${o.w || 4}"><span class="lab">${esc(l)}</span><select class="inp" data-in="ct:${p}" ${잠김?'disabled':''}><option value="">고르기</option>${o.o.map(t => `<option${String(ctGet(CT.doc, p) || '') === t ? ' selected' : ''}>${esc(t)}</option>`).join('')}</select></label>`
+    : o.type === 'long'
     ? `<label class="ct-f wide w12"><span class="lab">${esc(l)}</span><textarea class="inp" rows="3" data-in="ct:${p}" ${잠김?'disabled':''}>${esc(String(ctGet(CT.doc, p) || ''))}</textarea></label>`
     : ctIn(p, l, { w: o.w, ph: o.ph, money: o.type === 'money', type: o.type === 'date' ? 'date' : undefined })).join('');
 }
@@ -19189,6 +19462,11 @@ function ct중도단추(D){
   return `<span class="ec-tools">${!둘째 ? `<button type="button" class="tapx" data-act="ct-mid2-add">+ 2차 중도금</button>` : ct중도2(D) && ct중도더(D).length < CT_중도더최대 ? `<button type="button" class="tapx" data-act="ct-mid-add">+ ${ct중도더(D).length + 3}차 중도금</button>` : ''}${ct중도더(D).length ? `<button type="button" class="tapx" data-act="ct-mid-del" style="color:var(--danger)">마지막 차수 빼기</button>` : 둘째 && !(+D.mid2) ? `<button type="button" class="tapx" data-act="ct-mid2-del" style="color:var(--danger)">2차 빼기</button>` : ''}</span>`;
 }
 function ct대금표(doc){
+  if(doc.multi){ const D = doc.deal || {}, 원 = n => `${comma(String(+n || 0))}원`;
+    return `<div class="ec-wrap"><table class="ec ec-pay"><tr><th>총 매매대금</th><td data-ctmt-p>${원(D.price)}</td></tr><tr><th>총 계약금</th><td data-ctmt-d>${원(D.down)}</td></tr>
+      <tr><th>총 중도금</th><td><span data-ctmt-m>${원(D.mid)}</span> · 중도금 최종일자 ${ct입('deal.midDate', { type:'date', label:'중도금 최종일자' })}</td></tr>
+      <tr><th>총 잔금</th><td><span data-ctmt-b>${원(ctBalance(D))}</span> · 잔금 지급일자 ${ct입('deal.balanceDate', { type:'date', label:'잔금 지급일자' })}</td></tr></table>
+      <p class="sub" style="margin:6px 0 0;font-size:13.5px">총액은 위 물건별 금액을 더한 값입니다. 실거래 신고에도 이 총액이 쓰입니다.</p></div>`; }
   const F = ct양식(doc) || {}, D = doc.deal || (doc.deal = {}), 매매 = !F.lease, 맞춤 = !!F.fields && !F.lease, 잠김 = ctSealed();
   const 값 = 맞춤 ? ['deal.price', F.pay.price] : 매매 ? ['deal.price', '매매대금'] : ['deal.deposit', '보증금'];
   const 줄 = (이름, 몸, rs) => `<tr>${이름 == null ? '' : `<th${rs ? ` rowspan="${rs}"` : ''}>${이름}</th>`}<td>${몸}</td></tr>`;
@@ -19205,6 +19483,7 @@ function ct대금표(doc){
     ${줄(esc(값[1]), ct원칸(값[0], 값[1]) + (맞춤 && F.pay.note ? ` <span class="ec-l2">${esc(F.pay.note)}</span>` : ''))}
     ${줄('계약금', `${ct원칸('deal.down', '계약금')} 은 계약시에 지불하고 영수함. <span class="ec-l2">영수자</span> ${ct입('deal.downBy', { w:110, label:'영수자' })}`)}
     ${맞춤 ? (F.pay.afterDown || []).map(([p, l, 끝]) => 줄(esc(l), `${ct원칸(p, l)} ${esc(끝)}`)).join('') : ''}
+    ${!맞춤 && 매매 && ct전자(doc) ? 줄('융자금', `${ct원칸('deal.keepLoan', '승계 융자금')} (${ct입('deal.loanBank', { w:90, label:'융자 은행' })})을 승계키로 한다. 임대보증금 총 ${ct원칸('deal.keepDep', '승계 임대보증금')} 을 승계키로 한다.`) : ''}
     ${중.map((몸, i) => 줄(i ? null : '중도금', 몸 + (i === 중.length - 1 ? 더 : ''), i ? 0 : 중.length)).join('')}
     ${줄('잔금', `<span class="ct-won ec-han${ct금액넘침(D) ? ' warn' : ''}" data-ctbalwon>${esc(ct금액넘침(D) || (한글금액(잔) ? `금 ${한글금액(잔)}원정` : ''))}</span> (₩ <input class="inp ec-in" style="width:150px" value="${esc(잔 ? comma(String(잔)) : '')}" disabled data-ctbal aria-label="잔금(자동 계산)">) 은 ${ct입('deal.balanceDate', { type:'date', label:'잔금 지급일' })} 에 지불한다.`)}
     ${맞춤 ? (F.pay.post || []).map(([p, l, 끝]) => 줄(esc(l), `${ct원칸(p, l)} ${esc(끝)}`)).join('') : ''}
@@ -19283,7 +19562,8 @@ function ctFormHTML(doc){
       ${ct부동산표(doc)}</div>`}
     ${F.lease && F.fields ? F.fields.map(g => `<div class="card pad ct-sec"><h2>${esc(g.h)}</h2><div class="ct-grid">${ctFieldInputs(g.rows)}</div></div>`).join('') : ''}
 
-    <div class="card pad ct-sec"><h2>${맞춤 ? esc(F.pay.price) : 매매?'매매대금':'보증금과 차임'}${ct구획(doc, ['deal'])}</h2>
+    ${doc.multi ? ct다물건칸(doc) : ''}
+    <div class="card pad ct-sec"><h2>${doc.multi ? '다물건 거래대금 (실거래신고 금액)' : 맞춤 ? esc(F.pay.price) : 매매?'매매대금':'보증금과 차임'}${ct구획(doc, ['deal'])}</h2>
       ${F.monthly === 'choose' || F.monthly === 'choose3' ? chipsHTML(F.monthly === 'choose3' ? ['전세','월세','연세'] : ['전세','월세'], CT_DEAL_KO[D.type] || '전세', 'ct-deal', false, 잠김) : ''}
       ${ct대금표(doc)}
       ${F.lease && (D.type==='monthly' || D.type==='yearly') ? `<div><span class="lab">차임 지급</span>${chipsHTML(['선불','후불'], D.rentWhen || '선불', 'ct-rentwhen', false, 잠김)}</div>` : ''}
@@ -21694,6 +21974,7 @@ function ctInput(el, k){
   if(CT.filled && CT.filled.delete(path)) el.classList.remove('ai');
   if(CT.filled2 && CT.filled2.delete(path)) el.classList.remove('dj');
   CT.lastPath = kind === 'ct' || kind === 'ct$' ? path : null;
+  if(kind === 'ct' && CT.doc.multi && /^items\.\d+\.use$/.test(path)){ ctSet(CT.doc, path, el.value); ct다물건합(CT.doc); ctDirty(); render(); return true; }
   if(kind === 'ct'){ ctSet(CT.doc, path, el.value); if(path === 'period.to') CT.termN = null;
     if(path === 'property.show') ct소재지안내다시();   /* 다시 그리기 전에도 되돌리기 단추가 바로(11-21 코드리뷰) */
     if(/^property\.land(RightKind|RatioDen|RatioNum)$/.test(path)){ const P = CT.doc.property; P.landRight = ct대지권합(P); } }
@@ -21713,6 +21994,9 @@ function ctInput(el, k){
         const 글 = $('#app [data-ctwon="deal.down"]'); if(글) 글.textContent = `금 ${한글금액(D.down)}원정`; }
     }
     const w = $(`#app [data-ctwon="${path}"]`); if(w) w.textContent = 한글금액(n) ? `금 ${한글금액(n)}원정` : '';
+    if(CT.doc.multi && path.startsWith('items.')){ ct다물건합(CT.doc); const D = CT.doc.deal, 원 = v => `${comma(String(+v || 0))}원`;
+      const t = $('#app [data-ctmt]'); if(t) t.textContent = ct다물건합글(D);
+      for(const [k, v] of [['p', D.price], ['d', D.down], ['m', D.mid], ['b', ctBalance(D)]]){ const x = $(`#app [data-ctmt-${k}]`); if(x) x.textContent = 원(v); } }
     ct잔금표시();
     if(path.startsWith('safe.') || path === 'deal.deposit') ct안전다시();
     /* 중도금을 처음 넣거나 지우면 지급일 칸이 생기고 없어진다 - 그때만 다시 그린다 */
@@ -24214,6 +24498,8 @@ function handle(a,v,el){
       ct특약넣기(CT.doc, ...넣을); ctDirty(); render(); toast(`기본 특약 ${넣을.length}개를 넣었습니다`); } return true;
     case 'ct-deal': if(CT.doc && !ctSealed()){ CT.doc.deal.type = v === '월세' ? 'monthly' : v === '연세' ? 'yearly' : 'jeonse'; ctDirty(); render(); } return true;
     case 'ct-rentwhen': if(CT.doc && !ctSealed()){ CT.doc.deal.rentWhen = v === '후불' ? '후불' : '선불'; ctDirty(); render(); } return true;
+    case 'ct-item-add': if(CT.doc && CT.doc.multi && !ctSealed() && (CT.doc.items || []).length < CT_다물건최대){ CT.doc.items.push(ct다물건새것(CT.doc.use)); ctDirty(); render(); } return true;
+    case 'ct-item-del': if(CT.doc && CT.doc.multi && !ctSealed() && (CT.doc.items || []).length > 2 && +v > 0){ CT.doc.items.splice(+v, 1); ct다물건합(CT.doc); ctDirty(); render(); } return true;
     case 'ct-font': if(CT.doc && !ctSealed() && CT_글꼴[v] && ct글꼴(CT.doc) !== v){
       if(v === 'sans') CT.doc.font = 'sans'; else delete CT.doc.font;
       try{ localStorage.setItem('bk.ctFont', v); }catch(_){}

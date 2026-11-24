@@ -170,7 +170,7 @@ const 신몸 = js.slice(신시작, 신끝);
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const 모듈 = new Function('S', 'esc', 'apiFetch', '세션있음', 'render', 'toast',
   `${몸}\n${확몸}\n${신몸}\nreturn { rpItems, rp기한, rp대상, rpHTML, RP_직접, 한글금액, 금액글, ctNewDoc, ctDocHTML, ctBalance, CT_HOME_CLAUSES, CT_SPECIALS, CT_FORMS, exNewDoc, exDocHTML, EX_SPEC, EX_FORMS, exFormFor,
-  CT, ctSave, ctLoadList, ctOpen, exSwitch, exKeys, exLost, ctTitle, ct신고, ct군, ctClauseSet, ctSpecialSet, CT_CATS, ctFieldRows,
+  CT, ctSave, ctLoadList, ctOpen, exSwitch, exKeys, exLost, ctTitle, ct신고, ct군, ctClauseSet, ctSpecialSet, CT_CATS, CT_PV_WHY, ct다물건새것, ct다물건합, ctFieldRows,
   ct일정목록, ct알림설정, ct영업일째, ct영업일전, CT_공휴일, CT_특약묶음, ct특약묶음, ct묶음문구, ct문구이름,
   ct기본특약, ct갱신특약, ct종료일, ct부가, CT_기본특약, CT_계약일조항, ct글날, ct이름외, ct지분, ct앞자리, ct생일글, ct뒷자리적기, ct뒷자리지움, ct뒷자리빼고 };`);
 const S = { route: '#/x', agent: { office: '비버공인중개사사무소', name: '한상혁', reg_no: '41450-2024-00001', addr: '하남시 미사대로 550', phone: '031-000-0000' } };
@@ -597,7 +597,7 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
 {
   ok(/const CT_복사칸 = \[\['property', [^\]]+\], \['parties', [^\]]+\], \['specials', [^\]]+\], \['deal', [^\]]+\]\];/.test(js) && /const ct복사할 = \(\) => CT\.copyParts \|\| \['property', 'parties', 'specials'\];/.test(js),
      '복사 - 목적물 · 당사자 · 특약은 기본으로 가져오고 금액 · 날짜는 고를 때만');
-  ok(/const d = ctNewDoc\(원\.form, null, \{ cat: 원\.cat, sub: 원\.sub, use: 원\.use, ec: 원\.ec, deal: 원\.deal && 원\.deal\.type \}\);/.test(js) && /CT\.dirty = true; CT\.mode = 'edit'; ctGo\('#\/partner\/contract\/new'\);\s*toast\(`지난 계약서에서/.test(js),
+  ok(/const d = ctNewDoc\(원\.form, null, \{ cat: 원\.cat, sub: 원\.sub, use: 원\.use, ec: 원\.ec, priv: 원\.priv, deal: 원\.deal && 원\.deal\.type \}\);/.test(js) && /CT\.dirty = true; CT\.mode = 'edit'; ctGo\('#\/partner\/contract\/new'\);\s*toast\(`지난 계약서에서/.test(js),
      '복사는 같은 양식의 새 계약서(사무소 칸 · 조항은 지금 값) - 원래 계약서는 그대로');
   ok(/종류\('copy', '기존 계약서 복사'/.test(js) && /data-act="\$\{갱신고르기 === 'copy' \? 'ct-copy'/.test(js) && /data-act="ct-copy-this"/.test(js),
      '복사 시작 - 계약서 작성의 ‘기존 계약서 복사’ · 작성 화면의 ‘복사해서 새로’');
@@ -783,12 +783,12 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
 /* ── 계약서 종류 (2026-10-30 대표님 '계약서 종류 전체 목록') ── */
 {
   /* 2026-11-24 국토교통부 전자계약 분류로 (파트너) */
-  ok(M.CT_CATS.map(c => `${c.grp}:${c.k}`).join() === '부동산계약서:realty,표준계약서:std,표준계약서:shop,그 밖의 계약서:presale,그 밖의 계약서:union,그 밖의 계약서:sublease',
+  ok(M.CT_CATS.map(c => `${c.grp}:${c.k}`).join() === '부동산계약서:realty,부동산계약서:multi,표준계약서:std,표준계약서:shop,표준계약서:private,그 밖의 계약서:presale,그 밖의 계약서:union,그 밖의 계약서:sublease',
      '종류 - 부동산계약서 · 표준계약서 · 그 밖의 계약서 세 묶음(권리양도양수 · 상가권리금은 뺐다)');
   ok(M.CT_CATS[0].uses.join() === 'home,biz,land,etc' && M.CT_CATS[0].deals.join() === '매매,전세,월세', '부동산 - 용도 넷 + 거래유형 매매 · 전세 · 월세(연세는 뺐다)');
-  ok(M.CT_CATS[3].subs.map(M.CT_CATS[3].name).join() === '분양권(아파트),분양권,분양권(오피스텔),분양권(주상복합),분양권(상가)' && !M.CT_CATS[3].deals,
+  ok(M.CT_CATS[5].subs.map(M.CT_CATS[5].name).join() === '분양권(아파트),분양권,분양권(오피스텔),분양권(주상복합),분양권(상가)' && !M.CT_CATS[5].deals,
      '분양권 - 세부 종류 다섯(거래유형 없음)');
-  ok(M.CT_CATS[5].uses.join() === 'home,biz' && M.CT_CATS[5].deals.join() === '전세,월세', '전대차 - 주거용 · 비주거용 + 전세 · 월세');
+  ok(M.CT_CATS[7].uses.join() === 'home,biz' && M.CT_CATS[7].deals.join() === '전세,월세', '전대차 - 주거용 · 비주거용 + 전세 · 월세');
   /* 전자계약 양식 - 용도별 제목 · 조항 · 부동산의 표시 */
   const 주거매매 = M.ctNewDoc('sale', null, { cat: 'realty', use: 'home' }), 토지매매e = M.ctNewDoc('sale', null, { cat: 'realty', use: 'land' });
   const 비주거임대 = M.ctNewDoc('lease', null, { cat: 'realty', use: 'biz', deal: 'monthly' }), 주거임대 = M.ctNewDoc('lease', null, { cat: 'realty', use: 'home', sub: '아파트', deal: 'jeonse' });
@@ -823,6 +823,40 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
   ok(M.ctBalance(입e.deal) === 510000000 && /승계 융자금<\/th><td>금 이억원정.*\(이주비/.test(입h) && /승계 분담금/.test(입h) && /2\. 종전 토지 및 분양금액 등의 내역/.test(입h)
      && /<b>제2조\(조합원 지위의 승계 및 소유권이전\)<\/b>/.test(입h) && /제8조에 따른다/.test(입h) && /쌍방은 아래 표시 조합원입주권에 관하여/.test(입h),
      '입주권 - 승계 융자금 · 분담금은 잔금에서 빼고, 종전 토지 표 · 제2조 · 제8조를 가리킨다');
+  /* 표준계약서 원문 - 새 계약서만(ec), 짜임(계약의 종류 · 미납 국세 표)은 그대로 */
+  const 주표 = M.ctNewDoc('home-lease', null, { cat: 'std', ec: 1, deal: 'monthly' }), 상표 = M.ctNewDoc('shop-lease', null, { cat: 'shop', ec: 1 });
+  주표.deal.deposit = 10000000; 주표.parties.lessor.name = '김임대';
+  const 주표h = M.ctDocHTML(주표), 상표h = M.ctDocHTML(상표);
+  ok(M.ctTitle(주표) === '주택임대차표준계약서' && 주표.clauses.length === 11 && 상표.clauses.length === 10 && /주 택 임 대 차 표 준 계 약 서/.test(주표h), '표준계약서 제목 · 주택 제3~13조 · 상가 제3~12조');
+  ok(/<span class="ct-box">✔<\/span> 보증금 있는 월세/.test(주표h) && /임대인\(김임대\)과 임차인\(/.test(주표h) && /<b>제1조\(보증금과 차임 및 관리비\)<\/b>/.test(주표h) && /<b>제2조\(임대차기간\)<\/b> 임대인은 임차주택을/.test(주표h)
+     && /제4조 제1항을 위반한 경우/.test(주표h) && /<b>제11조\(분쟁의 해결\)<\/b>/.test(주표h) && /<b>제13조\(중개대상물확인·설명서 교부\)<\/b>/.test(주표h) && /미납 국세/.test(주표h) && /신규 계약/.test(주표h),
+     '주택 표준 - 월세 구분 · 당사자 이름 머리말 · 제1 · 2조 원문 · 제4조 제1항을 가리킨다 · 미납 국세 표와 계약의 종류는 그대로');
+  ok(/3기의 차임액에 달하도록/.test(상표h) && /<b>제3조\(임차목적\)<\/b>/.test(상표h) && /<b>제12조\(중개대상물 확인·설명서 교부\)<\/b>/.test(상표h) && /임차 상가건물을 임대차 목적대로/.test(상표h), '상가 표준 - 제3조 임차목적 · 3기 · 제12조');
+  /* 표준임대차계약서(민간임대) - 양식 열쇠는 home-lease(priv), 법정 서식 그대로 */
+  const 민 = M.ctNewDoc('home-lease', null, { cat: 'private', ec: 1, priv: 1, deal: 'monthly' });
+  민.pv = { htype: '아파트', kind: '장기일반 10년', build: '매입', areaOwn: '59.9', areaCommon: '20.1', guar: '미가입(법정사유)', guarWhy: M.CT_PV_WHY[1], over100: '아니오' };
+  const 민h = M.ctDocHTML(민);
+  ok(민.form === 'home-lease' && 민.priv === 1 && M.ctTitle(민) === '표준임대차계약서' && 민.clauses.length === 15 && M.ct신고(민), '민간임대 - 주택임대차 갈래(신고 대상) · 제3~17조');
+  ok(/별지 제24호서식/.test(민h) && /1\. 계약 당사자/.test(민h) && /임대사업자 등록번호/.test(민h) && /아파트\[<span class="ct-box">✔<\/span>\]/.test(민h) && /합계/.test(민h) && /80 ㎡/.test(민h)
+     && /장기일반\[✔\]/.test(민h) && /매입\[✔\]/.test(민h) && /<span class="ct-box">✔<\/span> 임대보증금이 우선변제금 이하/.test(민h) && /<b>제17조\(특약\)<\/b>/.test(민h) && /5\. 개인정보의 제3자 제공 동의서/.test(민h),
+     '민간임대 - 별지 서식 순서 · 체크 칸 · 면적 합계 · 미가입 사유 · 제17조 · 개인정보 제3자 제공 동의서');
+  ok(M.CT_CATS.some(c => c.k === 'private' && c.form === 'home-lease' && c.priv), '분류 - 표준계약서 묶음에 민간임대');
+  /* 다물건 매매 - 표지(총액 · 서명) + 물건별 상세 쪽, 양식 열쇠는 sale */
+  const 다 = M.ctNewDoc('sale', null, { cat: 'multi', use: 'home', multi: 1 });
+  ok(다.multi === 1 && 다.items.length === 2 && M.ctTitle(다) === '다물건 매매 계약서' && 다.clauses.length === 7, '다물건 - 물건 둘로 시작 · 제목 · 매매 조항');
+  다.items[0] = { ...다.items[0], price: 300000000, down: 30000000, mid: 100000000 };
+  다.items[1] = { ...다.items[1], use: 'land', price: 200000000, down: 20000000, mid: 0, property: { ...다.items[1].property, show: '경기도 하남시 덕풍동 1-2', landCat: '대' } };
+  다.items.push({ ...M.ct다물건새것('biz'), price: 100000000, down: 10000000 });
+  M.ct다물건합(다);
+  ok(다.deal.price === 600000000 && 다.deal.down === 60000000 && 다.deal.mid === 100000000 && M.ctBalance(다.deal) === 440000000, '다물건 - 총액은 물건별 금액의 합 · 총 잔금');
+  const 다h = M.ctDocHTML(다);
+  ok(/■ 다물건 부동산의 표시/.test(다h) && /\(외 2 물건\)/.test(다h) && /총 매매대금<\/th><td colspan="3">금 육억원정/.test(다h) && (다h.match(/class="ct-sign"/g) || []).length === 1
+     && (다h.match(/<section class="ct-page">/g) || []).length === 3 && /\(다물건\) 부동산\(토지\) 매매 계약서/.test(다h) && /물건번호<\/th><td>2<\/td><th class="w">전체 물건 개수<\/th><td>3<\/td>/.test(다h)
+     && /경기도 하남시 덕풍동 1-2/.test(다h) && /계약일자 : /.test(다h) && /\(다물건\) 부동산\(비주거용\) 매매 계약서/.test(다h),
+     '다물건 - 표지에 총액 · 서명은 한 번, 물건마다 상세 쪽(제목 · 물건번호 / 전체 개수 · 계약일자로 끝)');
+  /* 전자계약 매매 - 융자금 줄, 승계 금액은 잔금에서 뺀다 */
+  const 융 = M.ctNewDoc('sale', null, { cat: 'realty', use: 'home' }); 융.deal = { ...융.deal, price: 500000000, down: 50000000, keepLoan: 100000000, keepDep: 50000000 };
+  ok(/<th class="w">융자금<\/th>/.test(M.ctDocHTML(융)) && M.ctBalance(융.deal) === 300000000, '전자계약 매매 - 융자금 · 임대보증금 승계 줄, 잔금에서 뺀다');
   ok(/'__custom', '직접입력'/.test(js) && /data-in="ctp-custom"/.test(js), '세부 종류는 직접입력도 된다');
 
   /* 문서 이름이 고른 것을 따라간다 */

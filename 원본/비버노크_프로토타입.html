@@ -1478,6 +1478,18 @@ body.mo .hp-pair-h{font-size:19px}
 .ctpi-view img{display:block;width:100%;height:auto}
 .ctpi-acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
 .ctpi-acts .btn{flex:1 1 auto;white-space:nowrap}
+.hm-h1s{display:flex;flex-direction:column;gap:.55em;font-size:clamp(32px,3vw,46px);word-break:keep-all}
+.hm-h1l{display:block}
+body.mo .hm-h1.hm-h1s{font-size:26px;gap:.5em}
+.hm-h1s .accentWord{white-space:nowrap}
+.hm-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;width:100%;max-width:620px}
+.hm-3i{display:flex;align-items:flex-start;gap:10px;padding:14px 14px 15px;border:1px solid var(--hair);border-radius:16px;background:var(--white,#fff);cursor:pointer;text-decoration:none;transition:border-color .2s,transform .2s var(--e-out)}
+.hm-3i:hover{border-color:var(--ind300);transform:translateY(-2px)}
+.hm-3i:focus-visible{outline:2px solid var(--ind);outline-offset:2px}
+.hm-3g{flex:none;display:grid;place-items:center;width:36px;height:36px;border-radius:12px;color:var(--ind);background:var(--ind50,#F3EFFD)}
+.hm-3i b{display:block;font-size:15px;color:var(--n900);letter-spacing:-.02em}
+.hm-3i small{display:block;margin-top:2px;font-size:12.5px;line-height:1.5;color:var(--n600,#555)}
+body.mo .hm-3{grid-template-columns:1fr;text-align:left}
 .hm-sub2{margin:-6px 0 0;font-size:clamp(16px,1.3vw,18px);font-weight:700;letter-spacing:-.02em;color:var(--ind)}
 .hm-partner-band{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-top:28px;padding:18px 22px;border:1px solid var(--hair);border-radius:16px;background:var(--n50,#F7F7F9);text-align:left}
 .hm-partner-band b{display:block;font-size:15.5px;color:var(--n900);margin-bottom:4px}
@@ -6047,13 +6059,13 @@ V['#/'] = () => `
   <section class="hm-hero">
     <div class="hm-copy">
       <span class="beta"><b>Close Beta</b>서울·경기에서 먼저 시작합니다</span>
-      <h1 class="t hm-h1">찾아다니지 마세요.<br>조건을 걸어두면<br><span class="accentWord">문을 두드립니다.</span></h1>
-      <p class="hm-sub2">내 계약 진행과정, 비버노크에서 바로 확인하세요</p>
+      ${hm두머리()}
       <p class="hm-lead">원하는 집·가게의 조건을 남기면, 맞는 물건이 있는 공인중개사가 직접 연락합니다.</p>
       <div class="hm-cta">
         <button class="btn pri blk" data-go="#/kind">내 조건 걸어두기</button>
         ${S.user ? '' : `<span class="signupHint"><b>30초 간편가입</b> · 무료서비스</span>`}
       </div>
+      ${hm손님메뉴()}
       ${hm안내()}
     </div>
     <div class="hm-stage">
@@ -6082,13 +6094,13 @@ V['#/'] = () => `
   <section class="hm-hero">
     <div class="hm-copy">
       <span class="beta"><b>Close Beta</b>서울·경기에서 먼저 시작합니다</span>
-      <h1 class="t hm-h1">찾아다니지 마세요.<br>조건을 걸어두면<br><span class="accentWord">문을 두드립니다.</span></h1>
-      <p class="hm-sub2">내 계약 진행과정, 비버노크에서 바로 확인하세요</p>
+      ${hm두머리()}
       <p class="hm-lead">원하는 집·가게의 조건을 남기면, 맞는 물건이 있는 공인중개사가 직접 연락합니다.</p>
       <div class="hm-cta">
         <button class="btn pri" data-go="#/kind">내 조건 걸어두기</button>
         ${S.user ? '' : `<span class="signupHint"><b>30초 간편가입</b><br>무료서비스</span>`}
       </div>
+      ${hm손님메뉴()}
       ${hm안내()}
     </div>
     <div class="hm-stage">
@@ -6149,6 +6161,14 @@ const HM_그림 = {
 const hm그림 = (k, s = 22) => `<svg viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${HM_그림[k]}</svg>`;
 /* 비버는 주인공이 아니라 안내 - 작은 얼굴 하나와 말풍선 한 줄 */
 const hm안내 = () => `<p class="hm-guide lg">${beaverlyMini(isMo() ? 44 : 52)}<span><b>비버가 대신 기다려요</b>조건에 맞는 물건이 생기면, 그 물건을 가진 중개사가 문을 두드립니다.</span></p>`;
+/* 손님 메인 머리 (2026-11-24 파트너 '두 가지가 같은 레벨로 - 비버노크에서 누릴 수 있는 주요 기능 두 가지가 핵심') */
+const hm두머리 = () => `<h1 class="t hm-h1 hm-h1s"><span class="hm-h1l">찾아다니지 마세요.<br>조건을 걸어두면 <span class="accentWord">문을 두드립니다.</span></span><span class="hm-h1l">내 계약 진행과정,<br>비버노크에서 <span class="accentWord">바로 확인하세요.</span></span></h1>`;
+/* 손님 메뉴 셋 - 첫 화면에서 바로 (2026-11-24 파트너 '1:1 제안 · 매물매칭 · 직접매물찾기') */
+const hm손님메뉴 = () => `<nav class="hm-3" aria-label="손님 메뉴">${[
+    ['bell', '1:1 제안 받기', '조건을 걸어두면 중개사가 먼저 제안', '#/kind'],
+    ['target', '매물매칭', '중개사가 등록한 매물 중 내 조건에 맞는 것', '#/matched'],
+    ['search', '직접 매물찾기', '지도에서 매물 찾기', '#/map']].map(([g, t, d, h]) =>
+    `<a class="hm-3i" data-go="${h}"><span class="hm-3g">${hm그림(g, 20)}</span><span><b>${t}</b><small>${d}</small></span></a>`).join('')}</nav>`;
 const hm떠있는 = (제목, 말, 그림, 자리) => `<div class="hm-float lg ${자리}" aria-hidden="true"><span class="hm-fi">${hm그림(그림, 18)}</span><span><b>${제목}</b><small>${말}</small></span></div>`;
 const hm목록 = 줄들 => `<ul class="hm-list">${줄들.map(t => `<li>${hm그림('check', 18)}<span>${t}</span></li>`).join('')}</ul>`;
 function hm장점(){
@@ -14377,6 +14397,7 @@ if(typeof addEventListener === 'function'){
   addEventListener('unhandledrejection', e => { const r = e && e.reason; bk오류보내기('처리되지 않은 오류: ' + ((r && r.message) || r), (r && r.stack && (/(https?:\/\/[^\s)]+?):\d+:\d+/.exec(r.stack) || [])[1]) || location.origin, 0, 0, r && r.stack); });
 }
 const BK_변경 = [
+  { v:'26.11.24.15', 날:'2026-11-24', 줄:[ '손님 메인 (파트너) - ‘찾아다니지 마세요. 조건을 걸어두면 문을 두드립니다.’와 ‘내 계약 진행과정, 비버노크에서 바로 확인하세요.’를 같은 크기로 나란히, 첫 화면에 손님 메뉴 셋(1:1 제안 받기 · 매물매칭 · 직접 매물찾기)' ] },
   { v:'26.11.24.14', 날:'2026-11-24', 줄:[ '사이트 안 대화를 껐습니다 (대표님 · 파트너) - 손님 상담은 사무소 카카오톡 채널로: 알림 설정에 ‘손님 상담 카카오톡 채널’ 주소를 넣으면 손님의 계약 진행 화면 · 계약 뒤 할 일 안내에 ‘카카오톡 채널로 상담’ 단추', '대화방은 ‘계약 진행 화면’으로 - 초대 · 일정 · 계약서 보기는 그대로, 지난 대화는 읽기만 · 메뉴 이름 ‘계약 손님’' ] },
   { v:'26.11.24.13', 날:'2026-11-24', 줄:[ '잔금 준비서류 이미지 (파트너) - 계약서 일정·체크와 매매 대화방에서 매도인 · 매수인 준비서류를 한 장에 담은 이미지를 만들어 바로 보내기(휴대폰) · 저장 · 복사', '잔금 준비물 안내 · 알림은 일반 부동산 매매만 - 분양권 · 조합원입주권 · 입목재단은 뺐습니다' ] },
   { v:'26.11.24.12', 날:'2026-11-24', 줄:[ '홍보 문구 (파트너) - 파트너 안내 주제목 셋: ‘반복되는 계약업무, 이제는 편리하게 하세요’(등기부 · 대장만 올리면 자동 입력) · ‘계약현황 · 매물장부 · 매칭현황을 한눈에’(대시보드 작게) · ‘자동매칭 · 자동홍보’(매물등록만 하면 찾는 손님과 연결)', '손님 메인 첫 문구 아래 ‘내 계약 진행과정, 비버노크에서 바로 확인하세요’' ] },

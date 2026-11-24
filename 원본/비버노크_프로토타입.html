@@ -14334,6 +14334,7 @@ if(typeof addEventListener === 'function'){
   addEventListener('unhandledrejection', e => { const r = e && e.reason; bk오류보내기('처리되지 않은 오류: ' + ((r && r.message) || r), (r && r.stack && (/(https?:\/\/[^\s)]+?):\d+:\d+/.exec(r.stack) || [])[1]) || location.origin, 0, 0, r && r.stack); });
 }
 const BK_변경 = [
+  { v:'26.11.24.6', 날:'2026-11-24', 줄:[ '전수점검 · 코드리뷰 반영 - 민간임대 계약서에 2차부터 중도금 · 법인 당사자 · 공동명의 · 대리인 · 공동중개 사무소가 빠지던 것', '다물건 - 확인·설명서 탭이 총액을 거래금액으로 넣던 것(물건 1 금액으로) · 물건마다 소재지 · 매매대금이 있어야 확정 · 거래신고 도우미에 물건별 안내 · 계약현황 고치기에서 금액은 막음', '계약서 목록 · 계약현황의 종류 이름이 새 양식(부동산(주거용) · 민간임대 · 다물건)으로 보이게' ] },
   { v:'26.11.24.5', 날:'2026-11-24', 줄:[ '별지 - 주택임대차표준계약서는 서류 아래 ‘별지 붙이기’로 뒤에 한 쪽(소재지 · 토지 · 건물 · 임차할부분 · [내용]), 확인·설명서 별지는 파트너가 준 별지양식대로(종류 · 거래형태 줄 · [소유권 외의 권리사항]) 국가 원본 틀에도 붙습니다', '다물건 매매 - 물건마다 ‘이 물건 확인·설명서’로 그 물건의 소재지 · 용도 · 금액이 들어간 확인·설명서를 만듭니다', '토지 · 입목재단 계약서는 입력 화면에서도 건물 칸을 뺐고, 전자계약 임대는 대지권 칸 없이 ‘임대할 부분’으로', '서류 아래 양식 근거 문장을 전자계약 양식으로 바로잡았습니다' ] },
   { v:'26.11.24.4', 날:'2026-11-24', 줄:[ '주택임대차 · 상가건물 임대차 표준계약서 조항을 법무부 원문 그대로(주택 제1~13조 · 상가 제1~12조) - 보증금 있는 월세 · 전세 · 월세 표시, 임대인 · 임차인 이름 머리말', '표준임대차계약서(민간임대) 새로 - 민간임대주택법 별지 제24호서식 그대로(임대사업자 등록번호 · 주택 유형 · 면적 · 민간임대 종류 · 보증 가입 · 제1~17조 · 개인정보 제3자 제공 동의서), 임대차 신고 · 만기 알림은 주택임대차와 같이', '다물건 매매 새로 - 표지(총액 · 서명) + 물건마다 상세 쪽((다물건) 제목 · 물건번호 / 전체 개수 · 계약일자), 물건별 금액을 적으면 총액이 맞춰지고 실거래 신고에 총액을 씁니다', '전자계약 매매에 융자금 · 임대보증금 승계 줄 - 잔금에서 뺍니다' ] },
   { v:'26.11.24.3', 날:'2026-11-24', 줄:[ '분양권 · 조합원입주권 매매계약서를 전자계약 양식으로 - 분양 목적물(TYPE · 대지권 비율) · 분양대금 및 납부내역(확장비 · 선택품목 · 납부한 금액) · 총 매매대금 저절로 셈 · 정산지급금 · 승계 융자금, 입주권은 종전 토지 · 분담금 내역과 승계 분담금(잔금에서 뺌) · 조항 제2~12조', '예전에 만든 분양권 · 입주권 계약서는 그때 양식 그대로 열립니다' ] },
@@ -16322,6 +16323,16 @@ function ctPrivDocHTML(doc){
   const 면 = k => ct칸('pv.' + k, V[k], 60, 'area');
   const 합 = ['areaOwn', 'areaCommon', 'areaEtc'].reduce((n, k) => n + (parseFloat(V[k]) || 0), 0);
   const 주민 = x => ct앞자리(x.birth) ? `${esc(ct앞자리(x.birth))} - ${빈칸(72)}` : 빈칸(140);
+  /* 당사자 - 법인은 법인명 · 대표 · 법인등록번호 · 사업자등록번호, 공동명의는 같은 칸을 이어 붙이고, 대리인은 아래에 (11-24 리뷰) */
+  const 한사람 = (label, x, b, 등록) => { const 법인 = x.type === 'corp', n = 등록 ? 4 : 3;
+    return `<tr><th class="w" rowspan="${n}">${label}</th><th>성명(법인명)</th><td colspan="3" class="sign">${ct칸(b + '.name', x.name, 120)}${법인 ? ` &nbsp; 대표 ${ct칸(b + '.rep', x.rep, 80)}` : ''}${x.share ? ` <span class="sm">(지분 ${esc(x.share)})</span>` : ''} <span class="ct-seal">(서명 또는 인)</span></td></tr>
+      <tr><th>주소${등록 ? '<br><small>(대표 사무소 소재지)</small>' : ''}</th><td colspan="3">${ct칸(b + '.addr', x.addr, 260)}</td></tr>
+      <tr><th>${법인 ? '법인등록번호<br><small>(사업자등록번호)</small>' : `주민등록번호${등록 ? '<br><small>(사업자등록번호)</small>' : ''}`}</th><td>${법인 ? `${ct칸(b + '.corpNo', x.corpNo, 120)}${x.bizNo ? ` (${esc(x.bizNo)})` : ''}` : 주민(x)}</td><th>전화번호</th><td>${ct칸(b + '.phone', x.phone, 110)}</td></tr>
+      ${등록 ? `<tr><th>임대사업자 등록번호</th><td colspan="3">${ct칸('pv.regNo', V.regNo, 160)}</td></tr>` : ''}`; };
+  const 대리 = (label, x, b) => !x.proxy ? '' : `<tr><th class="w" rowspan="2">${label}의<br>대리인</th><th>성명 · 관계</th><td colspan="3" class="sign">${ct칸(b + '.proxy.name', x.proxy.name, 120)} · ${ct칸(b + '.proxy.rel', x.proxy.rel, 80)} <span class="ct-seal">(서명 또는 인)</span> <span class="sm">· 위임장 · 본인 인감증명서 첨부</span></td></tr>
+      <tr><th>주소 · 전화</th><td colspan="3">${ct칸(b + '.proxy.addr', x.proxy.addr, 220)} · ${ct칸(b + '.proxy.phone', x.proxy.phone, 110)}</td></tr>`;
+  const 당사자 = (label, x, k, 등록) => [한사람(label, x, `parties.${k}`, 등록), ...(x.co || []).map((c, i) => 한사람(`${label} ${i + 2}`, c, `parties.${k}.co.${i}`, false)), 대리(label, x, `parties.${k}`)].join('');
+  const 중도들 = [[D.mid, 'deal.mid', D.midDate, 'deal.midDate'], ...(ct중도2(D) ? [[D.mid2, 'deal.mid2', D.mid2Date, 'deal.mid2Date']] : []), ...ct중도더(D).map((x, i) => [x.amt, `deal.mids.${i}.amt`, x.date, `deal.mids.${i}.date`])];
   const 종류 = V.kind || '', 종 = k => 종류.startsWith(k);
   const on = (doc.clauses || []).filter(c => c.on), 번호 = {}; on.forEach((c, i) => 번호[c.id] = i + 3);
   const 글 = t => esc(t).replace(/\{\{조:([a-z]+)\}\}/g, (_, id) => 번호[id] ? `제${번호[id]}조` : '이 계약의 해당 조항').replace(/\n/g, '<br>');
@@ -16334,13 +16345,8 @@ function ctPrivDocHTML(doc){
     <p class="ct-date">계약일 : ${날('contractDate', doc.contractDate)}</p>
     <h2>1. 계약 당사자</h2>
     <table>
-      <tr><th class="w" rowspan="4">임대사업자</th><th>성명(법인명)</th><td colspan="3" class="sign">${ct칸('parties.lessor.name', 임.name, 120)} <span class="ct-seal">(서명 또는 인)</span></td></tr>
-      <tr><th>주소<br><small>(대표 사무소 소재지)</small></th><td colspan="3">${ct칸('parties.lessor.addr', 임.addr, 260)}</td></tr>
-      <tr><th>주민등록번호<br><small>(사업자등록번호)</small></th><td>${주민(임)}</td><th>전화번호</th><td>${ct칸('parties.lessor.phone', 임.phone, 110)}</td></tr>
-      <tr><th>임대사업자 등록번호</th><td colspan="3">${ct칸('pv.regNo', V.regNo, 160)}</td></tr>
-      <tr><th class="w" rowspan="3">임차인</th><th>성명(법인명)</th><td colspan="3" class="sign">${ct칸('parties.lessee.name', 차.name, 120)} <span class="ct-seal">(서명 또는 인)</span></td></tr>
-      <tr><th>주소</th><td colspan="3">${ct칸('parties.lessee.addr', 차.addr, 260)}</td></tr>
-      <tr><th>주민등록번호</th><td>${주민(차)}</td><th>전화번호</th><td>${ct칸('parties.lessee.phone', 차.phone, 110)}</td></tr>
+      ${당사자('임대사업자', 임, 'lessor', true)}
+      ${당사자('임차인', 차, 'lessee', false)}
     </table>
     <h2>2. 공인중개사 <small>(개업공인중개사가 계약서를 작성하는 경우 해당)</small></h2>
     <table>
@@ -16348,6 +16354,10 @@ function ctPrivDocHTML(doc){
       <tr><th class="w">사무소 소재지</th><td colspan="3">${ct칸('broker.addr', B.addr, 260)}</td></tr>
       <tr><th class="w">등록번호</th><td>${ct칸('broker.regNo', B.regNo, 120)}</td><th>전화번호</th><td>${ct칸('broker.phone', B.phone, 100)}</td></tr>
       <tr><th class="w">소속공인중개사</th><td colspan="3" class="sign">${B.hand ? 빈칸(120) : ct칸('broker.staff', B.staff, 120)} <span class="ct-seal">(서명 및 인)</span></td></tr>
+      ${(doc.coBrokers || []).map((c, i) => { const b = `coBrokers.${i}`; return `
+      <tr><th class="w">사무소 명칭<br><small>(공동중개${(doc.coBrokers || []).length > 1 ? ' ' + (i + 1) : ''})</small></th><td>${ct칸(b + '.office', c.office, 140)}</td><th>대표자 성명</th><td class="sign">${B.hand ? 빈칸(70) : ct칸(b + '.rep', c.rep, 70)} <span class="ct-seal">(서명 및 인)</span></td></tr>
+      <tr><th class="w">사무소 소재지</th><td colspan="3">${ct칸(b + '.addr', c.addr, 260)}</td></tr>
+      <tr><th class="w">등록번호</th><td>${ct칸(b + '.regNo', c.regNo, 120)}</td><th>전화번호</th><td>${ct칸(b + '.phone', c.phone, 100)}</td></tr>`; }).join('')}
     </table>
     <div class="ctpv-note"><p><b>◈ 해당 주택은 「민간임대주택에 관한 특별법」(이하 "법"이라 한다)에 따라 임대사업자가 시장·군수·구청장에게 등록한 민간임대주택으로서 다음과 같은 사항이 적용됩니다.</b></p>
       <p>ㅇ 임대의무기간 중 민간임대주택 양도 제한(법 제43조)<br>- 임대사업자는 「민간임대주택에 관한 특별법 시행령」 제34조제1항에 따른 시점부터 법 제2조제4호 또는 제5호에 따른 기간 동안 해당 민간임대주택을 계속 임대해야 하며, 그 기간 동안에는 양도가 제한됩니다.</p>
@@ -16376,7 +16386,7 @@ function ctPrivDocHTML(doc){
     <p class="ct-art">② 임차인은 제1항의 임대보증금에 대하여 아래와 같이 임대사업자에게 지급하기로 한다.</p>
     <table>
       <tr><th class="w">계약금</th><td>${돈('deal.down', D.down)} 은 계약 시에 지급</td></tr>
-      <tr><th class="w">중도금</th><td>${돈('deal.mid', D.mid)} 은 ${날('deal.midDate', D.midDate)}에 지급</td></tr>
+      ${중도들.map(([v, p1, d, p2], i) => `<tr><th class="w">${중도들.length > 1 ? `${i + 1}차 중도금` : '중도금'}</th><td>${돈(p1, v)} 은 ${날(p2, d)}에 지급</td></tr>`).join('')}
       <tr><th class="w">잔금</th><td>${금액글(ctBalance(D)) || `금 ${빈칸(140)}원정`} 은 ${날('deal.balanceDate', D.balanceDate)}에 지급</td></tr>
       <tr><th class="w">계좌번호</th><td>${빈칸(160)} ${ct칸('pv.bank', V.bank, 80)} 은행 &nbsp; 예금주 : ${ct칸('pv.holder', V.holder, 90)}</td></tr>
     </table>
@@ -16893,6 +16903,7 @@ function ct필수(doc){
   if(F.lease && (D.type === 'monthly' || D.type === 'yearly')) 목록.push(['deal.rent', D.type === 'yearly' ? '연 차임' : '월 차임']);
   if(F.lease) 목록.push(['period.handover', '인도일(입주일)'], ['period.to', '종료일']);
   목록.push(['contractDate', '계약일']);
+  if(doc.multi) (doc.items || []).forEach((x, i) => { if(i) 목록.push([`items.${i}.property.show`, `물건 ${i + 1} 소재지`]); 목록.push([`items.${i}.price`, `물건 ${i + 1} 매매대금`]); });
   for(const [k, ko] of [F.a || [], F.b || []]) if(k) 목록.push([`parties.${k}.name`, `${ct짧은이름(ko)} ${((doc.parties || {})[k] || {}).type === 'corp' ? '법인명' : '성명'}`]);
   목록.push(['broker.office', '사무소 명칭'], ['broker.regNo', '중개사무소 등록번호']);
   return 목록;
@@ -16900,7 +16911,7 @@ function ct필수(doc){
 function ct필수빠짐(doc = CT.doc){
   const s = new Set(); if(!doc) return s;
   for(const [p] of ct필수(doc)){ const v = p === 'property.road' ? (ctGet(doc, p) || ctGet(doc, 'property.jibun') || ctGet(doc, 'property.show')) : ctGet(doc, p);
-    if(v == null || String(v).trim() === '' || (/^deal\.(price|deposit|down|rent)$/.test(p) && !(+v > 0))) s.add(p); }
+    if(v == null || String(v).trim() === '' || ((/^deal\.(price|deposit|down|rent)$/.test(p) || /^items\.\d+\.price$/.test(p)) && !(+v > 0))) s.add(p); }
   return s;
 }
 /* 빠진 칸 안내 - 입력 판 맨 위. 확정을 한 번 눌러야 나온다(처음부터 빨갛게 하지 않는다) */
@@ -18800,13 +18811,13 @@ function ctQuickOpen(id){
   const r = (CT.list || []).find(x => x.id === id); if(!r) return;
   if(CT.id === id && CT.dirty) return toast('이 계약서에 임시저장하지 않은 고침이 있습니다 - 계약서를 열어 저장한 뒤 고쳐 주세요');
   const F = CT_FORMS[r.form] || {}, t = r.track || {}, p = r.parties || {}, a = p[(F.a || [])[0]] || {}, b = p[(F.b || [])[0]] || {};
-  S.modal = { type:'ct-quick', id, form: r.form, sealed: r.status === 'sealed', road0: r.title || '', f:{ road: r.title || '', an: a.name || '', ap: a.phone || '', bn: b.name || '', bp: b.phone || '',
+  S.modal = { type:'ct-quick', id, form: r.form, multi: r.multi === 1, sealed: r.status === 'sealed', road0: r.title || '', f:{ road: r.title || '', an: a.name || '', ap: a.phone || '', bn: b.name || '', bp: b.phone || '',
     total: +(r.price || r.deposit) || '', down: +r.down || '', cd: r.cd || '', mid: +r.mid || '', md: t.midDate || r.md || '', bd: t.balanceDate || r.bd || '', sd: t.signDate || '' } };
   render();
 }
 function ctQuickHTML(m){
   const F = CT_FORMS[m.form] || CT_FORMS['home-lease'], f = m.f, 잠 = !!m.sealed;
-  const 칸 = (k, 이름, o = {}) => { const 막 = 잠 && !o.open, 값 = o.money ? comma(f[k] || '') : (f[k] || '');
+  const 칸 = (k, 이름, o = {}) => { const 막 = (잠 && !o.open) || (m.multi && o.money), 값 = o.money ? comma(f[k] || '') : (f[k] || '');
     return `<label class="ct-f ${o.w || 'w6'}"><span class="lab">${이름}</span>${o.money ? '<div class="unit">' : ''}<input class="inp${o.money ? ' num' : ''}" data-in="ctq:${k}"${o.date ? ' type="date"' : ''}${o.money ? ' inputmode="numeric"' : ''}${o.tel ? ' inputmode="tel" maxlength="13"' : ''} value="${esc(값)}"${막 ? ' disabled' : ''} autocomplete="off">${o.money ? '<span>원</span></div>' : ''}</label>`; };
   const 양식 = m.id ? `<p class="sub" style="margin:0 0 10px">${esc(F.ko || '')}${잠 ? ' · 확정본' : ' · 작성 중'}</p>`
     : `<label class="ct-f w12"><span class="lab">계약서 종류</span><select class="inp" data-act-ch="ctq-formsel">${Object.entries(CT_FORMS).filter(([, x]) => !x.explain).map(([k, x]) => `<option value="${k}"${m.form === k ? ' selected' : ''}>${esc(x.ko)}</option>`).join('')}</select></label>`;
@@ -18845,7 +18856,8 @@ async function ctQuickSave(){
       if(소재바뀜){ const { admCd, bun, ji, mount, zip, jibun, show, ...남 } = doc.property || {}; void admCd; void bun; void ji; void mount; void zip; void jibun; void show;
         doc.property = m.id ? { ...남, road: 글(f.road, 200), jibun:'', admCd:'', bun:'', ji:'', mount:false, zip:'' } : { ...(doc.property || {}), road: 글(f.road, 200) }; }
       doc.parties = { ...(doc.parties || {}), [F.a[0]]: 사람(F.a[0], f.an, f.ap), [F.b[0]]: 사람(F.b[0], f.bn, f.bp) };
-      doc.deal = { ...(doc.deal || {}), [F.lease ? 'deposit' : 'price']: +f.total || 0, down: +f.down || 0, mid: +f.mid || 0, midDate: 날(f.md), balanceDate: 날(f.bd) };
+      doc.deal = doc.multi ? { ...(doc.deal || {}), midDate: 날(f.md), balanceDate: 날(f.bd) }   /* 다물건 - 총액은 물건별 금액의 합(계약서에서 고친다) */
+        : { ...(doc.deal || {}), [F.lease ? 'deposit' : 'price']: +f.total || 0, down: +f.down || 0, mid: +f.mid || 0, midDate: 날(f.md), balanceDate: 날(f.bd) };
       doc.contractDate = 날(f.cd);
       const { ok, j } = await ctPost({ what:'contract-save', id: id || undefined, form: doc.form, doc });
       if(!ok) throw new Error(j.error || '저장하지 못했습니다');
@@ -21936,6 +21948,7 @@ function rpItems(doc){
 }
 /* 임대차 신고 대상인지 대략 알려 준다 - 지역(수도권·광역시·세종·도의 시)까지는 보지 않으므로 '가능성' 으로만 말한다 */
 function rp대상(doc){
+  if(doc.multi) return `다물건 계약입니다 - 거래신고는 물건마다 소재지 · 금액을 따로 적어야 합니다. ${(doc.items || []).map((x, i) => { const it = ct물건(doc, i); return `물건 ${i + 1}: ${String((it.property || {}).show || (it.property || {}).road || '').trim() || '소재지 미입력'} ${comma(String(+it.price || 0))}원`; }).join(' / ')}`;
   if(doc.form === 'sale') return '중개거래는 개업공인중개사가 신고합니다(공동중개는 공동으로).';
   if(doc.form === 'presale') return '분양권 전매도 거래신고 대상입니다. 중개거래는 개업공인중개사가 계약일부터 30일 안에 신고합니다. 사업주체의 명의변경은 신고필증을 받은 뒤에 합니다.';
   if(doc.form === 'union') return '조합원 입주권 매매도 거래신고 대상입니다. 중개거래는 개업공인중개사가 계약일부터 30일 안에 신고합니다.';
@@ -24409,8 +24422,8 @@ function handle(a,v,el){
       if(!CT.doc) return true;
       if(CT.dirty || !CT.id) return toast('계약서를 먼저 저장해 주세요'), true;
       /* 다물건 - 고른 물건의 소재지 · 용도 · 금액으로 (2026-11-24 파트너 '각 상세 쪽 뒤에는 그 물건의 확인설명서') */
-      const 물 = a === 'ct-explain-item' && CT.doc.multi ? ct물건(CT.doc, +v) : null;
-      const 원 = 물 ? { ...CT.doc, __id: CT.id, multi: 0, use: 물.use, sub: CT_USE_SUB[물.use], property: { ...물.property }, deal: { ...CT.doc.deal, price: +물.price || 0 }, src: +v === 0 ? CT.doc.src : null }
+      const 물 = CT.doc.multi ? ct물건(CT.doc, a === 'ct-explain-item' ? +v || 0 : 0) : null;
+      const 원 = 물 ? { ...CT.doc, __id: CT.id, multi: 0, use: 물.use, sub: CT_USE_SUB[물.use], property: { ...물.property }, deal: { ...CT.doc.deal, price: +물.price || 0 }, src: a !== 'ct-explain-item' || !(+v) ? CT.doc.src : null }
         : { ...CT.doc, __id: CT.id }, 제안 = CT.row && CT.row.proposal_id;
       CT.id = null; CT.row = null; CT.track = {}; CT.fromProposal = 제안 || null;
       CT.doc = exNewDoc(원);

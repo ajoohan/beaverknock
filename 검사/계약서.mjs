@@ -170,7 +170,7 @@ const 신몸 = js.slice(신시작, 신끝);
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const 모듈 = new Function('S', 'esc', 'apiFetch', '세션있음', 'render', 'toast',
   `${몸}\n${확몸}\n${신몸}\nreturn { rpItems, rp기한, rp대상, rpHTML, RP_직접, 한글금액, 금액글, ctNewDoc, ctDocHTML, ctBalance, CT_HOME_CLAUSES, CT_SPECIALS, CT_FORMS, exNewDoc, exDocHTML, EX_SPEC, EX_FORMS, exFormFor,
-  CT, ctSave, ctLoadList, ctOpen, exSwitch, exKeys, exLost, ctTitle, ct신고, ct군, ctClauseSet, ctSpecialSet, CT_CATS, CT_PV_WHY, ct다물건새것, ct다물건합, ctFieldRows,
+  CT, ctSave, ctLoadList, ctOpen, exSwitch, exKeys, exLost, ctTitle, ct신고, ct군, ctClauseSet, ctSpecialSet, CT_CATS, ct필수, CT_PV_WHY, ct다물건새것, ct다물건합, ctFieldRows,
   ct일정목록, ct알림설정, ct영업일째, ct영업일전, CT_공휴일, CT_특약묶음, ct특약묶음, ct묶음문구, ct문구이름,
   ct기본특약, ct갱신특약, ct종료일, ct부가, CT_기본특약, CT_계약일조항, ct글날, ct이름외, ct지분, ct앞자리, ct생일글, ct뒷자리적기, ct뒷자리지움, ct뒷자리빼고 };`);
 const S = { route: '#/x', agent: { office: '비버공인중개사사무소', name: '한상혁', reg_no: '41450-2024-00001', addr: '하남시 미사대로 550', phone: '031-000-0000' } };
@@ -866,6 +866,18 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
      '다물건 - 물건마다 확인·설명서(그 물건의 용도로 서식을 고른다)');
   ok(/exAnnexOn\(doc\) \? `<div class="ctdoc exdoc exh-ax/.test(js), '국가 원본 틀 확인·설명서에도 별지 쪽');
   ok(/이 양식은 비버노크가 국토교통부 부동산거래 전자계약 양식을 따라 만든 작성 도구입니다\./.test(M.ctDocHTML(M.ctNewDoc('sale', null, { cat: 'realty', use: 'land' }))), '전자계약 양식은 근거 문장도 전자계약으로');
+  /* 11-24 코드리뷰 - 민간임대 중도금 차수 · 법인 · 공동명의 · 대리인 · 공동중개, 다물건 필수 · 신고 안내 · 확인·설명서 금액 · 목록 열 */
+  const 민2 = M.ctNewDoc('home-lease', null, { cat: 'private', ec: 1, priv: 1, deal: 'monthly' });
+  민2.deal = { ...민2.deal, deposit: 100000000, down: 10000000, mid: 30000000, mid2: 20000000 };
+  민2.parties.lessor = { type: 'corp', name: '주식회사 비버', rep: '김대표', corpNo: '1101111234567', addr: '서울', phone: '02', co: [{ name: '이공동', addr: '', phone: '' }], proxy: { name: '박대리', rel: '직원', addr: '', phone: '' } };
+  민2.coBrokers = [{ office: '공동공인중개사', rep: '최', regNo: '9', addr: '', phone: '' }];
+  const 민2h = M.ctDocHTML(민2);
+  ok(/1차 중도금/.test(민2h) && /2차 중도금/.test(민2h) && /금 이천만원정/.test(민2h) && /주식회사 비버/.test(민2h) && /1101111234567/.test(민2h) && /임대사업자 2/.test(민2h) && /박대리/.test(민2h) && /공동공인중개사/.test(민2h),
+     '민간임대 - 2차 중도금 줄 · 법인 · 공동명의 · 대리인 · 공동중개까지 찍는다');
+  const 다2 = M.ctNewDoc('sale', null, { cat: 'multi', use: 'home', multi: 1 });
+  ok(M.ct필수(다2).some(([p]) => p === 'items.1.property.show') && M.ct필수(다2).some(([p]) => p === 'items.0.price'), '다물건 - 물건마다 소재지 · 매매대금이 있어야 확정');
+  ok(/다물건 계약입니다 - 거래신고는 물건마다/.test(js) && /const 물 = CT\.doc\.multi \? ct물건\(CT\.doc, a === 'ct-explain-item' \? \+v \|\| 0 : 0\) : null;/.test(js), '다물건 - 신고 도우미 안내 · 그냥 확인·설명서 탭도 물건 1 금액으로');
+  ok(/use:doc->>use,ec:doc->ec,priv:doc->priv,multi:doc->multi/.test(fs.readFileSync(new URL('../api/_contract.js', import.meta.url), 'utf8')) && /\(m\.multi && o\.money\)/.test(js), '목록에 양식 갈래 열 · 다물건은 계약현황 고치기에서 금액을 막는다');
   ok(/'__custom', '직접입력'/.test(js) && /data-in="ctp-custom"/.test(js), '세부 종류는 직접입력도 된다');
 
   /* 문서 이름이 고른 것을 따라간다 */

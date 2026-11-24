@@ -854,6 +854,13 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
      && (다h.match(/<section class="ct-page">/g) || []).length === 3 && /\(다물건\) 부동산\(토지\) 매매 계약서/.test(다h) && /물건번호<\/th><td>2<\/td><th class="w">전체 물건 개수<\/th><td>3<\/td>/.test(다h)
      && /경기도 하남시 덕풍동 1-2/.test(다h) && /계약일자 : /.test(다h) && /\(다물건\) 부동산\(비주거용\) 매매 계약서/.test(다h),
      '다물건 - 표지에 총액 · 서명은 한 번, 물건마다 상세 쪽(제목 · 물건번호 / 전체 개수 · 계약일자로 끝)');
+  /* 다물건 부속서류 (11-24 점검) - 영수증 · 정산서 · 위임장 · 동의서의 부동산 표시는 물건마다 */
+  { const i = js.indexOf('const ct부동산글 = doc =>'), j = js.indexOf('/* 영수인·지급인', i);
+    const 글 = new Function('ct물건', `${js.slice(i, j)}
+return ct부동산글;`)((d, k) => ({ property: k === 0 ? (d.property || {}) : (d.items[k].property || {}) }));
+    const 부 = { multi: 1, property: { road: '경기도 하남시 미사대로 1' }, items: [{}, { property: { show: '경기도 하남시 덕풍동 1-2' } }, { property: {} }] };
+    ok(글(부) === '1. 경기도 하남시 미사대로 1 / 2. 경기도 하남시 덕풍동 1-2 / 3. 소재지 미입력' && 글({ property: { road: '서울 1' } }) === '서울 1',
+      '다물건 부속서류 - 부동산 표시를 물건마다 1. … / 2. … 로'); }
   /* 전자계약 매매 - 융자금 줄, 승계 금액은 잔금에서 뺀다 */
   const 융 = M.ctNewDoc('sale', null, { cat: 'realty', use: 'home' }); 융.deal = { ...융.deal, price: 500000000, down: 50000000, keepLoan: 100000000, keepDep: 50000000 };
   ok(/<th class="w">융자금<\/th>/.test(M.ctDocHTML(융)) && M.ctBalance(융.deal) === 300000000, '전자계약 매매 - 융자금 · 임대보증금 승계 줄, 잔금에서 뺀다');

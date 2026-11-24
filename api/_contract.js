@@ -475,13 +475,18 @@ export async function guideRead(req, res) {
   if (overLimit('guide:' + ipOf(req), 60, 600e3)) return res.status(429).json({ error: '잠시 뒤 다시 열어 주세요' });
   const t = 안내표읽기(req.query && req.query.guide);
   if (!t) return res.status(404).json({ error: '링크가 맞지 않거나 기한이 지났습니다 - 중개사무소에 다시 받아 주세요' });
-  const got = await 읽기(`select=id,form,status,doc{track}&id=eq.${t.id}&limit=1`);
+  const got = await 읽기(`select=id,agent_id,form,status,doc{track}&id=eq.${t.id}&limit=1`);
   if (!got.r.ok || !got.rows.length) return res.status(404).json({ error: '계약서를 찾지 못했습니다 - 지워졌을 수 있습니다' });
   const row = got.rows[0], tr = trackCheck(row.track || {}) || {};
   if ((tr.shareN || 0) !== t.n || row.status !== 'sealed' || tr.trash || String(row.form || '').startsWith('explain'))
     return res.status(404).json({ error: '중개사무소가 이 링크를 끊었습니다 - 새 링크를 받아 주세요' });
   await 열람남김(t, 'g', row.track);
-  return res.status(200).json({ ok: true, until: t.until, ...안내자료(row) });
+  /* 손님 상담 카카오톡 채널 (2026-11-24 대표님) - 사무소 설정에 있으면 '카카오톡 채널로 상담' 단추 */
+  const 자료 = 안내자료(row);
+  try { const a = await db('bk_agent', `select=kc:settings->>kakaoCh&id=eq.${row.agent_id}&limit=1`);
+    const kc = String(((a.rows || [])[0] || {}).kc || '').trim();
+    if (/^https:\/\/pf\.kakao\.com\/_[A-Za-z0-9]{3,40}(\/chat)?$/.test(kc)) 자료.office.kakaoCh = kc; } catch {}
+  return res.status(200).json({ ok: true, until: t.until, ...자료 });
 }
 /* 링크 열람 남기기 (2026-11-22) - 마지막으로 연 때(한국 시각, 분까지) · 횟수. 한 시간 안에 다시 연 것은 쓰지 않는다(새로고침마다 쓰지 않게). 실패해도 보기는 그대로 */
 async function 열람남김(t, k, track) {

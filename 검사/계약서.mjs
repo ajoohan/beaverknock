@@ -1442,6 +1442,11 @@ return ct부동산글;`)((d, k) => ({ property: k === 0 ? (d.property || {}) : (
   ok(js.includes('data-act="ctpi-open">잔금 준비서류 이미지</button>') && js.includes("data-act=\"rm-prep-img\"") && /async function ct잔금그림\(o\)/.test(js)
      && /\['매도인 잔금 준비서류', RM_준비물\.seller\], \['매수인 잔금 준비서류', RM_준비물\.buyer\]/.test(js) && js.includes("navigator.share({ files: [new File([CT잔금그림], '잔금준비서류.png'"),
     '잔금 준비서류 이미지 - 일정·체크 · 대화방 단추, 한 장에 매도인 · 매수인, 바로 보내기(공유) · 저장');
+  { const 방 = fs.readFileSync(new URL(길.api('_room.js')), 'utf8'), 피 = fs.readFileSync(new URL(길.api('feed.js')), 'utf8');
+    ok(/const RM_대화 = false;/.test(js) && (방.match(/if \(!대화켬\(\)\) return 대화끔답\(res\);/g) || []).length === 2 && /BK_ROOM_CHAT === '1'/.test(방)
+       && /kakaoCh: \/\^https/.test(방) && /if \(agent\.staff\) return res\.status\(403\)/.test(피) && /'kakao-ch-save'\)\s+return saveKakaoCh/.test(피)
+       && js.includes('카카오톡 채널로 상담</a>') && js.includes("data-act=\"cta-kch\""),
+      '사이트 안 대화 끔(11-24 대표님) - 화면 RM_대화 false · 서버는 보내기 410(BK_ROOM_CHAT=1 이면 켬), 손님 화면에 사무소 카카오톡 채널 단추 · 채널 주소는 대표만 저장'); }
   ok((fs.readFileSync(new URL(길.api('_contract.js')), 'utf8').match(/sub:doc->>sub,use:doc->>use/g) || []).length === 2, '서버 - 아침 알림 · 달력 구독 조회에 용도(use)를 같이 읽는다(입목 · 재단 신고 알림 끔)');
   ok(분줄.some(([s, l, v]) => s === '④ 거래대상 종류' && v === '분양권 · 전매') && 분줄.some(([s, l, v]) => l === '분양가격' && /600,000,000/.test(v)) && 분줄.some(([, l, v]) => /프리미엄/.test(l) && /100,000,000/.test(v)),
      '분양권 신고 도우미 - 거래대상 분양권·전매 · 분양가격 · 추가 지불액(프리미엄)');
@@ -1463,7 +1468,7 @@ return ct부동산글;`)((d, k) => ({ property: k === 0 ? (d.property || {}) : (
   ok(t && t.arch === '2026-11-10' && t.trash === '2026-11-10' && C.trackCheck({ trash: '어제' }) === null, 'track 에 보관함 · 휴지통 날짜(arch · trash)가 들어가고, 날짜 모양이 아니면 거절');
   ok(/case 'contract-bin':\s+await bin\(res, agent, b\)/.test(길.read ? '' : fs.readFileSync(new URL('../api/_contract.js', import.meta.url), 'utf8')), '서버 contract-bin - 보관함 · 휴지통으로 옮기고 되돌린다');
   ok(/'contract-del'[^\]]*\]\.includes\(w\)/.test(feed), '영구 삭제(contract-del)는 대표만 - 직원은 막는다');
-  ok(js.includes("const ct보관칸 = r =>") && js.includes("data-act=\"ct-bin-tab\"") && js.includes("'ct-purge', id, '영구 삭제'") && js.includes("r.status === 'sealed' ? '영구 삭제는 대표만'") && /r\.track && r\.track\.room \? `<span class="ct-rnote">손님 대화방이 있어 지우지 않습니다/.test(js) && js.includes("ct휴지남은날(r) + '일 뒤 지워짐'") && js.includes('확정본지움 ?'),
+  ok(js.includes("const ct보관칸 = r =>") && js.includes("data-act=\"ct-bin-tab\"") && js.includes("'ct-purge', id, '영구 삭제'") && js.includes("r.status === 'sealed' ? '영구 삭제는 대표만'") && /r\.track && r\.track\.room \? `<span class="ct-rnote">초대한 손님이 있어 지우지 않습니다/.test(js) && js.includes("ct휴지남은날(r) + '일 뒤 지워짐'") && js.includes('확정본지움 ?'),
      '목록 · 보관함 · 휴지통 칸 - 대화방이 있는 계약서는 영구 삭제 단추가 없고, 직원에게는 남은 날(확정본은 대표만)만 보인다');
   { const 서 = fs.readFileSync(new URL('../api/_contract.js', import.meta.url), 'utf8');
     ok(/'draft'\}&track->room=is\.null`, \{\s*method: 'DELETE'/.test(서) && (서.match(/track->>trash=lt\.\$\{날더하기\(오늘, -30\)\}&track->room=is\.null/g) || []).length === 2,

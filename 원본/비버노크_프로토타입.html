@@ -1467,6 +1467,12 @@ body.mo .hp-nav .right{gap:8px}
 body.mo .hp-pair .hm-card{display:flex;flex-direction:column;min-height:0;padding:22px 20px}
 body.mo .hp-pair-h{font-size:19px}
 .hp-pair .hm-card{min-height:0}
+.rm-ch{display:flex;flex-direction:column;gap:6px;margin:12px 16px;padding:16px;border:1px solid var(--hair);border-radius:16px;background:var(--n50,#F7F7F9)}
+.rm-ch b{font-size:15.5px;color:var(--n900)}
+.rm-chb{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.ct-kch{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.ct-kch .inp{flex:1 1 260px;min-width:0}
+.cg-ob{display:flex;gap:8px;flex-wrap:wrap}
 .ctpi-box{max-width:460px;width:100%}
 .ctpi-view{max-height:min(50vh,560px);overflow:auto;border:1px solid var(--hair);border-radius:14px;background:var(--n50,#F7F7F9);display:grid;place-items:center;min-height:120px}
 .ctpi-view img{display:block;width:100%;height:auto}
@@ -5297,7 +5303,7 @@ const 물건이름 = () => typeof ownerSide === 'function' && ownerSide() ? '내
 const 보조원 = () => !!(직원() && 직원().role === 'assistant');
 /* 직원 기능별 권한 (2026-11-10) - 서버(api/_staff.js 권한목록)와 같은 키. 대표 · 직원 아님은 늘 됨. 보조원은 계약서 넷이 늘 꺼짐 */
 const CT_권한목록 = [['ct_view', '계약서 보기', '목록 · 열기 · 일정'], ['ct_edit', '계약서 작성 · 수정', '저장 · 서류로 채우기 · 일정·체크 · 보관함 · 특약 · 문자 틀'], ['ct_seal', '확정본 저장', ''], ['ct_mail', '계약서 메일 보내기', 'PDF 를 메일로'],
-  ['propose', '제안 보내기', ''], ['listing', '매물장부 작성 · 수정', '적기 · 고치기 · 사진 · 내리기 · 삭제'], ['room', '손님 대화', '계약 대화방'], ['stats', '성과 보기', '열람률 · 실적'],
+  ['propose', '제안 보내기', ''], ['listing', '매물장부 작성 · 수정', '적기 · 고치기 · 사진 · 내리기 · 삭제'], ['room', '계약 손님', '계약 대화방'], ['stats', '성과 보기', '열람률 · 실적'],
   ['listing_open', '매물 노출 · 노출 종료', '손님 · 다른 중개사에게 보이게'], ['listing_memo', '의뢰인 비공개 정보 보기', '의뢰인 · 연락처 · 조정 금액 · 특이사항'], ['listing_price', '노출 중 매물 금액 수정', '바꾸면 이력이 남습니다']];
 /* 보조원에게 늘 꺼진 권한 - 계약서 넷 · 매물 노출(공인중개사법 제18조의2 표시 · 광고). 서버 api/_staff.js 보조원잠금 과 같다 */
 const 보조원잠금 = k => k.startsWith('ct_') || k === 'listing_open';
@@ -6167,7 +6173,7 @@ function hm손님(){
         <p class="hm-k">손님 화면</p>
         <h2 class="hm-h2">내 조건과 다른 점부터<br>보여드립니다</h2>
         <p class="hm-p">중개사가 보낸 제안마다 무엇이 맞고 무엇이 다른지 먼저 적혀 옵니다. 사진 · 관리비 · 건물 정보까지 한 화면에서 비교하세요.</p>
-        ${hm목록(['일치 · 다름이 제안마다 한눈에', '새 제안은 카카오톡과 메일로 바로 알림', '보고 싶은 매물의 가격이 바뀌면 카카오톡으로 알림 - 언제든 끌 수 있어요', '계약 뒤에는 중개사무소가 초대한 대화방과 할 일 안내(전입신고 · 신고 기한 등)로 이어집니다', '조건은 3개월 뒤 자동으로 지워집니다'])}
+        ${hm목록(['일치 · 다름이 제안마다 한눈에', '새 제안은 카카오톡과 메일로 바로 알림', '보고 싶은 매물의 가격이 바뀌면 카카오톡으로 알림 - 언제든 끌 수 있어요', '계약 뒤에는 내 계약 일정 · 계약서를 비버노크에서 보고, 상담은 중개사무소 카카오톡 채널로', '조건은 3개월 뒤 자동으로 지워집니다'])}
         <button class="btn sec" data-go="#/guide">이용 안내 보기</button>
       </div>
       <figure class="hm-shot lg"><img src="img/home/proposal.v2.webp" width="1400" height="830" loading="lazy" decoding="async" alt="제안 상세 화면 - 보증금·월세, 내 조건과 비교(다름·일치), 매물 특징, 중개사님의 한마디"></figure>
@@ -8989,14 +8995,14 @@ const HP_장점 = [
   ['doc', '계약서 작성', '국토교통부 전자계약 · 법무부 표준계약서 양식 그대로. 정보 입력 · 서식 입력 · 둘 다 편한 방식으로 쓰고, 서류 · 건축물대장 · 계약체결 문자로 칸을 채웁니다.', 2],
   ['check', '계약현황', '내가 쓴 계약 · 직접 추가 · 공동중개 계약을 한 표에. 중도금 5차까지, 상대 사무소와 날짜 · 금액을 공유합니다.', 0],
   ['bell', '자동 알림 · 일정', '계약일 · 중도금 · 잔금 · 신고 기한 · 법무사 예약 · 잔금 전 등기 확인을 매일 아침 카카오톡으로. 휴대폰 달력 구독까지.', 3],
-  ['chat', '사무소 운영', '직원 · 중개보조원 권한, 손님 대화방, 계약체결 문자, 성과까지. 모두 무료로 씁니다.', 0],
+  ['chat', '사무소 운영', '직원 · 중개보조원 권한, 손님 초대 · 카카오톡 채널 상담, 계약체결 문자, 성과까지. 모두 무료로 씁니다.', 0],
 ];
 const HP_실수없이 = [
   ['sun', '오늘의 브리핑', '대시보드 맨 위에 오늘 손댈 일을 먼저 모아 둡니다. 아침에 한 번 보면 하루가 정리됩니다.'],
   ['flag', '급한 일은 따로', '알림창이 급한 일과 새 소식을 나눕니다. 신고 기한 같은 일이 소식에 묻히지 않습니다.'],
   ['cal', '날짜는 계약서가 기억', '계약서에 넣은 날짜로 일정과 알림이 저절로 잡힙니다. 달력에 옮겨 적을 필요가 없습니다.'],
   ['doc', '계약 현황을 한 표로', '작성 중 · 확정본 · 신고 전 · 잔금 30일 안이 한눈에 보이고, 진행 상태로 걸러 봅니다.'],
-  ['chat', '손님마다 대화방', '손님과 주고받은 말이 대화방에 남습니다. 누구와 어디까지 얘기했는지 헷갈리지 않습니다.'],
+  ['chat', '상담은 카카오톡 채널로', '사무소 카카오톡 채널을 넣어 두면 손님 화면에 상담 단추가 생깁니다. 계약 일정 · 계약서는 손님이 비버노크에서 직접 봅니다.'],
   ['search', '한 칸에서 바로 찾기', '손님 · 주소 · 계약서를 Ctrl K 한 번으로 찾습니다. 전화가 와도 바로 꺼내 봅니다.'],
 ];
 /* 장점 하나 = 글 + 실제 화면(한 장, 또는 두 장 겹침). rev 면 화면이 왼쪽 */
@@ -13583,22 +13589,21 @@ const HELP = [
     ['제안 자세히 보기', '제안을 누르면 사진, 금액, 중개사무소의 설명이 나옵니다.'],
     ['마음에 안 들면 ‘관심 없음’', '‘관심 없음’을 누르면 그 중개사무소에는 아무것도 넘어가지 않습니다.'],
     ['마음에 들면 ‘연락하기’', '‘이 중개사무소와 연락하기’를 누르면 그때 서로의 연락처가 전달되고, 중개사무소에서 연락드립니다.'] ] },
-  { g:'계약 진행 중', id:'room', t:'계약 대화방 들어가기', s:'계약을 마치면 중개사무소가 대화방으로 초대합니다. 앱은 깔지 않아도 됩니다.', steps:[
+  { g:'계약 진행 중', id:'room', t:'내 계약 진행 보기', s:'계약을 마치면 중개사무소가 초대 링크를 보냅니다. 앱은 깔지 않아도 됩니다.', steps:[
     ['초대 문자의 링크 누르기', '중개사무소가 보낸 문자나 카카오톡의 링크를 누르세요.'],
     ['로그인하기', '카카오, 네이버, 구글 계정이나 메일로 로그인합니다. 처음이시면 가입 화면이 이어집니다.'],
-    ['‘대화방 들어가기’ 누르기', '들어가면 위쪽에 계약일, 중도금, 잔금 날짜가 보입니다. 이 대화방은 중개사무소와 나만 봅니다.'],
-    ['다음부터는 마이페이지에서', '마이페이지의 ‘계약 대화방’을 누르면 바로 열립니다.'] ] },
-  { g:'계약 진행 중', id:'chat', t:'대화방에서 묻고 사진 보내기', s:'궁금한 것은 글로 묻고, 서류 사진도 바로 보낼 수 있습니다.', steps:[
-    ['글 쓰고 ‘보내기’', '아래 칸에 글을 쓰고 ‘보내기’를 누르세요. 답이 오면 메일로 알려 드립니다.'],
-    ['‘사진 · 파일’ 누르기', '사진을 바로 찍거나 휴대폰에 있는 사진, 서류 파일을 고를 수 있습니다. 보내기 전에 한 번 더 물어봅니다.'],
+    ['‘계약 보기’ 누르기', '계약일, 중도금, 잔금 날짜와 계약서가 보입니다. 이 화면은 중개사무소와 나만 봅니다.'],
+    ['다음부터는 마이페이지에서', '마이페이지의 ‘계약 진행 보기’를 누르면 바로 열립니다.'] ] },
+  { g:'계약 진행 중', id:'chat', t:'중개사무소에 묻기', s:'궁금한 것은 중개사무소 카카오톡 채널이나 전화로 묻습니다.', steps:[
+    ['‘카카오톡 채널로 상담’ 누르기', '계약 진행 화면의 ‘카카오톡 채널로 상담’을 누르면 그 중개사무소 카카오톡 채널이 열립니다. 단추가 없으면 ‘전화’를 누르세요.'],
     ['이것만 조심하세요', '주민등록번호와 계좌번호는 적지 마세요. 서류 사진에 보이면 가리고 보내 주세요.'] ] },
-  { g:'계약 진행 중', id:'prep', t:'잔금 날 준비물 챙기기', s:'잔금 열흘쯤 전에 대화방으로 준비물 안내가 옵니다.', steps:[
-    ['대화방의 준비물 안내 보기', '중개사무소가 보내 드린 ‘잔금 준비물 안내’를 확인하세요.'],
+  { g:'계약 진행 중', id:'prep', t:'잔금 날 준비물 챙기기', s:'잔금 열흘쯤 전에 중개사무소가 준비서류 안내를 보냅니다.', steps:[
+    ['준비서류 안내 보기', '중개사무소가 카카오톡 · 문자로 보내 드린 ‘잔금 준비서류 안내’ 이미지를 확인하세요.'],
     ['파시는 분 준비물', '등기권리증, 신분증, 매도용 인감증명서, 인감도장, 주민등록초본입니다.'],
     ['사시는 분 준비물', '신분증, 도장, 주민등록등본, 가족관계증명서입니다. 잔금을 보낼 수 있게 이체 한도도 미리 늘려 두세요.'],
-    ['모르는 것은 바로 묻기', '준비물이 집마다 조금씩 다를 수 있습니다. 궁금하면 대화방에 물어보세요.'] ] },
-  { g:'잔금 후', id:'after', t:'대화와 파일 다시 보기', s:'잔금이 끝난 뒤에도 대화와 받은 파일을 다시 볼 수 있습니다.', steps:[
-    ['마이페이지 ‘계약 대화방’', '마이페이지에서 계약을 누르면 그동안 나눈 대화가 그대로 있습니다.'],
+    ['모르는 것은 바로 묻기', '준비물이 집마다 조금씩 다를 수 있습니다. 궁금하면 중개사무소에 물어보세요.'] ] },
+  { g:'잔금 후', id:'after', t:'계약서 다시 보기', s:'잔금이 끝난 뒤에도 계약서와 예전에 받은 파일을 다시 볼 수 있습니다.', steps:[
+    ['마이페이지 ‘계약 진행 보기’', '마이페이지에서 계약을 누르면 일정과 ‘계약서 보기’가 그대로 있습니다.'],
     ['필요한 파일은 저장해 두기', '받은 파일은 눌러서 보거나 내려받습니다. 파일은 잔금 뒤 1년까지 보관되니 필요한 것은 휴대폰에 저장해 두세요.'],
     ['전세 · 월세는 만기 안내', '계약이 끝나기 6개월쯤 전에 중개사무소에서 연장할지 여쭤봅니다.'] ] },
 ];
@@ -13667,10 +13672,11 @@ const PHELP = [
     ['아침 9시 알림', '매일 아침 9시에 카카오톡 · 메일로 알려 드립니다. 계약 › 일정·알림에서 받을 항목을 고릅니다.'],
     ['휴대폰 달력에', '일정·알림의 ‘휴대폰 · 구글 달력에서 보기’에서 구독 주소를 받으면 쓰시는 달력에 일정이 들어갑니다.'],
     ['잔금 완료 확인', '잔금일 오후 3시부터 대시보드가 ‘잔금 완료하셨나요?’를 묻습니다. 완료로 바꾸면 알림이 멈춥니다.'] ] },
-  { g:'계약 진행', id:'room', ct:true, room:true, t:'손님을 대화방에 초대하기', steps:[
-    ['초대 링크 보내기', '계약서(체결문자 뒤 작성 중이거나 확정본)의 ‘일정·체크’ 탭 › 손님 대화방에서 당사자마다 ‘초대 링크’를 눌러 문자 · 카톡으로 보냅니다.'],
+  { g:'계약 진행', id:'room', ct:true, room:true, t:'손님 초대 · 카카오톡 채널 상담', steps:[
+    ['초대 링크 보내기', '계약서(체결문자 뒤 작성 중이거나 확정본)의 ‘일정·체크’ 탭 › 손님 초대에서 당사자마다 ‘초대 링크’를 눌러 문자 · 카톡으로 보냅니다. 손님은 계약 일정 · 계약서를 비버노크에서 봅니다.'],
+    ['상담은 카카오톡 채널로', '사이트 안 대화는 쓰지 않습니다. 계약서 목록 › 알림 설정의 ‘손님 상담 카카오톡 채널’에 사무소 채널 주소를 넣으면 손님 화면에 상담 단추가 생깁니다.'],
     ['대리인 초대', '본인 대신 챙기는 분이 있으면 ‘대리인 초대’로 한 분을 더 부릅니다. 같은 방에서 대화합니다.'],
-    ['대화 · 사진 · 파일', '영업 › 손님 대화에서 당사자마다 따로 대화합니다. ‘사진 · 파일’로 서류를 보냅니다(잔금 뒤 1년 보관).'],
+    ['예전 대화', '영업 › 계약 손님에서 예전에 나눈 대화와 파일을 읽을 수 있습니다(파일은 잔금 뒤 1년 보관).'],
     ['잔금 준비물 안내', '매매 방에서는 ‘잔금 준비물 안내’ 단추가 매도인 · 매수인 몫의 글을 채웁니다. 보내면 잔금안내 체크도 됩니다.'] ] },
   { g:'계약 진행', id:'extra', ct:true, t:'영수증 · 잔금정산서 만들기', steps:[
     ['부속 서류 탭', '계약서의 ‘부속 서류’ 탭에서 영수증 · 잔금정산서 · 위임장 · 보증금 반환 영수증 · 개인정보 동의서를 고릅니다.'],
@@ -13789,7 +13795,7 @@ const GD_메뉴 = () => [
     ['매물장부', '#/partner/listings', '우리 사무소 물건 장부. 기준을 채우면 손님에게 노출됩니다'],
     ['매물등록', '#/partner/listings/open', '노출 중이거나 바로 노출할 수 있는 매물만 모아 봅니다'],
     ['내 제안', '#/partner/proposals', '보낸 제안 · 손님이 연결하면 이름과 번호가 열립니다'],
-    ...(권한('room') ? [['손님 대화', '#/partner/rooms', '계약한 손님과 일정 · 서류를 주고받는 대화방']] : [])]],
+    ...(권한('room') ? [['계약 손님', '#/partner/rooms', '초대한 계약 손님과 진행 상황']] : [])]],
   ...(계약막힘() ? [] : [['계약', 'doc', '계약서부터 잔금까지', [
     ['계약현황', '#/partner/contracts/status', '진행 중인 계약을 표로 한눈에(갱신 탭 따로)'],
     ['계약서 작성', '#/partner/contracts/new', '종류를 고르고 서류를 올리면 칸이 채워집니다'],
@@ -13805,7 +13811,7 @@ const GD_흐름 = [
   ['send', '1:1 제안', '맞는 물건으로 제안합니다(조건마다 5곳)'],
   ['link', '손님 연결', '손님이 연결을 누르면 이름 · 번호가 열립니다'],
   ['pen', '계약서', '서류를 올려 칸을 채우고 인쇄 · 날인'],
-  ['check', '잔금 · 신고', '일정 알림과 대화방으로 끝까지 챙깁니다'],
+  ['check', '잔금 · 신고', '일정 알림과 손님 안내로 끝까지 챙깁니다'],
 ];
 const GD_말 = [
   ['조건 · 수요', '손님이 남긴 "이런 집을 찾아요". 지역 · 예산 · 입주 시기가 들어 있습니다.'],
@@ -13871,7 +13877,7 @@ function 투어단계(){
     ['수요 목록', '활동 지역에 걸린 손님 조건이 모입니다. 조건마다 최대 5곳이 1:1 로 제안합니다.', 메뉴('#/partner/demands')],
     [ownerSide() ? '내 물건' : '매물장부', '물건을 적어 두면 맞는 손님을 점수와 함께 찾아 줍니다. 기준을 채우고 노출하면 손님 화면에도 뜹니다.', 메뉴('#/partner/listings')],
     ['내 제안', '보낸 제안과 손님이 연결한 건(이름 · 번호 · 희망 연락 방법)이 모입니다.', 메뉴('#/partner/proposals')],
-    ...(계약막힘() ? [] : [['계약서', '계약서 작성부터 확정본 · 일정 알림 · 손님 대화방까지 여기서 합니다.', isMo() ? 메뉴('#/partner/contracts') : '.dz-menu a[data-go="#/partner/contracts/new"]']]),
+    ...(계약막힘() ? [] : [['계약서', '계약서 작성부터 확정본 · 일정 알림 · 손님 초대까지 여기서 합니다.', isMo() ? 메뉴('#/partner/contracts') : '.dz-menu a[data-go="#/partner/contracts/new"]']]),
     ['도움말 ?', '화면마다 이 단추를 누르면 그 화면 안내가 열립니다. 첫날 할 일은 대시보드의 ‘시작 가이드’에서 하나씩 따라 하세요.', '.ph-q'],
   ];
 }
@@ -14276,7 +14282,7 @@ function 파트너옆(active){
     ...(own ? [] : [['#/partner/listings/open', '매물등록', 'list', 'lr']]),
     ['#/partner/map', '매물지도', 'map', 'lm'],
     ['#/partner/proposals', '내 제안', 'send', 'p'],
-    ...(own || !권한('room') ? [] : [['#/partner/rooms', '손님 대화', 'chat', 'rm']]),
+    ...(own || !권한('room') ? [] : [['#/partner/rooms', '계약 손님', 'chat', 'rm']]),
     ...(계약막힘() ? [] : ['계약', ...CT_하위메뉴]),
     '내 사무소',
     ...(권한('stats') ? [['#/partner/stats', '성과', 'chart', 'st']] : []),
@@ -14321,9 +14327,9 @@ function adm위치(h){
   if(h.startsWith('#/partner/listing/')) return [['영업'], 물건, ['물건 보기']];
   if(h === '#/partner/proposals') return [['영업'], ['내 제안']];
   if(h === '#/partner/map') return [['영업'], ['매물지도']];
-  if(h === '#/partner/rooms') return [['영업'], ['손님 대화']];
+  if(h === '#/partner/rooms') return [['영업'], ['계약 손님']];
   if(h.startsWith('#/partner/rooms/')){ const [, , , 번호, 자리] = h.split('/'); const 줄 = (RM.list || []).find(r => r.id === 번호 && (!자리 || r.side === 자리)) || {};
-    return [['영업'], ['손님 대화', '#/partner/rooms'], [`${줄.title || '대화방'}${자리 && RM_자리[자리] ? ' · ' + RM_자리[자리] : ''}`]]; }
+    return [['영업'], ['계약 손님', '#/partner/rooms'], [`${줄.title || '계약'}${자리 && RM_자리[자리] ? ' · ' + RM_자리[자리] : ''}`]]; }
   if(h === '#/partner/stats') return [['내 사무소'], ['성과']];
   if(h === '#/partner/settings') return [['내 사무소'], ['사무소 설정']];
   if(h === '#/partner/staff') return [['내 사무소'], ['직원 · 권한']];
@@ -14371,6 +14377,7 @@ if(typeof addEventListener === 'function'){
   addEventListener('unhandledrejection', e => { const r = e && e.reason; bk오류보내기('처리되지 않은 오류: ' + ((r && r.message) || r), (r && r.stack && (/(https?:\/\/[^\s)]+?):\d+:\d+/.exec(r.stack) || [])[1]) || location.origin, 0, 0, r && r.stack); });
 }
 const BK_변경 = [
+  { v:'26.11.24.14', 날:'2026-11-24', 줄:[ '사이트 안 대화를 껐습니다 (대표님 · 파트너) - 손님 상담은 사무소 카카오톡 채널로: 알림 설정에 ‘손님 상담 카카오톡 채널’ 주소를 넣으면 손님의 계약 진행 화면 · 계약 뒤 할 일 안내에 ‘카카오톡 채널로 상담’ 단추', '대화방은 ‘계약 진행 화면’으로 - 초대 · 일정 · 계약서 보기는 그대로, 지난 대화는 읽기만 · 메뉴 이름 ‘계약 손님’' ] },
   { v:'26.11.24.13', 날:'2026-11-24', 줄:[ '잔금 준비서류 이미지 (파트너) - 계약서 일정·체크와 매매 대화방에서 매도인 · 매수인 준비서류를 한 장에 담은 이미지를 만들어 바로 보내기(휴대폰) · 저장 · 복사', '잔금 준비물 안내 · 알림은 일반 부동산 매매만 - 분양권 · 조합원입주권 · 입목재단은 뺐습니다' ] },
   { v:'26.11.24.12', 날:'2026-11-24', 줄:[ '홍보 문구 (파트너) - 파트너 안내 주제목 셋: ‘반복되는 계약업무, 이제는 편리하게 하세요’(등기부 · 대장만 올리면 자동 입력) · ‘계약현황 · 매물장부 · 매칭현황을 한눈에’(대시보드 작게) · ‘자동매칭 · 자동홍보’(매물등록만 하면 찾는 손님과 연결)', '손님 메인 첫 문구 아래 ‘내 계약 진행과정, 비버노크에서 바로 확인하세요’' ] },
   { v:'26.11.24.11', 날:'2026-11-24', 줄:[ '전수점검 · 코드리뷰 반영 - 입목 · 광업재단 · 공장재단 매매의 신고 기한이 아침 카카오톡 · 메일 알림에는 아직 가던 것', '손님 메인 문구 - 계약 대화방은 중개사무소가 초대할 때 열린다는 뜻으로' ] },
@@ -15191,7 +15198,7 @@ function 바로찾기목록(q){
       .map(p => ({ t: p.cust, s: [p.title, '연결된 손님'].filter(Boolean).join(' · '), ico: 'user', go: '#/partner/proposals' }))]);
     묶음.push(['계약서', (CT.list || []).filter(r => 맞나([r.title, r.road, r.form, ...당사자(r)].join(' ')) || 당사자(r).some(번호맞나)).slice(0, 5)
       .map(r => ({ t: r.title || r.road || '소재지 미입력', s: r.status === 'sealed' ? '확정본' : '작성 중', ico: 'doc', go: `#/partner/contract/${r.id}` }))]);
-    묶음.push(['대화방', (RM.list || []).filter(r => 맞나([r.title, r.name, RM_자리[r.side]].join(' '))).slice(0, 5)
+    묶음.push(['계약 손님', (RM.list || []).filter(r => 맞나([r.title, r.name, RM_자리[r.side]].join(' '))).slice(0, 5)
       .map(r => ({ t: r.title || '계약', s: `${RM_자리[r.side] || ''}${r.name ? ' ' + r.name : ''}`, ico: 'chat', go: `#/partner/rooms/${r.id}/${r.side}` }))]);
     묶음.push(['내 물건', (S.listings || []).filter(l => !l.seed && 맞나([l.name, l.dong, l.deal, l.biz].join(' '))).slice(0, 5)
       .map(l => ({ t: l.name || l.dong || '물건', s: [l.dong, l.deal || l.biz].filter(Boolean).join(' · '), ico: 'building', go: `#/partner/listing/${l.id}` }))]);
@@ -15342,7 +15349,7 @@ function 파트너현황계산(){
   const 할일 = [
     잔금칸(잔금지연, '잔금 지연?', '잔금일이 지났는데 완료로 바꾸지 않았습니다 - 일정·체크에서 진행 상태를 고르세요'),
     잔금칸(오늘잔금, '오늘 잔금 - 완료 확인', '잔금을 마쳤으면 일정·체크에서 진행 상태를 완료로 바꾸세요'),
-    잔금칸(준비물전, '잔금 준비물 안내', '잔금 10일 안 - 매도인 · 매수인께 준비물을 알려 주세요(대화방이나 문자)'),
+    잔금칸(준비물전, '잔금 준비물 안내', '잔금 10일 안 - 매도인 · 매수인께 준비물을 알려 주세요(준비서류 이미지나 문자)'),
     ...(계약막힘() ? [] : ct의무할일(계약)),
     (!S.agent || S.agent.status !== 'approved') && !직원() ? { t:'자격 확인 마치기', s:'등록번호를 확인하면 손님 조건 전문이 열립니다', ico:'check', go:'#/partner/verify' } : null,
     (() => { const 새맞음 = 수요.filter(d => d.createdAt && Date.now() - Date.parse(d.createdAt) < 3 * 864e5 && d.slotsLeft > 0 && !d.mine && (S.listings || []).length && listingsFor(d).length);
@@ -16659,7 +16666,7 @@ function ct일정목록(c, 설정 = ct알림설정()){
     날: ct날더하기(cd, 30), 마침: !!c.reported_at, 메모: c.reported_at ? '신고 마침' : '부동산거래관리시스템에서 신고하세요' });
   /* 잔금 10일 전 - 매도인 · 매수인께 준비물 안내(2026-11-10 파트너 기획). 매매만, 잔금안내를 마쳤으면 마침 */
   if(bd && c.form === 'sale' && c.use !== 'etc') out.push({ k: 'prep',   /* 일반 부동산 매매만 - 분양권 · 입주권은 뺌(11-24 파트너) */ 날: ct날더하기(bd, -10), 마침: !!ct날만(t.guideAt),
-    메모: ct날만(t.guideAt) ? '잔금안내 마침' : '매도인 · 매수인께 잔금 준비물을 안내하세요 - 대화방이나 문자로' });
+    메모: ct날만(t.guideAt) ? '잔금안내 마침' : '매도인 · 매수인께 잔금 준비물을 안내하세요 - 준비서류 이미지나 문자로' });
   if(bd && ['sale', 'union'].includes(c.form)){
     const [a, b] = 설정.lawyer;
     out.push({ k: 'lawyer', 날: ct영업일전(bd, b), 끝: ct영업일전(bd, a), 메모: `잔금 ${bd} 기준 ${a}~${b}영업일 전에 예약하세요` });
@@ -17763,7 +17770,7 @@ V['#/cguide'] = tok => {
           return `<li class="${n < 0 ? 'past' : ''}"><span class="cg-d">${esc(ct디데이(n))}</span><div><b>${esc(e.t)}</b><small>${esc(ct날짜글(e.날))}</small>${e.s ? `<p>${esc(e.s)}</p>` : ''}</div></li>`; }).join('')
           : '<li><span class="cg-d">-</span><div><b>잡힌 날짜가 없습니다</b><p>계약서에 잔금일이 없어 날짜를 계산하지 못했습니다. 중개사무소에 물어봐 주세요.</p></div></li>'}</ul></div>
         <div class="card pad cg-office"><div><b>${esc(사무소.name || '중개사무소')}</b>${사무소.phone ? `<span class="num">${esc(사무소.phone)}</span>` : ''}</div>
-          ${전화 ? `<a class="btn pri sm" href="tel:${esc(전화)}">전화하기</a>` : ''}</div>
+          <span class="eqb cg-ob">${카톡채널맞나(사무소.kakaoCh) ? `<a class="btn pri sm" href="${esc(String(사무소.kakaoCh).trim())}" target="_blank" rel="noopener">카카오톡 채널로 상담</a>` : ''}${전화 ? `<a class="btn ${카톡채널맞나(사무소.kakaoCh) ? 'sec' : 'pri'} sm" href="tel:${esc(전화)}">전화하기</a>` : ''}</span></div>
         <p class="sub" style="margin:0;font-size:12.5px;line-height:1.7">일반적인 안내입니다. 내 경우에 맞는지는 중개사무소 · 관할 기관 · 세무사에 확인하세요. ${esc(new Date(R.until + 9 * 3600e3).toISOString().slice(0, 10))}까지 열립니다.</p>`}
   </div>
 </div>`;
@@ -17772,6 +17779,12 @@ V['#/cguide'] = tok => {
    서버 api/_room.js. 중개사는 확정본 계약서의 일정·체크 탭에서 당사자마다 초대 링크를 만들어 문자 · 카톡으로 보낸다.
    손님은 링크(#/invite/표)를 열고 로그인하면 그 계약의 방(#/room/번호)에 들어온다. 중개사는 '손님 대화'(#/partner/rooms)에서 본다.
    방에는 계약 요약 · 다가오는 일정 · 대화. 확정본은 ‘계약서 보기’(#/room/번호/doc)에서 보기 전용 - 전화번호는 가려서(2026-11-13 E4). 8초마다 새 말을 받아 온다 */
+/* 사이트 안 대화 (2026-11-24 대표님 '채팅은 카카오채널을 활용해서 고객과 소통') - 끈다. 방(초대 · 일정 · 계약서 보기)은 '계약 진행 화면'으로 남기고,
+   지난 대화는 읽기만, 손님 상담은 사무소 카카오톡 채널(설정 › 알림 설정의 '손님 상담 카카오톡 채널')로. 다시 켜려면 true + 서버 BK_ROOM_CHAT=1 */
+const RM_대화 = false;
+const 카톡채널맞나 = u => /^https:\/\/pf\.kakao\.com\/_[A-Za-z0-9]{3,40}(\/chat)?$/.test(String(u || '').trim());
+const rm채널HTML = (url, office, 전화) => `<div class="rm-ch"><b>상담은 카카오톡 채널로</b><span class="sub">${카톡채널맞나(url) ? `${esc(office || '중개사무소')} 카카오톡 채널에서 바로 물어보실 수 있습니다.` : `궁금한 점은 ${esc(office || '중개사무소')}에 전화로 물어봐 주세요.`}</span>
+    <span class="eqb rm-chb">${카톡채널맞나(url) ? `<a class="btn pri sm" href="${esc(String(url).trim())}" target="_blank" rel="noopener">카카오톡 채널로 상담</a>` : ''}${전화 ? `<a class="btn sec sm" href="tel:${esc(String(전화).replace(/[^0-9]/g, ''))}">전화</a>` : ''}</span></div>`;
 const RM_자리 = { seller:'매도인', buyer:'매수인', lessor:'임대인', lessee:'임차인', sublessor:'전대인', subtenant:'전차인', assignor:'양도인', assignee:'양수인' };
 const RM = { list:null, listAt:0, listLoading:false, listErr:'', need:'', cur:null, text:'', busy:false, inv:null, mine:null, mineLoading:false };
 const rm손님 = () => (S.route || '').startsWith('#/room/');
@@ -18007,13 +18020,13 @@ V['#/partner/rooms'] = (id, side) => {
   const 이름 = (M && M.name) || 줄.name || '';
   const 들어옴 = M ? M.joined : 줄.joined, 대리들 = M ? !!M.proxy : !!줄.proxy;
   const 없는방 = id && !키 && RM.list && !RM.listLoading && !RM.list.some(r => r.id === id);
-  const 오른쪽 = !키 ? (isMo() && !없는방 ? '' : `<div class="card pad rm-pane rm-none"><p class="sub" style="margin:0;line-height:1.6">${없는방 ? '이 계약서에는 아직 대화방이 없습니다. 확정본 계약서의 ‘일정·체크’에서 손님 초대 링크를 보내면 생깁니다.' : id ? '대화방을 여는 중입니다…' : '왼쪽에서 대화방을 고르세요.'}</p></div>`)
+  const 오른쪽 = !키 ? (isMo() && !없는방 ? '' : `<div class="card pad rm-pane rm-none"><p class="sub" style="margin:0;line-height:1.6">${없는방 ? '이 계약서에는 아직 초대한 손님이 없습니다. 확정본 계약서의 ‘일정·체크’에서 손님 초대 링크를 보내면 생깁니다.' : id ? '여는 중입니다…' : '왼쪽에서 손님을 고르세요.'}</p></div>`)
     : `<div class="card rm-pane">
       <div class="rm-h"><div><b>${esc(제목)}</b>
         <span class="sub">${esc(RM_자리[side])}${이름 ? ' ' + esc(이름) : ''} ${들어옴 ? '<i class="rm-in">들어옴</i>' : '<i class="rm-out">초대 전</i>'}${대리들 ? ' <i class="rm-in">대리인 들어옴</i>' : ''} · 이 방은 ${esc(RM_자리[side])}${대리들 ? '(과 대리인)' : ''}과 사무소만 봅니다</span></div>
         <div class="rm-hb">${isMo() ? `<button type="button" class="btn tool sm" data-go="#/partner/rooms">목록</button>` : ''}${보조원() ? '' : `<a class="btn tool sm" data-go="#/partner/contract/${esc(id)}">계약서</a>`}</div></div>
       ${C && C.err ? `<p class="sub" style="margin:16px">${esc(C.err)}</p>` : !M ? `<p class="sub" style="margin:16px">대화를 불러오는 중입니다…</p>`
-        : `${rm일정HTML(M.steps)}${rm대화HTML(C, v => v.side === 'agent', 들어옴 || 대리들 ? '' : `${esc(RM_자리[side])}이 대화방에 들어와 있지 않아 말을 보낼 수 없습니다. ${보조원() ? '공인중개사에게 초대 링크를 부탁해 주세요.' : '계약서의 ‘일정·체크’에서 초대 링크를 보내 주세요.'}`, rm도구HTML(false, side, M))}`}</div>`;
+        : `${rm일정HTML(M.steps)}${rm대화HTML(C, v => v.side === 'agent', !RM_대화 ? '사이트 안 대화는 쓰지 않습니다 - 손님 상담은 사무소 카카오톡 채널로 합니다(알림 설정에서 채널 주소를 넣으면 손님 화면에 상담 단추가 생깁니다). 지난 대화는 위에 남아 있습니다.' : 들어옴 || 대리들 ? '' : `${esc(RM_자리[side])}이 대화방에 들어와 있지 않아 말을 보낼 수 없습니다. ${보조원() ? '공인중개사에게 초대 링크를 부탁해 주세요.' : '계약서의 ‘일정·체크’에서 초대 링크를 보내 주세요.'}`, rm도구HTML(false, side, M))}`}</div>`;
   return `
 <div class="scr fade" style="background:var(--n50)">
   ${navPartner('rm')}
@@ -18034,12 +18047,12 @@ function ct방HTML(doc){
   const 방 = ct트랙().room || {};
   const 자리 = Object.keys(RM_자리).filter(k => (doc.parties || {})[k]);
   const 보조 = 보조원();
-  return `<div class="card pad ct-sec" id="ctRoom"><h2>손님 대화방 <span class="sub" style="font-weight:500;font-size:13.5px">당사자마다 방이 따로입니다 - 초대 링크로 로그인하면 사무소와 그분만의 방이 열립니다</span></h2>
+  return `<div class="card pad ct-sec" id="ctRoom"><h2>${RM_대화 ? '손님 대화방' : '손님 초대'} <span class="sub" style="font-weight:500;font-size:13.5px">${RM_대화 ? '당사자마다 방이 따로입니다 - 초대 링크로 로그인하면 사무소와 그분만의 방이 열립니다' : '초대 링크로 로그인하면 손님이 계약 일정 · 계약서를 비버노크에서 봅니다 · 상담은 사무소 카카오톡 채널로'}</span></h2>
     ${휴지통 ? `<p class="sub" style="margin:0">휴지통에 있는 계약서입니다 - 목록으로 되돌리면 손님을 초대할 수 있습니다.</p>`
       : `${확정 ? '' : `<p class="sub" style="margin:0;font-size:13.5px">계약체결 문자를 보낸 뒤라면 날인 전에도 초대할 수 있습니다. 계약서에 당사자 이름을 넣으면 그 자리가 생깁니다.</p>`}
       ${자리.length ? '' : `<p class="sub" style="margin:0">계약서 당사자 칸을 먼저 채워 주세요.</p>`}<ul class="rm-inv">${자리.map(k => { const 사람 = doc.parties[k] || {}, 들 = !!방[k], 대 = (방.p || {})[k], 날 = x => esc(String(x.at || '').slice(0, 10).replace(/-/g, '.'));
         return `<li><span><b>${RM_자리[k]}${사람.name ? ` · ${esc(사람.name)}` : ''}</b><small>${들 ? `들어옴 ${날(방[k])}` : '아직 안 들어옴'}${대 ? ` · 대리인 들어옴 ${날(대)}` : ''}</small></span>
-          <span class="eqb rm-invb">${들 || 대 ? `<button type="button" class="btn sec sm" data-go="#/partner/rooms/${esc(CT.id)}/${k}">대화</button>` : ''}
+          <span class="eqb rm-invb">${들 || 대 ? `<button type="button" class="btn sec sm" data-go="#/partner/rooms/${esc(CT.id)}/${k}">${RM_대화 ? '대화' : '보기'}</button>` : ''}
           ${보조 ? '' : 들 ? `<button type="button" class="btn tool sm" data-act="rm-kick" data-v="${k}">${CT.rmKick === CT.id + '|' + k ? '한 번 더 누르면 내보냅니다' : '내보내기'}</button>`
             : `<button type="button" class="btn tool sm" data-act="rm-invite" data-v="${k}">초대 링크</button>`}
           ${보조 ? '' : 대 ? `<button type="button" class="btn tool sm" data-act="rm-kick-p" data-v="${k}">${CT.rmKick === CT.id + '|p' + k ? '한 번 더 누르면 내보냅니다' : '대리인 내보내기'}</button>`
@@ -18056,8 +18069,8 @@ async function rmInvite(side, 카톡, 대리 = false){
   const 끝 = new Date(j.until + 9 * 3600e3).toISOString().slice(0, 10).replace(/-/g, '.');
   const 사람 = ((CT.doc || {}).parties || {})[side] || {};
   const 글 = 대리
-    ? `[비버노크] ${(S.agent && S.agent.office) || '중개사무소'}입니다. ${RM_자리[side]}${사람.name ? ' ' + 사람.name + '님' : ''}의 대리인으로 계약 대화방에 초대합니다. 계약 진행 상황과 일정을 이 대화방에서 안내드립니다. 아래 링크를 눌러 로그인해 주세요.\n${주소}\n\n사용 방법 보기(큰 글씨): ${location.origin}${location.pathname}#/help/room`
-    : `[비버노크] ${(S.agent && S.agent.office) || '중개사무소'}입니다. ${사람.name ? 사람.name + '님, ' : ''}계약 진행 상황과 일정을 이 대화방에서 안내드립니다. 아래 링크를 눌러 로그인해 주세요.\n${주소}\n\n사용 방법 보기(큰 글씨): ${location.origin}${location.pathname}#/help/room`;
+    ? `[비버노크] ${(S.agent && S.agent.office) || '중개사무소'}입니다. ${RM_자리[side]}${사람.name ? ' ' + 사람.name + '님' : ''}의 대리인으로 초대합니다. 계약 진행 상황과 일정을 비버노크에서 확인하실 수 있습니다. 아래 링크를 눌러 로그인해 주세요.\n${주소}\n\n사용 방법 보기(큰 글씨): ${location.origin}${location.pathname}#/help/room`
+    : `[비버노크] ${(S.agent && S.agent.office) || '중개사무소'}입니다. ${사람.name ? 사람.name + '님, ' : ''}계약 진행 상황과 일정을 비버노크에서 확인하실 수 있습니다. 아래 링크를 눌러 로그인해 주세요.\n${주소}\n\n사용 방법 보기(큰 글씨): ${location.origin}${location.pathname}#/help/room`;
   if(카톡){ render(); return toast(j.kakao ? '카카오 알림톡으로 초대를 보냈습니다' : '알림톡을 보내지 못했습니다 - 문자로 보내 주세요'); }
   S.modal = { type:'rm-invite', url: 주소, until: 끝, side, proxy: !!대리, phone: 대리 ? '' : String(사람.phone || '').replace(/[^0-9]/g, ''), text: 글, kakao: !대리 && !!j.kakaoReady };
   render();
@@ -18080,16 +18093,16 @@ V['#/invite'] = tok => {
           ${I.cut ? `<p class="sub" style="margin:12px 0 0;line-height:1.6">중개사무소가 링크만 새로 바꾼 경우라면, 이미 들어오신 분은 마이페이지의 ‘계약 대화방’에서 그대로 여실 수 있습니다.</p>
             <button type="button" class="btn sec" data-go="#/account" style="width:100%;margin-top:12px">마이페이지에서 대화방 열기</button>` : ''}`
         : !R ? `<p class="sub" style="margin:0">초대 내용을 불러오는 중입니다…</p>`
-        : `<span class="badge b-ind" style="align-self:flex-start">계약 대화방 초대</span>
+        : `<span class="badge b-ind" style="align-self:flex-start">계약 진행 초대</span>
           <h1 class="t" style="font-size:${isMo()?21:24}px;margin:12px 0 6px">${esc(R.office)}에서 초대했습니다</h1>
           <p class="sub" style="margin:0 0 16px;line-height:1.7"><b style="color:var(--n900)">${esc(R.title)}</b> 계약의 <b style="color:var(--n900)">${esc(R.role)}</b>으로 초대받으셨습니다.
-            대화방에서 계약 일정과 준비할 것을 안내받고, 궁금한 점을 바로 물어보실 수 있습니다.</p>
+            계약 일정과 계약서를 비버노크에서 바로 확인하실 수 있습니다.</p>
           ${R.joined ? `<p class="ct-note" style="margin:0 0 12px">이 자리에는 이미 누가 들어와 있습니다. 본인이 들어오신 계정으로 로그인하면 바로 열립니다.</p>` : ''}
-          ${로그인전() ? `<button type="button" class="btn pri" data-act="rm-login" style="width:100%">로그인하고 대화방 들어가기</button>
+          ${로그인전() ? `<button type="button" class="btn pri" data-act="rm-login" style="width:100%">로그인하고 계약 보기</button>
               <p class="sub" style="margin:10px 0 0;font-size:13px;line-height:1.6">카카오 · 네이버 · 구글 계정이나 메일로 로그인합니다. 처음이시면 가입 화면이 이어집니다.</p>`
-            : `<button type="button" class="btn pri" data-act="rm-join" style="width:100%" ${I.joining ? 'disabled' : ''}>${I.joining ? '들어가는 중…' : '대화방 들어가기'}</button>`}
+            : `<button type="button" class="btn pri" data-act="rm-join" style="width:100%" ${I.joining ? 'disabled' : ''}>${I.joining ? '들어가는 중…' : '계약 보기'}</button>`}
           <button type="button" class="btn sec" data-go="#/help/room" style="width:100%;margin-top:10px">사용 방법 보기 (큰 글씨)</button>
-          <p class="sub" style="margin:12px 0 0;font-size:12.5px">${esc(new Date(R.until + 9 * 3600e3).toISOString().slice(0, 10).replace(/-/g, '.'))}까지 쓸 수 있는 링크입니다 · 이 대화방은 중개사무소와 나만 봅니다. 상대 당사자에게는 보이지 않습니다.</p>`}
+          <p class="sub" style="margin:12px 0 0;font-size:12.5px">${esc(new Date(R.until + 9 * 3600e3).toISOString().slice(0, 10).replace(/-/g, '.'))}까지 쓸 수 있는 링크입니다 · 이 화면은 중개사무소와 나만 봅니다. 상대 당사자에게는 보이지 않습니다.</p>`}
     </div>
   </div>
 </div>`;
@@ -18136,16 +18149,17 @@ V['#/room'] = (id, sub) => {
   ${navUser ? navUser() : ''}
   <div class="pad" style="flex:1;padding-top:${isMo()?16:28}px;padding-bottom:24px;width:100%;max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:12px">
     <div class="card rm-pane rm-guest">
-      <div class="rm-h"><div><b>${esc(M ? M.title : '계약 대화방')}</b>
+      <div class="rm-h"><div><b>${esc(M ? M.title : '내 계약')}</b>
         <span class="sub">${M ? `${esc(M.office)} · 나는 ${esc(M.role)}` : ''}</span></div>
         <span class="eqb" style="flex:none;gap:6px">${M ? `<button type="button" class="btn tool sm" data-go="#/room/${esc(id)}/doc">계약서 보기</button>` : ''}${M && M.officePhone ? `<a class="btn tool sm" href="tel:${esc(String(M.officePhone).replace(/[^0-9]/g, ''))}">전화</a>` : ''}</span></div>
       ${C && C.err ? `<div class="rm-gone" role="alert"><p>${esc(C.err)}</p>
           ${C.gone ? `<p class="sub">중개사무소에서 새 초대 링크를 받으셨다면 그 링크를 다시 눌러 주세요.</p>
             <button type="button" class="btn sec" data-go="#/account">마이페이지로</button>` : `<p class="sub">잠시 뒤 저절로 다시 불러옵니다.</p>`}</div>`
         : !M ? `<p class="sub" style="margin:16px">대화를 불러오는 중입니다…</p>`
-        : `${rm일정HTML(M.steps)}${rm대화HTML(C, v => v.mine != null ? v.mine : v.side === M.me, '', rm도구HTML(true, M.me, M))}`}
+        : RM_대화 ? `${rm일정HTML(M.steps)}${rm대화HTML(C, v => v.mine != null ? v.mine : v.side === M.me, '', rm도구HTML(true, M.me, M))}`
+        : `${rm일정HTML(M.steps)}${rm채널HTML(M.kakaoCh, M.office, M.officePhone)}${C.rows.length ? rm대화HTML(C, v => v.mine != null ? v.mine : v.side === M.me, '사이트 안 대화는 쓰지 않습니다 - 위 카카오톡 채널이나 전화로 물어봐 주세요. 지난 대화는 그대로 남아 있습니다.', '') : ''}`}
     </div>
-    ${C && C.gone ? '' : `<p class="sub" style="margin:0;font-size:12.5px;line-height:1.6">새 말이 오면 가입하신 메일로 알려 드립니다. 이 대화방은 중개사무소와 나만 봅니다 - 상대 당사자에게는 보이지 않습니다. <a data-go="#/help/chat" style="color:var(--ind700);font-weight:600">사용 방법 보기</a></p>`}
+    ${C && C.gone ? '' : !RM_대화 ? `<p class="sub" style="margin:0;font-size:12.5px;line-height:1.6">이 화면은 중개사무소와 나만 봅니다 - 계약 일정과 계약서를 여기서 확인하세요.</p>` : `<p class="sub" style="margin:0;font-size:12.5px;line-height:1.6">새 말이 오면 가입하신 메일로 알려 드립니다. 이 대화방은 중개사무소와 나만 봅니다 - 상대 당사자에게는 보이지 않습니다. <a data-go="#/help/chat" style="color:var(--ind700);font-weight:600">사용 방법 보기</a></p>`}
   </div>
 </div>`;
 };
@@ -18182,11 +18196,11 @@ function rm내방HTML(){
   const 카드 = r => { const 다음 = (r.steps || []).find(s => !s.됨 && s.날 >= 오늘), n = 다음 ? Math.round((Date.parse(다음.날) - Date.parse(오늘)) / 864e5) : null;
     return `<div class="gm-card"><div class="gm-h"><b>${esc(r.title)}</b><span>${esc(`${r.office} · 나는 ${r.role || ''}`)}</span></div>${gm막대(r)}
       ${다음 ? `<p class="gm-next">다음 일정 <b>${esc(다음.이름)}</b> · ${n === 0 ? '오늘' : `${n}일 남음`} <span class="num">(${esc(String(다음.날).replace(/-/g, '.'))})</span></p>` : ''}
-      <button type="button" class="btn sec sm" data-go="#/room/${esc(r.id)}">계약 대화방 열기</button></div>`; };
+      <button type="button" class="btn sec sm" data-go="#/room/${esc(r.id)}">계약 진행 보기</button></div>`; };
   return `<section class="card acc-row"><div class="acc-l"><h2>내 계약</h2><p>진행 단계와 일정 · 중개사무소와 잔금까지</p></div><div class="acc-r gm-wrap">
     ${진행.length ? `<div class="gm-list">${진행.map(카드).join('')}</div>${gm달력(진행)}` : ''}
     ${지난.length ? `<div class="gm-past"><b>지난 계약</b>${지난.map(r => `<a class="gm-pr" data-go="#/room/${esc(r.id)}"><span><b>${esc(r.title)}</b><small>${esc(r.office)} · 잔금 ${esc(String(((r.steps || []).find(s => s.이름 === '잔금') || {}).날 || '').replace(/-/g, '.'))}</small></span><i class="ar-r" aria-hidden="true"></i></a>`).join('')}
-      <small class="sub">대화와 받은 파일은 대화방에 남아 있습니다. 파일은 잔금 뒤 1년까지 보관됩니다. 계약서는 대화방의 ‘계약서 보기’에서 다시 봅니다.</small></div>` : ''}
+      <small class="sub">계약서는 ‘계약 진행 보기’의 ‘계약서 보기’에서 다시 봅니다. 예전에 받은 파일은 잔금 뒤 1년까지 보관됩니다.</small></div>` : ''}
   </div></section>`;
 }
 
@@ -19060,7 +19074,7 @@ function ct행단추(r){
   const k = ct보관칸(r), 이름 = esc(r.title || '이 계약서'), id = esc(r.id), 단 = (act, v, t, 말, 위험) =>
     `<button type="button" class="ct-rcopy${위험 ? ' dng' : ''}" data-act="${act}" data-v="${v}" aria-label="${이름} ${말}">${t}</button>`;
   const 칸들 = k === 'trash'
-    ? [단('ct-bin', `${id}|`, '되돌리기', '목록으로 되돌리기'), r.track && r.track.room ? `<span class="ct-rnote">손님 대화방이 있어 지우지 않습니다</span>`   /* 2026-11-13 - 대화 · 파일이 주인 없이 남지 않게(서버도 막는다) */
+    ? [단('ct-bin', `${id}|`, '되돌리기', '목록으로 되돌리기'), r.track && r.track.room ? `<span class="ct-rnote">초대한 손님이 있어 지우지 않습니다</span>`   /* 2026-11-13 - 대화 · 파일이 주인 없이 남지 않게(서버도 막는다) */
         : 직원() ? `<span class="ct-rnote">${r.status === 'sealed' ? '영구 삭제는 대표만' : ct휴지남은날(r) + '일 뒤 지워짐'}</span>` : 단('ct-purge', id, '영구 삭제', '영구 삭제', true)]
     : k === 'arch' ? [단('ct-bin', `${id}|`, '되돌리기', '목록으로 되돌리기'), 단('ct-bin', `${id}|trash`, '휴지통', '휴지통으로')]
     : [!isMo() && !(CT_FORMS[r.form] || {}).explain ? 단('ct-copy', id, '복사', '복사해서 새로') : '', CT.현황 && ct빠른쓰기() && !(CT_FORMS[r.form] || {}).explain ? 단('ct-qedit', id, '고치기', '빠르게 고치기') : '', 단('ct-bin', `${id}|arch`, '내리기', '보관함으로 내리기'), 단('ct-bin', `${id}|trash`, '휴지통', '휴지통으로')];
@@ -20192,7 +20206,7 @@ function ctAlertLoad(){
     CT.alertLoading = false;
     /* 종료일 표기는 사무소 설정 - 서버 값을 이 브라우저에도 맞춰 둔다 */
     if(ok && (j.end === 'same' || j.end === 'prev')) try{ localStorage.setItem('bk.ctEnd', j.end); }catch(_){}
-    CT.alert = ok ? { loaded: true, cfg: ct알림설정(j.alert), need: j.need || '', phone: j.phone || '', kakaoReady: !!j.kakaoReady }
+    CT.alert = ok ? { loaded: true, cfg: ct알림설정(j.alert), need: j.need || '', phone: j.phone || '', kakaoReady: !!j.kakaoReady, kakaoCh: j.kakaoCh || '' }
       : { loaded: true, cfg: ct알림설정(), need: '', err: j.error || '알림 설정을 불러오지 못했습니다' };
     if(S.route.startsWith('#/partner/contracts') || CT.mode === 'plan' || S.route === '#/partner/home') render();
   }).catch(() => { CT.alertLoading = false; });
@@ -20233,6 +20247,10 @@ function ctAlertHTML(늘펼침){
         <div class="ct-law">잔금일 15시부터 1시간마다 묻고, <select class="inp" data-act-ch="cta-settle" ${막힘?'disabled':''} aria-label="잔금 완료 확인 끝 시각">${[16,17,18,19,20,21,22,23].map(h => `<option value="${h}"${설정.settleEnd === h ? ' selected' : ''}>${h}시</option>`).join('')}</select> 까지 완료가 아니면 ‘잔금 지연’
           <span class="sub" style="font-size:13.5px">다음 날 아침 9시에 다시 알려 드립니다(기본 19시)</span></div></div>
       ${ct의무칸HTML(설정, 막힘)}
+      ${직원() ? '' : `<div class="ct-step"><span class="lab">손님 상담 카카오톡 채널</span>
+        <div class="ct-law ct-kch"><input class="inp" type="url" inputmode="url" data-in="cta-kch" value="${esc(CT.kchDraft != null ? CT.kchDraft : A.kakaoCh || '')}" placeholder="https://pf.kakao.com/_xxxxx" ${막힘 ? 'disabled' : ''} aria-label="사무소 카카오톡 채널 주소">
+          <button type="button" class="btn sec sm" data-act="cta-kch" ${막힘 || CT.kchBusy ? 'disabled' : ''}>${CT.kchBusy ? '저장하는 중…' : '저장'}</button></div>
+        <span class="sub" style="font-size:13.5px">카카오톡 채널 관리자센터의 채널 주소(https://pf.kakao.com/_로 시작)를 넣으면, 손님의 계약 진행 화면 · 계약 뒤 할 일 안내에 ‘카카오톡 채널로 상담’ 단추가 생깁니다. 비우고 저장하면 단추가 사라집니다.</span></div>`}
     </div>`;
 }
 /* 사무소 의무 (2026-11-22) - 공제 만료일 · 연수교육 이수일 · 서류 보존 기간 */
@@ -23389,6 +23407,7 @@ document.addEventListener('input', e=>{
   /* 부속 서류 - 정산서 금액 · 추가 항목 · 인계 품목 */
   if(k.startsWith('cte:')){ ct부속입력(el, k.slice(4)); return; }
   /* 알림 설정 - 법무사 예약 시점(1~20영업일) */
+  if(k === 'cta-kch'){ CT.kchDraft = el.value; return; }   /* 손님 상담 카카오톡 채널 - 저장 단추로 (11-24) */
   if(k === 'cta-a' || k === 'cta-b'){
     const A = CT.alert, n = Math.round(+el.value); if(!A || !A.loaded || A.need || A.err || !(n >= 1 && n <= 20)) return;
     const c = ct알림설정(A.cfg); c.lawyer[k === 'cta-a' ? 0 : 1] = n; A.cfg = ct알림설정(c); ctAlertSave(); return;
@@ -25004,6 +25023,14 @@ function handle(a,v,el){
     case 'ct-go-sp': { const el = document.getElementById('ctSecSp'); if(el) el.scrollIntoView({ behavior:'smooth', block:'start' }); else { CT.mode = 'edit'; render(); setTimeout(() => { const e2 = document.getElementById('ctSecSp'); if(e2) e2.scrollIntoView({ block:'start' }); }, 60); } return true; }
     case 'ct-full': CT.full = !CT.full; render(); setTimeout(() => { const b = $('#app [data-act="ct-full"]'); if(b) b.focus({ preventScroll: true }); }); return true;
     case 'ct-cloud': 보관창(); return true;
+    /* 손님 상담 카카오톡 채널 (2026-11-24 대표님) */
+    case 'cta-kch': { const u = String(CT.kchDraft != null ? CT.kchDraft : (CT.alert || {}).kakaoCh || '').trim();
+      if(u && !카톡채널맞나(u)) return toast('카카오톡 채널 주소는 https://pf.kakao.com/_ 로 시작합니다 - 채널 관리자센터에서 복사해 주세요'), true;
+      CT.kchBusy = true; render();
+      ctPost({ what: 'kakao-ch-save', url: u }).then(({ ok, j }) => { CT.kchBusy = false;
+        if(ok){ if(CT.alert) CT.alert.kakaoCh = j.kakaoCh || ''; CT.kchDraft = null; toast(j.kakaoCh ? '저장했습니다 - 손님 화면에 카카오톡 채널 상담 단추가 생깁니다' : '지웠습니다 - 손님 화면의 상담 단추가 사라집니다'); }
+        else toast(j.error || '저장하지 못했습니다'); render(); }).catch(() => { CT.kchBusy = false; render(); toast('네트워크 문제로 저장하지 못했습니다'); });
+      return true; }
     /* 잔금 준비서류 이미지 (2026-11-24 파트너) */
     case 'ctpi-open': { const d = CT.doc; if(!d) return true;
       let 공유 = false; try{ 공유 = !!(navigator.canShare && navigator.canShare({ files: [new File([''], 'a.png', { type: 'image/png' })] })); }catch(_){}

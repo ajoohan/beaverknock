@@ -219,19 +219,29 @@ export const 권한키 = w => { w = String(w || '');
   if (w === 'contract-seal') return 'ct_seal';
   if (w === 'contract-mail') return 'ct_mail';
   if (['contracts', 'contract', 'contract-fpics', 'forms', 'form-url', 'form-fq', 'phrases', 'sms', 'complex', 'alert-settings', 'ics-link', 'contract-ext', 'contract-ext-url'].includes(w)) return 'ct_view';
-  if (/^(contract|form-)/.test(w) || ['phrases-save', 'sms-save', 'complex-save', 'alert-settings-save', 'end-style-save'].includes(w)) return 'ct_edit';
+  if (/^(contract|form-)/.test(w) || ['phrases-save', 'sms-save', 'complex-save', 'alert-settings-save', 'end-style-save', 'kakao-ch-save'].includes(w)) return 'ct_edit';
   if (w === 'listing-memo' || w === 'listing-memo-save') return 'listing_memo';
   if (/^listing-/.test(w)) return 'listing';
   if (/^room/.test(w)) return 'room';
   return ''; };
 export const 계약기능 = w => /^(contract|form)/.test(String(w || '')) || ['forms', 'phrases', 'phrases-save', 'sms', 'sms-save',
-  'complex', 'complex-save', 'alert-settings', 'alert-settings-save', 'end-style-save', 'ics-link', 'ics-reset'].includes(w);
+  'complex', 'complex-save', 'alert-settings', 'alert-settings-save', 'end-style-save', 'kakao-ch-save', 'ics-link', 'ics-reset'].includes(w);
 const 가린번호 = p => { const n = String(p || '').replace(/\D/g, ''); return n.length >= 10 ? `${n.slice(0, 3)}-****-${n.slice(-4)}` : ''; };
 async function readAlert(res, agent) {
   const x = await 설정읽기(agent);
   if (x.error) return res.status(502).json({ error: '알림 설정을 불러오지 못했습니다' });
   return res.status(200).json({ ok: true, alert: 알림설정(x.settings.alert), need: x.need || '',
-    phone: 가린번호(agent.phone), kakaoReady: !!process.env.SOLAPI_TPL_SCHEDULE, end: x.settings.ctEnd === 'same' ? 'same' : 'prev' });
+    phone: 가린번호(agent.phone), kakaoReady: !!process.env.SOLAPI_TPL_SCHEDULE, end: x.settings.ctEnd === 'same' ? 'same' : 'prev', kakaoCh: 카톡채널(x.settings.kakaoCh) });
+}
+/* 손님 상담 카카오톡 채널 (2026-11-24 대표님 '채팅은 카카오채널을 활용해서 고객과 소통') - settings.kakaoCh. 사무소 대표만 바꾼다 */
+export const 카톡채널 = u => { u = String(u || '').trim(); return /^https:\/\/pf\.kakao\.com\/_[A-Za-z0-9]{3,40}(\/chat)?$/.test(u) ? u : ''; };
+async function saveKakaoCh(res, agent, b) {
+  if (agent.staff) return res.status(403).json({ error: '카카오톡 채널 주소는 사무소 대표만 바꿉니다' });
+  const u = String(b.url || '').trim(), kakaoCh = 카톡채널(u);
+  if (u && !kakaoCh) return res.status(400).json({ error: '카카오톡 채널 주소는 https://pf.kakao.com/_ 로 시작합니다' });
+  const z = await 설정고침(agent, () => ({ patch: { kakaoCh } }));
+  if (!z.y) return 설정실패(res, z, '카카오톡 채널');
+  return res.status(200).json({ ok: true, kakaoCh });
 }
 /* 임대차 종료일 표기(파트너 리뷰 '사무소 설정') - 시작 전날(prev) · 시작과 같은 날(same). settings.ctEnd */
 async function saveEndStyle(res, agent, b) {
@@ -726,6 +736,7 @@ export default async function handler(req, res) {
     if (!z.y) return 설정실패(res, z, '알림 기록');
     return res.status(200).json({ ok: true }); }
   if (b.what === 'end-style-save')      return saveEndStyle(res, chk.agent, b);
+  if (b.what === 'kakao-ch-save')       return saveKakaoCh(res, chk.agent, b);
 
   /* 내 특약 문구함 - 자주 쓰는 특약을 매매·임대차·갱신계약·기타로 */
   if (b.what === 'phrases')      return readPhrases(res, chk.agent);

@@ -3,6 +3,7 @@ import * as 길 from './길.mjs';
 let ran = 0, fail = 0;
 const ok = (c, m) => { ran++; if (!c) fail++; console.log(`  ${c ? 'OK' : 'X '}  ${m}`); };
 process.env.BK_URL = 'https://x.supabase.co'; process.env.BK_SECRET_KEY = 'k';
+process.env.BK_ROOM_CHAT = '1';   /* 사이트 안 대화는 꺼 두었지만(11-24 대표님) 코드는 남겨 두므로 켠 상태로 검사한다 */
 delete process.env.RESEND_API_KEY; delete process.env.SOLAPI_TPL_INVITE; delete process.env.SOLAPI_TPL_ROOM;
 
 const CID = '11111111-2222-3333-4444-555555555555';
@@ -151,19 +152,19 @@ ok(r.code === 503 && r.body.need === '0035', 'thread 칸이 없으면 0035 마�
 const js = 길.js();
 ok(js.includes("else if(h.startsWith('#/invite/')) html = V['#/invite'](parts[2]);") && js.includes("else if(h.startsWith('#/room/')) html = V['#/room'](parts[2], parts[3]);")
   && js.includes("if(h.startsWith('#/room/') && 로그인전()){"), '화면 - 초대 · 손님 방 주소, 방은 로그인 뒤');
-ok(js.includes("['#/partner/rooms', '손님 대화', 'chat', 'rm']") && js.includes('${ct방HTML(doc)}') && js.includes("S.modal.type==='rm-invite'"), '화면 - 손님 대화 메뉴 · 일정·체크 탭의 초대 · 초대 링크 창');
+ok(js.includes("['#/partner/rooms', '계약 손님', 'chat', 'rm']") && js.includes('${ct방HTML(doc)}') && js.includes("S.modal.type==='rm-invite'"), '화면 - 손님 대화 메뉴 · 일정·체크 탭의 초대 · 초대 링크 창');
 ok(js.includes("const 곳 = /^(invite-join|my-)/.test(body.what) ? '/api/my' : '/api/feed';"), '화면 - 손님 요청은 /api/my, 사무소 요청은 /api/feed');
 ok(js.includes("html = V['#/partner/rooms'](parts[3], parts[4]);") && js.includes('data-go="#/partner/rooms/${esc(r.id)}/${esc(r.side)}"'), '화면 - 중개사 방 주소는 계약서/당사자');
 ok(js.includes("if(처음 || !C.meta || status === 403 || status === 404)"), '화면 - 새 말 확인이 한 번 실패해도 대화를 가리지 않는다');
 ok(js.includes("if(C.loading){ if(!처음) C.또 = true; return; }") && js.includes('if(처음 || 새.length || 살아남)') && js.includes("if(C.gone && !처음) return;"), '화면 - 보낸 말은 읽는 중이어도 곧바로 다시 읽고, 처음 실패한 빈 방도 열리면 다시 그린다 · 내보내진 방은 그만 묻는다');
-ok(js.includes("이 계약서에는 아직 대화방이 없습니다"), '화면 - 대화방이 없는 계약서 주소는 여는 중에 멈추지 않는다');
+ok(js.includes("이 계약서에는 아직 초대한 손님이 없습니다"), '화면 - 대화방이 없는 계약서 주소는 여는 중에 멈추지 않는다');
 ok(js.includes("Date.now() - RM.listAt > 30e3") && js.includes("RM.list = null;   /* 손님 대화 목록에 새 방이 바로 보이게 */"), '화면 - 목록은 30초마다 · 초대하면 바로 새로');
 ok(js.includes("data-keep=\"rm\"") && js.includes("[...app.querySelectorAll('[data-keep]')]") && js.includes('if(처음 || 아래였나 || C.보냄)'), '화면 - 다시 그려도 대화 스크롤을 지키고, 예전 말을 읽는 중이면 끌어내리지 않는다');
 ok(js.includes("${tabbar('rm','p')}") && js.includes('data-go="#/partner/rooms">목록</button>'), '화면 - 휴대폰: 엉뚱한 탭이 켜지지 않고, 방에서 목록으로 돌아간다');
 ok(js.includes("RM.mine = null; RM.cur = null; go('#/room/' + j.id);") && js.includes('if(RM.cur !== C){ if(!손님) RM.listAt = 0;')
   && js.includes('if(status === 400 || status === 403 || status === 404) C.gone = true;'), '화면 - 다시 들어온 방은 처음부터 읽고, 보내는 중 방을 옮겨도 지금 방을 건드리지 않고, 같은 답일 실패는 그만 묻는다');
 ok(js.includes('${보조원() ? \'\' : `<a class="btn tool sm" data-go="#/partner/contract/${esc(id)}">계약서</a>`}</div></div>')
-  && js.includes("rm대화HTML(C, v => v.side === 'agent', 들어옴 || 대리들 ? '' :") && js.includes("const 표지 = CT.id + '|' + (a === 'rm-kick' ? v : a === 'rm-kick-p' ? 'p' + v : '*');") && js.includes("CT.rmKick === CT.id + '|' + k ?") && js.includes("I.cut = !!j.error; } render();"), '화면 - 보조원은 계약서 단추 없음 · 안 들어온 방은 쓰는 칸 대신 까닭 · 모두 끊기도 두 번');
+  && js.includes("rm대화HTML(C, v => v.side === 'agent', !RM_대화 ? '사이트 안 대화는 쓰지 않습니다") && js.includes(": 들어옴 || 대리들 ? '' :") && js.includes("const 표지 = CT.id + '|' + (a === 'rm-kick' ? v : a === 'rm-kick-p' ? 'p' + v : '*');") && js.includes("CT.rmKick === CT.id + '|' + k ?") && js.includes("I.cut = !!j.error; } render();"), '화면 - 보조원은 계약서 단추 없음 · 안 들어온 방은 쓰는 칸 대신 까닭 · 모두 끊기도 두 번');
 ok(js.includes("if(!e.target.closest('[data-in=\"rm-text\"]')) return;") && js.includes("e.shiftKey || e.isComposing || e.keyCode === 229 || isMo()")
   && js.includes("else if(id && CT.id === id && ctSealed() && S.route !== h) ct방새로(id);") && js.includes("if(JSON.stringify((CT.track || {}).room || null) !== 그때) return;")
   && !js.includes("RM.조합끝") && js.includes("setTimeout(() => { const btn = $('#app [data-act=\"rm-send\"]'); if(btn && !btn.disabled) btn.click(); }, 0);") && js.includes("S.modal.type === 'rm-invite' || S.modal.type === 'ct-share')) S.modal = null;")

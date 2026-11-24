@@ -90,9 +90,14 @@ const 당사자번호 = (row, side) => String(((row.doc_parties || {})[side] || 
 const 당사자있음 = (row, side) => Object.hasOwn(자리이름, side) && !!(row.doc_parties || {})[side];
 
 async function 사무소(agentId) {
-  const x = await db('bk_agent', `select=id,office,phone,user_id&id=eq.${agentId}&limit=1`);
+  /* kc - 손님 상담 카카오톡 채널(settings.kakaoCh, 2026-11-24 대표님). 설정 칸이 없으면 빼고 다시 읽는다 */
+  let x = await db('bk_agent', `select=id,office,phone,user_id,kc:settings->>kakaoCh&id=eq.${agentId}&limit=1`);
+  if (!x.r.ok) x = await db('bk_agent', `select=id,office,phone,user_id&id=eq.${agentId}&limit=1`);
   return x.rows[0] || {};
 }
+/* 사이트 안 대화 (2026-11-24 대표님 '채팅은 카카오채널로') - 끈다. 다시 켜려면 BK_ROOM_CHAT=1 (화면 RM_대화 도 true) */
+const 대화켬 = () => process.env.BK_ROOM_CHAT === '1';
+const 대화끔답 = res => res.status(410).json({ error: '사이트 안 대화는 쓰지 않습니다 - 중개사무소 카카오톡 채널이나 전화로 문의해 주세요', off: true });
 /* 한 방(계약서 · 당사자)의 말. 처음 열 때는 최근 300개(오래된 것부터 보이게 뒤집는다), 다음부터는 마지막 번호 뒤만 */
 /* file 칸(0036)이 아직 없으면 빼고 다시 읽는다 - 대화는 그대로 열린다 */
 let 파일칸 = true;
@@ -233,6 +238,7 @@ export async function roomAgent(req, res, agent, user, b) {
     return 파일주소(res, id, side, b.msg);
   }
   if (b.what === 'room-send' || b.what === 'room-file') {
+    if (!대화켬()) return 대화끔답(res);
     if (!당사자있음(row, side)) return res.status(400).json({ error: '이 계약서에 없는 당사자입니다' });
     if (overLimit('room:a:' + user.id, 60, 600e3)) return res.status(429).json({ error: '잠시 뒤 다시 보내 주세요' });
     const 파일 = b.what === 'room-file';
@@ -379,7 +385,7 @@ export async function roomGuest(req, res, user, b) {
     if (!m.r.ok) return 표없음(m.t) ? 준비중(res, m.t) : res.status(502).json({ error: '대화를 불러오지 못했습니다' });
     const 사 = await 사무소(row.agent_id);
     return res.status(200).json({ ok: true, me: side, role: 내이름, proxy: 나.대리, title: row.title || row.road || '계약', office: 사.office || '중개사무소',
-      officePhone: 사.phone || '', steps: 일정(row), rows: m.rows.map(v => ({ ...내보낼말(v, user.id), name: v.side === 'agent' ? v.name : (v.name || 자리이름[v.side]) })) });
+      officePhone: 사.phone || '', kakaoCh: /^https:\/\/pf\.kakao\.com\/_[A-Za-z0-9]{3,40}(\/chat)?$/.test(String(사.kc || '')) ? 사.kc : '', steps: 일정(row), rows: m.rows.map(v => ({ ...내보낼말(v, user.id), name: v.side === 'agent' ? v.name : (v.name || 자리이름[v.side]) })) });
   }
   if (b.what === 'my-room-file-url') return 파일주소(res, id, side, b.msg);
   /* 지난 계약 서류 다시 보기 (2026-11-13 파트너 기획 E4) - 이 계약의 당사자(초대로 들어온 분)에게 확정본을 보기 전용으로.
@@ -399,6 +405,7 @@ export async function roomGuest(req, res, user, b) {
     return res.status(200).json({ ok: true, sealed: true, form: r0.form, title: r0.title || '', sealed_at: r0.sealed_at, doc: 초안가림(r0.doc) });
   }
   if (b.what === 'my-room-send' || b.what === 'my-room-file') {
+    if (!대화켬()) return 대화끔답(res);
     if (overLimit('room:g:' + user.id, 30, 600e3)) return res.status(429).json({ error: '잠시 뒤 다시 보내 주세요' });
     const 파일 = b.what === 'my-room-file';
     if (파일 && overLimit('roomfile:g:' + user.id, 10, 600e3)) return res.status(429).json({ error: '파일을 많이 보내셨습니다 - 잠시 뒤 다시 보내 주세요' });

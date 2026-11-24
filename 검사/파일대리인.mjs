@@ -4,6 +4,7 @@ import * as 길 from './길.mjs';
 let ran = 0, fail = 0;
 const ok = (c, m) => { ran++; if (!c) fail++; console.log(`  ${c ? 'OK' : 'X '}  ${m}`); };
 process.env.BK_URL = 'https://x.supabase.co'; process.env.BK_SECRET_KEY = 'k';
+process.env.BK_ROOM_CHAT = '1';   /* 사이트 안 대화는 꺼 두었지만(11-24 대표님) 코드는 남겨 두므로 켠 상태로 검사한다 */
 delete process.env.RESEND_API_KEY; delete process.env.SOLAPI_TPL_INVITE; delete process.env.SOLAPI_TPL_ROOM;
 
 const CID = '11111111-2222-3333-4444-555555555555', AID = '99999999-8888-7777-6666-555555555555';

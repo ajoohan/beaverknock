@@ -597,7 +597,7 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
 {
   ok(/const CT_복사칸 = \[\['property', [^\]]+\], \['parties', [^\]]+\], \['specials', [^\]]+\], \['deal', [^\]]+\]\];/.test(js) && /const ct복사할 = \(\) => CT\.copyParts \|\| \['property', 'parties', 'specials'\];/.test(js),
      '복사 - 목적물 · 당사자 · 특약은 기본으로 가져오고 금액 · 날짜는 고를 때만');
-  ok(/const d = ctNewDoc\(원\.form, null, \{ cat: 원\.cat, sub: 원\.sub, deal: 원\.deal && 원\.deal\.type \}\);/.test(js) && /CT\.dirty = true; CT\.mode = 'edit'; ctGo\('#\/partner\/contract\/new'\);\s*toast\(`지난 계약서에서/.test(js),
+  ok(/const d = ctNewDoc\(원\.form, null, \{ cat: 원\.cat, sub: 원\.sub, use: 원\.use, ec: 원\.ec, deal: 원\.deal && 원\.deal\.type \}\);/.test(js) && /CT\.dirty = true; CT\.mode = 'edit'; ctGo\('#\/partner\/contract\/new'\);\s*toast\(`지난 계약서에서/.test(js),
      '복사는 같은 양식의 새 계약서(사무소 칸 · 조항은 지금 값) - 원래 계약서는 그대로');
   ok(/종류\('copy', '기존 계약서 복사'/.test(js) && /data-act="\$\{갱신고르기 === 'copy' \? 'ct-copy'/.test(js) && /data-act="ct-copy-this"/.test(js),
      '복사 시작 - 계약서 작성의 ‘기존 계약서 복사’ · 작성 화면의 ‘복사해서 새로’');
@@ -809,6 +809,20 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
   ok(/\(업종\)을 위한 용도로 사용한다/.test(전h) && /3기의 차임액/.test(전h) && /2\. 원 임대차계약의 내용 및 임대인의 동의/.test(전h) && /3\. 계약내용/.test(전h) && /<b>제11조\(중개대상물확인·설명서 교부 등\)<\/b>/.test(전h),
      '전대차 비주거 - 업종 문구 · 3기 · 원 임대차 · 제11조까지');
   ok(/공인전자문서센터/.test(매h) && /공인전자문서센터/.test(M.ctDocHTML(M.ctNewDoc('sale', null, { cat: 'realty', sub: '아파트' }))) === false, '맺음말 - 전자계약 문구는 전자계약 양식에만');
+  /* 분양권 · 조합원입주권 - 전자계약 칸 · 조항(새 계약서만 ec) */
+  const 분e = M.ctNewDoc('presale', null, { cat: 'presale', ec: 1 }), 입e = M.ctNewDoc('union', null, { cat: 'union', ec: 1 }), 분옛 = M.ctNewDoc('presale', null, { cat: 'presale' });
+  ok(M.ctTitle(분e) === '분양권 매매계약서' && M.ctTitle(입e) === '조합원입주권 매매계약서', '분양권 · 입주권 제목');
+  ok(분e.ec === 1 && !분옛.ec && 분e.clauses.length === 9 && 입e.clauses.length === 10 && 분옛.clauses.length !== 9, '전자계약 분양권 제3~11조 · 입주권 제3~12조 - 예전 계약서는 그대로');
+  분e.deal = { ...분e.deal, orgPrice: 500000000, premium: 30000000, opt: 5000000, price: 130000000, down: 13000000 };
+  const 분h = M.ctDocHTML(분e);
+  ok(/1\. 분양 목적물의 표시/.test(분h) && /2\. 분양대금 및 납부내역/.test(분h) && /3\. 계약내용/.test(분h) && /총 매매대금<\/th><td>금 오억삼천오백만원정/.test(분h)
+     && /\(분양금액 \+ 프리미엄 \+ 선택품목\)/.test(분h) && /정산지급금/.test(분h) && /승계 융자금/.test(분h) && /<b>제2조\(권리의 이전\)<\/b>/.test(분h) && /<b>제11조\(준용\)<\/b>/.test(분h)
+     && /다만, 당사자 일방의 귀책사유로 인한 경우에는 제6조에 따른다/.test(분h), '분양권 - 목적물 · 분양대금 표, 총 매매대금 셈, 정산지급금, 승계 융자금, 제6조를 가리킨다');
+  입e.deal = { ...입e.deal, price: 900000000, down: 90000000, keepLoan: 200000000, keepExtra: 100000000 };
+  const 입h = M.ctDocHTML(입e);
+  ok(M.ctBalance(입e.deal) === 510000000 && /승계 융자금<\/th><td>금 이억원정.*\(이주비/.test(입h) && /승계 분담금/.test(입h) && /2\. 종전 토지 및 분양금액 등의 내역/.test(입h)
+     && /<b>제2조\(조합원 지위의 승계 및 소유권이전\)<\/b>/.test(입h) && /제8조에 따른다/.test(입h) && /쌍방은 아래 표시 조합원입주권에 관하여/.test(입h),
+     '입주권 - 승계 융자금 · 분담금은 잔금에서 빼고, 종전 토지 표 · 제2조 · 제8조를 가리킨다');
   ok(/'__custom', '직접입력'/.test(js) && /data-in="ctp-custom"/.test(js), '세부 종류는 직접입력도 된다');
 
   /* 문서 이름이 고른 것을 따라간다 */
@@ -1159,7 +1173,7 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
   ok(/class="ctw-foot"/.test(h) && !/ctw-foot lit/.test(h), '이미 켜진 뒤에 다시 그리면 켜짐 움직임이 없다');
   W.CT.pick = { cat: 'union', sub: null, custom: '', deal: null, ex: null }; W.CT.wizOk = false;
   h = W.ctWizHTML([]);
-  ok(/고를 것 없이 바로 만듭니다\. 조합원 입주권 매매 계약의 일반적인 항목을 따라 만든 양식입니다\./.test(h) && /class="ctw-foot lit"/.test(h),
+  ok(/고를 것 없이 바로 만듭니다\. 국토교통부 부동산거래 전자계약\(조합원입주권 매매\) 양식을 따라 만든 양식입니다\./.test(h) && /class="ctw-foot lit"/.test(h),
      '고를 것 없는 종류는 근거 한 문장으로 · 바꾸자마자 만들기 줄이 켜진다');
 }
 

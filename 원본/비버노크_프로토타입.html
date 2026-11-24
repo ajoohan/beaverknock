@@ -14334,6 +14334,7 @@ if(typeof addEventListener === 'function'){
   addEventListener('unhandledrejection', e => { const r = e && e.reason; bk오류보내기('처리되지 않은 오류: ' + ((r && r.message) || r), (r && r.stack && (/(https?:\/\/[^\s)]+?):\d+:\d+/.exec(r.stack) || [])[1]) || location.origin, 0, 0, r && r.stack); });
 }
 const BK_변경 = [
+  { v:'26.11.24.8', 날:'2026-11-24', 줄:[ '입목 · 광업재단 · 공장재단 매매는 실거래신고 기한 알림(화면 · 카톡 · 메일)과 거래신고 도우미를 껐습니다 (파트너 확인)' ] },
   { v:'26.11.24.7', 날:'2026-11-24', 줄:[ '부속서류 점검 - 다물건 계약의 영수증 · 정산서 · 위임장 · 개인정보 동의서 · 인수인계에 물건 1 소재지만 나오던 것을 물건마다(1. … / 2. …) 적게' ] },
   { v:'26.11.24.6', 날:'2026-11-24', 줄:[ '전수점검 · 코드리뷰 반영 - 민간임대 계약서에 2차부터 중도금 · 법인 당사자 · 공동명의 · 대리인 · 공동중개 사무소가 빠지던 것', '다물건 - 확인·설명서 탭이 총액을 거래금액으로 넣던 것(물건 1 금액으로) · 물건마다 소재지 · 매매대금이 있어야 확정 · 거래신고 도우미에 물건별 안내 · 계약현황 고치기에서 금액은 막음', '계약서 목록 · 계약현황의 종류 이름이 새 양식(부동산(주거용) · 민간임대 · 다물건)으로 보이게' ] },
   { v:'26.11.24.5', 날:'2026-11-24', 줄:[ '별지 - 주택임대차표준계약서는 서류 아래 ‘별지 붙이기’로 뒤에 한 쪽(소재지 · 토지 · 건물 · 임차할부분 · [내용]), 확인·설명서 별지는 파트너가 준 별지양식대로(종류 · 거래형태 줄 · [소유권 외의 권리사항]) 국가 원본 틀에도 붙습니다', '다물건 매매 - 물건마다 ‘이 물건 확인·설명서’로 그 물건의 소재지 · 용도 · 금액이 들어간 확인·설명서를 만듭니다', '토지 · 입목재단 계약서는 입력 화면에서도 건물 칸을 뺐고, 전자계약 임대는 대지권 칸 없이 ‘임대할 부분’으로', '서류 아래 양식 근거 문장을 전자계약 양식으로 바로잡았습니다' ] },
@@ -16103,7 +16104,8 @@ const ct문구이름 = t => { const s = String(t || '').replace(/\s+/g, ' ').tri
 /* 신고가 있는 계약 - 매매(거래신고)와 주택 임대차(임대차 신고). 서버(_contract.js 신고대상)와 같은 규칙 */
 /* 분양권·입주권 전매도 거래신고 대상이다(부동산 거래신고법 제3조 - 공급계약 지위 · 입주자로 선정된 지위의 매매, 2026-11-05) */
 const ct매매신고 = f => f === 'sale' || f === 'presale' || f === 'union';
-const ct신고 = d => !!d && (ct매매신고(d.form) || d.form === 'home-lease' || (d.form === 'lease' && ct주거(d.sub)));
+/* 입목 · 광업재단 · 공장재단(use etc)은 신고 알림 · 도우미를 끈다 (2026-11-24 파트너) */
+const ct신고 = d => !!d && d.use !== 'etc' && (ct매매신고(d.form) || d.form === 'home-lease' || (d.form === 'lease' && ct주거(d.sub)));
 /* 문서 이름 - '부동산(아파트) 전세계약서'. 세부 종류가 없는 예전 문서는 양식 이름 그대로 */
 function ctTitle(doc){
   const F = ct양식(doc) || CT_FORMS['home-lease'];
@@ -16611,7 +16613,7 @@ function ct일정목록(c, 설정 = ct알림설정()){
   if(+c.mid > 0 && +c.m2 > 0) (Array.isArray(c.mx) ? c.mx : []).slice(0, 3).forEach((x, i) => { if(x && +x.amt > 0 && ct날만(x.date)) out.push({ k: 'mid', 이름: `${i + 3}차 중도금`, 날: ct날만(x.date), 메모: `${i + 3}차 중도금 금액과 입금 계좌를 확인하세요` }); });
   if(bd) out.push({ k: 'balance', 날: bd, 바뀜: !!ct날만(t.balanceDate),
     메모: ct날만(t.guideAt) ? '잔금안내 마침 · 준비서류를 확인하세요' : '잔금안내(이체한도·준비서류) 전입니다' });
-  if(cd && ct신고({ form: c.form, sub: c.sub })) out.push({ k: 'report', 이름: ct매매신고(c.form) ? '실거래신고 기한' : '임대차 신고 기한',
+  if(cd && ct신고({ form: c.form, sub: c.sub, use: c.use })) out.push({ k: 'report', 이름: ct매매신고(c.form) ? '실거래신고 기한' : '임대차 신고 기한',
     날: ct날더하기(cd, 30), 마침: !!c.reported_at, 메모: c.reported_at ? '신고 마침' : '부동산거래관리시스템에서 신고하세요' });
   /* 잔금 10일 전 - 매도인 · 매수인께 준비물 안내(2026-11-10 파트너 기획). 매매만, 잔금안내를 마쳤으면 마침 */
   if(bd && ['sale', 'presale', 'union'].includes(c.form)) out.push({ k: 'prep', 날: ct날더하기(bd, -10), 마침: !!ct날만(t.guideAt),
@@ -16653,7 +16655,7 @@ function ct의무할일(계약){
   return out;
 }
 /* 화면의 계약서 → 일정 계산 모양 */
-const ct일정자료 = (doc, row, track) => ({ form: doc.form, sub: doc.sub, status: row && row.status, reported_at: row && row.reported_at,
+const ct일정자료 = (doc, row, track) => ({ form: doc.form, sub: doc.sub, use: doc.use, status: row && row.status, reported_at: row && row.reported_at,
   cd: doc.contractDate, mid: doc.deal && doc.deal.mid, md: doc.deal && doc.deal.midDate, m2: doc.deal && doc.deal.mid2, md2: doc.deal && doc.deal.mid2Date, mx: doc.deal && doc.deal.mids, bd: doc.deal && doc.deal.balanceDate, ex: doc.period && doc.period.to, track: track || {} });
 
 /* 고른 종류로 새 계약서를 연다 */

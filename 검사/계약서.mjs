@@ -861,6 +861,11 @@ return ct부동산글;`)((d, k) => ({ property: k === 0 ? (d.property || {}) : (
     const 부 = { multi: 1, property: { road: '경기도 하남시 미사대로 1' }, items: [{}, { property: { show: '경기도 하남시 덕풍동 1-2' } }, { property: {} }] };
     ok(글(부) === '1. 경기도 하남시 미사대로 1 / 2. 경기도 하남시 덕풍동 1-2 / 3. 소재지 미입력' && 글({ property: { road: '서울 1' } }) === '서울 1',
       '다물건 부속서류 - 부동산 표시를 물건마다 1. … / 2. … 로'); }
+  /* 입목 · 광업재단 · 공장재단 매매 - 신고 알림 · 도우미 끔 (11-24 파트너) */
+  ok(!M.ct신고({ form: 'sale', use: 'etc' }) && M.ct신고({ form: 'sale', use: 'land' }) && M.ct신고({ form: 'sale' })
+     && !M.ct일정목록({ form: 'sale', use: 'etc', cd: '2026-12-01', bd: '2027-01-10' }).some(e => e.k === 'report')
+     && M.ct일정목록({ form: 'sale', use: 'land', cd: '2026-12-01', bd: '2027-01-10' }).some(e => e.k === 'report'),
+    '입목 · 광업재단 · 공장재단 매매는 실거래신고 알림 · 도우미를 끈다');
   /* 전자계약 매매 - 융자금 줄, 승계 금액은 잔금에서 뺀다 */
   const 융 = M.ctNewDoc('sale', null, { cat: 'realty', use: 'home' }); 융.deal = { ...융.deal, price: 500000000, down: 50000000, keepLoan: 100000000, keepDep: 50000000 };
   ok(/<th class="w">융자금<\/th>/.test(M.ctDocHTML(융)) && M.ctBalance(융.deal) === 300000000, '전자계약 매매 - 융자금 · 임대보증금 승계 줄, 잔금에서 뺀다');
@@ -1429,6 +1434,7 @@ return ct부동산글;`)((d, k) => ({ property: k === 0 ? (d.property || {}) : (
   분.deal = { ...분.deal, price: 700000000, orgPrice: 600000000, premium: 100000000, down: 70000000, balanceDate: '2026-12-20' };
   const 분줄 = M.rpItems(분);
   ok(M.ct신고(분) && M.ct신고({ form: 'union' }) && C.신고대상('presale') && C.신고대상('union'), '분양권·입주권 전매도 신고 대상(화면·서버)');
+  ok(!C.신고대상('sale', { use: 'etc' }) && C.신고대상('sale', { use: 'land' }) && !C.일정목록({ form: 'sale', use: 'etc', cd: '2026-12-01', bd: '2027-01-10' }).some(e => e.k === 'report'), '서버 - 입목 · 광업재단 · 공장재단 매매는 신고 알림 끔');
   ok(분줄.some(([s, l, v]) => s === '④ 거래대상 종류' && v === '분양권 · 전매') && 분줄.some(([s, l, v]) => l === '분양가격' && /600,000,000/.test(v)) && 분줄.some(([, l, v]) => /프리미엄/.test(l) && /100,000,000/.test(v)),
      '분양권 신고 도우미 - 거래대상 분양권·전매 · 분양가격 · 추가 지불액(프리미엄)');
   const 입 = M.ctNewDoc('union', null, { cat: 'union' }); 입.deal = { ...입.deal, rightValue: 300000000, extra: 50000000, premium: 200000000 };

@@ -47,6 +47,7 @@ const 매매신고 = f => f === 'sale' || f === 'presale' || f === 'union';
 /* 부동산 임대차('lease')는 주거 세부 종류일 때만 임대차 신고 대상이다 - 화면의 ct신고 와 같은 규칙 */
 const 주거종류 = ['아파트','주상복합','연립주택','다세대주택','다가구주택','다중주택','도시형생활주택','주택','오피스텔','원룸'];
 export const 신고대상 = (form, doc) => {
+  if (doc && doc.use === 'etc') return false;   /* 입목 · 광업재단 · 공장재단 - 신고 알림 끔 (2026-11-24 파트너) */
   if (form !== 'lease') return CT_REPORT_FORMS.includes(form);
   const s = String((doc && doc.sub) || '').trim();
   return 주거종류.includes(s) || (/주택|아파트|빌라|원룸|오피스텔|주상복합/.test(s) && !/상가/.test(s));
@@ -962,7 +963,7 @@ export function 일정목록(c, 설정 = 알림설정()) {
   if (+c.mid > 0 && +c.m2 > 0) (Array.isArray(c.mx) ? c.mx : []).slice(0, 3).forEach((x, i) => { if (x && +x.amt > 0 && 날만(x.date)) out.push({ k: 'mid', 이름: `${i + 3}차 중도금`, 날: 날만(x.date), 메모: `${i + 3}차 중도금 금액과 입금 계좌를 확인하세요` }); });
   if (bd) out.push({ k: 'balance', 날: bd, 바뀜: !!날만(t.balanceDate),
     메모: 날만(t.guideAt) ? '잔금안내 마침 · 준비서류를 확인하세요' : '잔금안내(이체한도·준비서류) 전입니다' });
-  if (cd && 신고대상(c.form, { sub: c.sub })) out.push({ k: 'report', 이름: 매매신고(c.form) ? '실거래신고 기한' : '임대차 신고 기한',
+  if (cd && 신고대상(c.form, { sub: c.sub, use: c.use })) out.push({ k: 'report', 이름: 매매신고(c.form) ? '실거래신고 기한' : '임대차 신고 기한',
     날: 날더하기(cd, 30), 마침: !!c.reported_at, 메모: c.reported_at ? '신고 마침' : '부동산거래관리시스템에서 신고하세요' });
   /* 잔금 10일 전 - 매도인 · 매수인께 준비물 안내(2026-11-10 파트너 기획). 매매만, 잔금안내를 마쳤으면 마침 */
   if (bd && ['sale', 'presale', 'union'].includes(c.form)) out.push({ k: 'prep', 날: 날더하기(bd, -10), 마침: !!날만(t.guideAt),
@@ -1396,7 +1397,7 @@ export async function icsFeed(req, res) {
   const 사 = a.r.ok ? a.rows[0] : null;
   if (!사 || (Number.isInteger(사.icsN) ? 사.icsN : 0) !== t.n) return 없음();
   const 설정 = 알림설정(사.alert), 오늘 = 한국오늘(), 부터 = 날더하기(오늘, -90);
-  const x = await 읽기(`select=id,form,title,status,reported_at,prev_id,renew:doc->renewOf->>id,sub:doc->>sub${일정열}{track}&agent_id=eq.${t.a}&form=not.like.explain*&created_at=gte.${날더하기(오늘, -1200)}&order=updated_at.desc&limit=1000`);
+  const x = await 읽기(`select=id,form,title,status,reported_at,prev_id,renew:doc->renewOf->>id,sub:doc->>sub,use:doc->>use${일정열}{track}&agent_id=eq.${t.a}&form=not.like.explain*&created_at=gte.${날더하기(오늘, -1200)}&order=updated_at.desc&limit=1000`);
   if (!x.r.ok) return res.status(502).json({ error: '일정을 읽지 못했습니다' });
   const 앞판 = 일정뺄것(x.rows);
   const 일들 = [];

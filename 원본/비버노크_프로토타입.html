@@ -2349,6 +2349,8 @@ body.mo .ctw-st{padding:12px}
 .ctw-cat.on .ctw-ico{background:var(--ind);color:#fff;box-shadow:none}
 .ctw-cat.on b{color:var(--ind700);font-weight:700}
 .ctw-sep{display:block;height:1px;margin:8px 4px;background:var(--n200)}
+.ctw-gl{display:block;margin:10px 6px 2px;font-size:12px;font-weight:700;color:var(--n500);letter-spacing:-.01em}
+.ctw-gl:first-child{margin-top:0}
 .ctw-r{display:flex;flex-direction:column;min-width:0}
 .ctw-body{flex:1;display:flex;flex-direction:column;gap:30px;padding:28px 32px 32px}
 .ctw-step{display:flex;flex-direction:column;gap:14px}
@@ -2413,6 +2415,7 @@ body.mo .ctw-cat.on{border-color:var(--ind)}
 body.mo .ctw-cat :is(b,span){grid-column:1}
 body.mo .ctw-cat .ctw-ico{display:none}
 body.mo .ctw-sep{grid-column:1/-1;margin:2px 0}
+body.mo .ctw-gl{grid-column:1/-1;margin:6px 2px 0}
 body.mo .ctw-body{gap:24px;padding:20px 16px}
 body.mo :is(.ctw-c,.ctw-seg button,.ctw-q){min-height:44px}
 body.mo .ctw-foot{flex-wrap:wrap;padding:14px 16px}
@@ -14315,6 +14318,7 @@ if(typeof addEventListener === 'function'){
   addEventListener('unhandledrejection', e => { const r = e && e.reason; bk오류보내기('처리되지 않은 오류: ' + ((r && r.message) || r), (r && r.stack && (/(https?:\/\/[^\s)]+?):\d+:\d+/.exec(r.stack) || [])[1]) || location.origin, 0, 0, r && r.stack); });
 }
 const BK_변경 = [
+  { v:'26.11.24.2', 날:'2026-11-24', 줄:[ '계약서 종류를 국토교통부 전자계약 분류로 - 부동산계약서(매매 · 임대 × 주거용 · 비주거용 · 토지 · 입목·광업재단·공장재단) · 표준계약서 · 그 밖의 계약서(분양권 · 조합원입주권 · 전대차)', '부동산 매매 · 임대 · 전대차는 전자계약 조항 그대로(매매 제1~9조 · 임대 제1~9조, 비주거 임대 · 전대는 3기) · 세부 종류(아파트 등)는 고르지 않아도 됩니다', '권리양도양수 · 상가권리금계약서 · 연세는 새로 만들기에서 뺐습니다 - 예전에 만든 계약서는 그대로 열립니다' ] },
   { v:'26.11.24.1', 날:'2026-11-24', 줄:[ '표정별 비버리 그림 - 가입이 끝난 화면 · 조건 입력 안내에는 손 흔드는 비버, 계약서 · 계약현황이 비어 있을 때는 안경 쓰고 서류를 보는 비버' ] },
   { v:'26.11.23.11', 날:'2026-11-23', 줄:[ '전수점검 · 코드리뷰 반영 - 저장된 계약서의 일정·체크가 멈추던 것(11-17 부터) · 자격 확인 단추가 멈출 수 있던 것 · 이용 안내 화면이 손님 안내 링크 화면으로 덮이던 것을 고쳤습니다',
     '임시 백업 · 확정본 보관본은 개인정보를 잠긴 그대로 보관하고, 백업 내려받기는 명단의 운영자만 · 보관본은 스크립트를 막은 틀 안에서 엽니다 · 오류 기록의 번호 가림 · 하루 오류 기록 상한 · 다시 보내기 두 번 나감 방지' ] },
@@ -15575,6 +15579,77 @@ const CT_SHOP_CLAUSES = [
   조_설명,
 ];
 
+/* ── 국토교통부 부동산거래 전자계약 양식 (2026-11-24 파트너) ──
+   매매(주거용 · 비주거용 · 토지 · 입목·광업재단·공장재단)는 조항이 모두 같다. 임대는 비주거용만 해지 사유가 '3기'(나머지 '2기').
+   전대차는 비주거용에 업종 문구 · 3기. 제1조(목적) · 제2조(소유권 이전 / 존속기간)는 표와 칸으로 그리므로 여기는 제3조부터.
+   원본: 06_자료/전자계약양식_2026-11-24 (hwpx) */
+const CT_USES = { home:'주거용', biz:'비주거용', land:'토지', etc:'입목·광업재단·공장재단' };
+const CT_USE_SUB = { home:'주택', biz:'건물', land:'토지', etc:'' };      /* 세부 종류를 안 고르면 - 신고 · 법(주택/상가) 판단은 세부 종류로 한다 */
+const ct전자 = doc => !!(doc && CT_USES[doc.use] && ['sale', 'lease', 'sublease'].includes(doc.form));
+const 전_보수 = (a, b, 임대) => ({ id:'fee', title:'중개보수',
+  text:`${임대 ? `개업공인중개사는 ${a}과 ${b}이 본 계약을 불이행함으로 인한 책임을 지지 않는다.` : `개업공인중개사는 ${a} 또는 ${b}의 본 계약 불이행에 대하여 책임을 지지 않는다.`} 또한, 중개보수는 계약 당사자 쌍방이 각각 부담하며, 지급시기는 개업공인중개사와 중개의뢰인간의 지급약정에 따르되, 약정이 없을 때에는 거래대금 지급이 완료된 날로 한다. 개업공인중개사의 고의나 과실없이 본 계약이 무효·취소 또는 해제되어도 중개보수는 지급한다. 공동중개인 경우에 ${a}과 ${b}은 자신이 중개 의뢰한 개업공인중개사에게 각각 중개보수를 지급한다.` });
+const 전_설명 = { id:'explain', title:'중개대상물확인·설명서 교부 등',
+  text:'개업공인중개사는 중개대상물 확인·설명서를 작성하고 업무보증관계증서(공제증서 등) 사본을 첨부하여 계약체결과 동시에 거래당사자 쌍방에게 교부한다. 다만, 국토교통부장관이 지정한 정보처리시스템에서 공인전자서명(전자서명법 근거)의 방법으로 중개된 경우에는 교부한 것으로 갈음한다.' };
+const CT_E_SALE = [
+  { id:'burden', title:'제한물권 등의 소멸',
+    text:'매도인은 위의 부동산에 설정된 저당권, 지상권, 임차권 등 소유권의 행사를 제한하는 사유가 있거나, 제세공과 기타 부담금의 미납금 등이 있을 때에는 잔금 수수일까지 그 권리의 하자 및 부담 등을 제거하여 완전한 소유권을 매수인에게 이전한다. 다만, 승계하기로 합의하는 권리 및 금액은 그러하지 아니하다.' },
+  { id:'tax', title:'지방세 등',
+    text:'위 부동산에 관하여 발생한 수익의 귀속과 제세공과금 등의 부담은 위 부동산의 인도일을 기준으로 하되, 지방세의 납부의무 및 납부책임은 지방세법의 규정에 의한다.' },
+  { id:'cancel', title:'계약의 해제',
+    text:'매수인이 매도인에게 중도금(중도금이 없을때에는 잔금)을 지불하기 전까지 매도인은 계약금의 배액을 상환하고, 매수인은 계약금을 포기하고 본 계약을 해제할 수 있다.' },
+  { id:'breach', title:'채무불이행과 손해배상',
+    text:'매도인 또는 매수인이 본 계약상의 내용에 대하여 불이행이 있을 경우 그 상대방은 불이행한자에 대하여 서면으로 최고하고 계약을 해제할 수 있다. 그리고 계약당사자는 계약해제에 따른 손해배상을 각각 상대방에게 청구할 수 있으며, 손해배상에 대하여 별도의 약정이 없는 한 계약금을 손해배상의 기준으로 본다.' },
+  전_보수('매도인', '매수인'),
+  { id:'feeetc', title:'중개보수 외',
+    text:'매도인 또는 매수인이 본 계약 이외의 업무를 의뢰한 경우 이에 관한 보수는 중개보수와는 별도로 지급하며 그 금액은 합의에 의한다.' },
+  전_설명,
+];
+const ct전자임대조항 = 비주거 => [
+  { id:'use', title:'용도변경 및 전대 등',
+    text:'임차인은 임대인의 동의없이 위 부동산의 용도나 구조를 변경하거나 전대·임차권 양도 또는 담보제공을 하지 못하며 임대차 목적 이외의 용도로 사용할 수 없다.' },
+  { id:'stop', title:'계약의 해지',
+    text:`임차인의 차임연체액이 ${비주거 ? 3 : 2}기의 차임액에 달하거나 {{조:use}}를 위반하였을 때 임대인은 즉시 본 계약을 해지 할 수 있다.` },
+  { id:'end', title:'계약의 종료',
+    text:'임대차계약이 종료된 경우에 임차인은 위 부동산을 원상으로 회복하여 임대인에게 반환한다. 이러한 경우 임대인은 보증금을 임차인에게 반환하고, 연체 임대료 또는 손해배상금이 있을 때는 이들을 제하고 그 잔액을 반환한다.' },
+  { id:'cancel', title:'계약의 해제',
+    text:'임차인이 임대인에게 중도금(중도금이 없을 때는 잔금)을 지불하기 전까지, 임대인은 계약금의 배액을 상환하고, 임차인은 계약금을 포기하고 본 계약을 해제할 수 있다. 손해배상에 대하여 별도의 약정이 없는 한 계약금을 손해배상의 기준으로 본다.' },
+  { id:'breach', title:'채무불이행과 손해배상',
+    text:'임대인 또는 임차인이 본 계약상의 내용에 대하여 불이행이 있을 경우 그 상대방은 불이행한 자에 대하여 서면으로 최고하고 계약을 해제 할 수 있다. 그리고 계약 당사자는 계약해제에 따른 손해배상을 각각 상대방에 청구할 수 있다.' },
+  전_보수('임대인', '임차인', true),
+  전_설명,
+];
+const ct전자전대조항 = 비주거 => [
+  { id:'use', title:'용도변경 및 전전대 등',
+    text:'전차인은 전대인 및 임대인의 동의 없이 위 부동산의 용도나 구조를 변경하거나 전전대·전차권 양도 또는 담보제공을 하지 못하며 전대차 목적 이외의 용도로 사용할 수 없다.' + (비주거 ? ' 전차인은 위 부동산을 (                    )(업종)을 위한 용도로 사용한다.' : '') },
+  { id:'orig', title:'원 임대차계약과의 관계',
+    text:'① 전대인은 본 계약의 체결에 관하여 임대인의 동의를 얻어야 하며, 임대인의 동의를 얻지 못한 때에는 전차인은 본 계약을 해제할 수 있다.\n② 전대인과 임대인 사이의 원 임대차계약이 종료된 때에는 본 전대차계약도 종료한다.\n③ 전대인은 원 임대차계약상의 차임 연체 그 밖의 채무불이행으로 인하여 전차인의 사용·수익이 방해되지 아니하도록 하여야 한다.' },
+  { id:'repair', title:'수선의무 및 통지의무',
+    text:'① 전대인은 전대차기간 중 위 부동산의 사용·수익에 필요한 상태를 유지하여야 한다.\n② 전차인의 고의 또는 과실로 인한 파손의 수선 및 소모품의 교체는 전차인이 부담한다.\n③ 전차인은 위 부동산의 수선이 필요한 사유를 발견한 때에는 지체 없이 전대인에게 이를 통지하여야 한다.' },
+  { id:'stop', title:'계약의 해지',
+    text:`전차인의 차임연체액이 ${비주거 ? 3 : 2}기의 차임액에 달하거나 {{조:use}}를 위반하였을 때 전대인은 즉시 본 계약을 해지할 수 있다.` },
+  { id:'end', title:'계약의 종료',
+    text:'전대차계약이 종료된 경우에 전차인은 위 부동산을 원상으로 회복하여 전대인에게 반환한다. 이러한 경우 전대인은 보증금을 전차인에게 반환하고, 연체 차임 또는 손해배상금이 있을 때는 이들을 제하고 그 잔액을 반환한다. 다만, 통상의 사용에 따른 마모 및 손모는 원상회복의 대상에서 제외한다.' },
+  { id:'cancel', title:'계약의 해제',
+    text:'① 전차인이 전대인에게 중도금(중도금이 없을 때에는 잔금)을 지불하기 전까지 전대인은 계약금의 배액을 상환하고, 전차인은 계약금을 포기하고 본 계약을 해제할 수 있다.\n② 계약금의 일부만 지급된 경우에도 제1항의 해약금은 제1조에서 정한 계약금 전액을 기준으로 한다.' },
+  { id:'breach', title:'채무불이행과 손해배상',
+    text:'① 전대인 또는 전차인이 본 계약상의 채무를 이행하지 아니하는 때에는 그 상대방은 상당한 기간을 정하여 서면으로 이행을 최고하고, 그 기간 내에 이행이 없는 때에는 본 계약을 해제할 수 있다.\n② 제1항의 경우 계약당사자는 상대방에게 계약해제에 따른 손해배상을 청구할 수 있으며, 손해배상에 관하여 별도의 약정이 없는 한 계약금을 손해배상의 기준으로 본다.' },
+  전_보수('전대인', '전차인'),
+  전_설명,
+];
+/* 전자계약 부동산의 표시 - 주거 · 비주거는 토지(지목 · 면적) + 대지권(매매) + 건물, 토지 · 입목재단은 토지만. 임대 · 전대는 임대할 부분(입목재단 임대는 없음) */
+function ct전자표시HTML(doc){
+  const F = CT_FORMS[doc.form] || {}, P = doc.property || {}, u = doc.use, 건물 = u === 'home' || u === 'biz', 매매 = !F.lease;
+  const 부분 = F.lease && !(u === 'etc' && doc.form === 'lease') ? (doc.form === 'sublease' ? '전대할부분' : '임대할부분') : '';
+  return `
+    <h2>1. 부동산의 표시</h2>
+    <table>
+      <tr><th class="w">소재지</th><td colspan="5">${ct소재지(P, ct옛날인(doc))}</td></tr>
+      <tr><th class="w">토지</th><th>지목</th><td>${ct칸('property.landCat', P.landCat, 70)}</td><th>면적</th><td colspan="2">${ct칸('property.landArea', P.landArea, 70, 'area')}</td></tr>
+      ${매매 && 건물 ? `<tr><th class="w">대지권</th><td colspan="5">${ct칸('property.landRight', P.landRight, 200)}</td></tr>` : ''}
+      ${건물 ? `<tr><th class="w">건물</th><th>구조·용도</th><td>${CT편집칸 ? `${ct칸('property.bldStruct', P.bldStruct, 60, 'text', { ph:'구조' })} · ${ct칸('property.bldUse', P.bldUse, 50, 'text', { ph:'용도' })}` : ct값([P.bldStruct, P.bldUse].filter(Boolean).join(' · '), 90)}</td><th>면적</th><td colspan="2">${ct칸('property.bldArea', P.bldArea, 70, 'area')}</td></tr>` : ''}
+      ${부분 ? `<tr><th class="w">${부분}</th><td colspan="3">${ct칸('property.part', P.part, 160)}</td><th>면적</th><td>${ct칸('property.partArea', P.partArea, 60, 'area')}</td></tr>` : ''}
+    </table>`;
+}
 const CT_SALE_CLAUSES = [
   { id:'burden', title:'제한물권 등의 소멸',
     text:'매도인은 위 부동산에 설정된 저당권·지상권·임차권 등 소유권의 행사를 제한하는 사유가 있거나 제세공과금 등 미납금이 있으면, 잔금 지급일까지 그 권리의 하자와 부담을 모두 없애 완전한 소유권을 매수인에게 이전한다. 다만 승계하기로 합의한 권리와 금액은 그러하지 아니하다.' },
@@ -15750,16 +15825,17 @@ const CT_PREMIUM_SPECIALS = [
    세부 종류는 doc.sub 에 글자로, 종류는 doc.cat 에 둔다. 양식(form)은 그 둘로 정해진다. */
 const CT_SUB_HOME = ['아파트','주상복합','연립주택','다세대주택','다가구주택','다중주택','도시형생활주택','주택','오피스텔','원룸'];
 const CT_SUB_SHOP = ['상가','상가주택','상가건물','건물','사무실','공장','창고','지식산업센터'];
+/* 2026-11-24 국토교통부 전자계약 분류로 (파트너) - ① 부동산계약서 ② 표준계약서 ③ 그 밖의 계약서.
+   권리양도양수 · 상가권리금 · 연세는 새로 만들기에서 뺐다(파트너 '빼줘' · 연세는 월세 양식으로). 예전에 저장한 것은 그대로 열린다.
+   uses - 용도(전자계약 분류), subs - 세부 종류(고르지 않아도 된다 · CT_USE_SUB) */
 const CT_CATS = [
-  { k:'realty',   ko:'부동산',               hint:'매매 · 전세 · 월세 · 연세', subs:[...CT_SUB_HOME, '상가','상가주택','상가건물','건물','사무실','토지','공장','창고','지식산업센터'],
-    deals:['매매','전세','월세','연세'], name: s => `부동산(${s})` },
-  { k:'presale',  ko:'분양권',               hint:'분양권 매매', subs:['아파트','','오피스텔','주상복합','상가'], form:'presale', name: s => s ? `분양권(${s})` : '분양권' },
-  { k:'rights',   ko:'권리양도양수',          hint:'점포 시설·영업 양도', form:'rights' },
-  { k:'std',      ko:'표준임대차계약서',      hint:'법무부 주택임대차표준계약서', form:'home-lease' },
-  { k:'premium',  ko:'상가권리금계약서',      hint:'국토교통부 표준권리금계약서 항목', form:'premium' },
-  { k:'shop',     ko:'상가건물임대차계약서',  hint:'법무부 상가건물 임대차표준계약서', form:'shop-lease' },
-  { k:'union',    ko:'조합원입주권매매계약서', hint:'재개발·재건축 입주권', form:'union' },
-  { k:'sublease', ko:'전대차계약서',          hint:'주택 · 상가 전대차', subs:['주택','상가'], form:'sublease', name: s => `부동산전대차(${s})` },
+  { k:'realty',   grp:'부동산계약서', ko:'부동산 매매 · 임대', hint:'주거용 · 비주거용 · 토지 · 입목·재단', uses:['home','biz','land','etc'],
+    subs:[...CT_SUB_HOME, ...CT_SUB_SHOP], deals:['매매','전세','월세'] },
+  { k:'std',      grp:'표준계약서', ko:'주택임대차 표준계약서',  hint:'법무부 주택임대차표준계약서', form:'home-lease' },
+  { k:'shop',     grp:'표준계약서', ko:'상가건물 임대차 표준계약서', hint:'법무부 상가건물 임대차표준계약서', form:'shop-lease' },
+  { k:'presale',  grp:'그 밖의 계약서', ko:'분양권 매매',       hint:'분양권 전매', subs:['아파트','','오피스텔','주상복합','상가'], form:'presale', name: s => s ? `분양권(${s})` : '분양권' },
+  { k:'union',    grp:'그 밖의 계약서', ko:'조합원입주권 매매', hint:'재개발·재건축 입주권', form:'union' },
+  { k:'sublease', grp:'그 밖의 계약서', ko:'전대차',            hint:'주거용 · 비주거용 전대차', uses:['home','biz'], form:'sublease', deals:['전세','월세'] },
 ];
 const CT_DEAL_KO = { jeonse:'전세', monthly:'월세', yearly:'연세' };
 /* 세부 종류로 법을 가른다 - 주거면 주택임대차보호법, 상가·사무실 등은 상가건물 임대차보호법, 그 밖(토지·직접입력)은 민법 */
@@ -15777,6 +15853,7 @@ function ct군(doc){
 /* 양식마다 조항·특약 모음. 부동산 임대차·전대차는 세부 종류에 따라 고른다 */
 function ctClauseSet(doc){
   const F = CT_FORMS[doc.form] || CT_FORMS['home-lease'];
+  if(ct전자(doc)) return doc.form === 'sale' ? CT_E_SALE : doc.form === 'sublease' ? ct전자전대조항(doc.use === 'biz') : ct전자임대조항(doc.use === 'biz');
   if(doc.form === 'lease'){ const g = ct군(doc); return g === 'home' ? CT_HOME_CLAUSES : g === 'shop' ? CT_SHOP_CLAUSES : CT_GEN_CLAUSES; }
   return F.clauses;
 }
@@ -15929,6 +16006,7 @@ function ctTitle(doc){
   if(F.explain) return (EX_FORMS[doc.form] || EX_FORMS['explain-home']).h1;
   const 괄 = String(doc.sub || '').trim() ? `(${String(doc.sub).trim()})` : '';
   const 거래 = (doc.deal && doc.deal.type) || doc.dt;
+  if(ct전자(doc)) return `부동산(${CT_USES[doc.use]}) ${doc.form === 'sale' ? '매매' : doc.form === 'sublease' ? '전대차' : '임대차'} 계약서`;
   if(doc.form === 'sale' && doc.cat === 'realty') return `부동산${괄} 매매계약서`;
   if(doc.form === 'lease') return `부동산${괄} ${CT_DEAL_KO[거래] || '임대차'}계약서`;
   if(doc.form === 'presale') return `분양권${괄} 매매계약서`;
@@ -16012,6 +16090,7 @@ function ctNewDoc(form, from, opt = {}){
   const F = CT_FORMS[form] || CT_FORMS['home-lease'];
   if(F.explain) return exNewDoc(from, form);
   const 종류 = { cat: opt.cat || (CT_CATS.find(c => c.form === form) || {}).k || (form === 'sale' || form === 'lease' ? 'realty' : ''), sub: String(opt.sub || '').trim() };
+  if(CT_USES[opt.use] && ['sale', 'lease', 'sublease'].includes(form)){ 종류.use = opt.use; if(!종류.sub) 종류.sub = CT_USE_SUB[opt.use]; }
   const 판 = ctNewDoc0(form, from, F);
   Object.assign(판, 종류);
   if(ct기본글꼴() === 'sans') 판.font = 'sans';
@@ -16208,12 +16287,13 @@ const ct일정자료 = (doc, row, track) => ({ form: doc.form, sub: doc.sub, sta
   cd: doc.contractDate, mid: doc.deal && doc.deal.mid, md: doc.deal && doc.deal.midDate, m2: doc.deal && doc.deal.mid2, md2: doc.deal && doc.deal.mid2Date, mx: doc.deal && doc.deal.mids, bd: doc.deal && doc.deal.balanceDate, ex: doc.period && doc.period.to, track: track || {} });
 
 /* 고른 종류로 새 계약서를 연다 */
-function ctMake(catK, sub, deal){
+function ctMake(catK, sub, deal, use){
   const c = CT_CATS.find(x => x.k === catK); if(!c) return;
   const form = c.form || (deal === '매매' ? 'sale' : 'lease');
+  if(c.uses && !c.uses.includes(use)) use = c.uses[0];
   CT.pick = null; CT.prevId = null;
   CT.id = null; CT.row = null; CT.track = {}; CT.fromProposal = null;
-  CT.doc = ctNewDoc(form, null, { cat: c.k, sub, deal: { 전세:'jeonse', 월세:'monthly', 연세:'yearly' }[deal] }); CT.termN = null;
+  CT.doc = ctNewDoc(form, null, { cat: c.k, sub, use: c.uses ? use : '', deal: { 전세:'jeonse', 월세:'monthly', 연세:'yearly' }[deal] }); CT.termN = null;
   if(!(CT.phr && CT.phr.loaded)){ CT.baseAuto = { doc: CT.doc, list: CT.doc.specials.slice() }; ctPhrLoad(); }
   CT.filled = new Set(); CT.scan = null; CT.scanWarn = [];
   /* 시작 방법 (2026-11-12) - 등록 물건의 건물명 · 금액을 옮긴다. 주소는 물건에 없어 계약서에서 찾는다 */
@@ -16547,6 +16627,7 @@ function ctDocHTML(doc){
   if(F.explain){ if(typeof exh기다림 === 'function' && exh기다림(doc)) return exh기다림HTML;
     return typeof exHwp쓸까 === 'function' && exHwp쓸까(doc) ? exHwpDocHTML(doc) : exDocHTML(doc); }
   const 맞춤 = !!F.fields && !F.lease;                 /* 분양권·입주권·권리양도·권리금 - 소재지 아래가 양식마다 다르다 */
+  const 전자 = ct전자(doc);                            /* 국토교통부 전자계약 양식 (2026-11-24) */
   const 이름 = ctTitle(doc), 새이름 = 이름 !== F.ko || !F.h1;
   const P = doc.property || {}, D = doc.deal || {}, R = doc.period || {}, B = doc.broker || {};
   const on = (doc.clauses || []).filter(c => c.on);
@@ -16596,10 +16677,11 @@ function ctDocHTML(doc){
   return `
   <div class="ctdoc${ct글꼴(doc) === 'sans' ? ' f-sans' : ''}">
     ${새이름 ? `<h1 class="nm">${esc(이름)}</h1>` : `<h1>${F.h1}</h1>`}
-    <p class="lead">${aKo}과 ${bKo}은 아래 표시 ${F.obj}에 관하여 다음과 같이 ${동사}계약을 맺는다.</p>
-    ${F.lease && !F.noKind ? `<p class="kind">${체크('new')} 신규 계약 &nbsp; ${체크('agree')} 합의에 의한 재계약${갱신법 ? ` &nbsp; ${체크('right')} ${갱신법} 계약갱신요구권 행사에 의한 갱신계약` : ''}</p>` : ''}
+    <p class="lead">${전자 ? `${aKo}과 ${bKo} 쌍방은 아래 표시 부동산에 관하여 다음 계약 내용과 같이 ${동사}계약을 체결한다.` : `${aKo}과 ${bKo}은 아래 표시 ${F.obj}에 관하여 다음과 같이 ${동사}계약을 맺는다.`}</p>
+    ${전자 && F.lease ? `<p class="kind">전세 <span class="ct-box">${D.type === 'jeonse' ? '✔' : ''}</span> &nbsp; 월세 <span class="ct-box">${D.type === 'monthly' || D.type === 'yearly' ? '✔' : ''}</span></p>` : ''}
+    ${F.lease && !F.noKind && !(전자 && (doc.kind || 'new') === 'new') ? `<p class="kind">${체크('new')} 신규 계약 &nbsp; ${체크('agree')} 합의에 의한 재계약${갱신법 ? ` &nbsp; ${체크('right')} ${갱신법} 계약갱신요구권 행사에 의한 갱신계약` : ''}</p>` : ''}
 
-    ${맞춤 ? `
+    ${전자 ? ct전자표시HTML(doc) : 맞춤 ? `
     <h2>[${esc(F.fields[0].h)}]</h2>
     <table>
       <tr><th class="w">소재지</th><td colspan="3">${ct소재지(P, ct옛날인(doc))}</td></tr>
@@ -16615,13 +16697,13 @@ function ctDocHTML(doc){
       ${F.lease ? `<tr><th class="w">임차할 부분</th><td colspan="3">${ct칸('property.part', P.part, 160)}</td><th>면적</th><td>${ct칸('property.partArea', P.partArea, 60, 'area')}</td></tr>` : ''}
       ${doc.form === 'shop-lease' ? `<tr><th class="w">용도(업종)</th><td colspan="5">${ct칸('property.use', P.use, 200)}</td></tr>` : ''}
     </table>`}
-    ${F.lease && F.fields ? F.fields.map(g => `<h2>[${esc(g.h)}]</h2><table>${ctFieldRows(doc, g.rows)}</table>`).join('') : ''}
-    ${F.lease ? `<table class="mt">
+    ${F.lease && F.fields ? F.fields.map(g => `<h2>${전자 ? '2. 원 임대차계약의 내용 및 임대인의 동의' : `[${esc(g.h)}]`}</h2><table>${ctFieldRows(doc, g.rows)}</table>`).join('') : ''}
+    ${F.lease && !전자 ? `<table class="mt">
       <tr><th class="w">미납 국세·지방세</th><td>없음 ${빈칸(24)} · 있음(금액: ${빈칸(80)}) &nbsp; 임대인 확인 ${빈칸(70)} (서명 또는 날인)</td></tr>
       ${군 !== 'home' ? '' : `<tr><th class="w">선순위 확정일자 현황</th><td>해당 없음 ${빈칸(24)} · 해당 있음 ${빈칸(24)} (확정일자 부여일·보증금 등 정보 확인) &nbsp; 임대인 확인 ${빈칸(70)} (서명 또는 날인)</td></tr>`}
     </table>` : ''}
 
-    <h2>[계약 내용]</h2>
+    <h2>${전자 ? `${doc.form === 'sublease' ? 3 : 2}. 계약내용` : '[계약 내용]'}</h2>
     ${맞춤 ? `
     <p class="ct-art"><b>제1조(${esc(F.pay.price)})</b> ${esc(F.pay.lead || `위 ${F.obj}의 매매에 관하여 ${aKo}과 ${bKo}은 합의에 따라 ${F.pay.price}을 아래와 같이 지급하기로 한다.`)}</p>
     <table>
@@ -16634,7 +16716,7 @@ function ctDocHTML(doc){
     </table>
     <p class="ct-art"><b>제2조(${esc(F.art2t)})</b> ${F.art2(doc)}</p>`
     : 매매 ? `
-    <p class="ct-art"><b>제1조(매매대금)</b> 위 부동산의 매매에 관하여 매도인과 매수인은 합의에 따라 매매대금을 아래와 같이 지급하기로 한다.</p>
+    <p class="ct-art">${전자 ? '<b>제1조(목적)</b> 위 부동산의 매매에 대하여 매도인과 매수인은 합의에 의하여 매매대금을 아래와 같이 지불하기로 한다.' : '<b>제1조(매매대금)</b> 위 부동산의 매매에 관하여 매도인과 매수인은 합의에 따라 매매대금을 아래와 같이 지급하기로 한다.'}</p>
     <table>
       <tr><th class="w">매매대금</th><td>${돈('deal.price', D.price, `금 ${빈칸(160)}원정(₩${빈칸(90)})`)}</td></tr>
       <tr><th class="w">계약금</th><td>${돈('deal.down', D.down, `금 ${빈칸(140)}원정`)} 은 계약할 때 지급하고 영수함. 영수자 ${ct칸('deal.downBy', D.downBy, 70)} (인)</td></tr>
@@ -16642,9 +16724,9 @@ function ctDocHTML(doc){
       ${ct중도2(D) || +D.mid2 > 0 || (CT편집칸 && D.mid2On) ? `<tr><th class="w">${+D.mid || CT편집칸 ? '2차 중도금' : '중도금'}</th><td>${돈('deal.mid2', D.mid2, '')} 은 ${날('deal.mid2Date', D.mid2Date)}에 지급하며</td></tr>` : ''}${ct중도더(D).map((x, i) => `<tr><th class="w">${i + 3}차 중도금</th><td>${돈(`deal.mids.${i}.amt`, x.amt, '')} 은 ${날(`deal.mids.${i}.date`, x.date)}에 지급하며</td></tr>`).join('')}
       <tr><th class="w">잔금</th><td>${잔금글()} 은 ${날('deal.balanceDate', D.balanceDate)}에 지급한다</td></tr>
     </table>
-    <p class="ct-art"><b>제2조(소유권 이전 등)</b> 매도인은 매매대금의 잔금을 받음과 동시에 매수인에게 소유권이전등기에 필요한 모든 서류를 교부하고 등기 절차에 협력하며, 위 부동산을 ${CT편집칸 ? 날('period.handover', R.handover, D.balanceDate ? `${ct날짜(D.balanceDate)}(잔금일)` : '') : ct날짜(R.handover || D.balanceDate)}에 인도한다.</p>`
+    <p class="ct-art"><b>제2조(소유권 이전 등)</b> ${전자 ? `매도인은 매매대금의 잔금 수령과 동시에 매수인에게 소유권이전등기에 필요한 모든 서류를 교부하고 등기절차에 협력하며, 위 부동산의 인도일은 ${CT편집칸 ? 날('period.handover', R.handover, D.balanceDate ? `${ct날짜(D.balanceDate)}(잔금일)` : '') : ct날짜(R.handover || D.balanceDate)}로 한다.` : `매도인은 매매대금의 잔금을 받음과 동시에 매수인에게 소유권이전등기에 필요한 모든 서류를 교부하고 등기 절차에 협력하며, 위 부동산을 ${CT편집칸 ? 날('period.handover', R.handover, D.balanceDate ? `${ct날짜(D.balanceDate)}(잔금일)` : '') : ct날짜(R.handover || D.balanceDate)}에 인도한다.`}</p>`
     : `
-    <p class="ct-art"><b>제1조(보증금과 차임)</b> 위 ${F.obj}의 ${동사}에 관하여 ${aKo}과 ${bKo}은 합의에 따라 보증금${월세||연세?'과 차임':''}을 아래와 같이 지급하기로 한다.</p>
+    <p class="ct-art">${전자 ? `<b>제1조(목적)</b> 위 부동산의 ${동사}에 대하여 ${aKo}과 ${bKo}은 합의에 의하여 ${동사}대금을 아래와 같이 지불하기로 한다.` : `<b>제1조(보증금과 차임)</b> 위 ${F.obj}의 ${동사}에 관하여 ${aKo}과 ${bKo}은 합의에 따라 보증금${월세||연세?'과 차임':''}을 아래와 같이 지급하기로 한다.`}</p>
     <table>
       <tr><th class="w">보증금</th><td>${돈('deal.deposit', D.deposit, `금 ${빈칸(160)}원정(₩${빈칸(90)})`)}</td></tr>
       <tr><th class="w">계약금</th><td>${돈('deal.down', D.down, `금 ${빈칸(140)}원정`)} 은 계약할 때 지급하고 영수함. 영수자 ${ct칸('deal.downBy', D.downBy, 70)} (인)</td></tr>
@@ -16655,7 +16737,8 @@ function ctDocHTML(doc){
       ${연세 ? `<tr><th class="w">차임(연세)</th><td>${돈('deal.rent', D.rent, `금 ${빈칸(140)}원정`)}${ct부가글(ct부가(doc))} 은 ${CT편집칸 ? ct칸('deal.rentDay', D.rentDay, 90) : D.rentDay?esc(D.rentDay):빈칸(90)}에 1년분을 한꺼번에 지급한다(${esc(D.rentWhen||'선불')}). 입금계좌: ${빈칸(200)}</td></tr>` : ''}
       ${+D.fee ? `<tr><th class="w">관리비</th><td>${돈('deal.fee', D.fee, '')} (정액, 매월${D.feeVat === '별도' || D.feeVat === '포함' ? `, 부가가치세 ${D.feeVat}` : ''})</td></tr>` : ''}
     </table>
-    <p class="ct-art"><b>제2조(${동사}기간)</b> ${aKo}은 ${doc.form === 'sublease' ? '전대물' : '임차' + F.obj}을 ${동사} 목적대로 사용·수익할 수 있는 상태로 ${날('period.handover', R.handover)}까지 ${받는이}에게 인도하고, ${동사}기간은 인도일부터 ${날('period.to', R.to)}까지로 한다.</p>`}
+    ${전자 ? `<p class="ct-art"><b>제2조(존속기간)</b> ${aKo}은 위 부동산을 ${동사} 목적대로 사용·수익할 수 있는 상태로 ${날('period.handover', R.handover)}까지 ${받는이}에게 인도하며, ${동사}기간은 인도일로부터 ${날('period.to', R.to)}까지로 한다.</p>`
+      : `<p class="ct-art"><b>제2조(${동사}기간)</b> ${aKo}은 ${doc.form === 'sublease' ? '전대물' : '임차' + F.obj}을 ${동사} 목적대로 사용·수익할 수 있는 상태로 ${날('period.handover', R.handover)}까지 ${받는이}에게 인도하고, ${동사}기간은 인도일부터 ${날('period.to', R.to)}까지로 한다.</p>`}`}
     ${on.map(c => `<p class="ct-art"><b>제${번호[c.id]}조(${esc(c.title)})</b> ${조항글(c)}</p>`).join('')}
 
     <h2>[특약사항]</h2>
@@ -16663,7 +16746,7 @@ function ctDocHTML(doc){
       ? (() => { let n = 0; return (doc.specials || []).map((s, i) => `<p>${String(s || '').trim() ? `${++n}.` : '<span class="ct-sp-new">+</span>'} <span class="ct-ed" contenteditable="plaintext-only" spellcheck="false" data-cte="cts:${i}" data-ml="1" data-ph="" style="min-width:300px">${esc(s)}</span></p>`).join(''); })() + '<p class="line"></p>'.repeat(Math.max(1, 3 - (doc.specials || []).length))
       : sp.map((s,i)=>`<p>${i+1}. ${esc(s).replace(/\n/g,'<br>')}</p>`).join('') + '<p class="line"></p>'.repeat(Math.max(2, 5 - sp.length))}${doc.acct && !(doc.specials || []).some(ct계좌줄인가) ? `<p class="ct-acct">* ${esc(ct짧은이름(aKo))} 계좌 : ${빈칸(230)} (계약 시 기재)</p>` : ''}</div>${CT편집칸 ? ct서류특약단추(doc) : ''}
 
-    <p class="ct-close">이 계약을 증명하기 위하여 계약 당사자가 이의 없음을 확인하고 각각 서명 또는 날인한 뒤, ${aKo}·${bKo}·개업공인중개사는 매 장마다 간인하여 각각 1통씩 보관한다.</p>
+    <p class="ct-close">${전자 ? `본 계약을 증명하기 위하여 계약 당사자가 이의 없음을 확인하고 각각 서명·날인 후 ${aKo}, ${bKo} 및 개업공인중개사는 매장마다 간인하여야 하며, 각각 1통씩 보관한다. 다만, 거래계약서를 공인전자문서센터(전자문서및전자거래기본법 근거)에 보관한 경우에는 보존이 행하여진 것으로 본다.` : `이 계약을 증명하기 위하여 계약 당사자가 이의 없음을 확인하고 각각 서명 또는 날인한 뒤, ${aKo}·${bKo}·개업공인중개사는 매 장마다 간인하여 각각 1통씩 보관한다.`}</p>
     <p class="ct-date">${날('contractDate', doc.contractDate, '계약일')}</p>
 
     <table class="ct-sign">
@@ -17673,8 +17756,9 @@ async function ctNoteOp(op, i){
    왼쪽에서 종류, 오른쪽에서 세부 종류·거래유형을 고르면 아래에 만들 계약서 이름이 나오고 [계약서 만들기] 하나로 연다.
    전에는 마지막 칩을 누르는 순간 바로 열려 무엇을 만들었는지 놓쳤고, 세부 종류 스물한 칸이 '부동산(…)' 을 되풀이했다.
    자주 쓰는 여섯은 위에서 한 번에 연다. 처음 들어오면 부동산을 골라 둔다(가장 많이 쓴다) */
-const CT_빠른 = [['realty','아파트','매매'], ['realty','아파트','전세'], ['realty','아파트','월세'], ['realty','오피스텔','월세'], ['realty','원룸','월세'], ['shop','','']];
-const ct빠른이름 = ([k, sub, deal]) => k === 'shop' ? '상가 임대차' : `${sub} ${deal}`;
+/* [종류, 세부, 거래, 용도] */
+const CT_빠른 = [['realty','아파트','매매','home'], ['realty','아파트','전세','home'], ['realty','아파트','월세','home'], ['realty','오피스텔','월세','home'], ['realty','원룸','월세','home'], ['realty','상가','월세','biz'], ['realty','토지','매매','land']];
+const ct빠른이름 = ([k, sub, deal]) => `${sub} ${deal}`;
 /* 종류마다 그림 (2026-10-30 '완성도 있게') - 대시보드 그림(dzIco)과 같은 선 굵기·끝 모양. 없는 모양만 여기에 더한다 */
 const CTW_ICO = {
   presale:'M3 8 V5 h18 v3 a3 3 0 0 0 0 6 v3 H3 v-3 a3 3 0 0 0 0 -6 Z M9.5 7.5 v2 M9.5 11 v2 M9.5 14.5 v2',
@@ -17701,10 +17785,12 @@ function ct만들것(p){
   if(p.cat === 'copy') return { ok:false, renew:true, why:'아래 목록에서 복사할 계약서를 고르세요' };
   const c = CT_CATS.find(x => x.k === p.cat); if(!c) return { ok:false, why:'종류를 고르세요' };
   const 세부 = p.sub === '__custom' ? String(p.custom || '').trim() : p.sub;
-  if(c.subs && (p.sub == null || (p.sub === '__custom' && !세부))) return { ok:false, why: p.sub === '__custom' ? '세부 종류를 적어 주세요' : '세부 종류를 고르세요' };
+  if(c.uses && !c.uses.includes(p.use)) return { ok:false, why:'용도를 고르세요' };
+  if(c.subs && !c.uses && (p.sub == null || (p.sub === '__custom' && !세부))) return { ok:false, why: p.sub === '__custom' ? '세부 종류를 적어 주세요' : '세부 종류를 고르세요' };
+  if(c.uses && p.sub === '__custom' && !세부) return { ok:false, why:'세부 종류를 적어 주세요' };
   if(c.deals && !p.deal) return { ok:false, why:'거래유형을 고르세요' };
   const form = c.form || (p.deal === '매매' ? 'sale' : 'lease');
-  return { ok:true, title: ctTitle({ form, cat: c.k, sub: 세부 || '', deal: { type: { 전세:'jeonse', 월세:'monthly', 연세:'yearly' }[p.deal] } }) };
+  return { ok:true, title: ctTitle({ form, cat: c.k, sub: 세부 || '', use: p.use, deal: { type: { 전세:'jeonse', 월세:'monthly', 연세:'yearly' }[p.deal] } }) };
 }
 /* 고르는 단추는 공용 .chip 이 아니라 .ctw-c - 옅은 면 상자 · 고르면 꽉 찬 남색과 점(하나만 고르는 칩의 표).
    움직임 표시(CT.wizFx)는 누른 직후 첫 그림에서만 쓰고 지운다 - 글자를 칠 때마다 다시 그려도 되풀이되지 않는다.
@@ -17730,7 +17816,19 @@ function ctWizHTML(전체){
       <div class="ctw-grp"><span>가져올 내용</span><div class="ctw-cs" role="group" aria-label="가져올 내용">${CT_복사칸.map(([k, t]) => 칩('ct-copy-part', k, t, 고른.includes(k))).join('')}</div></div>
       ${전체.length ? ct찾기줄() : ''}${ctRowsHTML(전체, ctFilter(전체), 'copy')}`; }
   else if(c){
-    if(c.subs){
+    if(c.uses){
+      const 고른용도 = CT_USES[p.use] || '';
+      오른쪽 += 단계('용도', `<div class="ctw-cs">${c.uses.map(u => 칩('ctp-use', u, CT_USES[u], p.use === u)).join('')}</div>
+        <p class="ctw-note">국토교통부 부동산거래 전자계약 분류와 조항을 따릅니다.</p>`, 고른용도, 'use');
+      /* 세부 종류는 고르지 않아도 된다 - 주거용 · 비주거용만. 고르면 제목은 그대로, 신고 · 대지권 판단과 실거래가에 쓴다 */
+      const 줄 = p.use === 'home' ? CT_SUB_HOME : p.use === 'biz' ? CT_SUB_SHOP : [];
+      if(c.k === 'realty' && 줄.length){
+        const 고른세부 = 직접 ? String(p.custom || '').trim() : (p.sub || '');
+        오른쪽 += 단계('세부 종류 <small style="font-weight:500;color:var(--n500)">(고르지 않아도 됩니다)</small>', `<div class="ctw-cs">${줄.map(s => 칩('ctp-sub', s, s, p.sub === s)).join('')}${칩('ctp-sub', '__custom', '직접입력', 직접)}</div>
+          ${직접 ? `<input class="inp" data-in="ctp-custom" value="${esc(p.custom || '')}" placeholder="예: 펜션" style="max-width:320px;margin-top:8px" aria-label="세부 종류 직접입력">` : ''}`, 고른세부, 'sub');
+      }
+    }
+    else if(c.subs){
       /* 부동산은 묶어서 - 주거 · 상가·업무 · 토지·공장·창고. 이름에서 '부동산(…)' 은 뺀다(왼쪽에서 이미 골랐다) */
       const 땅 = ['토지','공장','창고'];
       const 묶음 = c.k === 'realty'
@@ -17742,7 +17840,7 @@ function ctWizHTML(전체){
           ${직접 ? `<input class="inp" data-in="ctp-custom" value="${esc(p.custom || '')}" placeholder="예: 펜션" style="max-width:320px" aria-label="세부 종류 직접입력">` : ''}</div>`, 고른세부, 'sub');
     }
     if(c.deals) 오른쪽 += 단계('거래유형', `<div class="ctw-seg" role="group" aria-label="거래유형">${c.deals.map(d => `<button type="button" class="${p.deal === d ? 'on' : ''}${톡(`ctp-deal:${d}`)}" data-act="ctp-deal" data-v="${d}" aria-pressed="${p.deal === d}">${d}</button>`).join('')}</div>`, p.deal || '', 'deal');
-    if(!c.subs && !c.deals) 오른쪽 = `<div class="ctw-one"><i class="ctw-ico">${ctw그림(c.k, 22)}</i><div><b>${esc(c.ko)}</b><p>고를 것 없이 바로 만듭니다. ${esc(ct양식근거((CT_FORMS[c.form] || {}).foot))}</p></div></div>`;
+    if(!c.subs && !c.deals && !c.uses) 오른쪽 = `<div class="ctw-one"><i class="ctw-ico">${ctw그림(c.k, 22)}</i><div><b>${esc(c.ko)}</b><p>고를 것 없이 바로 만듭니다. ${esc(ct양식근거((CT_FORMS[c.form] || {}).foot))}</p></div></div>`;
   }
   const 것 = ct만들것(p), 켜짐 = 것.ok && !CT.wizOk; CT.wizOk = 것.ok;
   /* 시작 방법 (2026-11-12 파트너 기획 D2-3) - 어떤 방법으로 시작해도 모든 칸은 직접 고칠 수 있다 */
@@ -17756,9 +17854,9 @@ function ctWizHTML(전체){
   return `
     <h2 class="ctw-h2"><span>1</span>계약서 종류를 고르세요</h2>
     <div class="ctw-quick"><span class="lab">자주 쓰는 계약서</span>
-      <div class="ctw-qs">${CT_빠른.map(q => `<button type="button" class="ctw-q" data-act="ctp-quick" data-v="${esc(q.join('|'))}"><i>${ctw그림(q[0] === 'shop' ? 'shop' : q[1] === '원룸' ? 'home' : 'realty', 16)}</i>${esc(ct빠른이름(q))}</button>`).join('')}</div></div>
+      <div class="ctw-qs">${CT_빠른.map(q => `<button type="button" class="ctw-q" data-act="ctp-quick" data-v="${esc(q.join('|'))}"><i>${ctw그림(q[3] === 'biz' ? 'shop' : q[1] === '원룸' ? 'home' : 'realty', 16)}</i>${esc(ct빠른이름(q))}</button>`).join('')}</div></div>
     <div class="ctw">
-      <nav class="ctw-l" aria-label="계약서 종류">${CT_CATS.map(x => 종류(x.k, x.ko, x.hint)).join('')}
+      <nav class="ctw-l" aria-label="계약서 종류">${CT_CATS.map((x, i) => (x.grp && x.grp !== (CT_CATS[i - 1] || {}).grp ? `<span class="ctw-gl">${esc(x.grp)}</span>` : '') + 종류(x.k, x.ko, x.hint)).join('')}
         <i class="ctw-sep" aria-hidden="true"></i>${종류('explain', '중개대상물 확인·설명서', '주거용 · 비주거용 · 토지 · 입목·재단')}${종류('renew', '갱신계약', '지난 계약서를 불러와 고쳐 쓰기')}${종류('copy', '기존 계약서 복사', '목적물 · 당사자 · 특약을 골라 가져오기')}</nav>
       <section class="ctw-r" aria-label="고르기">
         <div class="ctw-body${fx.swap ? ' swap' : ''}">${오른쪽}</div>
@@ -23839,7 +23937,7 @@ function handle(a,v,el){
     /* 새로 만들기 고르기 */
     /* 계약서 작성 - 고르기는 고르기만, 여는 것은 [계약서 만들기](ctp-go)와 자주 쓰는 계약서(ctp-quick) */
     case 'ctp-cat':
-      CT.pick = v ? { cat: v, sub: null, custom: '', deal: null, ex: null } : null;
+      CT.pick = v ? { cat: v, sub: null, custom: '', deal: null, ex: null, use: null } : null;
       CT.wizFx = { swap: true, just: 'ctp-cat:' + v };          /* 움직임은 누른 직후 한 번 - ctWizHTML 이 쓰고 지운다 */
       CT.wizOk = false;                                          /* 고를 것 없는 종류(권리양도양수 등)면 바로 만들기 줄이 켜진다 */
       if((v === 'renew' || v === 'copy') && !CT.list) ctLoadList(true);
@@ -23853,12 +23951,14 @@ function handle(a,v,el){
     case 'ctp-listing': { const l = (S.listings || []).find(x => x.id === v); if(!l) return true;
       CT.startL = CT.startL === v ? null : v;
       if(CT.startL){ const 세부 = CT_CATS[0].subs.includes(l.htype) ? l.htype : l.kind === 'shop' ? '상가' : l.kind === 'office' ? '사무실' : l.kind === 'warehouse' ? '창고' : null;
-        CT.pick = { cat: 'realty', sub: 세부, custom: '', deal: CT_CATS[0].deals.includes(l.deal) ? l.deal : null, ex: null }; CT.wizOk = false; }
+        const 용도 = !세부 ? null : CT_SUB_HOME.includes(세부) ? 'home' : 'biz';
+        CT.pick = { cat: 'realty', sub: 세부, custom: '', deal: CT_CATS[0].deals.includes(l.deal) ? l.deal : null, ex: null, use: 용도 }; CT.wizOk = false; }
       render(); return true; }
-    case 'ctp-sub': if(CT.pick){ CT.pick.sub = v; CT.wizFx = { just: 'ctp-sub:' + v, kind: 'sub' }; render(); } return true;
+    case 'ctp-sub': if(CT.pick){ const c = CT_CATS.find(x => x.k === CT.pick.cat) || {}; CT.pick.sub = c.uses && CT.pick.sub === v ? null : v; CT.wizFx = { just: 'ctp-sub:' + v, kind: 'sub' }; render(); } return true;
+    case 'ctp-use': if(CT.pick && CT_USES[v]){ if(CT.pick.use !== v){ CT.pick.sub = null; CT.pick.custom = ''; } CT.pick.use = v; CT.wizFx = { just: 'ctp-use:' + v, kind: 'use' }; render(); } return true;
     case 'ctp-deal': if(CT.pick){ CT.pick.deal = v; CT.wizFx = { just: 'ctp-deal:' + v, kind: 'deal' }; render(); } return true;
     case 'ctp-ex': if(CT.pick){ CT.pick.ex = EX_FORMS[v] ? v : null; CT.wizFx = { just: 'ctp-ex:' + v, kind: 'ex' }; render(); } return true;
-    case 'ctp-quick': { const [k, sub, deal] = String(v).split('|'); if(CT_CATS.some(x => x.k === k)) ctMake(k, sub || '', deal || ''); return true; }
+    case 'ctp-quick': { const [k, sub, deal, use] = String(v).split('|'); if(CT_CATS.some(x => x.k === k)) ctMake(k, sub || '', deal || '', use || ''); return true; }
     case 'ctp-go': {
       const p = CT.pick, 것 = ct만들것(p);
       if(!것.ok) return toast(것.why), true;
@@ -23868,7 +23968,7 @@ function handle(a,v,el){
         CT.filled = new Set(); CT.scan = null; CT.scanWarn = [];
         CT.dirty = true; CT.mode = 'scan'; go('#/partner/contract/new'); return true;
       }
-      ctMake(p.cat, p.sub === '__custom' ? String(p.custom || '').trim() : (p.sub || ''), p.deal || ''); return true; }
+      ctMake(p.cat, p.sub === '__custom' ? String(p.custom || '').trim() : (p.sub || ''), p.deal || '', p.use || ''); return true; }
     case 'ctq-st': CT.qs = CT.qs === v && v ? '' : (v || ''); render(); return true;
     case 'ctq-sum-m': CT.qs = 'sealed'; CT.qb = 'u'; CT.qp = 'm'; render(); return true;
     case 'ctq-sum-b': CT.qs = ''; CT.qb = 'b'; CT.qp = 'next'; render(); return true;

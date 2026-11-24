@@ -782,13 +782,33 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
 
 /* ── 계약서 종류 (2026-10-30 대표님 '계약서 종류 전체 목록') ── */
 {
-  ok(M.CT_CATS.map(c => c.ko).join() === '부동산,분양권,권리양도양수,표준임대차계약서,상가권리금계약서,상가건물임대차계약서,조합원입주권매매계약서,전대차계약서',
-     '종류 여덟 가지 - 대표님이 준 순서 그대로');
-  ok(M.CT_CATS[0].subs.join() === '아파트,주상복합,연립주택,다세대주택,다가구주택,다중주택,도시형생활주택,주택,오피스텔,원룸,상가,상가주택,상가건물,건물,사무실,토지,공장,창고,지식산업센터'
-     && M.CT_CATS[0].deals.join() === '매매,전세,월세,연세', '부동산 - 세부 종류 열아홉 + 거래유형 매매·전세·월세·연세');
-  ok(M.CT_CATS[1].subs.map(M.CT_CATS[1].name).join() === '분양권(아파트),분양권,분양권(오피스텔),분양권(주상복합),분양권(상가)' && !M.CT_CATS[1].deals,
+  /* 2026-11-24 국토교통부 전자계약 분류로 (파트너) */
+  ok(M.CT_CATS.map(c => `${c.grp}:${c.k}`).join() === '부동산계약서:realty,표준계약서:std,표준계약서:shop,그 밖의 계약서:presale,그 밖의 계약서:union,그 밖의 계약서:sublease',
+     '종류 - 부동산계약서 · 표준계약서 · 그 밖의 계약서 세 묶음(권리양도양수 · 상가권리금은 뺐다)');
+  ok(M.CT_CATS[0].uses.join() === 'home,biz,land,etc' && M.CT_CATS[0].deals.join() === '매매,전세,월세', '부동산 - 용도 넷 + 거래유형 매매 · 전세 · 월세(연세는 뺐다)');
+  ok(M.CT_CATS[3].subs.map(M.CT_CATS[3].name).join() === '분양권(아파트),분양권,분양권(오피스텔),분양권(주상복합),분양권(상가)' && !M.CT_CATS[3].deals,
      '분양권 - 세부 종류 다섯(거래유형 없음)');
-  ok(M.CT_CATS[7].subs.map(M.CT_CATS[7].name).join() === '부동산전대차(주택),부동산전대차(상가)', '전대차 - 주택·상가 (+직접입력)');
+  ok(M.CT_CATS[5].uses.join() === 'home,biz' && M.CT_CATS[5].deals.join() === '전세,월세', '전대차 - 주거용 · 비주거용 + 전세 · 월세');
+  /* 전자계약 양식 - 용도별 제목 · 조항 · 부동산의 표시 */
+  const 주거매매 = M.ctNewDoc('sale', null, { cat: 'realty', use: 'home' }), 토지매매e = M.ctNewDoc('sale', null, { cat: 'realty', use: 'land' });
+  const 비주거임대 = M.ctNewDoc('lease', null, { cat: 'realty', use: 'biz', deal: 'monthly' }), 주거임대 = M.ctNewDoc('lease', null, { cat: 'realty', use: 'home', sub: '아파트', deal: 'jeonse' });
+  const 재단임대 = M.ctNewDoc('lease', null, { cat: 'realty', use: 'etc', deal: 'monthly' }), 비주거전대 = M.ctNewDoc('sublease', null, { cat: 'sublease', use: 'biz', deal: 'monthly' });
+  ok(M.ctTitle(주거매매) === '부동산(주거용) 매매 계약서' && M.ctTitle(비주거임대) === '부동산(비주거용) 임대차 계약서' && M.ctTitle(비주거전대) === '부동산(비주거용) 전대차 계약서'
+     && M.ctTitle(재단임대) === '부동산(입목·광업재단·공장재단) 임대차 계약서', '전자계약 제목 - 부동산(용도) 매매 · 임대차 · 전대차 계약서');
+  ok(주거매매.sub === '주택' && 비주거임대.sub === '건물' && 주거임대.sub === '아파트' && M.ct신고(주거임대) && !M.ct신고(비주거임대) && M.ct군(비주거임대) === 'shop',
+     '세부 종류를 안 고르면 용도의 기본값 - 신고 · 주택/상가 판단은 그대로');
+  ok(주거매매.clauses.map(c => c.title).join() === '제한물권 등의 소멸,지방세 등,계약의 해제,채무불이행과 손해배상,중개보수,중개보수 외,중개대상물확인·설명서 교부 등',
+     '매매 - 전자계약 제3~9조');
+  const 임h = M.ctDocHTML(비주거임대), 주h = M.ctDocHTML(주거임대), 매h = M.ctDocHTML(주거매매), 토h = M.ctDocHTML(토지매매e), 재h = M.ctDocHTML(재단임대), 전h = M.ctDocHTML(비주거전대);
+  ok(/3기의 차임액에 달하거나 제3조를 위반하였을 때/.test(임h) && /2기의 차임액에 달하거나 제3조를 위반하였을 때/.test(주h), '임대 해지 - 비주거 3기 · 주거 2기, 제3조를 가리킨다');
+  ok(/<b>제1조\(목적\)<\/b> 위 부동산의 매매에 대하여 매도인과 매수인은 합의에 의하여/.test(매h) && /<b>제2조\(소유권 이전 등\)<\/b> 매도인은 매매대금의 잔금 수령과 동시에/.test(매h)
+     && /<b>제9조\(중개대상물확인·설명서 교부 등\)<\/b>/.test(매h) && /<b>제2조\(존속기간\)<\/b>/.test(주h), '제1조(목적) · 제2조 · 제9조까지 전자계약 순서');
+  ok(/전세 <span class="ct-box">✔<\/span> &nbsp; 월세 <span class="ct-box"><\/span>/.test(주h) && !/신규 계약/.test(주h) && !/미납 국세/.test(주h), '임대 - 전세 · 월세 표시, 신규 계약 줄과 미납 국세 표는 없다(전자계약 양식)');
+  ok(/대지권/.test(매h) && /<th class="w">건물<\/th>/.test(매h) && !/<th class="w">건물<\/th>/.test(토h) && !/대지권/.test(토h) && !/임대할부분/.test(재h) && /임대할부분/.test(임h),
+     '부동산의 표시 - 주거 매매는 대지권 · 건물, 토지는 토지만, 입목재단 임대는 임대할부분 없음');
+  ok(/\(업종\)을 위한 용도로 사용한다/.test(전h) && /3기의 차임액/.test(전h) && /2\. 원 임대차계약의 내용 및 임대인의 동의/.test(전h) && /3\. 계약내용/.test(전h) && /<b>제11조\(중개대상물확인·설명서 교부 등\)<\/b>/.test(전h),
+     '전대차 비주거 - 업종 문구 · 3기 · 원 임대차 · 제11조까지');
+  ok(/공인전자문서센터/.test(매h) && /공인전자문서센터/.test(M.ctDocHTML(M.ctNewDoc('sale', null, { cat: 'realty', sub: '아파트' }))) === false, '맺음말 - 전자계약 문구는 전자계약 양식에만');
   ok(/'__custom', '직접입력'/.test(js) && /data-in="ctp-custom"/.test(js), '세부 종류는 직접입력도 된다');
 
   /* 문서 이름이 고른 것을 따라간다 */
@@ -1121,8 +1141,11 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
     `${몸}\n${확몸}\n${마법}\nreturn { ctWizHTML, CT };`)(S, esc, () => {}, () => false, () => {}, () => {}, { building: 'M0 0', doc: 'M0 0', home: 'M0 0' }, () => '', () => '', r => r);
   W.CT.pick = null; W.CT.wizOk = false;
   let h = W.ctWizHTML([]);
-  ok(/class="ctw-c" data-act="ctp-sub"/.test(h) && !/class="chip/.test(h.split('<div class="ctw">')[1]) && /data-act="ctp-go" disabled>계약서 만들기/.test(h),
-     '고르는 단추는 공용 칩이 아닌 .ctw-c(옅은 면 상자) · 다 고르기 전에는 만들기가 잠긴다');
+  ok(/class="ctw-c" data-act="ctp-use"/.test(h) && !/data-act="ctp-sub"/.test(h) && !/class="chip/.test(h.split('<div class="ctw">')[1]) && /data-act="ctp-go" disabled>계약서 만들기/.test(h),
+     '고르는 단추는 공용 칩이 아닌 .ctw-c(옅은 면 상자) · 용도를 고르기 전에는 세부 종류가 없고 만들기가 잠긴다');
+  ok(/<span class="ctw-gl">부동산계약서<\/span>/.test(h) && /<span class="ctw-gl">표준계약서<\/span>/.test(h) && /<span class="ctw-gl">그 밖의 계약서<\/span>/.test(h), '왼쪽 종류는 세 묶음 이름으로 나눈다');
+  W.CT.pick.use = 'home'; h = W.ctWizHTML([]);
+  ok(/data-act="ctp-sub" data-v="아파트"/.test(h) && !/data-act="ctp-sub" data-v="상가"/.test(h) && /고르지 않아도 됩니다/.test(h), '주거용을 고르면 주거 세부 종류만 - 고르지 않아도 된다');
   W.CT.pick.sub = '아파트'; W.CT.wizFx = { just: 'ctp-sub:아파트', kind: 'sub' };
   h = W.ctWizHTML([]);
   ok(/class="ctw-c on just" data-act="ctp-sub" data-v="아파트"/.test(h) && /class="ctw-n done just"/.test(h) && /<em class="ctw-picked">아파트<\/em>/.test(h),
@@ -1131,12 +1154,12 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
   ok(!/ just/.test(h), '움직임 표시는 한 번만 - 다시 그려도 되풀이하지 않는다');
   W.CT.pick.deal = '전세';
   h = W.ctWizHTML([]);
-  ok(/class="ctw-foot lit"/.test(h) && /<b>부동산\(아파트\) 전세계약서<\/b>/.test(h) && /data-act="ctp-go" >계약서 만들기/.test(h), '다 고른 순간 만들기 줄이 한 번 켜진다(lit)');
+  ok(/class="ctw-foot lit"/.test(h) && /<b>부동산\(주거용\) 임대차 계약서<\/b>/.test(h) && /data-act="ctp-go" >계약서 만들기/.test(h), '다 고른 순간 만들기 줄이 한 번 켜진다(lit)');
   h = W.ctWizHTML([]);
   ok(/class="ctw-foot"/.test(h) && !/ctw-foot lit/.test(h), '이미 켜진 뒤에 다시 그리면 켜짐 움직임이 없다');
-  W.CT.pick = { cat: 'rights', sub: null, custom: '', deal: null, ex: null }; W.CT.wizOk = false;
+  W.CT.pick = { cat: 'union', sub: null, custom: '', deal: null, ex: null }; W.CT.wizOk = false;
   h = W.ctWizHTML([]);
-  ok(/고를 것 없이 바로 만듭니다\. 점포 영업 양도양수 계약의 일반적인 항목을 따라 만든 양식입니다\./.test(h) && /class="ctw-foot lit"/.test(h),
+  ok(/고를 것 없이 바로 만듭니다\. 조합원 입주권 매매 계약의 일반적인 항목을 따라 만든 양식입니다\./.test(h) && /class="ctw-foot lit"/.test(h),
      '고를 것 없는 종류는 근거 한 문장으로 · 바꾸자마자 만들기 줄이 켜진다');
 }
 
@@ -1390,7 +1413,7 @@ ok(js.includes("what:'listing-bld'") && js.includes('S.form.lbun = a.bun') && js
 ok(js.includes("case 'ct-full': CT.full = !CT.full;") && js.includes("CT.full ? ' ctx-full' : ''") && js.includes("e.key === 'Escape' && CT.full") && js.includes("알림창(false); CT.full = false;") && css.includes('html:has(.ctx-view.ctx-full){overflow:hidden}'), '계약서 서류 전체화면 - 같은 서류로 바로 고치기 · Esc · 화면 옮기면 닫힘');
 
 /* ── 소재지는 지번 (2026-11-17 파트너) ── */
-ok(js.includes('function ct소재지(P, 날인 = false){') && js.split('${ct소재지(P, ct옛날인(doc))}').length === 3 && js.includes('const 글 = ct소재지글(P); return 글 ? esc(글) : P.road ? esc(P.road) : 빈칸(300); }') && !js.includes('비워 두면 찾은 지번이 찍힙니다'), '계약서 · 확인·설명서 소재지는 지번 먼저, 도로명은 괄호 (설명 문구는 뺐다 · 2026-11-19)');
+ok(js.includes('function ct소재지(P, 날인 = false){') && js.split('${ct소재지(P, ct옛날인(doc))}').length === 4 && js.includes('const 글 = ct소재지글(P); return 글 ? esc(글) : P.road ? esc(P.road) : 빈칸(300); }') && !js.includes('비워 두면 찾은 지번이 찍힙니다'), '계약서 · 확인·설명서 소재지는 지번 먼저, 도로명은 괄호 (설명 문구는 뺐다 · 2026-11-19)');
 
 /* ── 공동중개 사무소 (2026-11-17 파트너) ── */
 { ok(C.등록키('41450-2019-00217') === C.등록키('41450-2019-217') && C.등록키(' 가3665-4 ') === '가36654', '공동중개 찾기 - 등록번호 정규화(앞 0 · 옛 번호)');

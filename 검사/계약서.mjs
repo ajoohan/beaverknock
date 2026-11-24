@@ -857,6 +857,15 @@ const M = 모듈(S, esc, () => {}, () => false, () => {}, () => {});
   /* 전자계약 매매 - 융자금 줄, 승계 금액은 잔금에서 뺀다 */
   const 융 = M.ctNewDoc('sale', null, { cat: 'realty', use: 'home' }); 융.deal = { ...융.deal, price: 500000000, down: 50000000, keepLoan: 100000000, keepDep: 50000000 };
   ok(/<th class="w">융자금<\/th>/.test(M.ctDocHTML(융)) && M.ctBalance(융.deal) === 300000000, '전자계약 매매 - 융자금 · 임대보증금 승계 줄, 잔금에서 뺀다');
+  /* 별지 - 주택임대차표준계약서 별지 · 국가 원본 틀 확인·설명서 별지 · 다물건 물건별 확인·설명서 · 토지는 건물 칸 없음 */
+  const 별주 = M.ctNewDoc('home-lease', null, { cat: 'std', ec: 1 }); 별주.annex = '별지로'; 별주.annexText = '101동 1203호 외 창고 1실'; 별주.property.landCat = '대';
+  const 별h = M.ctDocHTML(별주);
+  ok(/class="ctdoc ct-annex/.test(별h) && /주택임대차표준계약서<\/p>/.test(별h) && /\[ 내 용 \]/.test(별h) && /101동 1203호 외 창고 1실/.test(별h) && !/ct-annex/.test(M.ctDocHTML({ ...별주, annex: '' })),
+     '주택임대차표준계약서 별지 - 별지로 고르면 뒤에 한 쪽(소재지 · 토지 · 건물 · 임차할부분 · [내용])');
+  ok(/data-act="ct-explain-item"/.test(js) && /case 'ct-explain': case 'ct-explain-item':/.test(js) && M.exFormFor({ form: 'sale', use: 'land' }) === 'explain-land' && M.exFormFor({ form: 'lease', use: 'etc' }) === 'explain-etc' && M.exFormFor({ form: 'sale', use: 'biz' }) === 'explain-biz',
+     '다물건 - 물건마다 확인·설명서(그 물건의 용도로 서식을 고른다)');
+  ok(/exAnnexOn\(doc\) \? `<div class="ctdoc exdoc exh-ax/.test(js), '국가 원본 틀 확인·설명서에도 별지 쪽');
+  ok(/이 양식은 비버노크가 국토교통부 부동산거래 전자계약 양식을 따라 만든 작성 도구입니다\./.test(M.ctDocHTML(M.ctNewDoc('sale', null, { cat: 'realty', use: 'land' }))), '전자계약 양식은 근거 문장도 전자계약으로');
   ok(/'__custom', '직접입력'/.test(js) && /data-in="ctp-custom"/.test(js), '세부 종류는 직접입력도 된다');
 
   /* 문서 이름이 고른 것을 따라간다 */
@@ -1584,7 +1593,7 @@ ok(!js.includes('나란히 보기</button>') && js.includes("[['info', '칸 입�
 { const 문서 = M.exNewDoc(null, 'explain-home'); 문서.ex.ownLand = '성명: 홍길동'; 문서.ex.annex = '별지로';
   const h = M.exDocHTML(문서);
   ok(/<th class="ex-gp" rowspan="3">등기부<br>기재사항<\/th><th class="ex-c" colspan="2">소유권에 관한 사항<\/th><th class="ex-c" colspan="2">소유권 외의 권리사항<\/th>/.test(h) && /<th class="ex-gp" rowspan="\d+">토지<\/th><th class="ex-s">소재지<\/th>/.test(h) && /<th class="ex-gp" rowspan="\d+">건축물<\/th><th class="ex-s">전용면적\(㎡\)<\/th>/.test(h), '확인·설명서 - 법정 서식 격자(토지 · 건축물 묶음 · 등기부 기재사항 네 칸)');
-  ok(/별지 참조/.test(h) && /<th class="ex-h" rowspan="2">목적물<\/th>/.test(h) && h.indexOf('소유권에 관한 사항</b>') < h.indexOf('소유권 외의 사항</b>') && h.indexOf('소유권 외의 사항</b>') < h.indexOf('기타사항</b>') && !/작성방법|작성요령/.test(h), '별지 - 목적물 표 → 소유권에 관한 사항 → 소유권 외의 사항 → 기타사항 · 작성요령 쪽 없음');
+  ok(/별지 참조/.test(h) && /중개대상물 확인·설명서 &nbsp; \[<span class="ct-box">✔<\/span>\] 주거용/.test(h) && /<th class="ex-s">소재지<\/th><td colspan="3">/.test(h) && h.indexOf('[ 소유권에 관한 사항 ]</b>') < h.indexOf('[ 소유권 외의 권리사항 ]</b>') && h.indexOf('[ 소유권 외의 권리사항 ]</b>') < h.indexOf('[ 기타사항 ]</b>') && !/작성방법|작성요령/.test(h), '별지 - 확인·설명서 종류 줄 · 목적물 표 → [소유권에 관한 사항] → [소유권 외의 권리사항] → [기타사항] (2026-11-24 파트너 별지양식) · 작성요령 쪽 없음');
   ok(js.includes("const 줄 = o => [o.share ? `지분 ${o.share}` : '', `성명: ${o.name}`, `생년월일: ${o.birth || '     년    월    일'}`, `주소: ${o.addr || ''}`]") && js.includes("data-act=\"${p.t === 'one' ? 'ex1' : 'exm'}\"") && js.includes("['form', F.explain ? '양식에 직접 입력' : '계약서에 직접 입력']"), '등기부 소유자는 지분 / 성명 / 생년월일 / 주소 꼴 · 양식에 직접 입력');
 }
 

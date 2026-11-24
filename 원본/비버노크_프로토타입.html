@@ -2355,7 +2355,13 @@ body.mo .ctw-st{padding:12px}
 .ct-mi:first-of-type{border-top:none}
 .ct-mi-h{display:flex;align-items:center;gap:8px;margin-bottom:8px}
 .ct-mi-h .sub{font-size:13px;color:var(--n500)}
-.ct-mi-h .tapx{margin-left:auto;color:var(--danger)}
+.ct-mi-h [data-act="ct-explain-item"]{margin-left:auto}
+.ct-mi-h [data-act="ct-item-del"]{color:var(--danger)}
+.ctdoc.ct-annex{break-before:page;page-break-before:always;margin-top:28px;padding-top:20px;border-top:1px dashed #B9BCC6}
+.ctdoc.ct-annex h1{text-align:center;margin:0 0 6px}
+.ct-ax-box{min-height:120px;padding:8px 0;line-height:1.8}
+.ex-annex .ex-ax-kind{margin:0 0 10px;font-weight:600}
+@media print{.ctdoc.ct-annex{margin-top:0;padding-top:0;border-top:0}}
 .ct-mi-sum{margin:12px 0 0;font-size:14px;font-weight:600;color:var(--n700)}
 .ctpv .ctpv-note{margin:10px 0;padding:8px 10px;border:1px solid #999;font-size:.92em;line-height:1.6}
 .ctpv .ctpv-note p{margin:4px 0}
@@ -14328,6 +14334,7 @@ if(typeof addEventListener === 'function'){
   addEventListener('unhandledrejection', e => { const r = e && e.reason; bk오류보내기('처리되지 않은 오류: ' + ((r && r.message) || r), (r && r.stack && (/(https?:\/\/[^\s)]+?):\d+:\d+/.exec(r.stack) || [])[1]) || location.origin, 0, 0, r && r.stack); });
 }
 const BK_변경 = [
+  { v:'26.11.24.5', 날:'2026-11-24', 줄:[ '별지 - 주택임대차표준계약서는 서류 아래 ‘별지 붙이기’로 뒤에 한 쪽(소재지 · 토지 · 건물 · 임차할부분 · [내용]), 확인·설명서 별지는 파트너가 준 별지양식대로(종류 · 거래형태 줄 · [소유권 외의 권리사항]) 국가 원본 틀에도 붙습니다', '다물건 매매 - 물건마다 ‘이 물건 확인·설명서’로 그 물건의 소재지 · 용도 · 금액이 들어간 확인·설명서를 만듭니다', '토지 · 입목재단 계약서는 입력 화면에서도 건물 칸을 뺐고, 전자계약 임대는 대지권 칸 없이 ‘임대할 부분’으로', '서류 아래 양식 근거 문장을 전자계약 양식으로 바로잡았습니다' ] },
   { v:'26.11.24.4', 날:'2026-11-24', 줄:[ '주택임대차 · 상가건물 임대차 표준계약서 조항을 법무부 원문 그대로(주택 제1~13조 · 상가 제1~12조) - 보증금 있는 월세 · 전세 · 월세 표시, 임대인 · 임차인 이름 머리말', '표준임대차계약서(민간임대) 새로 - 민간임대주택법 별지 제24호서식 그대로(임대사업자 등록번호 · 주택 유형 · 면적 · 민간임대 종류 · 보증 가입 · 제1~17조 · 개인정보 제3자 제공 동의서), 임대차 신고 · 만기 알림은 주택임대차와 같이', '다물건 매매 새로 - 표지(총액 · 서명) + 물건마다 상세 쪽((다물건) 제목 · 물건번호 / 전체 개수 · 계약일자), 물건별 금액을 적으면 총액이 맞춰지고 실거래 신고에 총액을 씁니다', '전자계약 매매에 융자금 · 임대보증금 승계 줄 - 잔금에서 뺍니다' ] },
   { v:'26.11.24.3', 날:'2026-11-24', 줄:[ '분양권 · 조합원입주권 매매계약서를 전자계약 양식으로 - 분양 목적물(TYPE · 대지권 비율) · 분양대금 및 납부내역(확장비 · 선택품목 · 납부한 금액) · 총 매매대금 저절로 셈 · 정산지급금 · 승계 융자금, 입주권은 종전 토지 · 분담금 내역과 승계 분담금(잔금에서 뺌) · 조항 제2~12조', '예전에 만든 분양권 · 입주권 계약서는 그때 양식 그대로 열립니다' ] },
   { v:'26.11.24.2', 날:'2026-11-24', 줄:[ '계약서 종류를 국토교통부 전자계약 분류로 - 부동산계약서(매매 · 임대 × 주거용 · 비주거용 · 토지 · 입목·광업재단·공장재단) · 표준계약서 · 그 밖의 계약서(분양권 · 조합원입주권 · 전대차)', '부동산 매매 · 임대 · 전대차는 전자계약 조항 그대로(매매 제1~9조 · 임대 제1~9조, 비주거 임대 · 전대는 3기) · 세부 종류(아파트 등)는 고르지 않아도 됩니다', '권리양도양수 · 상가권리금계약서 · 연세는 새로 만들기에서 뺐습니다 - 예전에 만든 계약서는 그대로 열립니다' ] },
@@ -15733,7 +15740,7 @@ function ct다물건칸(doc){
   const 잠김 = ctSealed(), it = doc.items || [], N = it.length, D = doc.deal || {};
   const 고르기 = (p, v) => `<label class="ct-f w4"><span class="lab">용도</span><select class="inp" data-in="ct:${p}" ${잠김 ? 'disabled' : ''}>${Object.entries(CT_USES).map(([k, t]) => `<option value="${k}"${v === k ? ' selected' : ''}>${esc(t)}</option>`).join('')}</select></label>`;
   const 한 = (x, i) => { const 앞 = `items.${i}`, u = CT_USES[x.use] ? x.use : 'home', 건물 = u === 'home' || u === 'biz';
-    return `<div class="ct-mi"><div class="ct-mi-h"><b>물건 ${i + 1}</b>${i === 0 ? '<span class="sub">소재지 · 토지 · 건물은 위 부동산의 표시 칸</span>' : ''}${!잠김 && N > 2 && i > 0 ? `<button type="button" class="tapx" data-act="ct-item-del" data-v="${i}">빼기</button>` : ''}</div>
+    return `<div class="ct-mi"><div class="ct-mi-h"><b>물건 ${i + 1}</b>${i === 0 ? '<span class="sub">소재지 · 토지 · 건물은 위 부동산의 표시 칸</span>' : ''}<button type="button" class="tapx" data-act="ct-explain-item" data-v="${i}">이 물건 확인·설명서</button>${!잠김 && N > 2 && i > 0 ? `<button type="button" class="tapx" data-act="ct-item-del" data-v="${i}">빼기</button>` : ''}</div>
       <div class="ct-grid">${고르기(`${앞}.use`, u)}${i > 0 ? `${ctIn(`${앞}.property.show`, '소재지', { w: 8, ph: '예: 서울특별시 ○○구 ○○동 123-4' })}${ctIn(`${앞}.property.landCat`, '지목', { w: 3 })}${ctIn(`${앞}.property.landArea`, '토지 면적(㎡)', { w: 3 })}${건물 ? `${ctIn(`${앞}.property.landRight`, '대지권', { w: 6 })}${ctIn(`${앞}.property.bldStruct`, '건물 구조', { w: 3 })}${ctIn(`${앞}.property.bldUse`, '건물 용도', { w: 3 })}${ctIn(`${앞}.property.bldArea`, '건물 면적(㎡)', { w: 3 })}` : ''}` : ''}
         ${ctIn(`${앞}.price`, '매매대금(원)', { w: 4, money: true })}${ctIn(`${앞}.down`, '계약금(원)', { w: 4, money: true })}${ctIn(`${앞}.mid`, '중도금(원)', { w: 4, money: true })}</div></div>`; };
   return `<div class="card pad ct-sec"><h2>물건별 내용 <span class="sub" style="font-weight:500;font-size:13.5px">전체 ${N}개 · 계약일 · 중도금일 · 잔금일은 모든 물건이 같습니다</span></h2>
@@ -16390,6 +16397,37 @@ function ctPrivDocHTML(doc){
     <p class="ct-art">본인의 개인정보의 제3자 제공에 동의합니다. &nbsp; 임차인 성명: ${빈칸(120)} (서명 또는 날인)</p>
     <p class="sm">※ 임차인은 개인정보 제공에 대한 동의를 거부할 수 있으며, 이 경우 임대사업자의 의무사항 준수 여부(임대보증금에 대한 보증가입 정보 포함), 임차인의 권리, 등록임대주택에 관한 정보 등의 제공이 제한되어 불이익을 받을 수 있습니다.</p>
   </div>`;
+}
+/* ── 별지 (2026-11-24 파트너 '별지양식_주택임대차표준계약서 · 별지양식_중개대상물확인설명서') ── 부동산 표시가 길 때 뒤에 붙이는 쪽 */
+const ct별지줄 = t => String(t || '').trim() ? esc(String(t)).replace(/\n/g, '<br>') : '<p class="line"></p>'.repeat(6);
+function ct주택별지HTML(doc){
+  const P = doc.property || {}, 면 = v => v ? `${esc(String(v))} ㎡` : 빈칸(60);
+  return `<div class="ctdoc ct-annex${ct글꼴(doc) === 'sans' ? ' f-sans' : ''}">
+    <h1>별&nbsp;&nbsp;&nbsp;지</h1>
+    <p class="lead" style="text-align:center;font-weight:700">주택임대차표준계약서</p>
+    <table>
+      <tr><th class="w">소재지</th><td colspan="3">${esc(ct소재지글(P) || P.road || '') || 빈칸(260)}</td><td colspan="2">${esc(String(P.part || '').trim()) || `${빈칸(40)}동 ${빈칸(40)}호`}</td></tr>
+      <tr><th class="w">토지</th><th>지목</th><td>${esc(P.landCat || '') || 빈칸(70)}</td><th>면적</th><td colspan="2">${면(P.landArea)}</td></tr>
+      <tr><th class="w">건물</th><th>구조·용도</th><td>${esc([P.bldStruct, P.bldUse].filter(Boolean).join(' · ')) || 빈칸(90)}</td><th>면적</th><td colspan="2">${면(P.bldArea)}</td></tr>
+      <tr><th class="w">임차할부분</th><td colspan="3">${esc(P.part || '') || 빈칸(160)}</td><th>면적</th><td>${면(P.partArea)}</td></tr>
+    </table>
+    <h2>[ 내 용 ]</h2>
+    <div class="ct-ax-box">${CT편집칸 ? ct칸('annexText', doc.annexText, 300, 'long') : ct별지줄(doc.annexText)}</div>
+  </div>`;
+}
+/* 중개대상물 확인·설명서 별지 - 예전 모양과 국가 원본 틀이 같이 쓴다 */
+function ex별지HTML(doc, 줄글){
+  const 물 = doc.property || {}, f = doc.form, 임대 = /임대/.test(String(doc.deal || ''));
+  const 칸 = (on, t) => `[<span class="ct-box">${on ? '✔' : ''}</span>] ${t}`;
+  const 모음 = ks => ks.map(k => ctGet(doc, k)).filter(Boolean).join('\n');
+  const 글 = (k, 모) => CT편집칸 ? ct칸(k, ctGet(doc, k), 300, 'long') : 줄글(모);
+  return `<div class="ex-annex"><h1>별&nbsp;&nbsp;&nbsp;지</h1>
+      <p class="ex-ax-kind">중개대상물 확인·설명서 &nbsp; ${칸(f === 'explain-home', '주거용')} &nbsp; ${칸(f === 'explain-biz', '비주거용')} &nbsp; ${칸(f === 'explain-land', '토지')} &nbsp;&nbsp; 거래형태 : ${칸(!임대 && !!doc.deal, '매매·교환')} &nbsp; ${칸(임대, '임대')}</p>
+      <table class="ex-t ex-grid ex-ax-obj"><tr><th class="ex-s">소재지</th><td colspan="3">${esc(ct소재지글(물) || 물.road || '')}</td></tr>
+        <tr><th class="ex-s">토지</th><td>${[물.landCat ? esc(물.landCat) : '', 물.landArea ? esc(String(물.landArea)) + '㎡' : ''].filter(Boolean).join(' · ')}</td><th class="ex-s">건축물</th><td>${[물.bldUse ? esc(물.bldUse) : '', 물.bldArea ? '전용 ' + esc(String(물.bldArea)) + '㎡' : ''].filter(Boolean).join(' · ')}</td></tr></table>
+      <div class="ex-ax"><b>[ 소유권에 관한 사항 ]</b><div>${글('ex.ownLand', 모음(['ex.ownLand', 'ex.ownBld']))}</div></div>
+      <div class="ex-ax"><b>[ 소유권 외의 권리사항 ]</b><div>${글('ex.etcLand', 모음(['ex.etcLand', 'ex.etcBld']))}</div></div>
+      <div class="ex-ax last"><b>[ 기타사항 ]</b><div>${글('ex.annexNote', ctGet(doc, 'ex.annexNote'))}</div></div></div>`;
 }
 /* 이 계약서가 쓰는 양식 - 전자계약으로 만든 새 계약서면 CT_E_FORMS (민간임대는 CT_E_PRIVATE) */
 const ct양식 = doc => (doc && doc.ec === 1 && doc.priv && doc.form === 'home-lease' && CT_E_PRIVATE) || (doc && doc.ec === 1 && CT_E_FORMS[doc.form]) || CT_FORMS[doc && doc.form];
@@ -17095,8 +17133,9 @@ function ctDocHTML(doc){
       <tr><th class="w">소속공인중개사</th><td colspan="4" class="sign">${B.hand ? 빈칸(120) : ct칸(b + '.staff', c.staff, 120)} <span class="ct-seal">(서명 및 날인)</span></td></tr>`; }).join('')}
       ${CT편집칸 ? `<tr><td colspan="5" class="ct-doc-add">${(doc.coBrokers || []).length < CT_공동중개최대 ? '<button type="button" class="chip" data-act="ct-cobrk-add">+ 중개사무소 추가</button>' : ''}${(doc.coBrokers || []).map((c, i) => `<button type="button" class="tapx" data-act="ct-cobrk-del" data-v="${i}">공동중개 ${i + 1} 빼기</button>`).join('')}</td></tr>` : ''}
     </table>
-    <p class="ct-foot">이 양식은 비버노크가 ${F.foot}해 만든 작성 도구입니다. 내용은 작성자가 확인하고 고쳐 쓰셔야 합니다.</p>
-  </div>`;
+    <p class="ct-foot">이 양식은 비버노크가 ${(근거 => `${esc(근거)}${/따라$/.test(근거) ? ' ' : '해 '}만든 작성 도구입니다.`)(전자 && !맞춤 ? '국토교통부 부동산거래 전자계약 양식을 따라' : F.foot || '')} 내용은 작성자가 확인하고 고쳐 쓰셔야 합니다.</p>
+    ${CT편집칸 && doc.form === 'home-lease' && !F.priv ? `<p class="ex-ax-pick noprint"><span>임차주택 표시</span><button type="button" class="chip${doc.annex === '별지로' ? '' : ' on'}" data-act="ex1" data-v="annex|본문에 적기">본문에 적기</button><button type="button" class="chip${doc.annex === '별지로' ? ' on' : ''}" data-act="ex1" data-v="annex|별지로">별지 붙이기</button></p>` : ''}
+  </div>${doc.form === 'home-lease' && !F.priv && doc.annex === '별지로' ? ct주택별지HTML(doc) : ''}`;
 }
 
 /* 쪽 나눔 (2026-11-12 파트너 기획 D2-6) - 서명란은 갈라지지 않게 한 쪽에 모아 맨 아래에 두고, 넘친 특약만 다음 쪽으로 넘긴다.
@@ -19443,17 +19482,19 @@ function ct대지권나눔(P){
 const ct특약번호글 = sp => (sp || []).map((t, i) => `${i + 1}. ${String(t).replace(/\s*\n\s*/g, ' ')}`).join('\n');
 function ct부동산표(doc){
   const F = CT_FORMS[doc.form] || {}, P = doc.property || (doc.property = {}), 매매 = !F.lease, 상가 = doc.form === 'shop-lease', 군 = ct군(doc);
-  const 집합 = 매매 || (F.lease && ct집합(doc.sub));
+  const u = CT_USES[doc.use] && ct전자(doc) ? doc.use : '', 땅 = u === 'land' || u === 'etc';     /* 전자계약 용도 (2026-11-24) */
+  const 집합 = u ? 매매 && !땅 : 매매 || (F.lease && ct집합(doc.sub));
+  const 부분칸 = F.lease && !(u === 'etc' && doc.form === 'lease');
   if(집합) ct대지권나눔(P);
   return `<div class="ec-wrap"><table class="ec">
-    ${F.lease ? `<tr><th>${doc.form === 'sublease' ? '전대할 부분' : '임차할 부분'}</th><td colspan="4">${ct입('property.part', { w:300, label:'임차할 부분' })}</td><td class="ec-l">면적</td><td>${ct입('property.partArea', { w:90, label:'임차할 부분 면적' })} ㎡</td></tr>` : ''}
+    ${부분칸 ? `<tr><th>${doc.form === 'sublease' ? '전대할 부분' : u ? '임대할 부분' : '임차할 부분'}</th><td colspan="4">${ct입('property.part', { w:300, label:'임차할 부분' })}</td><td class="ec-l">면적</td><td>${ct입('property.partArea', { w:90, label:'임차할 부분 면적' })} ㎡</td></tr>` : ''}
     ${상가 || 군 === 'shop' ? `<tr><th>용도(업종)</th><td colspan="6">${ct입('property.use', { w:240, label:'용도(업종)' })}</td></tr>` : ''}
     <tr><th>토지</th><td class="ec-l">지목</td><td>${ct입('property.landCat', { w:110, label:'지목' })}</td>
       ${집합 ? `<td class="ec-l">대지권</td><td class="ec-nw">${ct입('property.landRightKind', { w:120, label:'대지권 종류' })}</td>` : '<td></td><td></td>'}
       <td class="ec-l">토지면적</td><td>${ct입('property.landArea', { w:100, label:'토지면적' })} ㎡</td></tr>
     ${집합 ? `<tr><th>대지권비율</th><td colspan="6" class="ec-nw">${ct입('property.landRatioDen', { w:120, label:'대지권비율 분모' })} 분의 ${ct입('property.landRatioNum', { w:110, label:'대지권비율 분자' })}</td></tr>` : ''}
-    <tr><th>건물</th><td class="ec-l">구조</td><td>${ct입('property.bldStruct', { w:140, label:'건물 구조' })}</td><td class="ec-l">용도</td><td>${ct입('property.bldUse', { w:140, label:'건물 용도' })}</td>
-      <td class="ec-l">${매매 ? '전용면적' : '면적'}</td><td>${ct입('property.bldArea', { w:100, label:'건물 면적' })} ㎡</td></tr>
+    ${땅 ? '' : `<tr><th>건물</th><td class="ec-l">구조</td><td>${ct입('property.bldStruct', { w:140, label:'건물 구조' })}</td><td class="ec-l">용도</td><td>${ct입('property.bldUse', { w:140, label:'건물 용도' })}</td>
+      <td class="ec-l">${매매 ? '전용면적' : '면적'}</td><td>${ct입('property.bldArea', { w:100, label:'건물 면적' })} ㎡</td></tr>`}
   </table></div>`;
 }
 /* 중도금 차수 더하기 · 빼기 - 정보 입력 표와 서류(직접 입력)가 같이 쓴다 */
@@ -19547,7 +19588,7 @@ function ctFormHTML(doc){
     return 고르기 + 본인 + 공동 + 대리인 + 더하기;
   };
   const 종류들 = 군 === 'gen' ? [CT_KIND.new, CT_KIND.agree] : Object.values(CT_KIND);
-  const 표시명 = 맞춤 ? F.fields[0].h : 매매 ? '부동산의 표시' : doc.form === 'sublease' ? '전대물의 표시' : 상가 || 군 === 'shop' ? '임차상가건물의 표시' : 군 === 'home' ? '임차주택의 표시' : '임차물의 표시';
+  const 표시명 = 맞춤 ? F.fields[0].h : CT_USES[doc.use] && ct전자(doc) ? '부동산의 표시' : 매매 ? '부동산의 표시' : doc.form === 'sublease' ? '전대물의 표시' : 상가 || 군 === 'shop' ? '임차상가건물의 표시' : 군 === 'home' ? '임차주택의 표시' : '임차물의 표시';
   return `
     ${F.lease && !F.noKind ? `<div class="card pad ct-sec"><h2>계약 종류${doc.renewOf ? ' <span class="sub" style="font-weight:500;font-size:13.5px">지난 계약서에서 불러왔습니다 - 원래 계약서는 그대로 남아 있습니다</span>' : ''}</h2>
       ${chipsHTML(종류들, CT_KIND[doc.kind] || CT_KIND.new, 'ct-kind', false, 잠김)}</div>` : ''}
@@ -21169,6 +21210,7 @@ const EX_FOOT = '「공인중개사법」 제25조제3항 및 제30조제5항에
 /* 계약서에서 만들 때 어느 서식인지 - 상가는 비주거용, 매매는 건물 용도로 가른다(주택이면 주거용, 건물이 없으면 토지) */
 function exFormFor(c){
   if(!c || !c.form) return 'explain-home';
+  if(CT_USES[c.use] && ct전자(c)) return { home:'explain-home', biz:'explain-biz', land:'explain-land', etc:'explain-etc' }[c.use];
   if(c.form === 'home-lease') return 'explain-home';
   if(c.form === 'shop-lease' || c.form === 'rights' || c.form === 'premium') return 'explain-biz';
   if(String(c.sub || '').trim() === '토지') return 'explain-land';
@@ -21302,12 +21344,7 @@ function exDocHTML(doc){
   const 모음 = ks => ks.map(k => ctGet(doc, k)).filter(Boolean).join('\n');
   /* 별지 (2026-11-19 파트너) - 맨 위에 목적물 표, 아래로 소유권에 관한 사항 · 소유권 외의 사항 · 기타사항을 한 칸씩 */
   const 물 = doc.property || {}, 물글 = (v, 끝 = '') => v ? esc(String(v)) + 끝 : '';
-  const 별지쪽 = !별지 ? '' : `<div class="ex-annex"><h1>별&nbsp;&nbsp;&nbsp;지</h1>
-      <table class="ex-t ex-grid ex-ax-obj"><tr><th class="ex-h" rowspan="2">목적물</th><th class="ex-s">소재지</th><td colspan="3">${esc(ct소재지글(물) || 물.road || '')}</td></tr>
-        <tr><th class="ex-s">토지</th><td>${[물글(물.landCat), 물글(물.landArea, '㎡')].filter(Boolean).join(' · ')}</td><th class="ex-s">건축물</th><td>${[물글(물.bldStruct), 물글(물.bldUse), 물글(물.bldArea, '㎡')].filter(Boolean).join(' · ')}</td></tr></table>
-      <div class="ex-ax"><b>소유권에 관한 사항</b><div>${CT편집칸 ? ct칸('ex.ownLand', ctGet(doc, 'ex.ownLand'), 300, 'long') : 줄글(모음(['ex.ownLand', 'ex.ownBld']))}</div></div>
-      <div class="ex-ax"><b>소유권 외의 사항</b><div>${CT편집칸 ? ct칸('ex.etcLand', ctGet(doc, 'ex.etcLand'), 300, 'long') : 줄글(모음(['ex.etcLand', 'ex.etcBld']))}</div></div>
-      <div class="ex-ax last"><b>기타사항</b><div>${CT편집칸 ? ct칸('ex.annexNote', ctGet(doc, 'ex.annexNote'), 300, 'long') : 줄글(ctGet(doc, 'ex.annexNote'))}</div></div></div>`;
+  const 별지쪽 = !별지 ? '' : ex별지HTML(doc, 줄글);
   /* 양식에 직접 적을 때 - 별지 작성 고르기 */
   const 별지단추 = !CT편집칸 ? '' : `<p class="ex-ax-pick"><span>등기부 기재사항</span><button type="button" class="chip${별지 ? '' : ' on'}" data-act="ex1" data-v="ex.annex|본문에 적기">본문에 적기</button><button type="button" class="chip${별지 ? ' on' : ''}" data-act="ex1" data-v="ex.annex|별지로">별지 작성</button></p>`;
   return `
@@ -21576,6 +21613,7 @@ function exHwpDocHTML(doc, o = {}){
       <span class="exh-tax"><span class="lab">중개사무소</span>${['일반과세', '간이과세'].map(t => `<button type="button" class="chip${유형 === t ? ' on' : ''}" data-act="ex-taxtype" data-v="${t}" aria-pressed="${유형 === t}" ${typeof ctSealed === 'function' && ctSealed() ? 'disabled' : ''}>${t}</button>`).join('')}</span>
     </div>`}
     ${쪽들}
+    ${o.only == null && typeof exAnnexOn === 'function' && exAnnexOn(doc) ? `<div class="ctdoc exdoc exh-ax${ct글꼴(doc) === 'sans' ? ' f-sans' : ''}">${ex별지HTML(doc, t => esc(String(t || '')).replace(/\n/g, '<br>'))}</div>` : ''}
   </div>`;
 }
 /* 그린 뒤 - 글이 칸보다 넓으면 줄을 좁히고, 적은 글이 칸보다 길면 글자를 줄인다. 화면이 A4 보다 좁으면 쪽을 줄여 보인다 */
@@ -24367,10 +24405,13 @@ function handle(a,v,el){
     case 'ct-open': go('#/partner/contract/' + v); return true;
     case 'ct-reload': ctLoadList(true); render(); return true;
     /* 계약서에서 확인·설명서로 - 소재지·당사자·중개사·금액을 옮긴다. 저장 안 한 고침이 있으면 먼저 저장하게 한다 */
-    case 'ct-explain': {
+    case 'ct-explain': case 'ct-explain-item': {
       if(!CT.doc) return true;
       if(CT.dirty || !CT.id) return toast('계약서를 먼저 저장해 주세요'), true;
-      const 원 = { ...CT.doc, __id: CT.id }, 제안 = CT.row && CT.row.proposal_id;
+      /* 다물건 - 고른 물건의 소재지 · 용도 · 금액으로 (2026-11-24 파트너 '각 상세 쪽 뒤에는 그 물건의 확인설명서') */
+      const 물 = a === 'ct-explain-item' && CT.doc.multi ? ct물건(CT.doc, +v) : null;
+      const 원 = 물 ? { ...CT.doc, __id: CT.id, multi: 0, use: 물.use, sub: CT_USE_SUB[물.use], property: { ...물.property }, deal: { ...CT.doc.deal, price: +물.price || 0 }, src: +v === 0 ? CT.doc.src : null }
+        : { ...CT.doc, __id: CT.id }, 제안 = CT.row && CT.row.proposal_id;
       CT.id = null; CT.row = null; CT.track = {}; CT.fromProposal = 제안 || null;
       CT.doc = exNewDoc(원);
       if(원.src && typeof 원.src !== 'object') 원.src = null;   /* 옛 '직접 입력' 표시 */

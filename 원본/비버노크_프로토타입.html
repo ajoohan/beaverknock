@@ -10407,7 +10407,7 @@ V['#/map'] = () => {
   const 줄 = []; const 본 = new Set();
   for(const g of MT.groups || []) for(const r of g.rows || []) if(!본.has(r.id)){ 본.add(r.id); 줄.push(r); }
   const 모드 = mp모드(), 전체 = 모드 === 'all';
-  if(전체 && S.user && MP.rows == null && !MP.loading) setTimeout(mpLoad);
+  if(전체 && S.user && !MP.loading && (MP.rows == null || Date.now() - MP.at > 300e3)) setTimeout(mpLoad);
   const 둘 = MP.rows || [];
   return `
 <div class="scr fade" style="background:var(--n50)">
@@ -14426,6 +14426,7 @@ if(typeof addEventListener === 'function'){
   addEventListener('unhandledrejection', e => { const r = e && e.reason; bk오류보내기('처리되지 않은 오류: ' + ((r && r.message) || r), (r && r.stack && (/(https?:\/\/[^\s)]+?):\d+:\d+/.exec(r.stack) || [])[1]) || location.origin, 0, 0, r && r.stack); });
 }
 const BK_변경 = [
+  { v:'26.11.24.18', 날:'2026-11-24', 줄:[ '점검 - 잔금 준비서류 이미지가 사무소에서 고쳐 둔 ‘잔금 준비물 안내’ 문자 틀의 목록을 따릅니다(고치지 않았으면 기본 목록)', '카카오톡 채널 저장이 다른 설정 저장과 겹쳐 서로 지우지 않게 · 직접 매물찾기는 5분 지나면 새로 읽고 로그아웃하면 비웁니다' ] },
   { v:'26.11.24.17', 날:'2026-11-24', 줄:[ '직접 매물찾기 (파트너 · 대표님) - 매물지도에 ‘직접 매물찾기’: 조건 없이 중개사가 공개한 매물 전체를 종류별로 지도에서(가입한 손님만, 위치는 대략) · ‘이 집 보고 싶어요’로 바로 요청(같은 종류 조건이 있으면)', '가입한 손님 누구나 마이페이지 ‘내 계약’ 칸 - 계약이 아직 없으면 안내와 1:1 제안 · 매물매칭 · 직접 매물찾기 바로 가기' ] },
   { v:'26.11.24.16', 날:'2026-11-24', 줄:[ '손님 계약서 보기 (파트너) - 확정본이 되면 저절로 보이던 것을, 중개사가 일정·체크의 ‘손님 화면에 계약서 공개’를 켰을 때만 보이게. 확정 전에 켜면 확정 전 계약서로, 확정하면 확정본으로 바뀝니다' ] },
   { v:'26.11.24.15', 날:'2026-11-24', 줄:[ '손님 메인 (파트너) - ‘찾아다니지 마세요. 조건을 걸어두면 문을 두드립니다.’와 ‘내 계약 진행과정, 비버노크에서 바로 확인하세요.’를 같은 크기로 나란히, 첫 화면에 손님 메뉴 셋(1:1 제안 받기 · 매물매칭 · 직접 매물찾기)' ] },
@@ -16837,7 +16838,7 @@ async function ctRenew(id){
 /* ── 서버 ── */
 /* 사무소 설정(bk_agent.settings) 을 고치는 요청은 줄 세워 하나씩 보낸다 - 서버가 settings 를 통째로 읽고 덮으므로,
    나란히 가면 뒤의 것이 앞의 고침을 지운다(문자 틀 저장 중 복사 → 틀이 되돌아감, 2026-11-05 리뷰) */
-const CT_설정쓰기 = new Set(['phrases-save', 'sms-save', 'complex-save', 'end-style-save', 'alert-settings-save']);
+const CT_설정쓰기 = new Set(['phrases-save', 'sms-save', 'complex-save', 'end-style-save', 'alert-settings-save', 'kakao-ch-save']);
 let ct설정줄 = Promise.resolve();
 function ctPost(body){
   const 보내 = () => apiFetch('/api/feed', {method:'POST', body: JSON.stringify(body)})
@@ -17973,7 +17974,7 @@ async function ct잔금그림(o){
     if(줄.trim()) out.push(줄.trim()); return out; };
   const 머리높이 = 190, 줄간 = 54, f항목 = 글꼴(500, 36), f정보 = 글꼴(600, 34);
   const 정보 = [['목적물', o.목적물 || '계약서 참고'], ['잔금일', o.잔금일 ? ct날짜글(o.잔금일) : '계약서 참고']].map(([k, v]) => [k, 나눔(v, 안쪽 - 150, f정보)]);
-  const 쪽줄 = [['매도인 잔금 준비서류', RM_준비물.seller], ['매수인 잔금 준비서류', RM_준비물.buyer]].map(([제목, 목록]) => [제목, 목록.map(t => 나눔(t, 안쪽 - 120, f항목))]);
+  const 내것 = ct내준비물(), 쪽줄 = [['매도인 잔금 준비서류', 내것.seller], ['매수인 잔금 준비서류', 내것.buyer]].map(([제목, 목록]) => [제목, 목록.map(t => 나눔(t, 안쪽 - 120, f항목))]);
   const 칸높이 = 목록 => 60 + 28 + 목록.reduce((n, l) => n + l.length * 줄간 + 10, 0);
   let H = 머리높이 + 56 + 정보.reduce((n, [, l]) => n + l.length * 50 + 14, 0) + 40;
   쪽줄.forEach(([, 목록]) => { H += 40 + 칸높이(목록) + 30; });
@@ -18001,6 +18002,20 @@ async function ct잔금그림(o){
   if(o.phone){ x.font = 글꼴(600, 34); x.fillStyle = 남; x.textAlign = 'right'; x.fillText(String(o.phone).slice(0, 20), W - P, y); x.textAlign = 'left'; }
   const blob = await new Promise((ok, 안됨) => cv.toBlob(b => b ? ok(b) : 안됨(new Error('이미지')), 'image/png'));
   return { blob, url: cv.toDataURL('image/png') };
+}
+/* 사무소 문자 틀 '잔금 준비물 안내'(balance-guide)의 ■ 매도인 · ■ 매수인 아래 '- ' 줄을 읽는다. 못 읽으면 기본 목록 (11-24 점검) */
+function ct내준비물(){
+  const 기본 = { seller: RM_준비물.seller, buyer: RM_준비물.buyer };
+  try{
+    const t = (typeof cs틀들 === 'function' ? cs틀들() : []).find(x => x && x.id === 'balance-guide');
+    if(!t || !t.text) return 기본;
+    const out = { seller: [], buyer: [] }; let 쪽 = '';
+    for(const 줄 of String(t.text).split('\n')){ const l = 줄.trim();
+      if(/^■/.test(l)){ 쪽 = /매도/.test(l) ? 'seller' : /매수/.test(l) ? 'buyer' : ''; continue; }
+      if(쪽 && /^[-·•]\s*/.test(l) && l.replace(/^[-·•]\s*/, '')) out[쪽].push(l.replace(/^[-·•]\s*/, '').slice(0, 60));
+      else if(쪽 && !l) 쪽 = ''; }
+    return { seller: out.seller.length ? out.seller.slice(0, 12) : 기본.seller, buyer: out.buyer.length ? out.buyer.slice(0, 12) : 기본.buyer };
+  }catch(_){ return 기본; }
 }
 const ct잔금그림자료 = doc => { const B = doc.broker || {}, a = S.agent || {}, t = CT.track || {};
   return { 목적물: ct부동산글(doc), 잔금일: t.balanceDate || (doc.deal || {}).balanceDate || '', office: B.office || a.office || '', phone: B.phone || a.phone || '' }; };
@@ -25778,7 +25793,7 @@ setInterval(() => {
    보이는 것이 잠깐 뜬다. 그래서 로그인이 끝나는 자리에서도 한 번 더 부른다. */
 function clearSeeds(force){
   if(!force && !store.get()) return;
-  S.conds = []; S.props = []; S.myprops = []; S.listings = []; S.demands = [];
+  S.conds = []; S.props = []; S.myprops = []; S.listings = []; S.demands = []; MP.rows = null; MP.mode = ''; RM.mine = null;
   S.mineReady = S.mpReady = S.lsReady = false;
   S.mineAt = S.mpAt = S.lsAt = S.feedAt = 0;
 }

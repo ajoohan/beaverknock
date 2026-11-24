@@ -1440,7 +1440,7 @@ return ct부동산글;`)((d, k) => ({ property: k === 0 ? (d.property || {}) : (
        && 있나(C.일정목록, { form: 'sale' }) && !있나(C.일정목록, { form: 'presale' }) && !있나(C.일정목록, { form: 'union' }),
       '잔금 준비물 안내 일정 · 알림은 일반 부동산 매매만 - 분양권 · 입주권 · 입목재단은 뺀다(화면 · 서버, 11-24 파트너)'); }
   ok(js.includes('data-act="ctpi-open">잔금 준비서류 이미지</button>') && js.includes("data-act=\"rm-prep-img\"") && /async function ct잔금그림\(o\)/.test(js)
-     && /\['매도인 잔금 준비서류', RM_준비물\.seller\], \['매수인 잔금 준비서류', RM_준비물\.buyer\]/.test(js) && js.includes("navigator.share({ files: [new File([CT잔금그림], '잔금준비서류.png'"),
+     && /\['매도인 잔금 준비서류', 내것\.seller\], \['매수인 잔금 준비서류', 내것\.buyer\]/.test(js) && js.includes("find(x => x && x.id === 'balance-guide')") && js.includes("navigator.share({ files: [new File([CT잔금그림], '잔금준비서류.png'"),
     '잔금 준비서류 이미지 - 일정·체크 · 대화방 단추, 한 장에 매도인 · 매수인, 바로 보내기(공유) · 저장');
   { const 방 = fs.readFileSync(new URL(길.api('_room.js')), 'utf8'), 피 = fs.readFileSync(new URL(길.api('feed.js')), 'utf8');
     ok(/const RM_대화 = false;/.test(js) && (방.match(/if \(!대화켬\(\)\) return 대화끔답\(res\);/g) || []).length === 2 && /BK_ROOM_CHAT === '1'/.test(방)

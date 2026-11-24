@@ -1435,6 +1435,7 @@ return ct부동산글;`)((d, k) => ({ property: k === 0 ? (d.property || {}) : (
   const 분줄 = M.rpItems(분);
   ok(M.ct신고(분) && M.ct신고({ form: 'union' }) && C.신고대상('presale') && C.신고대상('union'), '분양권·입주권 전매도 신고 대상(화면·서버)');
   ok(!C.신고대상('sale', { use: 'etc' }) && C.신고대상('sale', { use: 'land' }) && !C.일정목록({ form: 'sale', use: 'etc', cd: '2026-12-01', bd: '2027-01-10' }).some(e => e.k === 'report'), '서버 - 입목 · 광업재단 · 공장재단 매매는 신고 알림 끔');
+  ok((fs.readFileSync(new URL(길.api('_contract.js')), 'utf8').match(/sub:doc->>sub,use:doc->>use/g) || []).length === 2, '서버 - 아침 알림 · 달력 구독 조회에 용도(use)를 같이 읽는다(입목 · 재단 신고 알림 끔)');
   ok(분줄.some(([s, l, v]) => s === '④ 거래대상 종류' && v === '분양권 · 전매') && 분줄.some(([s, l, v]) => l === '분양가격' && /600,000,000/.test(v)) && 분줄.some(([, l, v]) => /프리미엄/.test(l) && /100,000,000/.test(v)),
      '분양권 신고 도우미 - 거래대상 분양권·전매 · 분양가격 · 추가 지불액(프리미엄)');
   const 입 = M.ctNewDoc('union', null, { cat: 'union' }); 입.deal = { ...입.deal, rightValue: 300000000, extra: 50000000, premium: 200000000 };

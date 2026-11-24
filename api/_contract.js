@@ -1098,7 +1098,7 @@ export async function reportDueCron(req, res) {
   const 오늘 = 한국오늘();
   /* 확인·설명서를 뺀 계약서 - 1200일 안에 만든 것. 가장 멀리 가는 일정은 임대차 만기 6개월 전(2년 계약이면 작성 뒤 약 550일,
      4년이어도 약 1300일 전후 - 갱신하면 새 계약서가 생긴다). 전에는 400일이라 2년 임대차의 만기 알림이 나가지 않았다(2026-11-05 리뷰). 쪽으로 나눠 다 읽는다 */
-  const 열 = 'id,agent_id,agent_user,form,title,status,reported_at,prev_id,renew:doc->renewOf->>id,sub:doc->>sub' + 일정열;   /* renew - 갱신계약인지(일정뺄것) */
+  const 열 = 'id,agent_id,agent_user,form,title,status,reported_at,prev_id,renew:doc->renewOf->>id,sub:doc->>sub,use:doc->>use' + 일정열;   /* use - 입목·재단 매매는 신고 알림 끔(11-24) */   /* renew - 갱신계약인지(일정뺄것) */
   const 쪽 = 1000, rows = [];
   let 트랙 = true;
   for (let 처음 = 0; ; 처음 += 쪽) {

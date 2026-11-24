@@ -1457,6 +1457,17 @@ body.mo .hp-nav .right{gap:8px}
 .hm-p{margin:16px 0 0;max-width:46ch;font-size:16px;line-height:1.8;color:var(--n700)}
 .hm-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px;margin-top:36px}
 .hm-grid.hp6{grid-template-columns:repeat(3,minmax(0,1fr))}
+/* 파트너 주제목 ② ③ (2026-11-24) - 두 칸, 대시보드 · 수요 목록을 작게 */
+.hp-pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.hp-pair .hm-card{display:flex;flex-direction:column}
+.hp-pair-h{margin:0 0 10px;font-size:clamp(20px,1.7vw,24px);line-height:1.4;letter-spacing:-.035em;font-weight:800;color:var(--n900)}
+.hp-pair-img{margin:20px 0 0;margin-top:auto;padding-top:20px}
+.hp-pair-img img{display:block;width:100%;height:auto;aspect-ratio:16/10;object-fit:cover;object-position:left top;border-radius:14px;border:1px solid var(--hair)}
+@media (max-width:767px){.hp-pair{grid-template-columns:1fr}}
+body.mo .hp-pair .hm-card{display:flex;flex-direction:column;min-height:0;padding:22px 20px}
+body.mo .hp-pair-h{font-size:19px}
+.hp-pair .hm-card{min-height:0}
+.hm-sub2{margin:-6px 0 0;font-size:clamp(16px,1.3vw,18px);font-weight:700;letter-spacing:-.02em;color:var(--ind)}
 .hm-partner-band{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-top:28px;padding:18px 22px;border:1px solid var(--hair);border-radius:16px;background:var(--n50,#F7F7F9);text-align:left}
 .hm-partner-band b{display:block;font-size:15.5px;color:var(--n900);margin-bottom:4px}
 .hm-partner-band span{font-size:14px;color:var(--n600,#555);line-height:1.6}
@@ -6026,6 +6037,7 @@ V['#/'] = () => `
     <div class="hm-copy">
       <span class="beta"><b>Close Beta</b>서울·경기에서 먼저 시작합니다</span>
       <h1 class="t hm-h1">찾아다니지 마세요.<br>조건을 걸어두면<br><span class="accentWord">문을 두드립니다.</span></h1>
+      <p class="hm-sub2">내 계약 진행과정, 비버노크에서 바로 확인하세요</p>
       <p class="hm-lead">원하는 집·가게의 조건을 남기면, 맞는 물건이 있는 공인중개사가 직접 연락합니다.</p>
       <div class="hm-cta">
         <button class="btn pri blk" data-go="#/kind">내 조건 걸어두기</button>
@@ -6060,6 +6072,7 @@ V['#/'] = () => `
     <div class="hm-copy">
       <span class="beta"><b>Close Beta</b>서울·경기에서 먼저 시작합니다</span>
       <h1 class="t hm-h1">찾아다니지 마세요.<br>조건을 걸어두면<br><span class="accentWord">문을 두드립니다.</span></h1>
+      <p class="hm-sub2">내 계약 진행과정, 비버노크에서 바로 확인하세요</p>
       <p class="hm-lead">원하는 집·가게의 조건을 남기면, 맞는 물건이 있는 공인중개사가 직접 연락합니다.</p>
       <div class="hm-cta">
         <button class="btn pri" data-go="#/kind">내 조건 걸어두기</button>
@@ -8876,19 +8889,31 @@ V['#/partner'] = () => `
       <div class="hm-txt">
         <p class="hm-k">FOR PARTNERS</p>
         <!-- 이미 들어와 계신 분께 '가입하세요' 라고 하지 않는다 - 자기 사무소 이름으로 부른다 -->
-        <h1 class="t hm-h1" style="color:#fff">${S.agent ? `${esc(S.agent.office || '파트너')} 님,<br><span style="color:var(--clay200)">맞는 손님이 기다립니다</span>` : `조건을 걸어둔 손님에게<br>1:1 로 제안하고,<br><span style="color:var(--clay200)">계약까지 한곳에서</span>`}</h1>
-        <p class="hm-p">서울·경기에서 집·가게를 구하는 손님이 조건을 걸어두고 기다립니다. 맞는 손님에게 제안하고, 계약서 · 알림 · 일정까지 비버노크 안에서 챙기세요. <b style="color:#fff">제안 비용은 없습니다.</b></p>
+        <h1 class="t hm-h1" style="color:#fff">${S.agent ? `${esc(S.agent.office || '파트너')} 님,<br><span style="color:var(--clay200)">맞는 손님이 기다립니다</span>` : `반복되는 계약업무,<br><span style="color:var(--clay200)">이제는 편리하게 하세요</span>`}</h1>
+        <!-- 주제목 셋 (2026-11-24 파트너) - ① 계약업무 자동 입력은 여기, ② 한눈에 · ③ 자동매칭은 바로 아래 두 칸 -->
+        <p class="hm-p">등기부 · 건축물대장만 올리세요. 계약서 · 확인·설명서 칸이 자동으로 입력됩니다. 맞는 손님에게 제안하고, 알림 · 일정까지 비버노크 안에서 챙기세요. <b style="color:#fff">제안 비용은 없습니다.</b></p>
         <div class="row eqb">${S.agent ? `${partnerDoor('onDark')}` : `<button class="btn partner" data-go="#/partner/join">파트너로 가입하기</button>`}<button class="btn onDark" data-act="hp-jump" data-v="hp-f1">기능 살펴보기</button></div>
         <span class="hm-login">공인중개사 · 소유자(개인 · 법인 · 신탁 위탁자) 모두 가입하실 수 있습니다</span>
       </div>
       <div class="hm-stage">
         <figure class="hm-win lg">
-          <div class="hm-bar" aria-hidden="true"><i></i><i></i><i></i><span>파트너 대시보드</span></div>
-          <img src="img/home/dash.v2.webp" width="1600" height="956" alt="파트너 대시보드 - 오늘의 브리핑, 내 지역에 걸린 조건, 보낸 제안, 열람률, 할 일" fetchpriority="high">
+          <div class="hm-bar" aria-hidden="true"><i></i><i></i><i></i><span>계약서 작성</span></div>
+          <img src="img/home/contract.v2.webp" width="1500" height="1028" alt="계약서 작성 화면 - 등기부 · 건축물대장을 올리면 칸이 채워지고 오른쪽에 계약서가 바로 보인다" fetchpriority="high">
         </figure>
-        ${hm떠있는('D-2 중도금', '아침 9시 카카오톡 알림', 'bell', 'f1')}
+        ${hm떠있는('등기부 · 대장 올리기', '칸이 자동으로 채워집니다', 'doc', 'f1')}
         ${isMo() ? '' : hm떠있는('잔금 완료 확인', '잔금일 다음 날 챙겨 드립니다', 'check', 'f2')}
       </div>
+    </div>
+  </section>
+
+  <section class="hm-sec hp-pair-sec">
+    <div class="hm-in hp-pair">
+      <article class="hm-card lg hp-card"><h2 class="hp-pair-h">계약현황 · 매물장부 · 매칭현황을 한눈에</h2>
+        <p>여기저기 나눠져 있는 업무를 한데 모아서 한눈에 확인하세요.</p>
+        <figure class="hp-pair-img"><img src="img/home/dash.v2.webp" width="1600" height="956" loading="lazy" alt="파트너 대시보드 - 오늘의 브리핑, 계약 현황, 내 지역에 걸린 조건, 할 일"></figure></article>
+      <article class="hm-card lg hp-card"><h2 class="hp-pair-h">손님이 원하는 물건과 내 물건이 맞으면<br>자동매칭 · 자동홍보</h2>
+        <p>매물등록만 하고 끝? 등록된 매물이 찾는 손님과 자동으로 연결됩니다.</p>
+        <figure class="hp-pair-img"><img src="img/home/demands.v2.webp" width="1400" height="914" loading="lazy" alt="수요 목록 - 내 지역 · 내 물건에 맞는 손님 조건 카드"></figure></article>
     </div>
   </section>
 
@@ -14334,6 +14359,7 @@ if(typeof addEventListener === 'function'){
   addEventListener('unhandledrejection', e => { const r = e && e.reason; bk오류보내기('처리되지 않은 오류: ' + ((r && r.message) || r), (r && r.stack && (/(https?:\/\/[^\s)]+?):\d+:\d+/.exec(r.stack) || [])[1]) || location.origin, 0, 0, r && r.stack); });
 }
 const BK_변경 = [
+  { v:'26.11.24.12', 날:'2026-11-24', 줄:[ '홍보 문구 (파트너) - 파트너 안내 주제목 셋: ‘반복되는 계약업무, 이제는 편리하게 하세요’(등기부 · 대장만 올리면 자동 입력) · ‘계약현황 · 매물장부 · 매칭현황을 한눈에’(대시보드 작게) · ‘자동매칭 · 자동홍보’(매물등록만 하면 찾는 손님과 연결)', '손님 메인 첫 문구 아래 ‘내 계약 진행과정, 비버노크에서 바로 확인하세요’' ] },
   { v:'26.11.24.11', 날:'2026-11-24', 줄:[ '전수점검 · 코드리뷰 반영 - 입목 · 광업재단 · 공장재단 매매의 신고 기한이 아침 카카오톡 · 메일 알림에는 아직 가던 것', '손님 메인 문구 - 계약 대화방은 중개사무소가 초대할 때 열린다는 뜻으로' ] },
   { v:'26.11.24.10', 날:'2026-11-24', 줄:[ '메인 · 파트너 안내 홍보 문구를 지금 기능에 맞게 - 계약서는 국토교통부 전자계약 · 법무부 표준계약서 · 민간임대 · 다물건 · 확인·설명서 국가 원본과 별지(새로 만들기에서 뺀 권리양도 문구는 지움), 알림에 잔금 전 등기 다시 보기 · 현금영수증 · 공제 · 연수교육, 손님 메인에 계약 대화방 · 계약 뒤 할 일 안내' ] },
   { v:'26.11.24.9', 날:'2026-11-24', 줄:[ '손님 쪽 점검 - 계약 뒤 할 일 안내를 계약 종류에 맞게: 상가 임차인은 전입신고 대신 사업자등록 · 확정일자(임대차 신고 · 반환보증 없음), 토지 · 입목재단 임대는 전입 · 신고 · 갱신 안내 없음, 분양권 매수인은 등기 대신 명의변경 · 취득세는 입주 때, 상가 · 토지 매수인은 전입신고 없음', '안내 머리의 계약서 이름을 새 양식 이름(부동산(비주거용) 임대차 · 민간임대 · 다물건)으로, 다물건은 소재지 외 n건' ] },

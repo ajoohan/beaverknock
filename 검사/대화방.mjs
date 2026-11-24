@@ -63,12 +63,20 @@ ok((await 손(손님2, { what: 'invite-join', token: 표 })).code === 409, '다�
 ok((await 손(손님1, { what: 'invite-join', token: 표 })).body.already === true, '같은 분이 다시 누르면 그냥 들어간다');
 /* 지난 계약 서류 다시 보기 (2026-11-13 E4) - 들어온 당사자만, 확정본만, 전화번호 · 생년월일은 가림 */
 { const 원 = 계약; 계약 = { ...원, doc: { form: 'sale', parties: { seller: { name: '김매도', phone: '010-1111-2222', birth: '1970-01-01' }, buyer: { name: '이매수', phone: '010-3333-4444' } } } };
+  /* 2026-11-24 파트너 - 중개사가 '손님 화면에 계약서 공개'를 켜야 보인다(확정본이어도) */
+  const r0 = await 손(손님1, { what: 'my-room-doc', id: CID });
+  ok(r0.code === 200 && r0.body.open === false && !r0.body.doc, '손님 - 중개사가 공개를 켜기 전에는 확정본이어도 계약서가 보이지 않는다');
+  계약 = { ...계약, track: { ...(계약.track || {}), docOpen: '2026-11-24' } };
   const r1 = await 손(손님1, { what: 'my-room-doc', id: CID }), 문 = JSON.stringify(r1.body.doc || {});
   ok(r1.code === 200 && r1.body.sealed === true && /김매도/.test(문) && !/1111-2222|3333-4444|1970/.test(문) && /010-\*{4}-2222/.test(문), '손님 - 확정본 계약서를 보기 전용으로(전화번호 · 생년월일은 가림)');
   ok((await 손(손님2, { what: 'my-room-doc', id: CID })).code === 403, '손님 - 이 계약에 들어오지 않은 계정은 계약서를 못 본다');
   계약 = { ...계약, status: 'draft' };
   const r2 = await 손(손님1, { what: 'my-room-doc', id: CID });
-  ok(r2.code === 200 && r2.body.sealed === false && !r2.body.doc, '손님 - 날인 전(작성 중)이면 내용을 주지 않는다');
+  ok(r2.code === 200 && r2.body.sealed === false && r2.body.open === true && /김매도/.test(JSON.stringify(r2.body.doc || {})) && !/3333-4444/.test(JSON.stringify(r2.body.doc || {})),
+    '손님 - 중개사가 공개를 켰으면 확정 전(작성 중)에도 확정 전 계약서로 보인다(전화번호는 가림)');
+  계약 = { ...계약, track: { ...(계약.track || {}), docOpen: undefined } };
+  const r3 = await 손(손님1, { what: 'my-room-doc', id: CID });
+  ok(r3.code === 200 && r3.body.open === false && !r3.body.doc, '손님 - 공개를 끄면 다시 보이지 않는다');
   계약 = { ...원, track: 계약.track }; }
 { const 앞 = 불린.filter(x => x.m === 'PATCH').length; await 손(손님1, { what: 'invite-join', token: 표 });
   ok(불린.filter(x => x.m === 'PATCH').length === 앞, '이미 든 분이 다시 누르면 track 을 새로 쓰지 않는다(일정 저장과 부딪히지 않게)'); }

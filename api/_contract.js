@@ -674,7 +674,7 @@ export function 의무일정(설정 = 알림설정()) {
 /* arch · trash (2026-11-10 대표님 결정 1번) - 보관함으로 내린 날 · 휴지통에 넣은 날. 확정본은 휴지통까지만, 작성 중은 휴지통 30일 뒤 지운다 */
 /* signDate (2026-11-17 파트너 D14 '계약체결일') - 일반 매매 · 임대차는 계약금 일부가 들어온 날(토지거래허가는 계약일과 같아 따로 적지 않는다) */
 /* rcpt (2026-11-22 사무소 의무 달력) - 현금영수증을 발행한 날. regAt (2026-11-23) - 잔금 전 등기를 다시 본 날 · feeAt - 중개보수 받은 날 · askAt - 갱신 의사를 물은 날 */
-const TRACK_DATES = ['permitDue', 'permitApplied', 'midDate', 'balanceDate', 'guideAt', 'permitPaid', 'permitAgreed', 'permitOk', 'piAt', 'arch', 'trash', 'signDate', 'rcpt', 'regAt', 'feeAt', 'askAt'];
+const TRACK_DATES = ['permitDue', 'permitApplied', 'midDate', 'balanceDate', 'guideAt', 'permitPaid', 'permitAgreed', 'permitOk', 'piAt', 'arch', 'trash', 'signDate', 'rcpt', 'regAt', 'feeAt', 'askAt', 'docOpen'];   /* docOpen - 손님 화면에 계약서 공개한 날(11-24) */
 export const 진행상태 = { ready: '준비', doing: '진행중', done: '완료', hold: '보류', cancel: '취소' };
 export const 현장사진최대 = 20;
 export function 현장사진값(x) {

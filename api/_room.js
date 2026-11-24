@@ -398,11 +398,15 @@ export async function roomGuest(req, res, user, b) {
       if (!다음.r.ok || !다음.rows.length) break;
       지금 = 다음.rows[0];
     }
-    if (지금.status !== 'sealed') return res.status(200).json({ ok: true, sealed: false });
-    const d = await db('bk_contract', `select=form,title,sealed_at,doc&id=eq.${지금.id}&limit=1`);
+    /* 공개 (2026-11-24 파트너 '날인까지 끝나고 중개사가 승인하면 그때부터 · 손님이 요청하면 확정 전에도') - 중개사가 track.docOpen 을 켜야 보인다.
+       확정 전에 켰으면 그 판을 확정 전 계약서로, 확정되면(고쳐 쓴 판 포함) 가장 나중 확정본으로 */
+    const 열림 = !!(trackCheck(row.track || {}) || {}).docOpen;
+    if (!열림) return res.status(200).json({ ok: true, open: false, sealed: 지금.status === 'sealed' });
+    const d = await db('bk_contract', `select=form,title,status,sealed_at,doc&id=eq.${지금.id}&limit=1`);
     const r0 = d.rows[0];
     if (!d.r.ok || !r0) return res.status(502).json({ error: '계약서를 불러오지 못했습니다' });
-    return res.status(200).json({ ok: true, sealed: true, form: r0.form, title: r0.title || '', sealed_at: r0.sealed_at, doc: 초안가림(r0.doc) });
+    const 확정 = r0.status === 'sealed';
+    return res.status(200).json({ ok: true, open: true, sealed: 확정, form: r0.form, title: r0.title || '', sealed_at: 확정 ? r0.sealed_at : '', doc: 초안가림(r0.doc) });
   }
   if (b.what === 'my-room-send' || b.what === 'my-room-file') {
     if (!대화켬()) return 대화끔답(res);

@@ -409,8 +409,14 @@ const 안내잔금 = (doc, t) => 날만((t || {}).balanceDate) || 날만(((doc |
 export function 안내자료(row) {
   const d = row.doc || {}, D = d.deal || {}, P = d.property || {}, B = d.broker || {}, t = trackCheck(row.track || {}) || {};
   const mids = +D.mid > 0 ? [날만(t.midDate) || 날만(D.midDate), +D.mid2 > 0 ? 날만(D.mid2Date) : '', ...(+D.mid2 > 0 && Array.isArray(D.mids) ? D.mids.map(x => x && +x.amt > 0 ? 날만(x.date) : '') : [])].filter(Boolean).slice(0, 5) : [];
-  return { form: row.form, deal: ['jeonse', 'monthly', 'yearly'].includes(D.type) ? D.type : '',
-    addr: [P.show || P.road || '', P.detail || ''].map(v => String(v).trim()).filter(Boolean).join(' ').slice(0, 200),
+  /* 할 일 갈래 (11-24 손님 쪽 점검) - home 주거 · shop 상가 · etc 토지 · 입목재단 등 · '' 모름(예전 계약서). 전입신고 · 임대차 신고는 주거만 */
+  const sub = String(d.sub || '').trim(), use = ['home', 'biz', 'land', 'etc'].includes(d.use) ? d.use : '';
+  const kind = row.form === 'home-lease' ? 'home' : row.form === 'shop-lease' ? 'shop' : use === 'home' ? 'home' : use === 'biz' ? 'shop' : use ? 'etc'
+    : 신고대상('lease', { sub }) ? 'home' : /상가|점포|사무|공장|창고|건물|센터/.test(sub) ? 'shop' : /^(토지|대지|임야|전|답|과수원|잡종지)$/.test(sub) ? 'etc' : '';
+  const 몇 = d.multi && Array.isArray(d.items) ? d.items.length : 0;
+  return { form: row.form, deal: ['jeonse', 'monthly', 'yearly'].includes(D.type) ? D.type : '', kind, use, sub: sub.slice(0, 20),
+    ec: d.ec === 1 ? 1 : 0, priv: d.priv ? 1 : 0, multi: 몇 > 1 ? 1 : 0,
+    addr: ([P.show || P.road || '', P.detail || ''].map(v => String(v).trim()).filter(Boolean).join(' ') + (몇 > 1 ? ` 외 ${몇 - 1}건` : '')).slice(0, 200),
     cd: 날만(d.contractDate), bd: 안내잔금(d, t), mids, from: 날만((d.period || {}).from), to: 날만((d.period || {}).to),
     office: { name: String(B.office || '').slice(0, 60), phone: String(B.phone || '').slice(0, 30) } };
 }

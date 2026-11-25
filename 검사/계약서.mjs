@@ -1804,6 +1804,8 @@ ok(js.includes('고친 판 있음') && js.includes('앞 확정본도 목록에 �
   /* 전세 안전 점검 */
   const 가림 = C.초안가림({ safe: { price: 1, rights: [] }, parties: {}, specials: [] });
   ok(!('safe' in 가림), '초안 링크 · 대화방 계약서 보기에는 전세 안전 점검 칸이 나가지 않는다');
+  { const 등 = C.초안가림({ parties: {}, specials: [], ex: { ownLand: '홍길동 1970', ownBld: 'x', etcLand: 'y', etcBld: 'z', fee: 1 } });
+    ok(!('ownLand' in 등.ex) && !('ownBld' in 등.ex) && !('etcLand' in 등.ex) && !('etcBld' in 등.ex) && 등.ex.fee === 1, '손님 화면 · 초안 링크에는 등기부 소유자 · 권리 칸이 나가지 않는다(2026-11-25 보안점검)'); }
   {
     const s = js.indexOf('const CT_선순위 ='), e = js.indexOf('function ct안전다시(', s);
     const won = n => String(Math.round(+n || 0)), esc = v => String(v ?? '');

@@ -57,13 +57,17 @@ export function 일치율(d, L) {
   return { 점: 지역 + 예산 + 면적방 + 입주, 지역, 예산, 면적방, 입주 };
 }
 
+/* 매물 글 속 번호 가림 (2026-11-25 보안점검) - 휴대전화 · 일반전화 · 주민등록번호 꼴. 금액(쉼표)은 건드리지 않는다 */
+export const 글가림 = t => t == null ? t : String(t)
+  .replace(/\d{6}\s*[-–]\s*[1-8]\d{6}/g, '******-*******')
+  .replace(/0\d{1,2}[\s.-]?\d{3,4}[\s.-]?\d{4}/g, m => { const d = m.replace(/\D/g, ''); return `${d.startsWith('02') ? '02' : d.slice(0, 3)}-****-${d.slice(-4)}`; });
 /* 손님에게 보이는 물건 값 - 여기 없는 칸은 나가지 않는다 */
 function 공개(L, 사무소) {
   return {
     id: L.id, kind: L.kind, name: L.name, dong: L.dong, deal: L.deal, dep: L.dep, rent: L.rent, fee: L.fee,
     fee_basis: L.fee_basis, fee_type: L.fee_type, fee_items: L.fee_items, area: L.area, area_sup: L.area_sup, rooms: L.rooms, baths: L.baths,
     band: L.band, floor_no: L.kind === 'home' ? null : L.floor_no, bdong: L.hide_unit === false ? L.bdong : null, htype: L.htype,
-    dir: L.dir, dir_base: L.dir_base, move_in: L.move_in, musts: L.musts || [], one_line: L.one_line, note: L.note, approved: L.approved,
+    dir: L.dir, dir_base: L.dir_base, move_in: L.move_in, musts: L.musts || [], one_line: 글가림(L.one_line), note: 글가림(L.note), approved: L.approved,
     /* 0043 (2026-11-17) - 명시사항: 총 층수 · 주차 대수 · 관리비 항목, 시설 */
     floors: +L.floors || 0, parking: L.parking || '', fee_rows: Array.isArray(L.fee_rows) ? L.fee_rows : [], facs: Array.isArray(L.facs) ? L.facs : [],
     photos: 사진들(L.pics).length, pic0: 사진들(L.pics)[0] || '', opened_at: L.opened_at, changed: Array.isArray(L.price_log) && L.price_log.length ? L.price_log[L.price_log.length - 1] : null,

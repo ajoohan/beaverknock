@@ -376,6 +376,8 @@ export function 초안가림(doc) {
   Object.values(d.parties || {}).forEach(가림);
   if (Array.isArray(d.specials)) d.specials = d.specials.map(t => 글번호가림(t));
   delete d.src; delete d.edited; delete d.safe;   /* 전세 안전 점검(2026-11-22)은 중개사만 */
+  /* 등기부 소유자 · 권리 칸(이름 · 생년월일 · 주소가 든다)은 손님 화면 · 초안 링크로 내보내지 않는다 (2026-11-25 보안점검) */
+  if (d.ex && typeof d.ex === 'object') { for (const k of ['ownLand', 'ownBld', 'etcLand', 'etcBld']) delete d.ex[k]; }
   return d;
 }
 async function share(res, agent, b) {

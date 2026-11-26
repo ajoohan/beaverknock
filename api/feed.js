@@ -896,6 +896,7 @@ export default async function handler(req, res) {
 
     /* 내가 이미 보낸 조건은 표시해 준다 */
     const mine = rows.length ? await myProposalTimes(chk.agent.id, 가장오래된(rows)) : new Map();
+    const 어려움 = await 내어려움(chk.agent.id, rows.map(d => d.id));
 
     return res.status(200).json({
       ok: true,
@@ -907,7 +908,7 @@ export default async function handler(req, res) {
       need: chk.pending ? 'verify' : '',
       rows: rows.map(d => {
         const base = chk.pending ? maskDemand(d) : d;
-        return { ...base, kind_ko: KIND_KO[d.kind] || '주거', mine: mine.has(d.id), mine_at: mine.get(d.id) || null };
+        return { ...base, kind_ko: KIND_KO[d.kind] || '주거', mine: mine.has(d.id), mine_at: mine.get(d.id) || null, my_hard: 어려움.get(d.id) || '' };
       }),
     });
   } catch (e) {
@@ -945,6 +946,18 @@ export async function getDemands(q) {
    since(목록에 실린 조건 중 가장 오래된 것의 등록 시각)보다 앞선 제안은 그 조건들에 대한 것일 수 없으니
    거기서 자르고, 남은 것은 쪽으로 나눠 끝까지 읽는다(한 쪽 1000건, 최대 10쪽). */
 const PROP_PAGE = 1000, PROP_PAGES = 10;
+/* 내가 '구하기 어려워요'라고 답한 조건과 그 이유 (0047). 칸이 없거나 못 읽으면 빈 것 - 목록은 그대로 나간다.
+   다른 중개사의 답은 여기서 버린다 */
+async function 내어려움(agentId, ids) {
+  const m = new Map();
+  if (!ids.length) return m;
+  try {
+    const r = await fetch(sbUrl('bk_demand', `select=id,hard&id=in.(${ids.slice(0, 200).join(',')})`), { headers: sbHeaders() });
+    if (!r.ok) return m;
+    for (const d of await r.json()) { const x = d.hard && d.hard[agentId]; if (x && x.why) m.set(d.id, String(x.why)); }
+  } catch (e) {}
+  return m;
+}
 export async function myProposalTimes(agentId, since = null) {
   const mine = new Map();
   for (let 쪽 = 0; 쪽 < PROP_PAGES; 쪽++) {
@@ -1096,6 +1109,7 @@ async function readFitting(res, agent, pending) {
     }
 
     const mine = rows.length ? await myProposalTimes(agent.id, 가장오래된(rows)) : new Map();
+    const 어려움 = await 내어려움(agent.id, rows.map(d => d.id));
 
     return res.status(200).json({
       ok: true, agent: meAgent(agent),
@@ -1106,7 +1120,7 @@ async function readFitting(res, agent, pending) {
       need: pending ? 'verify' : '',
       rows: rows.map(d => {
         const base = pending ? maskDemand(d) : d;
-        return { ...base, kind_ko: KIND_KO[d.kind] || '주거', mine: mine.has(d.id), mine_at: mine.get(d.id) || null };
+        return { ...base, kind_ko: KIND_KO[d.kind] || '주거', mine: mine.has(d.id), mine_at: mine.get(d.id) || null, my_hard: 어려움.get(d.id) || '' };
       }),
     });
   } catch (e) {
@@ -1138,7 +1152,9 @@ async function readMine(req, res, agent) {
   try {
     const 열 = 'id,created_at,status,addr,bname,dep,rent,fee,demand_id,connected_at,report_type,read_at,msg';
     const 묻기 = s => fetch(sbUrl('bk_proposal', new URLSearchParams({ select: s, agent_id: 'eq.' + agent.id, order: 'created_at.desc', limit: '200' }).toString()), { headers: sbHeaders() });
-    let r = await 묻기(열 + ',contact_pref');
+    /* ask_at(0047) - 간단 제안에 손님이 '자세히 보고 싶어요'를 누른 때. 칸이 아직 없으면 빼고 묻는다 */
+    let r = await 묻기(열 + ',contact_pref,ask_at');
+    if (!r.ok) { const t = await r.clone().text().catch(() => ''); if (/ask_at|42703/.test(t)) r = await 묻기(열 + ',contact_pref'); }
     if (!r.ok) { const t = await r.clone().text().catch(() => ''); if (/contact_pref|42703/.test(t)) r = await 묻기(열); }
     if (!r.ok) {
       const t = await r.text();
@@ -1170,6 +1186,9 @@ async function readMine(req, res, agent) {
           id: x.id, status: x.status, status_ko: P_STATUS_KO[x.status] || x.status,
           created_at: x.created_at, connected_at: x.connected_at || null,
           bname: x.bname, addr: x.addr, dep: x.dep, rent: x.rent, fee: x.fee,
+          /* 간단 제안(한마디만) · 손님이 자세히 보고 싶다고 누른 때 (2026-11-26) */
+          quick: x.addr === '간단 제안', ask_at: x.ask_at || null, demand_id: x.demand_id,
+          ...(x.addr === '간단 제안' ? { msg: String(x.msg || '').slice(0, 300) } : {}),
           /* 맞춤매물 '보고 싶어요' 로 생긴 제안인가 · 그때 일치율 (2026-11-13 대시보드 '매칭된 물건') - 글 전체는 보내지 않는다 */
           ...(m => m ? { via: 'want', score: +m[1] } : {})(/^맞춤매물에서 손님이 ‘보고 싶어요’를 눌렀습니다 \(일치율 (\d+)점\)/.exec(String(x.msg || ''))),
           ...(m => m ? { via: 'find', score: +m[1] } : {})(/^직접 매물찾기에서 손님이 ‘보고 싶어요’를 눌렀습니다 \(조건 일치율 (\d+)점\)/.exec(String(x.msg || ''))),

@@ -28,6 +28,68 @@ export function 연락방법(x) {
   return [수단 === '상관없음' ? '전화 · 문자 상관없음' : 수단 ? `${수단} 먼저` : '', 때 && 때 !== '아무때나' ? `${때}에 편함` : 때].filter(Boolean).join(' · ');
 }
 const ROLE_KO = { agent: '공인중개사', owner: '소유자', developer: '시행사' };
+/* ── 간단 제안 · 구하기 어려워요 (2026-11-26 한실장님 결정) ──
+   간단 제안: 매물 정보 없이 한마디만. 다섯 자리 중 하나를 쓴다. 가격 · 위치를 일부만 적은 광고가 되지 않게 글만 받는다.
+     따로 칸을 두지 않고 소재지 자리에 표식을 넣는다 - 같은 조건에 한 번만(0009 의 한 번 색인이 그대로 막는다).
+     손님이 '자세히 보고 싶어요'를 누르면 ask_at(0047). 중개사가 정식 제안을 보내면 그 줄을 고쳐 쓴다(자리를 또 쓰지 않는다).
+   구하기 어려워요: bk_demand.hard(0047) = { 중개사: { why, at } }. 손님에게는 건수와 이유만 나간다 - 누가 답했는지는 나가지 않는다 */
+export const 간단주소 = '간단 제안';
+export const 어려운이유 = ['예산', '지역', '면적', '입주 시기', '그 밖에'];
+const 연락처글 = /01[016789][\s.\-]?\d{3,4}[\s.\-]?\d{4}|0\d{1,2}[\s.\-]\d{3,4}[\s.\-]\d{4}|https?:\/\/|open\.kakao/i;
+export function 어려움요약(hard) {
+  const o = hard && typeof hard === 'object' && !Array.isArray(hard) ? hard : {}, why = {};
+  let n = 0;
+  for (const v of Object.values(o)) { if (!v || !어려운이유.includes(v.why)) continue; n++; why[v.why] = (why[v.why] || 0) + 1; }
+  return n ? { n, why } : null;
+}
+async function hardReply(res, agent, b) {
+  const id = str(b.demand_id, 40), why = str(b.why, 20);
+  if (!id || !UUID.test(id)) return res.status(400).json({ error: '어느 조건인지 알 수 없습니다' });
+  if (!b.undo && !어려운이유.includes(why)) return res.status(400).json({ error: '이유를 골라 주세요' });
+  try {
+    const r = await fetch(sbUrl('bk_demand', `select=id,hard,status&id=eq.${id}&limit=1`), { headers: sbHeaders() });
+    if (!r.ok) { const t = await r.text().catch(() => '');
+      if (/hard|42703|PGRST204/.test(t)) return res.status(503).json({ error: '아직 준비 중입니다 (0047 마이그레이션 필요)' });
+      return res.status(502).json({ error: '조건을 확인하지 못했습니다' }); }
+    const d = (await r.json())[0];
+    if (!d) return res.status(404).json({ error: '없는 조건입니다' });
+    if (d.status && d.status !== 'active') return res.status(409).json({ error: '지금은 답을 받지 않는 조건입니다' });
+    const 전 = d.hard && typeof d.hard === 'object' && !Array.isArray(d.hard) ? d.hard : {}, 새 = { ...전 };
+    if (b.undo) delete 새[agent.id]; else 새[agent.id] = { why, at: new Date().toISOString() };
+    const w = await fetch(sbUrl('bk_demand', `id=eq.${id}`), { method: 'PATCH', headers: { ...sbHeaders(), Prefer: 'return=minimal' }, body: JSON.stringify({ hard: 새 }) });
+    if (!w.ok) return res.status(502).json({ error: '답을 저장하지 못했습니다' });
+    return res.status(200).json({ ok: true, hard: b.undo ? '' : why });
+  } catch (e) { console.error('[proposal:hard]', e && e.message); return res.status(502).json({ error: 'DB에 닿지 못했습니다' }); }
+}
+/* 손님이 간단 제안에 '자세히 보고 싶어요' - 연락처는 넘어가지 않는다. 중개사에게 메일로 알린다 */
+async function askDetail(req, res, user, b) {
+  const id = str(b.id, 40);
+  if (!id || !UUID.test(id)) return res.status(400).json({ error: '어느 제안인지 알 수 없습니다' });
+  try {
+    const pr = await fetch(sbUrl('bk_proposal', `select=id,demand_id,status,agent_id,addr&id=eq.${id}&limit=1`), { headers: sbHeaders() });
+    if (!pr.ok) return res.status(502).json({ error: '제안을 확인하지 못했습니다' });
+    const p = (await pr.json())[0];
+    if (!p) return res.status(404).json({ error: '없는 제안입니다' });
+    const dr = await fetch(sbUrl('bk_demand', `select=id,user_id,dongs&id=eq.${p.demand_id}&limit=1`), { headers: sbHeaders() });
+    const d = dr.ok ? (await dr.json())[0] : null;
+    if (!d || d.user_id !== user.id) return res.status(404).json({ error: '없는 제안입니다' });
+    if (p.addr !== 간단주소) return res.status(409).json({ error: '간단 제안에만 요청하실 수 있습니다' });
+    if (!['sent', 'read'].includes(p.status)) return res.status(409).json({ error: '지금은 요청할 수 없는 제안입니다' });
+    const 지금 = new Date().toISOString();
+    const w = await fetch(sbUrl('bk_proposal', `id=eq.${id}`), { method: 'PATCH', headers: { ...sbHeaders(), Prefer: 'return=minimal' },
+      body: JSON.stringify({ ask_at: 지금, status: 'read', read_at: 지금 }) });
+    if (!w.ok) { const t = await w.text().catch(() => '');
+      if (/ask_at|42703|PGRST204/.test(t)) return res.status(503).json({ error: '아직 준비 중입니다 (0047 마이그레이션 필요)' });
+      return res.status(502).json({ error: '요청을 저장하지 못했습니다' }); }
+    const ar = await fetch(sbUrl('bk_agent', `select=id,email&id=eq.${p.agent_id}&limit=1`), { headers: sbHeaders() }).catch(() => null);
+    const a = ar && ar.ok ? (await ar.json())[0] : null;
+    if (a && a.email) await notify(req, { to: a.email, subject: '손님이 자세한 제안을 요청했습니다',
+      rows: [['지역', (d.dongs || []).join(' · ') || '서울·경기'], ['요청', '간단 제안을 보고 ‘자세히 보고 싶어요’를 눌렀습니다']],
+      link: '/#/partner/proposals', cta: '정식 제안 보내기',
+      note: '보낸 제안에서 그 건을 열어 매물 정보를 채워 보내 주세요. 자리는 그대로 쓰고, 손님 연락처는 손님이 연결을 누른 뒤에 열립니다.' }).catch(() => {});
+    return res.status(200).json({ ok: true, ask_at: 지금 });
+  } catch (e) { console.error('[proposal:ask]', e && e.message); return res.status(502).json({ error: 'DB에 닿지 못했습니다' }); }
+}
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
@@ -43,6 +105,7 @@ export default async function handler(req, res) {
 
   /* 회수는 보낸 사람이 하는 일이다 - 손님 경로와 문이 다르다 */
   if (req.method === 'PATCH' && b.status === 'withdrawn') return withdraw(req, res, user, b);
+  if (req.method === 'PATCH' && b.ask === true) return askDetail(req, res, user, b);
   if (req.method === 'PATCH') return patch(req, res, user, b);
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST 또는 PATCH 만 받습니다' });
 
@@ -54,11 +117,19 @@ export default async function handler(req, res) {
   /* 직원 기능별 권한 (2026-11-10) - 대표가 '제안 보내기' 를 끈 직원 */
   if (chk.agent && chk.agent.staff && chk.agent.staff.perm && chk.agent.staff.perm.propose === false) return res.status(403).json({ error: '대표님이 제안 보내기를 꺼 두셨습니다', need: 'perm' });
 
+  if (b.hard === true) return hardReply(res, chk.agent, b);
   const demandId = str(b.demand_id, 40);
   if (!demandId || !UUID.test(demandId)) return res.status(400).json({ error: '어느 조건인지 알 수 없습니다' });
+  const 간단 = b.quick === true;
   /* 소재지는 손님 화면에 그대로 찍힌다 - 꺾쇠·따옴표는 받지 않는다(심층 방어, 화면도 거른다 · 2026-11-03 보안점검) */
-  const addr = (str(b.addr, 200) || '').replace(/[<>"'`]/g, '');
+  const addr = 간단 ? 간단주소 : (str(b.addr, 200) || '').replace(/[<>"'`]/g, '');
   if (!addr) return res.status(400).json({ error: '소재지가 없습니다' });
+  if (!간단 && addr === 간단주소) return res.status(400).json({ error: '소재지를 적어 주세요' });
+  if (간단) {
+    const 글 = str(b.msg, 300) || '';
+    if (글.length < 10) return res.status(400).json({ error: '한마디를 열 글자 이상 적어 주세요' });
+    if (연락처글.test(글)) return res.status(400).json({ error: '연락처 · 링크는 적지 않습니다 - 손님이 연결을 누르면 전달됩니다' });
+  }
 
   try {
     /* 슬롯이 남았는지 본다. 조건 하나에 다섯 곳까지가 이 서비스의 약속이다.
@@ -69,11 +140,19 @@ export default async function handler(req, res) {
     if (!dr.ok) return res.status(502).json({ error: '조건을 확인하지 못했습니다' });
     const d = (await dr.json())[0];
     if (!d) return res.status(404).json({ error: '없는 조건입니다' });
-    if (!(d.slots_left > 0)) return res.status(409).json({ error: '이 조건은 제안이 마감됐습니다' });
+    /* 자리가 남았는지는 아래에서 본다 - 간단 제안을 정식 제안으로 올릴 때는 자리가 0 이어도 된다 */
     /* 손님이 멈추거나 끝낸 조건, 기한이 지난 조건에는 보내지 않는다 (2026-11-03) */
     if ((d.status && d.status !== 'active') || (d.expires_at && Date.parse(d.expires_at) < Date.now())) {
       return res.status(409).json({ error: '지금은 제안을 받지 않는 조건입니다' });
     }
+
+    /* 간단 제안을 먼저 보낸 조건에 정식 제안을 보낸다 - 그 줄을 고쳐 쓴다. 자리를 또 쓰지 않고, 횟수에도 한 번으로 센다 */
+    let 올릴줄 = null;
+    if (!간단) {
+      const qr = await fetch(sbUrl('bk_proposal', `select=id,status&demand_id=eq.${demandId}&agent_id=eq.${chk.agent.id}&addr=eq.${encodeURIComponent(간단주소)}&status=in.(sent,read)&limit=1`), { headers: sbHeaders() });
+      if (qr.ok) 올릴줄 = (await qr.json())[0] || null;
+    }
+    if (!올릴줄 && !(d.slots_left > 0)) return res.status(409).json({ error: '이 조건은 제안이 마감됐습니다' });
 
     /* ── 보내기 횟수 (2026-11-03 보안점검) ──
        회수하면 자리가 돌아오고 주소만 조금 바꾸면 같은 조건에 또 보낼 수 있어, 보내기·회수를 되풀이하면
@@ -84,7 +163,7 @@ export default async function handler(req, res) {
         const r = await fetch(sbUrl('bk_proposal', q.toString()), { headers: sbHeaders() });
         return r.ok ? (await r.json()).length : 0;
       };
-      if (await 셈({ demand_id: 'eq.' + demandId }) >= 2) {
+      if (!올릴줄 && await 셈({ demand_id: 'eq.' + demandId }) >= 2) {
         return res.status(429).json({ error: '같은 조건에는 두 번까지만 보내실 수 있습니다' });
       }
       if (await 셈({ created_at: 'gte.' + new Date(Date.now() - 3600e3).toISOString() }) >= 20) {
@@ -129,7 +208,7 @@ export default async function handler(req, res) {
       }
       return { busy: true };
     };
-    const seat = await take();
+    const seat = 올릴줄 ? { left: d.slots_left, 그대로: true } : await take();
     if (seat.full)  return res.status(409).json({ error: '이 조건은 제안이 마감됐습니다' });
     if (seat.busy)  return res.status(409).json({ error: '다른 분이 먼저 보내는 중입니다 - 잠시 후 다시 시도해 주세요' });
     if (seat.error) { console.error('[proposal] 슬롯 확보 실패', String(seat.error).slice(0, 200));
@@ -137,6 +216,7 @@ export default async function handler(req, res) {
 
     /* 자리를 잡았으니, 넣다 실패하면 반드시 돌려준다 */
     const giveBack = async () => {
+      if (seat.그대로) return;
       await fetch(sbUrl('bk_demand', `id=eq.${demandId}&slots_left=eq.${seat.left}`), {
         method: 'PATCH', headers: { ...sbHeaders(), Prefer: 'return=minimal' },
         body: JSON.stringify({ slots_left: seat.left + 1 }),
@@ -159,10 +239,16 @@ export default async function handler(req, res) {
       bdong: str(b.bdong, 20), htype: str(b.htype, 30),
       duplex: b.duplex === true,
       move_in: str(b.move_in, 40), park: str(b.park, 40), approved: str(b.approved, 20),
-      photos: int(b.photos) || 0, msg: str(b.msg, 500),
+      photos: 간단 ? 0 : int(b.photos) || 0, msg: str(b.msg, 간단 ? 300 : 500),
     };
+    if (간단) for (const k of ['bname', 'dep', 'rent', 'fee', 'fee_type', 'fee_items', 'fee_basis', 'note', 'area_sup', 'area', 'rooms', 'baths', 'dir', 'dir_base', 'floor_mode', 'floor_no', 'band', 'bdong', 'htype', 'move_in', 'park', 'approved']) row[k] = null;
+    if (간단) row.duplex = false;
 
-    const put = body => fetch(sbUrl('bk_proposal'), {
+    const put = body => 올릴줄
+      ? fetch(sbUrl('bk_proposal', `id=eq.${올릴줄.id}&addr=eq.${encodeURIComponent(간단주소)}`), {
+          method: 'PATCH', headers: { ...sbHeaders(), Prefer: 'return=representation' },
+          body: JSON.stringify({ ...body, status: 'sent', read_at: null, created_at: new Date().toISOString() }) })
+      : fetch(sbUrl('bk_proposal'), {
       method: 'POST', headers: { ...sbHeaders(), Prefer: 'return=representation' },
       body: JSON.stringify(body),
     });
@@ -180,6 +266,7 @@ export default async function handler(req, res) {
       const t = await ir.text();
       await giveBack();
       if (/duplicate key|23505/i.test(t)) {
+        if (간단) return res.status(409).json({ error: '이 조건에는 이미 간단 제안을 보내셨습니다' });
         return res.status(409).json({ error: '이미 제안하신 물건입니다 - 같은 주소는 한 번만 보낼 수 있습니다' });
       }
       if (/relation .* does not exist|PGRST205/i.test(t)) {
@@ -189,9 +276,10 @@ export default async function handler(req, res) {
       return res.status(502).json({ error: '제안을 저장하지 못했습니다' });
     }
     const saved = (await ir.json())[0] || {};
+    if (올릴줄 && !saved.id) return res.status(409).json({ error: '간단 제안이 그 사이 바뀌었습니다 - 새로 고친 뒤 다시 보내 주세요' });
 
     const where = (d.dongs || []).join(' · ') || '서울·경기';
-    const price = `보증금 ${won(row.dep)}${row.rent ? ` / 월 ${won(row.rent)}` : ''}`;
+    const price = 간단 ? '간단 제안(한마디)' : `보증금 ${won(row.dep)}${row.rent ? ` / 월 ${won(row.rent)}` : ''}`;
 
     /* 메일 둘을 나란히 보낸다.
        줄줄이 기다리면 제안을 보낸 중개사가 그만큼 더 서 있는다.
@@ -208,7 +296,7 @@ export default async function handler(req, res) {
         subject: `새 제안 · ${where}`,
         rows: [
           ['사무소', chk.agent.office || '-'],
-          ['물건', row.bname || row.addr],
+          ['물건', 간단 ? '간단 제안' : row.bname || row.addr],
           ['가격', price],
           ['남은 슬롯', String(seat.left)],
         ],
@@ -242,7 +330,7 @@ export default async function handler(req, res) {
       }),
     ]);
 
-    return res.status(201).json({ ok: true, id: saved.id, slots_left: seat.left });
+    return res.status(201).json({ ok: true, id: saved.id, slots_left: seat.left, quick: 간단, upgraded: !!올릴줄 });
   } catch (e) {
     console.error('[proposal]', e && e.message);
     return res.status(502).json({ error: 'DB에 닿지 못했습니다' });

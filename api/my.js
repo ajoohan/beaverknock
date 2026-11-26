@@ -10,6 +10,7 @@ import { userFrom, sbHeaders, sbUrl } from './_auth.js';
 import { approvedAgent, meAgent } from './feed.js';
 import { roomGuest } from './_room.js';
 import { logOps } from './_opslog.js';
+import { 간단주소, 어려움요약 } from './proposal.js';
 import { matched, matchWant, matchPics, matchReport, matchAlert, browse } from './_match.js';
 
 const KIND_KO = { home: '주거', shop: '상가', office: '오피스', storage: '창고' };
@@ -148,6 +149,8 @@ export default async function handler(req, res) {
         /* 종료 · 멈춤과 남은 기한(연장 단추) - 빠져 있어 늘 '활성 · 30일'로 보였다(2026-11-18 점검) */
         status: d.status, expires_at: d.expires_at,
         created_at: d.created_at,
+        /* 중개사가 '구하기 어려워요'라고 답한 건수와 이유만 - 누가 답했는지는 싣지 않는다 (0047) */
+        hard: 어려움요약(d.hard),
       })),
       proposals: proposals.map(p => ({
         id: p.id, demand_id: p.demand_id, status: p.status,
@@ -155,7 +158,7 @@ export default async function handler(req, res) {
            그 이름은 조건의 종류에서 갈리므로 여기서 함께 실어 보낸다. */
         kind: (demands.find(d => d.id === p.demand_id) || {}).kind || 'home',
         by: by[p.agent_id] || '공인중개사',
-        bname: p.bname, addr_area: String(p.addr || '').split(' ').slice(0, 2).join(' '),
+        bname: p.bname, addr_area: p.addr === 간단주소 ? '' : String(p.addr || '').split(' ').slice(0, 2).join(' '),
         dep: p.dep, rent: p.rent, fee: p.fee,
         fee_type: p.fee_type, fee_items: p.fee_items, fee_basis: p.fee_basis,
         note: p.note,
@@ -169,6 +172,8 @@ export default async function handler(req, res) {
         duplex: p.duplex === true,
         move_in: p.move_in, park: p.park, approved: p.approved, photos: p.photos,
         msg: p.msg, created_at: p.created_at,
+        /* 간단 제안(한마디만) · 손님이 자세히 보고 싶다고 누른 때 (0047) */
+        quick: p.addr === 간단주소, ask_at: p.ask_at || null,
         /* '보고 싶어요'로 만든 제안 - 가격 변동 알림을 손님이 켜고 끈다(0044) */
         listing_id: p.listing_id || '', price_alert: p.price_alert,
         /* 연결한 뒤에야 상대가 누구인지 나간다. 새로고침해도 번호가 남아 있어야

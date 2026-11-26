@@ -24,6 +24,8 @@ globalThis.fetch = async (url, opt = {}) => {
     return J(m === 'POST' ? 201 : 200, [{ ...(body || {}), id: 'ls-1', created_at: new Date().toISOString() }]);
   }
   if (u.includes('/rest/v1/bk_demand')) return J(200, world.demand ?? [{ id: '11111111-1111-1111-1111-111111111111', kind: 'shop', slots_left: 3, dongs: ['미사1동'], user_id: 'cust-1', created_at: new Date().toISOString() }]);
+  /* 먼저 보낸 간단 제안이 있는지 묻는 조회(2026-11-26) - 이 검사에서는 없다 */
+  if (u.includes('/rest/v1/bk_proposal') && m === 'GET' && decodeURIComponent(u).includes('addr=eq.간단 제안')) return J(200, []);
   if (u.includes('/rest/v1/bk_proposal')) {
     if (world.noNewCols && body && 'duplex' in body)
       return J(400, { code: 'PGRST204', message: "Could not find the 'duplex' column of 'bk_proposal' in the schema cache" });

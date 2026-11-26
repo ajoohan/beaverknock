@@ -1501,6 +1501,25 @@ body.mo .hp-pair-h{font-size:19px}
 .mp-off{display:flex;flex-direction:column;gap:4px;margin-top:10px;padding:10px 12px;border-radius:12px;background:var(--n50,#F7F7F9)}
 .mp-off small{color:var(--n600,#555);font-size:12.5px}
 .mp-off .btn{align-self:flex-start;margin-top:4px}
+.qk-row{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.qk-row .btn{flex:1 1 180px}
+.qk-tip{margin:8px 0 0;font-size:13px;line-height:1.6;color:var(--n500);text-align:center}
+.qk-msg{margin:6px 0 0;padding:12px 14px;border-radius:var(--r-md);background:var(--ind50);font-size:14.5px;line-height:1.7;color:var(--n900);overflow-wrap:anywhere}
+.qk-ask{margin-top:10px;padding:12px 14px;border-radius:var(--r-md);background:var(--n50);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:13.5px;line-height:1.6;color:var(--n700)}
+.qk-ask.on{background:var(--okbg)}
+.qk-ask.on b{color:var(--ok)}
+.qk-ask span{flex:1 1 220px;min-width:0}
+.qk-card{padding:18px;display:flex;flex-direction:column;gap:10px}
+.qk-top{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.qk-by{margin-left:auto;font-size:13px;color:var(--n500)}
+.qk-note,.qk-done{margin:0;font-size:13.5px;line-height:1.6;color:var(--n700)}
+.qk-done{color:var(--ok);font-weight:700}
+.qk-btns{display:flex;gap:8px;flex-wrap:wrap}
+.qk-btns .btn{flex:1 1 140px}
+.qk-rule{margin:10px 0 0;padding-left:18px;font-size:13px;line-height:1.65;color:var(--n500)}
+.hd-note{margin:0 0 14px;padding:12px 14px;border-radius:var(--r-md);background:var(--warnbg);border:1px solid var(--warnline);display:flex;flex-direction:column;gap:6px;font-size:13.5px;line-height:1.6;color:var(--n700)}
+.hd-note b{font-size:14.5px;color:var(--n900)}
+.hd-note .btn{align-self:flex-start}
 .pg-tabs{margin:0}
 .pg-h2{margin:6px 0 0;font-size:16px;font-weight:800;letter-spacing:-.03em;color:var(--n900)}
 .pg-h2 span{font-size:13.5px;font-weight:600;color:var(--ind);margin-left:4px}
@@ -5755,8 +5774,9 @@ function myPropFromRow(x){
   const want = x.want ? 제안값(x.want.dep, x.want.rent) : '';
   return {
     id: x.id,
-    title: x.bname || x.addr || '물건',
-    price: 제안값(x.dep, x.rent, x.fee),
+    quick: !!x.quick, askAt: x.ask_at || null, demandId: x.demand_id || '', msg: x.quick ? (x.msg || '') : '',
+    title: x.quick ? '간단 제안' : x.bname || x.addr || '물건',
+    price: x.quick ? '' : 제안값(x.dep, x.rent, x.fee),
     line: [x.dongs, want].filter(Boolean).join(' · '),
     status: MP_STATUS[x.status] || x.status,
     at: agoText(x.created_at),
@@ -5793,7 +5813,8 @@ function loadMyProps(force){
 function propFromRow(p){
   return {
     id:p.id, cond:p.demand_id, isNew:p.status==='sent', read:p.status!=='sent',
-    photos:p.photos||0, title:p.bname || p.addr_area || '물건', dong:p.addr_area||'',
+    quick:!!p.quick, askAt:p.ask_at||null,
+    photos:p.photos||0, title:p.quick ? '간단 제안' : p.bname || p.addr_area || '물건', dong:p.addr_area||'',
     dep:p.dep, rent:p.rent, fee:p.fee, feeType:p.fee_type||'',
     /* 전에는 공급면적 하나만 받아 '전용' 이라고 적어 보여줬다. 둘은 다른 숫자다 */
     area:+p.area||0, areaSup:+p.area_sup||0, py:pyOf(p.area||p.area_sup),
@@ -5871,7 +5892,7 @@ function demandFromRow(d){
     /* 손님이 걸어 둔 뒤 상세를 고쳤으면 그 시각(0030) - 중개사가 바뀐 줄 알게 '조건 고침' 을 띄운다 */
     edited: d.edited_at || null,
     /* 이 중개사가 이 조건에 마지막으로 제안한 시각 - 그 뒤에 고쳤을 때만 '다시 확인' 을 띄운다 */
-    mineAt: d.mine_at || null,
+    mineAt: d.mine_at || null, myHard: d.my_hard || '',
     /* ── 매칭이 읽는 값은 **전부** 여기에 실려야 한다 ──
        matchStages 가 보는 것: dongs·deal·biz·depMax·rentMax·feeIncluded·rooms·
        musts·pyMin·pyMax·floors·htype·openWhen·parkNeed·hArea·hBath·hFloor·hDir·hAge.
@@ -8497,6 +8518,14 @@ function 손님요약HTML(){
     ${dzKpi({ ico:'doc', cap:'내 계약', v: RM.mine == null ? null : 진행.length, go: 다음 ? `#/room/${다음.r.id}` : '#/account', sub: 다음 ? `${esc(다음.이름)} ${esc(gm날(다음.날))}` : 계약.length ? `지난 계약 ${계약.length - 진행.length}건` : '계약하면 일정이 여기에' })}
   </div>`;
 }
+/* 중개사가 '구하기 어려워요'라고 답한 조건 (2026-11-26) - 건수와 이유만. 누가 답했는지는 서버가 보내지 않는다 */
+function 어려움글(c){
+  const h = c && c.src && c.src.hard; if(!h || !h.n || ['closed','expired'].includes(c.status)) return '';
+  const 이유 = Object.entries(h.why || {}).sort((a, b) => b[1] - a[1]).map(([k, n]) => `${esc(k)} ${n}`).join(' · ');
+  return `<div class="hd-note" role="note"><b>중개사 ${h.n}곳이 ‘구하기 어려워요’라고 답했습니다</b>
+    <span>${이유 ? `이유: ${이유}. ` : ''}그 부분을 조금 넓히면 제안이 올 가능성이 높아집니다.</span>
+    ${c.seed ? '' : `<button class="btn sec sm" data-act="cond-edit" data-v="${c.id}">조건 고치기</button>`}</div>`;
+}
 V['#/my'] = () => {
   const rows = S.conds.map(c=>{
     const cnt = S.props.filter(p=>p.cond===c.id && p.status!=='hidden').length;
@@ -8509,6 +8538,7 @@ V['#/my'] = () => {
       </div>
       <b style="display:block;font-size:${isMo()?15:16}px;font-weight:700;letter-spacing:-.02em;margin-bottom:6px">${esc(c.title)} ${demoTag(c,'vertical-align:middle')}${unsavedTag(c)}</b>
       <div class="lines" style="margin-bottom:14px">${c.lines.map(esc).join('<br>')}</div>
+      ${어려움글(c)}
       ${c.status!=='closed'? `
         <div style="background:var(--n50);border-radius:var(--r-md);padding:4px 14px 14px;margin-bottom:14px">
           <!-- 오른쪽 링크는 누를 자리가 44px 이라 키가 크다 - 가운데로 맞춰야 왼쪽 글과 한 줄에 선다 -->
@@ -8581,7 +8611,16 @@ V['#/my'] = () => {
 V['#/inbox'] = () => {
   const cond = S.conds.find(c=>c.id===S.inboxCond) || S.conds[0];
   const list = cond? S.props.filter(p=>p.cond===cond.id && p.status!=='hidden') : [];
-  const card = p => `
+  const card = p => p.quick ? `
+    <div class="card ${p.isNew?'hi':''} fade qk-card">
+      <div class="qk-top"><span class="badge b-ind">간단 제안</span>${p.isNew ? '<span class="badge b-ind" style="background:var(--ind);color:#fff">NEW</span>' : ''}<span class="qk-by">${esc(p.by)} · ${esc(p.at)}</span></div>
+      <p class="qk-msg">“${esc(p.msg)}”</p>
+      <p class="qk-note">매물 정보 없이 한마디만 보낸 제안입니다. ‘자세히 보고 싶어요’를 누르면 중개사가 매물 정보를 채워 다시 보냅니다. 연락처는 넘어가지 않습니다.</p>
+      ${p.askAt ? `<p class="qk-done">요청했습니다 - 중개사가 매물 정보를 채워 보내면 제안함에 새 제안으로 옵니다.</p>` : ''}
+      <div class="eqb qk-btns">
+        ${p.askAt ? '' : `<button class="btn pri md" data-act="qk-ask" data-v="${p.id}" ${S.qkAsking ? 'disabled' : ''}>자세히 보고 싶어요</button>`}
+        <button class="btn sec md" data-act="reject" data-v="${p.id}" ${S.rejecting ? 'disabled' : ''}>관심 없음</button></div>
+    </div>` : `
     <div class="card ${p.isNew?'hi':''} clickable fade" data-go="#/proposal/${p.id}" style="overflow:hidden;${p.read&&!p.isNew?'background:var(--n50);box-shadow:none':''}">
       <div style="height:${isMo()?128:150}px;background:${p.photos?'var(--ind100)':'var(--n100)'};display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden">
         ${제안사진(p) ? `<img src="${제안사진(p, 0, true)}" alt="" loading="lazy" decoding="async" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">`
@@ -8725,7 +8764,7 @@ V['#/matched'] = () => {
   </div>
   ${tabbar('match','u')}
 </div>`;};
-V['#/proposal'] = (id) => { const p=S.props.find(x=>x.id===id); if(!p) return V['#/inbox']();
+V['#/proposal'] = (id) => { const p=S.props.find(x=>x.id===id); if(!p || p.quick) return V['#/inbox']();
   p.read=true; p.isNew=false;
   /* 손님이 열었다는 것을 서버에도 남긴다 - 전에는 화면에서만 읽음이라 중개사 쪽은 늘 '미열람' 이었고
      다시 불러오면 '새 제안' 뱃지가 되살아났다(2026-11-03 리뷰). 한 번만 보낸다 */
@@ -9248,6 +9287,10 @@ V['#/partner/demand'] = (id) => { const d=S.demands.find(x=>x.id===id); if(!d) r
     <div style="margin-top:auto;padding-top:8px">
       ${!권한('propose') ? '<p class="sub" style="margin:0;font-size:13.5px">제안 보내기는 대표님이 꺼 두셨습니다</p>' : ''}<button class="btn pri blk" data-act="start-propose" data-v="${d.id}" ${권한('propose') ? '' : 'disabled hidden'}>${listingsFor(d).length?'새로 작성해서 제안하기':'이 손님에게 제안하기'} (약 90초)</button>
       <p style="margin:10px 0 0;text-align:center;font-size:13.5px;color:var(--n500)">누르면 슬롯 1건이 15분간 예약됩니다 · 손님의 성함·연락처는 연결 확정 전까지 표시되지 않습니다</p>
+      ${권한('propose') && !d.locked && !ownerSide() ? `<div class="qk-row eqb">
+        <button class="btn sec md" data-act="qk-open" data-v="${d.id}" ${d.mine ? 'disabled' : ''}>${d.mine ? '이미 제안한 조건' : '간단 제안 (한마디만)'}</button>
+        <button class="btn sec md" data-act="hd-open" data-v="${d.id}">${d.myHard ? `구하기 어려워요 · ‘${esc(d.myHard)}’ 답함` : '구하기 어려워요'}</button></div>
+      <p class="qk-tip">간단 제안은 매물 정보 없이 한마디만 보냅니다 · 다섯 자리 중 하나를 씁니다. ‘구하기 어려워요’는 자리를 쓰지 않고, 손님에게 건수와 이유만 전합니다(사무소 이름은 나가지 않습니다).</p>` : ''}
     </div>
   </div>
 </div>`;};
@@ -9410,8 +9453,11 @@ V['#/partner/proposals'] = () => {
         <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap">
           <b style="font-size:15px;font-weight:700;letter-spacing:-.02em">${esc(p.title)} ${demoTag(p,'vertical-align:middle')}</b>
           <span class="badge ${b[0]}">${esc(b[1])}</span></div>
-        <span class="num" style="font-size:14.5px;color:var(--n700)">${esc(p.price)}</span>
+        ${p.quick ? `<p class="qk-msg">“${esc(p.msg)}”</p>` : `<span class="num" style="font-size:14.5px;color:var(--n700)">${esc(p.price)}</span>`}
         ${p.line ? `<span style="display:block;font-size:13.5px;color:var(--n500);margin-top:2px">손님 조건: ${esc(p.line)}</span>` : ''}
+        ${p.quick && ['sent','viewed'].includes(p.status) ? `<div class="qk-ask ${p.askAt ? 'on' : ''}">
+          <span>${p.askAt ? '<b>손님이 자세히 보고 싶어 합니다</b> - 매물 정보를 채워 정식 제안을 보내 주세요. 자리는 그대로 씁니다.' : '한마디만 보낸 제안입니다. 손님이 ‘자세히 보고 싶어요’를 누르면 메일로 알려 드립니다.'}</span>
+          <button class="btn ${p.askAt ? 'pri' : 'sec'} sm" data-act="qk-full" data-v="${esc(p.demandId)}">정식 제안 보내기</button></div>` : ''}
         ${p.status==='selected'&&p.cphone? `<div style="margin-top:10px;background:var(--okbg);padding:12px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
           <span style="font-size:13px;font-weight:700;color:var(--ok)">손님 연락처</span>
           <span class="num" style="font-size:16px;font-weight:700;color:var(--ok)">${esc(p.cphone)}</span>${p.cpref ? `<span class="cn-pref-t">손님 희망: ${esc(p.cpref)}</span>` : ''}
@@ -11608,6 +11654,27 @@ function modalHTML(){
         <button type="button" class="btn ${m.위험 ? 'warn' : 'pri'}" data-act="ask-yes">${esc(m.예)}</button></div>
     </div></div>`; }
   /* 업데이트 내역 - 왼쪽 메뉴 아래 버전을 누르면 */
+  if(S.modal.type==='qk'){ const m = S.modal, d = (S.demands || []).find(x => x.id === m.id) || {};
+    return `<div class="modal" data-act="modal-bg"><div class="box" data-stop role="dialog" aria-modal="true" aria-labelledby="mdT" tabindex="-1" style="max-width:520px">
+      <h2 id="mdT" style="margin:0 0 4px;font-size:16px;font-weight:700;letter-spacing:-.03em">간단 제안 보내기</h2>
+      <p style="margin:0 0 12px;font-size:13.5px;line-height:1.6;color:var(--n700)">${esc(d.region || '')} 손님에게 한마디만 보냅니다. 손님이 ‘자세히 보고 싶어요’를 누르면 매물 정보를 채워 정식 제안으로 이어 가세요.</p>
+      <label class="lab" for="qk-msg">한마디 (10~300자)</label>
+      <textarea class="inp" id="qk-msg" rows="4" maxlength="300" placeholder="예) 말씀하신 조건에 가까운 매물을 두 건 가지고 있습니다. 입주 시기도 맞출 수 있습니다.">${esc(m.msg || '')}</textarea>
+      <ul class="qk-rule"><li>가격 · 주소 같은 매물 정보는 적지 않습니다 - 일부만 적으면 표시 · 광고 명시사항이 빠진 광고가 될 수 있습니다.</li>
+        <li>전화번호 · 링크는 적을 수 없습니다. 연락처는 손님이 연결을 누른 뒤에 오갑니다.</li>
+        <li>다섯 자리 중 하나를 씁니다. 손님이 7일 동안 열지 않으면 자리는 돌아갑니다.</li></ul>
+      <div class="eqb" style="display:flex;gap:8px;margin-top:14px"><button class="btn sec" data-act="modal-close" style="flex:1">닫기</button>
+        <button class="btn pri" data-act="qk-send" data-v="${esc(m.id)}" style="flex:1" ${S.qkBusy ? 'disabled' : ''}>${S.qkBusy ? '보내는 중…' : '보내기'}</button></div>
+    </div></div>`; }
+  if(S.modal.type==='hd'){ const m = S.modal, d = (S.demands || []).find(x => x.id === m.id) || {};
+    return `<div class="modal" data-act="modal-bg"><div class="box" data-stop role="dialog" aria-modal="true" aria-labelledby="mdT" tabindex="-1" style="max-width:480px">
+      <h2 id="mdT" style="margin:0 0 4px;font-size:16px;font-weight:700;letter-spacing:-.03em">구하기 어려워요</h2>
+      <p style="margin:0 0 12px;font-size:13.5px;line-height:1.6;color:var(--n700)">이 조건으로는 매물을 구하기 어려운 까닭을 하나 골라 주세요. 손님에게는 ‘중개사 n곳 · 이유’만 보이고 사무소 이름은 나가지 않습니다. 자리는 쓰지 않습니다.</p>
+      <div class="chips" role="group" aria-label="어려운 이유">${HD_이유.map(t => `<button class="chip ${m.why === t ? 'on' : ''}" data-act="hd-pick" data-v="${t}" aria-pressed="${m.why === t}">${t}</button>`).join('')}</div>
+      <div class="eqb" style="display:flex;gap:8px;margin-top:16px">
+        ${d.myHard ? `<button class="btn sec" data-act="hd-undo" data-v="${esc(m.id)}" style="flex:1" ${S.hdBusy ? 'disabled' : ''}>답 취소</button>` : `<button class="btn sec" data-act="modal-close" style="flex:1">닫기</button>`}
+        <button class="btn pri" data-act="hd-send" data-v="${esc(m.id)}" style="flex:1" ${S.hdBusy ? 'disabled' : ''}>${S.hdBusy ? '보내는 중…' : '답하기'}</button></div>
+    </div></div>`; }
   if(S.modal.type==='ver') return `<div class="modal" data-act="modal-bg"><div class="box" data-stop role="dialog" aria-modal="true" aria-labelledby="mdT" tabindex="-1" style="max-width:560px">
       <h2 id="mdT" style="margin:0 0 4px;font-size:16px;font-weight:700;letter-spacing:-.03em">업데이트 내역</h2>
       <p style="margin:0 0 16px;font-size:14px;color:var(--n500)">지금 쓰시는 버전은 <b style="color:var(--n900)">${esc(BK_VER.v)}</b> · ${버전날짜(BK_VER.날)}입니다.</p>
@@ -13691,6 +13758,7 @@ function navAuth(which){
 /* 오른쪽 위 내 이름 - 누르면 펼쳐진다 (2026-10-17).
    내 것(내 조건·받은 제안)과 로그아웃은 여기에 모은다. 휴대폰에서는 이름을 빼고 얼굴만 둔다. */
 /* 안 읽은 받은 제안 수 - 서버 상태가 'sent'(손님이 아직 안 연 것)인 것. 예시는 세지 않는다 */
+const HD_이유 = ['예산', '지역', '면적', '입주 시기', '그 밖에'];
 const 새제안수 = () => S.user ? (S.props || []).filter(p => p.isNew && !p.seed).length : 0;
 /* 뱃지를 위해 내 조건을 미리 받아 두는 화면 - 입력칸이 없는 곳만 */
 const BADGE_ROUTES = ['#/', '#/guide', '#/faq'];
@@ -14617,6 +14685,7 @@ if(typeof addEventListener === 'function'){
   addEventListener('unhandledrejection', e => { const r = e && e.reason; bk오류보내기('처리되지 않은 오류: ' + ((r && r.message) || r), (r && r.stack && (/(https?:\/\/[^\s)]+?):\d+:\d+/.exec(r.stack) || [])[1]) || location.origin, 0, 0, r && r.stack); });
 }
 const BK_변경 = [
+  { v:'26.11.26.11', 날:'2026-11-26', 줄:[ '간단 제안 (파트너) - 손님 조건 화면에서 매물 정보 없이 한마디만 보냅니다(다섯 자리 중 하나 · 가격 · 주소 · 연락처는 적지 않음). 손님이 ‘자세히 보고 싶어요’를 누르면 메일로 알리고, 보낸 제안에서 ‘정식 제안 보내기’로 같은 자리에 매물 정보를 채워 보냅니다', '구하기 어려워요 (파트너) - 조건이 까다로울 때 이유(예산 · 지역 · 면적 · 입주 시기 · 그 밖에)를 골라 답합니다. 자리를 쓰지 않고, 손님의 내 조건에는 ‘중개사 n곳 · 이유’만 보입니다(사무소 이름은 나가지 않음)' ] },
   { v:'26.11.26.10', 날:'2026-11-26', 줄:[ '파트너 안내 화면의 ‘1:1 제안’ 그림을 지금 화면(손님 조건 · 진행 중 · 보낸 제안 탭, 수락 단추)으로 다시 찍어 바꿨습니다' ] },
   { v:'26.11.26.9', 날:'2026-11-26', 줄:[ '전수점검 - 파트너 안내 화면의 그림 설명에 남아 있던 옛 이름 ‘수요 목록’을 ‘1:1 제안’으로' ] },
   { v:'26.11.26.8', 날:'2026-11-26', 줄:[ '매물 화면 점검 - 보낸 제안이 없을 때 나오던 ‘서울·경기에서 12명의 손님이 기다립니다’는 실제 수가 아닌 예시 숫자라 뺐습니다. 단추는 ‘손님 조건 보기’로', '옛 메뉴 이름(수요 목록 · 내 제안)이 남아 있던 도움말 · 시작 가이드 · 휴대폰 위 메뉴를 ‘1:1 제안 · 손님 조건 · 보낸 제안 · 매물매칭’으로 맞췄습니다', '종 알림 숫자가 화면마다 다르게(0 · 2 · 3) 보이던 것 - 계약서 · 매물장부를 늦게 받아도 받는 즉시 다시 셉니다' ] },
@@ -24566,6 +24635,49 @@ function handle(a,v,el){
     /* 공급자 */
     case 'dfilter': S.form.dfilter=v; render(); return true;
     case 'ptab': S.form.ptab=v; render(); return true;
+    /* 간단 제안 · 구하기 어려워요 (2026-11-26) */
+    case 'qk-open': S.modal = { type:'qk', id:v, msg:'' }; render(); setTimeout(() => { const t = $('#qk-msg'); if(t) t.focus(); }, 60); return true;
+    case 'qk-send': { const 칸 = $('#qk-msg'), 글 = (칸 ? 칸.value : '').trim(), d2 = (S.demands || []).find(x => x.id === v);
+      if(S.modal) S.modal.msg = 글;
+      if(글.length < 10) return toast('한마디를 열 글자 이상 적어 주세요'), true;
+      if(S.qkBusy) return true;
+      if(d2 && d2.seed){ S.modal = null; toast('예시 조건입니다 - 실제 손님 조건에서 보내 보세요'); render(); return true; }
+      S.qkBusy = true; render();
+      apiFetch('/api/proposal', { method:'POST', body: JSON.stringify({ demand_id: v, quick: true, msg: 글 }) })
+        .then(r => r.json().catch(() => ({})).then(j => { S.qkBusy = false;
+          if(!(r.ok && j.ok)){ render(); return toast(j.error || '간단 제안을 보내지 못했습니다'); }
+          if(d2){ d2.slotsLeft = j.slots_left; d2.mine = true; d2.mineAt = new Date().toISOString(); }
+          S.myprops.unshift({ id: j.id, quick: true, msg: 글, demandId: v, title: '간단 제안', price: '', line: d2 ? `${d2.region} · ${d2.lines[0] || ''}` : '', status: 'sent', at: '방금', expires: 7 });
+          S.modal = null; S.mpAt = 0; toast('간단 제안을 보냈습니다 - 손님 제안함으로 전달됐습니다'); render(); }))
+        .catch(() => { S.qkBusy = false; render(); toast('네트워크 문제로 보내지 못했습니다'); });
+      return true; }
+    case 'qk-full': { const dm2 = (S.demands || []).find(x => x.id === v);
+      if(!dm2) return toast('이 손님 조건이 지금 목록에 없습니다 - 마감됐거나 손님이 조건을 내렸습니다'), true;
+      return handle('start-propose', v, el); }
+    case 'qk-ask': { const p = S.props.find(x => x.id === v); if(!p || S.qkAsking) return true;
+      if(p.seed){ p.askAt = new Date().toISOString(); toast('요청했습니다'); render(); return true; }
+      S.qkAsking = true; render();
+      apiFetch('/api/proposal', { method:'PATCH', body: JSON.stringify({ id: v, ask: true }) })
+        .then(r => r.json().catch(() => ({})).then(j => { S.qkAsking = false;
+          if(!(r.ok && j.ok)){ render(); return toast(j.error || '요청하지 못했습니다'); }
+          p.askAt = j.ask_at || new Date().toISOString(); p.isNew = false; p.read = true; p.status = 'viewed';
+          toast('요청했습니다 - 중개사가 매물 정보를 채워 보내면 알려 드립니다'); render(); }))
+        .catch(() => { S.qkAsking = false; render(); toast('네트워크 문제로 요청하지 못했습니다'); });
+      return true; }
+    case 'hd-open': { const d3 = (S.demands || []).find(x => x.id === v); S.modal = { type:'hd', id:v, why: (d3 && d3.myHard) || '' }; render(); return true; }
+    case 'hd-pick': if(S.modal && S.modal.type === 'hd'){ S.modal.why = v; render(); } return true;
+    case 'hd-send': case 'hd-undo': { const m = S.modal, d3 = (S.demands || []).find(x => x.id === v), 취소 = a === 'hd-undo';
+      if(!취소 && !(m && m.why)) return toast('이유를 하나 골라 주세요'), true;
+      if(S.hdBusy) return true;
+      if(d3 && d3.seed){ d3.myHard = 취소 ? '' : m.why; S.modal = null; toast(취소 ? '답을 취소했습니다' : '답했습니다'); render(); return true; }
+      S.hdBusy = true; render();
+      apiFetch('/api/proposal', { method:'POST', body: JSON.stringify({ hard: true, demand_id: v, why: m && m.why, undo: 취소 }) })
+        .then(r => r.json().catch(() => ({})).then(j => { S.hdBusy = false;
+          if(!(r.ok && j.ok)){ render(); return toast(j.error || '답을 보내지 못했습니다'); }
+          if(d3) d3.myHard = j.hard || ''; S.modal = null;
+          toast(취소 ? '답을 취소했습니다' : '답했습니다 - 손님에게 건수와 이유만 전해집니다'); render(); }))
+        .catch(() => { S.hdBusy = false; render(); toast('네트워크 문제로 보내지 못했습니다'); });
+      return true; }
     case 'start-propose': { const dm=S.demands.find(x=>x.id===v);
       /* 활동 지역을 정하지 않은 채로는 제안을 보낼 수 없다. 어디까지 가실 수 있는지
          모르는 상태로 손님에게 제안이 나가면 헛걸음이 그대로 손님 몫이 된다. */

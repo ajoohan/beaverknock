@@ -866,6 +866,15 @@ return ct부동산글;`)((d, k) => ({ property: k === 0 ? (d.property || {}) : (
      && !M.ct일정목록({ form: 'sale', use: 'etc', cd: '2026-12-01', bd: '2027-01-10' }).some(e => e.k === 'report')
      && M.ct일정목록({ form: 'sale', use: 'land', cd: '2026-12-01', bd: '2027-01-10' }).some(e => e.k === 'report'),
     '입목 · 광업재단 · 공장재단 매매는 실거래신고 알림 · 도우미를 끈다');
+  /* 쪽 나눔 (11-26 파트너) - 특약이 있으면 인적사항 다음 쪽에 특약(맨 위 물건 상자), 당사자가 많으면 특약 다음에 인적사항, 특약이 없으면 예전 순서 */
+  { const 쪽 = M.ctNewDoc('sale', null, { cat: 'realty', use: 'home' }); 쪽.specials = ['가', '나']; 쪽.parties.seller = { name: '김매도' };
+    const h1 = M.ctDocHTML(쪽), 별 = h1.indexOf('<section class="ct-page ct-cont">');
+    const 많 = M.ctNewDoc('sale', null, { cat: 'realty', use: 'home' }); 많.specials = ['가']; 많.parties.seller = { name: '김', co: [{ name: '둘' }, { name: '셋' }] }; 많.parties.buyer = { name: '이', co: [{ name: '넷' }] };
+    const h2 = M.ctDocHTML(많), 별2 = h2.indexOf('<section class="ct-page ct-cont">');
+    const 없 = M.ctNewDoc('sale', null, { cat: 'realty', use: 'home' }); 없.specials = [];
+    ok(별 > 0 && h1.indexOf('<table class="ct-sign">') < 별 && h1.indexOf('<h2>[특약사항]</h2>') > 별 && /class="ct-contbox"[\s\S]*김매도/.test(h1.slice(별)) && h1.includes('<thead><tr><td><table class="ct-contbox">')
+       && 별2 > 0 && h2.indexOf('<table class="ct-sign">') > 별2 && !M.ctDocHTML(없).includes('ct-cont'),
+      '쪽 나눔 - 인적사항 다음 쪽에 특약(쪽마다 물건 상자) · 당사자가 많으면 특약 다음에 인적사항 · 특약이 없으면 예전 순서'); }
   /* 전자계약 매매 - 융자금 줄, 승계 금액은 잔금에서 뺀다 */
   const 융 = M.ctNewDoc('sale', null, { cat: 'realty', use: 'home' }); 융.deal = { ...융.deal, price: 500000000, down: 50000000, keepLoan: 100000000, keepDep: 50000000 };
   ok(/<th class="w">융자금<\/th>/.test(M.ctDocHTML(융)) && M.ctBalance(융.deal) === 300000000, '전자계약 매매 - 융자금 · 임대보증금 승계 줄, 잔금에서 뺀다');

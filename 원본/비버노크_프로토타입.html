@@ -2394,6 +2394,13 @@ body.mo .ctw-st{padding:12px}
 .ctw-cat.on b{color:var(--ind700);font-weight:700}
 .ctw-sep{display:block;height:1px;margin:8px 4px;background:var(--n200)}
 .ctdoc .ct-page{break-before:page;margin-top:32px;padding-top:24px;border-top:2px dashed var(--n200)}
+/* 특약 별지 쪽 (2026-11-26) - 맨 위 물건 상자는 표 머리라 인쇄 때 쪽마다 되풀이 */
+.ctdoc .ct-contwrap{width:100%;border-collapse:collapse;border:0;margin:0}
+.ctdoc .ct-contwrap>thead>tr>td,.ctdoc .ct-contwrap>tbody>tr>td{border:0;padding:0;vertical-align:top}
+.ctdoc .ct-contwrap>thead{display:table-header-group}
+.ctdoc .ct-contbox{width:100%;margin:0 0 14px;border:1.5px solid #333}
+.ctdoc .ct-contbox th{width:13%;white-space:nowrap}
+.ctdoc .ct-sp-ref{margin:.8em 0;font-weight:600}
 @media print{.ctdoc .ct-page{border-top:none;margin-top:0;padding-top:0}}
 .ct-mi{padding:12px 0;border-top:1px solid var(--n100)}
 .ct-mi:first-of-type{border-top:none}
@@ -14434,6 +14441,7 @@ if(typeof addEventListener === 'function'){
   addEventListener('unhandledrejection', e => { const r = e && e.reason; bk오류보내기('처리되지 않은 오류: ' + ((r && r.message) || r), (r && r.stack && (/(https?:\/\/[^\s)]+?):\d+:\d+/.exec(r.stack) || [])[1]) || location.origin, 0, 0, r && r.stack); });
 }
 const BK_변경 = [
+  { v:'26.11.26.2', 날:'2026-11-26', 줄:[ '계약서 쪽 나눔 (파트너) - 특약이 있으면 첫 쪽은 부동산 표시 · 계약내용 · 인적사항으로 끝나고, 특약은 다음 쪽(별지)으로. 다음 쪽마다 맨 위에 물건 상자(목적물 · 당사자 · 계약서 · 계약일)가 인쇄됩니다. 당사자가 많으면(5명 넘음 · 공동중개 둘 넘음) 특약 다음에 인적사항' ] },
   { v:'26.11.26', 날:'2026-11-26', 줄:[ '계약서에 직접 입력 (파트너) - 당사자마다 개인 · 법인 고르기, 매도인(임대인) 계좌 넣기, 특약은 한 칸에서 원하는 줄 끝에 엔터로 바로 아래 줄 추가(‘+ 특약 줄 추가’는 뺌 · 번호는 칸을 떠날 때 다시 매김), 추가특약 보기(전문 · 넣기 · 특약 관리에서 고치기)', '영수증 - 문구 없이 계약금 · 중도금 · 잔금 · 보증금반환금 단추만(보증금 반환 영수증 탭을 여기로)', '잔금정산서 - 관리비 칸 안에서 바로 항목 추가' ] },
   { v:'26.11.25', 날:'2026-11-25', 줄:[ '보안 · 개인정보 점검 - 손님 계약서 보기 · 초안 링크에서 등기부 소유자 · 권리 칸도 빼고, 매물 글(한 줄 · 설명)에 적힌 전화번호 · 주민번호 꼴은 가려서 손님에게 보냅니다', '브라우저 권한 정책 - 카메라 · 마이크 · 위치를 쓰지 않는다고 밝혀 둡니다(사진은 파일 고르기로)' ] },
   { v:'26.11.24.18', 날:'2026-11-24', 줄:[ '점검 - 잔금 준비서류 이미지가 사무소에서 고쳐 둔 ‘잔금 준비물 안내’ 문자 틀의 목록을 따릅니다(고치지 않았으면 기본 목록)', '카카오톡 채널 저장이 다른 설정 저장과 겹쳐 서로 지우지 않게 · 직접 매물찾기는 5분 지나면 새로 읽고 로그아웃하면 비웁니다' ] },
@@ -17167,7 +17175,7 @@ function ctDocHTML(doc){
     return CT편집칸 && i >= 0 && ct빈칸조항(base) && !/\{\{조:/.test(c.text)
       ? `<span class="ct-ed" contenteditable="plaintext-only" spellcheck="false" data-cte="ctc:${i}" data-ml="1" data-ph="">${esc(c.text)}</span>` : 글(c.text); };
   const sp = (doc.specials||[]).filter(s => String(s||'').trim());
-  return `
+  return ct특약별지(doc, sp, `
   <div class="ctdoc${ct글꼴(doc) === 'sans' ? ' f-sans' : ''}">
     ${새이름 ? `<h1 class="nm">${esc(이름)}</h1>` : `<h1>${F.h1}</h1>`}
     ${표준 ? `<p class="kind"><span class="ct-box">${D.type === 'monthly' && +D.deposit > 0 ? '✔' : ''}</span> 보증금 있는 월세 &nbsp; <span class="ct-box">${D.type === 'jeonse' ? '✔' : ''}</span> 전세 &nbsp; <span class="ct-box">${D.type === 'monthly' && !(+D.deposit > 0) ? '✔' : ''}</span> 월세</p>` : ''}
@@ -17265,7 +17273,24 @@ function ctDocHTML(doc){
     </table>
     <p class="ct-foot">이 양식은 비버노크가 ${(근거 => `${esc(근거)}${/따라$/.test(근거) ? ' ' : '해 '}만든 작성 도구입니다.`)(전자 && !맞춤 ? '국토교통부 부동산거래 전자계약 양식을 따라' : F.foot || '')} 내용은 작성자가 확인하고 고쳐 쓰셔야 합니다.</p>
     ${CT편집칸 && doc.form === 'home-lease' && !F.priv ? `<p class="ex-ax-pick noprint"><span>임차주택 표시</span><button type="button" class="chip${doc.annex === '별지로' ? '' : ' on'}" data-act="ex1" data-v="annex|본문에 적기">본문에 적기</button><button type="button" class="chip${doc.annex === '별지로' ? ' on' : ''}" data-act="ex1" data-v="annex|별지로">별지 붙이기</button></p>` : ''}
-  </div>${doc.form === 'home-lease' && !F.priv && doc.annex === '별지로' ? ct주택별지HTML(doc) : ''}`;
+  </div>${doc.form === 'home-lease' && !F.priv && doc.annex === '별지로' ? ct주택별지HTML(doc) : ''}`);
+}
+/* 쪽 나눔 (2026-11-26 파트너 '인적사항은 첫 쪽에서 끝나고 특약이 다음 쪽으로 · 넘어가는 쪽마다 맨 위에 물건 상자 ·
+   당사자가 너무 많으면 특약 다음에 인적사항') - 그린 서류를 [특약] [맺음 · 날짜] [서명표] 로 잘라 다시 놓는다.
+   특약이 없으면(손으로 적을 빈 줄) 예전 순서 그대로. 다음 쪽은 표 머리(thead)에 상자를 둬 인쇄할 때 쪽마다 되풀이된다 */
+function ct특약별지(doc, sp, html){
+  const a = html.indexOf('<h2>[특약사항]</h2>'), c = html.indexOf('<p class="ct-close">'), g = html.indexOf('<table class="ct-sign">'), f = html.indexOf('<p class="ct-foot">');
+  if(!(sp.length || CT편집칸) || a < 0 || c < a || g < c || f < g) return html;
+  const 앞 = html.slice(0, a), 특약 = html.slice(a, c), 맺음 = html.slice(c, g), 서명 = html.slice(g, f), 뒤 = html.slice(f);
+  const F = ct양식(doc) || {}, P = doc.parties || {}, 사람 = k => { const x = P[k] || {}; return 1 + (x.co || []).length + (x.proxy ? 1 : 0); };
+  const 인원 = 사람((F.a || [])[0]) + 사람((F.b || [])[0]), 많음 = 인원 > 4 || (doc.coBrokers || []).length > 1;
+  const 이름 = k => ct이름외((P[k] || {})) || '', 소재 = (typeof ct부동산글 === 'function' ? ct부동산글(doc) : String((doc.property || {}).show || (doc.property || {}).road || '').trim()) || '소재지 미입력';
+  const 상자 = `<table class="ct-contbox"><tr><th>목적물</th><td colspan="3">${esc(소재)}</td></tr>
+      <tr><th>${esc(ct짧은이름((F.a || [])[1] || '매도인'))}</th><td>${esc(이름((F.a || [])[0])) || 빈칸(80)}</td><th>${esc(ct짧은이름((F.b || [])[1] || '매수인'))}</th><td>${esc(이름((F.b || [])[0])) || 빈칸(80)}</td></tr>
+      <tr><th>계약서</th><td>${esc(ctTitle(doc))}</td><th>계약일</th><td>${ct날짜(doc.contractDate) || 빈칸(80)}</td></tr></table>`;
+  const 다음쪽 = 속 => `<section class="ct-page ct-cont"><table class="ct-contwrap"><thead><tr><td>${상자}</td></tr></thead><tbody><tr><td>${속}</td></tr></tbody></table></section>`;
+  const 안내 = `<p class="ct-sp-ref">[특약사항] 다음 쪽(별지)에 이어 적습니다${많음 ? ' · 인적사항도 그 뒤에 적습니다' : ''}.</p>`;
+  return 많음 ? 앞 + 안내 + 다음쪽(특약 + 맺음 + 서명) + 뒤 : 앞 + 안내 + 맺음 + 서명 + 다음쪽(특약) + 뒤;
 }
 
 /* 쪽 나눔 (2026-11-12 파트너 기획 D2-6) - 서명란은 갈라지지 않게 한 쪽에 모아 맨 아래에 두고, 넘친 특약만 다음 쪽으로 넘긴다.

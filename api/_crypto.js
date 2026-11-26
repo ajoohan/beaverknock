@@ -111,6 +111,8 @@ export const 표칸 = {
       if (typeof s.memo === 'string') s.memo = 잠그기(s.memo);
       /* 물건마다 의뢰인 · 연락처 · 조정 금액 · 특이사항 (feed.js lmemo) */
       if (s.lmemo && typeof s.lmemo === 'object') s.lmemo = Object.fromEntries(Object.entries(s.lmemo).map(([k, m]) => [k, 깊이잠금(m)]));
+      /* 진행 기록 메모 (2026-11-26) - 손님 이름 · 사정이 들 수 있다. 단계 · 날짜는 그대로 */
+      if (s.prog && typeof s.prog === 'object') s.prog = Object.fromEntries(Object.entries(s.prog).map(([k, v]) => [k, v && typeof v === 'object' && Array.isArray(v.log) ? { ...v, log: v.log.map(l => l && l.note ? { ...l, note: 잠그기(String(l.note)) } : l) } : v]));
       /* 계약체결 문자 기록의 채운 값(당사자 이름 · 번호가 들어간다) */
       if (Array.isArray(s.smsLog)) s.smsLog = s.smsLog.map(x => x && typeof x === 'object' && x.vals ? { ...x, vals: 깊이잠금(x.vals) } : x);
     }

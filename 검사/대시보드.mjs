@@ -165,7 +165,7 @@ const M = new Function('esc', `${js.slice(시작, 끝)}\nreturn { dzLine, dzPill
   ok(JSON.stringify(위치.adm위치('#/partner/contracts/schedule')) === '[["계약"],["일정·알림"]]'
      && JSON.stringify(위치.adm위치('#/partner/contract/abc')) === '[["계약"],["계약서 목록","#/partner/contracts"],["부동산 매매계약서"]]'
      && JSON.stringify(위치.adm위치('#/partner/contract/new')) === '[["계약"],["계약서 작성","#/partner/contracts/new"],["부동산 매매계약서"]]'
-     && JSON.stringify(위치.adm위치('#/partner/demand/x')) === '[["영업"],["수요 목록","#/partner/demands"],["손님 조건"]]'
+     && JSON.stringify(위치.adm위치('#/partner/demand/x')) === '[["영업"],["1:1 제안","#/partner/demands"],["손님 조건"]]'
      && JSON.stringify(위치.adm위치('#/partner/settings')) === '[["내 사무소"],["사무소 설정"]]' && 위치.adm위치('#/x').length === 0,
      '지금 위치 - 묶음 › 화면(› 그 안의 화면), 계약서 작성 중이면 그 계약서 이름');
   const 경로 = 위치.adm경로([['계약서', '#/partner/contracts'], ['일정·알림']]);
@@ -342,8 +342,8 @@ const M = new Function('esc', `${js.slice(시작, 끝)}\nreturn { dzLine, dzPill
      '받은 제안의 관심 없음 · 연락하기는 1:1 - 휴대폰 반 칸에는 짧은 말');
   const 묶음 = (js.match(/class="eqb[ "]/g) || []).length;
   ok(묶음 >= 12, `같은 폭 묶음이 화면 곳곳에 섰다 (${묶음}곳)`);
-  ok((js.match(/class="btn [^"]*\bdgo\b/g) || []).length === 4 && css.includes('.dgo{min-width:9.8em}'),
-     '손님 조건 목록의 카드 버튼(자세히 보기 · 제안함 · 열람됨 · 제안 마감 · 자격 인증하고 열기)이 한 폭');
+  ok((js.match(/class="btn [^"]*\bdgo\b/g) || []).length === 6 && css.includes('.dgo{min-width:9.8em}'),
+     '손님 조건 목록의 카드 버튼(자세히 보기 · 수락 · 진행 중 · 제안함 · 열람됨 · 제안 마감 · 자격 인증하고 열기)이 한 폭');
   ok(!/<div style="display:flex;gap:10px;\$\{isMo\(\)\?'flex-direction:column/.test(js), '버튼 둘을 flex 로 늘어놓던 자리(폭이 글 길이대로)가 남지 않았다');
 }
 

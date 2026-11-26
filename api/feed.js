@@ -14,7 +14,7 @@ import { 공유찾기, contractRoute, listingScan, reportDueCron, draftRead, dra
 import { 날씨 } from './_weather.js';
 import { 서식들, 서식확인, 서식올리기, 서식주소, 서식지우기, 서식최대, 파일버킷, 버킷올리기, 버킷주소, 버킷지우기 } from './_forms.js';
 import { 외부들, 외부하나, 외부최대, 외부경로, 공유코드꼴, 공유합치기 } from './_ext.js';
-import { 가격바뀜알림 } from './_match.js';
+import { 가격바뀜알림, 일치율, 일치기준 } from './_match.js';
 import { listingPics, listingPicAdd, listingPicSet } from './_pics.js';
 import { 직원이력, 이력한줄, 보조원잠금, 자격증크기, 자격증경로, 자격증형식 } from './_staff.js';
 import { 직원들, 직원고침, 직원사무소, 직원들어옴, 직원역할, 다른사무소직원 } from './_staff.js';
@@ -235,6 +235,52 @@ async function readAlert(res, agent) {
 }
 /* 손님 상담 카카오톡 채널 (2026-11-24 대표님 '채팅은 카카오채널을 활용해서 고객과 소통') - settings.kakaoCh. 사무소 대표만 바꾼다 */
 export const 카톡채널 = u => { u = String(u || '').trim(); return /^https:\/\/pf\.kakao\.com\/_[A-Za-z0-9]{3,40}(\/chat)?$/.test(u) ? u : ''; };
+/* ── 진행 기록 (2026-11-26 파트너 '1:1 제안은 수락하면 진행 · 매물매칭은 안내한 것 따로 · 진행 상황을 기록') ──
+   settings.prog = { 'd:조건' | 'p:제안' | 'm:물건:조건' → { st, at, log:[{ at, st, note }] } }. 메모는 손님 이름이 들 수 있어 _crypto 표칸이 잠근다 */
+export const 진행단계 = ['수락', '제안 보냄', '매칭됨', '안내함', '연결됨', '상담 · 방문', '계약', '성사', '불발'];
+const 진행열쇠 = /^(d:[0-9a-f-]{36}|p:[0-9a-f-]{36}|m:[0-9a-f-]{36}:[0-9a-f-]{36})$/i;
+async function readProg(res, agent) {
+  const x = await 설정읽기(agent);
+  if (x.error) return res.status(502).json({ error: '진행 기록을 불러오지 못했습니다' });
+  return res.status(200).json({ ok: true, prog: x.settings.prog && typeof x.settings.prog === 'object' ? x.settings.prog : {}, need: x.need || '' });
+}
+async function saveProg(res, agent, b) {
+  const key = String(b.key || '');
+  if (!진행열쇠.test(key)) return res.status(400).json({ error: '어느 건인지 알 수 없습니다' });
+  const st = String(b.st || ''), note = String(b.note || '').replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, 300);
+  if (!b.del && !진행단계.includes(st)) return res.status(400).json({ error: '진행 단계가 맞지 않습니다' });
+  if (/\d{6}\s*[-–]?\s*[1-8]\d{6}/.test(note)) return res.status(400).json({ error: '주민등록번호는 적지 않습니다' });
+  const 지금 = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 16).replace('T', ' ');
+  let 새 = null;
+  const z = await 설정고침(agent, s => {
+    const p = { ...(s.prog && typeof s.prog === 'object' ? s.prog : {}) };
+    if (b.del) delete p[key];
+    else { const 전 = p[key] || {}; 새 = p[key] = { st, at: 지금.slice(0, 10), log: [...(Array.isArray(전.log) ? 전.log : []), { at: 지금, st, ...(note ? { note } : {}) }].slice(-30) }; }
+    const 키들 = Object.keys(p); if (키들.length > 600) for (const k of 키들.sort((a, c) => String((p[a] || {}).at).localeCompare(String((p[c] || {}).at))).slice(0, 키들.length - 600)) delete p[k];
+    return { patch: { prog: p } };
+  });
+  if (!z.y) return 설정실패(res, z, '진행 기록');
+  return res.status(200).json({ ok: true, key, item: 새 });
+}
+/* 매물매칭 - 내가 공개한 물건과 80점 이상 맞는 손님 조건(이름 · 연락처 없이 조건 요약만) */
+async function readMatching(res, agent) {
+  try {
+    const lr = await fetch(sbUrl('bk_listing', `select=*&agent_id=eq.${agent.id}&vis=eq.open&status=eq.active&limit=200`), { headers: sbHeaders() });
+    if (!lr.ok) return res.status(200).json({ ok: true, rows: [] });
+    const 물건들 = await lr.json();
+    if (!물건들.length) return res.status(200).json({ ok: true, rows: [], none: 'listing' });
+    const kinds = [...new Set(물건들.map(L => L.kind).filter(Boolean))];
+    const dr = await fetch(sbUrl('bk_demand', `select=id,kind,deal,dongs,places,dep,rent,area_min,area_max,htype,rooms,move_in,status,expires_at,created_at&kind=in.(${kinds.join(',')})&order=created_at.desc&limit=1000`), { headers: sbHeaders() });
+    if (!dr.ok) return res.status(200).json({ ok: true, rows: [] });
+    const 조건들 = (await dr.json()).filter(d => (!d.status || d.status === 'active') && !(d.expires_at && Date.parse(d.expires_at) < Date.now()));
+    const rows = [];
+    for (const L of 물건들) for (const d of 조건들) { if (d.kind !== L.kind) continue; const s = 일치율(d, L);
+      if (s && s.점 >= 일치기준) rows.push({ listing: { id: L.id, name: L.name || '', dong: L.dong || '', deal: L.deal || '', dep: +L.dep || 0, rent: +L.rent || 0 },
+        demand: { id: d.id, kind: d.kind, deal: d.deal || '', dongs: (d.dongs || []).join(' · '), dep: +d.dep || 0, rent: +d.rent || 0, at: String(d.created_at || '').slice(0, 10) }, score: s.점 }); }
+    rows.sort((a, c) => c.score - a.score);
+    return res.status(200).json({ ok: true, rows: rows.slice(0, 200) });
+  } catch (e) { return res.status(502).json({ error: '매칭을 불러오지 못했습니다' }); }
+}
 async function saveKakaoCh(res, agent, b) {
   if (agent.staff) return res.status(403).json({ error: '카카오톡 채널 주소는 사무소 대표만 바꿉니다' });
   const u = String(b.url || '').trim(), kakaoCh = 카톡채널(u);
@@ -737,6 +783,9 @@ export default async function handler(req, res) {
     return res.status(200).json({ ok: true }); }
   if (b.what === 'end-style-save')      return saveEndStyle(res, chk.agent, b);
   if (b.what === 'kakao-ch-save')       return saveKakaoCh(res, chk.agent, b);
+  if (b.what === 'prog')                return readProg(res, chk.agent);
+  if (b.what === 'prog-save')           return saveProg(res, chk.agent, b);
+  if (b.what === 'matching')            return readMatching(res, chk.agent);
 
   /* 내 특약 문구함 - 자주 쓰는 특약을 매매·임대차·갱신계약·기타로 */
   if (b.what === 'phrases')      return readPhrases(res, chk.agent);
@@ -1123,6 +1172,7 @@ async function readMine(req, res, agent) {
           bname: x.bname, addr: x.addr, dep: x.dep, rent: x.rent, fee: x.fee,
           /* 맞춤매물 '보고 싶어요' 로 생긴 제안인가 · 그때 일치율 (2026-11-13 대시보드 '매칭된 물건') - 글 전체는 보내지 않는다 */
           ...(m => m ? { via: 'want', score: +m[1] } : {})(/^맞춤매물에서 손님이 ‘보고 싶어요’를 눌렀습니다 \(일치율 (\d+)점\)/.exec(String(x.msg || ''))),
+          ...(m => m ? { via: 'find', score: +m[1] } : {})(/^직접 매물찾기에서 손님이 ‘보고 싶어요’를 눌렀습니다 \(조건 일치율 (\d+)점\)/.exec(String(x.msg || ''))),
           dongs: (d.dongs || []).join(' · '),
           kind: d.kind || null, deal: d.deal || null,
           want: d.dep != null ? { dep: d.dep, rent: d.rent } : null,

@@ -1501,6 +1501,25 @@ body.mo .hp-pair-h{font-size:19px}
 .mp-off{display:flex;flex-direction:column;gap:4px;margin-top:10px;padding:10px 12px;border-radius:12px;background:var(--n50,#F7F7F9)}
 .mp-off small{color:var(--n600,#555);font-size:12.5px}
 .mp-off .btn{align-self:flex-start;margin-top:4px}
+.pg-tabs{margin:0}
+.pg-h2{margin:6px 0 0;font-size:16px;font-weight:800;letter-spacing:-.03em;color:var(--n900)}
+.pg-h2 span{font-size:13.5px;font-weight:600;color:var(--ind);margin-left:4px}
+.pg-card{display:flex;flex-direction:column;gap:10px}
+.pg-h{display:flex;flex-direction:column;gap:2px}
+.pg-h b{font-size:15px;color:var(--n900);letter-spacing:-.02em}
+.pg-h small{font-size:13px;color:var(--n600,#555);line-height:1.6}
+.pg-h .tapx{align-self:flex-start;font-size:13.5px;color:var(--ind700);text-decoration:underline}
+.pg-box{display:flex;flex-direction:column;gap:8px}
+.pg-st{gap:6px}
+.pg-note{display:flex;gap:8px;flex-wrap:wrap}
+.pg-note .inp{flex:1 1 220px;min-width:0}
+.pg-log{list-style:none;margin:0;padding:8px 10px;border-radius:10px;background:var(--n50,#F7F7F9);font-size:13px;line-height:1.7;color:var(--n700)}
+.pg-log b{color:var(--ind700)}
+.pg-log span{color:var(--n500)}
+.pg-del{align-self:flex-end;font-size:12.5px;color:var(--n500)}
+.pg-dt{margin-top:10px;border-top:1px solid var(--hair);padding-top:10px}
+.pg-dt summary{cursor:pointer;font-size:14px;font-weight:700;color:var(--n700)}
+.pg-dt .pg-box{margin-top:8px}
 .ctpi-box{max-width:460px;width:100%}
 .ctpi-view{max-height:min(50vh,560px);overflow:auto;border:1px solid var(--hair);border-radius:14px;background:var(--n50,#F7F7F9);display:grid;place-items:center;min-height:120px}
 .ctpi-view img{display:block;width:100%;height:auto}
@@ -5299,7 +5318,7 @@ function tabbar(active, role){
   if(!isMo()) return '';
   const items = role==='p'
     /* 맨 앞은 대시보드(홈). 다섯 칸을 넘지 않게 중개사는 '내 물건' 을 홈 카드로 보내고, 소유자는 계약서가 없다 */
-    ? [['#/partner/home','홈','h'],['#/partner/demands',ownerSide()?'맞는 손님':'수요','d'],...(ownerSide()?[['#/partner/listings','내 물건','l']]:[]),['#/partner/proposals','내 제안','p'],...(계약막힘()?[]:[['#/partner/contracts','계약서','ct']]),...(직원()?[]:[['#/partner/settings','설정','s']])]
+    ? [['#/partner/home','홈','h'],['#/partner/demands',ownerSide()?'맞는 손님':'1:1제안','d'],...(ownerSide()?[['#/partner/listings','내 물건','l']]:[]),['#/partner/matching','매물매칭','p'],...(계약막힘()?[]:[['#/partner/contracts','계약서','ct']]),...(직원()?[]:[['#/partner/settings','설정','s']])]
     : [['#/','홈','home'],['#/my','대시보드','my'],['#/map','매물지도','map'],['#/matched','맞춤매물','match'],['#/inbox','1:1 제안','inbox']];
   const ico = {
     home:'M4 11 L12 4 L20 11 M6.5 9.5 V19 h11 V9.5',
@@ -9097,7 +9116,8 @@ V['#/partner/demands'] = () => {
 <div class="scr fade" style="background:var(--n50)">
   ${navPartner('d')}
   <div class="pad adm-page" style="flex:1;padding-top:${isMo()?18:30}px;padding-bottom:24px;max-width:${isMo()?'none':'1180px'};margin:0 auto;width:100%;display:flex;flex-direction:column;gap:14px">
-    <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap">
+    ${ownerSide() ? '' : pg탭HTML(S.form.dtab === 'prog' ? 'prog' : 'cond')}
+    ${!ownerSide() && S.form.dtab === 'prog' ? pg진행HTML() : `<div style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap">
       <div><h1 class="t" style="font-size:${isMo()?21:25}px;margin-top:8px">${
         S.feedByListing ? `올려두신 물건에 맞는 손님` : `내 조건에 맞는 손님`} <span style="color:var(--ind)">${list.length}건</span></h1>
       <p class="sub" style="font-size:14.5px">${S.feedByListing
@@ -9162,7 +9182,7 @@ V['#/partner/demands'] = () => {
           ${d.locked? `<button class="btn pri sm dgo" data-go="#/partner/verify">자격 인증하고 열기</button>`
             : d.mine? `<button class="btn sm dgo" data-go="#/partner/proposals" style="background:var(--n100);color:var(--n700)">제안함 · 열람됨</button>`
             : d.slotsLeft===0? `<span class="btn sm dgo" style="background:var(--n100);color:var(--n500)">제안 마감</span>`
-            : `<button class="btn pri sm dgo" data-go="#/partner/demand/${d.id}">자세히 보기</button>`}
+            : `<span class="eqb" style="display:flex;gap:6px">${ownerSide() ? '' : PG.map['d:' + d.id] ? `<button class="btn sm dgo" data-act="pg-tab" data-v="prog|#/partner/demands" style="background:var(--ind50);color:var(--ind700)">진행 중 · ${esc(PG.map['d:' + d.id].st)}</button>` : `<button class="btn sec sm dgo" data-act="pg-accept" data-v="${d.id}" title="수락하면 ‘진행 중’에 올라 진행 상황을 적습니다">수락</button>`}<button class="btn pri sm dgo" data-go="#/partner/demand/${d.id}">자세히 보기</button></span>`}
         </div>
       </div>`).join('')}
     </div>
@@ -9172,7 +9192,7 @@ V['#/partner/demands'] = () => {
           S.feedByListing ? `<a class="btn pri md" data-go="#/partner/listing/new">물건 올리기</a>` : `<a class="btn pri md" data-go="#/partner/settings">활동 설정 열기</a>`))
       : !list.length && !S.feedErr && !S.feedAt ? loadingBox() : ''}
     ${list.length ? `<div class="beaverbox" style="margin-top:6px;margin-bottom:${isMo()?'12px':'0'};max-width:${isMo()?'none':'640px'}">${beaverlyMini(56)}
-      <p>매물 1건 노출에 2천원을 쓰는 대신, <b style="color:var(--n900)">수요가 확인된 손님에게만</b> 제안하세요. 손님에게 제안을 보내는 데는 비용을 받지 않습니다.</p></div>` : ''}
+      <p>매물 1건 노출에 2천원을 쓰는 대신, <b style="color:var(--n900)">수요가 확인된 손님에게만</b> 제안하세요. 손님에게 제안을 보내는 데는 비용을 받지 않습니다.</p></div>` : ''}`}
   </div>
   ${tabbar('d','p')}
 </div>`;};
@@ -9184,7 +9204,7 @@ V['#/partner/demand'] = (id) => { const d=S.demands.find(x=>x.id===id); if(!d) r
   ${navPartner('d', false)}
   <div class="pad" style="flex:1;padding-top:${isMo()?16:26}px;padding-bottom:24px;max-width:${isMo()?'none':'860px'};margin:0 auto;width:100%;display:flex;flex-direction:column;gap:14px">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
-      <a class="back" data-go="#/partner/demands"><i class="ar-l" aria-hidden="true"></i>수요 목록</a>
+      <a class="back" data-go="#/partner/demands"><i class="ar-l" aria-hidden="true"></i>1:1 제안</a>
       <span style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-left:auto">
         ${고침표(d)}${d.urgent?'<span class="badge b-warn">마감 임박</span>':''}
         <span style="font-size:14.5px;font-weight:700;color:var(--n700)">남은 슬롯 <span class="num">${d.slotsLeft}/5</span></span></span>
@@ -9369,6 +9389,7 @@ V['#/partner/propose'] = (id) => { const d=S.demands.find(x=>x.id===id); if(!d) 
 
 /* ---------- S-07 내 제안 ---------- */
 V['#/partner/proposals'] = () => {
+  if(!PG.loaded) setTimeout(pgLoad);
   const TABS=[['all','전체',['sent','viewed','selected','rejected','expired','withdrawn']],['sent','발송',['sent']],
     ['viewed','열람',['viewed']],['selected','연결',['selected']],['closed','종료',['rejected','expired','withdrawn']]];
   const tab=S.form.ptab||'all'; const active=TABS.find(t=>t[0]===tab);
@@ -9379,7 +9400,8 @@ V['#/partner/proposals'] = () => {
 <div class="scr fade" style="background:var(--n50)">
   ${navPartner('p')}
   <div class="pad adm-page" style="flex:1;padding-top:${isMo()?18:30}px;padding-bottom:24px;max-width:${isMo()?'none':'1000px'};margin:0 auto;width:100%;display:flex;flex-direction:column;gap:14px">
-    <div><h1 class="t" style="font-size:${isMo()?21:25}px;margin-top:8px">내 제안</h1></div>
+    ${pg탭HTML('sent')}
+    <div><h1 class="t" style="font-size:${isMo()?21:25}px;margin-top:8px">보낸 제안</h1></div>
     <div class="chips">${TABS.map(([k,l,st])=>`<button class="chip ${tab===k?'on':''}" data-act="ptab" data-v="${k}" aria-pressed="${tab===k}">${l} ${S.myprops.filter(p=>st.includes(p.status)).length}</button>`).join('')}</div>
     ${S.mpErr ? `<div class="card pad" style="border-color:var(--warnline);background:var(--warnbg);box-shadow:none;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
       <b style="font-size:14.5px">${esc(S.mpErr)}</b><button class="btn sec sm" data-act="mp-retry" style="flex:none">다시 불러오기</button></div>` : ''}
@@ -9395,6 +9417,7 @@ V['#/partner/proposals'] = () => {
           <span class="num" style="font-size:16px;font-weight:700;color:var(--ok)">${esc(p.cphone)}</span>${p.cpref ? `<span class="cn-pref-t">손님 희망: ${esc(p.cpref)}</span>` : ''}
           <span style="font-size:13.5px;line-height:1.55;color:var(--n700)">${esc(p.cust||'손님')}님이 연결에 동의하셨습니다 · 이 상담에만 사용해 주세요</span></div>`:''}
         ${p.reason? `<p style="margin:10px 0 0;background:var(--n50);padding:12px 16px;font-size:14.5px;line-height:1.6;color:var(--n700)">${esc(p.reason)}</p>`:''}
+        ${['sent','viewed','selected'].includes(p.status) && !p.demo ? `<details class="pg-dt"${PG.map['p:' + p.id] ? ' open' : ''}><summary>진행 기록${PG.map['p:' + p.id] ? ` · ${esc(PG.map['p:' + p.id].st)}` : ''}</summary>${pg칸HTML('p:' + p.id, p.via ? 'w' : 'p')}</details>` : ''}
         <div class="adm-foot" style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:12px;gap:10px;flex-wrap:wrap">
           <span style="font-size:13.5px;color:var(--n500)">발송 ${esc(p.at)}${p.expires!=null?` · 만료까지 ${p.expires}일`:''}</span>
           <!-- 보낸 내용은 이 카드에 이미 다 있다 - 눌러도 아무 일 없던 '보낸 내용 보기' 단추는 뺐다(2026-11-03 리뷰).
@@ -10419,6 +10442,78 @@ V['#/partner/map'] = () => {
     </div>
   </div>
   ${tabbar('lm','p')}
+</div>`;
+};
+/* ── 진행 기록 (2026-11-26 파트너 '1:1 제안은 수락하면 진행 · 매물매칭은 안내한 것 따로 · 쌓이면 진행 상황을 적어야 관리') ──
+   서버 feed prog · prog-save (settings.prog). 열쇠 d:조건 · p:제안 · m:물건:조건 */
+const PG = { loaded: false, loading: false, map: {}, need: '', busy: '' };
+const PG_단계 = { d: ['수락', '제안 보냄', '연결됨', '상담 · 방문', '계약', '성사', '불발'], p: ['제안 보냄', '연결됨', '상담 · 방문', '계약', '성사', '불발'], m: ['매칭됨', '안내함', '연결됨', '상담 · 방문', '계약', '성사', '불발'], w: ['안내함', '연결됨', '상담 · 방문', '계약', '성사', '불발'] };
+function pgLoad(){
+  if(PG.loading || !세션있음() || !S.agent) return; PG.loading = true;
+  ctPost({ what: 'prog' }).then(({ ok, j }) => { PG.loading = false; PG.loaded = true; if(ok){ PG.map = j.prog || {}; PG.need = j.need || ''; } render(); }).catch(() => { PG.loading = false; PG.loaded = true; });
+}
+function pgSave(key, st, note, del){
+  if(PG.busy) return; PG.busy = key; render();
+  ctPost({ what: 'prog-save', key, st, note, ...(del ? { del: true } : {}) }).then(({ ok, j }) => { PG.busy = '';
+    if(ok){ if(del) delete PG.map[key]; else PG.map[key] = j.item; toast(del ? '진행 기록을 지웠습니다' : `‘${st}’(으)로 적었습니다`); }
+    else toast(j.error || '저장하지 못했습니다'); render(); }).catch(() => { PG.busy = ''; render(); toast('네트워크 문제로 저장하지 못했습니다'); });
+}
+/* 한 건의 진행 칸 - 단계 단추 · 메모 · 최근 기록. 종류: d 1:1 조건 · p 보낸 제안 · m 자동 매칭 · w 손님이 보고 싶어요 */
+function pg칸HTML(key, 종류){
+  if(!PG.loaded) setTimeout(pgLoad);
+  const x = PG.map[key], 단계 = PG_단계[종류] || PG_단계.p, 기록 = (x && x.log || []).slice(-3).reverse();
+  return `<div class="pg-box"><div class="ct-chips pg-st">${단계.map(t => `<button type="button" class="chip${x && x.st === t ? ' on' : ''}" data-act="pg-st" data-v="${esc(key)}|${esc(t)}" ${PG.busy ? 'disabled' : ''}>${esc(t)}</button>`).join('')}</div>
+    <div class="pg-note"><input class="inp" data-pg-note="${esc(key)}" placeholder="메모 (예: 11/28 방문 약속) - 주민번호 · 계좌번호는 적지 마세요" maxlength="300" aria-label="진행 메모"><button type="button" class="btn tool sm" data-act="pg-note" data-v="${esc(key)}" ${PG.busy || !x ? 'disabled' : ''} title="${x ? '지금 단계에 메모를 남깁니다' : '먼저 단계를 고르세요'}">메모 남기기</button></div>
+    ${기록.length ? `<ul class="pg-log">${기록.map(l => `<li><b>${esc(l.st)}</b> <span>${esc(l.at)}</span>${l.note ? ` · ${esc(l.note)}` : ''}</li>`).join('')}</ul>` : ''}</div>`;
+}
+/* 1:1 제안 위 탭 - 손님 조건 · 진행 중 · 보낸 제안 */
+function pg탭HTML(지금){
+  if(!PG.loaded) setTimeout(pgLoad);
+  const 진행수 = Object.keys(PG.map).filter(k => /^[dp]:/.test(k) && !['성사', '불발'].includes((PG.map[k] || {}).st)).length;
+  return `<div class="ct-chips pg-tabs" role="tablist" aria-label="1:1 제안">${[['cond', '손님 조건', '#/partner/demands'], ['prog', `진행 중${진행수 ? ' ' + 진행수 : ''}`, '#/partner/demands'], ['sent', '보낸 제안', '#/partner/proposals']].map(([k, t, h]) =>
+    `<button type="button" class="chip${지금 === k ? ' on' : ''}" role="tab" aria-selected="${지금 === k}" data-act="pg-tab" data-v="${k}|${h}">${t}</button>`).join('')}</div>`;
+}
+/* 진행 중 - 수락한 조건과 진행을 적은 제안 */
+function pg진행HTML(){
+  const 키들 = Object.keys(PG.map).filter(k => /^[dp]:/.test(k)).sort((a, b) => String((PG.map[b] || {}).at).localeCompare(String((PG.map[a] || {}).at)));
+  if(!PG.loaded) return '<div class="card pad"><p class="sub" style="margin:0">불러오는 중입니다…</p></div>';
+  if(!키들.length) return `<div class="card pad"><p class="sub" style="margin:0;line-height:1.7">아직 진행 중인 건이 없습니다. ‘손님 조건’에서 카드의 ‘수락’을 누르면 여기로 옵니다.</p></div>`;
+  return 키들.map(k => { const [종, id] = k.split(':'), d = 종 === 'd' ? (S.demands || []).find(x => x.id === id) : null, pp = 종 === 'p' ? (S.myprops || []).find(x => x.id === id) : null;
+    const 제목 = d ? `${d.kicker || ''} ${d.title || '손님 조건'}`.trim() : pp ? pp.title : (종 === 'd' ? '손님 조건 (목록에 없음 - 마감 또는 지역 밖)' : '보낸 제안');
+    const 줄 = d ? (d.lines || []).slice(0, 2).join(' · ') : pp ? [pp.price, pp.line, pp.status].filter(Boolean).join(' · ') : '';
+    return `<div class="card pad pg-card"><div class="pg-h"><b>${esc(제목)}</b><small>${esc(줄)}</small>${d ? `<a class="tapx" data-go="#/partner/demand/${esc(id)}">조건 보기</a>` : ''}</div>${pg칸HTML(k, 종)}
+      <button type="button" class="tapx pg-del" data-act="pg-del" data-v="${esc(k)}">진행 목록에서 빼기</button></div>`; }).join('');
+}
+/* 매물매칭 화면 */
+const MM = { loaded: false, loading: false, rows: [], none: '', err: '' };
+function mmLoad(){
+  if(MM.loading || !세션있음()) return; MM.loading = true;
+  ctPost({ what: 'matching' }).then(({ ok, j }) => { MM.loading = false; MM.loaded = true; if(ok){ MM.rows = j.rows || []; MM.none = j.none || ''; } else MM.err = j.error || '매칭을 불러오지 못했습니다'; render(); })
+    .catch(() => { MM.loading = false; MM.loaded = true; MM.err = '네트워크 문제로 불러오지 못했습니다'; render(); });
+}
+V['#/partner/matching'] = () => {
+  if(!MM.loaded) setTimeout(mmLoad);
+  if(!PG.loaded) setTimeout(pgLoad);
+  const 원함 = (S.myprops || []).filter(p => p.via === 'want' || p.via === 'find');
+  const 값 = (dep, rent) => `${won(dep)}${+rent ? ` / 월 ${won(rent)}` : ''}`;
+  return `
+<div class="scr fade" style="background:var(--n50)">
+  ${navPartner('p')}
+  <div class="pad adm-page" style="flex:1;padding-top:${isMo()?18:28}px;padding-bottom:24px;width:100%;display:flex;flex-direction:column;gap:14px">
+    <div><h1 class="t" style="font-size:${isMo()?21:25}px;margin-top:8px">매물매칭</h1>
+      <p class="sub" style="font-size:14.5px">내가 공개한 매물과 80점 이상 맞는 손님 조건, 손님이 직접 ‘보고 싶어요’를 누른 매물입니다. 안내 · 연결 · 계약까지 진행을 적어 두세요. 손님 이름 · 연락처는 손님이 연결을 누른 뒤에 열립니다.</p></div>
+    <h2 class="pg-h2">손님이 보고 싶어요 누른 매물 <span>${원함.length}건</span></h2>
+    ${원함.length ? 원함.map(pp => `<div class="card pad pg-card"><div class="pg-h"><b>${esc(pp.title)}</b><small>${esc([pp.price, pp.line, pp.via === 'find' ? '직접 매물찾기에서' : `맞춤매물 ${pp.score}점`, pp.status].filter(Boolean).join(' · '))}</small><a class="tapx" data-go="#/partner/proposals">제안 보기</a></div>${pg칸HTML('p:' + pp.id, 'w')}</div>`).join('')
+      : '<div class="card pad"><p class="sub" style="margin:0">아직 없습니다. 손님이 맞춤매물이나 매물찾기에서 내 매물에 ‘보고 싶어요’를 누르면 여기에 옵니다.</p></div>'}
+    <h2 class="pg-h2">내 매물과 맞는 손님 <span>${MM.loaded ? MM.rows.length + '건' : '…'}</span></h2>
+    ${MM.err ? `<div class="card pad"><p class="sub" style="margin:0">${esc(MM.err)}</p></div>` : !MM.loaded ? '<div class="card pad"><p class="sub" style="margin:0">맞춰 보는 중입니다…</p></div>'
+      : MM.none === 'listing' ? '<div class="card pad"><p class="sub" style="margin:0 0 10px">손님에게 공개한 매물이 없습니다. 매물장부에서 명시사항을 다 채워 공개하면 맞는 손님을 찾아 드립니다.</p><a class="btn sec sm" data-go="#/partner/listings">매물장부로</a></div>'
+      : !MM.rows.length ? '<div class="card pad"><p class="sub" style="margin:0">지금은 80점 이상 맞는 손님 조건이 없습니다. 새 조건이 들어오면 다시 맞춰 봅니다.</p></div>'
+      : MM.rows.map(r => `<div class="card pad pg-card"><div class="pg-h"><b>${esc(r.listing.name || '내 매물')} ↔ 손님 조건 ${r.score}점</b>
+          <small>${esc(`내 매물 ${[r.listing.dong, r.listing.deal, 값(r.listing.dep, r.listing.rent)].filter(Boolean).join(' · ')} / 손님 ${[r.demand.dongs, r.demand.deal, 값(r.demand.dep, r.demand.rent), r.demand.at + ' 등록'].filter(Boolean).join(' · ')}`)}</small>
+          <a class="tapx" data-go="#/partner/demand/${esc(r.demand.id)}">조건 보기</a></div>${pg칸HTML(`m:${r.listing.id}:${r.demand.id}`, 'm')}</div>`).join('')}
+  </div>
+  ${tabbar('p','p')}
 </div>`;
 };
 /* 직접 매물찾기 (2026-11-24 파트너 · 대표님) - 조건 없이 노출 중인 매물 전체를 지도에서. 가입한 손님만(서버 browse), 위치는 대략 · 공개 칸만 */
@@ -13935,10 +14030,10 @@ const GD_핀 = [
 ];
 const GD_메뉴 = () => [
   ['영업', 'users', '손님을 찾고 제안하는 곳', [
-    ['수요 목록', '#/partner/demands', '활동 지역에 걸린 손님 조건. 맞으면 1:1 제안을 보냅니다'],
+    ['1:1 제안', '#/partner/demands', '활동 지역에 걸린 손님 조건 · 수락하면 진행 시작 · 보낸 제안과 진행 상황'],
     ['매물장부', '#/partner/listings', '우리 사무소 물건 장부. 기준을 채우면 손님에게 노출됩니다'],
     ['매물등록', '#/partner/listings/open', '노출 중이거나 바로 노출할 수 있는 매물만 모아 봅니다'],
-    ['내 제안', '#/partner/proposals', '보낸 제안 · 손님이 연결하면 이름과 번호가 열립니다'],
+    ['매물매칭', '#/partner/matching', '내 매물과 맞는 손님 · 손님이 보고 싶어요 누른 매물 · 진행 상황'],
     ...(권한('room') ? [['계약 손님', '#/partner/rooms', '초대한 계약 손님과 진행 상황']] : [])]],
   ...(계약막힘() ? [] : [['계약', 'doc', '계약서부터 잔금까지', [
     ['계약현황', '#/partner/contracts/status', '진행 중인 계약을 표로 한눈에(갱신 탭 따로)'],
@@ -14018,9 +14113,9 @@ const TOUR = { i:-1 };
 function 투어단계(){
   const 메뉴 = h => isMo() ? `.ptn-nav .items a[data-go="${h}"]` : `.dz-menu a[data-go="${h}"]`;
   return [
-    ['수요 목록', '활동 지역에 걸린 손님 조건이 모입니다. 조건마다 최대 5곳이 1:1 로 제안합니다.', 메뉴('#/partner/demands')],
+    ['1:1 제안', '활동 지역에 걸린 손님 조건이 모입니다. 수락하면 진행이 시작되고, 조건마다 최대 5곳이 1:1 로 제안합니다.', 메뉴('#/partner/demands')],
     [ownerSide() ? '내 물건' : '매물장부', '물건을 적어 두면 맞는 손님을 점수와 함께 찾아 줍니다. 기준을 채우고 노출하면 손님 화면에도 뜹니다.', 메뉴('#/partner/listings')],
-    ['내 제안', '보낸 제안과 손님이 연결한 건(이름 · 번호 · 희망 연락 방법)이 모입니다.', 메뉴('#/partner/proposals')],
+    ['매물매칭', '내 매물과 자동으로 맞춰진 손님 · 손님이 보고 싶어요 누른 매물이 모입니다. 안내 · 연결 · 계약까지 진행을 적습니다.', 메뉴('#/partner/matching')],
     ...(계약막힘() ? [] : [['계약서', '계약서 작성부터 확정본 · 일정 알림 · 손님 초대까지 여기서 합니다.', isMo() ? 메뉴('#/partner/contracts') : '.dz-menu a[data-go="#/partner/contracts/new"]']]),
     ['도움말 ?', '화면마다 이 단추를 누르면 그 화면 안내가 열립니다. 첫날 할 일은 대시보드의 ‘시작 가이드’에서 하나씩 따라 하세요.', '.ph-q'],
   ];
@@ -14399,8 +14494,8 @@ function dzTodo(items, 빈말, 아래 = ''){
 /* 할 일 카드 아래 바로 가기 (2026-11-06 대표님 '중간중간 여백이 없게') - 오른쪽 칸이 왼쪽 높이까지 늘어날 때 빈 곳을 자주 가는 곳으로 채운다 */
 function dz바로가기(){
   if(!S.agent || ownerSide()) return '';
-  const 곳 = [['#/partner/demands', '수요 목록', 'users'], ['#/partner/listing/new', '물건 올리기', 'building'],
-    ...(계약막힘() ? [['#/partner/proposals', '내 제안', 'send'], ['#/partner/stats', '성과', 'chart']]
+  const 곳 = [['#/partner/demands', '1:1 제안', 'users'], ['#/partner/listing/new', '물건 올리기', 'building'],
+    ...(계약막힘() ? [['#/partner/matching', '매물매칭', 'send'], ['#/partner/stats', '성과', 'chart']]
       : [['#/partner/contracts/new', '계약서 작성', 'pen'], ['#/partner/contracts/schedule', '일정·알림', 'cal']])];
   return `<div class="dz-quick"><span class="dz-qh">바로 가기</span><div class="dz-qg">${곳.map(([h, t, i]) =>
     `<a class="dz-q" data-go="${h}">${dzIco(i, 16)}<span>${t}</span></a>`).join('')}</div></div>`;
@@ -14421,11 +14516,11 @@ function 파트너옆(active){
   const 항목 = [
     ['#/partner/home', '대시보드', 'home', 'h'],
     '영업',
-    ['#/partner/demands', own ? '맞는 손님' : '수요 목록', 'users', 'd'],
+    ['#/partner/demands', own ? '맞는 손님' : '1:1 제안', 'users', 'd'],
     ['#/partner/listings', (ownerSide() ? '내 물건' : '매물장부'), 'building', 'l'],
     ...(own ? [] : [['#/partner/listings/open', '매물등록', 'list', 'lr']]),
     ['#/partner/map', '매물지도', 'map', 'lm'],
-    ['#/partner/proposals', '내 제안', 'send', 'p'],
+    ['#/partner/matching', '매물매칭', 'send', 'p'],
     ...(own || !권한('room') ? [] : [['#/partner/rooms', '계약 손님', 'chat', 'rm']]),
     ...(계약막힘() ? [] : ['계약', ...CT_하위메뉴]),
     '내 사무소',
@@ -14459,7 +14554,7 @@ function adm위치(h){
   if(계약[h]) return [['계약'], [계약[h]]];
   if(h === '#/partner/contract/new') return [['계약'], ['계약서 작성', '#/partner/contracts/new'], [CT.doc ? ctTitle(CT.doc) : '새 계약서']];
   if(h.startsWith('#/partner/contract/')) return [['계약'], ['계약서 목록', '#/partner/contracts'], [CT.doc ? ctTitle(CT.doc) : '계약서']];
-  const 수요 = [ownerSide() ? '맞는 손님' : '수요 목록', '#/partner/demands'], 물건 = [(ownerSide() ? '내 물건' : '매물장부'), '#/partner/listings'];
+  const 수요 = [ownerSide() ? '맞는 손님' : '1:1 제안', '#/partner/demands'], 물건 = [(ownerSide() ? '내 물건' : '매물장부'), '#/partner/listings'];
   if(h === '#/partner/home') return [['대시보드']];
   if(h === '#/account') return [['마이페이지']];
   if(h === '#/partner/demands') return [['영업'], [수요[0]]];
@@ -14469,7 +14564,8 @@ function adm위치(h){
   if(h === '#/partner/listings/open') return [['영업'], ['매물등록']];
   if(h === '#/partner/listing/new') return [['영업'], 물건, [S.editL ? '물건 고치기' : '새로 적기']];
   if(h.startsWith('#/partner/listing/')) return [['영업'], 물건, ['물건 보기']];
-  if(h === '#/partner/proposals') return [['영업'], ['내 제안']];
+  if(h === '#/partner/proposals') return [['영업'], ['1:1 제안', '#/partner/demands'], ['보낸 제안']];
+  if(h === '#/partner/matching') return [['영업'], ['매물매칭']];
   if(h === '#/partner/map') return [['영업'], ['매물지도']];
   if(h === '#/partner/rooms') return [['영업'], ['계약 손님']];
   if(h.startsWith('#/partner/rooms/')){ const [, , , 번호, 자리] = h.split('/'); const 줄 = (RM.list || []).find(r => r.id === 번호 && (!자리 || r.side === 자리)) || {};
@@ -14521,6 +14617,7 @@ if(typeof addEventListener === 'function'){
   addEventListener('unhandledrejection', e => { const r = e && e.reason; bk오류보내기('처리되지 않은 오류: ' + ((r && r.message) || r), (r && r.stack && (/(https?:\/\/[^\s)]+?):\d+:\d+/.exec(r.stack) || [])[1]) || location.origin, 0, 0, r && r.stack); });
 }
 const BK_변경 = [
+  { v:'26.11.26.5', 날:'2026-11-26', 줄:[ '대시보드 명칭 · 진행 기록 (파트너) - ‘수요 목록’은 ‘1:1 제안’으로(위 탭: 손님 조건 · 진행 중 · 보낸 제안), 손님 조건 카드에 ‘수락’ - 누르면 진행 중에 올라 단계(수락 · 제안 보냄 · 연결됨 · 상담 · 방문 · 계약 · 성사 · 불발)와 메모를 적습니다', '‘매물매칭’ 새 메뉴 - 내가 공개한 매물과 80점 이상 맞는 손님 조건, 손님이 보고 싶어요 누른 매물을 따로 모아 안내 · 연결 · 계약까지 진행을 적습니다. 보낸 제안 카드에도 진행 기록' ] },
   { v:'26.11.26.4', 날:'2026-11-26', 줄:[ '매물찾기 (파트너) - 공개 매물을 단지(건물)별로 묶어 ‘매매 n건 · 전세 n건’ → 누르면 매물 목록 → 매물 상세(사무소 정보) · 단지 정보(사용승인 · 층수 · 주차). 중개사는 매물지도의 ‘공개 매물 찾기(공동중개)’에서 사무소 전화 · 주소까지 보고, 손님 화면은 매물이 쌓일 때까지 숨깁니다' ] },
   { v:'26.11.26.3', 날:'2026-11-26', 줄:[ '빈 양식 (파트너) - 계약서 종류 고르는 화면에서 고른 종류의 빈 계약서를 ‘빈 양식 인쇄 · PDF’로, 아래 ‘부속서류 · 빈 양식’에서 영수증(계약금 · 중도금 · 잔금 · 보증금반환금) · 잔금정산서 · 물품인계 확인서 · 위임장 · 개인정보 동의서를 바로 쓰거나 인쇄 · PDF, 공제증서는 출력' ] },
   { v:'26.11.26.2', 날:'2026-11-26', 줄:[ '계약서 쪽 나눔 (파트너) - 특약이 있으면 첫 쪽은 부동산 표시 · 계약내용 · 인적사항으로 끝나고, 특약은 다음 쪽(별지)으로. 다음 쪽마다 맨 위에 물건 상자(목적물 · 당사자 · 계약서 · 계약일)가 인쇄됩니다. 당사자가 많으면(5명 넘음 · 공동중개 둘 넘음) 특약 다음에 인적사항' ] },
@@ -15336,8 +15433,8 @@ const CK = { q: '', i: 0, rows: [] };
 function 바로찾기목록(q){
   const 낮 = String(q || '').trim().toLowerCase(), 맞나 = t => !낮 || String(t || '').toLowerCase().includes(낮);
   const own = ownerSide(), 묶음 = [];
-  const 메뉴 = [['#/partner/home', '대시보드', 'home'], ['#/partner/demands', own ? '맞는 손님' : '수요 목록', 'users'], ['#/partner/listings', '내 물건', 'building'],
-    ...(권한('listing') ? [['#/partner/listing/new', '물건 올리기', 'building']] : []), ['#/partner/proposals', '내 제안', 'send'], ...(own || !권한('room') ? [] : [['#/partner/rooms', '손님 대화', 'chat']]),
+  const 메뉴 = [['#/partner/home', '대시보드', 'home'], ['#/partner/demands', own ? '맞는 손님' : '1:1 제안', 'users'], ['#/partner/matching', '매물매칭', 'send'], ['#/partner/listings', '내 물건', 'building'],
+    ...(권한('listing') ? [['#/partner/listing/new', '물건 올리기', 'building']] : []), ['#/partner/proposals', '보낸 제안', 'send'], ...(own || !권한('room') ? [] : [['#/partner/rooms', '계약 손님', 'chat']]),
     ...(계약막힘() ? [] : CT_하위메뉴.map(([h, t, i]) => [h, t, i || 'doc'])), ...(권한('stats') ? [['#/partner/stats', '성과', 'chart']] : []),
     ...(own || 직원() ? [] : [['#/partner/settings', '사무소 설정', 'map']]), ['#/account', '마이페이지', 'user']];
   묶음.push(['바로 가기', 메뉴.filter(([, t]) => 맞나(t)).slice(0, 낮 ? 6 : 8).map(([h, t, i]) => ({ t, s: '', ico: i, go: h }))]);
@@ -16938,7 +17035,7 @@ async function ctRenew(id){
 /* ── 서버 ── */
 /* 사무소 설정(bk_agent.settings) 을 고치는 요청은 줄 세워 하나씩 보낸다 - 서버가 settings 를 통째로 읽고 덮으므로,
    나란히 가면 뒤의 것이 앞의 고침을 지운다(문자 틀 저장 중 복사 → 틀이 되돌아감, 2026-11-05 리뷰) */
-const CT_설정쓰기 = new Set(['phrases-save', 'sms-save', 'complex-save', 'end-style-save', 'alert-settings-save', 'kakao-ch-save']);
+const CT_설정쓰기 = new Set(['phrases-save', 'sms-save', 'complex-save', 'end-style-save', 'alert-settings-save', 'kakao-ch-save', 'prog-save']);
 let ct설정줄 = Promise.resolve();
 function ctPost(body){
   const 보내 = () => apiFetch('/api/feed', {method:'POST', body: JSON.stringify(body)})
@@ -22758,7 +22855,8 @@ function render(){
   if(h==='#/partner/home'){ if(S.lastRoute !== '#/partner/home'){ S.dzWait0 = 0; S.dzOpen = false; } loadFeed(false); loadMyProps(false); loadListings(false); ctLoadList(); }
   /* '#/partner' 는 누구나 여는 안내 화면이고 내 제안·내 물건을 쓰지 않는다 (2026-10-09).
      거기서 부르면 로그인한 손님 계정도 방문마다 /api/feed 를 두 번 부르고 403 을 받았다. */
-  if(h==='#/partner/proposals' || h==='#/partner/stats') loadMyProps(false);
+  if(h==='#/partner/proposals' || h==='#/partner/stats' || h==='#/partner/matching') loadMyProps(false);
+  if(h==='#/partner/demands' && S.form.dtab === 'prog') loadMyProps(false);
   /* 성과 - 계약 · 매물 · 매칭 지표도 함께 (2026-11-13 파트너 기획 B4) */
   if(h==='#/partner/stats'){ loadListings(false); if(S.agent && !계약막힘()) ctLoadList(); }
   /* 내 제안의 '계약서 만들기' 가 이미 만든 초안을 찾으려면 계약서 목록이 있어야 한다 */
@@ -25475,6 +25573,15 @@ function handle(a,v,el){
     case 'mt-want': { const [did, lid] = String(v).split('|'); mtWant(did, lid); return true; }
     /* 직접 매물찾기 (2026-11-24) */
     case 'mp-all': MP.mode = 'all'; go('#/map'); return true;
+    /* 진행 기록 (2026-11-26) */
+    case 'pg-tab': { const [k, h] = String(v).split('|'); S.form.dtab = k === 'prog' ? 'prog' : ''; if((location.hash || '') !== h) go(h); else render(); return true; }
+    case 'pg-accept': pgSave('d:' + v, '수락', ''); return true;
+    case 'pg-st': { const i = String(v).lastIndexOf('|'), key = v.slice(0, i), st = v.slice(i + 1), 칸 = document.querySelector(`[data-pg-note="${CSS.escape(key)}"]`);
+      pgSave(key, st, 칸 ? 칸.value : ''); return true; }
+    case 'pg-note': { const x = PG.map[v], 칸 = document.querySelector(`[data-pg-note="${CSS.escape(v)}"]`), 글 = 칸 ? 칸.value.trim() : '';
+      if(!x) return toast('먼저 단계를 고르세요'), true; if(!글) return toast('메모를 적어 주세요'), true; pgSave(v, x.st, 글); return true; }
+    case 'pg-del': if(PG.del !== v){ PG.del = v; toast('한 번 더 누르면 진행 목록에서 뺍니다'); setTimeout(() => { if(PG.del === v) PG.del = null; }, 4000); return true; }
+      PG.del = null; pgSave(v, '', '', true); return true;
     case 'mp-deal': { const i = String(v).lastIndexOf('|'), 키 = v.slice(0, i), 거 = v.slice(i + 1); if(MP.open === 키 && MP.deal === 거){ MP.open = ''; MP.deal = ''; } else { MP.open = 키; MP.deal = 거; } render(); return true; }
     case 'mp-grp': { const g = mp단지(MP.rows || []).find(x => x.키 === v); if(g){ MP.open = g.키; MP.deal = Object.keys(g.셈)[0] || ''; render(); setTimeout(() => { const el = document.querySelector('.mp-g.open'); if(el) el.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 50); } return true; }
     case 'mp-one': S.modal = { type: 'mp-one', id: v }; render(); return true;

@@ -193,16 +193,21 @@ async function shareMake(res, agent, b) {
     return res.status(200).json({ ok: true, token: tok, until: +tok.split('.')[2] });
   } catch (e) { return res.status(502).json({ error: 'DB에 닿지 못했습니다' }); }
 }
-/* 링크 끊기 - 그 물건의 링크번호를 하나 올린다. 600건이 넘으면 번호가 작은 것부터 버린다(버려진 물건의 옛 링크는 7일 기한으로 닫힌다) */
+/* 링크 끊기 - 그 물건의 링크번호를 하나 올린다 */
 async function shareCut(res, agent, b) {
   const id = String(b.id || '');
   if (!물건번호꼴.test(id)) return res.status(400).json({ error: '어느 물건인지 알 수 없습니다' });
   const x = await 내물건하나(agent, id).catch(() => ({ error: true }));
   if (x.error) return res.status(502).json({ error: '물건을 불러오지 못했습니다' });
   if (!x.L) return res.status(404).json({ error: '내 장부에 없는 물건입니다' });
-  const z = await 설정고침(agent, s => { const m = { ...(s.lshare && typeof s.lshare === 'object' ? s.lshare : {}) }; m[id] = 소개번호(s, id) + 1;
-    const 키 = Object.keys(m); if (키.length > 600) for (const k of 키.filter(k => k !== id).slice(0, 키.length - 600)) delete m[k];
-    return { patch: { lshare: m } }; });
+  /* 끊은 날도 적어 둔다(lshareAt). 600건이 넘으면 끊은 지 8일이 지난 것만 버린다 - 그 물건의 옛 링크는 7일 기한으로 이미 닫혔다.
+     날을 모르는 것 · 8일이 안 된 것은 버리지 않는다(버리면 번호가 0 으로 돌아가 끊었던 링크가 되살아난다 · 2026-11-26 코드리뷰) */
+  const 오늘 = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10), 옛날 = new Date(Date.now() + 9 * 3600e3 - 8 * 864e5).toISOString().slice(0, 10);
+  const z = await 설정고침(agent, s => { const m = { ...(s.lshare && typeof s.lshare === 'object' ? s.lshare : {}) }, 날 = { ...(s.lshareAt && typeof s.lshareAt === 'object' ? s.lshareAt : {}) };
+    m[id] = 소개번호(s, id) + 1; 날[id] = 오늘;
+    if (Object.keys(m).length > 600) for (const k of Object.keys(m)) { if (k !== id && 날[k] && 날[k] < 옛날) { delete m[k]; delete 날[k]; } }
+    for (const k of Object.keys(날)) if (!(k in m)) delete 날[k];
+    return { patch: { lshare: m, lshareAt: 날 } }; });
   if (!z.y) return 설정실패(res, z, '소개 링크');
   return res.status(200).json({ ok: true });
 }

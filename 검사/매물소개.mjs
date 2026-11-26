@@ -93,6 +93,16 @@ ok(/@media print\{\.lsh-noprint\{display:none/.test(js) || fs.readFileSync(길.H
 { const 원 = fs.readFileSync(new URL(길.api('feed.js')), 'utf8');
   ok(/async function shareMake[\s\S]{0,900}보조원잠금\('listing_open'\) && 직\.role === 'assistant' \|\| 끈\.listing_open === false/.test(원), '소개 링크 만들기는 매물 노출과 같은 권한을 본다 - 중개보조원 · 노출을 꺼 둔 직원은 못 만든다');
   ok(/ownerSide\(\) \|\| 보조원\(\) \|\| !권한\('listing_open'\) \? '' : `<button type="button" class="btn tool sm" data-act="lsh-make"/.test(js), '화면도 그 직원에게는 소개 한 장 단추를 보이지 않는다'); }
+/* ── 끊은 기록 버리기 - 8일이 지난 것만 ── */
+{ const 번호 = i => `${String(i).padStart(8, '0')}-0000-4000-8000-000000000000`, m = {}, 날 = {};
+  const 옛 = new Date(Date.now() + 9 * 3600e3 - 20 * 864e5).toISOString().slice(0, 10), 어제 = new Date(Date.now() + 9 * 3600e3 - 864e5).toISOString().slice(0, 10);
+  for (let i = 0; i < 400; i++) { m[번호(i)] = 1; 날[번호(i)] = 옛; }
+  for (let i = 400; i < 700; i++) { m[번호(i)] = 2; 날[번호(i)] = 어제; }
+  사무소 = { ...사무소기본(), settings: { lshare: m, lshareAt: 날 } }; 물건 = 물건기본();
+  r = await 부름('POST', { what: 'listing-share-cut', id: LID });
+  const 뒤 = 사무소.settings.lshare;
+  ok(r.code === 200 && 뒤[LID] === 1 && 뒤[번호(450)] === 2 && 뒤[번호(699)] === 2, '끊은 기록이 600건을 넘어도 끊은 지 8일이 안 된 것은 버리지 않는다 - 끊었던 링크가 되살아나지 않게');
+  ok(뒤[번호(0)] === undefined && 뒤[번호(399)] === undefined && Object.keys(사무소.settings.lshareAt).length === Object.keys(뒤).length, '끊은 지 8일이 지난 기록만 버린다(그 링크는 7일 기한으로 이미 닫혔다)'); }
 
 console.log(`${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

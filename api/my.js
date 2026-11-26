@@ -80,7 +80,7 @@ export default async function handler(req, res) {
   if (body.what === 'demand-edit') return demandEdit(req, res, user, body);
   /* 맞춤매물 (2026-11-12) - 노출된 물건 가운데 내 조건과 80점 이상 */
   if (body.what === 'matched') return matched(res, user);
-  if (body.what === 'browse') return browse(res, user, body);   /* 직접 매물찾기 (2026-11-24) */
+  if (body.what === 'browse') { const ag = await approvedAgent(user).catch(() => ({})); return browse(res, user, body, !!(ag && ag.agent && !ag.pending)); }   /* 직접 매물찾기 (2026-11-24) · 중개사는 공동중개용(11-26) */
   if (body.what === 'match-want') return matchWant(req, res, user, body);
   if (body.what === 'match-report') return matchReport(res, user, body);
   if (body.what === 'match-pics') return matchPics(res, body);

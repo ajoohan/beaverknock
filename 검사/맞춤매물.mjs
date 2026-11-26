@@ -85,7 +85,8 @@ globalThis.fetch = async (url, opt = {}) => {
   ok(o.code === 200 && o.body.again && o.body.id === 'old-1' && !넣은, '두 번 누르면 새로 만들지 않고 있던 것으로 잇는다'); }
 
 /* 직접 매물찾기 (2026-11-24) - 조건 없이 노출 물건 전체, 승인된 사무소 것만, 호수 · 장부 칸은 안 감 */
-{ const { o, res } = 답(); await browse(res, { id: 'u-7' }, {});
+{ const 닫 = 답(); await browse(닫.res, { id: 'u-8' }, {}); ok(닫.o.code === 200 && 닫.o.body.closed === true && !(닫.o.body.rows || []).length, '직접 매물찾기 - 손님은 BK_BROWSE_OPEN=1 전까지 닫혀 있다(11-26 파트너)'); }
+{ const { o, res } = 답(); await browse(res, { id: 'u-7' }, {}, true);
   const 글 = JSON.stringify(o.body || {});
   ok(o.code === 200 && (o.body.rows || []).length === 2 && !글.includes('1203') && !글.includes('agent_user') && (o.body.rows || []).every(r => r.office === '미사중앙공인중개사사무소'),
     '직접 매물찾기 - 조건 없이 공개 매물 전체(동이 달라도) · 승인 안 된 사무소 것 · 호수 · 장부 칸은 빠진다'); }

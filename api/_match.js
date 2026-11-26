@@ -118,8 +118,10 @@ export async function matched(res, user) {
 }
 /* 직접 매물찾기 (2026-11-24 파트너 · 대표님) - 조건 없이 노출 중인 물건 전체(가입한 손님만). 공개 칸 · 대략 위치만, 최근 공개순 300개 */
 const 종류들 = ['home', 'shop', 'office', 'storage'];
-export async function browse(res, user, b) {
+export async function browse(res, user, b, 중개사 = false) {
   if (overLimit('browse:' + user.id, 60, 600e3)) return res.status(429).json({ error: '잠시 뒤 다시 열어 주세요' });
+  /* 2026-11-26 파트너 '매물이 적으면 손님 화면에서는 숨기고 중개사(공동중개)만' - 손님은 BK_BROWSE_OPEN=1 일 때만 */
+  if (!중개사 && process.env.BK_BROWSE_OPEN !== '1') return res.status(200).json({ ok: true, rows: [], closed: true });
   try {
     const kinds = 종류들.includes(b.kind) ? [b.kind] : 종류들;
     const x = await 노출물건(kinds, []);
@@ -127,10 +129,12 @@ export async function browse(res, user, b) {
     if (x.need) return res.status(200).json({ ok: true, rows: [], need: x.need });
     const 사무소 = {}, ids = [...new Set(x.rows.map(L => L.agent_id))];
     if (ids.length) {
-      const ar = await fetch(sbUrl('bk_agent', `select=id,office,status&id=in.(${ids.join(',')})`), { headers: sbHeaders() });
-      if (ar.ok) for (const a of await ar.json()) if (a.status === 'approved') 사무소[a.id] = a;
+      const ar = await fetch(sbUrl('bk_agent', `select=id,office,status${중개사 ? ',phone,addr' : ''}&id=in.(${ids.join(',')})`), { headers: sbHeaders() });
+      if (ar.ok) { let 줄 = await ar.json(); if (중개사) { try { const { 응답풀기 } = await import('./_crypto.js'); 줄 = 응답풀기(줄); } catch {} }
+        for (const a of 줄) if (a.status === 'approved') 사무소[a.id] = a; }
     }
-    const rows = x.rows.filter(L => 사무소[L.agent_id]).slice(0, 300).map(L => 공개(L, 사무소[L.agent_id]));
+    /* 중개사가 볼 때는 공동중개 연락용으로 사무소 전화 · 주소를 더한다(손님에게는 안 간다) */
+    const rows = x.rows.filter(L => 사무소[L.agent_id]).slice(0, 300).map(L => ({ ...공개(L, 사무소[L.agent_id]), ...(중개사 ? { officePhone: 사무소[L.agent_id].phone || '', officeAddr: 사무소[L.agent_id].addr || '' } : {}) }));
     const 길 = [...new Set(rows.map(r => r.pic0).filter(Boolean))], 주소 = await 사진주소(길).catch(() => []);
     for (const r of rows) { r.pic = r.pic0 ? 주소[길.indexOf(r.pic0)] || '' : ''; delete r.pic0; }
     return res.status(200).json({ ok: true, rows });

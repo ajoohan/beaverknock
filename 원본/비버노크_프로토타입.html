@@ -1483,6 +1483,24 @@ body.mo .hp-pair-h{font-size:19px}
 .ctdoc .ct-sp-all{display:block;min-height:5.4em;white-space:pre-wrap;line-height:1.9}
 .ctw-go2{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
 .ctw-blank{margin-top:4px}
+.mp-gl{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.mp-g{padding:10px 12px;border:1px solid var(--hair);border-radius:12px;background:var(--white,#fff)}
+.mp-g.open{border-color:var(--ind300)}
+.mp-gh b{display:block;font-size:14.5px;color:var(--n900)}
+.mp-gh small{display:block;font-size:12.5px;color:var(--n600,#555);margin-top:2px}
+.mp-deals{margin-top:8px}
+.mp-rl{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}
+.mp-r{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;padding:8px 10px;border:1px solid var(--hair);border-radius:10px;background:var(--n50,#F7F7F9);text-align:left;cursor:pointer}
+.mp-r b{font-size:14px;color:var(--n900)}
+.mp-r span{font-size:12.5px;color:var(--n600,#555)}
+.mp-box{max-width:480px;width:100%}
+.mp-pic{display:block;width:100%;max-height:240px;object-fit:cover;border-radius:12px;margin:0 0 10px}
+.mp-t{width:100%;border-collapse:collapse;font-size:14px}
+.mp-t th{width:72px;text-align:left;color:var(--n500);font-weight:600;padding:5px 0;vertical-align:top}
+.mp-t td{padding:5px 0;color:var(--n900);white-space:pre-wrap}
+.mp-off{display:flex;flex-direction:column;gap:4px;margin-top:10px;padding:10px 12px;border-radius:12px;background:var(--n50,#F7F7F9)}
+.mp-off small{color:var(--n600,#555);font-size:12.5px}
+.mp-off .btn{align-self:flex-start;margin-top:4px}
 .ctpi-box{max-width:460px;width:100%}
 .ctpi-view{max-height:min(50vh,560px);overflow:auto;border:1px solid var(--hair);border-radius:14px;background:var(--n50,#F7F7F9);display:grid;place-items:center;min-height:120px}
 .ctpi-view img{display:block;width:100%;height:auto}
@@ -10381,6 +10399,7 @@ function 매물좌표채우기(){
   html: `<div class="gm-iw"><b>${esc(l.name || '물건')}</b><span>${esc([l.dong, l.deal].filter(Boolean).join(' · '))}</span><span>${esc(지도값(l))}</span><span>${esc(물건상태(l)[0])}</span><button type="button" class="btn sec sm" data-go="#/partner/listing/${esc(l.id)}">물건 보기</button></div>` })) });
 V['#/partner/map'] = () => {
   if(!GM.st) setTimeout(구글지도);
+  if(MP.pmode === 'all') return mp중개사화면();
   if(S.lsReady) setTimeout(매물좌표채우기);
   const 목록 = (S.listings || []).filter(l => !l.seed && l.status !== 'trash'), 있음 = 목록.filter(l => l.lat && l.lng), 없음 = 목록.filter(l => !(l.lat && l.lng));
   return `
@@ -10389,6 +10408,7 @@ V['#/partner/map'] = () => {
   <div class="pad adm-page" style="flex:1;padding-top:${isMo()?18:28}px;padding-bottom:24px;width:100%;display:flex;flex-direction:column;gap:14px">
     <div><h1 class="t" style="font-size:${isMo()?21:25}px;margin-top:8px">매물지도</h1>
       <p class="sub" style="font-size:14.5px">매물장부의 물건을 지도에서 봅니다 · <b style="color:var(--ind)">보라</b>는 손님에게 노출 중, 회색은 장부만입니다.</p></div>
+    ${mp중개사탭()}
     <div class="gm-lay">
       <div class="gm-box card" data-gmap="partner">${GM.st === 'ok' ? '' : `<p class="gm-msg">${지도글()}</p>`}</div>
       <aside class="card gm-side"><b class="gm-sh">물건 ${목록.length}건${없음.length ? ` · 위치 없음 ${없음.length}` : ''}</b>
@@ -10402,18 +10422,77 @@ V['#/partner/map'] = () => {
 </div>`;
 };
 /* 직접 매물찾기 (2026-11-24 파트너 · 대표님) - 조건 없이 노출 중인 매물 전체를 지도에서. 가입한 손님만(서버 browse), 위치는 대략 · 공개 칸만 */
-const MP = { mode: '', kind: '', rows: null, loading: false, err: '', at: 0 };
+const MP = { mode: '', kind: '', rows: null, loading: false, err: '', at: 0, closed: false, open: '', deal: '', pmode: '' };
 const MP_종류 = { '': '전체', home: '주거', shop: '상가', office: '오피스', storage: '창고' };
 function mpLoad(){
   if(MP.loading || !세션있음()) return; MP.loading = true; MP.err = '';
   apiFetch('/api/my', { method: 'POST', body: JSON.stringify({ what: 'browse', kind: MP.kind }) }).then(r => r.json().then(j => ({ ok: r.ok, j })))
-    .then(({ ok, j }) => { MP.loading = false; MP.at = Date.now(); if(ok && j.ok) MP.rows = j.rows || []; else { MP.rows = MP.rows || []; MP.err = j.error || '매물을 불러오지 못했습니다'; } if(S.route === '#/map') render(); })
-    .catch(() => { MP.loading = false; MP.err = '네트워크 문제로 매물을 불러오지 못했습니다'; if(S.route === '#/map') render(); });
+    .then(({ ok, j }) => { MP.loading = false; MP.at = Date.now(); if(ok && j.ok){ MP.rows = j.rows || []; MP.closed = !!j.closed; } else { MP.rows = MP.rows || []; MP.err = j.error || '매물을 불러오지 못했습니다'; } if(S.route === '#/map' || S.route === '#/partner/map') render(); })
+    .catch(() => { MP.loading = false; MP.err = '네트워크 문제로 매물을 불러오지 못했습니다'; if(S.route === '#/map' || S.route === '#/partner/map') render(); });
 }
 const mp모드 = () => MP.mode || ((S.conds || []).some(c => !c.seed) ? 'match' : 'all');
 const mp보고싶어 = r => `<button type="button" class="btn pri sm" data-act="mp-want" data-v="${esc(r.id)}|${esc(r.kind || '')}|${esc(r.deal || '')}">이 집 보고 싶어요</button>`;
-지도표시.browse = () => ({ circles: [], points: (MP.rows || []).filter(r => r.lat && r.lng).map(r => ({ id: r.id, lat: r.lat, lng: r.lng, t: r.name, on: true,
-  html: `<div class="gm-iw"><b>${esc(r.name || '매물')}</b><span>${esc([r.dong, r.deal].filter(Boolean).join(' · '))}</span><span>${esc(지도값(r))}</span><span>${esc(r.office || '')}</span><span class="gm-iwn">대략적인 위치입니다</span>${mp보고싶어(r)}</div>` })) });
+/* 단지(건물)별로 묶기 (2026-11-26 파트너 '단지 표시 · 매매 n건 · 전세 n건 → 목록 → 상세(중개사무소 정보)') - 동 + 건물 이름이 같으면 한 단지 */
+const MP_거래 = ['매매', '전세', '월세', '연세', '단기임대'];
+function mp단지(rows){
+  const 묶 = new Map();
+  for(const r of rows || []){ const 키 = `${r.dong || ''}|${String(r.name || '').trim() || r.id}`;
+    if(!묶.has(키)) 묶.set(키, { 키, name: String(r.name || '').trim() || '이름 없는 건물', dong: r.dong || '', lat: r.lat, lng: r.lng, rows: [], 셈: {} });
+    const g = 묶.get(키); g.rows.push(r); g.셈[r.deal || '기타'] = (g.셈[r.deal || '기타'] || 0) + 1; if(!g.lat && r.lat){ g.lat = r.lat; g.lng = r.lng; } }
+  return [...묶.values()].sort((a, b) => b.rows.length - a.rows.length || a.name.localeCompare(b.name, 'ko'));
+}
+/* 단지 정보 - 그 단지 매물에 적힌 사용승인 · 총 층수 · 주차 · 주택 유형에서 모은다(공공 단지 정보는 열쇠가 오면) */
+const mp단지정보 = g => { const 첫 = k => (g.rows.find(r => r[k]) || {})[k];
+  return [첫('approved') && `사용승인 ${String(첫('approved')).slice(0, 10)}`, +첫('floors') && `${첫('floors')}층`, 첫('parking') && `주차 ${첫('parking')}`, ((첫('htype') || [])[0] || '')].filter(Boolean).join(' · '); };
+const mp거래칩 = g => MP_거래.concat(Object.keys(g.셈).filter(k => !MP_거래.includes(k))).filter(k => g.셈[k]).map(k =>
+  `<button type="button" class="chip${MP.open === g.키 && MP.deal === k ? ' on' : ''}" data-act="mp-deal" data-v="${esc(g.키)}|${esc(k)}">${esc(k)} ${g.셈[k]}건</button>`).join('');
+function mp단지목록HTML(rows){
+  const 단지 = mp단지(rows);
+  if(!단지.length) return `<p class="sub" style="margin:0">${MP.rows == null ? '불러오는 중입니다…' : '아직 공개된 매물이 없습니다.'}</p>`;
+  return `<ul class="mp-gl">${단지.map(g => `<li class="mp-g${MP.open === g.키 ? ' open' : ''}"><div class="mp-gh"><b>${esc(g.name)}</b><small>${esc([g.dong, mp단지정보(g)].filter(Boolean).join(' · '))}</small></div>
+      <div class="ct-chips mp-deals">${mp거래칩(g)}</div>
+      ${MP.open === g.키 ? `<ul class="mp-rl">${g.rows.filter(r => (r.deal || '기타') === MP.deal).map(r => `<li><button type="button" class="mp-r" data-act="mp-one" data-v="${esc(r.id)}"><b>${esc(지도값(r))}</b><span>${esc([+r.area ? `${r.area}㎡` : '', r.band || (r.floor_no ? `${r.floor_no}층` : ''), r.rooms ? `방 ${r.rooms}` : '', r.office].filter(Boolean).join(' · '))}</span></button></li>`).join('')}</ul>` : ''}</li>`).join('')}</ul>`;
+}
+function mp상세HTML(id){
+  const r = (MP.rows || []).find(x => x.id === id); if(!r){ S.modal = null; return ''; }
+  const 줄 = [['거래', r.deal === '매매' || !r.deal ? 지도값(r) : `${r.deal} · ${지도값(r)}`], ['관리비', +r.fee ? `월 ${won(r.fee)}` : ''], ['면적', [+r.area ? `전용 ${r.area}㎡` : '', +r.area_sup ? `공급 ${r.area_sup}㎡` : ''].filter(Boolean).join(' · ')],
+    ['방 · 욕실', [r.rooms ? `방 ${r.rooms}` : '', r.baths ? `욕실 ${r.baths}` : ''].filter(Boolean).join(' · ')], ['층 · 향', [r.band || (r.floor_no ? `${r.floor_no}층` : ''), r.dir ? `${r.dir}향` : ''].filter(Boolean).join(' · ')],
+    ['입주', r.move_in || ''], ['건물', [r.approved ? `사용승인 ${String(r.approved).slice(0, 10)}` : '', +r.floors ? `총 ${r.floors}층` : '', r.parking ? `주차 ${r.parking}` : ''].filter(Boolean).join(' · ')],
+    ['한 줄', r.one_line || ''], ['설명', r.note || '']].filter(([, v]) => v);
+  const 중 = !!S.agent;
+  return `<div class="modal" data-act="modal-bg"><div class="box mp-box" data-stop role="dialog" aria-modal="true" aria-labelledby="mdT" tabindex="-1">
+    <h2 id="mdT" style="margin:0 0 4px;font-size:17px;font-weight:700;letter-spacing:-.03em">${esc(r.name || '매물')}</h2>
+    <p class="sub" style="margin:0 0 10px;font-size:13.5px">${esc([r.dong, r.kind ? ({ home:'주거', shop:'상가', office:'오피스', storage:'창고' })[r.kind] : ''].filter(Boolean).join(' · '))} · 위치는 대략입니다</p>
+    ${r.pic ? `<img class="mp-pic" src="${esc(r.pic)}" alt="${esc(r.name || '매물')} 사진">` : ''}
+    <table class="mp-t">${줄.map(([k, v]) => `<tr><th>${esc(k)}</th><td>${esc(v)}</td></tr>`).join('')}</table>
+    <div class="mp-off"><b>${esc(r.office || '공인중개사사무소')}</b>${중 && r.officeAddr ? `<small>${esc(r.officeAddr)}</small>` : ''}${중 && r.officePhone ? `<a class="btn sec sm" href="tel:${esc(String(r.officePhone).replace(/[^0-9]/g, ''))}">${esc(r.officePhone)} 전화</a>` : ''}</div>
+    <div class="eqb" style="display:flex;gap:8px;margin-top:12px">${중 ? '' : mp보고싶어(r)}<button type="button" class="btn sec" data-act="modal-close">닫기</button></div></div></div>`;
+}
+지도표시.browse = () => ({ circles: [], points: mp단지(MP.rows || []).filter(g => g.lat && g.lng).map(g => ({ id: g.키, lat: g.lat, lng: g.lng, t: `${g.name} ${g.rows.length}건`, on: true,
+  html: `<div class="gm-iw"><b>${esc(g.name)}</b><span>${esc([g.dong, mp단지정보(g)].filter(Boolean).join(' · '))}</span><span>${esc(Object.entries(g.셈).map(([k, n]) => `${k} ${n}건`).join(' · '))}</span><span class="gm-iwn">대략적인 위치입니다</span><button type="button" class="btn sec sm" data-act="mp-grp" data-v="${esc(g.키)}">매물 보기</button></div>` })) });
+/* 중개사 매물지도 - '공개 매물 찾기(공동중개)' (2026-11-26 파트너) - 다른 사무소가 공개한 매물까지 단지별로 */
+const mp중개사탭 = () => `<div class="ct-chips mp-tabs" role="tablist" aria-label="매물지도 보기">${[['', '내 매물장부'], ['all', '공개 매물 찾기 (공동중개)']].map(([k, t]) =>
+  `<button type="button" class="chip${(MP.pmode || '') === k ? ' on' : ''}" role="tab" aria-selected="${(MP.pmode || '') === k}" data-act="mp-pmode" data-v="${k}">${t}</button>`).join('')}</div>`;
+function mp중개사화면(){
+  if(MP.rows == null && !MP.loading) setTimeout(mpLoad);
+  const 둘 = MP.rows || [];
+  return `
+<div class="scr fade" style="background:var(--n50)">
+  ${navPartner('lm')}
+  <div class="pad adm-page" style="flex:1;padding-top:${isMo()?18:28}px;padding-bottom:24px;width:100%;display:flex;flex-direction:column;gap:14px">
+    <div><h1 class="t" style="font-size:${isMo()?21:25}px;margin-top:8px">매물지도</h1>
+      <p class="sub" style="font-size:14.5px">비버노크에 공개된 매물을 단지별로 봅니다 · 공동중개는 매물 상세의 사무소 전화로 · 위치는 대략입니다.</p></div>
+    ${mp중개사탭()}
+    ${S.agent ? `<div class="ct-chips mp-kinds" aria-label="매물 종류">${Object.entries(MP_종류).map(([k, t]) => `<button type="button" class="chip${MP.kind === k ? ' on' : ''}" data-act="mp-kind" data-v="${k}" aria-pressed="${MP.kind === k}">${t}</button>`).join('')}</div>` : ''}
+    <div class="gm-lay">
+      <div class="gm-box card" data-gmap="browse">${GM.st === 'ok' ? '' : `<p class="gm-msg">${지도글()}</p>`}</div>
+      <aside class="card gm-side"><b class="gm-sh">공개 매물 ${MP.rows == null ? '…' : 둘.length + '건'} · 단지 ${mp단지(둘).length}곳</b>
+        ${MP.err ? `<p class="sub" style="margin:0">${esc(MP.err)}</p>` : ''}${mp단지목록HTML(둘)}</aside>
+    </div>
+  </div>
+  ${tabbar('lm','p')}
+</div>`;
+}
 /* 손님 매물지도 - 맞춤매물(80점 이상)의 대략 위치. 같은 물건이 여러 조건에 걸리면 한 번만 */
 지도표시.cust = () => { const 본 = new Set(), points = [];
   for(const g of MT.groups || []) for(const r of g.rows || []) if(r.lat && r.lng && !본.has(r.id)){ 본.add(r.id);
@@ -10440,9 +10519,7 @@ V['#/map'] = () => {
       <div class="gm-box card" data-gmap="browse">${GM.st === 'ok' ? '' : `<p class="gm-msg">${지도글()}</p>`}</div>
       <aside class="card gm-side"><b class="gm-sh">공개 매물 ${MP.rows == null ? '…' : 둘.length + '건'}</b>
         ${MP.err ? `<p class="sub" style="margin:0">${esc(MP.err)}</p>` : ''}
-        ${둘.length ? `<ul class="gm-list">${둘.map(r => `<li><button type="button" class="gm-it" ${r.lat ? `data-act="gm-go" data-v="${esc(r.id)}"` : ''}><i class="gm-dot on${r.lat ? '' : ' off'}" aria-hidden="true"></i>
-          <span><b>${esc(r.name || '매물')}</b><small>${esc([r.dong, 지도값(r), r.office, r.lat ? '' : '위치 준비 중'].filter(Boolean).join(' · '))}</small></span></button></li>`).join('')}</ul>`
-          : `<p class="sub" style="margin:0">${MP.rows == null ? '불러오는 중입니다…' : '아직 공개된 매물이 없습니다.'}</p>`}</aside>
+        ${MP.closed ? '<p class="sub" style="margin:0;line-height:1.7">직접 매물찾기는 곧 열립니다. 지금은 ‘내 조건에 맞는 매물’과 1:1 제안으로 찾아 드립니다.</p>' : mp단지목록HTML(둘)}</aside>
     </div>` : `
     <div class="gm-lay">
       <div class="gm-box card" data-gmap="cust">${GM.st === 'ok' ? '' : `<p class="gm-msg">${지도글()}</p>`}</div>
@@ -11498,6 +11575,7 @@ function modalHTML(){
   }
   if(S.modal.type==='ct-ext') return ctExt창HTML();
   if(S.modal.type==='ct-cloud') return 보관창HTML();
+  if(S.modal.type==='mp-one') return mp상세HTML(S.modal.id);
   if(S.modal.type==='ct-prep-img'){ const m = S.modal, 막 = m.url ? '' : ' disabled';
     return `<div class="modal" data-act="modal-bg"><div class="box ctpi-box" data-stop role="dialog" aria-modal="true" aria-labelledby="mdT" tabindex="-1">
       <h2 id="mdT" style="margin:0 0 6px;font-size:16px;font-weight:700;letter-spacing:-.03em">잔금 준비서류 이미지</h2>
@@ -14443,6 +14521,7 @@ if(typeof addEventListener === 'function'){
   addEventListener('unhandledrejection', e => { const r = e && e.reason; bk오류보내기('처리되지 않은 오류: ' + ((r && r.message) || r), (r && r.stack && (/(https?:\/\/[^\s)]+?):\d+:\d+/.exec(r.stack) || [])[1]) || location.origin, 0, 0, r && r.stack); });
 }
 const BK_변경 = [
+  { v:'26.11.26.4', 날:'2026-11-26', 줄:[ '매물찾기 (파트너) - 공개 매물을 단지(건물)별로 묶어 ‘매매 n건 · 전세 n건’ → 누르면 매물 목록 → 매물 상세(사무소 정보) · 단지 정보(사용승인 · 층수 · 주차). 중개사는 매물지도의 ‘공개 매물 찾기(공동중개)’에서 사무소 전화 · 주소까지 보고, 손님 화면은 매물이 쌓일 때까지 숨깁니다' ] },
   { v:'26.11.26.3', 날:'2026-11-26', 줄:[ '빈 양식 (파트너) - 계약서 종류 고르는 화면에서 고른 종류의 빈 계약서를 ‘빈 양식 인쇄 · PDF’로, 아래 ‘부속서류 · 빈 양식’에서 영수증(계약금 · 중도금 · 잔금 · 보증금반환금) · 잔금정산서 · 물품인계 확인서 · 위임장 · 개인정보 동의서를 바로 쓰거나 인쇄 · PDF, 공제증서는 출력' ] },
   { v:'26.11.26.2', 날:'2026-11-26', 줄:[ '계약서 쪽 나눔 (파트너) - 특약이 있으면 첫 쪽은 부동산 표시 · 계약내용 · 인적사항으로 끝나고, 특약은 다음 쪽(별지)으로. 다음 쪽마다 맨 위에 물건 상자(목적물 · 당사자 · 계약서 · 계약일)가 인쇄됩니다. 당사자가 많으면(5명 넘음 · 공동중개 둘 넘음) 특약 다음에 인적사항' ] },
   { v:'26.11.26', 날:'2026-11-26', 줄:[ '계약서에 직접 입력 (파트너) - 당사자마다 개인 · 법인 고르기, 매도인(임대인) 계좌 넣기, 특약은 한 칸에서 원하는 줄 끝에 엔터로 바로 아래 줄 추가(‘+ 특약 줄 추가’는 뺌 · 번호는 칸을 떠날 때 다시 매김), 추가특약 보기(전문 · 넣기 · 특약 관리에서 고치기)', '영수증 - 문구 없이 계약금 · 중도금 · 잔금 · 보증금반환금 단추만(보증금 반환 영수증 탭을 여기로)', '잔금정산서 - 관리비 칸 안에서 바로 항목 추가' ] },
@@ -25396,8 +25475,12 @@ function handle(a,v,el){
     case 'mt-want': { const [did, lid] = String(v).split('|'); mtWant(did, lid); return true; }
     /* 직접 매물찾기 (2026-11-24) */
     case 'mp-all': MP.mode = 'all'; go('#/map'); return true;
+    case 'mp-deal': { const i = String(v).lastIndexOf('|'), 키 = v.slice(0, i), 거 = v.slice(i + 1); if(MP.open === 키 && MP.deal === 거){ MP.open = ''; MP.deal = ''; } else { MP.open = 키; MP.deal = 거; } render(); return true; }
+    case 'mp-grp': { const g = mp단지(MP.rows || []).find(x => x.키 === v); if(g){ MP.open = g.키; MP.deal = Object.keys(g.셈)[0] || ''; render(); setTimeout(() => { const el = document.querySelector('.mp-g.open'); if(el) el.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 50); } return true; }
+    case 'mp-one': S.modal = { type: 'mp-one', id: v }; render(); return true;
+    case 'mp-pmode': MP.pmode = v === 'all' ? 'all' : ''; if(MP.pmode && MP.rows == null) setTimeout(mpLoad); render(); return true;
     case 'mp-mode': MP.mode = v === 'all' ? 'all' : 'match'; render(); return true;
-    case 'mp-kind': if(MP.kind !== v){ MP.kind = MP_종류[v] != null ? v : ''; MP.rows = null; render(); } return true;
+    case 'mp-kind': if(MP.kind !== v){ MP.kind = MP_종류[v] != null ? v : ''; MP.rows = null; MP.open = ''; if(S.route === '#/partner/map') setTimeout(mpLoad); render(); } return true;
     case 'mp-want': { const [lid, kind, deal] = String(v).split('|'), 조건들 = (S.conds || []).filter(c => !c.seed && c.kind === kind);
       const 맞는 = 조건들.find(c => !deal || !c.deal || String(c.deal) === deal) || 조건들[0];
       if(!맞는){ toast(`이 매물을 보려면 ${MP_종류[kind] || ''} 조건을 먼저 걸어 주세요 - 30초면 됩니다`); go('#/kind'); return true; }

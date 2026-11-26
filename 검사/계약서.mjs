@@ -1375,8 +1375,8 @@ return ct부동산글;`)((d, k) => ({ property: k === 0 ? (d.property || {}) : (
   dp.parties.lessor.name = '김임대'; dp.parties.lessor.proxy = { name: '김대리', rel: '배우자', phone: '010-9', addr: '서울', docs: { letter: true } };
   const hp = M.ctDocHTML(dp);
   ok(/임대인의<br>대리인/.test(hp) && /김대리 <span class="ct-seal">\(서명 또는 날인\)<\/span> <span class="sm">· 위임장·본인 인감증명서 첨부/.test(hp) && /배우자/.test(hp), '대리인 계약이면 본인 칸 아래 대리인 칸(관계·위임장 첨부)');
-  ok(/function ctProxyDocHTML/.test(js) && /function ctReturnDocHTML/.test(js) && /\['pw','위임장'\], \.\.\.\(F\.lease \? \[\['rt','보증금 반환 영수증'\]\] : \[\]\)/.test(js),
-     '부속 서류에 위임장 · (임대차면) 보증금 반환 영수증');
+  ok(/function ctProxyDocHTML/.test(js) && /function ctReturnDocHTML/.test(js) && /\['bal','잔금'\], \.\.\.\(F\.lease \? \[\['ret','보증금반환금'\]\] : \[\]\)/.test(js) && js.includes("(탭 === 'rt' || (탭 === 'rc' && CT.extraRc === 'ret')) && F.lease ? ctReturnDocHTML(doc)"),
+     '부속 서류에 위임장 · (임대차면) 영수증 단추에 보증금반환금(11-26 파트너)');
   ok(/대리인 계약 - 아직 체크하지 않은 것: \$\{빠짐\.join\('·'\)\}/.test(js), '확정 전 점검 - 위임장·인감증명서·본인 통화 확인 중 빠진 것');
 
   /* 임대차 만기 6개월 전 - 화면과 서버가 같은 날을 낸다 */
@@ -1563,7 +1563,7 @@ ok(js.includes('doc.deal.down = 0;') && js.includes("if(같은줄){ CS.rowBusy =
 /* ── 3~5차 중도금 일정 · 영수증 (2026-11-17) ── */
 { const 서버 = fs.readFileSync(new URL('../api/_contract.js', import.meta.url), 'utf8');
   ok(서버.includes("이름: `${i + 3}차 중도금`, 날: 날만(x.date)") && js.includes("이름: `${i + 3}차 중도금`, 날: ct날만(x.date)"), '3~5차 중도금 일정 - 서버와 화면이 같은 규칙');
-  ok(js.includes('const ct영수더 = (D, k) =>') && js.includes("['down','mid','mid2','mx0','mx1','mx2','bal'].includes(v)"), '영수증 - 3~5차 중도금도 고른다'); }
+  ok(js.includes('const ct영수더 = (D, k) =>') && js.includes("['down','mid','mid2','mx0','mx1','mx2','bal','ret'].includes(v)"), '영수증 - 3~5차 중도금도 고른다'); }
 
 /* ── 대표님 결정 반영 (2026-11-17, 26.11.17.19) - 계약서 판독 · 날짜 바뀜 주황 · 소유자 이름 ── */
 { const SC2 = await import(길.api('_scan.js')), EX2 = await import(길.api('_ext.js'));

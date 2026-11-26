@@ -176,6 +176,10 @@ async function shareMake(res, agent, b) {
   const id = String(b.id || '');
   if (!물건번호꼴.test(id)) return res.status(400).json({ error: '어느 물건인지 알 수 없습니다' });
   if (overLimit('lshare:' + agent.id, 60, 3600e3)) return res.status(429).json({ error: '잠시 뒤 다시 만들어 주세요' });
+  /* 소개 링크는 손님에게 매물을 알리는 일이다 - 노출과 같은 권한을 본다 (2026-11-26 코드리뷰). 중개보조원은 표시 · 광고를 할 수 없다(공인중개사법 제18조의2) */
+  { const 직 = agent.staff, 끈 = (직 && 직.perm) || {};
+    if (직 && (보조원잠금('listing_open') && 직.role === 'assistant' || 끈.listing_open === false))
+      return res.status(403).json({ error: 직.role === 'assistant' ? '중개보조원은 매물 소개 링크를 만들 수 없습니다(공인중개사법 제18조의2)' : '대표님이 매물 노출을 꺼 두셨습니다', need: 'perm' }); }
   try {
     const x = await 내물건하나(agent, id);
     if (x.error) return res.status(502).json({ error: '물건을 불러오지 못했습니다' });

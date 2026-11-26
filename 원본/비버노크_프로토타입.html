@@ -1535,6 +1535,7 @@ body.mo .hp-pair-h{font-size:19px}
 .qk-done{color:var(--ok);font-weight:700}
 .qk-btns{display:flex;gap:8px;flex-wrap:wrap}
 .qk-btns .btn{flex:1 1 140px}
+.qk-rep{align-self:flex-start;font-size:13px;color:var(--n500);text-decoration:underline}
 .qk-rule{margin:10px 0 0;padding-left:18px;font-size:13px;line-height:1.65;color:var(--n500)}
 .hd-note{margin:0 0 14px;padding:12px 14px;border-radius:var(--r-md);background:var(--warnbg);border:1px solid var(--warnline);display:flex;flex-direction:column;gap:6px;font-size:13.5px;line-height:1.6;color:var(--n700)}
 .hd-note b{font-size:14.5px;color:var(--n900)}
@@ -8643,6 +8644,7 @@ V['#/inbox'] = () => {
       <div class="eqb qk-btns">
         ${p.askAt ? '' : `<button class="btn pri md" data-act="qk-ask" data-v="${p.id}" ${S.qkAsking ? 'disabled' : ''}>자세히 보고 싶어요</button>`}
         <button class="btn sec md" data-act="reject" data-v="${p.id}" ${S.rejecting ? 'disabled' : ''}>관심 없음</button></div>
+      ${p.seed ? '' : `<button type="button" class="tapx qk-rep" data-act="report" data-v="${p.id}">문제가 있는 제안인가요? 신고하기</button>`}
     </div>` : `
     <div class="card ${p.isNew?'hi':''} clickable fade" data-go="#/proposal/${p.id}" style="overflow:hidden;${p.read&&!p.isNew?'background:var(--n50);box-shadow:none':''}">
       <div style="height:${isMo()?128:150}px;background:${p.photos?'var(--ind100)':'var(--n100)'};display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden">
@@ -8964,7 +8966,7 @@ V['#/report'] = (id) => { const p=S.props.find(x=>x.id===id); if(!p) return V['#
   const TYPES=['실제와 다른 가격·조건이에요','사진이 실제 물건과 달라요','이미 나간(거래 완료) 물건이에요','다른 물건을 권유받았어요','그 외 문제가 있어요'];
   return `
 <div class="scr plain fade">
-  <div class="nav solid pad"><a data-go="#/" style="flex:none">${logoLockup({h:25,tag:!isMo()})}</a><a class="back" data-go="#/proposal/${p.id}"><i class="ar-l" aria-hidden="true"></i>제안</a></div>
+  <div class="nav solid pad"><a data-go="#/" style="flex:none">${logoLockup({h:25,tag:!isMo()})}</a><a class="back" data-go="${p.quick ? '#/inbox' : '#/proposal/' + p.id}"><i class="ar-l" aria-hidden="true"></i>제안</a></div>
   <div style="flex:1;display:flex;justify-content:center;padding:${isMo()?'20px 24px':'40px'}">
     <div style="width:100%;max-width:560px;display:flex;flex-direction:column;gap:18px">
       <div><h1 class="t" style="font-size:${isMo()?21:25}px">어떤 문제인가요?</h1>
@@ -10944,7 +10946,7 @@ function 물건관리HTML(L){
     <div class="lg-acts">${살아 ? `<button type="button" class="btn sec sm" data-act="lg-save" data-v="${L.id}" ${바쁨}>${MG.busy === L.id ? '저장하는 중…' : '저장'}</button>
       ${노출 ? (L.vis === 'open' ? `<button type="button" class="btn tool sm" data-act="lg-vis" data-v="${L.id}|private" ${바쁨}>노출 종료</button>` : `<button type="button" class="btn pri sm" data-act="lg-vis" data-v="${L.id}|open" ${바쁨}>노출하기</button>`) : ''}
       <button type="button" class="btn tool sm" data-act="lg-edit" data-v="${L.id}" ${바쁨}>고치기</button>
-      ${ownerSide() ? '' : `<button type="button" class="btn tool sm" data-act="lsh-make" data-v="${L.id}" ${바쁨 || (LSH.busy ? 'disabled' : '')} title="손님에게 보낼 7일짜리 소개 링크 · A4 한 장">소개 한 장</button>`}
+      ${ownerSide() || 보조원() || !권한('listing_open') ? '' : `<button type="button" class="btn tool sm" data-act="lsh-make" data-v="${L.id}" ${바쁨 || (LSH.busy ? 'disabled' : '')} title="손님에게 보낼 7일짜리 소개 링크 · A4 한 장">소개 한 장</button>`}
       <button type="button" class="btn tool sm" data-act="lg-state" data-v="${L.id}|done" ${바쁨}>거래완료</button>
       <button type="button" class="btn tool sm" data-act="lg-state" data-v="${L.id}|arch" ${바쁨}>내리기</button>
       <button type="button" class="btn tool sm dng" data-act="lg-state" data-v="${L.id}|trash" ${바쁨}>삭제</button>`
@@ -14720,6 +14722,7 @@ if(typeof addEventListener === 'function'){
   addEventListener('unhandledrejection', e => { const r = e && e.reason; bk오류보내기('처리되지 않은 오류: ' + ((r && r.message) || r), (r && r.stack && (/(https?:\/\/[^\s)]+?):\d+:\d+/.exec(r.stack) || [])[1]) || location.origin, 0, 0, r && r.stack); });
 }
 const BK_변경 = [
+  { v:'26.11.26.15', 날:'2026-11-26', 줄:[ '전수점검 · 코드리뷰 반영 - 매물 소개 링크는 매물 노출과 같은 권한을 봅니다(중개보조원 · 대표가 노출을 꺼 둔 직원은 만들 수 없음)', '손님이 받은 간단 제안에도 ‘신고하기’를 달았습니다' ] },
   { v:'26.11.26.14', 날:'2026-11-26', 줄:[ '간단 제안을 보내 둔 조건은 다섯 자리가 다 차도 손님 조건 목록에 남습니다 - 손님이 ‘자세히 보고 싶어요’를 눌렀는데 정식 제안으로 올리지 못하던 것', '‘구하기 어려워요’ - 두 중개사가 같은 때 답해도 한쪽 답이 사라지지 않게' ] },
   { v:'26.11.26.13', 날:'2026-11-26', 줄:[ '전수점검 · 코드리뷰 반영 - 간단 제안은 손님 제안함에 보이면 읽은 것으로 남깁니다(전에는 손님이 봤어도 중개사 쪽은 미열람이고 7일 뒤 ‘열지 않아 만료’가 됐음)', '간단 제안을 정식 제안으로 올린 뒤 보낸 제안에 옛 카드가 함께 남던 것 · 기한이 지난 조건에는 ‘구하기 어려워요’를 받지 않음' ] },
   { v:'26.11.26.12', 날:'2026-11-26', 줄:[ '매물 소개 한 장 (파트너) - 매물장부의 ‘소개 한 장’을 누르면 손님에게 보낼 링크가 생깁니다. 받은 사람만 로그인 없이 보고 7일 뒤 닫힙니다(직접 끊을 수도 있음). 사진 · 가격 · 명시사항 · 사무소 정보가 한 장에 담기고 그대로 인쇄하면 A4 한 장입니다', '명시사항을 다 채운 물건만 만들 수 있고, 호수와 의뢰인 · 특이사항은 나가지 않습니다. 거래완료 · 내린 물건의 링크는 바로 닫힙니다' ] },

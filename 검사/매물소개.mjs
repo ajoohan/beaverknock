@@ -89,6 +89,10 @@ ok(r.code === 200 && feed.소개표읽기(새표).n === 1, '끊은 뒤 새로 �
 const js = 길.js();
 ok(js.includes(`V['#/lshare']`) && /h\.startsWith\('#\/s\/'\)/.test(js) && js.includes(`case 'lsh-make'`) && js.includes(`case 'lsh-cut'`), '화면 - 장부의 소개 한 장 단추 · 링크 창 · 공개 화면(#/s/표) · 끊기가 있다');
 ok(/@media print\{\.lsh-noprint\{display:none/.test(js) || fs.readFileSync(길.HTML경로, 'utf8').includes('@media print{.lsh-noprint{display:none'), '인쇄할 때 단추는 빠진다');
+/* ── 2026-11-26 코드리뷰 - 노출과 같은 권한 ── */
+{ const 원 = fs.readFileSync(new URL(길.api('feed.js')), 'utf8');
+  ok(/async function shareMake[\s\S]{0,900}보조원잠금\('listing_open'\) && 직\.role === 'assistant' \|\| 끈\.listing_open === false/.test(원), '소개 링크 만들기는 매물 노출과 같은 권한을 본다 - 중개보조원 · 노출을 꺼 둔 직원은 못 만든다');
+  ok(/ownerSide\(\) \|\| 보조원\(\) \|\| !권한\('listing_open'\) \? '' : `<button type="button" class="btn tool sm" data-act="lsh-make"/.test(js), '화면도 그 직원에게는 소개 한 장 단추를 보이지 않는다'); }
 
 console.log(`${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

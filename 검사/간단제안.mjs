@@ -102,6 +102,7 @@ ok(/p\.quick && p\.status === 'sent' && !p\.seed && !p\.읽음보냄/.test(js), 
 r = await 부름('POST', { hard: true, demand_id: D, why: '예산' });
 ok(r.code === 409 && !조건.hard.a1, '기한이 지난 조건에는 구하기 어려워요를 받지 않는다');
 ok(feed.includes("!(d.slots_left > 0) && !간단보냄.has(d.id)") && feed.includes("addr=eq.${encodeURIComponent('간단 제안')}&status=in.(sent,read)"), '내가 간단 제안을 보내 둔 조건은 자리가 다 차도 목록에 남는다 - 정식 제안으로 올릴 수 있게');
+ok(/class="tapx qk-rep" data-act="report"/.test(js) && js.includes("p.quick ? '#/inbox' : '#/proposal/' + p.id"), '손님이 받은 간단 제안에도 신고하기가 있다');
 
 console.log(`${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

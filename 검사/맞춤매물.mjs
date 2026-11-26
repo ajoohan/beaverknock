@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import * as fs0 from 'node:fs';
 /* 매물장부 노출 기준 · 맞춤매물 일치율 (2026-11-12 파트너 기획 C1 · C1-2)
    ⚠ 손님에게 나가는 물건 값에 호수 · 숨긴 동이 실리면 안 된다 - 서버까지 눌러 본다. */
@@ -99,6 +100,10 @@ globalThis.fetch = async (url, opt = {}) => {
 { const { 글가림 } = await import('../api/_match.js');
   ok(글가림('연락 010-1234-5678 · 02-555-1234 · 900101-1234567 · 3억 5,000만 · 2026-11-25') === '연락 010-****-5678 · 02-****-1234 · ******-******* · 3억 5,000만 · 2026-11-25' && 글가림(null) === null,
     '매물 글 속 전화번호 · 주민번호 꼴은 가리고 금액 · 날짜는 그대로(2026-11-25 보안점검)'); }
+{ const 피 = fs.readFileSync(new URL('../api/feed.js', import.meta.url), 'utf8');
+  ok(피.includes("fetch(sbUrl('bk_demand', `select=*&kind=in.(") && 피.includes("return res.status(502).json({ error: '손님 조건을 불러오지 못했습니다' })")
+     && /const 진행열쇠 = \/\^\(d:/.test(피) && 피.includes("주민등록번호는 적지 않습니다") && 피.includes("].slice(-20) }; }"),
+    '매물매칭 · 진행 기록(11-26) - 손님 조건은 모든 칸을 읽고(점수 기준 같게) 실패는 알리며, 진행 열쇠 · 주민번호 · 기록 상한을 본다'); }
 /* ── 사진 (0040) ── */
 /* 매물 신고 (2026-11-14 약관 제11조) - 공개 중인 매물만 · 까닭은 정한 것 중에서 · 같은 분은 한 번만 · 사무소에는 누가 했는지 안 간다 */
 { const { matchReport } = await import('../api/_match.js');

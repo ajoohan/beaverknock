@@ -9398,7 +9398,7 @@ V['#/partner/proposals'] = () => {
     rejected:['b-mute','관심 없음'],expired:['b-mute','미열람 만료'],withdrawn:['b-mute','회수함']})[p.status];
   return `
 <div class="scr fade" style="background:var(--n50)">
-  ${navPartner('p')}
+  ${navPartner('d')}
   <div class="pad adm-page" style="flex:1;padding-top:${isMo()?18:30}px;padding-bottom:24px;max-width:${isMo()?'none':'1000px'};margin:0 auto;width:100%;display:flex;flex-direction:column;gap:14px">
     ${pg탭HTML('sent')}
     <div><h1 class="t" style="font-size:${isMo()?21:25}px;margin-top:8px">보낸 제안</h1></div>
@@ -9434,7 +9434,7 @@ V['#/partner/proposals'] = () => {
        <button class="btn pri md" data-go="#/partner/demands">수요 목록 보기</button></div>`)}
     <p style="margin:2px 0 ${isMo()?'12px':'0'};font-size:13.5px;line-height:1.6;color:var(--n500)">발송 후 수정은 불가합니다 - 전달 내용의 무결성을 위해 회수 후 재작성만 가능합니다. 회수는 손님이 열람하기 전에만 됩니다.</p>
   </div>
-  ${tabbar('p','p')}
+  ${tabbar('d','p')}
 </div>`;};
 /* A-04 운영 지표 화면은 지웠다 (2026-09-12).
    깔때기도 미제안 사유도 '응답률 41%' 도 전부 지어낸 숫자였고,
@@ -10479,7 +10479,7 @@ function pg진행HTML(){
   if(!PG.loaded) return '<div class="card pad"><p class="sub" style="margin:0">불러오는 중입니다…</p></div>';
   if(!키들.length) return `<div class="card pad"><p class="sub" style="margin:0;line-height:1.7">아직 진행 중인 건이 없습니다. ‘손님 조건’에서 카드의 ‘수락’을 누르면 여기로 옵니다.</p></div>`;
   return 키들.map(k => { const [종, id] = k.split(':'), d = 종 === 'd' ? (S.demands || []).find(x => x.id === id) : null, pp = 종 === 'p' ? (S.myprops || []).find(x => x.id === id) : null;
-    const 제목 = d ? `${d.kicker || ''} ${d.title || '손님 조건'}`.trim() : pp ? pp.title : (종 === 'd' ? '손님 조건 (목록에 없음 - 마감 또는 지역 밖)' : '보낸 제안');
+    const 제목 = d ? `${((typeof WHO !== 'undefined' && WHO[d.who]) || {}).tag || '손님'} 조건${d.dongs ? ' · ' + d.dongs : ''}` : pp ? pp.title : (종 === 'd' ? '손님 조건 (목록에 없음 - 마감 또는 지역 밖)' : '보낸 제안');
     const 줄 = d ? (d.lines || []).slice(0, 2).join(' · ') : pp ? [pp.price, pp.line, pp.status].filter(Boolean).join(' · ') : '';
     return `<div class="card pad pg-card"><div class="pg-h"><b>${esc(제목)}</b><small>${esc(줄)}</small>${d ? `<a class="tapx" data-go="#/partner/demand/${esc(id)}">조건 보기</a>` : ''}</div>${pg칸HTML(k, 종)}
       <button type="button" class="tapx pg-del" data-act="pg-del" data-v="${esc(k)}">진행 목록에서 빼기</button></div>`; }).join('');
@@ -14617,6 +14617,7 @@ if(typeof addEventListener === 'function'){
   addEventListener('unhandledrejection', e => { const r = e && e.reason; bk오류보내기('처리되지 않은 오류: ' + ((r && r.message) || r), (r && r.stack && (/(https?:\/\/[^\s)]+?):\d+:\d+/.exec(r.stack) || [])[1]) || location.origin, 0, 0, r && r.stack); });
 }
 const BK_변경 = [
+  { v:'26.11.26.6', 날:'2026-11-26', 줄:[ '전수점검 · 코드리뷰 반영 - 매물매칭의 손님 조건 읽기가 표에 없는 칸 때문에 실패하면 ‘맞는 손님 없음’으로 조용히 보이던 것(모든 칸을 읽고 점수는 같은 기준으로) · 실패는 실패라고 알림', '보낸 제안 화면에서 왼쪽 메뉴가 ‘1:1 제안’에 불이 들어오게 · 진행 기록은 건마다 최근 20개 · 400건까지' ] },
   { v:'26.11.26.5', 날:'2026-11-26', 줄:[ '대시보드 명칭 · 진행 기록 (파트너) - ‘수요 목록’은 ‘1:1 제안’으로(위 탭: 손님 조건 · 진행 중 · 보낸 제안), 손님 조건 카드에 ‘수락’ - 누르면 진행 중에 올라 단계(수락 · 제안 보냄 · 연결됨 · 상담 · 방문 · 계약 · 성사 · 불발)와 메모를 적습니다', '‘매물매칭’ 새 메뉴 - 내가 공개한 매물과 80점 이상 맞는 손님 조건, 손님이 보고 싶어요 누른 매물을 따로 모아 안내 · 연결 · 계약까지 진행을 적습니다. 보낸 제안 카드에도 진행 기록' ] },
   { v:'26.11.26.4', 날:'2026-11-26', 줄:[ '매물찾기 (파트너) - 공개 매물을 단지(건물)별로 묶어 ‘매매 n건 · 전세 n건’ → 누르면 매물 목록 → 매물 상세(사무소 정보) · 단지 정보(사용승인 · 층수 · 주차). 중개사는 매물지도의 ‘공개 매물 찾기(공동중개)’에서 사무소 전화 · 주소까지 보고, 손님 화면은 매물이 쌓일 때까지 숨깁니다' ] },
   { v:'26.11.26.3', 날:'2026-11-26', 줄:[ '빈 양식 (파트너) - 계약서 종류 고르는 화면에서 고른 종류의 빈 계약서를 ‘빈 양식 인쇄 · PDF’로, 아래 ‘부속서류 · 빈 양식’에서 영수증(계약금 · 중도금 · 잔금 · 보증금반환금) · 잔금정산서 · 물품인계 확인서 · 위임장 · 개인정보 동의서를 바로 쓰거나 인쇄 · PDF, 공제증서는 출력' ] },

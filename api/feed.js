@@ -255,8 +255,8 @@ async function saveProg(res, agent, b) {
   const z = await 설정고침(agent, s => {
     const p = { ...(s.prog && typeof s.prog === 'object' ? s.prog : {}) };
     if (b.del) delete p[key];
-    else { const 전 = p[key] || {}; 새 = p[key] = { st, at: 지금.slice(0, 10), log: [...(Array.isArray(전.log) ? 전.log : []), { at: 지금, st, ...(note ? { note } : {}) }].slice(-30) }; }
-    const 키들 = Object.keys(p); if (키들.length > 600) for (const k of 키들.sort((a, c) => String((p[a] || {}).at).localeCompare(String((p[c] || {}).at))).slice(0, 키들.length - 600)) delete p[k];
+    else { const 전 = p[key] || {}; 새 = p[key] = { st, at: 지금.slice(0, 10), log: [...(Array.isArray(전.log) ? 전.log : []), { at: 지금, st, ...(note ? { note } : {}) }].slice(-20) }; }
+    const 키들 = Object.keys(p); if (키들.length > 400) for (const k of 키들.sort((a, c) => String((p[a] || {}).at).localeCompare(String((p[c] || {}).at))).slice(0, 키들.length - 400)) delete p[k];
     return { patch: { prog: p } };
   });
   if (!z.y) return 설정실패(res, z, '진행 기록');
@@ -270,8 +270,8 @@ async function readMatching(res, agent) {
     const 물건들 = await lr.json();
     if (!물건들.length) return res.status(200).json({ ok: true, rows: [], none: 'listing' });
     const kinds = [...new Set(물건들.map(L => L.kind).filter(Boolean))];
-    const dr = await fetch(sbUrl('bk_demand', `select=id,kind,deal,dongs,places,dep,rent,area_min,area_max,htype,rooms,move_in,status,expires_at,created_at&kind=in.(${kinds.join(',')})&order=created_at.desc&limit=1000`), { headers: sbHeaders() });
-    if (!dr.ok) return res.status(200).json({ ok: true, rows: [] });
+    const dr = await fetch(sbUrl('bk_demand', `select=*&kind=in.(${kinds.join(',')})&order=created_at.desc&limit=1000`), { headers: sbHeaders() });
+    if (!dr.ok) return res.status(502).json({ error: '손님 조건을 불러오지 못했습니다' });   /* 조용히 빈 목록으로 보이지 않게(11-26 점검) */
     const 조건들 = (await dr.json()).filter(d => (!d.status || d.status === 'active') && !(d.expires_at && Date.parse(d.expires_at) < Date.now()));
     const rows = [];
     for (const L of 물건들) for (const d of 조건들) { if (d.kind !== L.kind) continue; const s = 일치율(d, L);

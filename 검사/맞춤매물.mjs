@@ -104,6 +104,8 @@ globalThis.fetch = async (url, opt = {}) => {
   ok(피.includes("fetch(sbUrl('bk_demand', `select=*&kind=in.(") && 피.includes("return res.status(502).json({ error: '손님 조건을 불러오지 못했습니다' })")
      && /const 진행열쇠 = \/\^\(d:/.test(피) && 피.includes("주민등록번호는 적지 않습니다") && 피.includes("].slice(-20) }; }"),
     '매물매칭 · 진행 기록(11-26) - 손님 조건은 모든 칸을 읽고(점수 기준 같게) 실패는 알리며, 진행 열쇠 · 주민번호 · 기록 상한을 본다'); }
+{ const 정책 = fs.readFileSync(new URL('../vercel.json', import.meta.url), 'utf8');
+  ok((정책.match(/https:\/\/\*\.kakaocdn\.net/g) || []).length >= 2, '카카오 지도 - 보안 정책이 kakaocdn.net 의 지도 프로그램 · 요청을 막지 않는다(11-26)'); }
 /* ── 사진 (0040) ── */
 /* 매물 신고 (2026-11-14 약관 제11조) - 공개 중인 매물만 · 까닭은 정한 것 중에서 · 같은 분은 한 번만 · 사무소에는 누가 했는지 안 간다 */
 { const { matchReport } = await import('../api/_match.js');

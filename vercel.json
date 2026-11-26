@@ -36,7 +36,7 @@
         },
         {
           "key": "Content-Security-Policy",
-          "value": "frame-ancestors 'none'; object-src 'none'; base-uri 'none'; script-src 'self' 'unsafe-inline' https://cdn.portone.io https://*.portone.io https://cdnjs.cloudflare.com https://accounts.google.com https://maps.googleapis.com https://maps.gstatic.com https://dapi.kakao.com https://*.daumcdn.net https://*.kakao.com; connect-src 'self' https://maps.googleapis.com https://places.googleapis.com https://gmbtsucasfwqskfvugzo.supabase.co https://cdn.portone.io https://*.portone.io https://*.iamport.co https://service.iamport.kr https://*.ingest.us.sentry.io https://www.googleapis.com https://accounts.google.com https://api.dropboxapi.com https://content.dropboxapi.com https://dapi.kakao.com https://*.kakao.com https://*.daumcdn.net"
+          "value": "frame-ancestors 'none'; object-src 'none'; base-uri 'none'; script-src 'self' 'unsafe-inline' https://cdn.portone.io https://*.portone.io https://cdnjs.cloudflare.com https://accounts.google.com https://maps.googleapis.com https://maps.gstatic.com https://dapi.kakao.com https://*.daumcdn.net https://*.kakao.com https://*.kakaocdn.net; connect-src 'self' https://maps.googleapis.com https://places.googleapis.com https://gmbtsucasfwqskfvugzo.supabase.co https://cdn.portone.io https://*.portone.io https://*.iamport.co https://service.iamport.kr https://*.ingest.us.sentry.io https://www.googleapis.com https://accounts.google.com https://api.dropboxapi.com https://content.dropboxapi.com https://dapi.kakao.com https://*.kakao.com https://*.daumcdn.net https://*.kakaocdn.net"
         },
         {
           "key": "X-Content-Type-Options",

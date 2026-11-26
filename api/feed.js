@@ -969,8 +969,11 @@ export default async function handler(req, res) {
        예전에는 이름이 겹치는지만 봐서, 활동 지역을 '하남시' 로 둔 분에게
        미사1동 손님이 한 건도 보이지 않았다 - 기본값이 하남시였다. */
     const hidden = { region: 0, slot: 0 };
+    /* 내가 간단 제안을 보내 둔 조건은 자리가 다 차도 남긴다 (2026-11-26 코드리뷰) - 손님이 '자세히 보고 싶어요'를 눌렀는데
+       목록에서 빠져 정식 제안으로 올리지 못하던 것. 올릴 때는 자리를 또 쓰지 않는다(api/proposal.js) */
+    const 간단보냄 = await 내간단제안(chk.agent.id);
     rows = rows.filter(d => {
-      if (!(d.slots_left > 0)) { hidden.slot++; return false; }
+      if (!(d.slots_left > 0) && !간단보냄.has(d.id)) { hidden.slot++; return false; }
       if (!regions.length) { hidden.region++; return false; }
       const hit = regions.some(rg => regionHit(rg, d.dongs));
       if (!hit) hidden.region++;
@@ -1031,6 +1034,14 @@ export async function getDemands(q) {
 const PROP_PAGE = 1000, PROP_PAGES = 10;
 /* 내가 '구하기 어려워요'라고 답한 조건과 그 이유 (0047). 칸이 없거나 못 읽으면 빈 것 - 목록은 그대로 나간다.
    다른 중개사의 답은 여기서 버린다 */
+async function 내간단제안(agentId) {
+  const m = new Set();
+  try {
+    const r = await fetch(sbUrl('bk_proposal', `select=demand_id&agent_id=eq.${agentId}&addr=eq.${encodeURIComponent('간단 제안')}&status=in.(sent,read)&limit=200`), { headers: sbHeaders() });
+    if (r.ok) for (const x of await r.json()) if (x.demand_id) m.add(x.demand_id);
+  } catch (e) {}
+  return m;
+}
 async function 내어려움(agentId, ids) {
   const m = new Map();
   if (!ids.length) return m;

@@ -47,18 +47,30 @@ async function hardReply(res, agent, b) {
   if (!id || !UUID.test(id)) return res.status(400).json({ error: '어느 조건인지 알 수 없습니다' });
   if (!b.undo && !어려운이유.includes(why)) return res.status(400).json({ error: '이유를 골라 주세요' });
   try {
-    const r = await fetch(sbUrl('bk_demand', `select=id,hard,status,expires_at&id=eq.${id}&limit=1`), { headers: sbHeaders() });
-    if (!r.ok) { const t = await r.text().catch(() => '');
-      if (/hard|42703|PGRST204/.test(t)) return res.status(503).json({ error: '아직 준비 중입니다 (0047 마이그레이션 필요)' });
-      return res.status(502).json({ error: '조건을 확인하지 못했습니다' }); }
-    const d = (await r.json())[0];
-    if (!d) return res.status(404).json({ error: '없는 조건입니다' });
-    if ((d.status && d.status !== 'active') || (d.expires_at && Date.parse(d.expires_at) < Date.now())) return res.status(409).json({ error: '지금은 답을 받지 않는 조건입니다' });
-    const 전 = d.hard && typeof d.hard === 'object' && !Array.isArray(d.hard) ? d.hard : {}, 새 = { ...전 };
-    if (b.undo) delete 새[agent.id]; else 새[agent.id] = { why, at: new Date().toISOString() };
-    const w = await fetch(sbUrl('bk_demand', `id=eq.${id}`), { method: 'PATCH', headers: { ...sbHeaders(), Prefer: 'return=minimal' }, body: JSON.stringify({ hard: 새 }) });
-    if (!w.ok) return res.status(502).json({ error: '답을 저장하지 못했습니다' });
-    return res.status(200).json({ ok: true, hard: b.undo ? '' : why });
+    /* 읽은 답 묶음이 그대로일 때만 쓴다 - 두 중개사가 같은 때 답하면 한쪽이 사라졌다(2026-11-26 코드리뷰). 그 사이 바뀌었으면 다시 읽어 세 번까지 */
+    for (let i = 0; i < 3; i++) {
+      const r = await fetch(sbUrl('bk_demand', `select=id,hard,status,expires_at&id=eq.${id}&limit=1`), { headers: sbHeaders() });
+      if (!r.ok) { const t = await r.text().catch(() => '');
+        if (/hard|42703|PGRST204/.test(t)) return res.status(503).json({ error: '아직 준비 중입니다 (0047 마이그레이션 필요)' });
+        return res.status(502).json({ error: '조건을 확인하지 못했습니다' }); }
+      const d = (await r.json())[0];
+      if (!d) return res.status(404).json({ error: '없는 조건입니다' });
+      if ((d.status && d.status !== 'active') || (d.expires_at && Date.parse(d.expires_at) < Date.now())) return res.status(409).json({ error: '지금은 답을 받지 않는 조건입니다' });
+      const 전 = d.hard && typeof d.hard === 'object' && !Array.isArray(d.hard) ? d.hard : {}, 새 = { ...전 };
+      if (b.undo) delete 새[agent.id]; else 새[agent.id] = { why, at: new Date().toISOString() };
+      const w = await fetch(sbUrl('bk_demand', `id=eq.${id}&hard=eq.${encodeURIComponent(JSON.stringify(전))}&select=id`), { method: 'PATCH', headers: { ...sbHeaders(), Prefer: 'return=representation' }, body: JSON.stringify({ hard: 새 }) });
+      if (!w.ok) return res.status(502).json({ error: '답을 저장하지 못했습니다' });
+      if ((await w.json().catch(() => [])).length) return res.status(200).json({ ok: true, hard: b.undo ? '' : why });
+    }
+    /* 세 번 다 어긋났다 - 견주기가 듣지 않는 것일 수 있으니 답을 버리지 않고 그대로 한 번 쓴다 */
+    { const r = await fetch(sbUrl('bk_demand', `select=id,hard&id=eq.${id}&limit=1`), { headers: sbHeaders() });
+      const d = r.ok ? (await r.json())[0] : null;
+      if (!d) return res.status(502).json({ error: '답을 저장하지 못했습니다' });
+      const 새 = { ...(d.hard && typeof d.hard === 'object' && !Array.isArray(d.hard) ? d.hard : {}) };
+      if (b.undo) delete 새[agent.id]; else 새[agent.id] = { why, at: new Date().toISOString() };
+      const w = await fetch(sbUrl('bk_demand', `id=eq.${id}`), { method: 'PATCH', headers: { ...sbHeaders(), Prefer: 'return=minimal' }, body: JSON.stringify({ hard: 새 }) });
+      if (!w.ok) return res.status(502).json({ error: '답을 저장하지 못했습니다' });
+      return res.status(200).json({ ok: true, hard: b.undo ? '' : why }); }
   } catch (e) { console.error('[proposal:hard]', e && e.message); return res.status(502).json({ error: 'DB에 닿지 못했습니다' }); }
 }
 /* 손님이 간단 제안에 '자세히 보고 싶어요' - 연락처는 넘어가지 않는다. 중개사에게 메일로 알린다 */

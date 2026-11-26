@@ -1481,6 +1481,8 @@ body.mo .hp-pair-h{font-size:19px}
 .ct-spv-i .eqb{display:flex;gap:6px;flex-wrap:wrap}
 .ct-sp-tip{margin:4px 0 0;font-size:12.5px;color:var(--n500)}
 .ctdoc .ct-sp-all{display:block;min-height:5.4em;white-space:pre-wrap;line-height:1.9}
+.ctw-go2{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.ctw-blank{margin-top:4px}
 .ctpi-box{max-width:460px;width:100%}
 .ctpi-view{max-height:min(50vh,560px);overflow:auto;border:1px solid var(--hair);border-radius:14px;background:var(--n50,#F7F7F9);display:grid;place-items:center;min-height:120px}
 .ctpi-view img{display:block;width:100%;height:auto}
@@ -14441,6 +14443,7 @@ if(typeof addEventListener === 'function'){
   addEventListener('unhandledrejection', e => { const r = e && e.reason; bk오류보내기('처리되지 않은 오류: ' + ((r && r.message) || r), (r && r.stack && (/(https?:\/\/[^\s)]+?):\d+:\d+/.exec(r.stack) || [])[1]) || location.origin, 0, 0, r && r.stack); });
 }
 const BK_변경 = [
+  { v:'26.11.26.3', 날:'2026-11-26', 줄:[ '빈 양식 (파트너) - 계약서 종류 고르는 화면에서 고른 종류의 빈 계약서를 ‘빈 양식 인쇄 · PDF’로, 아래 ‘부속서류 · 빈 양식’에서 영수증(계약금 · 중도금 · 잔금 · 보증금반환금) · 잔금정산서 · 물품인계 확인서 · 위임장 · 개인정보 동의서를 바로 쓰거나 인쇄 · PDF, 공제증서는 출력' ] },
   { v:'26.11.26.2', 날:'2026-11-26', 줄:[ '계약서 쪽 나눔 (파트너) - 특약이 있으면 첫 쪽은 부동산 표시 · 계약내용 · 인적사항으로 끝나고, 특약은 다음 쪽(별지)으로. 다음 쪽마다 맨 위에 물건 상자(목적물 · 당사자 · 계약서 · 계약일)가 인쇄됩니다. 당사자가 많으면(5명 넘음 · 공동중개 둘 넘음) 특약 다음에 인적사항' ] },
   { v:'26.11.26', 날:'2026-11-26', 줄:[ '계약서에 직접 입력 (파트너) - 당사자마다 개인 · 법인 고르기, 매도인(임대인) 계좌 넣기, 특약은 한 칸에서 원하는 줄 끝에 엔터로 바로 아래 줄 추가(‘+ 특약 줄 추가’는 뺌 · 번호는 칸을 떠날 때 다시 매김), 추가특약 보기(전문 · 넣기 · 특약 관리에서 고치기)', '영수증 - 문구 없이 계약금 · 중도금 · 잔금 · 보증금반환금 단추만(보증금 반환 영수증 탭을 여기로)', '잔금정산서 - 관리비 칸 안에서 바로 항목 추가' ] },
   { v:'26.11.25', 날:'2026-11-25', 줄:[ '보안 · 개인정보 점검 - 손님 계약서 보기 · 초안 링크에서 등기부 소유자 · 권리 칸도 빼고, 매물 글(한 줄 · 설명)에 적힌 전화번호 · 주민번호 꼴은 가려서 손님에게 보냅니다', '브라우저 권한 정책 - 카메라 · 마이크 · 위치를 쓰지 않는다고 밝혀 둡니다(사진은 파일 고르기로)' ] },
@@ -17659,8 +17662,8 @@ async function cl저장(곳){
 /* ── 서식 자료실 (2026-11-06 · 파트너 기획 [227] '각종 서식(빈 양식)을 다운로드') ── 계약서 · 확인·설명서 · 부속 서류의 빈 양식을
    그 자리에서 인쇄(PDF 로 저장)한다. 화면의 문서 그리기를 빈 문서로 그대로 쓴다 - 작성 화면과 같은 모양.
    '사무소 정보 넣기' 를 켜면 사무소 명칭 · 등록번호 · 주소 · 전화가 들어간다(성명은 자필). 사무소가 올리는 서식은 파일 보관이 생기면 */
-const CT_기타서식 = [['rc:down', '영수증 · 계약금', 'sale'], ['rc:bal', '영수증 · 잔금', 'sale'], ['st', '잔금정산서', 'sale'], ['hd', '물품인계 확인서', 'home-lease'],
-  ['pw', '위임장 (대리인 계약용)', 'sale'], ['rt', '보증금 반환 영수증', 'home-lease'], ['pi', '개인정보 수집·이용 동의서', 'sale']];
+const CT_기타서식 = [['rc:down', '영수증 · 계약금', 'sale'], ['rc:mid', '영수증 · 중도금', 'sale'], ['rc:bal', '영수증 · 잔금', 'sale'], ['rc:ret', '영수증 · 보증금반환금', 'home-lease'], ['st', '잔금정산서', 'sale'], ['hd', '물품인계 확인서', 'home-lease'],
+  ['pw', '위임장 (대리인 계약용)', 'sale'], ['pi', '개인정보 수집·이용 동의서', 'sale']];
 function ct빈서식HTML(kind, key){
   const 사무소 = CT.formsOffice !== false;
   /* 빈 확인·설명서도 작성 화면과 같은 국가 원본 틀로(11-21 코드리뷰) - 틀을 받는 동안은 '불러오는 중', 못 받으면 예전 모양 */
@@ -17671,8 +17674,29 @@ function ct빈서식HTML(kind, key){
   if(!사무소) d.broker = { hand: true }; else d.broker = { ...d.broker, hand: true };
   if(kind === 'ct') return ctDocHTML(d);
   const 앞 = { mode: CT.mode, tab: CT.extraTab, rc: CT.extraRc, track: CT.track };
-  CT.mode = 'extra'; CT.extraTab = 탭; CT.extraRc = rc || 'down'; CT.track = {};
-  try{ return ct보기HTML(d); } finally { CT.mode = 앞.mode; CT.extraTab = 앞.tab; CT.extraRc = 앞.rc; CT.track = 앞.track; }
+  CT.mode = 'extra'; CT.extraTab = 탭; CT.extraRc = rc || 'down'; CT.track = {}; CT.빈 = true;
+  try{ return ct보기HTML(d); } finally { CT.mode = 앞.mode; CT.extraTab = 앞.tab; CT.extraRc = 앞.rc; CT.track = 앞.track; CT.빈 = false; }
+}
+/* 고르기 화면에서 고른 종류의 빈 계약서 (2026-11-26 파트너 '계약서 양식들 빈 양식 출력 또는 pdf 저장') - 계약서 만들기와 같은 양식, 값 · 특약은 비우고 사무소 정보만 */
+function ct빈계약서HTML(p){
+  if(!p) return '';
+  if(p.cat === 'explain') return ct빈서식HTML('ex', p.ex);
+  const c = CT_CATS.find(x => x.k === p.cat); if(!c) return '';
+  const deal = p.deal || '', use = c.uses ? (c.uses.includes(p.use) ? p.use : c.uses[0]) : '', form = c.form || (deal === '매매' ? 'sale' : 'lease');
+  const d = ctNewDoc(form, null, { cat: c.k, sub: p.sub === '__custom' ? String(p.custom || '').trim() : (p.sub || ''), use: c.uses ? use : c.multi ? 'home' : '', multi: c.multi ? 1 : 0, ec: CT_E_FORMS[form] ? 1 : 0, priv: c.priv ? 1 : 0, deal: { 전세:'jeonse', 월세:'monthly', 연세:'yearly' }[deal] });
+  d.specials = []; d.acct = form === 'sale' || !!(CT_FORMS[form] || {}).lease;
+  d.broker = CT.formsOffice === false ? { hand: true } : { ...d.broker, hand: true };
+  return ctDocHTML(d);
+}
+/* 고르기 화면 - 부속서류 빈 양식 (2026-11-26 파트너 '모든 부속서류를 빈 양식으로 띄워 직접 작성 · 공제증서 등은 출력') */
+function ct빈부속HTML(){
+  const 줄 = CT_기타서식.map(([k, 이름]) => `<li class="ctf-row"><span><b>${esc(이름)}</b></span><span class="eqb" style="gap:6px">
+      <button type="button" class="btn tool sm" data-act="ctw-extra" data-v="${esc(k)}">빈 양식에 쓰기</button><button type="button" class="btn tool sm" data-act="ctf-print" data-v="x|${esc(k)}">인쇄 · PDF</button></span></li>`).join('');
+  const 공 = (typeof FU_공제 !== 'undefined' ? FU_공제 : []).some(n => typeof fu공제 === 'function' && fu공제(n));
+  if(세션있음() && !FU.loaded) setTimeout(fuLoad);
+  return `<h2 class="ctw-h2"><span>+</span>부속서류 · 빈 양식 <small>계약서 없이 바로 쓰거나 인쇄 · PDF 로 저장합니다 - 계약 건에서 쓰면 그 계약 내용이 저절로 들어갑니다</small></h2>
+    <div class="card pad ct-sec ctw-blank"><ul class="ctf-ul">${줄}
+      <li class="ctf-row"><span><b>공제증서</b><small>${공 ? '올려 둔 앞 · 뒤 면을 출력합니다' : '서식 자료실에서 앞 · 뒤 면을 한 번 올려 두면 여기서 출력합니다'}</small></span><span class="eqb" style="gap:6px">${공 ? '<button type="button" class="btn tool sm" data-act="fu-bond-print">출력</button>' : '<a class="btn tool sm" data-go="#/partner/contracts/forms">올리러 가기</a>'}</span></li></ul></div>`;
 }
 /* ── 우리 사무소 서식 (2026-11-06 · 파트너 기획 [237]) ── 서버 api/_forms.js. 올린 파일은 비공개 저장소에, 내려받기는 5분짜리 주소 */
 const FU = { loaded:false, loading:false, list:[], need:'', err:'', busy:false, del:null };
@@ -18467,11 +18491,12 @@ function ctWizHTML(전체){
       <section class="ctw-r" aria-label="고르기">
         <div class="ctw-body${fx.swap ? ' swap' : ''}">${오른쪽}</div>
         ${것.renew ? '' : `<div class="ctw-foot${켜짐 ? ' lit' : ''}"><div class="ctw-sum" aria-live="polite"><small>만들 계약서</small>${것.ok ? `<b>${esc(것.title)}</b>` : `<span>${esc(것.why)}</span>`}</div>
-          <button type="button" class="btn pri" data-act="ctp-go" ${것.ok ? '' : 'disabled'}>계약서 만들기${ctw그림('go', 18, 2.2)}</button></div>`}
+          <span class="eqb ctw-go2"><button type="button" class="btn sec" data-act="ctp-blank" ${것.ok ? '' : 'disabled'} title="고른 종류의 빈 계약서를 인쇄하거나 PDF 로 저장합니다">빈 양식 인쇄 · PDF</button><button type="button" class="btn pri" data-act="ctp-go" ${것.ok ? '' : 'disabled'}>계약서 만들기${ctw그림('go', 18, 2.2)}</button></span></div>`}
       </section>
     </div>
     <h2 class="ctw-h2"><span>2</span>시작 방법 <small>고르지 않으면 서류로 채우기로 시작합니다</small></h2>
-    ${시작줄}`;
+    ${시작줄}
+    ${ct빈부속HTML()}`;
 }
 /* 목록 검색 - 소재지 · 문서 이름 · 당사자 이름 · 날짜 */
 const ct이름들 = r => Object.values(r.parties || {}).map(x => x && x.name).filter(Boolean);
@@ -20699,7 +20724,7 @@ const ct영수칸 = (label, x) => `
     <tr><th>연락처</th><td>${ct값(x.phone, 110)}</td><th>성명</th><td class="sign">${ct값(x.name, 90)} <span class="ct-seal">(서명 또는 날인)</span></td></tr>`;
 /* 영수증 고른 돈 - 없는 중도금을 골라 두었으면 계약금으로 */
 const ct영수더 = (D, k) => { const m = /^mx([0-2])$/.exec(k || ''); return m ? ct중도더(D)[+m[1]] || null : null; };
-const ct영수고름 = D => { const k = CT.extraRc || 'down'; return k === 'ret' || (k === 'mid' && !+D.mid) || (k === 'mid2' && !ct중도2(D)) || (/^mx/.test(k) && !ct영수더(D, k)) ? 'down' : k; };
+const ct영수고름 = D => { const k = CT.extraRc || 'down'; if(CT.빈 && k !== 'ret') return k; return k === 'ret' || (k === 'mid' && !+D.mid) || (k === 'mid2' && !ct중도2(D)) || (/^mx/.test(k) && !ct영수더(D, k)) ? 'down' : k; };
 function ctReceiptDocHTML(doc){
   const F = CT_FORMS[doc.form] || {}, D = doc.deal || {}, t = CT.track || {};
   const [aKey, aKo] = F.a || ['', ''], [bKey, bKo] = F.b || ['', ''], 사람 = doc.parties || {};
@@ -24604,6 +24629,13 @@ function handle(a,v,el){
         CT.dirty = true; CT.mode = 'scan'; go('#/partner/contract/new'); return true;
       }
       ctMake(p.cat, p.sub === '__custom' ? String(p.custom || '').trim() : (p.sub || ''), p.deal || '', p.use || ''); return true; }
+    case 'ctp-blank': { const 것 = ct만들것(CT.pick); if(!것.ok) return toast(것.why), true; return ctPrint(ct빈계약서HTML(CT.pick)); }
+    /* 부속서류 빈 양식에 바로 쓰기 - 그 서류에 맞는 빈 계약서를 부속 서류 탭으로 연다(이름 · 금액은 '정보 입력'에서) */
+    case 'ctw-extra': { const 줄 = CT_기타서식.find(x => x[0] === v); if(!줄) return true; const [탭, rc] = v.split(':');
+      CT.pick = null; CT.prevId = null; CT.id = null; CT.row = null; CT.track = {}; CT.fromProposal = null;
+      CT.doc = ctNewDoc(줄[2]); CT.doc.specials = []; CT.filled = new Set(); CT.scan = null; CT.scanWarn = [];
+      CT.dirty = true; CT.mode = 'extra'; CT.extraTab = 탭 === 'rt' ? 'rc' : 탭; CT.extraRc = rc || 'down'; go('#/partner/contract/new');
+      toast('빈 양식입니다 - 이름 · 금액 · 날짜는 위 ‘입력’ 탭에서 적으면 이 서류에 들어갑니다'); return true; }
     case 'ctq-st': CT.qs = CT.qs === v && v ? '' : (v || ''); render(); return true;
     case 'ctq-sum-m': CT.qs = 'sealed'; CT.qb = 'u'; CT.qp = 'm'; render(); return true;
     case 'ctq-sum-b': CT.qs = ''; CT.qb = 'b'; CT.qp = 'next'; render(); return true;

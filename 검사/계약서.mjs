@@ -875,6 +875,9 @@ return ct부동산글;`)((d, k) => ({ property: k === 0 ? (d.property || {}) : (
     ok(별 > 0 && h1.indexOf('<table class="ct-sign">') < 별 && h1.indexOf('<h2>[특약사항]</h2>') > 별 && /class="ct-contbox"[\s\S]*김매도/.test(h1.slice(별)) && h1.includes('<thead><tr><td><table class="ct-contbox">')
        && 별2 > 0 && h2.indexOf('<table class="ct-sign">') > 별2 && !M.ctDocHTML(없).includes('ct-cont'),
       '쪽 나눔 - 인적사항 다음 쪽에 특약(쪽마다 물건 상자) · 당사자가 많으면 특약 다음에 인적사항 · 특약이 없으면 예전 순서'); }
+  ok(js.includes('data-act="ctp-blank"') && js.includes('function ct빈계약서HTML(p){') && js.includes('function ct빈부속HTML(){') && js.includes("['rc:mid', '영수증 · 중도금', 'sale'], ['rc:bal', '영수증 · 잔금', 'sale'], ['rc:ret', '영수증 · 보증금반환금', 'home-lease']")
+     && js.includes("case 'ctw-extra':") && js.includes('data-act="fu-bond-print">출력</button>'),
+    '빈 양식(11-26 파트너) - 고르기 화면에서 빈 계약서 인쇄 · PDF, 부속서류 빈 양식에 쓰기 · 인쇄, 공제증서 출력');
   /* 전자계약 매매 - 융자금 줄, 승계 금액은 잔금에서 뺀다 */
   const 융 = M.ctNewDoc('sale', null, { cat: 'realty', use: 'home' }); 융.deal = { ...융.deal, price: 500000000, down: 50000000, keepLoan: 100000000, keepDep: 50000000 };
   ok(/<th class="w">융자금<\/th>/.test(M.ctDocHTML(융)) && M.ctBalance(융.deal) === 300000000, '전자계약 매매 - 융자금 · 임대보증금 승계 줄, 잔금에서 뺀다');

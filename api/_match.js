@@ -62,7 +62,7 @@ export const 글가림 = t => t == null ? t : String(t)
   .replace(/\d{6}\s*[-–]\s*[1-8]\d{6}/g, '******-*******')
   .replace(/0\d{1,2}[\s.-]?\d{3,4}[\s.-]?\d{4}/g, m => { const d = m.replace(/\D/g, ''); return `${d.startsWith('02') ? '02' : d.slice(0, 3)}-****-${d.slice(-4)}`; });
 /* 손님에게 보이는 물건 값 - 여기 없는 칸은 나가지 않는다 */
-function 공개(L, 사무소) {
+export function 공개(L, 사무소) {
   return {
     id: L.id, kind: L.kind, name: L.name, dong: L.dong, deal: L.deal, dep: L.dep, rent: L.rent, fee: L.fee,
     fee_basis: L.fee_basis, fee_type: L.fee_type, fee_items: L.fee_items, area: L.area, area_sup: L.area_sup, rooms: L.rooms, baths: L.baths,

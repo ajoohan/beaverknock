@@ -1501,6 +1501,25 @@ body.mo .hp-pair-h{font-size:19px}
 .mp-off{display:flex;flex-direction:column;gap:4px;margin-top:10px;padding:10px 12px;border-radius:12px;background:var(--n50,#F7F7F9)}
 .mp-off small{color:var(--n600,#555);font-size:12.5px}
 .mp-off .btn{align-self:flex-start;margin-top:4px}
+.lsh-head{display:flex;flex-direction:column;gap:4px}
+.lsh-head h1{margin:2px 0 0;font-size:21px;letter-spacing:-.03em;line-height:1.35}
+.lsh-price{font-size:19px;color:var(--ind700);letter-spacing:-.02em}
+.lsh-one{margin:6px 0 0;font-size:14.5px;line-height:1.6;color:var(--n700)}
+.lsh-pics{display:grid;gap:6px;grid-template-columns:repeat(3,minmax(0,1fr))}
+.lsh-pics.n1{grid-template-columns:1fr}
+.lsh-pics.n2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.lsh-pics img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:var(--r-md);background:var(--n200)}
+.lsh-kv{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px 28px}
+.lsh-note{margin:12px 0 0;padding-top:12px;border-top:1px solid var(--n100);font-size:14.5px;line-height:1.75;color:var(--n700);white-space:pre-line;overflow-wrap:anywhere}
+.lsh-office{display:flex;flex-direction:column;gap:3px;font-size:14px;line-height:1.6;color:var(--n700)}
+.lsh-office b{font-size:16px;color:var(--n900)}
+.lsh-btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.lsh-mb{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.lsh-mb .btn{flex:1 1 150px;text-align:center}
+.lsh-mf{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:16px;padding-top:12px;border-top:1px solid var(--n100)}
+.lsh-mf .tapx{font-size:13px;color:var(--danger);text-decoration:underline}
+@media (max-width:520px){.lsh-kv{grid-template-columns:1fr}}
+@media print{.lsh-noprint{display:none!important}.lsh{background:#fff!important}.lsh .card{box-shadow:none!important;border:1px solid #ddd;break-inside:avoid}.lsh .pad{padding-top:0!important}.lsh-pics img{max-height:52mm}}
 .qk-row{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
 .qk-row .btn{flex:1 1 180px}
 .qk-tip{margin:8px 0 0;font-size:13px;line-height:1.6;color:var(--n500);text-align:center}
@@ -10921,6 +10940,7 @@ function 물건관리HTML(L){
     <div class="lg-acts">${살아 ? `<button type="button" class="btn sec sm" data-act="lg-save" data-v="${L.id}" ${바쁨}>${MG.busy === L.id ? '저장하는 중…' : '저장'}</button>
       ${노출 ? (L.vis === 'open' ? `<button type="button" class="btn tool sm" data-act="lg-vis" data-v="${L.id}|private" ${바쁨}>노출 종료</button>` : `<button type="button" class="btn pri sm" data-act="lg-vis" data-v="${L.id}|open" ${바쁨}>노출하기</button>`) : ''}
       <button type="button" class="btn tool sm" data-act="lg-edit" data-v="${L.id}" ${바쁨}>고치기</button>
+      ${ownerSide() ? '' : `<button type="button" class="btn tool sm" data-act="lsh-make" data-v="${L.id}" ${바쁨 || (LSH.busy ? 'disabled' : '')} title="손님에게 보낼 7일짜리 소개 링크 · A4 한 장">소개 한 장</button>`}
       <button type="button" class="btn tool sm" data-act="lg-state" data-v="${L.id}|done" ${바쁨}>거래완료</button>
       <button type="button" class="btn tool sm" data-act="lg-state" data-v="${L.id}|arch" ${바쁨}>내리기</button>
       <button type="button" class="btn tool sm dng" data-act="lg-state" data-v="${L.id}|trash" ${바쁨}>삭제</button>`
@@ -11654,6 +11674,17 @@ function modalHTML(){
         <button type="button" class="btn ${m.위험 ? 'warn' : 'pri'}" data-act="ask-yes">${esc(m.예)}</button></div>
     </div></div>`; }
   /* 업데이트 내역 - 왼쪽 메뉴 아래 버전을 누르면 */
+  if(S.modal.type==='lsh'){ const m = S.modal;
+    return `<div class="modal" data-act="modal-bg"><div class="box" data-stop role="dialog" aria-modal="true" aria-labelledby="mdT" tabindex="-1" style="max-width:520px">
+      <h2 id="mdT" style="margin:0 0 4px;font-size:16px;font-weight:700;letter-spacing:-.03em">매물 소개 한 장</h2>
+      <p style="margin:0 0 12px;font-size:13.5px;line-height:1.6;color:var(--n700)"><b>${esc(m.name || '매물')}</b> - 이 링크를 받은 사람만 로그인 없이 볼 수 있고, <b>${esc(m.until)}</b>까지 열립니다. 호수와 의뢰인 · 특이사항은 나가지 않습니다.</p>
+      <input class="inp" readonly value="${esc(m.url)}" aria-label="소개 링크" data-act="lsh-sel" style="font-size:13px">
+      <div class="eqb lsh-mb"><button class="btn pri" data-act="lsh-copy">링크 복사</button>
+        ${navigator.share ? `<button class="btn sec" data-act="lsh-send">문자 · 카카오톡으로 보내기</button>` : ''}
+        <a class="btn sec" href="${esc(m.url)}" target="_blank" rel="noopener">열어 보기 · 인쇄</a></div>
+      <div class="lsh-mf"><button class="tapx" data-act="lsh-cut" data-v="${esc(m.id)}" ${LSH.busy ? 'disabled' : ''}>이 물건의 나간 링크 모두 끊기</button>
+        <button class="btn sec sm" data-act="modal-close">닫기</button></div>
+    </div></div>`; }
   if(S.modal.type==='qk'){ const m = S.modal, d = (S.demands || []).find(x => x.id === m.id) || {};
     return `<div class="modal" data-act="modal-bg"><div class="box" data-stop role="dialog" aria-modal="true" aria-labelledby="mdT" tabindex="-1" style="max-width:520px">
       <h2 id="mdT" style="margin:0 0 4px;font-size:16px;font-weight:700;letter-spacing:-.03em">간단 제안 보내기</h2>
@@ -14685,6 +14716,7 @@ if(typeof addEventListener === 'function'){
   addEventListener('unhandledrejection', e => { const r = e && e.reason; bk오류보내기('처리되지 않은 오류: ' + ((r && r.message) || r), (r && r.stack && (/(https?:\/\/[^\s)]+?):\d+:\d+/.exec(r.stack) || [])[1]) || location.origin, 0, 0, r && r.stack); });
 }
 const BK_변경 = [
+  { v:'26.11.26.12', 날:'2026-11-26', 줄:[ '매물 소개 한 장 (파트너) - 매물장부의 ‘소개 한 장’을 누르면 손님에게 보낼 링크가 생깁니다. 받은 사람만 로그인 없이 보고 7일 뒤 닫힙니다(직접 끊을 수도 있음). 사진 · 가격 · 명시사항 · 사무소 정보가 한 장에 담기고 그대로 인쇄하면 A4 한 장입니다', '명시사항을 다 채운 물건만 만들 수 있고, 호수와 의뢰인 · 특이사항은 나가지 않습니다. 거래완료 · 내린 물건의 링크는 바로 닫힙니다' ] },
   { v:'26.11.26.11', 날:'2026-11-26', 줄:[ '간단 제안 (파트너) - 손님 조건 화면에서 매물 정보 없이 한마디만 보냅니다(다섯 자리 중 하나 · 가격 · 주소 · 연락처는 적지 않음). 손님이 ‘자세히 보고 싶어요’를 누르면 메일로 알리고, 보낸 제안에서 ‘정식 제안 보내기’로 같은 자리에 매물 정보를 채워 보냅니다', '구하기 어려워요 (파트너) - 조건이 까다로울 때 이유(예산 · 지역 · 면적 · 입주 시기 · 그 밖에)를 골라 답합니다. 자리를 쓰지 않고, 손님의 내 조건에는 ‘중개사 n곳 · 이유’만 보입니다(사무소 이름은 나가지 않음)' ] },
   { v:'26.11.26.10', 날:'2026-11-26', 줄:[ '파트너 안내 화면의 ‘1:1 제안’ 그림을 지금 화면(손님 조건 · 진행 중 · 보낸 제안 탭, 수락 단추)으로 다시 찍어 바꿨습니다' ] },
   { v:'26.11.26.9', 날:'2026-11-26', 줄:[ '전수점검 - 파트너 안내 화면의 그림 설명에 남아 있던 옛 이름 ‘수요 목록’을 ‘1:1 제안’으로' ] },
@@ -18142,6 +18174,61 @@ V['#/cguide'] = tok => {
         <div class="card pad cg-office"><div><b>${esc(사무소.name || '중개사무소')}</b>${사무소.phone ? `<span class="num">${esc(사무소.phone)}</span>` : ''}</div>
           <span class="eqb cg-ob">${카톡채널맞나(사무소.kakaoCh) ? `<a class="btn pri sm" href="${esc(String(사무소.kakaoCh).trim())}" target="_blank" rel="noopener">카카오톡 채널로 상담</a>` : ''}${전화 ? `<a class="btn ${카톡채널맞나(사무소.kakaoCh) ? 'sec' : 'pri'} sm" href="tel:${esc(전화)}">전화하기</a>` : ''}</span></div>
         <p class="sub" style="margin:0;font-size:12.5px;line-height:1.7">일반적인 안내입니다. 내 경우에 맞는지는 중개사무소 · 관할 기관 · 세무사에 확인하세요. ${esc(new Date(R.until + 9 * 3600e3).toISOString().slice(0, 10))}까지 열립니다.</p>`}
+  </div>
+</div>`;
+};
+/* ══ 매물 소개 한 장 (2026-11-26 한실장님 결정) ══ 서버 api/feed.js shareMake · shareCut · shareRead.
+   중개사는 매물장부에서 '소개 한 장' → 7일짜리 링크(#/s/표)를 복사해 문자 · 카카오톡으로 보낸다. 받은 사람은 로그인 없이 본다.
+   이 화면을 그대로 인쇄하면 A4 한 장이다. 호는 나오지 않고, 의뢰인 · 특이사항 같은 장부 칸은 서버가 보내지 않는다 */
+const LSH = { busy: false, tok: '', row: null, err: '' };
+V['#/lshare'] = tok => {
+  if(LSH.tok !== tok){ LSH.tok = tok; LSH.row = null; LSH.err = '';
+    fetch('/api/feed?share=' + encodeURIComponent(tok)).then(r => r.json().then(j => ({ ok: r.ok, j }))).then(({ ok, j }) => {
+      if(ok && j.ok) LSH.row = j; else LSH.err = j.error || '매물을 열지 못했습니다'; render();
+    }).catch(() => { LSH.err = '네트워크 문제로 매물을 열지 못했습니다'; render(); }); }
+  const R = LSH.row, L = R && R.listing || {}, O = R && R.office || {}, 전화 = String(O.phone || '').replace(/[^0-9]/g, '');
+  const 주거 = L.kind === 'home', kv = (k, v) => v || v === 0 ? `<div class="kv"><dt>${k}</dt><dd>${esc(String(v))}</dd></div>` : '';
+  const 값 = L.deal === '매매' ? `매매 ${won(L.dep)}` : L.rent ? `보증금 ${won(L.dep)} / 월 ${won(L.rent)}` : `${esc(L.deal || '전세')} ${won(L.dep)}`;
+  const 면 = (a, 이름) => +a ? `${이름} ${(+a).toFixed(2).replace(/\.?0+$/, '')}㎡(${(+a / 3.305785).toFixed(1)}평)` : '';
+  const 층 = L.floor_no ? (/^[0-9]+$/.test(L.floor_no) ? L.floor_no + '층' : L.floor_no) : L.band || '';
+  const 관리비줄 = (L.fee_rows || []).map(x => { const 이름 = x && (FEE_ROWS.find(r => r[0] === x.k) || [])[1]; return 이름 ? `${이름}${+x.amt ? ' ' + won(+x.amt) : x.real ? ' 실비' : ''}` : ''; }).filter(Boolean).join(' / ');
+  return `
+<div class="scr fade lsh" style="background:var(--n100)">
+  <div class="pad" style="flex:1;padding-top:20px;padding-bottom:32px;width:100%;max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:12px">
+    <div class="ct-draftbar lsh-noprint"><b>매물 소개</b><span>${R ? `${esc(O.name || '중개사무소')}에서 보낸 매물입니다` : LSH.err ? '링크를 열 수 없습니다' : '불러오는 중'}</span></div>
+    ${LSH.err ? `<div class="card pad"><p class="sub" style="margin:0">${esc(LSH.err)}</p></div>`
+      : !R ? '<div class="card pad"><p class="sub" style="margin:0">매물을 불러오는 중입니다…</p></div>'
+      : `<div class="card pad lsh-head">
+          <span class="sub" style="font-size:13px">${esc([L.htype, L.deal].filter(Boolean).join(' · '))}</span>
+          <h1>${esc(L.name || L.dong || '매물')}</h1>
+          <b class="num lsh-price">${값}</b>
+          ${L.one_line ? `<p class="lsh-one">${esc(L.one_line)}</p>` : ''}
+        </div>
+        ${(R.pics || []).length ? `<div class="lsh-pics n${Math.min(R.pics.length, 3)}">${R.pics.slice(0, 6).map((u, i) => `<img src="${esc(u)}" alt="매물 사진 ${i + 1}" loading="${i ? 'lazy' : 'eager'}" decoding="async">`).join('')}</div>
+          ${R.pics.length > 6 ? `<p class="sub lsh-noprint" style="margin:0;font-size:13px">사진 ${R.pics.length}장 가운데 6장입니다 - 나머지는 중개사무소에 물어봐 주세요.</p>` : ''}` : ''}
+        <div class="card pad"><span class="sect">매물 정보</span>
+          <div class="lsh-kv">
+            ${kv('소재지', [L.dong, L.bdong ? `${L.bdong}동` : ''].filter(Boolean).join(' '))}
+            ${kv('면적', [면(L.area, '전용'), 면(L.area_sup, 주거 ? '공급' : '계약')].filter(Boolean).join(' · '))}
+            ${kv('층', [층, +L.floors ? `총 ${L.floors}층` : ''].filter(Boolean).join(' / '))}
+            ${주거 ? kv('방 · 욕실', [+L.rooms ? `방 ${L.rooms}` : '', +L.baths ? `욕실 ${L.baths}` : ''].filter(Boolean).join(' · ')) : ''}
+            ${L.dir ? kv('방향', `${L.dir}${L.dir_base ? ` (${L.dir_base} 기준)` : ''}`) : ''}
+            ${kv('주차', L.parking)}
+            ${kv('사용승인일', L.approved)}
+            ${kv('입주 가능일', L.move_in)}
+            ${kv('관리비', [+L.fee ? `월 ${won(+L.fee)}` : '', L.fee_type, L.fee_basis].filter(Boolean).join(' · '))}
+            ${kv('관리비 항목', 관리비줄 || L.fee_items)}
+            ${(L.facs || []).length ? kv('시설', L.facs.join(' · ')) : ''}
+          </div>
+          ${L.note ? `<p class="lsh-note">${esc(L.note)}</p>` : ''}
+        </div>
+        <div class="card pad lsh-office"><span class="sect">중개사무소</span>
+          <b>${esc(O.name || '중개사무소')}</b>
+          <span>${[O.rep && `대표 ${esc(O.rep)}`, O.reg_no && `등록번호 ${esc(O.reg_no)}`].filter(Boolean).join(' · ')}</span>
+          ${O.addr ? `<span>${esc(O.addr)}</span>` : ''}${O.phone ? `<span class="num">${esc(O.phone)}</span>` : ''}
+          <span class="eqb lsh-btns lsh-noprint">${카톡채널맞나(O.kakaoCh) ? `<a class="btn pri sm" href="${esc(String(O.kakaoCh).trim())}" target="_blank" rel="noopener">카카오톡 채널로 상담</a>` : ''}${전화 ? `<a class="btn ${카톡채널맞나(O.kakaoCh) ? 'sec' : 'pri'} sm" href="tel:${전화}">전화하기</a>` : ''}<button type="button" class="btn sec sm" data-act="lsh-print">인쇄 · PDF</button></span>
+        </div>
+        <p class="sub" style="margin:0;font-size:12.5px;line-height:1.7">중개사무소가 적은 내용입니다. 계약 전에 현장과 등기부 · 건축물대장을 꼭 확인하세요. 이 링크는 ${esc(new Date(R.until + 9 * 3600e3).toISOString().slice(0, 10))}까지 열리고, 거래가 끝나면 먼저 닫힐 수 있습니다.</p>`}
   </div>
 </div>`;
 };
@@ -22770,6 +22857,7 @@ function render(){
   else if(h.startsWith('#/partner/contract/')) html = V['#/partner/contract'](parts[3]);
   else if(h.startsWith('#/draft/')) html = V['#/draft'](parts[2]);
   else if(h.startsWith('#/guide/')) html = V['#/cguide'](parts[2]);
+  else if(h.startsWith('#/s/')) html = V['#/lshare'](parts[2]);
   else if(h.startsWith('#/invite/')) html = V['#/invite'](parts[2]);
   else if(h.startsWith('#/room/')) html = V['#/room'](parts[2], parts[3]);
   else if(h === '#/help' || h.startsWith('#/help/')) html = V['#/help'](parts[2]);
@@ -24635,6 +24723,32 @@ function handle(a,v,el){
     /* 공급자 */
     case 'dfilter': S.form.dfilter=v; render(); return true;
     case 'ptab': S.form.ptab=v; render(); return true;
+    /* 매물 소개 한 장 (2026-11-26) */
+    case 'lsh-make': { const L = (S.listings || []).find(x => x.id === v); if(LSH.busy) return true;
+      if(L && L.seed) return toast('예시 물건입니다 - 장부에 적은 물건에서 만들어 보세요'), true;
+      LSH.busy = true; render();
+      apiFetch('/api/feed', { method:'POST', body: JSON.stringify({ what:'listing-share', id: v }) })
+        .then(r => r.json().catch(() => ({})).then(j => { LSH.busy = false;
+          if(!(r.ok && j.ok)){ render(); return toast(j.error || '소개 링크를 만들지 못했습니다'); }
+          S.modal = { type:'lsh', id: v, name: L ? L.name : '', url: `${location.origin}${location.pathname}#/s/${j.token}`, until: new Date(j.until + 9 * 3600e3).toISOString().slice(0, 10) };
+          render(); }))
+        .catch(() => { LSH.busy = false; render(); toast('네트워크 문제로 만들지 못했습니다'); });
+      return true; }
+    case 'lsh-sel': if(el && el.select) el.select(); return true;
+    case 'lsh-copy': { const m = S.modal; if(!m) return true;
+      (navigator.clipboard ? navigator.clipboard.writeText(m.url) : Promise.reject()).then(
+        () => toast(`소개 링크를 복사했습니다 - ${m.until}까지 열립니다`),
+        () => { const 칸 = document.querySelector('.modal input[readonly]'); if(칸){ 칸.select(); } toast('링크를 길게 눌러 복사해 주세요'); });
+      return true; }
+    case 'lsh-send': { const m = S.modal; if(m && navigator.share) navigator.share({ title: `${m.name || '매물'} 소개`, text: `${m.name || '매물'} 소개입니다 (${m.until}까지 열립니다)`, url: m.url }).catch(() => {}); return true; }
+    case 'lsh-cut': { if(LSH.busy) return true; LSH.busy = true; render();
+      apiFetch('/api/feed', { method:'POST', body: JSON.stringify({ what:'listing-share-cut', id: v }) })
+        .then(r => r.json().catch(() => ({})).then(j => { LSH.busy = false;
+          if(!(r.ok && j.ok)){ render(); return toast(j.error || '링크를 끊지 못했습니다 - 다시 눌러 주세요'); }
+          S.modal = null; toast('이 물건의 나간 소개 링크를 모두 끊었습니다'); render(); }))
+        .catch(() => { LSH.busy = false; render(); toast('네트워크 문제로 끊지 못했습니다'); });
+      return true; }
+    case 'lsh-print': window.print(); return true;
     /* 간단 제안 · 구하기 어려워요 (2026-11-26) */
     case 'qk-open': S.modal = { type:'qk', id:v, msg:'' }; render(); setTimeout(() => { const t = $('#qk-msg'); if(t) t.focus(); }, 60); return true;
     case 'qk-send': { const 칸 = $('#qk-msg'), 글 = (칸 ? 칸.value : '').trim(), d2 = (S.demands || []).find(x => x.id === v);

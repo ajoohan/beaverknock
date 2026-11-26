@@ -14,7 +14,8 @@ import { 공유찾기, contractRoute, listingScan, reportDueCron, draftRead, dra
 import { 날씨 } from './_weather.js';
 import { 서식들, 서식확인, 서식올리기, 서식주소, 서식지우기, 서식최대, 파일버킷, 버킷올리기, 버킷주소, 버킷지우기 } from './_forms.js';
 import { 외부들, 외부하나, 외부최대, 외부경로, 공유코드꼴, 공유합치기 } from './_ext.js';
-import { 가격바뀜알림, 일치율, 일치기준 } from './_match.js';
+import { 가격바뀜알림, 일치율, 일치기준, 공개 as 매물공개 } from './_match.js';
+import { 사진들, 사진주소 } from './_pics.js';
 import { listingPics, listingPicAdd, listingPicSet } from './_pics.js';
 import { 직원이력, 이력한줄, 보조원잠금, 자격증크기, 자격증경로, 자격증형식 } from './_staff.js';
 import { 직원들, 직원고침, 직원사무소, 직원들어옴, 직원역할, 다른사무소직원 } from './_staff.js';
@@ -148,6 +149,81 @@ export async function approvedAgent(user) {
   }
   const a = rows[0];
   return a.status === 'approved' ? { agent: a } : { pending: a.status || 'new', agent: a };
+}
+
+/* ── 매물 소개 한 장 (2026-11-26 한실장님 결정 - 7일 링크) ──
+   매물장부의 물건 하나를 받은 사람만 보는 링크로. 표 = L1.물건.기한.링크번호.서명 - 검색에 나오지 않고(주소의 # 뒤), 7일 뒤 닫힌다.
+   링크번호는 bk_agent.settings.lshare[물건] - 하나 올리면 그 물건의 나간 링크가 모두 끊긴다.
+   노출 기준(표시 · 광고 명시사항 열 가지)을 다 채운 물건만 - 일부만 적힌 광고가 나가지 않게. 호는 나가지 않고 동은 '동 · 호 숨기기'를 따른다.
+   의뢰인 · 특이사항 같은 장부 칸은 손님에게 가는 칸(_match.js 공개)에 없다 */
+const 소개열쇠 = () => crypto.createHash('sha256').update('bk-lshare|' + String(process.env.BK_SECRET_KEY || ''), 'utf8').digest();
+const 소개서명 = (id, until, n) => crypto.createHmac('sha256', 소개열쇠()).update(`${id}.${until}.${n}`).digest('base64url');
+export const 소개기한 = 7 * 864e5;
+export function 소개표(id, n = 0, 지금 = Date.now()) { const until = 지금 + 소개기한; return `L1.${id}.${until}.${n}.${소개서명(id, until, n)}`; }
+export function 소개표읽기(tok, 지금 = Date.now()) {
+  const m = /^L1\.([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\.(\d{13})\.(\d{1,6})\.([A-Za-z0-9_-]{43})$/i.exec(String(tok || ''));
+  if (!m || +m[2] < 지금 || +m[2] > 지금 + 소개기한 + 60e3) return null;
+  return sameSecret(m[4], 소개서명(m[1], m[2], m[3])) ? { id: m[1], until: +m[2], n: +m[3] } : null;
+}
+const 소개번호 = (settings, id) => { const n = +(((settings || {}).lshare || {})[id]); return Number.isInteger(n) && n > 0 ? n : 0; };
+const 물건번호꼴 = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+async function 내물건하나(agent, id) {
+  const r = await fetch(sbUrl('bk_listing', `select=*&id=eq.${id}&agent_id=eq.${agent.id}&limit=1`), { headers: sbHeaders() });
+  if (!r.ok) return { error: true };
+  return { L: (await r.json())[0] || null };
+}
+async function shareMake(res, agent, b) {
+  const id = String(b.id || '');
+  if (!물건번호꼴.test(id)) return res.status(400).json({ error: '어느 물건인지 알 수 없습니다' });
+  if (overLimit('lshare:' + agent.id, 60, 3600e3)) return res.status(429).json({ error: '잠시 뒤 다시 만들어 주세요' });
+  try {
+    const x = await 내물건하나(agent, id);
+    if (x.error) return res.status(502).json({ error: '물건을 불러오지 못했습니다' });
+    if (!x.L) return res.status(404).json({ error: '내 장부에 없는 물건입니다' });
+    if (x.L.status && x.L.status !== 'active') return res.status(409).json({ error: '거래가 끝났거나 보관 · 휴지통에 있는 물건은 소개 링크를 만들지 않습니다' });
+    const 빠짐 = 노출기준(x.L).빠짐;
+    if (빠짐.length) return res.status(409).json({ error: `명시사항을 먼저 채워 주세요 - ${빠짐.slice(0, 3).join(' · ')}${빠짐.length > 3 ? ` 외 ${빠짐.length - 3}가지` : ''}`, miss: 빠짐 });
+    const s = await 설정읽기(agent);
+    if (s.error) return res.status(502).json({ error: '설정을 불러오지 못했습니다' });
+    const tok = 소개표(id, 소개번호(s.settings, id));
+    return res.status(200).json({ ok: true, token: tok, until: +tok.split('.')[2] });
+  } catch (e) { return res.status(502).json({ error: 'DB에 닿지 못했습니다' }); }
+}
+/* 링크 끊기 - 그 물건의 링크번호를 하나 올린다. 600건이 넘으면 번호가 작은 것부터 버린다(버려진 물건의 옛 링크는 7일 기한으로 닫힌다) */
+async function shareCut(res, agent, b) {
+  const id = String(b.id || '');
+  if (!물건번호꼴.test(id)) return res.status(400).json({ error: '어느 물건인지 알 수 없습니다' });
+  const x = await 내물건하나(agent, id).catch(() => ({ error: true }));
+  if (x.error) return res.status(502).json({ error: '물건을 불러오지 못했습니다' });
+  if (!x.L) return res.status(404).json({ error: '내 장부에 없는 물건입니다' });
+  const z = await 설정고침(agent, s => { const m = { ...(s.lshare && typeof s.lshare === 'object' ? s.lshare : {}) }; m[id] = 소개번호(s, id) + 1;
+    const 키 = Object.keys(m); if (키.length > 600) for (const k of 키.filter(k => k !== id).slice(0, 키.length - 600)) delete m[k];
+    return { patch: { lshare: m } }; });
+  if (!z.y) return 설정실패(res, z, '소개 링크');
+  return res.status(200).json({ ok: true });
+}
+/* 공개 읽기 - 로그인 없이 표만으로. IP 마다 10분에 60번. 거래가 끝났거나 내려간 물건, 승인이 풀린 사무소의 링크는 닫힌다 */
+export async function shareRead(req, res) {
+  if (overLimit('lshare-r:' + ipOf(req), 60, 600e3)) return res.status(429).json({ error: '잠시 뒤 다시 열어 주세요' });
+  const t = 소개표읽기(req.query && req.query.share);
+  if (!t) return res.status(404).json({ error: '링크가 맞지 않거나 기한(7일)이 지났습니다 - 중개사무소에 다시 받아 주세요' });
+  try {
+    const lr = await fetch(sbUrl('bk_listing', `select=*&id=eq.${t.id}&limit=1`), { headers: sbHeaders() });
+    const L = lr.ok ? (await lr.json())[0] : null;
+    if (!L || (L.status && L.status !== 'active')) return res.status(404).json({ error: '거래가 끝났거나 내려간 매물입니다 - 중개사무소에 물어봐 주세요' });
+    const ar = await fetch(sbUrl('bk_agent', `select=id,status,role,office,name,phone,addr,reg_no,settings&id=eq.${L.agent_id}&limit=1`), { headers: sbHeaders() });
+    let a = ar.ok ? (await ar.json())[0] : null;
+    if (a) { try { const { 응답풀기 } = await import('./_crypto.js'); a = 응답풀기([a])[0]; } catch {} }
+    if (!a || a.status !== 'approved') return res.status(404).json({ error: '지금은 볼 수 없는 매물입니다' });
+    if (소개번호(a.settings, t.id) !== t.n) return res.status(404).json({ error: '중개사무소가 이 링크를 끊었습니다 - 새 링크를 받아 주세요' });
+    if (노출기준(L).빠짐.length) return res.status(404).json({ error: '지금은 볼 수 없는 매물입니다 - 중개사무소에 물어봐 주세요' });
+    const row = 매물공개(L, a); delete row.pic0; delete row.lat; delete row.lng; delete row.changed; delete row.opened_at;
+    const pics = (await 사진주소(사진들(L.pics)).catch(() => [])).filter(Boolean);
+    const kc = String((a.settings || {}).kakaoCh || '').trim();
+    return res.status(200).json({ ok: true, until: t.until, listing: row, pics,
+      office: { name: a.office || '공인중개사사무소', rep: a.name || '', phone: a.phone || '', addr: a.addr || '', reg_no: a.reg_no || '',
+        ...(/^https:\/\/pf\.kakao\.com\/_[A-Za-z0-9]{3,40}(\/chat)?$/.test(kc) ? { kakaoCh: kc } : {}) } });
+  } catch (e) { return res.status(502).json({ error: '매물을 불러오지 못했습니다' }); }
 }
 
 /* 알림 설정 (2026-10-30 대표님 '카카오 알림설정') - bk_agent.settings.alert.
@@ -664,6 +740,11 @@ export default async function handler(req, res) {
     if (!process.env.BK_URL || !process.env.BK_SECRET_KEY) return res.status(503).json({ error: '서버에 환경변수가 설정되지 않았습니다' });
     return draftRead(req, res);
   }
+  /* 매물 소개 한 장(로그인 없이 서명된 표로 · 2026-11-26) */
+  if (req.method === 'GET' && req.query && req.query.share) {
+    if (!process.env.BK_URL || !process.env.BK_SECRET_KEY) return res.status(503).json({ error: '서버에 환경변수가 설정되지 않았습니다' });
+    return shareRead(req, res);
+  }
   /* 계약 뒤 손님 안내(로그인 없이 서명된 표로 · 2026-11-22) - api/_contract.js guideRead */
   if (req.method === 'GET' && req.query && req.query.guide) {
     if (!process.env.BK_URL || !process.env.BK_SECRET_KEY) return res.status(503).json({ error: '서버에 환경변수가 설정되지 않았습니다' });
@@ -828,6 +909,8 @@ export default async function handler(req, res) {
 
   /* 올려둔 물건. 지금까지 이 목록도 그 브라우저에만 있어서 창을 닫으면
      사라졌다. 함수 상한(12개) 때문에 여기 함께 둔다. */
+  if (b.what === 'listing-share')     return shareMake(res, chk.agent, b);
+  if (b.what === 'listing-share-cut') return shareCut(res, chk.agent, b);
   if (b.what === 'listings')    return readListings(req, res, chk.agent);
   if (b.what === 'listing-add') return addListing(req, res, chk.agent, user, b);
   if (b.what === 'listing-del') return delListing(req, res, chk.agent, b);

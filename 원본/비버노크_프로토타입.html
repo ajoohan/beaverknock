@@ -5428,11 +5428,11 @@ function navPartner(active, 탭있음 = true){
 <div class="nav solid pad ptn-nav">
   <a data-go="${S.agent ? '#/partner/home' : '#/partner'}" style="flex:none">${logoLockup({h:22,partner:true})}</a>
   <div class="items mid">
-    <a data-go="#/partner/demands" class="${active==='d'?'on':''}">${own?'맞는 손님':'수요 목록'}</a>
+    <a data-go="#/partner/demands" class="${active==='d'?'on':''}">${own?'맞는 손님':'1:1 제안'}</a>
     <a data-go="#/partner/listings" class="${active==='l'?'on':''}">${ownerSide() ? '내 물건' : '매물장부'}</a>
     ${own||직원()?'':`<a data-go="#/partner/settings" class="${active==='s'?'on':''}">사무소 설정</a>`}
     ${권한('stats') ? `<a data-go="#/partner/stats" class="${active==='st'?'on':''}">성과</a>` : ''}
-    <a data-go="#/partner/proposals" class="${active==='p'?'on':''}">내 제안</a>
+    <a data-go="#/partner/proposals" class="${active==='p'?'on':''}">보낸 제안</a>
     ${own || !권한('room') ?'':`<a data-go="#/partner/rooms" class="${active==='rm'?'on':''}">손님 대화</a>`}
     ${계약막힘()?'':`<a data-go="#/partner/contracts" class="${active==='ct'?'on':''}">계약서</a>`}
   </div>
@@ -5744,7 +5744,7 @@ function loadListings(force){
       if(!(r.ok && j.ok)) return render();       /* 실패해도 로딩 표시는 내린다(2026-11-03 리뷰) */
       S.lsSaved = !j.note;          /* 표가 없으면 아직 저장되지 않는다 */
       S.listings = (j.rows||[]).map(listingFromRow);
-      if(changed('listings', S.listings)) render();
+      if(changed('listings', S.listings)) render(); else 알림종새로();
     }))
     .catch(() => { S.lsLoading = false; S.lsReady = true; render(); });
 }
@@ -8065,7 +8065,7 @@ function agentPanel(){
               <td class="agt-pk"><label class="pickhit"><input type="checkbox" data-act="ag-pick" data-v="${esc(r.id)}" ${AG.pick[r.id]?'checked':''}
                 aria-label="${esc(r.name||'이름 없는 신청')} 신청 고르기"></label></td>
               <td><b class="agt-nm">${esc(r.name||'이름 없음')}</b>
-                <small>${esc(AG_ROLE[r.role]||r.role||'')}${r.user_id ? '' : ` · <em class="agt-warn" title="계정에 이어지지 않은 신청입니다 - 승인돼도 수요 목록·제안을 쓸 수 없습니다">계정 없음</em>`}</small></td>
+                <small>${esc(AG_ROLE[r.role]||r.role||'')}${r.user_id ? '' : ` · <em class="agt-warn" title="계정에 이어지지 않은 신청입니다 - 승인돼도 1:1 제안을 쓸 수 없습니다">계정 없음</em>`}</small></td>
               <td>${곳 ? `<span class="agt-of">${esc(곳)}</span>` : `<span class="agt-none">${r.role==='agent'?'사무소 미입력':'주소 미입력'}</span>`}
                 <small>${번호 ? `<span class="num">${esc(번호)}</span>${r.role==='agent' ? ` <em class="${r.reg_verified?'agt-ok':'agt-warn'}">${r.reg_verified?'등록 확인':'미확인'}</em>` : ''}`
                   : r.role==='agent' ? '<em class="agt-warn">등록번호 없음</em>' : r.role==='developer' ? '<span class="agt-none">사업자번호 없음</span>' : ''}</small></td>
@@ -9430,8 +9430,8 @@ V['#/partner/proposals'] = () => {
       </div>`;}).join('')}</div>`
     : `<div class="empty"><span style="display:flex;justify-content:center;margin-bottom:8px">${beaverly(120)}</span>
        <p style="margin:0 0 6px;font-size:15px;font-weight:700">아직 보낸 제안이 없습니다</p>
-       <p style="margin:0 0 18px;font-size:14.5px;color:var(--n500)">지금 서울·경기에서 12명의 손님이 조건을 걸어두고 기다립니다.</p>
-       <button class="btn pri md" data-go="#/partner/demands">수요 목록 보기</button></div>`)}
+       <p style="margin:0 0 18px;font-size:14.5px;color:var(--n500)">활동 지역에 걸린 손님 조건에 맞는 매물로 제안을 보내 보세요.</p>
+       <button class="btn pri md" data-go="#/partner/demands">손님 조건 보기</button></div>`)}
     <p style="margin:2px 0 ${isMo()?'12px':'0'};font-size:13.5px;line-height:1.6;color:var(--n500)">발송 후 수정은 불가합니다 - 전달 내용의 무결성을 위해 회수 후 재작성만 가능합니다. 회수는 손님이 열람하기 전에만 됩니다.</p>
   </div>
   ${tabbar('d','p')}
@@ -9906,7 +9906,7 @@ V["#/partner/stats"] = () => {
       </div>
     </div>
     <p style="margin:2px 0 ${isMo()?'12px':'0'};font-size:13.5px;line-height:1.75;color:var(--n500)">
-      건별 이력은 <a class="tapx" data-go="#/partner/proposals" style="font-weight:800;color:var(--ind);text-decoration:underline">내 제안</a>에서 봅니다 - 이 화면은 집계와 순위만 다룹니다.</p>
+      건별 이력은 <a class="tapx" data-go="#/partner/proposals" style="font-weight:800;color:var(--ind);text-decoration:underline">보낸 제안</a>에서 봅니다 - 이 화면은 집계와 순위만 다룹니다.</p>
   </div>
   ${tabbar('st','p')}
 </div>`;};
@@ -11345,7 +11345,7 @@ V["#/partner/listing"] = (id) => {
       <span style="font-size:13.5px;color:var(--n500)">유형 → 지역 → 예산(±10%) → 필수 → 확인 순으로 대조했습니다</span>
     </div>
     ${ms.length? `<div style="display:grid;grid-template-columns:repeat(${isMo()?1:2},minmax(0,1fr));gap:16px">${ms.map(card).join('')}</div>`
-      : 빈자리('아직 맞는 손님이 없습니다', '수요 목록에 새 조건이 들어온 뒤 이 화면을 다시 열면 그때 다시 대조합니다.', '', 96)}
+      : 빈자리('아직 맞는 손님이 없습니다', '1:1 제안에 새 손님 조건이 들어온 뒤 이 화면을 다시 열면 그때 다시 대조합니다.', '', 96)}
   </div>
   ${tabbar('l','p')}
 </div>`;};
@@ -13853,7 +13853,7 @@ const HP = { id:'', i:0 };
 const PHELP = [
   { g:'시작하기', id:'start', t:'비버노크 파트너 처음 시작하기', steps:[
     ['자격 확인', '대시보드의 ‘자격 확인 마치기’에서 중개사무소 등록번호를 확인합니다. 확인되면 손님 조건 전문이 열립니다.'],
-    ['활동 지역 정하기', '내 사무소 › 활동 설정에서 활동 지역을 고르세요. 그 지역에 걸린 손님 조건이 수요 목록에 모입니다.'],
+    ['활동 지역 정하기', '내 사무소 › 활동 설정에서 활동 지역을 고르세요. 그 지역에 걸린 손님 조건이 1:1 제안 › 손님 조건에 모입니다.'],
     ['대시보드 보기', '대시보드의 할 일 · 알림(종 단추)에 지금 챙길 일이 모입니다. 새 조건 · 손님 말 · 잔금 일정이 여기에 뜹니다.'] ] },
   { g:'시작하기', id:'staff', boss:true, t:'직원 초대하고 권한 정하기', steps:[
     ['직원 초대', '내 사무소 › 직원 · 권한에서 메일 주소로 초대합니다. 메일을 못 봤으면 ‘문자로 초대 알리기’를 누르세요. 그 메일로 로그인하면 우리 사무소로 들어옵니다.'],
@@ -13869,21 +13869,21 @@ const PHELP = [
   { g:'매물장부', id:'lopen', t:'손님에게 매물 노출하기', steps:[
     ['기준 10가지 채우기', '물건을 열면 ‘노출 기준 N/10’이 보입니다. 빠진 항목(층 · 방향 · 관리비 기준 등)을 채웁니다.'],
     ['소유자 확인', '등기부와 대조해 ‘등기부상 소유자와 일치함을 확인했습니다’에 체크합니다. 체크는 중개사 책임입니다.'],
-    ['노출하기', '‘노출하기’를 누르면 조건이 80점 이상 맞는 손님의 맞춤매물에 뜹니다. 손님이 ‘보고 싶어요’를 누르면 내 제안으로 들어옵니다.'],
+    ['노출하기', '‘노출하기’를 누르면 조건이 80점 이상 맞는 손님의 맞춤매물에 뜹니다. 손님이 ‘보고 싶어요’를 누르면 매물매칭으로 들어옵니다.'],
     ['거래가 끝나면', '계약금이 들어오면 직접 ‘노출 종료’ 또는 ‘거래완료’를 눌러 주세요. 자동으로 꺼지지 않습니다.'] ] },
   { g:'매물장부', id:'lmemo', t:'물건에 비공개 메모 남기기', steps:[
     ['물건 상세 열기', '매물장부에서 물건을 누르면 아래에 ‘의뢰인 · 특이사항(비공개)’ 칸이 있습니다.'],
     ['적고 저장', '의뢰인, 의뢰인 연락처, 조정 가능 금액, 특이사항을 적고 ‘메모 저장’을 누릅니다.'],
     ['밖으로 나가지 않습니다', '메모는 우리 사무소만 봅니다. 손님 화면과 제안에는 나가지 않습니다. 현관 비밀번호는 적지 마세요.'] ] },
   { g:'손님 조건과 제안', id:'propose', t:'손님 조건 보고 1:1 제안 보내기', steps:[
-    ['수요 목록 보기', '영업 › 수요 목록에 활동 지역의 손님 조건이 모입니다. 내 물건과 맞는 조건이 위로 옵니다.'],
+    ['손님 조건 보기', '1:1 제안 › 손님 조건에 활동 지역의 손님 조건이 모입니다. 내 물건과 맞는 조건이 위로 옵니다.'],
     ['조건 전문 보기', '조건을 누르면 지역 · 예산 · 입주 시기 · 원하는 점이 나옵니다. 손님 이름과 연락처는 연결 전까지 가려져 있습니다.'],
     ['제안 보내기', '‘이 물건으로 제안’을 누르면 금액 · 면적 · 층이 채워집니다. 맞는 물건이 없으면 ‘이 손님에게 제안하기’로 새로 씁니다.'],
     ['한 조건에 다섯 곳', '조건 1건에는 최대 5곳만 제안할 수 있습니다. 남은 자리가 조건마다 보입니다.'] ] },
   { g:'손님 조건과 제안', id:'connect', t:'손님이 연결하면', steps:[
-    ['알림 받기', '손님이 ‘연락하기’를 누르면 메일이 오고, 영업 › 내 제안에 손님 이름과 전화번호가 열립니다.'],
+    ['알림 받기', '손님이 ‘연락하기’를 누르면 메일이 오고, 1:1 제안 › 보낸 제안에 손님 이름과 전화번호가 열립니다.'],
     ['희망 연락 방법', '손님이 고른 연락 방법(전화 먼저 · 문자 먼저)과 편한 때가 번호 옆에 보입니다. 그 방법으로 연락하세요.'],
-    ['계약서로 이어가기', '계약이 되면 내 제안에서 그 손님으로 계약서를 시작할 수 있습니다. 손님 이름과 번호가 채워집니다.'] ] },
+    ['계약서로 이어가기', '계약이 되면 보낸 제안에서 그 손님으로 계약서를 시작할 수 있습니다. 손님 이름과 번호가 채워집니다.'] ] },
   { g:'계약서', id:'ct-status', ct:true, t:'계약현황 한눈에 보기', steps:[
     ['표로 보기', '계약 › 계약현황에 진행 중인 계약이 표로 모입니다. 상태(준비 · 진행중 · 완료)를 바로 바꿉니다.'],
     ['갱신은 따로', '‘갱신’ 탭에 갱신계약 · 재계약만 모입니다. 만기가 가까우면 ‘갱신 의사 확인’ 문자로 먼저 물어보세요.'],
@@ -13996,8 +13996,8 @@ function 가이드할일(){
   한번('mp', !S.mpReady, typeof loadMyProps === 'function' ? loadMyProps : null);
   const g = gd읽기(), 본 = k => !!(g.seen && g.seen[k]), 대표 = !직원() && !ownerSide(), 계약 = !계약막힘();
   return [
-    대표 && { k:'scope', t:'활동 지역 정하기', why:'고른 지역에 걸린 손님 조건만 수요 목록에 모입니다. 가장 먼저 해 주세요.', 분:'1분', go:'#/partner/settings', 끝: !!S.scopeStored, 모름: !S.feedAt },
-    { k:'demands', t:'수요 목록 둘러보기', why:'우리 동네 손님이 무엇을 찾는지 봅니다. 이름 · 연락처는 연결 전까지 가려져 있습니다.', 분:'2분', go:'#/partner/demands', 끝: 본('demands') },
+    대표 && { k:'scope', t:'활동 지역 정하기', why:'고른 지역에 걸린 손님 조건만 1:1 제안에 모입니다. 가장 먼저 해 주세요.', 분:'1분', go:'#/partner/settings', 끝: !!S.scopeStored, 모름: !S.feedAt },
+    { k:'demands', t:'손님 조건 둘러보기', why:'우리 동네 손님이 무엇을 찾는지 봅니다. 이름 · 연락처는 연결 전까지 가려져 있습니다.', 분:'2분', go:'#/partner/demands', 끝: 본('demands') },
     { k:'listing', t:'매물장부에 물건 하나 적기', why:'적어 두면 걸려 있는 손님 조건과 바로 견줘 맞는 손님 수를 알려 줍니다.', 분:'3분', go:'#/partner/listing/new', 끝: (S.listings || []).some(L => !L.seed), 모름: !S.lsReady },
     { k:'propose', t:'손님에게 첫 제안 보내기', why:'조건 하나에 5곳까지만 제안할 수 있어 빨리 보낼수록 유리합니다.', 분:'2분', go:'#/partner/demands', 끝: (S.myprops || []).some(x => !x.seed), 모름: !S.mpReady },
     계약 && { k:'contract', t:'계약서 하나 만들어 보기', why:'등기부 · 건축물대장을 올리면 칸이 채워집니다. 연습으로 만들고 휴지통에 넣어도 됩니다.', 분:'5분', go:'#/partner/contracts/new', 끝: 본('contract') },
@@ -14046,7 +14046,7 @@ const GD_메뉴 = () => [
 ];
 const GD_흐름 = [
   ['clock', '아침 9시', '카카오톡 · 메일로 오늘 챙길 일정이 옵니다'],
-  ['users', '조건 확인', '수요 목록에서 새로 걸린 손님 조건을 봅니다'],
+  ['users', '조건 확인', '1:1 제안에서 새로 걸린 손님 조건을 봅니다'],
   ['send', '1:1 제안', '맞는 물건으로 제안합니다(조건마다 5곳)'],
   ['link', '손님 연결', '손님이 연결을 누르면 이름 · 번호가 열립니다'],
   ['pen', '계약서', '서류를 올려 칸을 채우고 인쇄 · 날인'],
@@ -14617,6 +14617,7 @@ if(typeof addEventListener === 'function'){
   addEventListener('unhandledrejection', e => { const r = e && e.reason; bk오류보내기('처리되지 않은 오류: ' + ((r && r.message) || r), (r && r.stack && (/(https?:\/\/[^\s)]+?):\d+:\d+/.exec(r.stack) || [])[1]) || location.origin, 0, 0, r && r.stack); });
 }
 const BK_변경 = [
+  { v:'26.11.26.8', 날:'2026-11-26', 줄:[ '매물 화면 점검 - 보낸 제안이 없을 때 나오던 ‘서울·경기에서 12명의 손님이 기다립니다’는 실제 수가 아닌 예시 숫자라 뺐습니다. 단추는 ‘손님 조건 보기’로', '옛 메뉴 이름(수요 목록 · 내 제안)이 남아 있던 도움말 · 시작 가이드 · 휴대폰 위 메뉴를 ‘1:1 제안 · 손님 조건 · 보낸 제안 · 매물매칭’으로 맞췄습니다', '종 알림 숫자가 화면마다 다르게(0 · 2 · 3) 보이던 것 - 계약서 · 매물장부를 늦게 받아도 받는 즉시 다시 셉니다' ] },
   { v:'26.11.26.7', 날:'2026-11-26', 줄:[ '카카오 지도 - 카카오가 지도 프로그램을 새 주소(kakaocdn.net)에서 내려주는데 사이트 보안 정책이 막아 지도가 뜨지 않던 것' ] },
   { v:'26.11.26.6', 날:'2026-11-26', 줄:[ '전수점검 · 코드리뷰 반영 - 매물매칭의 손님 조건 읽기가 표에 없는 칸 때문에 실패하면 ‘맞는 손님 없음’으로 조용히 보이던 것(모든 칸을 읽고 점수는 같은 기준으로) · 실패는 실패라고 알림', '보낸 제안 화면에서 왼쪽 메뉴가 ‘1:1 제안’에 불이 들어오게 · 진행 기록은 건마다 최근 20개 · 400건까지' ] },
   { v:'26.11.26.5', 날:'2026-11-26', 줄:[ '대시보드 명칭 · 진행 기록 (파트너) - ‘수요 목록’은 ‘1:1 제안’으로(위 탭: 손님 조건 · 진행 중 · 보낸 제안), 손님 조건 카드에 ‘수락’ - 누르면 진행 중에 올라 단계(수락 · 제안 보냄 · 연결됨 · 상담 · 방문 · 계약 · 성사 · 불발)와 메모를 적습니다', '‘매물매칭’ 새 메뉴 - 내가 공개한 매물과 80점 이상 맞는 손님 조건, 손님이 보고 싶어요 누른 매물을 따로 모아 안내 · 연결 · 계약까지 진행을 적습니다. 보낸 제안 카드에도 진행 기록' ] },
@@ -15359,6 +15360,10 @@ const 알림읽음 = (() => { let 봄, 최대; const 쪼개 = id => /^(todo:.*):
 function 알림들(){
   if(!S.user || !S.agent) return [];
   if(RM.list == null && !RM.listLoading && !ownerSide() && !계약막힘() && Date.now() - (알림들._물음 || 0) > 60e3){ 알림들._물음 = Date.now(); setTimeout(rmListLoad); }
+  /* 종 숫자는 계약서 · 매물장부 · 알림 설정으로 센다 - 그 자료를 안 부르는 화면으로 바로 들어오면 수가 화면마다 달랐다 (2026-11-26 점검).
+     없으면 한 번 불러 두고, 도착하면 종만 다시 센다 */
+  if(CT.list == null && !CT.loading && !계약막힘() && Date.now() - (알림들._계약 || 0) > 60e3){ 알림들._계약 = Date.now(); setTimeout(() => ctLoadList()); }
+  if(!S.lsReady && !S.lsLoading && Date.now() - (알림들._매물 || 0) > 60e3){ 알림들._매물 = Date.now(); setTimeout(() => loadListings()); }
   const { 할일, 수요 } = 파트너현황(), 목록 = [];
   할일.forEach(x => 목록.push({ id: 'todo:' + x.t + ':' + (x.v || '') + ':' + (x.n || 1), 종류: /잔금|신고/.test(x.t) ? '급함' : '할일',
     t: x.n > 1 ? `${x.t} ${x.n}건` : x.t, s: x.s, ico: x.ico, go: x.go, act: x.act, v: x.v }));
@@ -17062,7 +17067,7 @@ function ctLoadList(force){
     CT.need = j.need || '';
     CT.err = ok ? '' : (j.error || '목록을 불러오지 못했습니다');
     if(ok){ CT.list = j.rows || []; CT.failAt = 0; if(j.need32) CT.need32 = true; } else CT.failAt = Date.now();
-    다시();
+    다시(); if(typeof 알림종새로 === 'function') 알림종새로();
   }).catch(() => { CT.loading = false; CT.failAt = Date.now(); CT.err = '네트워크 문제로 불러오지 못했습니다'; 다시(); });
 }
 /* 저장한 판을 목록에 바로 반영한다 - 목록을 비우면 제안 화면에서 같은 손님의 초안을 못 찾아 또 만든다 */
@@ -20523,7 +20528,7 @@ function ctAlertLoad(){
     if(ok && (j.end === 'same' || j.end === 'prev')) try{ localStorage.setItem('bk.ctEnd', j.end); }catch(_){}
     CT.alert = ok ? { loaded: true, cfg: ct알림설정(j.alert), need: j.need || '', phone: j.phone || '', kakaoReady: !!j.kakaoReady, kakaoCh: j.kakaoCh || '' }
       : { loaded: true, cfg: ct알림설정(), need: '', err: j.error || '알림 설정을 불러오지 못했습니다' };
-    if(S.route.startsWith('#/partner/contracts') || CT.mode === 'plan' || S.route === '#/partner/home') render();
+    if(S.route.startsWith('#/partner/contracts') || CT.mode === 'plan' || S.route === '#/partner/home') render(); else 알림종새로();
   }).catch(() => { CT.alertLoading = false; });
 }
 let ctAlertT = 0;
@@ -24589,7 +24594,7 @@ function handle(a,v,el){
           box.animate([{opacity:.35},{opacity:1}], {duration:520, iterations:2}); }
         return true;
       }
-      if(S.timeLeft<=0) return toast('예약 시간이 끝났습니다 - 수요 목록에서 다시 시작해 주세요'), true;
+      if(S.timeLeft<=0) return toast('예약 시간이 끝났습니다 - 1:1 제안에서 다시 시작해 주세요'), true;
       if(S.proposing) return true;
 
       /* 서버로 보낸다. 지금까지는 이 화면 메모리에만 남고 손님에게 가지 않았다. */

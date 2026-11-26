@@ -47,13 +47,13 @@ async function hardReply(res, agent, b) {
   if (!id || !UUID.test(id)) return res.status(400).json({ error: '어느 조건인지 알 수 없습니다' });
   if (!b.undo && !어려운이유.includes(why)) return res.status(400).json({ error: '이유를 골라 주세요' });
   try {
-    const r = await fetch(sbUrl('bk_demand', `select=id,hard,status&id=eq.${id}&limit=1`), { headers: sbHeaders() });
+    const r = await fetch(sbUrl('bk_demand', `select=id,hard,status,expires_at&id=eq.${id}&limit=1`), { headers: sbHeaders() });
     if (!r.ok) { const t = await r.text().catch(() => '');
       if (/hard|42703|PGRST204/.test(t)) return res.status(503).json({ error: '아직 준비 중입니다 (0047 마이그레이션 필요)' });
       return res.status(502).json({ error: '조건을 확인하지 못했습니다' }); }
     const d = (await r.json())[0];
     if (!d) return res.status(404).json({ error: '없는 조건입니다' });
-    if (d.status && d.status !== 'active') return res.status(409).json({ error: '지금은 답을 받지 않는 조건입니다' });
+    if ((d.status && d.status !== 'active') || (d.expires_at && Date.parse(d.expires_at) < Date.now())) return res.status(409).json({ error: '지금은 답을 받지 않는 조건입니다' });
     const 전 = d.hard && typeof d.hard === 'object' && !Array.isArray(d.hard) ? d.hard : {}, 새 = { ...전 };
     if (b.undo) delete 새[agent.id]; else 새[agent.id] = { why, at: new Date().toISOString() };
     const w = await fetch(sbUrl('bk_demand', `id=eq.${id}`), { method: 'PATCH', headers: { ...sbHeaders(), Prefer: 'return=minimal' }, body: JSON.stringify({ hard: 새 }) });

@@ -8630,6 +8630,10 @@ V['#/my'] = () => {
 V['#/inbox'] = () => {
   const cond = S.conds.find(c=>c.id===S.inboxCond) || S.conds[0];
   const list = cond? S.props.filter(p=>p.cond===cond.id && p.status!=='hidden') : [];
+  /* 간단 제안은 열어 볼 상세가 없다 - 제안함에 보인 것이 곧 읽은 것이다. 남기지 않으면 중개사 쪽은 늘 '미열람'이고 7일 뒤 '열지 않아 만료'가 된다 (2026-11-26 코드리뷰) */
+  list.filter(p => p.quick && p.status === 'sent' && !p.seed && !p.읽음보냄 && S.user).forEach(p => { p.읽음보냄 = true;
+    apiFetch('/api/proposal', {method:'PATCH', body: JSON.stringify({id:p.id, status:'read'})})
+      .then(r => { if(r.ok) p.status = 'viewed'; else p.읽음보냄 = false; }).catch(() => { p.읽음보냄 = false; }); });
   const card = p => p.quick ? `
     <div class="card ${p.isNew?'hi':''} fade qk-card">
       <div class="qk-top"><span class="badge b-ind">간단 제안</span>${p.isNew ? '<span class="badge b-ind" style="background:var(--ind);color:#fff">NEW</span>' : ''}<span class="qk-by">${esc(p.by)} · ${esc(p.at)}</span></div>
@@ -14716,6 +14720,7 @@ if(typeof addEventListener === 'function'){
   addEventListener('unhandledrejection', e => { const r = e && e.reason; bk오류보내기('처리되지 않은 오류: ' + ((r && r.message) || r), (r && r.stack && (/(https?:\/\/[^\s)]+?):\d+:\d+/.exec(r.stack) || [])[1]) || location.origin, 0, 0, r && r.stack); });
 }
 const BK_변경 = [
+  { v:'26.11.26.13', 날:'2026-11-26', 줄:[ '전수점검 · 코드리뷰 반영 - 간단 제안은 손님 제안함에 보이면 읽은 것으로 남깁니다(전에는 손님이 봤어도 중개사 쪽은 미열람이고 7일 뒤 ‘열지 않아 만료’가 됐음)', '간단 제안을 정식 제안으로 올린 뒤 보낸 제안에 옛 카드가 함께 남던 것 · 기한이 지난 조건에는 ‘구하기 어려워요’를 받지 않음' ] },
   { v:'26.11.26.12', 날:'2026-11-26', 줄:[ '매물 소개 한 장 (파트너) - 매물장부의 ‘소개 한 장’을 누르면 손님에게 보낼 링크가 생깁니다. 받은 사람만 로그인 없이 보고 7일 뒤 닫힙니다(직접 끊을 수도 있음). 사진 · 가격 · 명시사항 · 사무소 정보가 한 장에 담기고 그대로 인쇄하면 A4 한 장입니다', '명시사항을 다 채운 물건만 만들 수 있고, 호수와 의뢰인 · 특이사항은 나가지 않습니다. 거래완료 · 내린 물건의 링크는 바로 닫힙니다' ] },
   { v:'26.11.26.11', 날:'2026-11-26', 줄:[ '간단 제안 (파트너) - 손님 조건 화면에서 매물 정보 없이 한마디만 보냅니다(다섯 자리 중 하나 · 가격 · 주소 · 연락처는 적지 않음). 손님이 ‘자세히 보고 싶어요’를 누르면 메일로 알리고, 보낸 제안에서 ‘정식 제안 보내기’로 같은 자리에 매물 정보를 채워 보냅니다', '구하기 어려워요 (파트너) - 조건이 까다로울 때 이유(예산 · 지역 · 면적 · 입주 시기 · 그 밖에)를 골라 답합니다. 자리를 쓰지 않고, 손님의 내 조건에는 ‘중개사 n곳 · 이유’만 보입니다(사무소 이름은 나가지 않음)' ] },
   { v:'26.11.26.10', 날:'2026-11-26', 줄:[ '파트너 안내 화면의 ‘1:1 제안’ 그림을 지금 화면(손님 조건 · 진행 중 · 보낸 제안 탭, 수락 단추)으로 다시 찍어 바꿨습니다' ] },
@@ -24848,6 +24853,8 @@ function handle(a,v,el){
           S.proposing = false;
           if(!(r.ok && j.ok)){ render(); return toast(j.error || '제안을 보내지 못했습니다'); }
           if(d2) d2.slotsLeft = j.slots_left;
+          /* 간단 제안을 정식 제안으로 올렸으면 같은 줄이다 - 옛 카드를 빼고 넣는다 (2026-11-26 코드리뷰) */
+          S.myprops = S.myprops.filter(x => x.id !== j.id);
           S.myprops.unshift({id:j.id,
             title:`${f.bname||f.addr}${(f.pkind||'home')==='home' && f.rooms ? ` · ${f.rooms}룸` : ''}`,
             price: 제안값(f.dep, f.rent, f.fee),   /* 서버가 다시 줄 때와 같은 서식 */

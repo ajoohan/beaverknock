@@ -96,6 +96,11 @@ ok(/quick: p\.addr === 간단주소/.test(my) && /addr_area: p\.addr === 간단�
 ok(/select=id,hard&id=in\./.test(feed) && /d\.hard\[agentId\]/.test(feed) && !/select: 'id,created_at,kind,dongs[^']*hard/.test(feed), '중개사 조건 목록에는 내 답만 붙인다 - 다른 중개사의 답은 읽어도 내보내지 않는다');
 ok(js.includes(`case 'qk-send'`) && js.includes(`case 'qk-ask'`) && js.includes(`case 'hd-send'`) && js.includes('function 어려움글'), '화면 - 간단 제안 보내기 · 자세히 보고 싶어요 · 구하기 어려워요 · 손님 안내가 있다');
 ok(/if\(!p \|\| p\.quick\) return V\['#\/inbox'\]\(\)/.test(js), '간단 제안은 제안 상세(매물 정보 화면)로 열리지 않는다');
+/* ── 2026-11-26 코드리뷰 ── */
+ok(/p\.quick && p\.status === 'sent' && !p\.seed && !p\.읽음보냄/.test(js), '간단 제안은 손님 제안함에 보이면 읽음으로 남긴다 - 7일 뒤 열지 않아 만료가 되지 않게');
+조건 = { ...조건기본(), expires_at: new Date(Date.now() - 864e5).toISOString() };
+r = await 부름('POST', { hard: true, demand_id: D, why: '예산' });
+ok(r.code === 409 && !조건.hard.a1, '기한이 지난 조건에는 구하기 어려워요를 받지 않는다');
 
 console.log(`${ran - fail} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

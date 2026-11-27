@@ -1452,14 +1452,35 @@ body.mo .hp-nav .right{gap:8px}
 
 /* 마디 */
 .hm-sec{padding:clamp(56px,8vh,104px) 0}
-/* 내 계약 진행과정 (2026-11-27 한실장님) - 글 왼쪽 · 휴대폰 화면 오른쪽, 휴대폰에서는 위아래 */
-.hm-deal{display:grid;grid-template-columns:1fr auto;align-items:center;gap:clamp(28px,5vw,80px)}
+/* 내 계약 진행과정 (2026-11-27 한실장님 '썰렁하다 - 카카오톡 알림 · 비버를 넣어 풍성하게')
+   왼쪽 글 + 세 가지, 오른쪽 연보라 무대에 카카오톡 초대 알림 · 휴대폰 화면 · 비버. 겹치거나 기울이지 않는다 */
+.hm-deal{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.08fr);align-items:center;gap:clamp(28px,4vw,72px)}
 .hm-deal .hm-lead{margin-top:16px}
-.hm-deal-ph{width:min(280px,26vw);margin:0;padding:7px;border-radius:30px;background:linear-gradient(160deg,#2A2840,#14131F);box-shadow:0 28px 60px -20px rgba(29,24,80,.55),inset 0 1px 0 rgba(255,255,255,.18)}
+.hm-deal-pts{list-style:none;margin:28px 0 0;padding:0;display:grid;gap:16px;max-width:46ch}
+.hm-deal-pts li{display:grid;grid-template-columns:40px 1fr;gap:14px;align-items:start}
+.hm-deal-pts i{display:grid;place-items:center;width:40px;height:40px;border-radius:13px;background:#EFEBFF;color:var(--ind)}
+.hm-deal-pts b{display:block;font-size:15.5px;font-weight:700;color:var(--n900);line-height:1.45}
+.hm-deal-pts small{display:block;margin-top:2px;font-size:14px;line-height:1.6;color:var(--n500)}
+.hm-deal-stage{position:relative;justify-self:end;width:min(580px,100%);display:flex;justify-content:flex-end;padding:40px 44px 40px 40px;border-radius:36px;
+  background:linear-gradient(180deg,#F0EDFF 0%,#F7F6FD 100%);box-shadow:inset 0 0 0 1px rgba(106,70,224,.08)}
+.hm-deal-ph{flex:none;width:min(256px,46%);margin:0;padding:7px;border-radius:30px;background:linear-gradient(160deg,#2A2840,#14131F);box-shadow:0 28px 60px -22px rgba(29,24,80,.5),inset 0 1px 0 rgba(255,255,255,.18)}
 .hm-deal-ph img{display:block;width:100%;height:auto;border-radius:23px}
-body.mo .hm-deal{grid-template-columns:1fr;justify-items:center;gap:24px}
-body.mo .hm-deal>div{justify-self:stretch}
-body.mo .hm-deal-ph{width:min(240px,64vw)}
+.hm-kkw{position:absolute;left:6.5%;top:11%;width:min(264px,44%);animation:hmBob 7s ease-in-out infinite}
+.hm-kk-from{display:flex;align-items:center;gap:8px;margin:0 0 8px 2px;font-size:12.5px;font-weight:700;color:var(--n700)}
+.hm-kk-from i{display:grid;place-items:center;width:28px;height:28px;border-radius:10px;background:var(--ind);color:#fff;font-style:normal;font-size:12px;font-weight:800}
+.hm-kk{border-radius:16px;overflow:hidden;background:#fff;box-shadow:0 18px 40px -20px rgba(29,24,80,.4)}
+.hm-kk-h{padding:9px 14px;background:#FEE500;font-size:12.5px;font-weight:700;color:#1F1B00}
+.hm-kk-b{padding:13px 14px 12px;font-size:13px;line-height:1.62;color:var(--n700)}
+.hm-kk-b b{display:block;margin-bottom:6px;color:var(--n900)}
+.hm-kk-btn{display:block;margin:0 12px 12px;padding:9px;border-radius:9px;background:#F2F3F6;text-align:center;font-size:13px;font-weight:700;color:var(--n900)}
+.hm-deal-bv{position:absolute;left:9%;bottom:0;height:clamp(130px,13vw,176px);width:auto;user-select:none;-webkit-user-drag:none}
+@media (prefers-reduced-motion:reduce){.hm-kkw{animation:none}}
+body.mo .hm-deal{grid-template-columns:1fr;gap:26px}
+body.mo .hm-deal-pts{margin-top:22px;gap:14px}
+body.mo .hm-deal-stage{justify-self:stretch;width:auto;flex-direction:column;align-items:center;gap:18px;padding:22px 18px 24px;border-radius:28px}
+body.mo .hm-kkw{position:static;width:min(300px,100%)}
+body.mo .hm-deal-ph{width:min(224px,60vw);align-self:flex-end;margin-right:6px}
+body.mo .hm-deal-bv{left:10px;height:104px}
 .hm-in{width:var(--hm-in);margin:0 auto}
 .hm-k{margin:0 0 10px;font-size:13px;font-weight:800;letter-spacing:.08em;color:var(--ind)}
 .hm-h2{margin:0;font-size:clamp(28px,2.5vw,40px);line-height:1.28;letter-spacing:-.035em;font-weight:800;color:var(--n900)}
@@ -6299,8 +6320,22 @@ const hm계약 = () => `
     <div class="hm-in hm-deal">
       <div><p class="hm-k">계약 진행</p>
         <h2 class="hm-h2">내 계약 진행과정,<br>바로 확인하세요</h2>
-        <p class="hm-lead">계약하면 중개사무소가 초대 링크를 보냅니다. 계약일 · 중도금 · 잔금 일정과 계약서를 마이페이지에서 그대로 봅니다.</p></div>
-      <figure class="hm-deal-ph"><img src="img/home/mydeal-m.v1.webp" width="560" height="1106" loading="lazy" alt="휴대폰 마이페이지의 내 계약 - 계약일 · 중도금 · 잔금 단계 막대, 다음 일정까지 남은 날, 달력"></figure>
+        <p class="hm-lead">계약을 마치면 중개사무소가 초대 링크를 보냅니다. 링크를 누르면 내 계약이 마이페이지에 열립니다.</p>
+        <ul class="hm-deal-pts">
+          <li><i>${hm그림('chat', 20)}</i><span><b>카카오톡으로 초대가 옵니다</b><small>앱을 깔지 않아도, 받은 링크를 누르고 로그인하면 됩니다.</small></span></li>
+          <li><i>${hm그림('cal', 20)}</i><span><b>계약일 · 중도금 · 잔금이 한 줄에</b><small>어디까지 왔는지, 다음 일정까지 며칠 남았는지 보입니다.</small></span></li>
+          <li><i>${hm그림('doc', 20)}</i><span><b>계약서도 그 자리에서</b><small>‘계약서 보기’로 언제든 다시 엽니다.</small></span></li>
+        </ul></div>
+      <div class="hm-deal-stage">
+        <div class="hm-kkw" aria-hidden="true">
+          <p class="hm-kk-from"><i>비</i>비버노크</p>
+          <div class="hm-kk"><div class="hm-kk-h">알림톡 도착</div>
+            <div class="hm-kk-b"><b>[비버노크] 계약 대화방 초대</b>김하늘님, 미사공인중개사사무소에서 계약 진행 대화방에 초대했습니다.</div>
+            <span class="hm-kk-btn">대화방 들어가기</span></div>
+        </div>
+        <img class="hm-deal-bv" src="${BEAVERLY_POSE.review}" alt="" loading="lazy">
+        <figure class="hm-deal-ph"><img src="img/home/mydeal-m.v1.webp" width="560" height="1106" loading="lazy" alt="휴대폰 마이페이지의 내 계약 - 계약일 · 중도금 · 잔금 단계 막대, 다음 일정까지 남은 날, 달력"></figure>
+      </div>
     </div>
   </section>`;
 function hm손님(){
@@ -14742,6 +14777,7 @@ if(typeof addEventListener === 'function'){
   addEventListener('unhandledrejection', e => { const r = e && e.reason; bk오류보내기('처리되지 않은 오류: ' + ((r && r.message) || r), (r && r.stack && (/(https?:\/\/[^\s)]+?):\d+:\d+/.exec(r.stack) || [])[1]) || location.origin, 0, 0, r && r.stack); });
 }
 const BK_변경 = [
+  { v:'26.11.27.4', 날:'2026-11-27', 줄:[ '손님 메인 ‘내 계약 진행과정’ - 카카오톡 초대 알림 모습 · 비버 · 확인할 수 있는 세 가지(초대 · 일정 · 계약서)를 더해 채웠습니다' ] },
   { v:'26.11.27.3', 날:'2026-11-27', 줄:[ '손님 메인 - ‘네 걸음이면 끝납니다’ 위에 ‘내 계약 진행과정, 바로 확인하세요’와 휴대폰 마이페이지의 내 계약 화면을 넣었습니다' ] },
   { v:'26.11.27.2', 날:'2026-11-27', 줄:[ '손님 메인 - 둘째 문구 ‘내 계약 진행과정, 비버노크에서 바로 확인하세요.’를 뺐습니다' ] },
   { v:'26.11.27.1', 날:'2026-11-27', 줄:[ 'Google 로그인 창에 비버노크 이름 · 로고가 보이도록 사이트 소유 확인 표식을 넣었습니다(화면은 그대로)' ] },

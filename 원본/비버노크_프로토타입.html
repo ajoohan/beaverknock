@@ -1425,7 +1425,7 @@ body.mo .hp-nav .right{gap:8px}
 .hm .signupHint{font-size:14px;line-height:1.55;color:var(--n500)}
 .hm .signupHint b{color:var(--n700);font-weight:700}
 /* 2026-11-27 한실장님 '썰렁하다 - 비버가 손 흔드는 움직임, 자리와 정렬 다시' - 위 세 메뉴와 같은 폭, 비버를 키우고 팔만 흔든다(.bv-wave) */
-.hm-guide{display:flex;align-items:center;gap:18px;margin:4px 0 0;padding:14px 24px 14px 18px;border-radius:22px;width:100%;max-width:620px}
+.hm-guide{display:flex;align-items:center;gap:18px;margin:4px 0 0;padding:14px 24px 14px 18px;border-radius:20px;width:100%;max-width:620px}
 .hm-guide img{filter:drop-shadow(0 4px 8px rgba(46,38,120,.18))}
 /* 손 흔드는 비버 (2026-11-27 한실장님 '손을 흔드는 애니메이션') - 몸과 팔 두 겹(470×560 같은 판), 팔만 어깨(72.3% 47.5%)를 축으로 돈다.
    두 번 흔들고 쉰다. transform 만 움직인다 */
@@ -1463,14 +1463,17 @@ body.mo .hp-nav .right{gap:8px}
 .hm-sec{padding:clamp(56px,8vh,104px) 0}
 /* 내 계약 진행과정 (2026-11-27 한실장님 '썰렁하다 - 카카오톡 알림 · 비버를 넣어 풍성하게')
    왼쪽 글 + 세 가지, 오른쪽 연보라 무대에 카카오톡 초대 알림 · 휴대폰 화면 · 비버. 겹치거나 기울이지 않는다 */
-.hm-deal{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.08fr);align-items:center;gap:clamp(28px,4vw,72px)}
+.hm-deal{display:grid;grid-template-columns:minmax(0,1.08fr) minmax(0,1fr);align-items:center;gap:clamp(28px,4vw,72px)}
+/* 위 '손님 화면'이 글 왼쪽 · 그림 오른쪽이라 여기는 뒤집는다(2026-11-27 디자인 점검) - 휴대폰에서는 글이 먼저 */
+.hm-deal>div:first-child{order:2}
+body.mo .hm-deal>div:first-child{order:0}
 .hm-deal .hm-lead{margin-top:16px}
 .hm-deal-pts{list-style:none;margin:28px 0 0;padding:0;display:grid;gap:16px;max-width:46ch}
 .hm-deal-pts li{display:grid;grid-template-columns:40px 1fr;gap:14px;align-items:start}
-.hm-deal-pts i{display:grid;place-items:center;width:40px;height:40px;border-radius:13px;background:#EFEBFF;color:var(--ind)}
+.hm-deal-pts i{display:grid;place-items:center;width:40px;height:40px;border-radius:12px;background:#EFEBFF;color:var(--ind)}
 .hm-deal-pts b{display:block;font-size:15.5px;font-weight:700;color:var(--n900);line-height:1.45}
 .hm-deal-pts small{display:block;margin-top:2px;font-size:14px;line-height:1.6;color:var(--n500)}
-.hm-deal-stage{position:relative;justify-self:end;width:min(600px,100%);display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:clamp(16px,2vw,28px);padding:38px 40px 0 36px;border-radius:36px;
+.hm-deal-stage{position:relative;justify-self:start;width:min(600px,100%);display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:clamp(16px,2vw,28px);padding:38px 40px 0 36px;border-radius:32px;
   background:linear-gradient(180deg,#F0EDFF 0%,#F7F6FD 100%);box-shadow:inset 0 0 0 1px rgba(106,70,224,.08)}
 .hm-deal-l{display:flex;flex-direction:column;justify-content:space-between;gap:18px;min-width:0}
 .hm-deal-ph{align-self:start;justify-self:end;width:100%;max-width:256px;margin:0 0 38px;padding:7px;border-radius:30px;background:linear-gradient(160deg,#2A2840,#14131F);box-shadow:0 28px 60px -22px rgba(29,24,80,.5),inset 0 1px 0 rgba(255,255,255,.18)}
@@ -1486,14 +1489,16 @@ body.mo .hp-nav .right{gap:8px}
 .hm-kk-h{padding:9px 14px;background:#FEE500;font-size:12.5px;font-weight:700;color:#1F1B00}
 .hm-kk-b{padding:13px 14px 12px;font-size:13px;line-height:1.62;color:var(--n700)}
 .hm-kk-b b{display:block;margin-bottom:6px;color:var(--n900)}
-.hm-kk-btn{display:block;margin:0 12px 12px;padding:9px;border-radius:9px;background:#F2F3F6;text-align:center;font-size:13px;font-weight:700;color:var(--n900)}
+.hm-kk-btn{display:block;margin:0 12px 12px;padding:9px;border-radius:10px;background:#F2F3F6;text-align:center;font-size:13px;font-weight:700;color:var(--n900)}
 .hm-deal-bv{display:block;align-self:flex-start;margin-left:6%;height:clamp(130px,13vw,176px);width:auto;user-select:none;-webkit-user-drag:none}
 @media (prefers-reduced-motion:reduce){.hm-kkw{animation:none}}
 body.mo .hm-deal{grid-template-columns:1fr;gap:26px}
 body.mo .hm-deal-pts{margin-top:22px;gap:14px}
-body.mo .hm-deal-stage{justify-self:stretch;width:auto;grid-template-columns:1fr;justify-items:center;gap:18px;padding:22px 18px 24px;border-radius:28px}
+body.mo .hm-deal-stage{justify-self:stretch;width:auto;grid-template-columns:1fr;justify-items:center;gap:18px;padding:22px 18px 24px;border-radius:24px}
 body.mo .hm-deal-l{display:contents}
-body.mo .hm-kkw{margin-top:0;width:min(300px,100%)}
+/* 휴대폰에서는 비버가 멀리 아래에 있어 튀어나오는 길이 화면 그림을 가로지른다 - 제자리에서 떠오르기만 */
+body.mo .hm-kkw{margin-top:0;width:min(300px,100%);transform-origin:50% 100%;animation-name:kkPopM}
+@keyframes kkPopM{0%,100%{opacity:0;transform:translateY(12px) scale(.97)}8%,90%{opacity:1;transform:none}}
 body.mo .hm-deal-ph{width:min(224px,60vw);max-width:none;justify-self:end;margin:0 6px 0 0}
 body.mo .hm-deal-bv{position:absolute;left:8px;bottom:0;margin:0;height:92px}
 .hm-in{width:var(--hm-in);margin:0 auto}
@@ -6337,7 +6342,7 @@ function hm장점(){
 const hm계약 = () => `
   <section class="hm-sec">
     <div class="hm-in hm-deal">
-      <div><p class="hm-k">계약 진행</p>
+      <div>
         <h2 class="hm-h2">내 계약 진행과정,<br>바로 확인하세요</h2>
         <p class="hm-lead">계약을 마치면 내 계약이 마이페이지에 열립니다. 어디까지 왔는지, 다음에 무엇이 남았는지 그대로 보입니다.</p>
         <ul class="hm-deal-pts">
@@ -6353,7 +6358,7 @@ const hm계약 = () => `
               <div class="hm-kk-row"><span>다음 일정</span><strong>중도금 · 12.2</strong></div></div>
             <span class="hm-kk-btn">계약 진행 보기</span></div>
         </div>
-        <img class="hm-deal-bv" src="${BEAVERLY_POSE.phone}" alt="" loading="lazy"></div>
+        <img class="hm-deal-bv" src="${BEAVERLY_POSE.phone}" width="419" height="560" alt="" loading="lazy"></div>
         <figure class="hm-deal-ph"><img src="img/home/mydeal-m.v1.webp" width="560" height="1106" loading="lazy" alt="휴대폰 마이페이지의 내 계약 - 계약일 · 중도금 · 잔금 단계 막대, 다음 일정까지 남은 날, 달력"></figure>
       </div>
     </div>
@@ -14797,6 +14802,7 @@ if(typeof addEventListener === 'function'){
   addEventListener('unhandledrejection', e => { const r = e && e.reason; bk오류보내기('처리되지 않은 오류: ' + ((r && r.message) || r), (r && r.stack && (/(https?:\/\/[^\s)]+?):\d+:\d+/.exec(r.stack) || [])[1]) || location.origin, 0, 0, r && r.stack); });
 }
 const BK_변경 = [
+  { v:'26.11.27.9', 날:'2026-11-27', 줄:[ '디자인 점검 반영 - 메인 ‘내 계약 진행과정’은 그림을 왼쪽에 두어 위 구역과 방향이 번갈아 가게 했습니다', '같은 말을 되풀이하던 작은 머리말을 빼고 모서리 둥글기를 사이트 값에 맞췄습니다' ] },
   { v:'26.11.27.8', 날:'2026-11-27', 줄:[ '파비콘을 글자 없이 굵은 문틀 무늬만으로 바꿨습니다', '전수점검 · 코드리뷰 반영 - 메인 ‘내 계약 진행과정’의 알림 카드와 휴대폰 화면이 화면 폭에 따라 겹치던 것을 두 칸으로 나눠 고쳤습니다', '알림 카드를 ‘계약일 일정이 완료되었습니다’ 안내로 바꾸고, 비버의 휴대폰에서 튀어나오듯 나타나게 했습니다' ] },
   { v:'26.11.27.7', 날:'2026-11-27', 줄:[ '손님 메인 첫 화면의 비버가 손을 흔듭니다 - 몸은 그대로, 팔만 두 번 흔들고 쉽니다' ] },
   { v:'26.11.27.6', 날:'2026-11-27', 줄:[ '비버 표정 다섯 가지를 더했습니다 - 휴대폰 보는 비버(메인 ‘내 계약 진행과정’ · 제안을 기다리는 화면), 고민하는 비버(찾는 것이 없을 때), 슬픈 비버(가입 신청 실패), 박수 치는 비버(조건 접수 완료)' ] },

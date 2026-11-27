@@ -5366,7 +5366,8 @@ function logoLockup(opt){
 const BEAVERLY_FRONT = "img/beaverly-front.v1.webp";
 const BEAVERLY_KNOCK = "img/beaverly-knock.v1.webp";
 /* 표정별 비버리 (2026-11-24) - 인사: 처음 · 가입 / 검토: 계약서 · 확인. 고민 · 슬픔 · 자신만만 · 박수는 그림이 오면 더한다 */
-const BEAVERLY_POSE = { hello: "img/beaverly-hello.v1.webp", review: "img/beaverly-review.v1.webp" };
+/* 2026-11-27 다섯 장 더함(Cloudflare FLUX.2 dev · tools/비버그림.mjs) - 휴대폰 · 고민 · 슬픔 · 자신만만 · 박수 */
+const BEAVERLY_POSE = { hello: "img/beaverly-hello.v1.webp", review: "img/beaverly-review.v1.webp", phone: "img/beaverly-phone.v1.webp", thinking: "img/beaverly-thinking.v1.webp", sad: "img/beaverly-sad.v1.webp", confident: "img/beaverly-confident.v1.webp", clap: "img/beaverly-clap.v1.webp" };
 
 
 
@@ -5377,7 +5378,7 @@ function beaverlyMini(h, 표정){ return `<img src="${BEAVERLY_POSE[표정] || B
   style="height:${h||56}px;width:auto;display:block;flex:none;user-select:none;-webkit-user-drag:none">`;}
 /* 빈 화면 (2026-10-30 대표님 '이런 비어있는 화면에는 비버 캐릭터를') - 비버 + 제목 + 설명 + (단추).
    크기는 화면 전체가 빈 곳 104 · 찾기 결과가 없는 곳처럼 작은 곳 80. 카드 안이면 안쪽=true(상자 속 상자를 만들지 않는다) */
-const 빈자리 = (제목, 설명 = '', 단추 = '', 크기 = 104, 안쪽 = false, 표정 = '') => `<div class="empty${안쪽 ? ' bare' : ''}">${beaverlyMini(크기, 표정)}<p class="em-t">${제목}</p>${설명 ? `<p class="em-d">${설명}</p>` : ''}${단추 ? `<div class="em-a">${단추}</div>` : ''}</div>`;
+const 빈자리 = (제목, 설명 = '', 단추 = '', 크기 = 104, 안쪽 = false, 표정 = '') => `<div class="empty${안쪽 ? ' bare' : ''}">${beaverlyMini(크기, 표정 || (/^찾는 |조건에 맞는 .*없습니다|조건은 아직 없습니다|^복사할 |^갱신할 /.test(String(제목)) ? 'thinking' : ''))}<p class="em-t">${제목}</p>${설명 ? `<p class="em-d">${설명}</p>` : ''}${단추 ? `<div class="em-a">${단추}</div>` : ''}</div>`;
 
 const ICON_CHECK = `<svg viewBox="0 0 12 12"><path d="M2 6.5 L5 9.5 L10 3" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 const ICON_PHOTO = `<svg viewBox="0 0 24 24" fill="none" stroke="#7C58E7" stroke-width="1.5"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.6"/><path d="M3 16 L9 11 L14 15 L17 13 L21 16"/></svg>`;
@@ -6338,7 +6339,7 @@ const hm계약 = () => `
             <div class="hm-kk-b"><b>[비버노크] 계약 대화방 초대</b>김하늘님, 미사공인중개사사무소에서 계약 진행 대화방에 초대했습니다.</div>
             <span class="hm-kk-btn">대화방 들어가기</span></div>
         </div>
-        <img class="hm-deal-bv" src="${BEAVERLY_POSE.review}" alt="" loading="lazy">
+        <img class="hm-deal-bv" src="${BEAVERLY_POSE.phone}" alt="" loading="lazy">
         <figure class="hm-deal-ph"><img src="img/home/mydeal-m.v1.webp" width="560" height="1106" loading="lazy" alt="휴대폰 마이페이지의 내 계약 - 계약일 · 중도금 · 잔금 단계 막대, 다음 일정까지 남은 날, 달력"></figure>
       </div>
     </div>
@@ -8420,7 +8421,7 @@ V['#/done'] = () => `
   <div class="done-wrap" style="flex:1;display:flex;${isMo()?'flex-direction:column;':''}align-items:center;justify-content:center;gap:${isMo()?24:80}px;padding:${isMo()?'10px 26px 26px':'0 76px'}">
     <div style="position:relative;display:flex;align-items:center;justify-content:center;flex:none">
       <div style="position:absolute;width:${isMo()?240:400}px;height:${isMo()?240:400}px;border-radius:var(--r-full);background:rgba(247,244,255,.92)"></div>
-      <span style="position:absolute;left:2%;bottom:2%;z-index:2">${beaverly(isMo()?190:320)}</span>
+      <span style="position:absolute;left:2%;bottom:2%;z-index:2">${beaverly(isMo()?190:320, 'clap')}</span>
       <svg viewBox="0 0 300 190" style="width:${isMo()?260:440}px;position:relative" aria-label="문">
         <ellipse cx="150" cy="180" rx="120" ry="8" fill="#EBDCCD" opacity=".55"/>
         <rect x="186" y="6" width="78" height="170" rx="8" fill="var(--ind700)"/>
@@ -8735,7 +8736,7 @@ V['#/inbox'] = () => {
   const empty = () => {
     const over = cond && cond.expires < 10;
     return `<div class="empty">
-      <span style="display:flex;justify-content:center;margin-bottom:8px">${beaverly(126)}</span>
+      <span style="display:flex;justify-content:center;margin-bottom:8px">${beaverly(126, over ? 'thinking' : 'phone')}</span>
       <p style="margin:0 0 8px;font-size:15px;font-weight:700">${over?'아직 도착한 제안이 없습니다':'조건이 중개사에게 전달됐습니다'}</p>
       <p style="margin:0 auto 18px;max-width:420px;font-size:14.5px;line-height:1.6;color:var(--n500)">
         ${over?'지금 조건에 맞는 물건이 시장에 없을 수 있습니다. 실제 거래 데이터로 확인해 보세요.':'제안이 오면 카카오톡과 가입하신 메일로 알려드립니다. 들어와서 기다리실 필요 없습니다.'}</p>
@@ -9713,7 +9714,7 @@ V["#/partner/join"] = () => {
   if(step===3){
     const instant = role==='agent';
     body = `<div style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;padding-top:${isMo()?10:24}px">
-      ${beaverly(isMo()?150:190, f.jSent==='fail' || f.jSent==='already' ? '' : 'hello')}
+      ${beaverly(isMo()?150:190, f.jSent==='fail' ? 'sad' : f.jSent==='already' ? '' : 'hello')}
       ${/* 끝난 게 아니면 초록 체크를 달지 않는다 - 실패·다른 계정에 걸림은 주의 표시(2026-10-30) */
         f.jSent==='fail' || (f.jSent==='already' && f.jWhy!=='account')
         ? `<span style="width:44px;height:44px;border-radius:var(--r-full);background:var(--warnbg);border:1.5px solid var(--warnline);display:flex;align-items:center;justify-content:center;margin-top:8px">
@@ -14782,6 +14783,7 @@ if(typeof addEventListener === 'function'){
   addEventListener('unhandledrejection', e => { const r = e && e.reason; bk오류보내기('처리되지 않은 오류: ' + ((r && r.message) || r), (r && r.stack && (/(https?:\/\/[^\s)]+?):\d+:\d+/.exec(r.stack) || [])[1]) || location.origin, 0, 0, r && r.stack); });
 }
 const BK_변경 = [
+  { v:'26.11.27.6', 날:'2026-11-27', 줄:[ '비버 표정 다섯 가지를 더했습니다 - 휴대폰 보는 비버(메인 ‘내 계약 진행과정’ · 제안을 기다리는 화면), 고민하는 비버(찾는 것이 없을 때), 슬픈 비버(가입 신청 실패), 박수 치는 비버(조건 접수 완료)' ] },
   { v:'26.11.27.5', 날:'2026-11-27', 줄:[ '손님 메인 첫 화면 ‘비버가 대신 기다려요’ - 위 세 메뉴와 폭을 맞추고, 손 든 비버를 키워 인사하듯 흔들리게 했습니다' ] },
   { v:'26.11.27.4', 날:'2026-11-27', 줄:[ '손님 메인 ‘내 계약 진행과정’ - 카카오톡 초대 알림 모습 · 비버 · 확인할 수 있는 세 가지(초대 · 일정 · 계약서)를 더해 채웠습니다' ] },
   { v:'26.11.27.3', 날:'2026-11-27', 줄:[ '손님 메인 - ‘네 걸음이면 끝납니다’ 위에 ‘내 계약 진행과정, 바로 확인하세요’와 휴대폰 마이페이지의 내 계약 화면을 넣었습니다' ] },

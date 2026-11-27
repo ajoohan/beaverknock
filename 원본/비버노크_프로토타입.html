@@ -6260,7 +6260,7 @@ const hm그림 = (k, s = 22) => `<svg viewBox="0 0 24 24" width="${s}" height="$
 /* 비버는 주인공이 아니라 안내 - 작은 얼굴 하나와 말풍선 한 줄 */
 const hm안내 = () => `<p class="hm-guide lg">${beaverlyMini(isMo() ? 44 : 52)}<span><b>비버가 대신 기다려요</b>조건에 맞는 물건이 생기면, 그 물건을 가진 중개사가 문을 두드립니다.</span></p>`;
 /* 손님 메인 머리 (2026-11-24 파트너 '두 가지가 같은 레벨로 - 비버노크에서 누릴 수 있는 주요 기능 두 가지가 핵심') */
-const hm두머리 = () => `<h1 class="t hm-h1 hm-h1s"><span class="hm-h1l">찾아다니지 마세요.<br>조건을 걸어두면 <span class="accentWord">문을 두드립니다.</span></span><span class="hm-h1l">내 계약 진행과정,<br>비버노크에서 <span class="accentWord">바로 확인하세요.</span></span></h1>`;
+const hm두머리 = () => `<h1 class="t hm-h1 hm-h1s"><span class="hm-h1l">찾아다니지 마세요.<br>조건을 걸어두면 <span class="accentWord">문을 두드립니다.</span></span></h1>`;
 /* 손님 메뉴 셋 - 첫 화면에서 바로 (2026-11-24 파트너 '1:1 제안 · 매물매칭 · 직접매물찾기') */
 const hm손님메뉴 = () => `<nav class="hm-3" aria-label="손님 메뉴">${[
     ['bell', '1:1 제안 받기', '조건을 걸어두면 중개사가 먼저 제안', '#/kind'],
@@ -14723,6 +14723,7 @@ if(typeof addEventListener === 'function'){
   addEventListener('unhandledrejection', e => { const r = e && e.reason; bk오류보내기('처리되지 않은 오류: ' + ((r && r.message) || r), (r && r.stack && (/(https?:\/\/[^\s)]+?):\d+:\d+/.exec(r.stack) || [])[1]) || location.origin, 0, 0, r && r.stack); });
 }
 const BK_변경 = [
+  { v:'26.11.27.2', 날:'2026-11-27', 줄:[ '손님 메인 - 둘째 문구 ‘내 계약 진행과정, 비버노크에서 바로 확인하세요.’를 뺐습니다' ] },
   { v:'26.11.27.1', 날:'2026-11-27', 줄:[ 'Google 로그인 창에 비버노크 이름 · 로고가 보이도록 사이트 소유 확인 표식을 넣었습니다(화면은 그대로)' ] },
   { v:'26.11.26.16', 날:'2026-11-26', 줄:[ '매물 소개 링크 - 끊은 기록을 정리할 때 끊은 지 8일이 지난 것만 버립니다(끊었던 링크가 다시 열리는 일이 없게)' ] },
   { v:'26.11.26.15', 날:'2026-11-26', 줄:[ '전수점검 · 코드리뷰 반영 - 매물 소개 링크는 매물 노출과 같은 권한을 봅니다(중개보조원 · 대표가 노출을 꺼 둔 직원은 만들 수 없음)', '손님이 받은 간단 제안에도 ‘신고하기’를 달았습니다' ] },

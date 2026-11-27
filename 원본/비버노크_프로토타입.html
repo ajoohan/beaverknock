@@ -1452,6 +1452,14 @@ body.mo .hp-nav .right{gap:8px}
 
 /* 마디 */
 .hm-sec{padding:clamp(56px,8vh,104px) 0}
+/* 내 계약 진행과정 (2026-11-27 한실장님) - 글 왼쪽 · 휴대폰 화면 오른쪽, 휴대폰에서는 위아래 */
+.hm-deal{display:grid;grid-template-columns:1fr auto;align-items:center;gap:clamp(28px,5vw,80px)}
+.hm-deal .hm-lead{margin-top:16px}
+.hm-deal-ph{width:min(280px,26vw);margin:0;padding:7px;border-radius:30px;background:linear-gradient(160deg,#2A2840,#14131F);box-shadow:0 28px 60px -20px rgba(29,24,80,.55),inset 0 1px 0 rgba(255,255,255,.18)}
+.hm-deal-ph img{display:block;width:100%;height:auto;border-radius:23px}
+body.mo .hm-deal{grid-template-columns:1fr;justify-items:center;gap:24px}
+body.mo .hm-deal>div{justify-self:stretch}
+body.mo .hm-deal-ph{width:min(240px,64vw)}
 .hm-in{width:var(--hm-in);margin:0 auto}
 .hm-k{margin:0 0 10px;font-size:13px;font-weight:800;letter-spacing:.08em;color:var(--ind)}
 .hm-h2{margin:0;font-size:clamp(28px,2.5vw,40px);line-height:1.28;letter-spacing:-.035em;font-weight:800;color:var(--n900)}
@@ -6173,6 +6181,7 @@ V['#/'] = () => `
   </section>
   ${hm장점()}
   ${hm손님()}
+  ${hm계약()}
   <section class="hm-sec">
     <div class="hm-in">
       <p class="hm-k">이용 순서</p>
@@ -6215,6 +6224,7 @@ V['#/'] = () => `
   ${hm손님()}
 
   <!-- 네 걸음: 이어진 한 줄. 눈에 들어오면 왼쪽부터 채워진다(runSteps) -->
+  ${hm계약()}
   <section class="hm-sec">
     <div class="hm-in">
       <p class="hm-k">이용 순서</p>
@@ -6284,6 +6294,15 @@ function hm장점(){
     </div>
   </section>`;
 }
+const hm계약 = () => `
+  <section class="hm-sec">
+    <div class="hm-in hm-deal">
+      <div><p class="hm-k">계약 진행</p>
+        <h2 class="hm-h2">내 계약 진행과정,<br>바로 확인하세요</h2>
+        <p class="hm-lead">계약하면 중개사무소가 초대 링크를 보냅니다. 계약일 · 중도금 · 잔금 일정과 계약서를 마이페이지에서 그대로 봅니다.</p></div>
+      <figure class="hm-deal-ph"><img src="img/home/mydeal-m.v1.webp" width="560" height="1106" loading="lazy" alt="휴대폰 마이페이지의 내 계약 - 계약일 · 중도금 · 잔금 단계 막대, 다음 일정까지 남은 날, 달력"></figure>
+    </div>
+  </section>`;
 function hm손님(){
   return `<section class="hm-sec">
     <div class="hm-in hm-split">
@@ -14723,6 +14742,7 @@ if(typeof addEventListener === 'function'){
   addEventListener('unhandledrejection', e => { const r = e && e.reason; bk오류보내기('처리되지 않은 오류: ' + ((r && r.message) || r), (r && r.stack && (/(https?:\/\/[^\s)]+?):\d+:\d+/.exec(r.stack) || [])[1]) || location.origin, 0, 0, r && r.stack); });
 }
 const BK_변경 = [
+  { v:'26.11.27.3', 날:'2026-11-27', 줄:[ '손님 메인 - ‘네 걸음이면 끝납니다’ 위에 ‘내 계약 진행과정, 바로 확인하세요’와 휴대폰 마이페이지의 내 계약 화면을 넣었습니다' ] },
   { v:'26.11.27.2', 날:'2026-11-27', 줄:[ '손님 메인 - 둘째 문구 ‘내 계약 진행과정, 비버노크에서 바로 확인하세요.’를 뺐습니다' ] },
   { v:'26.11.27.1', 날:'2026-11-27', 줄:[ 'Google 로그인 창에 비버노크 이름 · 로고가 보이도록 사이트 소유 확인 표식을 넣었습니다(화면은 그대로)' ] },
   { v:'26.11.26.16', 날:'2026-11-26', 줄:[ '매물 소개 링크 - 끊은 기록을 정리할 때 끊은 지 8일이 지난 것만 버립니다(끊었던 링크가 다시 열리는 일이 없게)' ] },

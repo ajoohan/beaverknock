@@ -14973,6 +14973,7 @@ if(typeof addEventListener === 'function'){
   addEventListener('unhandledrejection', e => { const r = e && e.reason; bk오류보내기('처리되지 않은 오류: ' + ((r && r.message) || r), (r && r.stack && (/(https?:\/\/[^\s)]+?):\d+:\d+/.exec(r.stack) || [])[1]) || location.origin, 0, 0, r && r.stack); });
 }
 const BK_변경 = [
+  { v:'26.11.27.17', 날:'2026-11-27', 줄:[ '가입 동의 화면의 ‘전문 보기’ - 눌러도 약관 · 처리방침이 열리지 않고 체크만 바뀌던 것을 고쳤습니다 (파트너)' ] },
   { v:'26.11.27.16', 날:'2026-11-27', 줄:[ '인사하는 비버의 꼬리 - 가장자리에 보이던 흰 테를 없애고 선을 매끈하게 다시 그렸습니다. 이어 붙인 끝도 자연스럽게 다듬었습니다' ] },
   { v:'26.11.27.15', 날:'2026-11-27', 줄:[ '인사하는 비버 - 잘려 있던 꼬리 끝을 이어 그리고, 손을 더 크게 흔들며 눈을 깜빡이고 꼬리도 가끔 흔듭니다(팔 자리에 남던 잔영을 없앰)', '파트너 안내 - ‘자동 알림’에 카카오톡으로 오는 계약 일정 알림 그림을 더했습니다', '파트너 안내 마무리도 보라 판 · 큰 글 · 인사하는 비버로 바꿨습니다' ] },
   { v:'26.11.27.14', 날:'2026-11-27', 줄:[ '손님 메인 마무리 - 보라 판 위에 큰 글과 흰 단추, 손 흔들며 인사하는 큰 비버로 다시 짰습니다', '문구를 ‘집 찾아 헤매는 건 여기까지. 이제 조건만 걸어두세요’로 바꿨습니다' ] },
@@ -24050,6 +24051,10 @@ function slideUnderline(){
 document.addEventListener('click', e=>{
   const goEl = e.target.closest('[data-go]');
   const actEl = e.target.closest('[data-act]');
+  /* 누를 수 있는 줄(동의 체크 등) 안에 든 바깥 링크는 링크로 연다 (2026-11-27 파트너 '전문 보기를 눌러도 안 보인다') -
+     줄의 동작이 먼저 먹어 새 창이 막히고 체크만 바뀌었다. href 만 있는 링크는 그대로 보낸다 */
+  { const 링크 = e.target.closest('a[href]');
+    if(링크 && !링크.dataset.act && !링크.dataset.go && (!actEl || actEl.contains(링크)) && (!goEl || goEl.contains(링크)) && 링크 !== actEl && 링크 !== goEl) return; }
   if(actEl){ const a=actEl.dataset.act, v=actEl.dataset.v;
     if(a==='modal-bg' && e.target.closest('[data-stop]')) return;
     /* 고른 칩이 다시 그린 뒤 한 번 톡 튄다(어드민) - 누른 칩의 자리를 적어 두고 render() 가 찾는다 */

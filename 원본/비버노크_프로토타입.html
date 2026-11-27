@@ -492,6 +492,29 @@ body.mo .scr .pad.opsPad{padding-left:16px;padding-right:16px}
 .tl .it .x b{font-weight:700;color:var(--n900)}
 
 /* 아직 안 온 값은 빈칸이 아니라 '오는 중' 이다 */
+/* 스켈레톤 묶음 (2026-11-27) - 뼈대() 가 그리는 모양들 */
+.skw{display:flex;flex-direction:column;gap:12px;width:100%}
+.skc{display:flex;gap:16px;align-items:flex-start;padding:18px 20px;border-radius:16px;background:var(--white);border:1px solid var(--n100)}
+.skc.col{flex-direction:column;gap:10px;align-items:stretch}
+.skt{flex:1;min-width:0;display:flex;flex-direction:column;gap:9px;padding-top:2px}
+.sk-img{flex:none;width:84px!important;height:84px!important;border-radius:12px!important}
+.sk-ph{width:100%!important;height:150px!important;border-radius:12px!important;margin-bottom:4px}
+.sk-g{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.sk-tb{overflow:hidden;padding:4px 0}
+.sk-row{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr) minmax(0,1fr) 72px;gap:18px;align-items:center;padding:16px 20px}
+.sk-row+.sk-row{border-top:1px solid var(--n100)}
+.sk-lines,.sk-doc{display:flex;flex-direction:column;gap:11px}
+.sk-gap{height:10px}
+.sk-chat{display:flex;flex-direction:column;gap:12px;padding:16px}
+.sk-bub{height:40px;border-radius:16px!important}.sk-bub.r{align-self:flex-end}
+.sk-kpi,.sk-pan{display:flex;flex-direction:column;gap:12px}
+.sk-li{display:flex;gap:12px;align-items:center;padding:6px 0}
+.sk-av{flex:none;width:40px!important;height:40px!important;border-radius:12px!important}
+body.mo .sk-g{grid-template-columns:1fr}
+body.mo .sk-row{grid-template-columns:minmax(0,1fr) 64px}
+body.mo .sk-row .sk:nth-child(2),body.mo .sk-row .sk:nth-child(3){display:none}
+body.mo .sk-img{width:64px!important;height:64px!important}
+@media (prefers-reduced-motion:reduce){.sk{animation:none}}
 .sk{display:block;background:linear-gradient(90deg,var(--n100),var(--n50),var(--n100));
   background-size:220% 100%;border-radius:var(--r-xs);animation:shim 1.3s linear infinite}
 @keyframes shim{to{background-position:-220% 0}}
@@ -5850,9 +5873,28 @@ const waitingFor = ready => 세션있음() && !ready;
    세션이 있는데 서버가 아직 답하지 않았으면 기다림 표시를 낸다 - 전에는
    남의 물건처럼 보이는 예시가 잠깐 떴다가 사라졌다. 자기 것이 아닌 줄 모르면
    '내가 모르는 물건이 있다' 로 읽힌다. */
-const seedGate = (ready, body) => waitingFor(ready) ? loadingBox() : body();
-const loadingBox = () => `<div class="empty" style="display:flex;justify-content:center;padding:38px 0">
-  ${bkLoader(30)}</div>`;
+/* 스켈레톤 스크린 (2026-11-27 한실장님 '스켈레톤 스크린 처리해') - 불러오는 동안 돌아가는 표시 대신, 곧 나올 화면과 같은 모양의 회색 뼈대.
+   종류: cards(목록 카드) · grid(두 칸 카드) · rows(표 줄) · lines(글 몇 줄) · doc(문서 한 장) · chat(대화) · dash(대시보드).
+   너비는 정해 둔 값을 돌려 쓴다(그릴 때마다 흔들리지 않게). 화면 읽기 프로그램에는 '불러오는 중' 한마디만 */
+function 뼈대(종류 = 'lines', n = 3){
+  const W = ['72%', '58%', '84%', '46%', '66%', '78%', '52%', '90%'];
+  const 줄 = (w, h = 12, 더 = '') => `<span class="sk" style="height:${h}px;width:${w}${더}"></span>`;
+  const 겉 = (안, 클 = '') => `<div class="skw ${클}" role="status" aria-busy="true" aria-label="불러오는 중"><div aria-hidden="true" style="display:contents">${안}</div></div>`;
+  const 카드 = i => `<div class="skc"><span class="sk sk-img"></span><div class="skt">${줄(W[i % 8], 15)}${줄(W[(i + 3) % 8], 12)}${줄(W[(i + 5) % 8].replace(/\d+/, d => Math.round(d * .6)), 12)}</div></div>`;
+  const 칸 = (h = 12) => 줄('100%', h);
+  if(종류 === 'cards') return 겉(Array.from({ length: n }, (_, i) => 카드(i)).join(''));
+  if(종류 === 'grid') return 겉(`<div class="sk-g">${Array.from({ length: n < 4 ? 4 : n }, (_, i) => `<div class="skc col"><span class="sk sk-ph"></span>${줄(W[i % 8], 15)}${줄(W[(i + 2) % 8], 12)}${줄('38%', 12)}</div>`).join('')}</div>`);
+  if(종류 === 'rows') return 겉(`<div class="card sk-tb">${Array.from({ length: n < 3 ? 4 : n }, (_, i) => `<div class="sk-row">${줄(W[i % 8], 14)}${줄('70%', 12)}${줄('54%', 12)}${줄('64px', 22, ';border-radius:99px')}</div>`).join('')}</div>`);
+  if(종류 === 'doc') return 겉(`<div class="card pad sk-doc">${줄('42%', 22)}${줄('28%', 12)}<span class="sk-gap"></span>${Array.from({ length: n < 6 ? 8 : n }, (_, i) => 줄(W[i % 8], 13)).join('')}</div>`);
+  if(종류 === 'chat') return 겉(`<div class="sk-chat">${[['l', '62%'], ['r', '48%'], ['l', '74%'], ['r', '36%']].map(([a, w]) => `<span class="sk sk-bub ${a}" style="width:${w}"></span>`).join('')}</div>`);
+  if(종류 === 'dash') return 겉(`<div class="dz-head">${줄('220px', 26)}${줄('140px', 14)}</div>
+    <div class="dz-k4">${[0, 1, 2, 3].map(i => `<div class="dz-card sk-kpi">${줄('36%', 12)}${줄('48%', 30)}${줄('100%', 30, ';border-radius:8px')}</div>`).join('')}</div>
+    <div class="dz-grid" style="margin-top:22px"><div class="dz-card sk-pan">${줄('30%', 16)}${Array.from({ length: 5 }, (_, i) => `<div class="sk-li"><span class="sk sk-av"></span><div class="skt">${줄(W[i % 8], 13)}${줄(W[(i + 4) % 8], 11)}</div></div>`).join('')}</div>
+      <div class="dz-aside"><div class="dz-card sk-pan">${줄('40%', 16)}${칸(120)}</div><div class="dz-card sk-pan">${줄('36%', 16)}${줄('90%', 12)}${줄('72%', 12)}${줄('80%', 12)}</div></div></div>`, 'sk-dash');
+  return 겉(`<div class="card pad sk-lines">${Array.from({ length: n }, (_, i) => 줄(W[i % 8], 13)).join('')}</div>`);
+}
+const seedGate = (ready, body, 모양) => waitingFor(ready) ? 뼈대(모양 || 'cards') : body();
+const loadingBox = () => 뼈대('cards');
 
 /* 서버 조건 → 손님 '내 조건' 카드 */
 /* 서버의 상태·만료일로 화면 상태를 정한다 - 전에는 늘 '활성 · 30일' 로 고정했다 (2026-11-03 리뷰) */
@@ -8231,7 +8273,7 @@ function agentPanel(){
   const chip = (label, on, act, v) =>
     `<button class="chip ${on?'on':''}" data-act="${act}" data-v="${v}" style="padding:8px 14px;font-size:13.5px">${label}</button>`;
 
-  if(!all && AG.loading) return `<div class="card pad" style="display:flex;justify-content:center;padding:30px 0">${bkLoader(28)}</div>`;
+  if(!all && AG.loading) return `${뼈대('rows')}`;
   if(!all) return `
     <div class="card pad" style="max-width:440px">
       <b style="display:block;font-size:15px;font-weight:700;margin-bottom:10px">가입 신청 보기</b>
@@ -8912,7 +8954,7 @@ V['#/inbox'] = () => {
           ${S.conds.map(c=>`<option value="${c.id}" ${c.id===S.inboxCond?'selected':''}>${esc(c.title)}</option>`).join('')}</select>`
         : `<span style="font-size:13.5px;color:var(--n500)">${esc(cond?cond.title:'')} · 다른 점을 먼저 보여드립니다</span>`}
       </div>
-      ${seedGate(S.mineReady, () => list.length? `<div style="display:grid;grid-template-columns:repeat(${isMo()?1:2},minmax(0,1fr));gap:16px">${list.map(card).join('')}</div>` : empty())}
+      ${seedGate(S.mineReady, () => list.length? `<div style="display:grid;grid-template-columns:repeat(${isMo()?1:2},minmax(0,1fr));gap:16px">${list.map(card).join('')}</div>` : empty(), 'grid')}
     </div>
   </div>
   ${tabbar('inbox')}
@@ -9710,7 +9752,7 @@ V['#/partner/proposals'] = () => {
     : `<div class="empty"><span style="display:flex;justify-content:center;margin-bottom:8px">${beaverly(120)}</span>
        <p style="margin:0 0 6px;font-size:15px;font-weight:700">아직 보낸 제안이 없습니다</p>
        <p style="margin:0 0 18px;font-size:14.5px;color:var(--n500)">활동 지역에 걸린 손님 조건에 맞는 매물로 제안을 보내 보세요.</p>
-       <button class="btn pri md" data-go="#/partner/demands">손님 조건 보기</button></div>`)}
+       <button class="btn pri md" data-go="#/partner/demands">손님 조건 보기</button></div>`, 'grid')}
     <p style="margin:2px 0 ${isMo()?'12px':'0'};font-size:13.5px;line-height:1.6;color:var(--n500)">발송 후 수정은 불가합니다 - 전달 내용의 무결성을 위해 회수 후 재작성만 가능합니다. 회수는 손님이 열람하기 전에만 됩니다.</p>
   </div>
   ${tabbar('d','p')}
@@ -10334,7 +10376,7 @@ V['#/partner/staff'] = () => {
     <div class="sf-lay">
       <div class="sf-left">
         <div class="card pad"><h2 class="adm-sh" style="margin:0 0 8px">직원 <span class="num">${SF.list.length}</span>명 <span class="sub">최대 20명</span></h2>
-          ${SF.err ? `<p style="margin:0;color:var(--danger)">${esc(SF.err)}</p>` : !SF.loaded ? '<p class="sub" style="margin:0">명단을 불러오는 중입니다</p>'
+          ${SF.err ? `<p style="margin:0;color:var(--danger)">${esc(SF.err)}</p>` : !SF.loaded ? 뼈대('lines', 3)
             : SF.list.length ? `<div class="sf-list"><div class="sf-it me"><span><b>대표</b><small>모든 기능</small></span><span class="badge b-mute">대표</span></div>${SF.list.map(줄).join('')}</div>` : '<p class="sub" style="margin:0">아직 초대한 직원이 없습니다.</p>'}</div>
         <div class="card pad sf-inv"><h2 class="adm-sh" style="margin:0 0 8px">직원 초대</h2>
           <label><span class="lab">메일</span><input class="inp" id="sfMail" type="email" autocomplete="off" placeholder="staff@example.com" maxlength="120"></label>
@@ -10374,7 +10416,7 @@ function 직원카드HTML(){
     </div>
     <div style="margin-top:12px">
       ${SF.err ? `<p style="margin:0;font-size:13.5px;color:var(--danger)">${esc(SF.err)}</p>`
-        : !SF.loaded ? `<p style="margin:0;font-size:13.5px;color:var(--n500)">명단을 불러오는 중입니다</p>`
+        : !SF.loaded ? 뼈대('lines', 3)
         : SF.list.length ? SF.list.map(줄).join('')
         : `<p style="margin:0;font-size:13.5px;color:var(--n500)">아직 초대한 직원이 없습니다.</p>`}
     </div>
@@ -10755,7 +10797,7 @@ function pg탭HTML(지금){
 /* 진행 중 - 수락한 조건과 진행을 적은 제안 */
 function pg진행HTML(){
   const 키들 = Object.keys(PG.map).filter(k => /^[dp]:/.test(k)).sort((a, b) => String((PG.map[b] || {}).at).localeCompare(String((PG.map[a] || {}).at)));
-  if(!PG.loaded) return '<div class="card pad"><p class="sub" style="margin:0">불러오는 중입니다…</p></div>';
+  if(!PG.loaded) return 뼈대('cards', 2);
   if(!키들.length) return `<div class="card pad"><p class="sub" style="margin:0;line-height:1.7">아직 진행 중인 건이 없습니다. ‘손님 조건’에서 카드의 ‘수락’을 누르면 여기로 옵니다.</p></div>`;
   return 키들.map(k => { const [종, id] = k.split(':'), d = 종 === 'd' ? (S.demands || []).find(x => x.id === id) : null, pp = 종 === 'p' ? (S.myprops || []).find(x => x.id === id) : null;
     const 제목 = d ? `${((typeof WHO !== 'undefined' && WHO[d.who]) || {}).tag || '손님'} 조건${d.dongs ? ' · ' + d.dongs : ''}` : pp ? pp.title : (종 === 'd' ? '손님 조건 (목록에 없음 - 마감 또는 지역 밖)' : '보낸 제안');
@@ -10822,7 +10864,7 @@ const mp거래칩 = g => MP_거래.concat(Object.keys(g.셈).filter(k => !MP_거
   `<button type="button" class="chip${MP.open === g.키 && MP.deal === k ? ' on' : ''}" data-act="mp-deal" data-v="${esc(g.키)}|${esc(k)}">${esc(k)} ${g.셈[k]}건</button>`).join('');
 function mp단지목록HTML(rows){
   const 단지 = mp단지(rows);
-  if(!단지.length) return `<p class="sub" style="margin:0">${MP.rows == null ? '불러오는 중입니다…' : '아직 공개된 매물이 없습니다.'}</p>`;
+  if(!단지.length) return MP.rows == null ? 뼈대('lines', 4) : `<p class="sub" style="margin:0">아직 공개된 매물이 없습니다.</p>`;
   return `<ul class="mp-gl">${단지.map(g => `<li class="mp-g${MP.open === g.키 ? ' open' : ''}"><div class="mp-gh"><b>${esc(g.name)}</b><small>${esc([g.dong, mp단지정보(g)].filter(Boolean).join(' · '))}</small></div>
       <div class="ct-chips mp-deals">${mp거래칩(g)}</div>
       ${MP.open === g.키 ? `<ul class="mp-rl">${g.rows.filter(r => (r.deal || '기타') === MP.deal).map(r => `<li><button type="button" class="mp-r" data-act="mp-one" data-v="${esc(r.id)}"><b>${esc(지도값(r))}</b><span>${esc([+r.area ? `${r.area}㎡` : '', r.band || (r.floor_no ? `${r.floor_no}층` : ''), r.rooms ? `방 ${r.rooms}` : '', r.office].filter(Boolean).join(' · '))}</span></button></li>`).join('')}</ul>` : ''}</li>`).join('')}</ul>`;
@@ -10900,7 +10942,7 @@ V['#/map'] = () => {
       <aside class="card gm-side"><b class="gm-sh">맞춤매물 ${MT.loaded ? 줄.length + '건' : '…'}</b>
         ${줄.length ? `<ul class="gm-list">${줄.map(r => `<li><button type="button" class="gm-it" ${r.lat ? `data-act="gm-go" data-v="${esc(r.id)}"` : 'data-go="#/matched"'}><i class="gm-dot on${r.lat ? '' : ' off'}" aria-hidden="true"></i>
           <span><b>${esc(r.name || '매물')}</b><small>${esc([r.dong, 지도값(r), r.lat ? '' : '위치 준비 중'].filter(Boolean).join(' · '))}</small></span></button></li>`).join('')}</ul>`
-          : `<p class="sub" style="margin:0">${MT.loaded ? '아직 맞는 매물이 없습니다. 조건에 맞는 매물이 노출되면 여기에 모입니다.' : '불러오는 중입니다…'}</p>`}</aside>
+          : MT.loaded ? `<p class="sub" style="margin:0">아직 맞는 매물이 없습니다. 조건에 맞는 매물이 노출되면 여기에 모입니다.</p>` : 뼈대('lines', 3)}</aside>
     </div>`}
   </div>
   ${tabbar('map','u')}
@@ -11077,7 +11119,7 @@ V["#/partner/listings"] = () => {
       : 등록 ? 빈자리('등록한 매물이 없습니다', '‘+ 매물 등록’으로 명시사항을 모두 적고 소유자 확인을 마치면 노출할 수 있습니다. 매물장부에 적어 둔 물건도 기준을 다 채우면 여기에 나옵니다.', '', 80)
       : `<div class="empty">${beaverlyMini(110)}<p style="margin:8px 0 6px;font-size:15px;font-weight:700">아직 적어 둔 물건이 없습니다</p>
          <p style="margin:0 auto 18px;max-width:400px;font-size:14.5px;line-height:1.6;color:var(--n500)">보유하신 물건을 적어 두시면, 조건이 맞는 손님을 이 화면에서 바로 찾아드립니다.</p>
-         ${쓸수 ? `<button class="btn pri md" data-act="lg-new">첫 물건 적기</button>` : ''}</div>`)}
+         ${쓸수 ? `<button class="btn pri md" data-act="lg-new">첫 물건 적기</button>` : ''}</div>`, 'rows')}
     ${등록 ? `<p style="margin:2px 0 0;font-size:13.5px;line-height:1.75;color:var(--n500)">거래가 성사된(계약금이 들어온) 매물은 바로 <b style="color:var(--n900)">‘노출 종료’</b>를 눌러 주세요. 끝난 매물이 계속 보이지 않게 관리하는 화면입니다.</p>` : ''}
     <p style="margin:2px 0 ${isMo()?'12px':'0'};font-size:13.5px;line-height:1.75;color:var(--n500)">
       노란 칸(의뢰인 · 특이사항)은 <b style="color:var(--n900)">우리 사무소 직원만</b> 봅니다. ‘장부만’인 물건은 손님에게 목록으로 보이지 않고, 조건이 맞을 때 보내시는 제안 안에서만 보입니다.</p>
@@ -12588,7 +12630,7 @@ const opsWhen = t => { const d=new Date(t); return isNaN(d)?'-':
    rows 가 null 인 동안(탭을 처음 열 때, 불러오는 중) 본문이 rows.length 를
    읽다가 통째로 터졌다 - 매물관리와 손님 계정 둘 다 그랬다. */
 function opsBox(box, label, loadAct, body){
-  if(box.loading && !box.rows) return `<div class="card pad" style="display:flex;justify-content:center;padding:30px 0">${bkLoader(28)}</div>`;
+  if(box.loading && !box.rows) return `${뼈대('rows')}`;
   if(box.err) return `<div class="card pad"><p style="margin:0 0 12px;font-size:14.5px;color:var(--danger);font-weight:700">${esc(box.err)}</p>
     <button class="btn sec sm" data-act="${loadAct}">다시 불러오기</button></div>`;
   if(!box.rows) return `<div class="card pad"><button class="btn pri md" data-act="${loadAct}">${esc(label)} 불러오기</button></div>`;
@@ -12880,7 +12922,7 @@ function 매물신고HTML(when){
 }
 function reportPanel(){
   const rows = RP.rows;
-  if(RP.loading && !rows) return `<div class="card pad" style="display:flex;justify-content:center;padding:30px 0">${bkLoader(28)}</div>`;
+  if(RP.loading && !rows) return `${뼈대('rows')}`;
   if(RP.err) return `<div class="card pad"><p style="margin:0;font-size:14.5px;color:var(--danger);font-weight:700">${esc(RP.err)}</p></div>`;
   if(!rows) return `<div class="card pad"><button class="btn pri md" data-act="rp-load">신고 불러오기</button></div>`;
   const chip = (label,on,v) => `<button class="chip ${on?'on':''}" data-act="rp-only" data-v="${v}" style="padding:8px 14px;font-size:13.5px">${label}</button>`;
@@ -12952,7 +12994,7 @@ function sysPanel(){
     <span style="margin-left:auto;display:flex;gap:8px"><button class="btn sec sm" data-act="sy-check" ${SY.busy === 'check' ? 'disabled' : ''}>${SY.busy === 'check' ? '점검 중…' : '지금 점검'}</button><button class="btn sec sm" data-act="sy-load">새로고침</button></span></div>`;
   const 점검 = SY.check ? sy점검표(SY.check) : '';
   if(SY.only === 'backup' && !SY.loading) return 줄 + 점검 + sy백업HTML();
-  if(SY.loading && !SY.rows && !SY.usage) return 줄 + 점검 + `<div class="card pad" style="display:flex;justify-content:center;padding:30px 0">${bkLoader(28)}</div>`;
+  if(SY.loading && !SY.rows && !SY.usage) return 줄 + 점검 + `${뼈대('rows')}`;
   if(SY.err) return 줄 + 점검 + `<div class="card pad"><p style="margin:0;font-size:14.5px;color:var(--danger);font-weight:700">${esc(SY.err)}</p></div>`;
   if(SY.only === 'usage'){
     const U = SY.usage; if(!U) return 줄 + 점검;
@@ -12980,7 +13022,7 @@ function sy백업HTML(){
   const 안내 = `<div class="card pad" style="display:flex;flex-direction:column;gap:8px"><b style="font-size:15px">임시 백업 - Pro 플랜으로 올리기 전까지</b>
     <p class="sub" style="margin:0;line-height:1.7">무료 플랜은 Supabase 자동 백업이 없습니다. 매일 새벽 3시에 주요 표 10개(사무소 · 계약서 · 대화 · 조건 · 제안 · 매물 · 동의 · 본인확인 · 운영 기록)를 비공개 저장소에 7일치 둡니다. 개인정보 칸은 잠긴 그대로 담깁니다. 같은 프로젝트 안이라 가끔 PC 로 내려받아 따로 보관해 주세요. 로그인 계정 목록은 들어가지 않습니다.</p>
     <span class="eqb" style="display:flex;gap:8px"><button class="btn pri sm" data-act="sy-backup-now" ${SY.busy === 'backup' ? 'disabled' : ''}>${SY.busy === 'backup' ? '백업 중…' : '지금 백업'}</button></span></div>`;
-  if(!rows) return 안내 + `<div class="card pad" style="display:flex;justify-content:center;padding:30px 0">${bkLoader(28)}</div>`;
+  if(!rows) return 안내 + `${뼈대('rows')}`;
   if(!rows.length) return 안내 + 빈자리('아직 백업이 없습니다', '오늘 새벽 3시에 처음 돕니다 - 지금 백업을 눌러도 됩니다', '', 80, true);
   return 안내 + rows.map(b => { const 줄수 = Object.values(b.표).reduce((s, n) => s + n, 0);
     return `<div class="card pad" style="display:flex;flex-direction:column;gap:8px"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><b class="num" style="font-size:15px">${esc(b.날)}</b>
@@ -12991,7 +13033,7 @@ function sy백업HTML(){
 }
 function logPanel(){
   const rows = LG.rows;
-  if(LG.loading && !rows) return `<div class="card pad" style="display:flex;justify-content:center;padding:30px 0">${bkLoader(28)}</div>`;
+  if(LG.loading && !rows) return `${뼈대('rows')}`;
   if(LG.err) return `<div class="card pad"><p style="margin:0;font-size:14.5px;color:var(--danger);font-weight:700">${esc(LG.err)}</p></div>`;
   if(!rows) return `<div class="card pad"><button class="btn pri md" data-act="lg-load">기록 불러오기</button></div>`;
   const chip = (label,on,v) => `<button class="chip ${on?'on':''}" data-act="lg-only" data-v="${v}" style="padding:8px 14px;font-size:13.5px">${label}</button>`;
@@ -13472,7 +13514,7 @@ function opsHomePanel(){
     const 남음 = 6000 - (Date.now() - OPS.homeWait0);
     if(!다 && 남음 > 0){
       clearTimeout(OPS.homeWaitT); OPS.homeWaitT = setTimeout(() => { if(OPS.tab === 'home' || !OPS.tab) render(); }, Math.min(남음, 600));
-      return `<div class="dz-wait" aria-busy="true" style="min-height:60vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px">${bkLoader(40)}<p class="sub" style="margin:0;font-size:14px">대시보드를 준비하고 있습니다</p></div>`;
+      return `${뼈대('dash')}`;
     }
     OPS.homeOpen = true;
   }
@@ -13555,8 +13597,7 @@ function statsPanel(){
 
   if(ST.err) return head + `<div class="card pad"><b style="color:var(--danger)">${esc(ST.err)}</b>
     <button class="btn sec sm" data-act="st-load" style="margin-top:10px">다시 시도</button></div>`;
-  if(!d) return head + `<div class="empty" style="display:flex;justify-content:center;padding:38px 0">
-    ${bkLoader(30)}</div>`;
+  if(!d) return head + 뼈대('lines', 5);
   if(d.note) return head + `<div class="card pad"><span style="font-size:14.5px;color:var(--n500)">${esc(d.note)}</span></div>`;
 
   const top = d.funnel[0].v || 1;
@@ -14979,6 +15020,7 @@ if(typeof addEventListener === 'function'){
   addEventListener('unhandledrejection', e => { const r = e && e.reason; bk오류보내기('처리되지 않은 오류: ' + ((r && r.message) || r), (r && r.stack && (/(https?:\/\/[^\s)]+?):\d+:\d+/.exec(r.stack) || [])[1]) || location.origin, 0, 0, r && r.stack); });
 }
 const BK_변경 = [
+  { v:'26.11.27.23', 날:'2026-11-27', 줄:[ '스켈레톤 스크린 - 불러오는 동안 돌아가는 표시나 ‘불러오는 중입니다…’ 글 대신, 곧 나올 화면과 같은 모양의 회색 뼈대가 보입니다(대시보드 · 내 조건 · 제안함 · 1:1 제안 · 매물 · 계약서 목록 · 대화방 · 운영 화면 등)' ] },
   { v:'26.11.27.22', 날:'2026-11-27', 줄:[ '계약체결 문자 (파트너) - ‘계약금’ 칸에 비율(10)로도 금액(50,000,000)으로도 적을 수 있습니다. 잔금 자동 계산과 계약서로 넘기는 계약금도 적은 대로 따릅니다' ] },
   { v:'26.11.27.21', 날:'2026-11-27', 줄:[ '계약체결 문자 (파트너) - ‘계약금 10%’가 칸이 됐습니다. 비우면 10, 다른 숫자를 적으면 그 비율로 잔금도 다시 계산합니다', '‘이 문자만 직접 고치기’ - 칸을 채운 문자를 그 자리에서 줄을 더하고 지우고 고쳐 보낼 수 있습니다(틀은 그대로)', '틀 자체를 바꾸려면 ‘문구 고치기’ - 저장하면 우리 사무소의 기본 문구' ] },
   { v:'26.11.27.20', 날:'2026-11-27', 줄:[ '계약체결 문자 - 금액 칸에 ‘협의’처럼 글을 적으면 뒤에 ‘원’이 붙지 않습니다' ] },
@@ -16135,7 +16177,7 @@ V['#/partner/home'] = () => {
     const 남음 = 6000 - (Date.now() - S.dzWait0);
     if(남음 > 0){
       clearTimeout(S.dzWaitT); S.dzWaitT = setTimeout(() => { if(S.route === '#/partner/home') render(); }, Math.min(남음, 600));
-      return `<div class="scr dz-scr">${navPartner('h')}<div class="pad dz-main dz-wait" aria-busy="true">${bkLoader(40)}</div>${tabbar('h','p')}</div>`;
+      return `<div class="scr dz-scr">${navPartner('h')}<div class="pad dz-main">${뼈대('dash')}</div>${tabbar('h','p')}</div>`;
     }
   }
   S.dzOpen = true; S.dzWait0 = 0;
@@ -16184,7 +16226,7 @@ V['#/partner/home'] = () => {
             <span class="dz-av">${dzIco(NONHOME(d.kind) ? 'building' : 'home', 18)}</span>
             <span class="dz-rt"><b>${esc(d.region)}</b><span>${esc(d.deal || '')} · ${esc((d.lines || [])[0] || '')}</span></span>
             <span class="dz-rw">${esc(d.at || '')}</span></a>`).join('')
-          : `<p class="dz-calm">${!S.feedAt ? '불러오는 중입니다…' : '아직 내 지역에 걸린 조건이 없습니다. 활동 지역을 넓히면 더 보입니다.'}</p>`}
+          : !S.feedAt ? 뼈대('lines', 3) : `<p class="dz-calm">아직 내 지역에 걸린 조건이 없습니다. 활동 지역을 넓히면 더 보입니다.</p>`}
         </div>`}
       </div>
       <aside class="dz-aside">
@@ -18386,7 +18428,7 @@ V['#/draft'] = tok => {
   <div class="pad" style="flex:1;padding-top:20px;padding-bottom:32px;width:100%;max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:12px">
     <div class="ct-draftbar"><b>확정 전 초안</b><span>보기 전용 · ${끝 ? `${esc(끝)}까지 열립니다` : DR.err ? '링크를 열 수 없습니다' : '불러오는 중'} · 전화번호는 가려서 보입니다</span></div>
     ${DR.err ? `<div class="card pad"><p class="sub" style="margin:0">${esc(DR.err)}</p></div>`
-      : !R ? `<div class="card pad"><p class="sub" style="margin:0">초안을 불러오는 중입니다…</p></div>`
+      : !R ? `${뼈대('doc')}`
       : R.status === 'sealed' || !R.doc ? `<div class="card pad"><p class="sub" style="margin:0">이 계약서는 확정본으로 저장됐습니다. 초안은 더 보이지 않습니다 - 최종본은 중개사무소에서 받으세요.</p></div>`
       : `<p class="sub" style="margin:0;font-size:13.5px">마지막으로 고친 때 ${esc(String(R.updated_at || '').slice(0, 16).replace('T', ' '))} · 고칠 곳이 있으면 중개사무소에 말씀해 주세요.</p>
         <div class="ct-sheet-wrap ct-draft"><div class="ct-sheet">${ctDocHTML(R.doc)}</div></div>
@@ -18452,7 +18494,7 @@ V['#/cguide'] = tok => {
   <div class="pad" style="flex:1;padding-top:20px;padding-bottom:32px;width:100%;max-width:640px;margin:0 auto;display:flex;flex-direction:column;gap:12px">
     <div class="ct-draftbar"><b>계약 뒤 할 일</b><span>${R ? `${esc(사무소.name || '중개사무소')}에서 보낸 안내입니다` : CG.err ? '링크를 열 수 없습니다' : '불러오는 중'}</span></div>
     ${CG.err ? `<div class="card pad"><p class="sub" style="margin:0">${esc(CG.err)}</p></div>`
-      : !R ? '<div class="card pad"><p class="sub" style="margin:0">안내를 불러오는 중입니다…</p></div>'
+      : !R ? 뼈대('doc')
       : `<div class="card pad cg-head"><span class="sub" style="font-size:13px">${esc((R.use || R.priv || R.multi || R.sub) && typeof ctTitle === 'function' ? ctTitle({ form: R.form, use: R.use, sub: R.sub, ec: R.ec, priv: R.priv, multi: R.multi, deal: { type: R.deal } }) : (CT_FORMS[R.form] || {}).ko || '계약서')}</span>
           <h1 style="margin:2px 0 0;font-size:19px;letter-spacing:-.03em">${esc(R.addr || '소재지')}</h1>
           <p class="sub" style="margin:6px 0 0;font-size:13.5px">${[R.cd && `계약일 ${ct날짜글(R.cd)}`, R.bd && `잔금일 ${ct날짜글(R.bd)}`, R.from && R.to && `기간 ${ct날짜글(R.from)} ~ ${ct날짜글(R.to)}`].filter(Boolean).map(esc).join(' · ')}</p>
@@ -18486,7 +18528,7 @@ V['#/lshare'] = tok => {
   <div class="pad" style="flex:1;padding-top:20px;padding-bottom:32px;width:100%;max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:12px">
     <div class="ct-draftbar lsh-noprint"><b>매물 소개</b><span>${R ? `${esc(O.name || '중개사무소')}에서 보낸 매물입니다` : LSH.err ? '링크를 열 수 없습니다' : '불러오는 중'}</span></div>
     ${LSH.err ? `<div class="card pad"><p class="sub" style="margin:0">${esc(LSH.err)}</p></div>`
-      : !R ? '<div class="card pad"><p class="sub" style="margin:0">매물을 불러오는 중입니다…</p></div>'
+      : !R ? 뼈대('doc')
       : `<div class="card pad lsh-head">
           <span class="sub" style="font-size:13px">${esc([L.htype, L.deal].filter(Boolean).join(' · '))}</span>
           <h1>${esc(L.name || L.dong || '매물')}</h1>
@@ -18772,7 +18814,7 @@ V['#/partner/rooms'] = (id, side) => {
       <small>${r.last ? `${esc(r.last.body)} · ${esc(rm때(r.last.at))}` : '아직 나눈 말 없음'}</small></a>`; }).join('');
   const 왼쪽 = `<div class="card rm-list"><div class="rm-lh"><b>대화방</b><span class="sub">당사자마다 따로</span></div>
     ${RM.listErr ? `<p class="sub" style="margin:12px 16px">${esc(rm준비말(RM) || RM.listErr)}</p>`
-      : RM.list == null ? `<p class="sub" style="margin:12px 16px">불러오는 중입니다…</p>`
+      : RM.list == null ? `<div style="padding:12px 16px">${뼈대('lines', 4)}</div>`
       : 목록 || `<p class="sub" style="margin:12px 16px;line-height:1.6">아직 대화방이 없습니다. 확정본 계약서의 ‘일정·체크’에서 손님 초대 링크를 보내면 생깁니다.</p>`}</div>`;
   const M = C && C.meta;
   const 줄 = (RM.list || []).find(r => r.id === id && r.side === side) || {};
@@ -18785,7 +18827,7 @@ V['#/partner/rooms'] = (id, side) => {
       <div class="rm-h"><div><b>${esc(제목)}</b>
         <span class="sub">${esc(RM_자리[side])}${이름 ? ' ' + esc(이름) : ''} ${들어옴 ? '<i class="rm-in">들어옴</i>' : '<i class="rm-out">초대 전</i>'}${대리들 ? ' <i class="rm-in">대리인 들어옴</i>' : ''} · 이 방은 ${esc(RM_자리[side])}${대리들 ? '(과 대리인)' : ''}과 사무소만 봅니다</span></div>
         <div class="rm-hb">${isMo() ? `<button type="button" class="btn tool sm" data-go="#/partner/rooms">목록</button>` : ''}${보조원() ? '' : `<a class="btn tool sm" data-go="#/partner/contract/${esc(id)}">계약서</a>`}</div></div>
-      ${C && C.err ? `<p class="sub" style="margin:16px">${esc(C.err)}</p>` : !M ? `<p class="sub" style="margin:16px">대화를 불러오는 중입니다…</p>`
+      ${C && C.err ? `<p class="sub" style="margin:16px">${esc(C.err)}</p>` : !M ? 뼈대('chat')
         : `${rm일정HTML(M.steps)}${rm대화HTML(C, v => v.side === 'agent', !RM_대화 ? '사이트 안 대화는 쓰지 않습니다 - 손님 상담은 사무소 카카오톡 채널로 합니다(알림 설정에서 채널 주소를 넣으면 손님 화면에 상담 단추가 생깁니다). 지난 대화는 위에 남아 있습니다.' : 들어옴 || 대리들 ? '' : `${esc(RM_자리[side])}이 대화방에 들어와 있지 않아 말을 보낼 수 없습니다. ${보조원() ? '공인중개사에게 초대 링크를 부탁해 주세요.' : '계약서의 ‘일정·체크’에서 초대 링크를 보내 주세요.'}`, rm도구HTML(false, side, M))}`}</div>`;
   return `
 <div class="scr fade" style="background:var(--n50)">
@@ -18854,7 +18896,7 @@ V['#/invite'] = tok => {
       ${I.err ? `<h1 class="t" style="font-size:20px;margin:0 0 8px">초대 링크를 열 수 없습니다</h1><p class="sub" style="margin:0">${esc(I.err)}</p>
           ${I.cut ? `<p class="sub" style="margin:12px 0 0;line-height:1.6">중개사무소가 링크만 새로 바꾼 경우라면, 이미 들어오신 분은 마이페이지의 ‘계약 대화방’에서 그대로 여실 수 있습니다.</p>
             <button type="button" class="btn sec" data-go="#/account" style="width:100%;margin-top:12px">마이페이지에서 대화방 열기</button>` : ''}`
-        : !R ? `<p class="sub" style="margin:0">초대 내용을 불러오는 중입니다…</p>`
+        : !R ? 뼈대('lines', 4)
         : `<span class="badge b-ind" style="align-self:flex-start">계약 진행 초대</span>
           <h1 class="t" style="font-size:${isMo()?21:24}px;margin:12px 0 6px">${esc(R.office)}에서 초대했습니다</h1>
           <p class="sub" style="margin:0 0 16px;line-height:1.7"><b style="color:var(--n900)">${esc(R.title)}</b> 계약의 <b style="color:var(--n900)">${esc(R.role)}</b>으로 초대받으셨습니다.
@@ -18917,7 +18959,7 @@ V['#/room'] = (id, sub) => {
       ${C && C.err ? `<div class="rm-gone" role="alert"><p>${esc(C.err)}</p>
           ${C.gone ? `<p class="sub">중개사무소에서 새 초대 링크를 받으셨다면 그 링크를 다시 눌러 주세요.</p>
             <button type="button" class="btn sec" data-go="#/account">마이페이지로</button>` : `<p class="sub">잠시 뒤 저절로 다시 불러옵니다.</p>`}</div>`
-        : !M ? `<p class="sub" style="margin:16px">대화를 불러오는 중입니다…</p>`
+        : !M ? 뼈대('chat')
         : RM_대화 ? `${rm일정HTML(M.steps)}${rm대화HTML(C, v => v.mine != null ? v.mine : v.side === M.me, '', rm도구HTML(true, M.me, M))}`
         : `${rm일정HTML(M.steps)}${rm채널HTML(M.kakaoCh, M.office, M.officePhone)}${C.rows.length ? rm대화HTML(C, v => v.mine != null ? v.mine : v.side === M.me, '사이트 안 대화는 쓰지 않습니다 - 위 카카오톡 채널이나 전화로 물어봐 주세요. 지난 대화는 그대로 남아 있습니다.', '') : ''}`}
     </div>
@@ -20698,7 +20740,7 @@ function ct보수행들(전체){
 function ct보수장부HTML(전체){
   const 머리 = ct머리('중개보수', '확정본마다 받은 보수와 현금영수증 발행을 적어 둡니다.');
   if(직원()) return 머리 + '<div class="card pad"><p class="sub" style="margin:0">중개보수 장부는 대표만 볼 수 있습니다.</p></div>';
-  if(!CT.list) return 머리 + '<div class="card pad"><p class="sub" style="margin:0">계약서를 불러오는 중입니다…</p></div>';
+  if(!CT.list) return 머리 + 뼈대('rows');
   const 오늘 = ct오늘(), 행 = ct보수행들(전체), 달 = /^\d{4}-\d{2}$/.test(CT.feeM || '') ? CT.feeM : '';
   const 보이는 = 달 ? 행.filter(x => String(x.잔).startsWith(달)) : 행;
   const 받음 = 보이는.filter(x => x.t.feeAt).reduce((s, x) => s + x.보수, 0);
@@ -20723,7 +20765,7 @@ function ct보수장부HTML(전체){
 /* ── 만기 재계약 (2026-11-23) ── 임대차 확정본 가운데 만기가 6개월 안(지난 30일까지)인 것. 갱신 의사를 물었는지(track.askAt) 표시 */
 function ct재계약HTML(전체){
   const 머리 = ct머리('만기 재계약', '6개월 안에 만기가 오는 임대차를 모아 봅니다.');
-  if(!CT.list) return 머리 + '<div class="card pad"><p class="sub" style="margin:0">계약서를 불러오는 중입니다…</p></div>';
+  if(!CT.list) return 머리 + 뼈대('rows');
   const 오늘 = ct오늘(), 앞판 = ct일정뺄것(전체);
   const 행 = 전체.filter(r => r.status === 'sealed' && ct살아있음(r) && (CT_FORMS[r.form] || {}).lease && !앞판.has(r.id) && (r.track || {}).state !== 'cancel' && ct날만(r.ex))
     .map(r => ({ r, ex: ct날만(r.ex), n: ct날차(오늘, ct날만(r.ex)), t: r.track || {} })).filter(x => x.n >= -30 && x.n <= 183).sort((a, b) => a.n - b.n);
@@ -21027,7 +21069,7 @@ function ctAlertHTML(늘펼침){
   return `
     <div class="card pad ct-alert">
       <div class="ct-pick-h"><h2>알림 설정</h2>${늘펼침 ? '' : `<button class="tapx" data-act="cta-open" style="font-size:13.5px;color:var(--n500)">닫기</button>`}</div>
-      ${!A.loaded ? '<p class="sub" style="margin:0">불러오는 중입니다…</p>' : ''}
+      ${!A.loaded ? 뼈대('lines', 4) : ''}
       ${A.err ? `<p class="ct-note">${esc(A.err)}</p>` : ''}
       ${A.need ? '<p class="ct-note">알림 설정 저장은 준비 중입니다 - 곧 열립니다. 그동안은 모든 항목을 카카오톡·메일로 알려 드립니다.</p>' : ''}
       <p class="sub" style="margin:0">계약서에 넣은 일정을 매일 아침 9시에 알려 드립니다${A.phone ? ` · 카카오톡은 ${esc(A.phone)}로` : ''}.</p>
@@ -21134,7 +21176,7 @@ function ctPhrPageHTML(){
         <button type="button" class="btn pri sm" data-act="phr-new-add" ${막힘 ? 'disabled' : ''}>저장</button></div>
       <p class="sub" style="margin:0;font-size:13px">이름·연락처처럼 한 계약에만 맞는 내용은 빼고 저장하세요 - 다른 계약서에도 그대로 들어갑니다. 주민등록번호가 든 문구는 저장하지 않습니다.</p>
     </div>
-    ${!P ? '<p class="sub" style="margin:0">불러오는 중입니다…</p>' : ''}
+    ${!P ? 뼈대('lines', 4) : ''}
     ${P && P.err ? `<p class="ct-note">${esc(P.err)} <button type="button" class="tapx" data-act="phr-reload" style="font-size:13.5px;font-weight:700;color:var(--ind700)">다시 불러오기</button></p>` : ''}
     ${P && P.need ? '<p class="ct-note">내 특약 저장은 준비 중입니다 - 곧 열립니다.</p>' : ''}
     ${P && !P.err ? `<div class="ct-chips" role="group" aria-label="묶음">${ct묶음탭(전부, g, 'phr-pgtab')}</div>
@@ -21171,7 +21213,7 @@ function ct추가단추(doc){
 function ctPhrHTML(doc){
   if(!세션있음()) return '';
   const P = CT.phr;
-  if(!P){ setTimeout(ctPhrLoad); return `<div class="ct-my"><div class="ct-my-h"><b>추가특약사항</b></div><p class="sub ct-my-empty">불러오는 중입니다…</p></div>`; }
+  if(!P){ setTimeout(ctPhrLoad); return `<div class="ct-my"><div class="ct-my-h"><b>추가특약사항</b></div>${뼈대('lines', 3)}</div>`; }
   const g = ct특약묶음(doc);
   const 묶음 = ct추가목록(doc), 전부 = 묶음;
   ct추가자동(doc);
@@ -21880,7 +21922,7 @@ function ct문자고르기HTML(){
   return `<div class="modal" data-act="modal-bg"><div class="box" data-stop role="dialog" aria-modal="true" aria-labelledby="mdT" tabindex="-1" style="max-width:520px">
     <h2 id="mdT" style="margin:0 0 6px;font-size:16px;font-weight:700;letter-spacing:-.03em">체결문자 적용</h2>
     <p style="margin:0 0 12px;font-size:14px;line-height:1.7;color:var(--n500)">보낸 계약체결 문자를 고르면 금액 · 날짜를 이 계약서에 채웁니다. 이미 적은 소재지는 그대로 두고, 계약금은 비어 있을 때만 채웁니다.</p>
-    ${CS.loading && !CS.loaded ? '<p class="sub">문자 기록을 불러오는 중입니다…</p>'
+    ${CS.loading && !CS.loaded ? 뼈대('lines', 4)
       : 줄.length ? `<ul class="cs-log" style="max-height:52vh;overflow:auto">${줄.map(e => `<li><span class="cs-log-t"><b>${esc(e.vals && e.vals.목적물 ? String(e.vals.목적물).slice(0, 40) : '(목적물 없음)')}</b><small>${esc(e.tpl || '')} · ${esc(String(e.at || '').slice(0, 16).replace('T', ' '))}</small></span>
           <button type="button" class="btn sec sm" data-act="ct-sms-use" data-v="${esc(e.id)}">이것으로 채우기</button></li>`).join('')}</ul>`
       : '<p class="sub">보낸 계약체결 문자 기록이 없습니다. ‘계약체결 문자’ 메뉴에서 문자를 보내면 여기에 나옵니다.</p>'}
@@ -22702,7 +22744,7 @@ function fpHTML(){
   if(FP.id !== id && !FP.loading) setTimeout(() => fpLoad(id));
   const 다 = FP.list.length >= 20;
   return `<div class="card pad ct-sec fp-sec"><h2>현장 사진 <span class="sub" style="font-weight:500;font-size:13px">사무소 보관 · ${FP.list.length} / 20장 · 손님에게는 보이지 않습니다</span></h2>
-    ${FP.err ? `<p style="margin:0;color:var(--danger)">${esc(FP.err)}</p>` : FP.loading && FP.id === id && !FP.list.length ? '<p class="sub" style="margin:0">불러오는 중입니다</p>' : ''}
+    ${FP.err ? `<p style="margin:0;color:var(--danger)">${esc(FP.err)}</p>` : FP.loading && FP.id === id && !FP.list.length ? 뼈대('lines', 3) : ''}
     ${FP.list.length ? `<div class="fp-grid">${FP.list.map(v => `<figure class="fp-it">${v.url ? `<a href="${esc(v.url)}" target="_blank" rel="noopener"><img src="${esc(v.url)}" alt="현장 사진 ${esc(String(v.at).slice(0, 10))}" loading="lazy"></a>` : '<span class="fp-no">열 수 없음</span>'}
         <figcaption><span>${esc(String(v.at).replace('T', ' ').slice(5, 16))}</span><button type="button" class="tapx" data-act="fp-del" data-v="${esc(v.i)}" aria-label="이 사진 지우기">지우기</button></figcaption></figure>`).join('')}</div>`
       : !FP.loading ? '<p class="sub" style="margin:0">누수 자국 · 벽지 상태 · 계량기처럼 나중에 다툼이 될 만한 곳을 찍어 두세요. 입주 · 퇴거 때 비교할 수 있습니다.</p>' : ''}

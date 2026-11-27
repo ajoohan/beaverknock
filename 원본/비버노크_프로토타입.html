@@ -1461,6 +1461,59 @@ body.mo .hp-nav .right{gap:8px}
 
 /* 마디 */
 .hm-sec{padding:clamp(56px,8vh,104px) 0}
+/* 이용 안내 (#/guide · 2026-11-27) */
+.ug-nums{list-style:none;margin:0 0 28px;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-top:1px solid var(--n100);border-bottom:1px solid var(--n100)}
+.ug-nums li{padding:20px 24px;display:flex;flex-direction:column;gap:4px}
+.ug-nums li+li{border-left:1px solid var(--n100)}
+.ug-nums b{font-size:clamp(26px,2.4vw,34px);font-weight:800;letter-spacing:-.03em;color:var(--ind)}
+.ug-nums span{font-size:14.5px;color:var(--n700)}
+.ug-grid{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+.ug-step{display:flex;flex-direction:column;border-radius:24px;background:#fff;border:1px solid var(--n100);overflow:hidden;box-shadow:0 14px 34px -26px rgba(29,24,80,.35)}
+.ug-vis{position:relative;height:300px;display:flex;justify-content:center;align-items:flex-end;gap:clamp(14px,3vw,40px);padding:26px 26px 0;overflow:hidden;background:linear-gradient(180deg,#F0EDFF 0%,#F7F6FD 100%)}
+.ug-vis.two{align-items:center;padding-bottom:26px}
+.ug-side{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:14px;align-self:stretch;min-width:0}
+.ug-bv{height:190px;width:auto;display:block;user-select:none;-webkit-user-drag:none}
+.ug-vis.two .ug-bv{height:210px}
+.ug-ph{flex:none;align-self:flex-start;width:172px;margin:0;padding:6px 6px 0;border-radius:26px 26px 0 0;background:linear-gradient(160deg,#2A2840,#14131F);box-shadow:0 22px 44px -22px rgba(29,24,80,.5)}
+.ug-ph img{display:block;width:100%;height:auto;border-radius:20px 20px 0 0}
+.ug-noti{display:flex;align-items:center;gap:10px;padding:9px 14px 9px 9px;border-radius:16px;background:#fff;box-shadow:0 12px 28px -16px rgba(29,24,80,.4);white-space:nowrap}
+.ug-noti span:last-child{display:flex;flex-direction:column;gap:1px}
+.ug-noti b{font-size:13px;color:var(--n900)} .ug-noti small{font-size:12px;color:var(--n500)}
+.ug-ways{display:grid;gap:10px;min-width:0}
+.ug-way{display:flex;align-items:center;gap:12px;padding:12px 16px 12px 12px;border-radius:16px;background:#fff;box-shadow:0 12px 28px -18px rgba(29,24,80,.4)}
+.ug-way span:last-child{display:flex;flex-direction:column;gap:2px;min-width:0}
+.ug-way b{font-size:14.5px;color:var(--n900)} .ug-way small{font-size:12.5px;color:var(--n500)}
+.ug-ic{flex:none;display:grid;place-items:center;width:36px;height:36px;border-radius:12px;background:#EFEBFF;color:var(--ind)}
+.ug-tx{padding:22px 26px 26px}
+.ug-tx h2{display:flex;align-items:center;gap:12px;margin:0;font-size:20px;letter-spacing:-.03em;font-weight:800;color:var(--n900)}
+.ug-n{flex:none;display:grid;place-items:center;width:34px;height:34px;border-radius:99px;background:var(--ind);color:#fff;font-size:15px;font-weight:700}
+.ug-keys{display:flex;flex-wrap:wrap;gap:6px;margin:14px 0 0}
+.ug-keys mark{padding:5px 11px;border-radius:99px;background:#EFEBFF;color:var(--ind);font-size:13.5px;font-weight:700}
+.ug-s1{margin:14px 0 0;font-size:15.5px;font-weight:700;line-height:1.5;color:var(--n900)}
+.ug-s2{margin:6px 0 0;font-size:14.5px;line-height:1.75;color:var(--n700)}
+.ug-more{display:flex;justify-content:center;margin-top:20px}
+.ug-not{margin-top:36px}
+.ug-not h2{margin:0 0 14px;font-size:20px;letter-spacing:-.03em;font-weight:800;color:var(--n900)}
+.ug-not dl{margin:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-top:2px solid var(--n900)}
+.ug-not dl>div{padding:18px 24px 4px 0}
+.ug-not dl>div+div{padding-left:24px;border-left:1px solid var(--n100)}
+.ug-not dt{font-size:15.5px;font-weight:700;color:var(--n900)}
+.ug-not dd{margin:6px 0 0;font-size:14.5px;line-height:1.75;color:var(--n700)}
+body.mo .ug-nums{grid-template-columns:1fr;margin-bottom:20px}
+body.mo .ug-nums li{padding:14px 4px;flex-direction:row;align-items:baseline;gap:12px}
+body.mo .ug-nums li+li{border-left:0;border-top:1px solid var(--n100)}
+body.mo .ug-nums b{font-size:22px;min-width:86px}
+body.mo .ug-grid{grid-template-columns:1fr;gap:14px}
+body.mo .ug-vis{height:250px;padding:20px 16px 0;gap:14px}
+body.mo .ug-vis.two{height:auto;padding:18px 16px;align-items:center}
+body.mo .ug-bv{height:150px} body.mo .ug-vis.two .ug-bv{height:130px}
+body.mo .ug-ph{width:144px}
+body.mo .ug-noti{padding:7px 10px 7px 7px} body.mo .ug-noti small{display:none}
+body.mo .ug-tx{padding:18px 18px 22px} body.mo .ug-tx h2{font-size:18px}
+body.mo .ug-more .btn{width:100%}
+body.mo .ug-not dl{grid-template-columns:1fr}
+body.mo .ug-not dl>div{padding:14px 0 4px}
+body.mo .ug-not dl>div+div{padding-left:0;border-left:0;border-top:1px solid var(--n100)}
 /* 내 계약 진행과정 (2026-11-27 한실장님 '썰렁하다 - 카카오톡 알림 · 비버를 넣어 풍성하게')
    왼쪽 글 + 세 가지, 오른쪽 연보라 무대에 카카오톡 초대 알림 · 휴대폰 화면 · 비버. 겹치거나 기울이지 않는다 */
 .hm-deal{display:grid;grid-template-columns:minmax(0,1.08fr) minmax(0,1fr);align-items:center;gap:clamp(28px,4vw,72px)}
@@ -13932,7 +13985,7 @@ function userMenu(opt = {}){
   </div>`;
 }
 
-function docShell(eyebrow, title, lead, body){
+function docShell(eyebrow, title, lead, body, wide){
   return `
 <div class="scr fade" style="background:var(--n50)">
   <div class="nav solid pad">
@@ -13944,9 +13997,9 @@ function docShell(eyebrow, title, lead, body){
     </div>
     <div class="right" style="gap:12px">${navAuth('both')}</div>
   </div>
-  <div class="pad" style="flex:1;overflow:auto;padding-top:${isMo()?20:32}px;padding-bottom:44px;max-width:760px;margin:0 auto;width:100%">
-    <h1 class="t" style="font-size:${isMo()?21:25}px;margin:10px 0 10px">${title}</h1>
-    <p style="margin:0 0 24px;font-size:14.5px;line-height:1.75;color:var(--n700)">${lead}</p>
+  <div class="pad" style="flex:1;overflow:auto;padding-top:${isMo()?20:32}px;padding-bottom:44px;max-width:${wide && !isMo() ? 1120 : 760}px;margin:0 auto;width:100%">
+    <h1 class="t" style="font-size:${isMo()?21:wide?32:25}px;margin:10px 0 10px">${title}</h1>
+    <p style="margin:0 0 24px;font-size:${wide && !isMo() ? 16 : 14.5}px;line-height:1.75;color:var(--n700);max-width:62ch">${lead}</p>
     ${body}
     ${bizFooter ? `<div style="margin-top:28px;padding-top:18px;border-top:1px solid var(--n100)">${bizFooter()}</div>` : ''}
     <div class="card pad" style="margin-top:24px;background:var(--ind50);border-color:var(--ind200)">
@@ -13974,30 +14027,51 @@ const STEPS = [
    '누르기 전까지는 어느 쪽도 상대를 특정할 수 없습니다. 누르시는 순간 상대 연락처를 보여드리고, 확인된 이름과 연락처가 상대에게 전달됩니다.'],
 ];
 
+/* 이용 안내 (2026-11-27 한실장님 '글만 있고 PC 화면을 다 쓰지도 않는다 - 그림 · 강조 키워드 · 비버 · 휴대폰 화면으로 쉽게')
+   넓은 틀(docShell wide) + 숫자 세 개 + 단계 카드 넷(위는 그림, 아래는 글). 휴대폰 화면 그림은 실제 화면을 찍은 것 */
+const UG_그림 = [
+  { 키: ['1분이면 끝', '동네 · 예산 · 시기'], 비버: 'phone', 화면: ['img/home/kind-m.v1.webp', '휴대폰의 조건 걸기 첫 화면 - 살 집 · 가게 자리 · 사무실 · 창고 가운데 고른다'] },
+  { 키: ['휴대폰으로 한 번', '주민등록번호는 받지 않음'], 비버: 'review', 방법: [['간편인증', '카카오 · 네이버 · 토스 · PASS'], ['휴대폰 문자', '통신사 문자로 인증번호']] },
+  { 키: ['최대 5곳', '광고 전화 없음'], 비버: 'knock', 알림: ['새 제안 도착', '미사강변 ○○아파트 · 3룸'], 화면: ['img/home/inbox-m.v2.webp', '휴대폰 제안함 - 받은 제안마다 사진 · 금액 · 내 조건과 다른 점이 보인다'] },
+  { 키: ['연결을 눌러야 연락처 전달'], 비버: 'hello', 화면: ['img/home/proposal-m.v2.webp', '휴대폰 제안 상세 - 사진, 보증금 · 월세, 내 조건과 비교'] },
+];
 V['#/guide'] = () => docShell('HOW IT WORKS', '어떻게 쓰나요',
   '비버노크는 <b style="color:var(--n900)">조건을 전달하는 곳</b>입니다. 중개사가 공개한 매물 가운데 맞는 것만 보여 드리고, 거래에는 끼어들지 않습니다.',
   `
-  <div style="display:flex;flex-direction:column;gap:12px">
-    ${STEPS.map(([t,s1,s2],i)=>`
-      <div class="card pad" style="display:flex;gap:16px;align-items:flex-start">
-        <span style="flex:none;width:34px;height:34px;border-radius:var(--r-full);
-          background:${i===0?'var(--ind)':'var(--ind100)'};color:${i===0?'#fff':'var(--ind)'};
-          display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700">${i+1}</span>
-        <div style="flex:1;min-width:0">
-          <b style="display:block;font-size:15px;font-weight:700;color:var(--n900);margin-bottom:4px">${t}</b>
-          <span style="display:block;font-size:14.5px;font-weight:700;line-height:1.45;color:var(--ind);margin-bottom:6px">${s1}</span>
-          <span style="display:block;font-size:14.5px;line-height:1.75;color:var(--n700)">${s2}</span>
+  <ul class="ug-nums" aria-label="한눈에">
+    <li><b class="num">1분</b><span>조건을 걸어두는 데 걸리는 시간</span></li>
+    <li><b class="num">최대 5곳</b><span>조건 하나가 전달되는 중개사</span></li>
+    <li><b class="num">0원</b><span>손님도 중개사도 내는 돈</span></li>
+  </ul>
+  <ol class="ug-grid">
+    ${STEPS.map(([t,s1,s2],i)=>{ const g = UG_그림[i] || {}; const 비버 = g.비버 === 'knock' ? BEAVERLY_KNOCK : (BEAVERLY_POSE[g.비버] || BEAVERLY_FRONT); return `
+      <li class="ug-step">
+        <div class="ug-vis${g.방법 ? ' two' : ''}">
+          <div class="ug-side" aria-hidden="true">
+            ${g.알림 ? `<div class="ug-noti"><span class="hm-fi">${hm그림('bell', 16)}</span><span><b>${g.알림[0]}</b><small>${g.알림[1]}</small></span></div>` : ''}
+            <img class="ug-bv" src="${비버}" alt="" loading="lazy">
+          </div>
+          ${g.화면 ? `<figure class="ug-ph"><img src="${g.화면[0]}" width="560" height="1106" loading="lazy" alt="${g.화면[1]}"></figure>` : ''}
+          ${g.방법 ? `<div class="ug-ways" aria-hidden="true">${g.방법.map(([a, b]) => `<div class="ug-way"><span class="ug-ic">${hm그림('shield', 18)}</span><span><b>${a}</b><small>${b}</small></span></div>`).join('')}</div>` : ''}
         </div>
-      </div>`).join('')}
-  </div>
+        <div class="ug-tx">
+          <h2><span class="ug-n num">${i+1}</span>${t}</h2>
+          <p class="ug-keys">${(g.키 || []).map(k => `<mark>${k}</mark>`).join('')}</p>
+          <p class="ug-s1">${s1}</p>
+          <p class="ug-s2">${s2}</p>
+        </div>
+      </li>`; }).join('')}
+  </ol>
 
-  <button type="button" class="btn sec" data-go="#/help" style="margin-top:14px;width:100%">큰 글씨로 한 단계씩 보기 · 소리로 듣기</button>
-  <div class="card pad hi" style="margin-top:18px">
-    <b style="display:block;font-size:15px;font-weight:700;color:var(--n900);margin-bottom:10px">저희가 하지 않는 것</b>
-    <div class="kv"><dt>매물 목록</dt><dd>아무 매물이나 늘어놓지 않습니다. 소유자 확인을 받고 중개사가 공개한 매물 가운데, 조건에 80점 이상 맞는 것만 보여 드립니다.</dd></div>
-    <div class="kv"><dt>중개</dt><dd>거래에 관여하지 않습니다. 계약은 중개사와 직접 하십니다.</dd></div>
-    <div class="kv"><dt>비용 청구</dt><dd>이용자와 중개사 모두에게 어떤 비용도 받지 않습니다.</dd></div>
-  </div>`);
+  <div class="ug-more"><button type="button" class="btn sec" data-go="#/help">큰 글씨로 한 단계씩 보기 · 소리로 듣기</button></div>
+  <section class="ug-not" aria-label="저희가 하지 않는 것">
+    <h2>저희가 하지 않는 것</h2>
+    <dl>
+      <div><dt>매물 목록</dt><dd>아무 매물이나 늘어놓지 않습니다. 소유자 확인을 받고 중개사가 공개한 매물 가운데, 조건에 80점 이상 맞는 것만 보여 드립니다.</dd></div>
+      <div><dt>중개</dt><dd>거래에 관여하지 않습니다. 계약은 중개사와 직접 하십니다.</dd></div>
+      <div><dt>비용 청구</dt><dd>이용자와 중개사 모두에게 어떤 비용도 받지 않습니다.</dd></div>
+    </dl>
+  </section>`, true);
 
 /* ══════════ 쉬운 사용 안내 - 큰 글씨 카드 (2026-11-10 파트너 기획 ④ '손님 3상황 · 안내 6개 · 큰 글씨 · 소리로 듣기 · 초대 문자의 사용 방법 보기')
    로그인 없이 열린다(초대 문자 링크로 먼저 본다). 한 화면에 한 단계 - 제목 26px · 본문 20px, 이전 · 듣기 · 다음. 안내가 끝나면 다음 안내로 이어진다.
@@ -14802,6 +14876,7 @@ if(typeof addEventListener === 'function'){
   addEventListener('unhandledrejection', e => { const r = e && e.reason; bk오류보내기('처리되지 않은 오류: ' + ((r && r.message) || r), (r && r.stack && (/(https?:\/\/[^\s)]+?):\d+:\d+/.exec(r.stack) || [])[1]) || location.origin, 0, 0, r && r.stack); });
 }
 const BK_변경 = [
+  { v:'26.11.27.10', 날:'2026-11-27', 줄:[ '이용 안내를 새로 짰습니다 - PC 화면을 넓게 쓰고, 네 단계마다 실제 휴대폰 화면 · 비버 · 강조 키워드를 넣었습니다', '한눈에 보는 숫자 셋(1분 · 최대 5곳 · 0원)과 ‘저희가 하지 않는 것’ 세 칸' ] },
   { v:'26.11.27.9', 날:'2026-11-27', 줄:[ '디자인 점검 반영 - 메인 ‘내 계약 진행과정’은 그림을 왼쪽에 두어 위 구역과 방향이 번갈아 가게 했습니다', '같은 말을 되풀이하던 작은 머리말을 빼고 모서리 둥글기를 사이트 값에 맞췄습니다' ] },
   { v:'26.11.27.8', 날:'2026-11-27', 줄:[ '파비콘을 글자 없이 굵은 문틀 무늬만으로 바꿨습니다', '전수점검 · 코드리뷰 반영 - 메인 ‘내 계약 진행과정’의 알림 카드와 휴대폰 화면이 화면 폭에 따라 겹치던 것을 두 칸으로 나눠 고쳤습니다', '알림 카드를 ‘계약일 일정이 완료되었습니다’ 안내로 바꾸고, 비버의 휴대폰에서 튀어나오듯 나타나게 했습니다' ] },
   { v:'26.11.27.7', 날:'2026-11-27', 줄:[ '손님 메인 첫 화면의 비버가 손을 흔듭니다 - 몸은 그대로, 팔만 두 번 흔들고 쉽니다' ] },

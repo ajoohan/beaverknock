@@ -5507,7 +5507,7 @@ const BEAVERLY_POSE = { hello: "img/beaverly-hello.v1.webp", review: "img/beaver
 function beaverly(h, 표정){ return `<img src="${BEAVERLY_POSE[표정] || BEAVERLY_FRONT}" alt="공인중개사 비버리"
   style="height:${h||280}px;width:auto;display:block;user-select:none;-webkit-user-drag:none">`;}
 /* 미니 - 안내 배지용 (정면을 작게) */
-function beaverlyWave(h){ return `<span class="bv-wave" style="height:${h||56}px" aria-hidden="true"><img class="bv-tail" src="img/beaverly-hello-tail.v2.webp" alt=""><img class="bv-body" src="img/beaverly-hello-body.v2.webp" alt=""><img class="bv-lid" src="img/beaverly-hello-lid.v2.webp" alt=""><img class="bv-arm" src="img/beaverly-hello-arm.v2.webp" alt=""></span>`; }
+function beaverlyWave(h){ return `<span class="bv-wave" style="height:${h||56}px" aria-hidden="true"><img class="bv-tail" src="img/beaverly-hello-tail.v3.webp" alt=""><img class="bv-body" src="img/beaverly-hello-body.v2.webp" alt=""><img class="bv-lid" src="img/beaverly-hello-lid.v2.webp" alt=""><img class="bv-arm" src="img/beaverly-hello-arm.v2.webp" alt=""></span>`; }
 function beaverlyMini(h, 표정){ return `<img src="${BEAVERLY_POSE[표정] || BEAVERLY_FRONT}" alt=""
   style="height:${h||56}px;width:auto;display:block;flex:none;user-select:none;-webkit-user-drag:none">`;}
 /* 빈 화면 (2026-10-30 대표님 '이런 비어있는 화면에는 비버 캐릭터를') - 비버 + 제목 + 설명 + (단추).
@@ -14973,6 +14973,7 @@ if(typeof addEventListener === 'function'){
   addEventListener('unhandledrejection', e => { const r = e && e.reason; bk오류보내기('처리되지 않은 오류: ' + ((r && r.message) || r), (r && r.stack && (/(https?:\/\/[^\s)]+?):\d+:\d+/.exec(r.stack) || [])[1]) || location.origin, 0, 0, r && r.stack); });
 }
 const BK_변경 = [
+  { v:'26.11.27.16', 날:'2026-11-27', 줄:[ '인사하는 비버의 꼬리 - 가장자리에 보이던 흰 테를 없애고 선을 매끈하게 다시 그렸습니다. 이어 붙인 끝도 자연스럽게 다듬었습니다' ] },
   { v:'26.11.27.15', 날:'2026-11-27', 줄:[ '인사하는 비버 - 잘려 있던 꼬리 끝을 이어 그리고, 손을 더 크게 흔들며 눈을 깜빡이고 꼬리도 가끔 흔듭니다(팔 자리에 남던 잔영을 없앰)', '파트너 안내 - ‘자동 알림’에 카카오톡으로 오는 계약 일정 알림 그림을 더했습니다', '파트너 안내 마무리도 보라 판 · 큰 글 · 인사하는 비버로 바꿨습니다' ] },
   { v:'26.11.27.14', 날:'2026-11-27', 줄:[ '손님 메인 마무리 - 보라 판 위에 큰 글과 흰 단추, 손 흔들며 인사하는 큰 비버로 다시 짰습니다', '문구를 ‘집 찾아 헤매는 건 여기까지. 이제 조건만 걸어두세요’로 바꿨습니다' ] },
   { v:'26.11.27.13', 날:'2026-11-27', 줄:[ '이용 안내 - 단계 번호 1 · 2 · 3 · 4 를 큰 보라 판으로 키웠습니다', '이용 안내 - ‘저희가 하지 않는 것’을 굵은 테두리 카드 셋으로 강조했습니다', '이용 안내 · 자주 묻는 질문 맨 아래 ‘내 조건 걸어두기’를 보라 띠 위 큰 흰 단추로 키웠습니다', '‘큰 글씨로 한 단계씩 보기’ 단추는 이용 안내에서 뺐습니다(바닥글의 쉬운 사용 안내로 들어갑니다)' ] },

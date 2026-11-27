@@ -1484,6 +1484,12 @@ body.mo .doc-cta-b{justify-content:center;height:56px;font-size:17px}
 /* 자주 묻는 질문 - PC 는 두 칸(넓은 틀을 채운다), 휴대폰은 한 줄 */
 .faq-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:start}
 body.mo .faq-grid{grid-template-columns:1fr;gap:10px}
+/* 계약체결 문자 - 날짜 칸: 글 칸 + 달력 (2026-11-27) */
+.cs-dt{display:flex;gap:6px;align-items:stretch}.cs-dt .inp{flex:1;min-width:0}
+.cs-dp{flex:none;width:44px;padding:0 8px;border:1px solid var(--n200,#D9DBE3);border-radius:12px;background:#fff;color:transparent;cursor:pointer}
+.cs-dp::-webkit-datetime-edit{display:none}.cs-dp:disabled{opacity:.5;cursor:not-allowed}
+.cs-in1{display:block}
+.cs-right h2{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 /* 이용 안내 (#/guide · 2026-11-27) */
 /* 한눈에 보는 숫자 (2026-11-27 한실장님 '10분에서 사라락 1분 · 0에서 5 · 100,000원에서 0원, 눈에 띄게') - 보라 띠 위 큰 흰 숫자, runCounts 가 센다 */
 .ug-nums{list-style:none;margin:0 0 28px;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-radius:24px;overflow:hidden;color:#fff;
@@ -14973,6 +14979,7 @@ if(typeof addEventListener === 'function'){
   addEventListener('unhandledrejection', e => { const r = e && e.reason; bk오류보내기('처리되지 않은 오류: ' + ((r && r.message) || r), (r && r.stack && (/(https?:\/\/[^\s)]+?):\d+:\d+/.exec(r.stack) || [])[1]) || location.origin, 0, 0, r && r.stack); });
 }
 const BK_변경 = [
+  { v:'26.11.27.19', 날:'2026-11-27', 줄:[ '계약체결 문자 (파트너) - 날짜 · 금액 칸에 자유롭게 적을 수 있습니다(예: ‘12월 초 · 협의 가능’, ‘협의’). 날짜는 옆의 달력으로도 고릅니다', '‘보낼 문자’ 위에 ‘문구 고치기’ - 합의 내용을 포함해 모든 문구를 고칠 수 있고, 저장하면 다시 고칠 때까지 우리 사무소의 기본 문구로 씁니다', '바뀌는 칸이 하나도 없는 문구도 저장할 수 있습니다' ] },
   { v:'26.11.27.18', 날:'2026-11-27', 줄:[ '계약서 - 등기사항전부증명서를 올리면 동 · 호수가 상세주소 칸에 들어갑니다(칸 입력 · 계약서에 직접 입력 모두) (파트너)' ] },
   { v:'26.11.27.17', 날:'2026-11-27', 줄:[ '가입 동의 화면의 ‘전문 보기’ - 눌러도 약관 · 처리방침이 열리지 않고 체크만 바뀌던 것을 고쳤습니다 (파트너)' ] },
   { v:'26.11.27.16', 날:'2026-11-27', 줄:[ '인사하는 비버의 꼬리 - 가장자리에 보이던 흰 테를 없애고 선을 매끈하게 다시 그렸습니다. 이어 붙인 끝도 자연스럽게 다듬었습니다' ] },
@@ -19330,6 +19337,9 @@ const CS_날 = new Set(['계약서작성일', '입금일', '중도금일', '잔�
 const CS_줄빼기 = new Set(['채권최고액', '중도금', '중도금일', '권리금', '임차보증금', '임차월세']);
 const CS_자동 = new Set(['배액', '사무소명']);
 const cs틀들 = () => CS.tpls.length ? CS.tpls : CT_문자기본;
+/* 날짜 칸에 고른 날짜(2026-12-20)인지 · 금액 칸에 숫자 말고 글을 적었는지 */
+const cs날만 = x => /^\d{4}-\d{2}-\d{2}$/.test(String(x == null ? '' : x)) ? String(x) : '';
+const cs자유글 = x => typeof x === 'string' && /[^0-9,\s]/.test(x);
 /* 내 틀을 저장한 사무소에도 나중에 더한 기본 틀(잔금 준비물 · 일정 안내 · 갱신 의사)은 번호로 찾아 쓴다(2026-11-05 리뷰) */
 const cs지금 = () => { const L = cs틀들(); return L.find(t => t.id === CS.sel) || CT_문자기본.find(t => t.id === CS.sel) || L.find(t => !t.hidden) || L[0]; };
 const cs칸들 = text => { const n = []; String(text || '').replace(/【([^】]+)】/g, (m, k) => { if(!n.includes(k)) n.push(k); return m; }); return n; };
@@ -19341,8 +19351,10 @@ function cs값(k, v = CS.vals){
   if(k === '잔금' && !+v.잔금) { const n = cs잔금(v); return n ? comma(String(n)) : ''; }
   const x = v[k];
   if(x == null || x === '') return '';
-  if(CS_돈.has(k)) return +x ? comma(String(x)) : '';
-  if(CS_날.has(k)) return ct글날(x);
+  /* 2026-11-27 파트너 '날짜나 금액 란도 자유형식으로 - 날짜 적고 옆에 협의가능 이런 식으로 쓰는 경우도 있다' :
+     숫자면 쉼표를 찍고 날짜(2026-12-20)면 한글 날짜로, 그 밖에 적은 글은 적은 그대로 */
+  if(CS_돈.has(k)) return +x ? comma(String(x)) : (cs자유글(x) ? String(x) : '');
+  if(CS_날.has(k)) return cs날만(x) ? ct글날(x) : String(x);
   return String(x);
 }
 /* 보낼 문자 - '해당 없음' 칸이 든 줄은 통째로 뺀다 */
@@ -19399,11 +19411,11 @@ function cs문서(e){
   d.property.road = String(v.목적물 || '').slice(0, 200);
   if(매매) D.price = +v.매매대금 || 0; else D.deposit = +v.보증금 || 0;
   const 총 = ctTotal(D); if(총) D.down = Math.round(총 * 0.1);
-  if(!none.has('중도금') && +v.중도금){ D.mid = +v.중도금; D.midDate = none.has('중도금일') ? '' : (v.중도금일 || ''); }
-  D.balanceDate = v.잔금일 || '';
-  d.contractDate = v.계약서작성일 || '';
+  if(!none.has('중도금') && +v.중도금){ D.mid = +v.중도금; D.midDate = none.has('중도금일') ? '' : cs날만(v.중도금일); }
+  D.balanceDate = cs날만(v.잔금일);
+  d.contractDate = cs날만(v.계약서작성일);
   if(!매매){ if(+v.월차임) D.rent = +v.월차임; if(v.지급일) D.rentDay = String(v.지급일); if(v['선불/후불'] === '후불') D.rentWhen = '후불';
-    if(v.잔금일){ d.period.handover = v.잔금일; if(+v.계약기간) d.period.to = ct종료일(v.잔금일, +v.계약기간, ct끝표기() === 'same'); } }
+    if(cs날만(v.잔금일)){ d.period.handover = v.잔금일; if(+v.계약기간) d.period.to = ct종료일(v.잔금일, +v.계약기간, ct끝표기() === 'same'); } }
   const 최고 = none.has('채권최고액') ? 0 : +v.채권최고액 || 0;
   const 근저당 = t => /근저당권\(채권최고액/.test(t);
   if(최고 && d.specials.some(근저당)) d.specials = d.specials.map(t => 근저당(t) ? t.replace(/금 \(\s+\)원/, `금 ${한글금액(최고)}원`) : t);
@@ -19452,11 +19464,12 @@ function csPageHTML(){
     if(CS_자동.has(k)) return `<div class="ct-f w12">${머리}<div class="cs-auto">${esc(cs값(k)) || '<span class="sub">계약금 일부를 넣으면 채워집니다</span>'} <small>· 자동</small></div></div>`;
     if(k === '선불/후불') return `<div class="ct-f w12">${머리}<div class="ct-chips">${['선불', '후불'].map(x => `<button type="button" class="chip${CS.vals[k] === x ? ' on' : ''}" data-act="cs-when" data-v="${x}">${x}</button>`).join('')}</div></div>`;
     const v = CS.vals[k], 돈 = CS_돈.has(k), 날 = CS_날.has(k);
-    const 값 = 돈 ? (+v ? comma(String(v)) : '') : (v == null ? '' : String(v));
+    const 값 = 돈 ? (+v ? comma(String(v)) : cs자유글(v) ? String(v) : '') : (v == null ? '' : String(v));
     const 잔금자동 = k === '잔금' && !+v && cs잔금(CS.vals);
     return `<label class="ct-f ${돈 || 날 ? 'w6' : /기간|지급일/.test(k) ? 'w4' : 'w12'}${없음 ? ' cs-off' : ''}">${머리}
-      <input class="inp" id="${id}" data-in="cs:${esc(k)}" type="${날 ? 'date' : 'text'}" ${돈 || /기간|지급일/.test(k) ? 'inputmode="numeric"' : ''} value="${esc(값)}" ${없음 ? 'disabled' : ''}
-        placeholder="${esc(잔금자동 ? comma(String(잔금자동)) + ' (자동)' : k === '계좌' ? '은행 · 계좌번호 · 예금주 (저장하지 않습니다)' : k === '계약기간' ? '년 (예: 2)' : k === '지급일' ? '일 (예: 25)' : '')}" autocomplete="off">
+      <span class="${날 ? 'cs-dt' : 'cs-in1'}"><input class="inp" id="${id}" data-in="cs:${esc(k)}" type="text" ${/기간|지급일/.test(k) ? 'inputmode="numeric"' : ''} value="${esc(값)}" ${없음 ? 'disabled' : ''}
+        placeholder="${esc(잔금자동 ? comma(String(잔금자동)) + ' (자동)' : k === '계좌' ? '은행 · 계좌번호 · 예금주 (저장하지 않습니다)' : k === '계약기간' ? '년 (예: 2)' : k === '지급일' ? '일 (예: 25)' : 날 ? '달력에서 고르거나 직접 (예: 12월 초 · 협의 가능)' : 돈 ? '숫자 또는 직접 (예: 협의)' : '')}" autocomplete="off">
+        ${날 ? `<input class="cs-dp" type="date" data-in="cs:${esc(k)}" value="${esc(cs날만(v))}" aria-label="${esc(k)} 달력에서 고르기" ${없음 ? 'disabled' : ''}>` : ''}</span>
       ${돈 ? `<span class="ct-won" data-cswon="${esc(k)}">${+v ? esc(`금 ${한글금액(v)}원정`) : ''}</span>` : ''}</label>`;
   }).join('');
   const 막힘 = !!CS.need || !!CS.err;
@@ -19471,7 +19484,7 @@ function csPageHTML(){
         <button type="button" class="tapx" data-act="cs-log-del" data-v="${esc(e.id)}" style="font-size:13.5px;color:var(--n500)">지우기</button></span></li>`).join('')}</ul>`
     : `<p class="sub" style="margin:0">아직 보낸 문자가 없습니다. 복사·문자·공유 중 하나를 누르면 여기에 남습니다(계좌는 남기지 않습니다).</p>`;
   const 틀관리 = 편집 ? `<div class="card pad ct-sec"><h2>문자 틀 고치기</h2>
-      <p class="sub" style="margin:0;font-size:13.5px">바뀌는 칸은 【칸 이름】으로 적으면 왼쪽에 입력칸이 생깁니다 (예: 【관리비】). 【배액】·【사무소명】은 저절로 채워집니다.</p>
+      <p class="sub" style="margin:0;font-size:13.5px">문구는 어디든 자유롭게 고치고 지울 수 있습니다. 바뀌는 칸은 【칸 이름】으로 적으면 왼쪽에 입력칸이 생깁니다 (예: 【관리비】). 【배액】·【사무소명】은 저절로 채워집니다.</p>
       <label class="ct-f w12"><span class="lab">이름 (14자까지)</span><input class="inp" data-in="cs-name" maxlength="14" value="${esc(편집.name)}"></label>
       <textarea class="inp cs-ta" rows="16" data-in="cs-text" aria-label="문자 틀">${esc(편집.text)}</textarea>
       <div class="cs-acts eqb st"><button type="button" class="btn pri sm" data-act="cs-edit-save" ${막힘 ? 'disabled' : ''}>내 문자 틀로 저장</button>
@@ -19501,7 +19514,9 @@ function csPageHTML(){
           <p class="sub" style="margin:0;font-size:12.5px">캡처 사진은 글자만 읽고 저장하지 않습니다(AI 판독 - 개인정보 처리방침의 국외 이전). 서류 판독과 같은 하루 횟수 안에서 씁니다.</p></details>
         <button type="button" class="tapx" data-act="cs-clear" style="align-self:flex-start;font-size:13.5px;color:var(--n500)">칸 모두 비우기</button></div>
       <div class="cs-right">
-        <div class="card pad ct-sec"><h2>보낼 문자</h2>
+        ${편집 ? 틀관리 : ''}
+        <div class="card pad ct-sec"><h2>보낼 문자 ${편집 ? '' : `<button type="button" class="btn tool sm" data-act="cs-edit" data-v="${esc(t.id)}" style="margin-left:auto" ${막힘 ? 'disabled' : ''}>문구 고치기</button>`}</h2>
+          <p class="sub" style="margin:0;font-size:13px">합의 내용을 포함해 모든 문구를 고칠 수 있습니다. 고쳐 저장하면 다시 고칠 때까지 우리 사무소의 기본 문구로 씁니다.</p>
           <div class="cs-pv" id="csPv">${esc(cs문자())}</div>
           <p class="sub" id="csLeft" style="margin:0;font-size:13px;color:var(--warn)">${(() => { const n = (cs문자().match(/【[^】]+】/g) || []).length; return n ? `아직 비어 있는 칸 ${n}개 - 【 】로 보입니다` : ''; })()}</p>
           <div class="ct-grid"><label class="ct-f w6"><span class="lab">받는 사람 1 (${/임대|전세|월세/.test(t.name) ? '임대인' : '매도인'})</span><input class="inp" inputmode="tel" data-in="cs-to:a" value="${esc(CS.to.a)}" placeholder="010-0000-0000" autocomplete="off"></label>
@@ -19511,7 +19526,7 @@ function csPageHTML(){
             <button type="button" class="btn tool" data-act="cs-share">카카오톡 등 공유</button></div>
           <p class="sub" style="margin:0;font-size:13px">중개사님 휴대폰에서 보내므로 발송 비용이 없습니다. 받는 번호는 저장하지 않습니다.</p></div>
         <div class="card pad ct-sec"><h2>보낸 기록 <span class="sub" style="font-weight:500;font-size:13.5px">동의 회신을 표시하고, 그 내용으로 계약서를 엽니다</span></h2>${기록}</div>
-        ${틀관리}
+        ${편집 ? '' : 틀관리}
       </div>
     </div>`;
 }
@@ -19571,8 +19586,13 @@ function cs미리(){
 }
 function cs입력(el, key){
   if(key.startsWith('to:')){ CS.to[key.slice(3)] = el.value.slice(0, 20); return; }
-  if(CS_돈.has(key)){ money(el); const n = +(el.value.replace(/[^0-9]/g, '')) || 0; CS.vals[key] = n;
-    const w = document.querySelector(`#app [data-cswon="${CSS.escape(key)}"]`); if(w) w.textContent = n ? `금 ${한글금액(n)}원정` : ''; }
+  if(CS_돈.has(key)){ const 글 = /[^0-9,\s]/.test(el.value);   /* 숫자 말고 글을 적으면 적은 그대로(예: 협의) */
+    if(글) CS.vals[key] = el.value.slice(0, 60); else { money(el); CS.vals[key] = +(el.value.replace(/[^0-9]/g, '')) || 0; }
+    const n = 글 ? 0 : CS.vals[key], w = document.querySelector(`#app [data-cswon="${CSS.escape(key)}"]`); if(w) w.textContent = n ? `금 ${한글금액(n)}원정` : ''; }
+  else if(CS_날.has(key)){ CS.vals[key] = el.value.slice(0, 60);
+    /* 달력에서 고르면 글 칸에도, 글 칸에 직접 적으면 달력은 비운다 */
+    const 짝 = el.parentElement && el.parentElement.querySelector(el.type === 'date' ? 'input[type="text"]' : 'input[type="date"]');
+    if(짝) 짝.value = el.type === 'date' ? el.value : cs날만(el.value); }
   else if(/기간|지급일/.test(key)) CS.vals[key] = el.value.replace(/[^0-9]/g, '').slice(0, 2);
   else CS.vals[key] = el.value.slice(0, 200);
   cs미리();
@@ -25653,9 +25673,8 @@ function handle(a,v,el){
     case 'cs-edit-save': { const E = CS.edit; if(!E) return true;
       const name = String(E.name || '').trim().slice(0, 14), text = String(E.text || '').trim();
       if(!name || !text) return toast('이름과 문구를 적어 주세요'), true;
-      if(!cs칸들(text).length) return toast('바뀌는 칸을 【칸 이름】으로 하나 이상 적어 주세요'), true;
       CS.edit = null; cs틀고침(L => { const i = L.findIndex(x => x.id === E.id); if(i >= 0) L[i] = { ...L[i], name, text }; else L.push({ id: E.id, name, text }); });
-      toast('내 문자 틀로 저장했습니다'); return true; }
+      toast('저장했습니다 - 다시 고칠 때까지 우리 사무소의 기본 문구로 씁니다'); return true; }
     case 'cs-new': { const id = cs새번호(); CS.edit = { id, name:'새 문자 틀', text:'[계약체결]\n*목적물: 【목적물】\n\n【사무소명】' }; render(); return true; }
     case 'cs-dup': { const t = cs틀들().find(x => x.id === v); if(!t) return true; const id = cs새번호();
       cs틀고침(L => { const i = L.findIndex(x => x.id === v); L.splice(i + 1, 0, { id, name: (t.name + ' 복사').slice(0, 14), text: t.text }); }); CS.sel = id; return true; }

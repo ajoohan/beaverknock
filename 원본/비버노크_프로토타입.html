@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="google-site-verification" content="zSZ5bqFHyh3ZwJpVt9BOGrI1GKYmRXBI9y5mkLOVYSg">
 <!-- 파비콘 (2026-11-10 바뀐 보라 #6A46E0 계열 · 흰 문틀) - 선명한 SVG 먼저, 못 읽는 곳은 ico -->
-<!-- 파비콘 = 로고 심벌(브래킷 + 비버/노크 두 줄) - 2026-11-10 대표님 '파비콘도 로고 심벌로'. 글자가 있어 SVG 대신 그린 PNG -->
-<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=3">
-<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=3">
-<link rel="icon" type="image/x-icon" href="favicon.ico?v=3" sizes="any">
+<!-- 파비콘 = 문틀 무늬만 (2026-11-27 한실장님 '글자는 어차피 안 보이니 무늬만, 조금 더 두껍게') - 흰 바탕 · 보라 문틀 -->
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=4">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=4">
+<link rel="icon" type="image/x-icon" href="favicon.ico?v=4" sizes="any">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=3">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#6A46E0">
@@ -1424,17 +1424,18 @@ body.mo .hp-nav .right{gap:8px}
 .hm-cta .btn.pri{box-shadow:0 12px 28px -10px rgba(79,82,209,.6)}
 .hm .signupHint{font-size:14px;line-height:1.55;color:var(--n500)}
 .hm .signupHint b{color:var(--n700);font-weight:700}
-/* 2026-11-27 한실장님 '썰렁하다 - 비버가 손 흔드는 움직임, 자리와 정렬 다시' - 위 세 메뉴와 같은 폭, 비버를 키우고 인사하듯 좌우로 흔든다 */
+/* 2026-11-27 한실장님 '썰렁하다 - 비버가 손 흔드는 움직임, 자리와 정렬 다시' - 위 세 메뉴와 같은 폭, 비버를 키우고 팔만 흔든다(.bv-wave) */
 .hm-guide{display:flex;align-items:center;gap:18px;margin:4px 0 0;padding:14px 24px 14px 18px;border-radius:22px;width:100%;max-width:620px}
 .hm-guide img{filter:drop-shadow(0 4px 8px rgba(46,38,120,.18))}
 /* 손 흔드는 비버 (2026-11-27 한실장님 '손을 흔드는 애니메이션') - 몸과 팔 두 겹(470×560 같은 판), 팔만 어깨(72.3% 47.5%)를 축으로 돈다.
    두 번 흔들고 쉰다. transform 만 움직인다 */
-.bv-wave{position:relative;display:block;flex:none;aspect-ratio:470/560;filter:drop-shadow(0 4px 8px rgba(46,38,120,.18))}
+.bv-wave{position:relative;display:block;flex:none;aspect-ratio:470/560}
 .bv-wave img{position:absolute;inset:0;width:100%;height:100%;display:block;filter:none;user-select:none;-webkit-user-drag:none}
+.bv-wave img:first-child{filter:drop-shadow(0 4px 8px rgba(46,38,120,.18))}
 .bv-wave .bv-arm{transform-origin:72.3% 47.5%;animation:bvWave 3.4s cubic-bezier(.45,0,.3,1) infinite;will-change:transform}
 @keyframes bvWave{0%,52%,100%{transform:rotate(0)}8%{transform:rotate(-7deg)}18%{transform:rotate(6deg)}28%{transform:rotate(-7deg)}38%{transform:rotate(6deg)}46%{transform:rotate(-2deg)}}
 @media (prefers-reduced-motion:reduce){.bv-wave .bv-arm{animation:none}}
-.hm-guide span{display:flex;flex-direction:column;gap:3px;font-size:15px;line-height:1.6;color:var(--n700);word-break:keep-all}
+.hm-guide span:not(.bv-wave){display:flex;flex-direction:column;gap:3px;font-size:15px;line-height:1.6;color:var(--n700);word-break:keep-all}
 .hm-guide b{font-size:16.5px;font-weight:800;color:var(--ind)}
 
 /* 실제 화면 - 창 하나와 휴대폰 하나가 겹친다 */
@@ -1469,11 +1470,16 @@ body.mo .hp-nav .right{gap:8px}
 .hm-deal-pts i{display:grid;place-items:center;width:40px;height:40px;border-radius:13px;background:#EFEBFF;color:var(--ind)}
 .hm-deal-pts b{display:block;font-size:15.5px;font-weight:700;color:var(--n900);line-height:1.45}
 .hm-deal-pts small{display:block;margin-top:2px;font-size:14px;line-height:1.6;color:var(--n500)}
-.hm-deal-stage{position:relative;justify-self:end;width:min(580px,100%);display:flex;justify-content:flex-end;padding:40px 44px 40px 40px;border-radius:36px;
+.hm-deal-stage{position:relative;justify-self:end;width:min(600px,100%);display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:clamp(16px,2vw,28px);padding:38px 40px 0 36px;border-radius:36px;
   background:linear-gradient(180deg,#F0EDFF 0%,#F7F6FD 100%);box-shadow:inset 0 0 0 1px rgba(106,70,224,.08)}
-.hm-deal-ph{flex:none;width:min(256px,46%);margin:0;padding:7px;border-radius:30px;background:linear-gradient(160deg,#2A2840,#14131F);box-shadow:0 28px 60px -22px rgba(29,24,80,.5),inset 0 1px 0 rgba(255,255,255,.18)}
+.hm-deal-l{display:flex;flex-direction:column;justify-content:space-between;gap:18px;min-width:0}
+.hm-deal-ph{align-self:start;justify-self:end;width:100%;max-width:256px;margin:0 0 38px;padding:7px;border-radius:30px;background:linear-gradient(160deg,#2A2840,#14131F);box-shadow:0 28px 60px -22px rgba(29,24,80,.5),inset 0 1px 0 rgba(255,255,255,.18)}
 .hm-deal-ph img{display:block;width:100%;height:auto;border-radius:23px}
-.hm-kkw{position:absolute;left:6.5%;top:11%;width:min(264px,44%);animation:hmBob 7s ease-in-out infinite}
+/* 알림이 비버의 휴대폰에서 튀어나온다 (2026-11-27 한실장님) - 왼쪽 아래(비버 쪽)에서 커지며 올라와 머물다가 다시 들어간다. transform · opacity 만 */
+.hm-kkw{margin-top:16px;transform-origin:20% 130%;animation:kkPop 6.4s cubic-bezier(.22,.9,.3,1) infinite;will-change:transform,opacity}
+@keyframes kkPop{0%{opacity:0;transform:translate(-6%,42%) scale(.16)}10%{opacity:1;transform:translate(0,-3%) scale(1.035)}15%,84%{opacity:1;transform:translate(0,0) scale(1)}93%,100%{opacity:0;transform:translate(-6%,42%) scale(.16)}}
+.hm-kk-row{display:flex;justify-content:space-between;gap:10px;margin-top:8px;padding-top:8px;border-top:1px solid var(--n100,#EEF0F4);font-size:12.5px;color:var(--n500)}
+.hm-kk-row strong{font-weight:700;color:var(--n900)}
 .hm-kk-from{display:flex;align-items:center;gap:8px;margin:0 0 8px 2px;font-size:12.5px;font-weight:700;color:var(--n700)}
 .hm-kk-from i{display:grid;place-items:center;width:28px;height:28px;border-radius:10px;background:var(--ind);color:#fff;font-style:normal;font-size:12px;font-weight:800}
 .hm-kk{border-radius:16px;overflow:hidden;background:#fff;box-shadow:0 18px 40px -20px rgba(29,24,80,.4)}
@@ -1481,14 +1487,15 @@ body.mo .hp-nav .right{gap:8px}
 .hm-kk-b{padding:13px 14px 12px;font-size:13px;line-height:1.62;color:var(--n700)}
 .hm-kk-b b{display:block;margin-bottom:6px;color:var(--n900)}
 .hm-kk-btn{display:block;margin:0 12px 12px;padding:9px;border-radius:9px;background:#F2F3F6;text-align:center;font-size:13px;font-weight:700;color:var(--n900)}
-.hm-deal-bv{position:absolute;left:9%;bottom:0;height:clamp(130px,13vw,176px);width:auto;user-select:none;-webkit-user-drag:none}
+.hm-deal-bv{display:block;align-self:flex-start;margin-left:6%;height:clamp(130px,13vw,176px);width:auto;user-select:none;-webkit-user-drag:none}
 @media (prefers-reduced-motion:reduce){.hm-kkw{animation:none}}
 body.mo .hm-deal{grid-template-columns:1fr;gap:26px}
 body.mo .hm-deal-pts{margin-top:22px;gap:14px}
-body.mo .hm-deal-stage{justify-self:stretch;width:auto;flex-direction:column;align-items:center;gap:18px;padding:22px 18px 24px;border-radius:28px}
-body.mo .hm-kkw{position:static;width:min(300px,100%)}
-body.mo .hm-deal-ph{width:min(224px,60vw);align-self:flex-end;margin-right:6px}
-body.mo .hm-deal-bv{left:10px;height:104px}
+body.mo .hm-deal-stage{justify-self:stretch;width:auto;grid-template-columns:1fr;justify-items:center;gap:18px;padding:22px 18px 24px;border-radius:28px}
+body.mo .hm-deal-l{display:contents}
+body.mo .hm-kkw{margin-top:0;width:min(300px,100%)}
+body.mo .hm-deal-ph{width:min(224px,60vw);max-width:none;justify-self:end;margin:0 6px 0 0}
+body.mo .hm-deal-bv{position:absolute;left:8px;bottom:0;margin:0;height:92px}
 .hm-in{width:var(--hm-in);margin:0 auto}
 .hm-k{margin:0 0 10px;font-size:13px;font-weight:800;letter-spacing:.08em;color:var(--ind)}
 .hm-h2{margin:0;font-size:clamp(28px,2.5vw,40px);line-height:1.28;letter-spacing:-.035em;font-weight:800;color:var(--n900)}
@@ -1675,7 +1682,7 @@ body.mo .hm-cta{flex-direction:column;align-self:stretch;gap:10px}
 body.mo .hm-cta .btn{width:100%}
 body.mo .hm .signupHint{font-size:13px}
 body.mo .hm-guide{text-align:left;align-self:stretch;max-width:none;gap:14px;padding:12px 16px 12px 12px}
-body.mo .hm-guide span{font-size:13.5px}
+body.mo .hm-guide span:not(.bv-wave){font-size:13.5px}
 body.mo .hm-guide b{font-size:15px}
 body.mo .hm-stage{padding:0 10% 0;display:flex;justify-content:center}
 body.mo .hm-phone{position:relative;width:min(240px,64vw);left:auto;bottom:auto}
@@ -6302,7 +6309,7 @@ const HM_그림 = {
 const hm그림 = (k, s = 22) => `<svg viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${HM_그림[k]}</svg>`;
 /* 비버는 주인공이 아니라 안내 - 작은 얼굴 하나와 말풍선 한 줄 */
 const hm안내 = () => `<p class="hm-guide lg">${beaverlyWave(isMo() ? 60 : 84)}<span><b>비버가 대신 기다려요</b>조건에 맞는 물건이 생기면, 그 물건을 가진 중개사가 문을 두드립니다.</span></p>`;
-/* 손님 메인 머리 (2026-11-24 파트너 '두 가지가 같은 레벨로 - 비버노크에서 누릴 수 있는 주요 기능 두 가지가 핵심') */
+/* 손님 메인 머리 (2026-11-24 파트너 '두 가지가 같은 레벨로') - 2026-11-27 한실장님: 둘째 문구는 아래 hm계약 구역으로 옮김 */
 const hm두머리 = () => `<h1 class="t hm-h1 hm-h1s"><span class="hm-h1l">찾아다니지 마세요.<br>조건을 걸어두면 <span class="accentWord">문을 두드립니다.</span></span></h1>`;
 /* 손님 메뉴 셋 - 첫 화면에서 바로 (2026-11-24 파트너 '1:1 제안 · 매물매칭 · 직접매물찾기') */
 const hm손님메뉴 = () => `<nav class="hm-3" aria-label="손님 메뉴">${[
@@ -6332,20 +6339,21 @@ const hm계약 = () => `
     <div class="hm-in hm-deal">
       <div><p class="hm-k">계약 진행</p>
         <h2 class="hm-h2">내 계약 진행과정,<br>바로 확인하세요</h2>
-        <p class="hm-lead">계약을 마치면 중개사무소가 초대 링크를 보냅니다. 링크를 누르면 내 계약이 마이페이지에 열립니다.</p>
+        <p class="hm-lead">계약을 마치면 내 계약이 마이페이지에 열립니다. 어디까지 왔는지, 다음에 무엇이 남았는지 그대로 보입니다.</p>
         <ul class="hm-deal-pts">
-          <li><i>${hm그림('chat', 20)}</i><span><b>카카오톡으로 초대가 옵니다</b><small>앱을 깔지 않아도, 받은 링크를 누르고 로그인하면 됩니다.</small></span></li>
+          <li><i>${hm그림('chat', 20)}</i><span><b>단계가 끝나면 카카오톡으로</b><small>계약일 · 중도금 · 잔금이 끝날 때마다 알려 드립니다.</small></span></li>
           <li><i>${hm그림('cal', 20)}</i><span><b>계약일 · 중도금 · 잔금이 한 줄에</b><small>어디까지 왔는지, 다음 일정까지 며칠 남았는지 보입니다.</small></span></li>
           <li><i>${hm그림('doc', 20)}</i><span><b>계약서도 그 자리에서</b><small>‘계약서 보기’로 언제든 다시 엽니다.</small></span></li>
         </ul></div>
       <div class="hm-deal-stage">
-        <div class="hm-kkw" aria-hidden="true">
+        <div class="hm-deal-l"><div class="hm-kkw" aria-hidden="true">
           <p class="hm-kk-from"><i>비</i>비버노크</p>
           <div class="hm-kk"><div class="hm-kk-h">알림톡 도착</div>
-            <div class="hm-kk-b"><b>[비버노크] 계약 대화방 초대</b>김하늘님, 미사공인중개사사무소에서 계약 진행 대화방에 초대했습니다.</div>
-            <span class="hm-kk-btn">대화방 들어가기</span></div>
+            <div class="hm-kk-b"><b>[비버노크] 계약 진행 안내</b>김하늘님, 계약일 일정이 완료되었습니다.
+              <div class="hm-kk-row"><span>다음 일정</span><strong>중도금 · 12.2</strong></div></div>
+            <span class="hm-kk-btn">계약 진행 보기</span></div>
         </div>
-        <img class="hm-deal-bv" src="${BEAVERLY_POSE.phone}" alt="" loading="lazy">
+        <img class="hm-deal-bv" src="${BEAVERLY_POSE.phone}" alt="" loading="lazy"></div>
         <figure class="hm-deal-ph"><img src="img/home/mydeal-m.v1.webp" width="560" height="1106" loading="lazy" alt="휴대폰 마이페이지의 내 계약 - 계약일 · 중도금 · 잔금 단계 막대, 다음 일정까지 남은 날, 달력"></figure>
       </div>
     </div>
@@ -14789,6 +14797,7 @@ if(typeof addEventListener === 'function'){
   addEventListener('unhandledrejection', e => { const r = e && e.reason; bk오류보내기('처리되지 않은 오류: ' + ((r && r.message) || r), (r && r.stack && (/(https?:\/\/[^\s)]+?):\d+:\d+/.exec(r.stack) || [])[1]) || location.origin, 0, 0, r && r.stack); });
 }
 const BK_변경 = [
+  { v:'26.11.27.8', 날:'2026-11-27', 줄:[ '파비콘을 글자 없이 굵은 문틀 무늬만으로 바꿨습니다', '전수점검 · 코드리뷰 반영 - 메인 ‘내 계약 진행과정’의 알림 카드와 휴대폰 화면이 화면 폭에 따라 겹치던 것을 두 칸으로 나눠 고쳤습니다', '알림 카드를 ‘계약일 일정이 완료되었습니다’ 안내로 바꾸고, 비버의 휴대폰에서 튀어나오듯 나타나게 했습니다' ] },
   { v:'26.11.27.7', 날:'2026-11-27', 줄:[ '손님 메인 첫 화면의 비버가 손을 흔듭니다 - 몸은 그대로, 팔만 두 번 흔들고 쉽니다' ] },
   { v:'26.11.27.6', 날:'2026-11-27', 줄:[ '비버 표정 다섯 가지를 더했습니다 - 휴대폰 보는 비버(메인 ‘내 계약 진행과정’ · 제안을 기다리는 화면), 고민하는 비버(찾는 것이 없을 때), 슬픈 비버(가입 신청 실패), 박수 치는 비버(조건 접수 완료)' ] },
   { v:'26.11.27.5', 날:'2026-11-27', 줄:[ '손님 메인 첫 화면 ‘비버가 대신 기다려요’ - 위 세 메뉴와 폭을 맞추고, 손 든 비버를 키워 인사하듯 흔들리게 했습니다' ] },

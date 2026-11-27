@@ -14979,6 +14979,7 @@ if(typeof addEventListener === 'function'){
   addEventListener('unhandledrejection', e => { const r = e && e.reason; bk오류보내기('처리되지 않은 오류: ' + ((r && r.message) || r), (r && r.stack && (/(https?:\/\/[^\s)]+?):\d+:\d+/.exec(r.stack) || [])[1]) || location.origin, 0, 0, r && r.stack); });
 }
 const BK_변경 = [
+  { v:'26.11.27.21', 날:'2026-11-27', 줄:[ '계약체결 문자 (파트너) - ‘계약금 10%’가 칸이 됐습니다. 비우면 10, 다른 숫자를 적으면 그 비율로 잔금도 다시 계산합니다', '‘이 문자만 직접 고치기’ - 칸을 채운 문자를 그 자리에서 줄을 더하고 지우고 고쳐 보낼 수 있습니다(틀은 그대로)', '틀 자체를 바꾸려면 ‘문구 고치기’ - 저장하면 우리 사무소의 기본 문구' ] },
   { v:'26.11.27.20', 날:'2026-11-27', 줄:[ '계약체결 문자 - 금액 칸에 ‘협의’처럼 글을 적으면 뒤에 ‘원’이 붙지 않습니다' ] },
   { v:'26.11.27.19', 날:'2026-11-27', 줄:[ '계약체결 문자 (파트너) - 날짜 · 금액 칸에 자유롭게 적을 수 있습니다(예: ‘12월 초 · 협의 가능’, ‘협의’). 날짜는 옆의 달력으로도 고릅니다', '‘보낼 문자’ 위에 ‘문구 고치기’ - 합의 내용을 포함해 모든 문구를 고칠 수 있고, 저장하면 다시 고칠 때까지 우리 사무소의 기본 문구로 씁니다', '바뀌는 칸이 하나도 없는 문구도 저장할 수 있습니다' ] },
   { v:'26.11.27.18', 날:'2026-11-27', 줄:[ '계약서 - 등기사항전부증명서를 올리면 동 · 호수가 상세주소 칸에 들어갑니다(칸 입력 · 계약서에 직접 입력 모두) (파트너)' ] },
@@ -19186,7 +19187,7 @@ const CT_문자기본 = [
 *목적물: 【목적물】
 *매매대금: 【매매대금】원
 *계약서작성일: 【계약서작성일】
-*계약금 10%
+*계약금 【계약금비율】%
 【입금일】 계약금일부 【계약금일부】원 입금
 매도인계좌: 【계좌】
 *중도금: 【중도금】원 / 【중도금일】
@@ -19201,7 +19202,7 @@ const CT_문자기본 = [
 *목적물: 【목적물】
 *전세보증금: 【보증금】원
 *계약서작성일: 【계약서작성일】
-*계약금 10%
+*계약금 【계약금비율】%
 【입금일】 계약금일부 【계약금일부】원 입금
 임대인계좌: 【계좌】
 *잔금: 【잔금일】
@@ -19215,7 +19216,7 @@ const CT_문자기본 = [
 *목적물: 【목적물】
 *보증금: 【보증금】원 / 월차임: 【월차임】원(매월 【지급일】일 【선불/후불】)
 *계약서작성일: 【계약서작성일】
-*계약금 10%
+*계약금 【계약금비율】%
 【입금일】 계약금일부 【계약금일부】원 입금
 임대인계좌: 【계좌】
 *잔금: 【잔금일】
@@ -19251,7 +19252,7 @@ const CT_문자기본 = [
 *목적물: 【목적물】
 *매매대금: 【매매대금】원
 *계약서작성일: 【계약서작성일】
-*계약금 10%
+*계약금 【계약금비율】%
 【입금일】 계약금일부 【계약금일부】원 입금
 매도인계좌: 【계좌】
 *중도금: 【중도금】원 / 【중도금일】
@@ -19320,7 +19321,7 @@ const CT_문자기본 = [
 *보증금: 【보증금】원 / 월차임: 【월차임】원(부가세 별도, 매월 【지급일】일 【선불/후불】)
 *권리금: 【권리금】
 *계약서작성일: 【계약서작성일】
-*계약금 10%
+*계약금 【계약금비율】%
 【입금일】 계약금일부 【계약금일부】원 입금
 임대인계좌: 【계좌】
 *잔금: 【잔금일】
@@ -19331,7 +19332,9 @@ const CT_문자기본 = [
 
 【사무소명】` },
 ];
-const CS = { loaded:false, loading:false, tpls:[], log:[], need:'', err:'', sel:'', vals:{}, none:{}, edit:null, to:{ a:'', b:'' } };
+const CS = { loaded:false, loading:false, tpls:[], log:[], need:'', err:'', sel:'', vals:{}, none:{}, edit:null, to:{ a:'', b:'' }, free:null };
+/* 보낼 글 - '이 문자만 직접 고치기'로 고친 글이 있으면 그것(2026-11-27 파트너 '구체적인 내용들도 추가 · 삭제 · 수정') */
+const cs보낼 = () => CS.free != null ? CS.free : cs문자();
 /* 칸의 꼴 - 이름으로 가른다 */
 const CS_돈 = new Set(['매매대금', '보증금', '계약금일부', '중도금', '잔금', '월차임', '채권최고액', '임차보증금', '임차월세', '합의이행금']);
 const CS_날 = new Set(['계약서작성일', '입금일', '중도금일', '잔금일', '만기일', '회신기한']);
@@ -19345,10 +19348,12 @@ const cs자유글 = x => typeof x === 'string' && /[^0-9,\s]/.test(x);
 const cs지금 = () => { const L = cs틀들(); return L.find(t => t.id === CS.sel) || CT_문자기본.find(t => t.id === CS.sel) || L.find(t => !t.hidden) || L[0]; };
 const cs칸들 = text => { const n = []; String(text || '').replace(/【([^】]+)】/g, (m, k) => { if(!n.includes(k)) n.push(k); return m; }); return n; };
 /* 잔금 - 직접 적지 않았으면 매매대금 − 계약금(10%) − 중도금 */
-const cs잔금 = v => { const p = +v.매매대금 || 0; if(!p) return 0; return Math.max(0, p - Math.round(p * 0.1) - (CS.none.중도금 ? 0 : (+v.중도금 || 0))); };
+const cs비율 = v => { const r = parseFloat(v && v.계약금비율); return r > 0 && r < 100 ? r : 10; };
+const cs잔금 = v => { const p = +v.매매대금 || 0; if(!p) return 0; return Math.max(0, p - Math.round(p * cs비율(v) / 100) - (CS.none.중도금 ? 0 : (+v.중도금 || 0))); };
 function cs값(k, v = CS.vals){
   if(k === '사무소명') return (S.agent && S.agent.office) || '';
   if(k === '배액') return +v.계약금일부 ? comma(String(v.계약금일부 * 2)) : '';
+  if(k === '계약금비율') return String(v.계약금비율 == null || v.계약금비율 === '' ? 10 : v.계약금비율);   /* 2026-11-27 파트너 '10% 가 아닐 수도 있다' - 비우면 10 */
   if(k === '잔금' && !+v.잔금) { const n = cs잔금(v); return n ? comma(String(n)) : ''; }
   const x = v[k];
   if(x == null || x === '') return '';
@@ -19411,7 +19416,7 @@ function cs문서(e){
   const D = d.deal;
   d.property.road = String(v.목적물 || '').slice(0, 200);
   if(매매) D.price = +v.매매대금 || 0; else D.deposit = +v.보증금 || 0;
-  const 총 = ctTotal(D); if(총) D.down = Math.round(총 * 0.1);
+  const 총 = ctTotal(D); if(총) D.down = Math.round(총 * cs비율(v) / 100);
   if(!none.has('중도금') && +v.중도금){ D.mid = +v.중도금; D.midDate = none.has('중도금일') ? '' : cs날만(v.중도금일); }
   D.balanceDate = cs날만(v.잔금일);
   d.contractDate = cs날만(v.계약서작성일);
@@ -19467,9 +19472,9 @@ function csPageHTML(){
     const v = CS.vals[k], 돈 = CS_돈.has(k), 날 = CS_날.has(k);
     const 값 = 돈 ? (+v ? comma(String(v)) : cs자유글(v) ? String(v) : '') : (v == null ? '' : String(v));
     const 잔금자동 = k === '잔금' && !+v && cs잔금(CS.vals);
-    return `<label class="ct-f ${돈 || 날 ? 'w6' : /기간|지급일/.test(k) ? 'w4' : 'w12'}${없음 ? ' cs-off' : ''}">${머리}
+    return `<label class="ct-f ${돈 || 날 ? 'w6' : /기간|지급일|비율/.test(k) ? 'w4' : 'w12'}${없음 ? ' cs-off' : ''}">${머리}
       <span class="${날 ? 'cs-dt' : 'cs-in1'}"><input class="inp" id="${id}" data-in="cs:${esc(k)}" type="text" ${/기간|지급일/.test(k) ? 'inputmode="numeric"' : ''} value="${esc(값)}" ${없음 ? 'disabled' : ''}
-        placeholder="${esc(잔금자동 ? comma(String(잔금자동)) + ' (자동)' : k === '계좌' ? '은행 · 계좌번호 · 예금주 (저장하지 않습니다)' : k === '계약기간' ? '년 (예: 2)' : k === '지급일' ? '일 (예: 25)' : 날 ? '달력에서 고르거나 직접 (예: 12월 초 · 협의 가능)' : 돈 ? '숫자 또는 직접 (예: 협의)' : '')}" autocomplete="off">
+        placeholder="${esc(잔금자동 ? comma(String(잔금자동)) + ' (자동)' : k === '계좌' ? '은행 · 계좌번호 · 예금주 (저장하지 않습니다)' : k === '계약기간' ? '년 (예: 2)' : k === '지급일' ? '일 (예: 25)' : k === '계약금비율' ? '% (비우면 10)' : 날 ? '달력에서 고르거나 직접 (예: 12월 초 · 협의 가능)' : 돈 ? '숫자 또는 직접 (예: 협의)' : '')}" autocomplete="off">
         ${날 ? `<input class="cs-dp" type="date" data-in="cs:${esc(k)}" value="${esc(cs날만(v))}" aria-label="${esc(k)} 달력에서 고르기" ${없음 ? 'disabled' : ''}>` : ''}</span>
       ${돈 ? `<span class="ct-won" data-cswon="${esc(k)}">${+v ? esc(`금 ${한글금액(v)}원정`) : ''}</span>` : ''}</label>`;
   }).join('');
@@ -19518,8 +19523,12 @@ function csPageHTML(){
         ${편집 ? 틀관리 : ''}
         <div class="card pad ct-sec"><h2>보낼 문자 ${편집 ? '' : `<button type="button" class="btn tool sm" data-act="cs-edit" data-v="${esc(t.id)}" style="margin-left:auto" ${막힘 ? 'disabled' : ''}>문구 고치기</button>`}</h2>
           <p class="sub" style="margin:0;font-size:13px">합의 내용을 포함해 모든 문구를 고칠 수 있습니다. 고쳐 저장하면 다시 고칠 때까지 우리 사무소의 기본 문구로 씁니다.</p>
-          <div class="cs-pv" id="csPv">${esc(cs문자())}</div>
-          <p class="sub" id="csLeft" style="margin:0;font-size:13px;color:var(--warn)">${(() => { const n = (cs문자().match(/【[^】]+】/g) || []).length; return n ? `아직 비어 있는 칸 ${n}개 - 【 】로 보입니다` : ''; })()}</p>
+          ${CS.free != null ? `<textarea class="inp cs-ta" rows="16" data-in="cs-free" aria-label="보낼 문자 직접 고치기">${esc(CS.free)}</textarea>
+            <div class="cs-acts eqb st"><button type="button" class="btn tool sm" data-act="cs-free-off">칸 내용으로 되돌리기</button></div>
+            <p class="sub" style="margin:0;font-size:13px">지금 보낼 이 문자만 고칩니다. 줄을 더하거나 지워도 됩니다. 왼쪽 칸을 바꿔도 여기 글은 그대로이니, 칸부터 채운 뒤 고쳐 주세요.</p>`
+          : `<div class="cs-pv" id="csPv">${esc(cs문자())}</div>
+            <div class="cs-acts eqb st"><button type="button" class="btn tool sm" data-act="cs-free-on">이 문자만 직접 고치기</button></div>`}
+          <p class="sub" id="csLeft" style="margin:0;font-size:13px;color:var(--warn)">${(() => { const n = (cs보낼().match(/【[^】]+】/g) || []).length; return n ? `아직 비어 있는 칸 ${n}개 - 【 】로 보입니다` : ''; })()}</p>
           <div class="ct-grid"><label class="ct-f w6"><span class="lab">받는 사람 1 (${/임대|전세|월세/.test(t.name) ? '임대인' : '매도인'})</span><input class="inp" inputmode="tel" data-in="cs-to:a" value="${esc(CS.to.a)}" placeholder="010-0000-0000" autocomplete="off"></label>
             <label class="ct-f w6"><span class="lab">받는 사람 2 (${/임대|전세|월세/.test(t.name) ? '임차인' : '매수인'})</span><input class="inp" inputmode="tel" data-in="cs-to:b" value="${esc(CS.to.b)}" placeholder="010-0000-0000" autocomplete="off"></label></div>
           <div class="cs-acts eqb st"><button type="button" class="btn pri" data-act="cs-copy">복사하기</button>
@@ -24191,6 +24200,7 @@ document.addEventListener('input', e=>{
   if(k.startsWith('cs-to:')){ cs입력(el, 'to:' + k.slice(6)); return; }
   if(k === 'cs-name'){ if(CS.edit) CS.edit.name = el.value; return; }
   if(k === 'cs-text'){ if(CS.edit) CS.edit.text = el.value; return; }
+  if(k === 'cs-free'){ CS.free = el.value.slice(0, 4000); return; }
   if(k === 'dz-memo'){ memoTyped(el.value.slice(0, 2000)); return; }
   /* 중개보수 장부 - 직접 적는 보수(확인·설명서가 없을 때). 멈추면 저장, 다시 그리지 않는다 */
   if(k.startsWith('ctfee:')){ const id = k.slice(6), n = +String(money(el)).replace(/[^0-9]/g, '') || 0; clearTimeout(ctFeeT.get(id)); ctFeeT.set(id, setTimeout(() => { ctFeeT.delete(id); ctRowTrack(id, { fee: n }, true); }, 700)); return; }
@@ -25635,19 +25645,21 @@ function handle(a,v,el){
     case 'ct-plan': CT.mode = 'plan'; if(!CT.alert) ctAlertLoad(); render(); return true;
     case 'ct-extra': CT.mode = 'extra'; render(); return true;
     /* 계약체결 문자 */
-    case 'cs-sel': CS.sel = v; CS.edit = null; render(); return true;
+    case 'cs-sel': CS.sel = v; CS.edit = null; CS.free = null; render(); return true;
     case 'cs-none': CS.none = { ...CS.none, [v]: !CS.none[v] }; render(); return true;
     case 'cs-when': CS.vals = { ...CS.vals, '선불/후불': v }; render(); return true;
-    case 'cs-clear': CS.vals = {}; CS.none = {}; render(); return true;
+    case 'cs-clear': CS.vals = {}; CS.none = {}; CS.free = null; render(); return true;
     case 'cs-reload': CS.loaded = false; CS.err = ''; csLoad(); render(); return true;
-    case 'cs-copy': { const 글 = cs문자();
+    case 'cs-free-on': CS.free = cs문자(); render(); return true;
+    case 'cs-free-off': CS.free = null; render(); return true;
+    case 'cs-copy': { const 글 = cs보낼();
       (navigator.clipboard ? navigator.clipboard.writeText(글) : Promise.reject()).then(() => toast('문자를 복사했습니다 - 문자나 카카오톡 대화창에 붙여 넣으세요'), () => toast('복사하지 못했습니다 - 미리보기를 길게 눌러 복사해 주세요'));
       cs기록(); return true; }
     case 'cs-sms': { const 번호 = cs받는번호(), ios = /iP(hone|ad|od)/.test(navigator.userAgent);
-      location.href = `sms:${번호.join(ios ? ',' : ';')}${ios ? '&' : '?'}body=${encodeURIComponent(cs문자())}`;
+      location.href = `sms:${번호.join(ios ? ',' : ';')}${ios ? '&' : '?'}body=${encodeURIComponent(cs보낼())}`;
       if(!isMo()) toast('PC 에서는 문자 앱이 열리지 않을 수 있습니다 - 복사하기를 써 주세요');
       cs기록(); return true; }
-    case 'cs-share': { const 글 = cs문자();
+    case 'cs-share': { const 글 = cs보낼();
       if(navigator.share) navigator.share({ text: 글 }).catch(() => {});
       else (navigator.clipboard ? navigator.clipboard.writeText(글) : Promise.reject()).then(() => toast('복사했습니다 - 카카오톡 대화창에 붙여 넣으세요'), () => toast('복사하지 못했습니다'));
       cs기록(); return true; }

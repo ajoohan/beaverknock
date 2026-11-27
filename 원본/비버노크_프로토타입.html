@@ -1427,14 +1427,18 @@ body.mo .hp-nav .right{gap:8px}
 /* 2026-11-27 한실장님 '썰렁하다 - 비버가 손 흔드는 움직임, 자리와 정렬 다시' - 위 세 메뉴와 같은 폭, 비버를 키우고 팔만 흔든다(.bv-wave) */
 .hm-guide{display:flex;align-items:center;gap:18px;margin:4px 0 0;padding:14px 24px 14px 18px;border-radius:20px;width:100%;max-width:620px}
 .hm-guide img{filter:drop-shadow(0 4px 8px rgba(46,38,120,.18))}
-/* 손 흔드는 비버 (2026-11-27 한실장님 '손을 흔드는 애니메이션') - 몸과 팔 두 겹(470×560 같은 판), 팔만 어깨(72.3% 47.5%)를 축으로 돈다.
-   두 번 흔들고 쉰다. transform 만 움직인다 */
+/* 손 흔드는 비버 (2026-11-27 한실장님 '손을 더 크게 · 눈 깜빡 · 꼬리도 가끔 · 잔영 없이') - 꼬리 · 몸 · 눈꺼풀 · 팔 네 겹(470×560 같은 판, tools/비버겹.py).
+   팔은 어깨(72.3% 47.5%), 꼬리는 몸에 붙은 자리(72.8% 70.5%)를 축으로 돈다. 눈꺼풀은 잠깐 덮였다 걷힌다. transform · opacity 만 */
 .bv-wave{position:relative;display:block;flex:none;aspect-ratio:470/560}
 .bv-wave img{position:absolute;inset:0;width:100%;height:100%;display:block;filter:none;user-select:none;-webkit-user-drag:none}
-.bv-wave img:first-child{filter:drop-shadow(0 4px 8px rgba(46,38,120,.18))}
-.bv-wave .bv-arm{transform-origin:72.3% 47.5%;animation:bvWave 3.4s cubic-bezier(.45,0,.3,1) infinite;will-change:transform}
-@keyframes bvWave{0%,52%,100%{transform:rotate(0)}8%{transform:rotate(-7deg)}18%{transform:rotate(6deg)}28%{transform:rotate(-7deg)}38%{transform:rotate(6deg)}46%{transform:rotate(-2deg)}}
-@media (prefers-reduced-motion:reduce){.bv-wave .bv-arm{animation:none}}
+.bv-wave .bv-body{filter:drop-shadow(0 4px 8px rgba(46,38,120,.18))}
+.bv-wave .bv-arm{transform-origin:72.3% 47.5%;animation:bvWave 3.6s cubic-bezier(.45,0,.3,1) infinite;will-change:transform}
+@keyframes bvWave{0%,56%,100%{transform:rotate(0)}8%{transform:rotate(-15deg)}17%{transform:rotate(9deg)}26%{transform:rotate(-15deg)}35%{transform:rotate(9deg)}44%{transform:rotate(-12deg)}51%{transform:rotate(3deg)}}
+.bv-wave .bv-tail{transform-origin:72.8% 70.5%;animation:bvTail 7.2s ease-in-out infinite}
+@keyframes bvTail{0%,62%,100%{transform:rotate(0)}68%{transform:rotate(-6deg)}75%{transform:rotate(5deg)}82%{transform:rotate(-5deg)}89%{transform:rotate(3deg)}95%{transform:rotate(0)}}
+.bv-wave .bv-lid{opacity:0;animation:bvBlink 4.4s linear infinite}
+@keyframes bvBlink{0%,93.4%,97.6%,100%{opacity:0}94%,97%{opacity:1}}
+@media (prefers-reduced-motion:reduce){.bv-wave .bv-arm,.bv-wave .bv-tail,.bv-wave .bv-lid{animation:none}}
 .hm-guide span:not(.bv-wave){display:flex;flex-direction:column;gap:3px;font-size:15px;line-height:1.6;color:var(--n700);word-break:keep-all}
 .hm-guide b{font-size:16.5px;font-weight:800;color:var(--ind)}
 
@@ -1769,6 +1773,8 @@ body.mo .hm-3{grid-template-columns:1fr;text-align:left}
 .hm-fin-say{margin:0;padding:11px 18px;border-radius:18px 18px 18px 5px;background:#fff;color:var(--n900);font-size:15.5px;font-weight:800;letter-spacing:-.02em;white-space:nowrap;box-shadow:0 16px 30px -16px rgba(20,10,70,.7);animation:hmBob 5s ease-in-out infinite}
 @media (prefers-reduced-motion:reduce){.hm-fin-say{animation:none}}
 .hm-last .hm-partner-band{margin-top:16px}
+.hm-fin .hp-login{margin:0;font-size:15px;font-weight:600;color:#E3DBFF}
+.hm-fin .hp-login a{color:#fff;font-weight:800;text-decoration:underline;text-underline-offset:3px}
 body.mo .hm-fin{grid-template-columns:1fr;gap:0;padding:0 24px;border-radius:26px}
 body.mo .hm-fin-tx{padding:34px 0 8px}
 body.mo .hm-fin h2{font-size:28px}
@@ -5501,7 +5507,7 @@ const BEAVERLY_POSE = { hello: "img/beaverly-hello.v1.webp", review: "img/beaver
 function beaverly(h, 표정){ return `<img src="${BEAVERLY_POSE[표정] || BEAVERLY_FRONT}" alt="공인중개사 비버리"
   style="height:${h||280}px;width:auto;display:block;user-select:none;-webkit-user-drag:none">`;}
 /* 미니 - 안내 배지용 (정면을 작게) */
-function beaverlyWave(h){ return `<span class="bv-wave" style="height:${h||56}px" aria-hidden="true"><img src="img/beaverly-hello-body.v1.webp" alt=""><img class="bv-arm" src="img/beaverly-hello-arm.v1.webp" alt=""></span>`; }
+function beaverlyWave(h){ return `<span class="bv-wave" style="height:${h||56}px" aria-hidden="true"><img class="bv-tail" src="img/beaverly-hello-tail.v2.webp" alt=""><img class="bv-body" src="img/beaverly-hello-body.v2.webp" alt=""><img class="bv-lid" src="img/beaverly-hello-lid.v2.webp" alt=""><img class="bv-arm" src="img/beaverly-hello-arm.v2.webp" alt=""></span>`; }
 function beaverlyMini(h, 표정){ return `<img src="${BEAVERLY_POSE[표정] || BEAVERLY_FRONT}" alt=""
   style="height:${h||56}px;width:auto;display:block;flex:none;user-select:none;-webkit-user-drag:none">`;}
 /* 빈 화면 (2026-10-30 대표님 '이런 비어있는 화면에는 비버 캐릭터를') - 비버 + 제목 + 설명 + (단추).
@@ -9281,7 +9287,7 @@ V['#/partner'] = () => `
   ${hp기능(3, '자동 알림', '챙길 날짜는<br>카카오톡으로 먼저 알려 드립니다',
     '계약서에 넣은 날짜로 알림이 저절로 잡힙니다. 매일 아침 9시, 오늘과 다가오는 일을 카카오톡 알림으로 보내 드립니다. 휴대폰만 보면 오늘 할 일이 정리돼 있습니다.',
     ['매일 아침 9시 카카오톡 알림 - 메일로도 함께 받을 수 있습니다', '계약일 · 중도금 · 잔금(7일 · 3일 전 · 당일)', '실거래 · 임대차 신고 기한 · 법무사 예약 시점 · 임대차 만기 6개월 전', '잔금 3일 전 등기부 다시 보기 · 현금영수증 발행 · 공제 만료 · 연수교육 기한', '받을 항목과 받는 곳은 직접 고릅니다'],
-    [['noti.v2.webp', 1500, 842, '알림창 - 아직 안 열린 제안, 연결된 손님 계약서, 신고 안 한 확정본, 작성 중인 계약서']], false)}
+    [['noti.v2.webp', 1500, 842, '알림창 - 아직 안 열린 제안, 연결된 손님 계약서, 신고 안 한 확정본, 작성 중인 계약서'], ['kakao-noti.v1.webp', 1300, 1040, '카카오톡으로 온 계약 일정 알림 - 잔금 3일 전, 날짜, 물건, 확인할 일과 계약서 보기 단추']], false)}
   ${hp기능(4, '일정 체크', '앞으로 60일 일정을<br>D-day 로 한눈에',
     '계약마다 흩어진 날짜를 한 줄로 모읍니다. 잔금일이 지나면 완료했는지 묻고, 신고하지 않은 확정본은 대시보드 할 일에 올려 둡니다.',
     ['다가오는 일정을 D-day 순으로 - 누르면 그 계약서가 열립니다', '진행 상태(준비 · 진행중 · 완료 · 보류 · 취소)로 계약 현황 관리', '잔금 완료 확인 · 잔금 지연 표시', '대시보드 브리핑에 오늘 손댈 일을 모아 보여 드립니다'],
@@ -9310,12 +9316,14 @@ V['#/partner'] = () => `
 
   <section class="hm-sec hm-last">
     <div class="hm-in">
-      <div class="hm-end lg">
-        ${beaverlyMini(isMo() ? 56 : 64)}
-        <h2 class="hm-h2">광고비 대신,<br>기다리는 손님에게 제안하세요</h2>
-        <p class="hm-p">매물을 올려두고 연락이 오기를 기다리는 방식과 다릅니다. 수요가 확인된 손님에게만, 무료로 보냅니다.</p>
-        ${S.agent ? `<div class="row eqb" style="margin-top:26px">${partnerDoor()}</div>` : `<button class="btn pri" data-go="#/partner/join">파트너로 가입하기</button>`}
-        ${S.user ? '' : `<span class="hp-login">이미 파트너이신가요? <a class="tapx" data-act="nav-login" data-v="partner">로그인</a></span>`}
+      <div class="hm-fin">
+        <div class="hm-fin-tx">
+          <h2>광고비 대신,<br><em>기다리는 손님</em>에게 제안하세요</h2>
+          <p>매물을 올려두고 연락이 오기를 기다리는 방식과 다릅니다. 수요가 확인된 손님에게만, 무료로 보냅니다.</p>
+          <div class="hm-fin-act">${S.agent ? partnerDoor() : `<button type="button" class="doc-cta-b" data-go="#/partner/join">파트너로 가입하기<i class="ar-r" aria-hidden="true"></i></button>`}
+            ${S.user ? '' : `<span class="hp-login">이미 파트너이신가요? <a class="tapx" data-act="nav-login" data-v="partner">로그인</a></span>`}</div>
+        </div>
+        <div class="hm-fin-bv" aria-hidden="true"><p class="hm-fin-say">손님이 기다리고 있어요</p>${beaverlyWave(isMo() ? 190 : 300)}</div>
       </div>
     </div>
   </section>
@@ -14965,6 +14973,7 @@ if(typeof addEventListener === 'function'){
   addEventListener('unhandledrejection', e => { const r = e && e.reason; bk오류보내기('처리되지 않은 오류: ' + ((r && r.message) || r), (r && r.stack && (/(https?:\/\/[^\s)]+?):\d+:\d+/.exec(r.stack) || [])[1]) || location.origin, 0, 0, r && r.stack); });
 }
 const BK_변경 = [
+  { v:'26.11.27.15', 날:'2026-11-27', 줄:[ '인사하는 비버 - 잘려 있던 꼬리 끝을 이어 그리고, 손을 더 크게 흔들며 눈을 깜빡이고 꼬리도 가끔 흔듭니다(팔 자리에 남던 잔영을 없앰)', '파트너 안내 - ‘자동 알림’에 카카오톡으로 오는 계약 일정 알림 그림을 더했습니다', '파트너 안내 마무리도 보라 판 · 큰 글 · 인사하는 비버로 바꿨습니다' ] },
   { v:'26.11.27.14', 날:'2026-11-27', 줄:[ '손님 메인 마무리 - 보라 판 위에 큰 글과 흰 단추, 손 흔들며 인사하는 큰 비버로 다시 짰습니다', '문구를 ‘집 찾아 헤매는 건 여기까지. 이제 조건만 걸어두세요’로 바꿨습니다' ] },
   { v:'26.11.27.13', 날:'2026-11-27', 줄:[ '이용 안내 - 단계 번호 1 · 2 · 3 · 4 를 큰 보라 판으로 키웠습니다', '이용 안내 - ‘저희가 하지 않는 것’을 굵은 테두리 카드 셋으로 강조했습니다', '이용 안내 · 자주 묻는 질문 맨 아래 ‘내 조건 걸어두기’를 보라 띠 위 큰 흰 단추로 키웠습니다', '‘큰 글씨로 한 단계씩 보기’ 단추는 이용 안내에서 뺐습니다(바닥글의 쉬운 사용 안내로 들어갑니다)' ] },
   { v:'26.11.27.12', 날:'2026-11-27', 줄:[ '이용 안내의 숫자 셋이 움직입니다 - 10분에서 1분으로, 0에서 5곳으로, 100,000원에서 0원으로 세며 보라 띠 위에 크게 보입니다' ] },

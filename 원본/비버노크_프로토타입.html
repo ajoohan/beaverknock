@@ -1468,11 +1468,19 @@ body.mo .hp-nav .right{gap:8px}
 .faq-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:start}
 body.mo .faq-grid{grid-template-columns:1fr;gap:10px}
 /* 이용 안내 (#/guide · 2026-11-27) */
-.ug-nums{list-style:none;margin:0 0 28px;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-top:1px solid var(--n100);border-bottom:1px solid var(--n100)}
-.ug-nums li{padding:20px 24px;display:flex;flex-direction:column;gap:4px}
-.ug-nums li+li{border-left:1px solid var(--n100)}
-.ug-nums b{font-size:clamp(26px,2.4vw,34px);font-weight:800;letter-spacing:-.03em;color:var(--ind)}
-.ug-nums span{font-size:14.5px;color:var(--n700)}
+/* 한눈에 보는 숫자 (2026-11-27 한실장님 '10분에서 사라락 1분 · 0에서 5 · 100,000원에서 0원, 눈에 띄게') - 보라 띠 위 큰 흰 숫자, runCounts 가 센다 */
+.ug-nums{list-style:none;margin:0 0 28px;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-radius:24px;overflow:hidden;color:#fff;
+  background:linear-gradient(120deg,#6A46E0 0%,#5131C4 100%);box-shadow:0 26px 50px -30px rgba(81,49,196,.75)}
+.ug-nums li{display:flex;flex-direction:column;gap:8px;padding:26px 32px 28px;min-width:0}
+.ug-nums li+li{border-left:1px solid rgba(255,255,255,.16)}
+.ug-nl{font-size:14.5px;font-weight:600;color:#E3DBFF}
+.ug-nums b{display:flex;align-items:baseline;gap:4px;font-size:clamp(40px,4.4vw,60px);font-weight:800;letter-spacing:-.035em;line-height:1.1;color:#fff;font-variant-numeric:tabular-nums;transform-origin:left center}
+.ug-nums b small{margin-right:6px;font-size:.42em;font-weight:700;letter-spacing:-.01em;color:#E3DBFF}
+.ug-nums b.pop{animation:ugPop .5s cubic-bezier(.2,1.5,.4,1)}
+@keyframes ugPop{0%{transform:scale(1)}45%{transform:scale(1.09)}100%{transform:scale(1)}}
+.ug-nb{display:block;height:4px;margin-top:6px;border-radius:99px;background:rgba(255,255,255,.2);overflow:hidden}
+.ug-nb::after{content:'';display:block;height:100%;border-radius:99px;background:#fff;transform-origin:left center;transform:scaleX(var(--p,1))}
+@media (prefers-reduced-motion:reduce){.ug-nums b.pop{animation:none}}
 .ug-grid{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
 .ug-step{display:flex;flex-direction:column;border-radius:24px;background:#fff;border:1px solid var(--n100);overflow:hidden;box-shadow:0 14px 34px -26px rgba(29,24,80,.35)}
 .ug-vis{position:relative;height:300px;display:flex;justify-content:center;align-items:flex-end;gap:clamp(14px,3vw,40px);padding:26px 26px 0;overflow:hidden;background:linear-gradient(180deg,#F0EDFF 0%,#F7F6FD 100%)}
@@ -1505,10 +1513,10 @@ body.mo .faq-grid{grid-template-columns:1fr;gap:10px}
 .ug-not dl>div+div{padding-left:24px;border-left:1px solid var(--n100)}
 .ug-not dt{font-size:15.5px;font-weight:700;color:var(--n900)}
 .ug-not dd{margin:6px 0 0;font-size:14.5px;line-height:1.75;color:var(--n700)}
-body.mo .ug-nums{grid-template-columns:1fr;margin-bottom:20px}
-body.mo .ug-nums li{padding:14px 4px;flex-direction:row;align-items:baseline;gap:12px}
-body.mo .ug-nums li+li{border-left:0;border-top:1px solid var(--n100)}
-body.mo .ug-nums b{font-size:22px;min-width:86px}
+body.mo .ug-nums{grid-template-columns:1fr;margin-bottom:20px;border-radius:20px}
+body.mo .ug-nums li{padding:18px 22px 20px;gap:6px}
+body.mo .ug-nums li+li{border-left:0;border-top:1px solid rgba(255,255,255,.16)}
+body.mo .ug-nums b{font-size:38px}
 body.mo .ug-grid{grid-template-columns:1fr;gap:14px}
 body.mo .ug-vis{height:250px;padding:20px 16px 0;gap:14px}
 body.mo .ug-vis.two{height:auto;padding:18px 16px;align-items:center}
@@ -13746,6 +13754,30 @@ function stopSteps(){
   if(STEPS_T){ clearTimeout(STEPS_T); STEPS_T = null; }
   if(STEPS_IO){ STEPS_IO.disconnect(); STEPS_IO = null; }
 }
+/* 이용 안내의 숫자 세기. 재렌더마다 불린다 - 이 화면에 들어와 처음 한 번만 세고, 그 뒤 재렌더에는 끝 값을 그대로 둔다.
+   움직임을 줄여 달라고 한 분께는 세지 않는다. 사라진 노드는 스스로 멈춘다 */
+let UG_센 = 0;   /* 세기 시작한 때(performance.now) - 0 이면 아직 */
+function runCounts(){
+  if(S.route !== '#/guide'){ UG_센 = 0; return; }
+  const 칸 = [...document.querySelectorAll('#app .ug-nums [data-cnt]')];
+  if(!칸.length || REDUCED()) return;
+  /* 첫 화면은 로그인 확인 따위로 몇 번 다시 그려진다 - 새로 그려진 노드가 세던 자리를 이어받게 시작한 때를 기억한다 */
+  if(!UG_센) UG_센 = performance.now();
+  const 글 = n => Math.round(n).toLocaleString('ko-KR');
+  칸.forEach(el => {
+    const 처음 = +el.dataset.from, 끝 = +el.dataset.to, 길이 = +el.dataset.ms || 1200, 기다림 = +el.dataset.wait || 0;
+    if(performance.now() - UG_센 - 기다림 >= 길이) return;   /* 이미 다 셌다 - 끝 값 그대로 */
+    const 막대 = el.closest('li') && el.closest('li').querySelector('.ug-nb');
+    const 돌기 = () => {
+      if(!el.isConnected) return;
+      const k = Math.min(1, Math.max(0, (performance.now() - UG_센 - 기다림) / 길이)), e = 1 - Math.pow(1 - k, 3);
+      el.textContent = 글(처음 + (끝 - 처음) * e); if(막대) 막대.style.setProperty('--p', String(e));
+      if(k < 1) requestAnimationFrame(돌기);
+      else { el.textContent = 글(끝); const b = el.closest('b'); if(b) b.classList.add('pop'); }
+    };
+    돌기();
+  });
+}
 function runSteps(){
   /* 재렌더마다 불린다 - 먼저 앞선 바퀴를 정리한다. 안 그러면 사라진 노드를
      붙잡은 예약이 쌓이고, 화면을 옮겨 다닐수록 그만큼 늘어난다. */
@@ -14055,9 +14087,9 @@ V['#/guide'] = () => docShell('HOW IT WORKS', '어떻게 쓰나요',
   '비버노크는 <b style="color:var(--n900)">조건을 전달하는 곳</b>입니다. 중개사가 공개한 매물 가운데 맞는 것만 보여 드리고, 거래에는 끼어들지 않습니다.',
   `
   <ul class="ug-nums" aria-label="한눈에">
-    <li><b class="num">1분</b><span>조건을 걸어두는 데 걸리는 시간</span></li>
-    <li><b class="num">최대 5곳</b><span>조건 하나가 전달되는 중개사</span></li>
-    <li><b class="num">0원</b><span>손님도 중개사도 내는 돈</span></li>
+    <li><span class="ug-nl">조건을 걸어두는 데 걸리는 시간</span><b aria-label="1분"><span data-cnt data-from="10" data-to="1" data-ms="1300">1</span>분</b><i class="ug-nb" aria-hidden="true"></i></li>
+    <li><span class="ug-nl">조건 하나가 전달되는 중개사</span><b aria-label="최대 5곳"><small>최대</small><span data-cnt data-from="0" data-to="5" data-ms="1300" data-wait="250">5</span>곳</b><i class="ug-nb" aria-hidden="true"></i></li>
+    <li><span class="ug-nl">손님도 중개사도 내는 돈</span><b aria-label="0원"><span data-cnt data-from="100000" data-to="0" data-ms="1900" data-wait="500">0</span>원</b><i class="ug-nb" aria-hidden="true"></i></li>
   </ul>
   <ol class="ug-grid">
     ${STEPS.map(([t,s1,s2],i)=>{ const g = UG_그림[i] || {}; const 비버 = g.비버 === 'knock' ? BEAVERLY_KNOCK : (BEAVERLY_POSE[g.비버] || BEAVERLY_FRONT); return `
@@ -14892,6 +14924,7 @@ if(typeof addEventListener === 'function'){
   addEventListener('unhandledrejection', e => { const r = e && e.reason; bk오류보내기('처리되지 않은 오류: ' + ((r && r.message) || r), (r && r.stack && (/(https?:\/\/[^\s)]+?):\d+:\d+/.exec(r.stack) || [])[1]) || location.origin, 0, 0, r && r.stack); });
 }
 const BK_변경 = [
+  { v:'26.11.27.12', 날:'2026-11-27', 줄:[ '이용 안내의 숫자 셋이 움직입니다 - 10분에서 1분으로, 0에서 5곳으로, 100,000원에서 0원으로 세며 보라 띠 위에 크게 보입니다' ] },
   { v:'26.11.27.11', 날:'2026-11-27', 줄:[ '이용 안내 · 자주 묻는 질문 - PC 에서 로고와 오른쪽 단추, 본문, 바닥글을 파트너 안내와 같은 틀에 맞췄습니다(화면 양 끝으로 벌어지던 것)', '바닥글 - 로고를 키워 오른쪽 위로 올리고 ‘비버노크는 공인중개사가 아닌 …’ 한 줄을 로고 아래에 오른쪽 정렬, 세로 길이를 줄였습니다' ] },
   { v:'26.11.27.10', 날:'2026-11-27', 줄:[ '이용 안내를 새로 짰습니다 - PC 화면을 넓게 쓰고, 네 단계마다 실제 휴대폰 화면 · 비버 · 강조 키워드를 넣었습니다', '한눈에 보는 숫자 셋(1분 · 최대 5곳 · 0원)과 ‘저희가 하지 않는 것’ 세 칸' ] },
   { v:'26.11.27.9', 날:'2026-11-27', 줄:[ '디자인 점검 반영 - 메인 ‘내 계약 진행과정’은 그림을 왼쪽에 두어 위 구역과 방향이 번갈아 가게 했습니다', '같은 말을 되풀이하던 작은 머리말을 빼고 모서리 둥글기를 사이트 값에 맞췄습니다' ] },
@@ -23157,6 +23190,7 @@ function render(){
      .run 도 같이 사라진다 - entered 일 때만 불러주면 첫 화면이 한 번만 더
      그려져도(로그인 확인이 끝나는 그 순간이 꼭 그렇다) 영영 회색으로 남는다. */
   runSteps();
+  runCounts();
   S.lastRoute = h;
   그린계정 = 지금계정();
 

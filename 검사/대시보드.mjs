@@ -99,7 +99,7 @@ const M = new Function('esc', `${js.slice(시작, 끝)}\nreturn { dzLine, dzPill
      && /\.mf-row\.pol a\.em\{font-weight:700;color:var\(--n900\)\}/.test(css) && /\.mf-row a \+ a::before\{content:''/.test(css) && !/\.mf-row a\{[^}]*text-decoration:underline/.test(css),
      '휴대폰 바닥 링크 - 밑줄 없이 사이 줄로 나눈 두 줄 · 개인정보 처리방침은 굵게');
   /* 2026-11-02 '푸터 텍스트가 너무 많다 · 통신판매업 필요한가 · 2열로' - PC·휴대폰 같은 두 칸(왼쪽 회사 · 오른쪽 연락처) + 주소 · 안내 한 줄씩 */
-  const 사업자 = js.slice(js.indexOf('function bizFooter(){'), js.indexOf('\n}\n', js.indexOf('function bizFooter(){')));
+  const 사업자 = js.slice(js.indexOf('function bizFooter('), js.indexOf('\n}\n', js.indexOf('function bizFooter(')));
   ok(사업자.includes("칸('대표', esc(CORP.ceo))") && 사업자.includes("칸('사업자번호', esc(CORP.no))") && 사업자.includes("칸('고객센터',")
      && (사업자.match(/<div class="bz-col">/g) || []).length === 2 && 사업자.includes("CORP.addr.replace(/\\s*\\([^)]*\\)\\s*$/, '')")
      && !사업자.includes('CORP.tsp') && !사업자.includes('통신판매') && !/text-decoration:underline/.test(사업자) && !사업자.includes('©'),

@@ -1461,6 +1461,12 @@ body.mo .hp-nav .right{gap:8px}
 
 /* 마디 */
 .hm-sec{padding:clamp(56px,8vh,104px) 0}
+/* 문서형 화면(이용 안내 · 자주 묻는 질문 · 쉬운 안내)의 PC 틀 - 파트너 안내 · 메인과 같은 폭 */
+.doc-in{width:min(1240px,92vw);margin:0 auto}
+.nav.solid.pad.doc-nav{padding-left:max(4vw,calc((100% - 1240px)/2));padding-right:max(4vw,calc((100% - 1240px)/2))}
+/* 자주 묻는 질문 - PC 는 두 칸(넓은 틀을 채운다), 휴대폰은 한 줄 */
+.faq-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:start}
+body.mo .faq-grid{grid-template-columns:1fr;gap:10px}
 /* 이용 안내 (#/guide · 2026-11-27) */
 .ug-nums{list-style:none;margin:0 0 28px;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-top:1px solid var(--n100);border-bottom:1px solid var(--n100)}
 .ug-nums li{padding:20px 24px;display:flex;flex-direction:column;gap:4px}
@@ -1793,8 +1799,8 @@ body.mo .hp-tiles h3{font-size:16px;margin:2px 0 4px}
 @media (max-width:1180px){ .hp-tiles{grid-template-columns:repeat(2,minmax(0,1fr))} }
 /* 공통 바닥글 */
 .sf{position:relative;z-index:2;margin-top:clamp(24px,4vh,48px);background:linear-gradient(180deg,rgba(255,255,255,.6),#fff 40%);border-top:1px solid var(--n100)}
-.sf-in{width:min(1240px,92vw);margin:0 auto;padding:56px 0 36px}
-.sf-top{display:flex;justify-content:space-between;gap:48px;padding-bottom:40px;border-bottom:1px solid var(--n100)}
+.sf-in{width:min(1240px,92vw);margin:0 auto;padding:44px 0 28px}
+.sf-top{display:flex;justify-content:space-between;gap:48px;padding-bottom:30px;border-bottom:1px solid var(--n100)}
 .sf-brand{display:flex;flex-direction:column;gap:16px}
 .sf-brand p{margin:0;font-size:14px;line-height:1.7;color:var(--n500)}
 .sf-cols{display:grid;grid-template-columns:repeat(3,minmax(120px,auto));gap:clamp(32px,5vw,88px)}
@@ -1803,7 +1809,12 @@ body.mo .hp-tiles h3{font-size:16px;margin:2px 0 4px}
 .sf-col a{font-size:14px;color:var(--n500);cursor:pointer;transition:color .15s}
 .sf-col a:hover{color:var(--ind)}
 .sf-col a.em{font-weight:700;color:var(--n700)}
-.sf-bot{display:flex;align-items:flex-start;gap:40px;padding-top:28px}
+/* 2026-11-27 한실장님 '로고를 올리고, 비버노크는 … 줄은 로고 아래 오른쪽 정렬, 세로를 줄여' - 운영 · 사업자 정보 · (로고 + 한 줄) 세 칸, 윗선에 맞춘다 */
+.sf-bot{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:start;column-gap:40px;padding-top:22px}
+.sf-bot .sf-op{padding-top:1px}
+.sf-end{display:flex;flex-direction:column;align-items:flex-end;gap:8px;text-align:right}
+.sf-end .sf-logo{align-self:flex-end;margin:0;padding:6px 8px 4px}
+.sf-note{margin:0;font-size:12.5px;line-height:1.6;color:var(--n500)}
 .sf-bot .biz{flex:1;min-width:0}
 .sf-op{flex:none;display:inline-flex;align-items:center;gap:10px}
 .sf-op small{font-size:12px;font-weight:600;color:var(--n500)}
@@ -6470,7 +6481,8 @@ function siteFooter(){
           ${묶음('정책', ['<a href="/terms" target="_blank" rel="noopener">이용약관</a>', '<a href="/privacy" target="_blank" rel="noopener" class="em">개인정보 처리방침</a>', '<a data-go="#/brand">브랜드</a>'])}
         </nav>
       </div>
-      <div class="sf-bot">${운영}${bizFooter()}<span class="sf-logo">${logoLockup({h:24,tag:false})}</span></div>
+      <div class="sf-bot">${운영}${bizFooter(true)}
+        <div class="sf-end"><span class="sf-logo">${logoLockup({h:30,tag:false})}</span><p class="sf-note">비버노크는 공인중개사가 아닌,<br>조건을 전달하는 서비스입니다.</p></div></div>
     </div>
   </footer>`;
 }
@@ -6490,14 +6502,14 @@ const CORP = {
    - 두 칸: 왼쪽 회사(이름 · 대표 · 사업자번호), 오른쪽 연락처(고객센터 · 메일). 주소와 안내는 그 아래 한 줄씩.
      PC·휴대폰 같은 모양 - 휴대폰은 12px 두 칸(375·360px 에서 한 칸에 들어가게 '메일' 이름표는 뺀다)
    - 주소 괄호(동·건물 이름 - 참고 항목)는 뺀다. 법(전자상거래법 제10조)상 첫 화면 표시라 접지는 않는다 */
-function bizFooter(){
+function bizFooter(줄뺌){
   const 칸 = (이름, 값) => `<span class="bz-i">${이름 ? `<em>${이름}</em>` : ''}${값}</span>`;
   return `<div class="biz${isMo() ? ' mo' : ''}">
     <div class="bz-col"><b class="bz-name">${esc(CORP.corp)}</b>${칸('대표', esc(CORP.ceo))}${칸('사업자번호', esc(CORP.no))}</div>
     <div class="bz-col">${칸('고객센터', `<a href="tel:${esc(CORP.tel.replace(/-/g,''))}">${esc(CORP.tel)}</a>`)}${칸('', `<a href="mailto:${esc(CORP.mail)}">${esc(CORP.mail)}</a>`)}</div>
     <p class="bz-wide">${칸('주소', esc(CORP.addr.replace(/\s*\([^)]*\)\s*$/, '')))}</p>
     <!-- 우리가 무엇이 아닌지 밝히는 한 줄 - 연락처에 딸린 말처럼 읽히지 않게 따로 세운다 -->
-    <p class="bz-note">비버노크는 공인중개사가 아닌, 조건을 전달하는 서비스입니다.</p>
+    ${줄뺌 ? '' : `<p class="bz-note">비버노크는 공인중개사가 아닌, 조건을 전달하는 서비스입니다.</p>`}
   </div>`;
 }
 
@@ -13985,10 +13997,13 @@ function userMenu(opt = {}){
   </div>`;
 }
 
+/* 2026-11-27 한실장님 '로고와 오른쪽 단추가 저 멀리 가 있다 - 파트너 안내처럼 머리 · 본문 · 바닥 정렬' :
+   PC 는 머리 · 본문 · 바닥을 같은 틀(.doc-in = min(1240px, 92vw))에 맞춘다. 글만 있는 화면(자주 묻는 질문 등)은 그 틀 안에서 왼쪽 820px */
 function docShell(eyebrow, title, lead, body, wide){
+  const pc = !isMo();
   return `
 <div class="scr fade" style="background:var(--n50)">
-  <div class="nav solid pad">
+  <div class="nav solid pad${pc ? ' doc-nav' : ''}">
     <a data-go="#/" style="flex:none">${logoLockup({h:25})}</a>
     <div class="items mid">
       <a data-go="#/guide" class="${S.route==='#/guide'?'on':''}">이용 안내</a>
@@ -13997,18 +14012,19 @@ function docShell(eyebrow, title, lead, body, wide){
     </div>
     <div class="right" style="gap:12px">${navAuth('both')}</div>
   </div>
-  <div class="pad" style="flex:1;overflow:auto;padding-top:${isMo()?20:32}px;padding-bottom:44px;max-width:${wide && !isMo() ? 1120 : 760}px;margin:0 auto;width:100%">
-    <h1 class="t" style="font-size:${isMo()?21:wide?32:25}px;margin:10px 0 10px">${title}</h1>
+  ${pc ? `<div style="flex:1;overflow:auto"><div class="doc-in" style="padding-top:40px;padding-bottom:44px"><div style="max-width:${wide ? 'none' : '820px'}">`
+       : `<div class="pad" style="flex:1;overflow:auto;padding-top:20px;padding-bottom:44px;max-width:760px;margin:0 auto;width:100%">`}
+    <h1 class="t" style="font-size:${isMo()?21:wide?32:28}px;margin:10px 0 10px">${title}</h1>
     <p style="margin:0 0 24px;font-size:${wide && !isMo() ? 16 : 14.5}px;line-height:1.75;color:var(--n700);max-width:62ch">${lead}</p>
     ${body}
-    ${bizFooter ? `<div style="margin-top:28px;padding-top:18px;border-top:1px solid var(--n100)">${bizFooter()}</div>` : ''}
-    <div class="card pad" style="margin-top:24px;background:var(--ind50);border-color:var(--ind200)">
+    ${pc ? '' : (bizFooter ? `<div style="margin-top:28px;padding-top:18px;border-top:1px solid var(--n100)">${bizFooter()}</div>` : '')}
+    <div class="card pad" style="margin-top:${pc ? 36 : 24}px;background:var(--ind50);border-color:var(--ind200)">
       <b style="display:block;font-size:15px;font-weight:700;color:var(--n900);margin-bottom:6px">아직 궁금한 게 남으셨나요?</b>
       <p style="margin:0 0 14px;font-size:14.5px;line-height:1.75;color:var(--n700)">
         조건을 걸어두시면 맞는 곳이 있을 때만 연락이 갑니다. 마음에 안 들면 그냥 두셔도 됩니다.</p>
       <button class="btn pri" data-go="#/kind">내 조건 걸어두기</button>
     </div>
-  </div>
+  ${pc ? `</div></div>${siteFooter()}</div>` : `</div>`}
 </div>`;
 }
 
@@ -14466,14 +14482,14 @@ const FAQ = [
 
 V['#/faq'] = () => docShell('FAQ', '자주 묻는 질문',
   '가장 많이 받는 질문을 모았습니다. 답이 없는 질문은 아직 저희가 준비하지 못한 것입니다.',
-  `<div style="display:flex;flex-direction:column;gap:10px">
+  `<div class="faq-grid">
     ${FAQ.map(([q,a])=>`
       <div class="card pad">
         <b style="display:flex;gap:10px;font-size:15px;font-weight:700;color:var(--n900);margin-bottom:8px">
           <span style="flex:none;color:var(--ind)">Q</span><span>${q}</span></b>
         <p style="margin:0 0 0 24px;font-size:14.5px;line-height:1.8;color:var(--n700)">${a}</p>
       </div>`).join('')}
-  </div>`);
+  </div>`, true);
 
 /* ══════════ 라우터 ══════════ */
 /* 가입 화면을 벗어나면 작성 내용을 비운다. 그대로 두면 다시 들어왔을 때
@@ -14876,6 +14892,7 @@ if(typeof addEventListener === 'function'){
   addEventListener('unhandledrejection', e => { const r = e && e.reason; bk오류보내기('처리되지 않은 오류: ' + ((r && r.message) || r), (r && r.stack && (/(https?:\/\/[^\s)]+?):\d+:\d+/.exec(r.stack) || [])[1]) || location.origin, 0, 0, r && r.stack); });
 }
 const BK_변경 = [
+  { v:'26.11.27.11', 날:'2026-11-27', 줄:[ '이용 안내 · 자주 묻는 질문 - PC 에서 로고와 오른쪽 단추, 본문, 바닥글을 파트너 안내와 같은 틀에 맞췄습니다(화면 양 끝으로 벌어지던 것)', '바닥글 - 로고를 키워 오른쪽 위로 올리고 ‘비버노크는 공인중개사가 아닌 …’ 한 줄을 로고 아래에 오른쪽 정렬, 세로 길이를 줄였습니다' ] },
   { v:'26.11.27.10', 날:'2026-11-27', 줄:[ '이용 안내를 새로 짰습니다 - PC 화면을 넓게 쓰고, 네 단계마다 실제 휴대폰 화면 · 비버 · 강조 키워드를 넣었습니다', '한눈에 보는 숫자 셋(1분 · 최대 5곳 · 0원)과 ‘저희가 하지 않는 것’ 세 칸' ] },
   { v:'26.11.27.9', 날:'2026-11-27', 줄:[ '디자인 점검 반영 - 메인 ‘내 계약 진행과정’은 그림을 왼쪽에 두어 위 구역과 방향이 번갈아 가게 했습니다', '같은 말을 되풀이하던 작은 머리말을 빼고 모서리 둥글기를 사이트 값에 맞췄습니다' ] },
   { v:'26.11.27.8', 날:'2026-11-27', 줄:[ '파비콘을 글자 없이 굵은 문틀 무늬만으로 바꿨습니다', '전수점검 · 코드리뷰 반영 - 메인 ‘내 계약 진행과정’의 알림 카드와 휴대폰 화면이 화면 폭에 따라 겹치던 것을 두 칸으로 나눠 고쳤습니다', '알림 카드를 ‘계약일 일정이 완료되었습니다’ 안내로 바꾸고, 비버의 휴대폰에서 튀어나오듯 나타나게 했습니다' ] },

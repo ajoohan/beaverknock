@@ -14979,6 +14979,7 @@ if(typeof addEventListener === 'function'){
   addEventListener('unhandledrejection', e => { const r = e && e.reason; bk오류보내기('처리되지 않은 오류: ' + ((r && r.message) || r), (r && r.stack && (/(https?:\/\/[^\s)]+?):\d+:\d+/.exec(r.stack) || [])[1]) || location.origin, 0, 0, r && r.stack); });
 }
 const BK_변경 = [
+  { v:'26.11.27.20', 날:'2026-11-27', 줄:[ '계약체결 문자 - 금액 칸에 ‘협의’처럼 글을 적으면 뒤에 ‘원’이 붙지 않습니다' ] },
   { v:'26.11.27.19', 날:'2026-11-27', 줄:[ '계약체결 문자 (파트너) - 날짜 · 금액 칸에 자유롭게 적을 수 있습니다(예: ‘12월 초 · 협의 가능’, ‘협의’). 날짜는 옆의 달력으로도 고릅니다', '‘보낼 문자’ 위에 ‘문구 고치기’ - 합의 내용을 포함해 모든 문구를 고칠 수 있고, 저장하면 다시 고칠 때까지 우리 사무소의 기본 문구로 씁니다', '바뀌는 칸이 하나도 없는 문구도 저장할 수 있습니다' ] },
   { v:'26.11.27.18', 날:'2026-11-27', 줄:[ '계약서 - 등기사항전부증명서를 올리면 동 · 호수가 상세주소 칸에 들어갑니다(칸 입력 · 계약서에 직접 입력 모두) (파트너)' ] },
   { v:'26.11.27.17', 날:'2026-11-27', 줄:[ '가입 동의 화면의 ‘전문 보기’ - 눌러도 약관 · 처리방침이 열리지 않고 체크만 바뀌던 것을 고쳤습니다 (파트너)' ] },
@@ -19360,7 +19361,7 @@ function cs값(k, v = CS.vals){
 /* 보낼 문자 - '해당 없음' 칸이 든 줄은 통째로 뺀다 */
 function cs문자(t = cs지금(), v = CS.vals, none = CS.none){
   return String(t.text).split('\n').filter(ln => !Object.keys(none).some(k => none[k] && ln.includes(`【${k}】`)))
-    .join('\n').replace(/【([^】]+)】/g, (m, k) => cs값(k, v) || m);
+    .join('\n').replace(/【([^】]+)】(원?)/g, (m, k, 원) => { const x = cs값(k, v); return x ? x + (원 && CS_돈.has(k) && cs자유글(v[k]) ? '' : 원) : m; });   /* 금액 칸에 글을 적었으면(예: 협의) 뒤의 '원'은 뺀다 */
 }
 function csLoad(){
   if(CS.loading || !세션있음()) return;

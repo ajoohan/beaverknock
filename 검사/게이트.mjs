@@ -339,10 +339,10 @@ ok(!/h==='#\/partner'\) loadMyProps|h==='#\/partner'\) loadListings/.test(js), '
     const location = { replace: x => { 간곳 = x; } };
     const $ = () => ({ set innerHTML(v){ 그림 = v; } });
     const store = { get: () => 세션 ? { access_token: 't' } : null };
-    new Function('h', 'S', 'location', 'store', '$', 'bkLoader', 'keepDraft', 'consentNeeded', 'bootDone',
+    new Function('h', 'S', 'location', 'store', '$', 'bkLoader', '뼈대', 'isMo', 'keepDraft', 'consentNeeded', 'bootDone',
       `const 세션있음 = () => { const s = store.get(); return !!(s && s.access_token); };
        ${판정.replace('let 계정확인실패 = false;', `let 계정확인실패 = ${실패};`)}
-       ${길목}\nreturn;`)(h, S, location, store, $, () => '<i>loader</i>', () => {}, () => !!S.needConsent, () => { 가림막++; });
+       ${길목}\nreturn;`)(h, S, location, store, $, () => '<i>loader</i>', () => '<i>skel</i>', () => false, () => {}, () => !!S.needConsent, () => { 가림막++; });
     return 간곳 || (그림 ? '기다림' : null);
   };
   const 손 = (o = {}) => ({ user: { id: 'u' }, agent: null, agentKnown: true, form: {}, ...o });

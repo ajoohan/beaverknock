@@ -3940,7 +3940,7 @@ body.mo .ct-qbox .inp{min-height:44px;font-size:16px}
 .cl-msg.ok{background:var(--okbg);color:var(--ok);border:1px solid var(--okline)}
 .cl-msg.err{background:var(--dangerbg);color:var(--danger);border:1px solid var(--dangerline)}
 .cl-msg a,.cl-msg .lnk{font-weight:700;color:inherit;text-decoration:underline;background:none;border:0;padding:0;cursor:pointer;font-size:inherit}
-.cl-spin{width:14px;height:14px;border-radius:50%;border:2px solid var(--n200);border-top-color:var(--ind);animation:clSpin .8s linear infinite}
+.cl-spin{display:inline-block;flex:none;width:36px;height:10px;border-radius:99px;background:linear-gradient(90deg,var(--n100),var(--n50),var(--n100));background-size:220% 100%;animation:shim 1.3s linear infinite}   /* 돌기 대신 반짝이는 막대 (2026-11-27) */
 @keyframes clSpin{to{transform:rotate(360deg)}}
 @media print{
   @page{size:A4;margin:14mm 13mm}
@@ -4560,10 +4560,17 @@ body.mo .ct-font button{min-width:4.2em}
   <!-- 첫 화면도 같은 표시를 쓴다. 자바스크립트가 아직 안 돌아 bkLoader() 를 못 부르므로
        같은 모양을 손으로 적어 둔다 - 클래스와 키프레임은 위 <style> 에 이미 있다.
        글자는 두지 않는다. 기다리는 동안 읽을 것이 있으면 더 길게 느껴진다. -->
-  <span class="bkld" style="width:40px;height:40px" role="status" aria-label="불러오는 중">
-    <i class="bkld-a" style="width:20.8px;height:20.8px;border-left:4.2px solid var(--ind400);border-top:4.2px solid var(--ind400)"></i>
-    <i class="bkld-b" style="width:20.8px;height:20.8px;border-right:4.2px solid var(--ind700);border-bottom:4.2px solid var(--ind700)"></i>
-  </span>
+  <!-- 2026-11-27 한실장님 '로딩 인디케이터 · 스피너 빼고 스켈레톤으로' - 돌기 대신 화면 모양의 뼈대 -->
+  <div role="status" aria-label="불러오는 중" style="position:absolute;inset:0;display:flex;flex-direction:column">
+    <div aria-hidden="true" style="height:64px;display:flex;align-items:center;justify-content:space-between;padding:0 max(20px,calc((100% - 1240px)/2));border-bottom:1px solid #EEF0F4;background:#fff">
+      <span class="sk" style="width:96px;height:26px"></span><span style="display:flex;gap:10px"><span class="sk" style="width:84px;height:34px;border-radius:10px"></span><span class="sk" style="width:84px;height:34px;border-radius:10px"></span></span></div>
+    <div aria-hidden="true" style="width:min(1240px,calc(100% - 40px));margin:44px auto 0;display:flex;flex-direction:column;gap:14px">
+      <span class="sk" style="width:min(460px,80%);height:34px"></span><span class="sk" style="width:min(380px,66%);height:34px"></span>
+      <span class="sk" style="width:min(520px,90%);height:14px;margin-top:10px"></span><span class="sk" style="width:min(420px,72%);height:14px"></span>
+      <span class="sk" style="width:150px;height:48px;border-radius:12px;margin-top:14px"></span>
+      <span style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:22px"><span class="sk" style="height:92px;border-radius:16px"></span><span class="sk" style="height:92px;border-radius:16px"></span><span class="sk" style="height:92px;border-radius:16px"></span></span>
+    </div>
+  </div>
 </div>
 
 <div id="stage"><div id="frame"><div id="app"></div></div></div>
@@ -5883,6 +5890,7 @@ function 뼈대(종류 = 'lines', n = 3){
   const 카드 = i => `<div class="skc"><span class="sk sk-img"></span><div class="skt">${줄(W[i % 8], 15)}${줄(W[(i + 3) % 8], 12)}${줄(W[(i + 5) % 8].replace(/\d+/, d => Math.round(d * .6)), 12)}</div></div>`;
   const 칸 = (h = 12) => 줄('100%', h);
   if(종류 === 'cards') return 겉(Array.from({ length: n }, (_, i) => 카드(i)).join(''));
+  if(종류 === 'page') return 겉(`${줄('min(360px,70%)', 26)}${줄('min(480px,88%)', 13)}<span class="sk-gap"></span>${[0, 1, 2].map(카드).join('')}`, 'sk-page');
   if(종류 === 'grid') return 겉(`<div class="sk-g">${Array.from({ length: n < 4 ? 4 : n }, (_, i) => `<div class="skc col"><span class="sk sk-ph"></span>${줄(W[i % 8], 15)}${줄(W[(i + 2) % 8], 12)}${줄('38%', 12)}</div>`).join('')}</div>`);
   if(종류 === 'rows') return 겉(`<div class="card sk-tb">${Array.from({ length: n < 3 ? 4 : n }, (_, i) => `<div class="sk-row">${줄(W[i % 8], 14)}${줄('70%', 12)}${줄('54%', 12)}${줄('64px', 22, ';border-radius:99px')}</div>`).join('')}</div>`);
   if(종류 === 'doc') return 겉(`<div class="card pad sk-doc">${줄('42%', 22)}${줄('28%', 12)}<span class="sk-gap"></span>${Array.from({ length: n < 6 ? 8 : n }, (_, i) => 줄(W[i % 8], 13)).join('')}</div>`);
@@ -12029,7 +12037,7 @@ function modalHTML(){
     return `<div class="modal" data-act="modal-bg"><div class="box ctpi-box" data-stop role="dialog" aria-modal="true" aria-labelledby="mdT" tabindex="-1">
       <h2 id="mdT" style="margin:0 0 6px;font-size:16px;font-weight:700;letter-spacing:-.03em">잔금 준비서류 이미지</h2>
       <p class="sub" style="margin:0 0 12px;font-size:14px;line-height:1.7">매도인 · 매수인 준비서류를 한 장에 담았습니다. 카카오톡 · 문자로 바로 보내세요.</p>
-      <div class="ctpi-view">${m.url ? `<img src="${m.url}" alt="잔금 준비서류 안내 이미지 - 목적물, 잔금일, 매도인 · 매수인 준비서류, 사무소">` : bkLoader(28)}</div>
+      <div class="ctpi-view">${m.url ? `<img src="${m.url}" alt="잔금 준비서류 안내 이미지 - 목적물, 잔금일, 매도인 · 매수인 준비서류, 사무소">` : '<span class="sk" role="status" aria-label="그림을 만드는 중" style="width:100%;height:420px;border-radius:12px"></span>'}</div>
       <div class="eqb ctpi-acts">${m.share ? `<button type="button" class="btn pri" data-act="ctpi-share"${막}>바로 보내기</button>` : ''}<button type="button" class="btn ${m.share ? 'sec' : 'pri'}" data-act="ctpi-save"${막}>이미지 저장</button>${m.copy ? `<button type="button" class="btn sec" data-act="ctpi-copy"${막}>복사</button>` : ''}<button type="button" class="btn sec" data-act="modal-close">닫기</button></div>
       <p class="sub" style="margin:10px 0 0;font-size:12.5px;line-height:1.6">보낸 뒤 체크사항의 ‘잔금안내를 했습니다’를 눌러 두면 잔금 준비물 알림이 멈춥니다.</p></div></div>`; }
   if(S.modal.type==='ct-share'){
@@ -12870,7 +12878,7 @@ function encOverlay(글){
   if(!el){ el = document.createElement('div'); el.id = 'encRun'; el.tabIndex = -1; el.setAttribute('role', 'alertdialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-label', '개인정보 암호화 진행 중'); document.body.appendChild(el);
     if(앱) 앱.inert = true;   /* 뒤 화면은 키보드 · 마우스 모두 닿지 않게 */
     window.addEventListener('beforeunload', ENC_닫기경고); setTimeout(() => el.focus(), 0); }
-  el.innerHTML = `<div class="enc-box">${bkLoader(44)}<b>개인정보를 암호화하는 중입니다</b><p>${글}</p><small>끝날 때까지 이 창을 닫지 마세요. 다른 탭에서는 계속 일하셔도 됩니다.</small></div>`;
+  el.innerHTML = `<div class="enc-box"><span class="sk" role="progressbar" aria-label="암호화하는 중" style="width:min(260px,100%);height:8px;border-radius:99px"></span><b>개인정보를 암호화하는 중입니다</b><p>${글}</p><small>끝날 때까지 이 창을 닫지 마세요. 다른 탭에서는 계속 일하셔도 됩니다.</small></div>`;
 }
 async function encRunAll(){
   if(ENC.running) return; ENC.running = true; ENC.err = ''; let 합 = 0, 빈손 = 0;
@@ -13710,7 +13718,7 @@ function opsGateScreen(){
      쓸 데가 없는 것들이다. 이메일과 구글, 둘만 둔다. */
   /* 세션은 있는데 계정을 아직 읽는 중이거나, 운영 자료를 여는 중이면 로딩 표시만 (2026-11-12 대표님 '왜 텍스트로 운영자 화면이 나오는지 모르겠다').
      전에는 그 짧은 사이에 운영자 로그인 카드 · '운영 화면' 제목이 잠깐 보였다 사라졌다 */
-  const 로딩만 = `<div class="scr" style="background:var(--n50);min-height:100vh;display:grid;place-items:center" aria-busy="true">${bkLoader(40)}</div>`;
+  const 로딩만 = `<div class="scr" style="background:var(--n50);min-height:100vh"><div class="pad" style="width:100%;padding-top:28px">${뼈대('dash')}</div></div>`;
   if(계정확인중()) return 로딩만;   /* 확인이 실패하면(만료 · 오프라인) 로그인 카드로 넘어간다 - 영영 돌지 않게 */
   if(S.user && (OPS.loading || !OPS.tried)) return 로딩만;
   if(!S.user){
@@ -13748,7 +13756,7 @@ function opsGateScreen(){
 
   /* 로그인은 되어 있고, 아직 열어보는 중 */
   if(OPS.loading || !OPS.tried) return wrap(`
-    <div style="display:flex;justify-content:center;padding:26px 0">${bkLoader(30)}</div>${linkNote}`);
+    ${뼈대('lines', 4)}${linkNote}`);
 
   /* 로그인은 했는데 권한이 없다 */
   if(OPS.err && !OPS.needPass) return wrap(`
@@ -15020,6 +15028,7 @@ if(typeof addEventListener === 'function'){
   addEventListener('unhandledrejection', e => { const r = e && e.reason; bk오류보내기('처리되지 않은 오류: ' + ((r && r.message) || r), (r && r.stack && (/(https?:\/\/[^\s)]+?):\d+:\d+/.exec(r.stack) || [])[1]) || location.origin, 0, 0, r && r.stack); });
 }
 const BK_변경 = [
+  { v:'26.11.27.24', 날:'2026-11-27', 줄:[ '돌아가는 로딩 표시를 모두 걷고 스켈레톤으로 바꿨습니다 - 첫 화면, 계정 확인 중, 운영 화면 여는 중, 손님 계약서 보기, 잔금 준비서류 그림, 암호화 · 드라이브 저장 진행' ] },
   { v:'26.11.27.23', 날:'2026-11-27', 줄:[ '스켈레톤 스크린 - 불러오는 동안 돌아가는 표시나 ‘불러오는 중입니다…’ 글 대신, 곧 나올 화면과 같은 모양의 회색 뼈대가 보입니다(대시보드 · 내 조건 · 제안함 · 1:1 제안 · 매물 · 계약서 목록 · 대화방 · 운영 화면 등)' ] },
   { v:'26.11.27.22', 날:'2026-11-27', 줄:[ '계약체결 문자 (파트너) - ‘계약금’ 칸에 비율(10)로도 금액(50,000,000)으로도 적을 수 있습니다. 잔금 자동 계산과 계약서로 넘기는 계약금도 적은 대로 따릅니다' ] },
   { v:'26.11.27.21', 날:'2026-11-27', 줄:[ '계약체결 문자 (파트너) - ‘계약금 10%’가 칸이 됐습니다. 비우면 10, 다른 숫자를 적으면 그 비율로 잔금도 다시 계산합니다', '‘이 문자만 직접 고치기’ - 칸을 채운 문자를 그 자리에서 줄을 더하고 지우고 고쳐 보낼 수 있습니다(틀은 그대로)', '틀 자체를 바꾸려면 ‘문구 고치기’ - 저장하면 우리 사무소의 기본 문구' ] },
@@ -18936,7 +18945,7 @@ function rm서류HTML(id){
   <div class="pad" style="flex:1;padding-top:20px;padding-bottom:32px;width:100%;max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:12px">
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><a class="back" data-go="#/room/${esc(id)}"><i class="ar-l" aria-hidden="true"></i>내 계약으로</a>
       <span class="sub" style="font-size:13.5px">${D.ok && j.doc && !j.sealed ? '확정 전 계약서' : '확정본'} · 보기 전용 · 전화번호는 가려서 보입니다</span></div>
-    ${D.loading ? `<div class="card pad">${bkLoader(28)}</div>`
+    ${D.loading ? 뼈대('doc')
       : !D.ok ? `<div class="card pad"><p class="sub" style="margin:0">${esc(j.error || '계약서를 열지 못했습니다')}</p></div>`
       : !j.doc ? `<div class="card pad"><p class="sub" style="margin:0">중개사무소가 계약서를 공개하면 여기에서 볼 수 있습니다. 보통 날인까지 끝난 뒤 공개합니다 - 먼저 보고 싶으시면 중개사무소에 말씀해 주세요.</p></div>`
       : `<p class="sub" style="margin:0;font-size:13.5px">${esc(j.title || '')} · ${j.sealed ? `확정본 저장 ${esc(ct한국날(j.sealed_at))} · 원본은 중개사무소에서 받으신 종이 계약서입니다.` : '확정 전 계약서입니다 - 내용이 바뀔 수 있고, 확정되면 확정본으로 바뀝니다.'}</p>
@@ -23075,9 +23084,7 @@ function render(){
   /* 계정을 확인하는 몇백 밀리초 - 어떤 가드도 타지 않고 그냥 기다린다 */
   if(S.authBusy){
     $('#app').innerHTML = `
-      <div class="scr" style="align-items:center;justify-content:center;padding:40px 24px">
-        ${bkLoader(34)}
-      </div>`;
+      <div class="scr" style="background:var(--n50)"><div class="pad" style="width:100%;max-width:1240px;margin:0 auto;padding-top:${isMo() ? 24 : 40}px">${뼈대('page')}</div></div>`;
     S.lastRoute = null;
     return;
   }
@@ -23119,9 +23126,7 @@ function render(){
      boot 가 다시 그린다. */
   if((MINE || h==='#/agree' || h==='#/contact' || h.startsWith('#/partner/')) && 계정확인중()){
     $('#app').innerHTML = `
-      <div class="scr" style="align-items:center;justify-content:center;padding:40px 24px">
-        ${bkLoader(34)}
-      </div>`;
+      <div class="scr" style="background:var(--n50)"><div class="pad" style="width:100%;max-width:1240px;margin:0 auto;padding-top:${isMo() ? 24 : 40}px">${뼈대('page')}</div></div>`;
     S.lastRoute = null;
     /* 기다림도 '그려진 화면' 이다 - 가림막을 걷는다. 돌아오는 길(본인확인·소셜 로그인)에서는
        boot 가 가림막을 걷지 않으므로 여기서 걷어야 하고, 그래야 BOOTED 가 서서

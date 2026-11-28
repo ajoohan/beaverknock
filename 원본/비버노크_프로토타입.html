@@ -14153,12 +14153,12 @@ function docShell(eyebrow, title, lead, body, wide){
     <h1 class="t" style="font-size:${isMo()?21:wide?32:28}px;margin:10px 0 10px">${title}</h1>
     <p style="margin:0 0 24px;font-size:${wide && !isMo() ? 16 : 14.5}px;line-height:1.75;color:var(--n700);max-width:62ch">${lead}</p>
     ${body}
-    ${pc ? '' : (bizFooter ? `<div style="margin-top:28px;padding-top:18px;border-top:1px solid var(--n100)">${bizFooter()}</div>` : '')}
     <div class="doc-cta">
       <div><b>아직 궁금한 게 남으셨나요?</b>
         <p>조건을 걸어두시면 맞는 곳이 있을 때만 연락이 갑니다. 마음에 안 들면 그냥 두셔도 됩니다.</p></div>
       <button type="button" class="doc-cta-b" data-go="#/kind">내 조건 걸어두기<i class="ar-r" aria-hidden="true"></i></button>
     </div>
+    ${pc ? '' : (bizFooter ? `<div style="margin-top:28px;padding-top:18px;border-top:1px solid var(--n100)">${bizFooter()}</div>` : '')}   <!-- 휴대폰: 부름 띠 다음에 회사 정보 (11-28 점검) -->
   ${pc ? `</div></div>${siteFooter()}</div>` : `</div>`}
 </div>`;
 }
@@ -15028,6 +15028,7 @@ if(typeof addEventListener === 'function'){
   addEventListener('unhandledrejection', e => { const r = e && e.reason; bk오류보내기('처리되지 않은 오류: ' + ((r && r.message) || r), (r && r.stack && (/(https?:\/\/[^\s)]+?):\d+:\d+/.exec(r.stack) || [])[1]) || location.origin, 0, 0, r && r.stack); });
 }
 const BK_변경 = [
+  { v:'26.11.28.1', 날:'2026-11-28', 줄:[ '코드리뷰 반영 - 계약체결 문자의 잔금 칸에 ‘협의’처럼 적으면 자동 계산 금액으로 바뀌던 것을 고쳤습니다', '직접 고친 문자가 있는 채로 다른 보낸 기록을 다시 열거나 붙여 넣으면 앞 문자의 글이 그대로 나가던 것을 고쳤습니다', '휴대폰 이용 안내 · 자주 묻는 질문 - 회사 정보가 ‘내 조건 걸어두기’ 띠보다 먼저 나오던 순서를 바로잡았습니다' ] },
   { v:'26.11.27.24', 날:'2026-11-27', 줄:[ '돌아가는 로딩 표시를 모두 걷고 스켈레톤으로 바꿨습니다 - 첫 화면, 계정 확인 중, 운영 화면 여는 중, 손님 계약서 보기, 잔금 준비서류 그림, 암호화 · 드라이브 저장 진행' ] },
   { v:'26.11.27.23', 날:'2026-11-27', 줄:[ '스켈레톤 스크린 - 불러오는 동안 돌아가는 표시나 ‘불러오는 중입니다…’ 글 대신, 곧 나올 화면과 같은 모양의 회색 뼈대가 보입니다(대시보드 · 내 조건 · 제안함 · 1:1 제안 · 매물 · 계약서 목록 · 대화방 · 운영 화면 등)' ] },
   { v:'26.11.27.22', 날:'2026-11-27', 줄:[ '계약체결 문자 (파트너) - ‘계약금’ 칸에 비율(10)로도 금액(50,000,000)으로도 적을 수 있습니다. 잔금 자동 계산과 계약서로 넘기는 계약금도 적은 대로 따릅니다' ] },
@@ -19414,7 +19415,7 @@ function cs값(k, v = CS.vals){
     const n = +t.replace(/[,\s원%]/g, '');
     if(/^[0-9,.\s]+(%|원)?$/.test(t) && n > 0) return /%$/.test(t) || (!/원$/.test(t) && n <= 100) ? `${n}%` : `${comma(String(Math.round(n)))}원`;
     return t; }
-  if(k === '잔금' && !+v.잔금) { const n = cs잔금(v); return n ? comma(String(n)) : ''; }
+  if(k === '잔금' && !+v.잔금 && !cs자유글(v.잔금)) { const n = cs잔금(v); return n ? comma(String(n)) : ''; }   /* 글을 적었으면(예: 협의) 자동 계산으로 덮지 않는다 (11-28 코드리뷰) */
   const x = v[k];
   if(x == null || x === '') return '';
   /* 2026-11-27 파트너 '날짜나 금액 란도 자유형식으로 - 날짜 적고 옆에 협의가능 이런 식으로 쓰는 경우도 있다' :
@@ -19622,6 +19623,7 @@ function cs읽기(글, t){
   return 값;
 }
 function cs붙여넣기(글){
+  CS.free = null;   /* 붙여넣기 · 캡처로 칸을 다시 채우면 직접 고친 글은 버린다 (11-28 코드리뷰) */
   let 틀 = cs지금(), 값 = cs읽기(글, 틀);
   for(const t of cs틀들()){ const v = cs읽기(글, t); if(Object.keys(v).length > Object.keys(값).length){ 틀 = t; 값 = v; } }
   const n = Object.keys(값).length; if(!n) return 0;
@@ -19648,7 +19650,7 @@ if(typeof document !== 'undefined') document.addEventListener('change', e => { c
 /* 칸을 고칠 때 - 다시 그리지 않고 미리보기·채운 수만 바꾼다(커서가 튀지 않게) */
 function cs미리(){
   const t = cs지금(), 글 = cs문자(), pv = document.getElementById('csPv'); if(pv) pv.textContent = 글;
-  const n = (글.match(/【[^】]+】/g) || []).length, l = document.getElementById('csLeft'); if(l) l.textContent = n ? `아직 비어 있는 칸 ${n}개 - 【 】로 보입니다` : '';
+  const n = (cs보낼().match(/【[^】]+】/g) || []).length, l = document.getElementById('csLeft'); if(l) l.textContent = n ? `아직 비어 있는 칸 ${n}개 - 【 】로 보입니다` : '';
   const 칸 = cs칸들(t.text), c = document.getElementById('csCount');
   if(c) c.textContent = `채운 칸 ${칸.filter(k => CS_자동.has(k) || CS.none[k] || cs값(k)).length} / ${칸.length}`;
   document.querySelectorAll('#app .cs-auto').forEach((el, i) => { const k = 칸.filter(x => CS_자동.has(x))[i]; if(k) el.innerHTML = `${esc(cs값(k)) || '<span class="sub">계약금 일부를 넣으면 채워집니다</span>'} <small>· 자동</small>`; });
@@ -24256,7 +24258,7 @@ document.addEventListener('input', e=>{
   if(k.startsWith('cs-to:')){ cs입력(el, 'to:' + k.slice(6)); return; }
   if(k === 'cs-name'){ if(CS.edit) CS.edit.name = el.value; return; }
   if(k === 'cs-text'){ if(CS.edit) CS.edit.text = el.value; return; }
-  if(k === 'cs-free'){ CS.free = el.value.slice(0, 4000); return; }
+  if(k === 'cs-free'){ CS.free = el.value.slice(0, 4000); cs미리(); return; }
   if(k === 'dz-memo'){ memoTyped(el.value.slice(0, 2000)); return; }
   /* 중개보수 장부 - 직접 적는 보수(확인·설명서가 없을 때). 멈추면 저장, 다시 그리지 않는다 */
   if(k.startsWith('ctfee:')){ const id = k.slice(6), n = +String(money(el)).replace(/[^0-9]/g, '') || 0; clearTimeout(ctFeeT.get(id)); ctFeeT.set(id, setTimeout(() => { ctFeeT.delete(id); ctRowTrack(id, { fee: n }, true); }, 700)); return; }
@@ -25734,7 +25736,7 @@ function handle(a,v,el){
       return true; }
     case 'cs-log-ct': { const e = CS.log.find(x => x.id === v); if(e) cs계약서(e); return true; }
     case 'cs-log-row': { const e = CS.log.find(x => x.id === v); if(e) cs현황줄(e); return true; }
-    case 'cs-log-again': { const e = CS.log.find(x => x.id === v); if(!e) return true;
+    case 'cs-log-again': { const e = CS.log.find(x => x.id === v); if(!e) return true; CS.free = null;
       const t = cs틀들().find(x => x.name === e.tpl); if(t) CS.sel = t.id;
       CS.vals = { ...(e.vals || {}) }; CS.none = Object.fromEntries((e.none || []).map(k => [k, true])); render(); toast('보낸 내용을 다시 열었습니다 - 계좌는 다시 적어 주세요'); return true; }
     case 'cs-edit': { const t = cs틀들().find(x => x.id === v); if(t){ CS.edit = { id: t.id, name: t.name, text: t.text }; CS.sel = t.id; render(); } return true; }

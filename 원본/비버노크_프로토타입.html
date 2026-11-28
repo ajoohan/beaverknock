@@ -797,6 +797,24 @@ body.mo .acc-row{grid-template-columns:minmax(0,1fr);gap:12px;padding:18px}
 .sublinks a{padding:14px 8px;margin:-14px 0;display:inline-block}
 .b-ind{background:var(--ind100);color:var(--ind)} .b-mute{background:var(--n100);color:var(--n500)}
 .b-danger{background:var(--dangerbg);color:var(--danger)}
+/* 1:1 문의 · 자료 내려받기 (2026-11-28) */
+.aq-card{display:flex;flex-direction:column;gap:12px}
+.aq-h{margin:0;font-size:16.5px;font-weight:800;color:var(--n900);letter-spacing:-.01em}
+.aq-kinds{gap:8px}
+.aq-lab{font-size:13.5px;font-weight:700;color:var(--n700)}
+.aq-text{width:100%;min-height:120px;resize:vertical;line-height:1.7;font-size:15px;padding:12px 14px}
+.aq-note{margin:0;font-size:12.5px;line-height:1.6;color:var(--n500)}
+.aq-mine{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:6px}
+.aq-item,.iq-item{display:flex;flex-direction:column;gap:10px}
+.aq-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.aq-at{margin-left:auto;font-size:12.5px;color:var(--n500)}
+.aq-q{margin:0;white-space:pre-wrap;word-break:break-word;font-size:14.5px;line-height:1.75;color:var(--n800,var(--n900))}
+.aq-a{background:var(--ind50,var(--n50));border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:4px}
+.aq-a b{font-size:13px;color:var(--ind)}
+.aq-a .num{font-size:12px;color:var(--n500)}
+.aq-a p{margin:0;white-space:pre-wrap;word-break:break-word;font-size:14.5px;line-height:1.75;color:var(--n900)}
+.aq-cta{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-top:18px}
+.dx-list{margin:0;padding-left:18px;font-size:14px;line-height:1.85;color:var(--n700)}
 /* 배지는 옅은 바탕 + 같은 색 가는 테 (2026-11-06 '파스텔 배제') - 바탕만 있으면 색 덩어리로 떠 보였다 */
 .badge{box-shadow:inset 0 0 0 1px color-mix(in srgb, currentColor 20%, transparent)}
 
@@ -8702,6 +8720,203 @@ function 마이줄(go, 이름, 값, 아이콘){
    두 칸씩 놓던 카드는 높이가 달라 '내 활동' 아래가 크게 비었다 - 묶음마다 한 줄 카드(왼쪽 이름·설명 | 오른쪽 내용)로 폭을 채운다.
    로그아웃은 칸 하나를 채우던 큰 단추에서 프로필 줄 오른쪽의 작은 단추로. 링크는 폭만큼 나뉘는 칸.
    파트너는 넓은 화면에서 어드민 틀 그대로(왼쪽 메뉴·머리 줄) - 프로필의 마이페이지를 눌러도 화면 틀이 바뀌지 않는다 */
+/* ── 1:1 문의 (2026-11-28 한실장님 '제안대로 진행') ──
+   고객센터가 안내뿐이라 문의는 메일 · 슬랙에 기댔다. 이제 이 화면에서 보내고, 답도 여기와 메일로 받는다.
+   서버 api/my.js what:'inquiry-send' · 'inquiry-mine' (bk_sys_event kind 'inquiry', 글은 잠가서). 운영 화면 '1:1 문의'에서 답한다 */
+const AQ = { topic:'', text:'', rows:null, loading:false, busy:false, err:'' };
+const AQ_종류 = ['이용 방법', '오류 신고', '계약서 · 서식', '매물 · 제안', '계정 · 탈퇴', '제안 · 기타'];
+function aqLoad(){
+  if(AQ.loading || !세션있음()) return;
+  AQ.loading = true; AQ.err = '';
+  const 끝 = () => { AQ.loading = false; if(S.route === '#/ask') render(); };
+  apiFetch('/api/my', { method:'POST', body: JSON.stringify({ what:'inquiry-mine' }) })
+    .then(r => r.json().catch(() => ({})).then(j => { if(r.ok) AQ.rows = j.rows || []; else { AQ.rows = AQ.rows || []; AQ.err = j.error || '지난 문의를 불러오지 못했습니다'; } 끝(); }))
+    .catch(() => { AQ.rows = AQ.rows || []; AQ.err = '네트워크 문제로 지난 문의를 불러오지 못했습니다'; 끝(); });
+}
+async function aqSend(topic, text){
+  const 직접 = topic != null;
+  const t = String(직접 ? text : AQ.text || '').trim(), k = 직접 ? topic : (AQ.topic || '');
+  if(!직접 && !k){ toast('문의 종류를 골라 주세요'); return false; }
+  if(t.length < 5){ toast('문의 내용을 다섯 글자 이상 적어 주세요'); return false; }
+  if(AQ.busy) return false;
+  AQ.busy = true; render();
+  const r = await apiFetch('/api/my', { method:'POST', body: JSON.stringify({ what:'inquiry-send', topic: k, text: t }) }).catch(() => null);
+  const j = r ? await r.json().catch(() => ({})) : {};
+  AQ.busy = false;
+  if(!r || !r.ok){ toast(j.error || '문의를 보내지 못했습니다 - 잠시 뒤 다시 보내 주세요'); render(); return false; }
+  if(!직접){ AQ.text = ''; AQ.topic = ''; }
+  AQ.rows = null; aqLoad();
+  toast('문의를 보냈습니다 - 답은 이 화면과 가입하신 메일로 드립니다'); render(); return true;
+}
+function aq때(t){ const d = new Date(t); return isNaN(d) ? '' : `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; }
+V['#/ask'] = () => {
+  const 관리 = !!S.agent && !isMo();
+  if(S.user && AQ.rows == null && !AQ.loading) setTimeout(aqLoad);
+  const 종류 = AQ_종류.map(k => `<button type="button" class="chip${AQ.topic === k ? ' on' : ''}" data-act="aq-topic" data-v="${esc(k)}" aria-pressed="${AQ.topic === k}">${esc(k)}</button>`).join('');
+  const 쓰기 = !S.user ? `<section class="card pad aq-card"><b style="font-size:16px">로그인하면 1:1 문의를 보낼 수 있습니다</b>
+      <p class="sub" style="margin:6px 0 14px;line-height:1.7">답을 이 화면과 가입하신 메일로 드리기 위해 로그인이 필요합니다. 로그인이 어려우면 <a href="mailto:${esc(CORP.mail)}">${esc(CORP.mail)}</a> 으로 보내 주세요.</p>
+      <span class="eqb" style="display:flex;gap:8px"><button type="button" class="btn pri md" data-act="aq-login">로그인하고 문의하기</button></span></section>`
+    : `<section class="card pad aq-card" aria-label="새 문의">
+      <h2 class="aq-h">무엇을 도와드릴까요?</h2>
+      <div class="chips aq-kinds" role="group" aria-label="문의 종류">${종류}</div>
+      <label class="aq-lab" for="aqText">문의 내용</label>
+      <textarea id="aqText" class="inp aq-text" data-in="aq:text" maxlength="2000" rows="${isMo() ? 6 : 7}" placeholder="어느 화면에서 무엇을 하려다 어떤 일이 있었는지 적어 주시면 빨리 답을 드릴 수 있습니다.">${esc(AQ.text || '')}</textarea>
+      <p class="aq-note">주민등록번호 · 계좌번호 같은 개인정보는 적지 마세요. 2,000자까지 적을 수 있습니다.</p>
+      <span class="eqb" style="display:flex;gap:8px;justify-content:flex-end"><button type="button" class="btn pri md" data-act="aq-send" ${AQ.busy ? 'disabled' : ''}>${AQ.busy ? '보내는 중…' : '문의 보내기'}</button></span>
+    </section>`;
+  const 목록 = !S.user ? '' : AQ.rows == null ? 뼈대('lines', 3)
+    : `${AQ.err ? `<p class="sub" style="margin:0;color:var(--danger)">${esc(AQ.err)}</p>` : ''}${!AQ.rows.length ? (AQ.err ? '' : 빈자리('아직 보낸 문의가 없습니다', '궁금한 점이나 불편한 점을 위에서 보내 주세요.', '', 80, true))
+      : AQ.rows.map(r => `<article class="card pad aq-item">
+        <div class="aq-top"><span class="badge b-ind">${esc(r.topic || '문의')}</span><span class="badge ${r.done ? 'b-ok' : 'b-warn'}">${r.done ? '답변 완료' : '답변 기다리는 중'}</span><span class="aq-at num">${esc(aq때(r.at))}</span></div>
+        <p class="aq-q">${esc(r.text)}</p>
+        ${r.done && r.reply ? `<div class="aq-a"><b>비버노크 운영팀 답변</b>${r.reply_at ? `<span class="num">${esc(aq때(r.reply_at))}</span>` : ''}<p>${esc(r.reply)}</p></div>` : ''}
+      </article>`).join('')}`;
+  const 몸 = `
+    <div class="aq-head"><h1 class="t" style="font-size:${isMo() ? 21 : 24}px;margin:0">1:1 문의</h1>
+      <p class="sub" style="margin:6px 0 0;font-size:14.5px;line-height:1.7">보내 주신 문의는 운영팀이 확인하는 대로 답을 드립니다. 답은 이 화면과 가입하신 메일로 갑니다. 자주 묻는 질문은 <a data-go="#/faq" class="lnk">고객센터</a>에 모아 두었습니다.</p></div>
+    ${쓰기}
+    ${S.user ? `<div class="aq-mine"><h2 class="aq-h" style="margin:0">내 문의</h2><button type="button" class="btn sec sm" data-act="aq-reload" ${AQ.loading ? 'disabled' : ''}>새로고침</button></div>${목록}` : ''}`;
+  if(관리) return `
+<div class="scr fade" style="background:var(--n50)">
+  ${navPartner('ask')}
+  <div class="pad adm-page aq" style="flex:1;width:100%;max-width:880px;margin:0 auto;display:flex;flex-direction:column;gap:14px;padding-top:28px;padding-bottom:28px">${몸}</div>
+</div>`;
+  return `
+<div class="scr fade">
+  ${navUser('acc')}
+  <div class="pad aq" style="flex:1;width:100%;max-width:880px;margin:0 auto;display:flex;flex-direction:column;gap:14px;padding-top:${isMo()?20:32}px;padding-bottom:${isMo()?24:40}px">${몸}</div>
+  ${tabbar('acc')}
+</div>`;
+};
+
+/* ── 회원 탈퇴 (2026-11-28) ── 전에는 메일로 요청해야 했다 - 탈퇴가 가입보다 어려우면 안 된다.
+   손님은 바로 지운다(api/my.js what:'withdraw'). 파트너는 계약서 보존(계약서 5년 · 확인·설명서 3년) · 직원 · 손님 대화방이 걸려 있어
+   '자료 내려받기 → 탈퇴 신청'(1:1 문의 '탈퇴 신청')으로 받고 운영팀이 정리한다 */
+function accWdHTML(a){
+  if(!a) return `<p class="acc-note" style="margin:0 0 12px">탈퇴하면 걸어 두신 조건과 받은 제안, 동의 기록, 로그인 계정이 바로 지워지고 되돌릴 수 없습니다.
+      계약 대화방에 남기신 말과 중개사무소가 보관하는 계약서는 중개사무소의 법정 보존 자료라 남습니다.</p>
+    <span class="eqb" style="display:flex;gap:8px"><button type="button" class="btn sec sm acc-wd" data-act="acc-wd-go" ${S.accWdBusy ? 'disabled' : ''}>${S.accWdBusy ? '탈퇴하는 중…' : '탈퇴하기'}</button></span>`;
+  if(a.staff) return `<p class="acc-note" style="margin:0 0 12px">직원 계정은 사무소 대표가 ‘직원 · 권한’에서 내보내면 사무소와의 연결이 끊어집니다. 로그인 계정까지 지우시려면 탈퇴 신청을 보내 주세요 - 운영팀이 확인한 뒤 메일로 알려 드립니다.</p>
+    <span class="eqb" style="display:flex;gap:8px"><button type="button" class="btn sec sm" data-act="acc-wd-req" ${AQ.busy ? 'disabled' : ''}>탈퇴 신청</button></span>`;
+  return `<p class="acc-note" style="margin:0 0 12px">중개사무소는 계약서를 5년, 확인·설명서를 3년 보존해야 해서 바로 지우지 않습니다.
+      ① 사무소 설정의 ‘자료 내려받기’로 계약서 · 매물장부를 모두 받아 두신 뒤 ② 탈퇴 신청을 보내 주시면, 운영팀이 확인하고 사무소 자료와 계정을 지운 뒤 메일로 알려 드립니다.</p>
+    <span class="eqb" style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn sec sm" data-act="acc-data">자료 내려받기</button><button type="button" class="btn sec sm" data-act="acc-wd-req" ${AQ.busy ? 'disabled' : ''}>탈퇴 신청</button></span>`;
+}
+async function accWithdraw(){
+  if(S.accWdBusy) return;
+  const ok = await 확인창('정말 탈퇴할까요?', '걸어 두신 조건과 받은 제안, 동의 기록, 로그인 계정이 바로 지워지고 되돌릴 수 없습니다.', { 예:'탈퇴', 위험:true });
+  if(!ok) return;
+  S.accWdBusy = true; render();
+  const r = await apiFetch('/api/my', { method:'POST', body: JSON.stringify({ what:'withdraw', confirm:true }) }).catch(() => null);
+  const j = r ? await r.json().catch(() => ({})) : {};
+  S.accWdBusy = false;
+  if(!r || !r.ok){ toast(j.error || '탈퇴를 마치지 못했습니다 - 잠시 뒤 다시 시도해 주세요'); render(); return; }
+  handle('logout', '', null);
+  toast('탈퇴를 마쳤습니다 - 그동안 비버노크를 이용해 주셔서 감사합니다');
+  go('#/');
+}
+async function accWdReq(){
+  const ok = await 확인창('탈퇴 신청을 보낼까요?', S.agent && !S.agent.staff ? '자료를 먼저 내려받아 두셨는지 확인해 주세요. 운영팀이 확인한 뒤 사무소 자료와 계정을 지우고 메일로 알려 드립니다.' : '운영팀이 확인한 뒤 계정을 지우고 메일로 알려 드립니다.', { 예:'신청 보내기' });
+  if(!ok) return;
+  const a = S.agent || {};
+  aqSend('탈퇴 신청', `${a.staff ? '직원' : '사무소'} 계정 탈퇴를 신청합니다.${a.office ? ` (사무소: ${a.office})` : ''}`);
+}
+
+/* ── 사무소 자료 한꺼번에 내려받기 (2026-11-28) ──
+   계약서(인쇄 모양 HTML · 원본 데이터) · 계약서 목록(엑셀) · 매물장부(엑셀 · 원본)를 압축 파일 하나로.
+   중개사가 '이 서비스에 자료를 맡겨도 되나'를 판단하는 조건이고, 탈퇴 전에도 필요하다. 이 브라우저에서만 만든다(서버에 파일을 두지 않는다) */
+const DX = { busy:false, n:0, of:0, err:'', done:'' };
+const dx셀 = v => { let t = v == null ? '' : typeof v === 'object' ? JSON.stringify(v) : String(v);
+  if(/^[=+\-@\t\r]/.test(t)) t = "'" + t;                     /* 엑셀 수식으로 읽히지 않게 */
+  return /[",\n\r]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t; };
+const dxCsv = (머리, 줄들) => '\ufeff' + [머리, ...줄들].map(r => r.map(dx셀).join(',')).join('\r\n');
+const dx이름 = t => String(t || '').replace(/[\\/:*?"<>|\u0000-\u001f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 40) || '이름없음';
+let dxCrcT = null;
+function dxZip(files){
+  if(!dxCrcT){ dxCrcT = new Uint32Array(256); for(let n = 0; n < 256; n++){ let c = n; for(let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; dxCrcT[n] = c >>> 0; } }
+  const crc = d => { let c = 0xFFFFFFFF; for(let i = 0; i < d.length; i++) c = dxCrcT[(c ^ d[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; };
+  const enc = new TextEncoder(), 앞 = [], 뒤 = [], 지금 = new Date();
+  const 시 = ((지금.getHours() << 11) | (지금.getMinutes() << 5) | (지금.getSeconds() >> 1)) & 0xFFFF, 날 = (((지금.getFullYear() - 1980) << 9) | ((지금.getMonth() + 1) << 5) | 지금.getDate()) & 0xFFFF;
+  let off = 0;
+  for(const f of files){
+    const nm = enc.encode(f.name), d = typeof f.data === 'string' ? enc.encode(f.data) : f.data, c = crc(d);
+    const h = new DataView(new ArrayBuffer(30));
+    h.setUint32(0, 0x04034b50, true); h.setUint16(4, 20, true); h.setUint16(6, 0x0800, true); h.setUint16(10, 시, true); h.setUint16(12, 날, true);
+    h.setUint32(14, c, true); h.setUint32(18, d.length, true); h.setUint32(22, d.length, true); h.setUint16(26, nm.length, true);
+    앞.push(new Uint8Array(h.buffer), nm, d);
+    const z = new DataView(new ArrayBuffer(46));
+    z.setUint32(0, 0x02014b50, true); z.setUint16(4, 20, true); z.setUint16(6, 20, true); z.setUint16(8, 0x0800, true); z.setUint16(12, 시, true); z.setUint16(14, 날, true);
+    z.setUint32(16, c, true); z.setUint32(20, d.length, true); z.setUint32(24, d.length, true); z.setUint16(28, nm.length, true); z.setUint32(42, off, true);
+    뒤.push(new Uint8Array(z.buffer), nm);
+    off += 30 + nm.length + d.length;
+  }
+  const 뒤길이 = 뒤.reduce((s, x) => s + x.length, 0), e = new DataView(new ArrayBuffer(22));
+  e.setUint32(0, 0x06054b50, true); e.setUint16(8, files.length, true); e.setUint16(10, files.length, true); e.setUint32(12, 뒤길이, true); e.setUint32(16, off, true);
+  return new Blob([...앞, ...뒤, new Uint8Array(e.buffer)], { type:'application/zip' });
+}
+function dx상태(r){ return ct보관칸(r) === 'trash' ? '휴지통' : ct보관칸(r) === 'arch' ? '보관함' : r.status === 'sealed' ? '확정본' : '작성 중'; }
+async function dxRun(){
+  if(DX.busy) return;
+  DX.busy = true; DX.err = ''; DX.done = ''; DX.n = 0; DX.of = 0; render();
+  try{
+    await ctLoadList(true);
+    const 목록 = (CT.list || []).slice();
+    const lr = await apiFetch('/api/feed', { method:'POST', body: JSON.stringify({ what:'listings' }) }).catch(() => null);
+    const lj = lr ? await lr.json().catch(() => ({})) : {};
+    const 매물 = lr && lr.ok ? (lj.rows || []) : null;
+    DX.of = 목록.length; render();
+    const 원본 = [], 파일 = [], 쓴이름 = new Set();
+    const 그림css = Array.from(document.querySelectorAll('style')).map(x => x.textContent).join('\n');
+    let 못읽음 = 0, i = 0;
+    const 하나 = async r => {
+      const { ok, j } = await ctPost({ what:'contract', id: r.id }).catch(() => ({ ok:false, j:{} }));
+      DX.n++; if(DX.n % 5 === 0 || DX.n === DX.of) render();
+      if(!ok || !j.row){ 못읽음++; return; }
+      원본.push(j.row);
+      let 몸 = ''; try{ 몸 = ctDocHTML(j.row.doc || {}); }catch(_){ 몸 = ''; }
+      if(!몸) return;
+      let 이름 = `계약서/${String(j.row.sealed_at || j.row.updated_at || '').slice(0, 10) || '날짜없음'}_${dx이름(r.title || ctTitle(r))}_${String(r.id).slice(0, 8)}.html`;
+      while(쓴이름.has(이름)) 이름 = 이름.replace(/\.html$/, '_2.html'); 쓴이름.add(이름);
+      파일.push({ name: 이름, data: `<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>${esc(ctTitle(j.row.doc || r))} - ${esc(r.title || '')}</title>${'<'}style>${그림css}\nbody{background:#fff;overflow:auto!important;height:auto!important}#ctPrint{display:block!important;position:static!important;padding:24px}${'<'}/style></head><body><div id="ctPrint">${몸}</div></body></html>` });
+    };
+    /* 서버를 한꺼번에 두드리지 않게 세 개씩 */
+    const 일꾼 = async () => { while(i < 목록.length){ const r = 목록[i++]; await 하나(r); } };
+    await Promise.all([일꾼(), 일꾼(), 일꾼()]);
+    const 목록csv = dxCsv(['소재지', '종류', '당사자', '상태', '확정일', '고친 날', '신고', '계약서 번호'],
+      목록.map(r => [r.title || '', ctTitle(r), ct이름들(r).join(' · '), dx상태(r), String(r.sealed_at || '').slice(0, 10), String(r.updated_at || '').slice(0, 10), r.reported_at ? '신고 마침' : '', r.id]));
+    const 칸 = 매물 ? [...new Set(매물.flatMap(x => Object.keys(x || {})))] : [];
+    const 매물csv = 매물 ? dxCsv(칸, 매물.map(x => 칸.map(k => x[k]))) : '';
+    const 사무소 = (S.agent && S.agent.office) || '사무소';
+    const 안내 = [`비버노크 자료 - ${사무소}`, `받은 때: ${new Date().toLocaleString('ko-KR')}`, '',
+      `계약서 ${목록.length}건${못읽음 ? ` (이 가운데 ${못읽음}건은 불러오지 못했습니다 - 다시 받아 주세요)` : ''} · 매물 ${매물 ? 매물.length : 0}건`, '',
+      '· 계약서/ : 계약서마다 인쇄 모양 그대로의 HTML 파일입니다. 브라우저로 열어 인쇄하거나 PDF 로 저장할 수 있습니다.',
+      '· 계약서_목록.csv · 매물장부.csv : 엑셀로 열립니다.',
+      '· 원본데이터/ : 비버노크에 저장된 내용 그대로(JSON)입니다. 다른 프로그램으로 옮길 때 씁니다.', '',
+      '계약서는 5년, 확인·설명서는 3년 보존해야 합니다(공인중개사법). 이 파일에는 손님의 이름 · 연락처가 들어 있으니 안전한 곳에 두세요.'].join('\r\n');
+    const 모두 = [{ name:'읽어주세요.txt', data: 안내 }, { name:'계약서_목록.csv', data: 목록csv }, ...(매물 ? [{ name:'매물장부.csv', data: 매물csv }] : []),
+      ...파일, { name:'원본데이터/계약서.json', data: JSON.stringify(원본, null, 1) }, ...(매물 ? [{ name:'원본데이터/매물장부.json', data: JSON.stringify(매물, null, 1) }] : [])];
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(dxZip(모두));
+    a.download = `비버노크_자료_${dx이름(사무소)}_${ct오늘()}.zip`;
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 60e3);
+    DX.done = `계약서 ${목록.length - 못읽음}건 · 매물 ${매물 ? 매물.length : 0}건을 받았습니다${못읽음 ? ` - ${못읽음}건은 불러오지 못해 빠졌습니다. 다시 받아 주세요` : ''}${매물 ? '' : ' - 매물장부는 불러오지 못해 빠졌습니다'}`;
+  }catch(e){ DX.err = '자료를 만들지 못했습니다 - 잠시 뒤 다시 시도해 주세요'; }
+  DX.busy = false; render();
+}
+function 설정자료HTML(){
+  return `<div class="card pad" style="display:flex;flex-direction:column;gap:12px">
+    <h2 class="adm-sh" style="margin:0">자료 한꺼번에 내려받기</h2>
+    <p class="sub" style="margin:0;line-height:1.75">계약서(인쇄 모양 그대로) · 계약서 목록 · 매물장부를 압축 파일 하나로 받습니다. 계약서 목록과 매물장부는 엑셀로 열립니다.
+      파일은 이 브라우저에서 만들어지고 비버노크 서버에는 남지 않습니다.</p>
+    <ul class="dx-list"><li>계약서/ - 계약서마다 HTML 파일(브라우저로 열어 인쇄 · PDF 저장)</li><li>계약서_목록.csv · 매물장부.csv - 엑셀</li><li>원본데이터/ - 저장된 내용 그대로(JSON)</li></ul>
+    <p class="sub" style="margin:0;font-size:13px;line-height:1.7">손님 이름 · 연락처가 들어 있습니다. 받은 파일은 안전한 곳에 두세요. 계약서가 많으면 1~2분 걸립니다.</p>
+    ${DX.err ? `<p style="margin:0;color:var(--danger);font-weight:700;font-size:14px">${esc(DX.err)}</p>` : ''}
+    ${DX.done ? `<p style="margin:0;color:var(--ok);font-weight:700;font-size:14px">${esc(DX.done)}</p>` : ''}
+    <span class="eqb" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button type="button" class="btn pri md" data-act="dx-run" ${DX.busy ? 'disabled' : ''}>${DX.busy ? (DX.of ? `만드는 중… ${DX.n}/${DX.of}` : '불러오는 중…') : '모두 내려받기'}</button>
+      ${DX.busy && DX.of ? `<span class="sk" role="progressbar" aria-label="자료를 만드는 중" aria-valuenow="${DX.n}" aria-valuemax="${DX.of}" style="width:160px;height:8px;border-radius:99px"></span>` : ''}</span>
+  </div>`;
+}
+
 V['#/account'] = () => {
   const u = S.user || {};
   const 조건수 = (S.conds || []).filter(c => !c.seed).length;
@@ -8726,7 +8941,7 @@ V['#/account'] = () => {
           + (직원() || ownerSide() ? '' : 마이줄('#/partner/staff', '직원 · 권한', '', 'M16 19 v-1.5 a3.5 3.5 0 0 0 -3.5 -3.5 h-5 A3.5 3.5 0 0 0 4 17.5 V19 M10 10.5 a3 3 0 1 0 0 -6 a3 3 0 0 0 0 6 M20 19 v-1.5 a3.5 3.5 0 0 0 -2.6 -3.4 M15.5 4.6 a3 3 0 0 1 0 5.8'))
           + (직원() ? '' : 마이줄('#/partner/settings', '사무소 설정', '', 'M12 21 s-7 -6.2 -7 -11.5 a7 7 0 0 1 14 0 C19 14.8 12 21 12 21 Z M12 12.5 a2.5 2.5 0 1 0 0 -5 a2.5 2.5 0 0 0 0 5'))
           /* 운영사에 문의 (2026-11-10 파트너 기획 '운영사 상담') - 휴대폰은 왼쪽 메뉴가 없어 여기에도 둔다 */
-          + `<a class="acc-go" href="mailto:support@plustonic.com?subject=${encodeURIComponent('[비버노크 파트너 문의] ')}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6 h16 v12 H4 Z M4 7 l8 6 8-6"/></svg><span class="acc-gn">운영사에 문의</span>${isMo() ? '' : '<span class="acc-gv">support@plustonic.com</span>'}<i class="ar-r" aria-hidden="true"></i></a>`
+          + `<a class="acc-go" data-go="#/ask"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6 h16 v12 H4 Z M4 7 l8 6 8-6"/></svg><span class="acc-gn">운영사에 문의</span>${isMo() ? '' : '<span class="acc-gv">support@plustonic.com</span>'}<i class="ar-r" aria-hidden="true"></i></a>`
         : 마이줄('#/partner/verify', '자격 확인하기', '등록번호 대조', 판)}</div>`
     : S.agentKnown ? `
       <p class="acc-note">공인중개사·소유자이신가요? 파트너로 가입하시면 손님이 걸어둔 조건에 1:1 로 제안하실 수 있습니다.</p>
@@ -8762,8 +8977,8 @@ V['#/account'] = () => {
       </label>`
       : `<p class="acc-note">동의 내역을 불러오지 못했습니다. 잠시 뒤 다시 열어 주세요.</p>`)}
     ${홈화면추가가능() ? 줄('홈 화면에 추가', '앱처럼 바로 열립니다', BK_설치 ? `<button type="button" class="btn tool" data-act="pwa-add">홈 화면에 추가</button>` : `<p class="acc-note" style="margin:0">${/iPhone|iPad|iPod/.test(navigator.userAgent) ? '사파리 아래쪽 <b>공유</b> 단추를 누른 뒤 <b>홈 화면에 추가</b>를 고르세요.' : '브라우저 메뉴(⋮)에서 <b>홈 화면에 추가</b> 또는 <b>앱 설치</b>를 고르세요.'}</p>`) : ''}
-    ${줄('계정 탈퇴', '', `<p class="acc-note" style="margin:0">탈퇴를 원하시면 가입하신 이메일과 함께 <a href="mailto:support@plustonic.com?subject=%EB%B9%84%EB%B2%84%EB%85%B8%ED%81%AC%20%ED%9A%8C%EC%9B%90%20%ED%83%88%ED%87%B4">support@plustonic.com</a> 으로 알려 주세요.
-      확인 뒤 계정과 걸어두신 조건을 지우고 결과를 메일로 알려 드립니다.</p>`)}`;
+    ${줄('1:1 문의', '궁금한 점 · 불편한 점을 운영팀에', `<div class="acc-tiles">${마이줄('#/ask', '1:1 문의하기', (AQ.rows || []).some(r => r.done && r.reply) ? '답변 있음' : '', 'M4 5 h16 v11 H9 l-5 4 Z M8 9.5 h8 M8 12.5 h5')}</div>`)}
+    ${줄('계정 탈퇴', a ? '파트너 계정은 자료를 먼저 받아 둡니다' : '탈퇴하면 되돌릴 수 없습니다', accWdHTML(a))}`;
   if(관리) return `
 <div class="scr fade" style="background:var(--n50)">
   ${navPartner('acc')}
@@ -10471,8 +10686,8 @@ V["#/partner/settings"] = () => {
   const week = Math.max(0, Math.round(now * 0.6));
   const drop = base > 0 && now <= base/2;
   /* 탭 (2026-11-13 파트너 기획 A4 '사무소 설정(정보 · 알림 · 기능)') - 한 화면에 섞여 있던 것을 넷으로. 고른 탭은 이 기기에 기억 */
-  const 탭들 = own ? [['info','사무소 정보'],['noti','알림'],['func','기능']] : [['info','사무소 정보'],['scope','활동 조건'],['noti','알림'],['func','기능']];
-  if(S.lastRoute !== '#/partner/settings') S.setTab = '';   /* 다른 화면에서 들어오면 기본 탭(활동 조건) - '활동 지역 정하기' 같은 단추가 이 화면으로 온다 */
+  const 탭들 = [...(own ? [['info','사무소 정보'],['noti','알림'],['func','기능']] : [['info','사무소 정보'],['scope','활동 조건'],['noti','알림'],['func','기능']]), ['data','자료 내려받기']];   /* 자료 내려받기 2026-11-28 */
+  if(S.lastRoute !== '#/partner/settings'){ S.setTab = S.setTabNext || ''; S.setTabNext = ''; }   /* 마이페이지 '자료 내려받기'는 그 탭으로 */   /* 다른 화면에서 들어오면 기본 탭(활동 조건) - '활동 지역 정하기' 같은 단추가 이 화면으로 온다 */
   const 탭 = 탭들.some(([k]) => k === S.setTab) ? S.setTab : (own ? 'info' : 'scope');
   const sect = (no,title,hint,body) => `<div class="card pad">
     <h2 class="adm-sh" style="margin-bottom:${hint?6:14}px"><span class="ctw-n">${no}</span>${title}</h2>
@@ -10484,7 +10699,7 @@ V["#/partner/settings"] = () => {
   <div class="pad adm-page" style="flex:1;padding-top:${isMo()?18:28}px;padding-bottom:24px;max-width:${isMo()?'none':'1100px'};margin:0 auto;width:100%;display:flex;flex-direction:column;gap:14px">
     <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap">
       <div><h1 class="t" style="font-size:${isMo()?21:25}px;margin-top:8px">사무소 설정</h1>
-        <p class="sub" style="font-size:14.5px">${탭 === 'scope' ? '저장 즉시 새 조건부터 적용됩니다 · 이미 발송된 알림에는 소급되지 않습니다.' : 탭 === 'info' ? '사무소와 내 계정 정보입니다.' : 탭 === 'noti' ? '새 손님 알림과 계약 일정 알림을 정합니다.' : '대시보드에 보일 카드를 고릅니다.'}</p></div>
+        <p class="sub" style="font-size:14.5px">${탭 === 'scope' ? '저장 즉시 새 조건부터 적용됩니다 · 이미 발송된 알림에는 소급되지 않습니다.' : 탭 === 'info' ? '사무소와 내 계정 정보입니다.' : 탭 === 'data' ? '계약서 · 매물장부를 압축 파일 하나로 받습니다.' : 탭 === 'noti' ? '새 손님 알림과 계약 일정 알림을 정합니다.' : '대시보드에 보일 카드를 고릅니다.'}</p></div>
       ${own || 탭 !== 'scope' ? '' : `<button class="btn pri sm" data-act="scope-save">저장</button>`}
     </div>
     <div class="ct-chips st-tabs" role="tablist" aria-label="사무소 설정">${탭들.map(([k, t]) => `<button type="button" class="chip${k === 탭 ? ' on' : ''}" role="tab" aria-selected="${k === 탭}" data-act="set-tab" data-v="${k}">${t}</button>`).join('')}</div>
@@ -10492,6 +10707,7 @@ V["#/partner/settings"] = () => {
     ${탭 === 'info' ? meCard() : ''}
     ${탭 === 'noti' ? 설정알림HTML(own, sect, sc) : ''}
     ${탭 === 'func' ? 설정기능HTML() : ''}
+    ${탭 === 'data' ? 설정자료HTML() : ''}
     ${탭 !== 'scope' ? '' : own ? `<p style="margin:0;font-size:13.5px;line-height:1.7;color:var(--n500)">
       소유자·시행사께는 활동 지역과 유형을 묻지 않습니다 - 올려두신 물건이 곧 조건입니다.</p>`
     : `<div style="display:grid;grid-template-columns:${isMo()?'1fr':'1fr 300px'};gap:${isMo()?14:18}px;align-items:start">
@@ -12970,7 +13186,7 @@ function reportPanel(){
 
 /* ── 시스템 (2026-11-22) ── 서버 api/_sys.js (api/demands.js what:'sys'). SQL 0046 전이면 기록이 쌓이지 않는다고 알린다 */
 const SY_ONLY = [ {v:'', t:'전체'}, {v:'error', t:'오류'}, {v:'send', t:'발송 실패'}, {v:'health', t:'아침 점검'}, {v:'usage', t:'사용 현황'}, {v:'backup', t:'백업'} ];
-const SY_KIND = { backup:['b-ind','임시 백업'], 'client-error':['b-warn','화면 오류'], 'server-error':['b-warn','서버 오류'], send:['b-warn','발송 실패'], health:['b-ind','아침 점검'], cron:['b-mute','아침 알림'], retry:['b-ok','다시 보냄'] };
+const SY_KIND = { backup:['b-ind','임시 백업'], 'client-error':['b-warn','화면 오류'], 'server-error':['b-warn','서버 오류'], send:['b-warn','발송 실패'], health:['b-ind','아침 점검'], cron:['b-mute','아침 알림'], inquiry:['b-ind','1:1 문의'], withdraw:['b-mute','탈퇴'], retry:['b-ok','다시 보냄'] };
 const SY = { only:'', rows:null, usage:null, backups:null, check:null, loading:false, err:'', need:'', busy:'' };
 function syPost(body){ return apiFetch('/api/demands', { method:'POST', body: JSON.stringify({ ...body, pass: OPS.pass }) }).then(r => r.json().catch(() => ({})).then(j => ({ ok: r.ok, j }))); }
 function syFetch(){
@@ -13039,6 +13255,49 @@ function sy백업HTML(){
       ${(b.없음 || []).length ? `<p class="sub" style="margin:0;font-size:12.5px">아직 만들지 않은 표(백업할 것 없음): ${b.없음.map(esc).join(', ')}</p>` : ''}
       <div style="display:flex;gap:6px;flex-wrap:wrap">${[...b.파일, ...(Object.keys(b.표).length ? [`backup/${b.날}/manifest.json`] : [])].map(p => `<button class="btn tool sm" data-act="sy-backup-get" data-v="${esc(p)}" title="5분짜리 주소로 내려받습니다">${esc(p.split('/').pop().replace(/\.json$/, ''))}${(m => m && b.표[m[1]] != null ? ` (${b.표[m[1]]})` : '')(/^([a-z_]+)-1\.json$/.exec(p.split('/').pop()))}</button>`).join('')}</div></div>`; }).join('');
 }
+/* ── 1:1 문의 (2026-11-28) ── 서버 api/demands.js what:'inq' · 'inq-reply'. 답은 손님 메일로도 간다 */
+const IQ = { rows:null, loading:false, err:'', only:'todo', ans:{}, busy:'', edit:'' };
+function iqFetch(){
+  if(IQ.loading || !OPS.ok) return;
+  IQ.loading = true; IQ.err = ''; render();
+  syPost({ what:'inq', days: 90 }).then(({ ok, j }) => { IQ.loading = false; if(ok) IQ.rows = j.rows || []; else IQ.err = j.error || '불러오지 못했습니다'; render(); })
+    .catch(() => { IQ.loading = false; IQ.err = '네트워크 문제로 불러오지 못했습니다'; render(); });
+}
+async function iqReply(id){
+  const t = String(IQ.ans[id] || '').trim();
+  if(t.length < 2) return toast('답을 적어 주세요');
+  if(IQ.busy) return;
+  IQ.busy = id; render();
+  const { ok, j } = await syPost({ what:'inq-reply', id, text: t }).catch(() => ({ ok:false, j:{} }));
+  IQ.busy = '';
+  if(!ok){ toast(j.error || '답하지 못했습니다'); render(); return; }
+  delete IQ.ans[id]; IQ.edit = '';
+  const r = (IQ.rows || []).find(x => x.id === id); if(r){ r.done = true; r.reply = t; r.reply_at = new Date().toISOString(); }
+  toast(j.mail === 'sent' ? '답을 저장하고 메일로 보냈습니다' : j.mail === 'failed' ? '답은 저장했지만 메일은 보내지 못했습니다 - 손님은 1:1 문의 화면에서 볼 수 있습니다' : '답을 저장했습니다');
+  render();
+}
+function inqPanel(){
+  const chip = o => `<button class="chip ${(IQ.only || '') === o.v ? 'on' : ''}" data-act="ops-sub" data-v="inq|${o.v}" style="padding:8px 14px;font-size:13.5px">${o.t}</button>`;
+  const 줄 = `<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px"><div class="chips" style="gap:6px">${IQ_ONLY.map(chip).join('')}</div>
+    <span style="margin-left:auto;display:flex;gap:8px"><button class="btn sec sm" data-act="iq-load">새로고침</button></span></div>`;
+  if(IQ.loading && !IQ.rows) return 줄 + 뼈대('rows');
+  if(IQ.err) return 줄 + `<div class="card pad"><p style="margin:0;font-size:14.5px;color:var(--danger);font-weight:700">${esc(IQ.err)}</p></div>`;
+  if(!IQ.rows) return 줄;
+  const rows = IQ.only === 'todo' ? IQ.rows.filter(r => !r.done) : IQ.rows;
+  if(!rows.length) return 줄 + 빈자리(IQ.only === 'todo' ? '답할 문의가 없습니다' : '최근 90일 문의가 없습니다', '', '', 80, true);
+  return 줄 + rows.map(r => { const 쓰기 = !r.done || IQ.edit === r.id;
+    return `<article class="card pad iq-item">
+      <div class="aq-top"><span class="badge b-ind">${esc(r.topic || '문의')}</span><span class="badge ${r.role === 'partner' ? 'b-warn' : 'b-mute'}">${r.role === 'partner' ? '파트너' : '손님'}</span>
+        <b style="font-size:14px">${esc([r.office, r.name].filter(Boolean).join(' · ') || '이름 없음')}</b><span class="sub num" style="font-size:13px">${esc(r.email || '')}</span>
+        <span class="aq-at num">${esc(sy때(r.at))}</span><span class="badge ${r.done ? 'b-ok' : 'b-warn'}">${r.done ? '답함' : '답 안 함'}</span></div>
+      <p class="aq-q">${esc(r.text)}</p>
+      ${r.done && r.reply && IQ.edit !== r.id ? `<div class="aq-a"><b>보낸 답</b><span class="num">${esc(sy때(r.reply_at))}${r.by ? ` · ${esc(r.by)}` : ''}</span><p>${esc(r.reply)}</p>
+        <span style="display:flex;justify-content:flex-end"><button class="btn tool sm" data-act="iq-edit" data-v="${esc(r.id)}">답 고쳐 다시 보내기</button></span></div>` : ''}
+      ${쓰기 ? `<label class="aq-lab" for="iq-${esc(r.id)}">답</label><textarea id="iq-${esc(r.id)}" class="inp aq-text" data-in="iq:${esc(r.id)}" rows="4" maxlength="3000" placeholder="손님 메일과 1:1 문의 화면으로 갑니다">${esc(IQ.ans[r.id] != null ? IQ.ans[r.id] : (IQ.edit === r.id ? r.reply : ''))}</textarea>
+        <span class="eqb" style="display:flex;gap:8px;justify-content:flex-end">${IQ.edit === r.id ? `<button class="btn sec sm" data-act="iq-edit" data-v="${esc(r.id)}">그만두기</button>` : ''}<button class="btn pri sm" data-act="iq-reply" data-v="${esc(r.id)}" ${IQ.busy === r.id ? 'disabled' : ''}>${IQ.busy === r.id ? '보내는 중…' : '답 보내기'}</button></span>` : ''}
+    </article>`; }).join('');
+}
+const IQ_ONLY = [ {v:'todo', t:'답 안 한 것'}, {v:'', t:'전체'} ];
 function logPanel(){
   const rows = LG.rows;
   if(LG.loading && !rows) return `${뼈대('rows')}`;
@@ -13307,6 +13566,8 @@ const OPS_MENU = [
     subs:[ {v:'active', t:'올려둔 것'}, {v:'', t:'내린 것까지'} ] },
   { k:'report',  t:'신고',      n:()=>RP.rows && RP.rows.length,
     subs:[ {v:'todo', t:'미확인만'}, {v:'', t:'전체'} ] },
+  { k:'inq',     t:'1:1 문의',  n:()=>IQ.rows && IQ.rows.filter(r => !r.done).length,
+    subs:[ {v:'todo', t:'답 안 한 것'}, {v:'', t:'전체'} ] },
   { g:'기록' },
   { k:'log',     t:'열람 기록', n:()=>LG.rows && LG.rows.length,
     subs:LG_ONLY },
@@ -13317,9 +13578,9 @@ const OPS_MENU = [
 /* 지금 어느 하위 항목에 있는지는 각 화면이 이미 들고 있다 - 두 벌로 두지 않는다 */
 const opsSubNow = k => k==='member' ? (OPS.msub||'agent')
   : k==='demand' ? (OPS.only||'') : k==='listing' ? (LS2.only||'')
-  : k==='report' ? (RP.only||'')  : k==='log' ? (LG.only||'') : k==='sys' ? (SY.only||'') : '';
+  : k==='report' ? (RP.only||'')  : k==='inq' ? (IQ.only||'') : k==='log' ? (LG.only||'') : k==='sys' ? (SY.only||'') : '';
 const OPS_TITLE = { home:'대시보드', stats:'지표', member:'회원관리', demand:'조건관리',
-  listing:'매물관리', report:'신고', log:'열람 기록', sys:'시스템', setting:'설정' };
+  listing:'매물관리', report:'신고', inq:'1:1 문의', log:'열람 기록', sys:'시스템', setting:'설정' };
 
 /* ── 대시보드 ──
    운영자가 하루에 처음 보는 화면이다. 여기서 "오늘 손댈 게 있나" 가
@@ -13675,6 +13936,7 @@ function opsPanel(){
     case 'report':  return reportPanel();
     case 'log':     return logPanel();
     case 'sys':     return sysPanel();
+    case 'inq':     return inqPanel();
     case 'setting': return opsSettingPanel();
     case 'demand':  return demandPanel();
     default:        return opsHomePanel();
@@ -13784,7 +14046,7 @@ function opsGateScreen(){
       지금 <b style="color:var(--n700)">${esc(S.user.email||S.user.name||'로그인됨')}</b> 으로 로그인해 계십니다.</p>`);
 }
 
-const OPS_ICO = { home:'home', stats:'chart', member:'users', demand:'list', listing:'building', report:'flag', log:'clock', setting:'gear' };
+const OPS_ICO = { home:'home', stats:'chart', member:'users', demand:'list', listing:'building', report:'flag', inq:'send', log:'clock', setting:'gear' };
 V[OPS_HOME] = () => {
   if(!OPS.rows) return opsGateScreen();
 
@@ -14625,7 +14887,9 @@ V['#/faq'] = () => docShell('FAQ', '자주 묻는 질문',
           <span style="flex:none;color:var(--ind)">Q</span><span>${q}</span></b>
         <p style="margin:0 0 0 24px;font-size:14.5px;line-height:1.8;color:var(--n700)">${a}</p>
       </div>`).join('')}
-  </div>`, true);
+  </div>
+  <div class="card pad aq-cta"><div><b>찾는 답이 없나요?</b><p class="sub" style="margin:4px 0 0">1:1 문의로 보내 주시면 운영팀이 확인하고 답을 드립니다.</p></div>
+    <span class="eqb" style="display:flex"><button type="button" class="btn pri md" data-go="#/ask">1:1 문의하기</button></span></div>`, true);
 
 /* ══════════ 라우터 ══════════ */
 /* 가입 화면을 벗어나면 작성 내용을 비운다. 그대로 두면 다시 들어왔을 때
@@ -14951,7 +15215,7 @@ function 파트너옆(active){
       <a data-go="#/">${dzIco('site')}<span>사이트 가기</span></a>
       ${ownerSide() ? '' : `<a data-go="#/partner/guide" class="${active === 'guide' ? 'on' : ''}">${dzIco('flag')}<span>시작 가이드</span></a>`}
       <a data-go="#/partner/help" class="${active === 'help' ? 'on' : ''}">${dzIco('help')}<span>도움말</span></a>
-      <a href="mailto:support@plustonic.com?subject=${encodeURIComponent('[비버노크 파트너 문의] ')}&body=${encodeURIComponent(`\n\n- 사무소: ${(S.agent && (S.agent.name || '')) || ''}\n- 화면: ${typeof location !== 'undefined' ? location.hash : ''}\n- 버전: ${BK_변경[0].v}`)}">${dzIco('send')}<span>운영사에 문의</span></a>
+      <a data-go="#/ask" class="${active === 'ask' ? 'on' : ''}">${dzIco('send')}<span>운영사에 문의</span></a>
       ${버전칸()}
     </div>
   </aside>
@@ -15028,6 +15292,7 @@ if(typeof addEventListener === 'function'){
   addEventListener('unhandledrejection', e => { const r = e && e.reason; bk오류보내기('처리되지 않은 오류: ' + ((r && r.message) || r), (r && r.stack && (/(https?:\/\/[^\s)]+?):\d+:\d+/.exec(r.stack) || [])[1]) || location.origin, 0, 0, r && r.stack); });
 }
 const BK_변경 = [
+  { v:'26.11.28.2', 날:'2026-11-28', 줄:[ '1:1 문의 - 고객센터 · 마이페이지 · 파트너 왼쪽 메뉴에서 문의를 보내고, 답을 같은 화면과 메일로 받습니다. 운영 화면에 ‘1:1 문의’ 메뉴', '회원 탈퇴 - 손님은 마이페이지에서 바로 탈퇴합니다. 파트너는 자료를 받아 둔 뒤 ‘탈퇴 신청’', '사무소 설정 ‘자료 내려받기’ - 계약서(인쇄 모양) · 계약서 목록 · 매물장부를 압축 파일 하나로' ] },
   { v:'26.11.28.1', 날:'2026-11-28', 줄:[ '코드리뷰 반영 - 계약체결 문자의 잔금 칸에 ‘협의’처럼 적으면 자동 계산 금액으로 바뀌던 것을 고쳤습니다', '직접 고친 문자가 있는 채로 다른 보낸 기록을 다시 열거나 붙여 넣으면 앞 문자의 글이 그대로 나가던 것을 고쳤습니다', '휴대폰 이용 안내 · 자주 묻는 질문 - 회사 정보가 ‘내 조건 걸어두기’ 띠보다 먼저 나오던 순서를 바로잡았습니다' ] },
   { v:'26.11.27.24', 날:'2026-11-27', 줄:[ '돌아가는 로딩 표시를 모두 걷고 스켈레톤으로 바꿨습니다 - 첫 화면, 계정 확인 중, 운영 화면 여는 중, 손님 계약서 보기, 잔금 준비서류 그림, 암호화 · 드라이브 저장 진행' ] },
   { v:'26.11.27.23', 날:'2026-11-27', 줄:[ '스켈레톤 스크린 - 불러오는 동안 돌아가는 표시나 ‘불러오는 중입니다…’ 글 대신, 곧 나올 화면과 같은 모양의 회색 뼈대가 보입니다(대시보드 · 내 조건 · 제안함 · 1:1 제안 · 매물 · 계약서 목록 · 대화방 · 운영 화면 등)' ] },
@@ -24254,6 +24519,8 @@ document.addEventListener('input', e=>{
     CT.track = t; ctTrackSave(false); return;
   }
   /* 계약체결 문자 - 칸 · 받는 번호 · 틀 고치기 */
+  if(k.startsWith('aq:')){ AQ[k.slice(3)] = el.value; return; }          /* 1:1 문의 (2026-11-28) */
+  if(k.startsWith('iq:')){ IQ.ans[k.slice(3)] = el.value; return; }
   if(k.startsWith('cs:')){ cs입력(el, k.slice(3)); return; }
   if(k.startsWith('cs-to:')){ cs입력(el, 'to:' + k.slice(6)); return; }
   if(k === 'cs-name'){ if(CS.edit) CS.edit.name = el.value; return; }
@@ -24590,6 +24857,7 @@ function handle(a,v,el){
         if(v==='member'){ if((OPS.msub||'agent')==='user'){ if(!US.rows) usFetch(); } else if(!AG.rows) agFetch(); }
         if(v==='log'     && !LG.rows) lgFetch();
         if(v==='sys'     && !SY.rows && !SY.usage) syFetch();
+        if(v==='inq'     && !IQ.rows) iqFetch();
         if(v==='report'  && !RP.rows) rpFetch();
         if(v==='listing' && !LS2.rows) lsFetch();
       }
@@ -24624,6 +24892,7 @@ function handle(a,v,el){
       else if(k==='listing'){ LS2.only = val; LS2.rows = null; lsFetch(); }
       else if(k==='report'){ RP.only = val; RP.rows = null; rpFetch(); }
       else if(k==='log'){ LG.only = val; LG.rows = null; lgFetch(); }
+      else if(k==='inq'){ IQ.only = val; if(!IQ.rows) iqFetch(); }
       else if(k==='sys'){ SY.only = val; SY.rows = null; SY.usage = null; SY.backups = null; SY.err = ''; syFetch(); }
       render(); return true; }
     case 'ls2-load': LS2.rows=null; lsFetch(); return true;
@@ -26057,6 +26326,18 @@ function handle(a,v,el){
     case 'ct-autoarch': { const A = CT.alert; if(!A || !A.loaded || A.need || A.err) return true; A.cfg = ct알림설정({ ...ct알림설정(A.cfg), autoArch: !ct알림설정(A.cfg).autoArch });
       ctAlertSave(); render(); toast(A.cfg.autoArch ? '완료 · 취소 건을 3개월 뒤 보관함으로 옮깁니다(매일 아침)' : '자동 보관을 껐습니다'); return true; }
     case 'set-tab': S.setTab = v; render(); return true;
+    /* 1:1 문의 · 탈퇴 · 자료 내려받기 (2026-11-28) */
+    case 'aq-topic': AQ.topic = v; render(); return true;
+    case 'aq-send': aqSend(); return true;
+    case 'aq-reload': AQ.rows = null; aqLoad(); render(); return true;
+    case 'aq-login': S.afterLogin = '#/ask'; go('#/login'); return true;
+    case 'acc-wd-go': accWithdraw(); return true;
+    case 'acc-wd-req': accWdReq(); return true;
+    case 'acc-data': S.setTabNext = 'data'; go('#/partner/settings'); return true;
+    case 'dx-run': dxRun(); return true;
+    case 'iq-load': IQ.rows = null; iqFetch(); return true;
+    case 'iq-reply': iqReply(v); return true;
+    case 'iq-edit': IQ.edit = IQ.edit === v ? '' : v; render(); return true;
     case 'dz-card': { const 숨 = dz숨김(); 숨.has(v) ? 숨.delete(v) : 숨.add(v); try{ localStorage.setItem('bk.dzHide', JSON.stringify([...숨])); }catch(_){} render(); return true; }
     case 'dz-sales': { let 지금 = false; try{ 지금 = localStorage.getItem('bk.hideSales') === '1'; localStorage.setItem('bk.hideSales', 지금 ? '0' : '1'); }catch(_){} render(); return true; }
     case 'perf-hide': { let 지금 = false; try{ 지금 = localStorage.getItem('bk.hideSales') === '1'; localStorage.setItem('bk.hideSales', 지금 ? '0' : '1'); }catch(_){} render(); return true; }

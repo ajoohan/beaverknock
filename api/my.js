@@ -59,6 +59,9 @@ export default async function handler(req, res) {
      ⚠ 못 물어봤다고 막지 않는다. 파트너인지 모르면 손님 화면을 보여주면 되고,
      진짜 문턱은 어차피 서버가 각 화면에서 다시 본다. */
   if (body.what === 'agent') return agentAnswer(res, user);
+  /* 1:1 문의 · 회원 탈퇴 (2026-11-28) - 함수 상한(12개) 때문에 '내 것'을 다루는 이 자리에 */
+  if (body.what === 'inquiry-send' || body.what === 'inquiry-mine') return inquiry(req, res, user, body);
+  if (body.what === 'withdraw') return withdraw(req, res, user, body);
 
   /* 동의 + 파트너를 한 번에 (2026-10-12).
      로그인할 때마다 화면이 이 둘을 따로 물어서 함수 호출 두 번 · 토큰 확인(userFrom)
@@ -425,4 +428,47 @@ async function rtRefresh(req, res) {
   } catch (e) {
     return res.status(502).json({ error: '잠시 뒤 다시 시도해 주세요' });
   }
+}
+
+/* ── 1:1 문의 (2026-11-28) ── 저장은 api/_sys.js (bk_sys_event kind 'inquiry', 글은 잠가서). 새 문의는 운영 메일로 알린다(내용은 싣지 않음) */
+async function inquiry(req, res, user, body) {
+  const S = await import('./_sys.js');
+  if (body.what === 'inquiry-mine') {
+    const x = await S.내문의(user.id);
+    return res.status(x.rows ? 200 : 502).json(x.rows ? { ok: true, rows: x.rows, need: '' } : { error: x.need ? '문의 받기를 준비하고 있습니다' : '불러오지 못했습니다' });
+  }
+  const ag = await approvedAgent(user).catch(() => ({}));
+  const 파트너 = !!(ag && ag.agent);
+  const r = await S.문의넣기(user, { topic: String(body.topic || ''), text: body.text, role: 파트너 ? 'partner' : 'guest', office: 파트너 ? ag.agent.office : '' });
+  if (!r.ok) return res.status(r.code || 400).json({ error: r.error });
+  const { notify } = await import('./_notify.js');
+  await notify(req, { subject: `새 1:1 문의 - ${r.topic}`, rows: [['종류', r.topic], ['보낸 분', 파트너 ? `파트너${ag.agent.office ? ' · ' + ag.agent.office : ''}` : '손님']],
+    link: '/#/ops/live', cta: '운영 화면에서 답하기', note: '문의 내용은 메일에 싣지 않습니다. 운영 화면 ‘1:1 문의’에서 보고 답해 주세요.' }).catch(() => {});
+  return res.status(200).json({ ok: true, id: r.id });
+}
+
+/* ── 회원 탈퇴 (2026-11-28) ──
+ * 손님: 걸어 둔 조건(받은 제안은 함께 지워진다) · 동의 기록 · 로그인 계정을 지운다.
+ *   계약 대화방에 남긴 말과 중개사무소가 보관하는 계약서는 중개사무소의 법정 보존 자료라 남는다(화면에서 미리 알린다).
+ * 파트너(사무소 · 직원): 계약서 보존(5년) · 직원 · 손님 대화방이 걸려 있어 바로 지우지 않는다 - 화면에서 '자료 내려받기 → 탈퇴 신청(1:1 문의)'으로. */
+async function withdraw(req, res, user, body) {
+  if (body.confirm !== true) return res.status(400).json({ error: '탈퇴 확인이 필요합니다' });
+  const ag = await approvedAgent(user).catch(() => null);
+  if (!ag || ag.error) return res.status(502).json({ error: '계정을 확인하지 못했습니다 - 잠시 뒤 다시 시도해 주세요' });
+  if (ag.agent) return res.status(409).json({ error: '파트너 계정은 계약서 보존 때문에 바로 지우지 않습니다 - 자료를 내려받은 뒤 ‘탈퇴 신청’을 눌러 주세요', partner: true });
+  const 지우기 = async (표, q) => { const r = await fetch(sbUrl(표, q), { method: 'DELETE', headers: { ...sbHeaders(), Prefer: 'return=minimal' } });
+    if (!r.ok) { const t = await r.text().catch(() => ''); if (!/does not exist|PGRST205|42P01/i.test(t)) throw new Error(표 + ' ' + r.status); } };
+  try {
+    await 지우기('bk_demand', `user_id=eq.${user.id}`);
+    await 지우기('bk_consent', `user_id=eq.${user.id}`);
+    const r = await fetch(`${process.env.BK_URL}/auth/v1/admin/users/${encodeURIComponent(user.id)}`, { method: 'DELETE', headers: { apikey: process.env.BK_SECRET_KEY, Authorization: 'Bearer ' + process.env.BK_SECRET_KEY } });
+    if (!r.ok && r.status !== 404) throw new Error('auth ' + r.status);
+  } catch (e) {
+    console.error('[withdraw]', e && e.message);
+    return res.status(502).json({ error: '탈퇴를 마치지 못했습니다 - 잠시 뒤 다시 시도하시거나 1:1 문의로 알려 주세요' });
+  }
+  const S = await import('./_sys.js');
+  await S.기록('withdraw', { msg: '손님 계정 탈퇴' });
+  쿠키(res, '');
+  return res.status(200).json({ ok: true });
 }

@@ -94,6 +94,27 @@ export default async function handler(req, res) {
     const x = await S.최근(['client-error', 'server-error', 'send', 'health', 'cron', 'retry'].includes(payload.kind) ? payload.kind : '', payload.days);
     return res.status(x.error ? 502 : 200).json(x.error ? x : { ok: true, rows: x.rows || [], need: x.need || '' });
   }
+  /* 1:1 문의 (2026-11-28) - 목록 · 답하기. 부운영자도 답할 수 있다(메일 주소만 가림). 답은 손님 메일로 보내고 열람 기록에 남긴다 */
+  if (payload.what === 'inq' || payload.what === 'inq-reply') {
+    const S = await import('./_sys.js');
+    if (payload.what === 'inq') {
+      const x = await S.문의목록(payload.days, 부);
+      if (x.rows) await logOps(req, opsUser, { action: 'inq', reveal: !부, count: x.rows.length });
+      return res.status(x.rows ? 200 : 502).json(x.rows ? { ok: true, rows: x.rows } : { error: x.need ? '시스템 기록 표가 없습니다(SQL 0046)' : (x.error || '불러오지 못했습니다') });
+    }
+    const r = await S.문의답(payload.id, payload.text, opsUser && opsUser.email);
+    if (!r.ok) return res.status(400).json({ error: r.error || '답하지 못했습니다' });
+    let 메일 = 'none';
+    if (r.email) {
+      const { notify } = await import('./_notify.js');
+      const 글 = String(r.text || '').replace(/\s+/g, ' ');
+      const m = await notify(req, { to: r.email, subject: '1:1 문의에 답을 드렸습니다', rows: [['문의', `${r.topic} - ${글.length > 60 ? 글.slice(0, 60) + '…' : 글}`], ['답', String(payload.text || '').slice(0, 1500)]],
+        link: '/#/ask', cta: '내 문의 보기', note: '이 메일은 보내기 전용입니다. 더 물어보실 것은 사이트의 1:1 문의로 보내 주세요.' }).catch(() => null);
+      메일 = m && m.ok ? 'sent' : 'failed';
+    }
+    await logOps(req, opsUser, { action: 'inq-reply', detail: `${r.다시답 ? '답 고침' : '답함'} · 메일 ${메일}` });
+    return res.status(200).json({ ok: true, mail: 메일 });
+  }
   if (payload.what === 'log')         return readLog(req, res, payload, opsUser);
   if (payload.what === 'reports')     return readReports(req, res, payload, opsUser);
   if (payload.what === 'report-mark') return markReport(req, res, payload, opsUser);

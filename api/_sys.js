@@ -54,7 +54,7 @@ export async function 최근(kind = '', days = 7) {
   const 부터 = new Date(Date.now() - Math.min(Math.max(+days || 7, 1), 90) * 864e5).toISOString();
   const x = await 읽기(`select=id,at,kind,level,msg,detail,done&at=gte.${부터}${kind ? `&kind=eq.${encodeURIComponent(kind)}` : ''}&order=at.desc&limit=300`);
   if (!x.rows) return x;
-  return { rows: x.rows.map(r => { const d = r.detail && typeof r.detail === 'object' ? { ...r.detail } : null; const 다시됨 = !!(d && d.enc); if (d) delete d.enc; return { ...r, detail: d, retry: 다시됨 && !r.done }; }) };
+  return { rows: x.rows.map(r => { const d = r.detail && typeof r.detail === 'object' ? { ...r.detail } : null; const 다시됨 = !!(d && d.enc); if (d) { delete d.enc; delete d.renc; } return { ...r, detail: d, retry: 다시됨 && !r.done }; }) };
 }
 
 /* 다시 보내기 - 운영자만(부운영자 막음은 부르는 쪽). 잠긴 내용을 풀어 같은 채널로 한 번 더 */
@@ -237,4 +237,67 @@ export async function 백업주소(path, fetchFn = fetch) {
   const j = await r.json().catch(() => ({})), s = j.signedURL || j.signedUrl;
   if (!r.ok || !s) return { error: '내려받을 주소를 만들지 못했습니다' };
   return { url: `${저장소(String(s).replace(/^\/+/, ''))}&download=${encodeURIComponent(path.replace(/\//g, '_'))}` };
+}
+
+/* ── 1:1 문의 (2026-11-28 한실장님 '제안대로 진행') ──
+ * 새 표 없이 bk_sys_event 에 kind 'inquiry' 로 담는다(SQL 없음).
+ * 글 · 메일 주소 · 이름은 잠가서 detail.enc, 답은 detail.renc. 평문으로는 누가 보냈는지(uid) · 종류 · 답한 때만 둔다 - '내 문의'를 찾으려면 uid 가 있어야 한다.
+ * done = 답함. 열쇠(BK_DATA_KEY)가 없으면 받지 않는다 - 글을 평문으로 남기지 않는다. */
+export const 문의종류 = ['이용 방법', '오류 신고', '계약서 · 서식', '매물 · 제안', '계정 · 탈퇴', '탈퇴 신청', '제안 · 기타'];
+const 문의풀기 = v => { try { return v ? JSON.parse(풀기(v)) : null; } catch { return null; } };
+const uid모양 = v => /^[0-9a-f-]{36}$/i.test(String(v || ''));
+
+export async function 문의넣기(user, { topic, text, role, office }) {
+  if (!암호켜짐()) return { error: '문의 받기를 준비하고 있습니다 - 잠시 뒤 다시 보내 주세요', code: 503 };
+  if (!user || !uid모양(user.id)) return { error: '로그인이 필요합니다', code: 401 };
+  const 글 = String(text || '').replace(/\r/g, '').trim().slice(0, 2000);
+  if (글.length < 5) return { error: '문의 내용을 다섯 글자 이상 적어 주세요', code: 400 };
+  const 종류 = 문의종류.includes(topic) ? topic : '제안 · 기타';
+  /* 하루 다섯 건까지 - 누르기만 반복해 운영 메일이 쏟아지지 않게 */
+  const 하루전 = new Date(Date.now() - 864e5).toISOString();
+  const x = await 읽기(`select=id&kind=eq.inquiry&detail->>uid=eq.${user.id}&at=gte.${하루전}&limit=6`);
+  if (x.need) return { error: '문의 받기를 준비하고 있습니다(SQL 0046)', code: 503 };
+  if (x.rows && x.rows.length >= 5) return { error: '하루에 다섯 건까지 보낼 수 있습니다 - 앞서 보내신 문의에 답을 드릴게요', code: 429 };
+  const enc = 잠그기(JSON.stringify({ text: 글, email: String(user.email || '').slice(0, 200), name: String((user.user_metadata && (user.user_metadata.name || user.user_metadata.full_name)) || '').slice(0, 40), office: String(office || '').slice(0, 60) }));
+  const r = await 시간제한(fetch(sbUrl(표), { method: 'POST', headers: { ...sbHeaders(), Prefer: 'return=representation' },
+    body: JSON.stringify({ kind: 'inquiry', level: 'info', msg: `1:1 문의 - ${종류}`, detail: { uid: user.id, topic: 종류, role: role === 'partner' ? 'partner' : 'guest', enc } }) }), 4000);
+  if (!r || !r.ok) return { error: '문의를 저장하지 못했습니다 - 잠시 뒤 다시 보내 주세요', code: 502 };
+  const [row] = await r.json().catch(() => [{}]);
+  return { ok: true, id: row && row.id, topic: 종류 };
+}
+
+/* 내가 보낸 문의 - 90일. 내 글과 답만 풀어서 준다 */
+export async function 내문의(uid) {
+  if (!uid모양(uid)) return { rows: [] };
+  const 부터 = new Date(Date.now() - 90 * 864e5).toISOString();
+  const x = await 읽기(`select=id,at,detail,done&kind=eq.inquiry&detail->>uid=eq.${uid}&at=gte.${부터}&order=at.desc&limit=30`);
+  if (!x.rows) return x;
+  return { rows: x.rows.map(r => { const d = r.detail || {}, 글 = 문의풀기(d.enc) || {}, 답 = 문의풀기(d.renc) || {};
+    return { id: r.id, at: r.at, topic: d.topic || '', text: 글.text || '', done: !!r.done, reply: 답.text || '', reply_at: d.reply_at || null }; }) };
+}
+
+/* 운영 - 문의 목록. 부운영자에게는 메일 주소를 가린다 */
+export async function 문의목록(days = 30, 부 = false) {
+  const 부터 = new Date(Date.now() - Math.min(Math.max(+days || 30, 1), 180) * 864e5).toISOString();
+  const x = await 읽기(`select=id,at,detail,done&kind=eq.inquiry&at=gte.${부터}&order=at.desc&limit=300`);
+  if (!x.rows) return x;
+  return { rows: x.rows.map(r => { const d = r.detail || {}, 글 = 문의풀기(d.enc) || {}, 답 = 문의풀기(d.renc) || {};
+    return { id: r.id, at: r.at, topic: d.topic || '', role: d.role || 'guest', text: 글.text || '(내용을 풀지 못했습니다)', email: 부 ? 글가림(글.email || '') : (글.email || ''),
+      name: 글.name || '', office: 글.office || '', done: !!r.done, reply: 답.text || '', reply_at: d.reply_at || null, by: d.reply_by || '' }; }) };
+}
+
+/* 운영 - 답하기. 답을 잠가 넣고 done. 받는 메일 주소를 돌려준다(메일은 부르는 쪽이 보낸다) */
+export async function 문의답(id, 답글, 누가 = '') {
+  if (!uid모양(id)) return { error: '어느 문의인지 알 수 없습니다' };
+  if (!암호켜짐()) return { error: '열쇠(BK_DATA_KEY)가 없어 답을 저장할 수 없습니다' };
+  const t = String(답글 || '').replace(/\r/g, '').trim().slice(0, 3000);
+  if (t.length < 2) return { error: '답을 적어 주세요' };
+  const x = await 읽기(`select=id,detail,done&kind=eq.inquiry&id=eq.${id}&limit=1`);
+  if (!x.rows) return x;
+  const row = x.rows[0]; if (!row) return { error: '문의를 찾지 못했습니다' };
+  const d = row.detail || {}, 글 = 문의풀기(d.enc) || {};
+  const 새 = { ...d, renc: 잠그기(JSON.stringify({ text: t })), reply_at: new Date().toISOString(), reply_by: String(누가 || '').slice(0, 60) };
+  const r = await 시간제한(fetch(sbUrl(표, `id=eq.${id}`), { method: 'PATCH', headers: { ...sbHeaders(), Prefer: 'return=minimal' }, body: JSON.stringify({ detail: 새, done: true }) }), 4000);
+  if (!r || !r.ok) return { error: '답을 저장하지 못했습니다' };
+  return { ok: true, email: 글.email || '', topic: d.topic || '', text: 글.text || '', 다시답: !!row.done };
 }
